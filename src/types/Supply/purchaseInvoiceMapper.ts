@@ -21,24 +21,27 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
   });
 
 
-  const items = validItems.map((it, idx) => {
-    // Force number conversion
-    const quantity = Number(it.quantity);
-    const rate = Number(it.rate);
-    const vatRate = Number(it.vatRate || 0);
+const items = validItems.map((it) => {
+  const quantity = Number(it.quantity);
+  const rate = Number(it.rate);
+  const vatRate = Number(it.vatRate || 0);
 
-
-   
-    return {
-      itemCode: it.itemCode,
-      itemName: it.itemName || "",
-      quantity: quantity,
-      rate: rate,
-      uom: it.uom || "Unit",
-      vatCd: it.vatCd || "A",
-      vatRate: vatRate,
-    };
-  });
+  return {
+    itemCode: it.itemCode,
+    itemName: it.itemName || "",
+    quantity,
+    rate,
+    uom: it.uom || "Unit",
+    vatCd: it.vatCd || "A",
+    vatRate,
+    description: it.description || "",
+    packing: it.packing || "",
+    batchNo: it.batchNo || "",
+    mfgDate: it.mfgDate || "",
+    expDate: it.expDate || "",
+    discount: Number(it.discount || 0),
+  };
+});
 
 
 
@@ -67,9 +70,16 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
 
 const payload: any = {
   rcptTyCd: "Local",
-    ...(form.poNumber && { lpoNumber: form.poNumber }),
-  requiredBy: form.requiredBy,
+
+  ...(form.poNumber && { lpoNumber: form.poNumber }),
+
   supplierId: form.supplierId,
+  supplierName: form.supplier,
+  supplierCode: form.supplierCode,
+  supplierContact: form.supplierContact,
+
+  poDate: form.date,
+
   currency: form.currency,
   status: form.status,
 

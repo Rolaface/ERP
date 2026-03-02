@@ -6,13 +6,14 @@ import { mapSupplierToApi } from "../types/Supply/supplierMapper";
 import { Supplier } from "../types/Supply/supplier";
 import { mapSupplierToForm } from "../types/Supply/supplierMapper";
 import { showApiError, showSuccess } from "../utils/alert";
-
+import { generateSupplierCode } from "../types/Supply/generateSupplierCode";
 
 interface UseSupplierFormProps {
   initialData?: Supplier | null;
   isEditMode?: boolean;
   onSuccess?: (data: SupplierFormData) => void;
   isOpen?: boolean;
+  existingSupplierCodes?: string[];
 }
 
 interface SupplierErrors {
@@ -49,12 +50,14 @@ export const useSupplierForm = ({
   isEditMode = false,
   onSuccess,
   isOpen,
+  existingSupplierCodes = [] 
 }: UseSupplierFormProps) => {
   const [form, setForm] = useState<SupplierFormData>(emptySupplierForm);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<SupplierTab>("supplier");
   const [errors, setErrors] = useState<SupplierErrors>({});
   const [allowSubmit, setAllowSubmit] = useState(false);
+  const [isCodeEdited, setIsCodeEdited] = useState(false);
 
   // Validate Supplier Tab
   const validateSupplierTab = (): boolean => {
@@ -164,14 +167,16 @@ export const useSupplierForm = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    if (initialData) {
-      setForm(mapSupplierToForm(initialData));
-    } else {
-      setForm({
-        ...emptySupplierForm,
-        dateOfAddition: new Date().toISOString().split("T")[0],
-      });
-    }
+if (initialData) {
+  setForm(mapSupplierToForm(initialData));
+  setIsCodeEdited(true); // prevent auto overwrite in edit
+} else {
+  setForm({
+    ...emptySupplierForm,
+    dateOfAddition: new Date().toISOString().split("T")[0],
+  });
+  setIsCodeEdited(false);
+}
 
     setActiveTab("supplier");
     setErrors({});
@@ -204,6 +209,37 @@ export const useSupplierForm = ({
           }));
         }
       }
+
+      if (name === "supplierName") {
+
+  setForm(prev => {
+
+    // If user already edited code → don't override
+    if (isCodeEdited) {
+      return { ...prev, supplierName: value };
+    }
+
+    const autoCode = generateSupplierCode(value, existingSupplierCodes);
+    return {
+      ...prev,
+      supplierName: value,
+      supplierCode: autoCode
+    };
+  });
+
+  return;
+}
+
+if (name === "supplierCode") {
+  setIsCodeEdited(true);
+
+  setForm(prev => ({
+    ...prev,
+    supplierCode: value.toUpperCase()
+  }));
+
+  return;
+}
 
       setForm((p) => ({ ...p, [name]: value }));
     }
@@ -337,6 +373,7 @@ export const useSupplierForm = ({
     }
 
     setErrors({});
+    setIsCodeEdited(false);
     setAllowSubmit(false);
     showSuccess("Form reset");
   };

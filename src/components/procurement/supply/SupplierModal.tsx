@@ -18,6 +18,7 @@ interface SupplierModalProps {
   onSubmit?: (data: SupplierFormData) => void;
   initialData?: Supplier | null;
   isEditMode?: boolean;
+  existingSupplierCodes?: string[]; 
 }
 const tabs: { key: SupplierTab; icon: typeof Building2; label: string }[] = [
   { key: "supplier", icon: Building2, label: "Supplier" },
@@ -31,6 +32,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   onSubmit,
   initialData,
   isEditMode = false,
+  existingSupplierCodes = [] 
 }) => {
   const {
     form,
@@ -47,6 +49,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     isEditMode,
     onSuccess: onSubmit,
     isOpen,
+    existingSupplierCodes
   });
 
   const footer = (

@@ -40,10 +40,10 @@ export const mapSupplierToApi = (
   ...(supplierId ? { supplierId } : {}),
 
   supplierName: f.supplierName,
-  supplierCode: f.supplierCode,
+  supplierCode: f.supplierCode?.toUpperCase(),
   tpin: f.tpin,
   currency: f.currency,
-  taxCategory:f.taxCategory,
+  taxCategory: f.taxCategory,
   contactPerson: f.contactPerson,
   phoneNo: f.phoneNo,
   alternateNo: f.alternateNo,
@@ -81,13 +81,16 @@ export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
     supplierName: s.supplierName ?? "",
     supplierCode: s.supplierCode ?? "",
     tpin: s.tpin ?? "",
+    taxCategory: s.taxCategory ?? "",
 
     contactPerson: s.contactPerson ?? "",
-    phoneNo: s.phoneNo ?? "",
-    alternateNo: s.alternateNo ?? "",
+    phoneCode: s.phoneNo?.slice(0, 3) ?? "",
+    phoneNo: s.phoneNo?.slice(3) ?? "",
+    alternateCode: s.alternateNo?.slice(0, 3) ?? "",
+    alternateNo: s.alternateNo?.slice(3) ?? "",
     emailId: s.emailId ?? "",
 
-    currency: s.currency ?? "ZMW",
+    currency: s.currency ?? "",
     paymentTerms: s.paymentTerms ?? "",
     dateOfAddition: s.dateOfAddition ?? "",
 

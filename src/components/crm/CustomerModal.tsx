@@ -127,32 +127,26 @@ const CustomerModal: React.FC<{
     if (initialData) {
 
       const splitMobile = (mobile?: string) => {
-        if (!mobile) return { code: "", number: "" };
+  if (!mobile) return { code: "", number: "" };
 
-        // With +code
-        const plusMatch = mobile.match(/^(\+\d{1,4})(\d+)$/);
-        if (plusMatch) {
-          return {
-            code: plusMatch[1],
-            number: plusMatch[2],
-          };
-        }
+  const countryCodes = ["+91", "+260", "+1", "+44"]; // add as needed
 
-        // Without +
-        const plainMatch = mobile.match(/^(\d{1,4})(\d{6,})$/);
-        if (plainMatch) {
-          return {
-            code: `+${plainMatch[1]}`,
-            number: plainMatch[2],
-          };
-        }
+  const matchedCode = countryCodes.find(code =>
+    mobile.startsWith(code)
+  );
 
-        // Fallback → treat everything as number
-        return {
-          code: "",
-          number: mobile,
-        };
-      };
+  if (matchedCode) {
+    return {
+      code: matchedCode,
+      number: mobile.slice(matchedCode.length)
+    };
+  }
+
+  return {
+    code: "",
+    number: mobile
+  };
+};
 
       const mobile = splitMobile(initialData.mobile);
 
@@ -376,7 +370,10 @@ const CustomerModal: React.FC<{
 
     const formattedForm = {
       ...form,
-      mobile: `${form.mobileCode || ""}${form.mobile || ""}`,
+      mobile: (() => {
+        const raw = `${form.mobile || ""}`.replace(/^\+?\d{1,4}/, "");
+        return `${form.mobileCode || ""}${raw}`;
+      })(),
     };
 
     const { sameAsBilling, mobileCode, ...cleanForm } = formattedForm;

@@ -30,6 +30,7 @@ const SupplierManagement: React.FC<Props> = () => {
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
+  const supplierCodes = suppliers.map(s => s.supplierCode || "");
 
 
 
@@ -299,16 +300,17 @@ const handleDeleteSupplier = async (supplier: Supplier) => {
 
 
       {/* SUPPLIER MODAL */}
-      <SupplierModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditSupplier(null);
-        }}
-        onSubmit={handleSupplierSaved}
-        initialData={editSupplier}
-        isEditMode={!!editSupplier}
-      />
+    <SupplierModal
+  isOpen={showModal}
+  onClose={() => {
+    setShowModal(false);
+    setEditSupplier(null);
+  }}
+  onSubmit={handleSupplierSaved}
+  initialData={editSupplier}
+  isEditMode={!!editSupplier}
+  existingSupplierCodes={supplierCodes}
+/>
     </div>
   );
 };
