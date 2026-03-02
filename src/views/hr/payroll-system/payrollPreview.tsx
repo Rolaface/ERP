@@ -100,8 +100,47 @@ export default function PayrollPreviewModal({
   if (!open) return null;
 
   const safeCurrency = String(currency ?? "").trim();
-  const earnings = Array.isArray((detail as any)?.earnings) ? (detail as any).earnings : [];
-  const deductions = Array.isArray((detail as any)?.deductions) ? (detail as any).deductions : [];
+  const earningsRaw = Array.isArray((detail as any)?.earnings) ? (detail as any).earnings : [];
+  const deductionsRaw = Array.isArray((detail as any)?.deductions) ? (detail as any).deductions : [];
+
+  const enabledComponentKeys = React.useMemo(() => {
+    const comps = Array.isArray((detail as any)?.components) ? (detail as any).components : [];
+    const set = new Set<string>();
+    comps.forEach((c: any) => {
+      const name = String(c?.component ?? "").trim();
+      if (!name) return;
+      const enabled = Boolean(Number(c?.enabled ?? 0)) || c?.enabled === true;
+      if (enabled) set.add(name.toLowerCase());
+    });
+    return set;
+  }, [detail]);
+
+  const earnings = React.useMemo(() => {
+    if (!enabledComponentKeys || enabledComponentKeys.size === 0) return earningsRaw;
+    return (earningsRaw || []).filter((r: any) => enabledComponentKeys.has(String(r?.component ?? "").trim().toLowerCase()));
+  }, [earningsRaw, enabledComponentKeys]);
+
+  const deductions = React.useMemo(() => {
+    if (!enabledComponentKeys || enabledComponentKeys.size === 0) return deductionsRaw;
+    return (deductionsRaw || []).filter((r: any) => enabledComponentKeys.has(String(r?.component ?? "").trim().toLowerCase()));
+  }, [deductionsRaw, enabledComponentKeys]);
+
+  const deductionsDeduped = React.useMemo(() => {
+    const map = new Map<string, { component: string; amount: number }>();
+    (deductions || []).forEach((row: any) => {
+      const component = String(row?.component ?? "").trim();
+      if (!component) return;
+      const key = component.toLowerCase();
+      const amt = Number(row?.amount ?? 0) || 0;
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, { component, amount: amt });
+      } else {
+        existing.amount += amt;
+      }
+    });
+    return Array.from(map.values());
+  }, [deductions]);
 
   const fmtMoney = (v: any) => {
     const n = Number(v ?? 0);
@@ -235,10 +274,10 @@ export default function PayrollPreviewModal({
                 <div className="border border-theme rounded-xl bg-card p-4">
                   <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">Deductions</div>
                   <div className="mt-3 space-y-2">
-                    {deductions.length === 0 ? (
+                    {deductionsDeduped.length === 0 ? (
                       <div className="text-xs text-muted">—</div>
                     ) : (
-                      deductions.map((row: any, idx: number) => (
+                      deductionsDeduped.map((row: any, idx: number) => (
                         <div key={`${row?.component ?? idx}`} className="border-b border-theme/60 last:border-0 py-2">
                           <div className="flex items-center justify-between gap-3">
                             <div className="text-xs font-bold text-main truncate">{String(row?.component ?? "—")}</div>
