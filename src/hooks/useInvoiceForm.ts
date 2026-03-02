@@ -37,6 +37,18 @@ export const useInvoiceForm = (
     terms: { ...EMPTY_TERMS },
   });
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    setFormData(prev => ({
+      ...prev,
+      dateOfInvoice: prev.dateOfInvoice || today
+    }));
+
+  }, [isOpen]);
+
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
   const [page, setPage] = useState(0);
@@ -52,7 +64,7 @@ export const useInvoiceForm = (
   const shippingEditedRef = useRef(false);
   const lastCurrencyRef = useRef<string>("INR");
   const lastRateRef = useRef<number>(1);
-  const enableExchange = mode === "invoice"; 
+  const enableExchange = mode === "invoice";
   useEffect(() => {
     if (!isOpen || initialData) return;
 
@@ -73,10 +85,10 @@ export const useInvoiceForm = (
             ...prev.paymentInformation,
             paymentTerms:
               company?.terms?.selling?.payment?.dueDates ?? "",
-bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+            bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+            accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+            routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+            swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
           },
         }));
       } catch (err) {
@@ -87,8 +99,8 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
     loadCompanyData();
   }, [isOpen, mode]);
 
- useEffect(() => {
-  if (!isOpen || !enableExchange) return;
+  useEffect(() => {
+    if (!isOpen || !enableExchange) return;
 
     const code = String(formData.currencyCode ?? "").trim().toUpperCase();
     if (!code || code === "INR") {
@@ -127,7 +139,7 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
   }, [isOpen, formData.currencyCode, enableExchange]);
 
   useEffect(() => {
-   if (!isOpen || !enableExchange) return;
+    if (!isOpen || !enableExchange) return;
 
     const newCurrency = String(formData.currencyCode ?? "").trim().toUpperCase();
     const prevCurrency = String(lastCurrencyRef.current ?? "").trim().toUpperCase();
@@ -177,9 +189,6 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
   };
 
   const validateForm = (): boolean => {
-    const hasC1 = formData.items.some(
-      (it) => String(it?.vatCode ?? "").toUpperCase() === "C1",
-    );
 
     const invoiceType = String(formData.invoiceType ?? "").trim().toLowerCase();
 
@@ -221,14 +230,11 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
         throw new Error("LPO Number must be exactly 10 digits");
       }
     }
-    
 
-    if (hasC1 && !formData.destnCountryCd) {
-      throw new Error(
-        "Destination country (destnCountryCd) is required for VAT code C1 transactions",
-      );
+
+    if (formData.invoiceType === "Export" && !formData.destnCountryCd) {
+      throw new Error("Please enter Export To Country");
     }
-
     return true;
   };
 
@@ -262,20 +268,20 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       }
     } else {
       if (name === "currencyCode") {
-  if (!enableExchange) {
-    setFormData((prev) => ({
-      ...prev,
-      currencyCode: value,
-      exchangeRt: "1",   // ⭐ lock for proforma
-    }));
-    return;
-  }
+        if (!enableExchange) {
+          setFormData((prev) => ({
+            ...prev,
+            currencyCode: value,
+            exchangeRt: "1",   // ⭐ lock for proforma
+          }));
+          return;
+        }
 
-  setExchangeRateLoading(true);
-  setExchangeRateError(null);
-  setFormData((prev) => ({ ...prev, [name]: value }));
-  return;
-}
+        setExchangeRateLoading(true);
+        setExchangeRateError(null);
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        return;
+      }
 
       if (name === "lpoNumber") {
         const digitsOnly = String(value ?? "").replace(/\D/g, "").slice(0, 10);
@@ -378,10 +384,10 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
           "",
 
         paymentMethod: "01",
-      bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+        bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+        accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+        routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+        swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       };
 
       setFormData((prev) => {
@@ -395,7 +401,7 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
 
         return {
           ...prev,
-           currencyCode: data.currency || prev.currencyCode,
+          currencyCode: data.currency || prev.currencyCode,
           destnCountryCd: invoiceType === "Export" ? countryCode : prev.destnCountryCd,
           invoiceType,
           billingAddress: billing,
@@ -444,10 +450,10 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
 
         const apiSellingPrice = Number(data.sellingPrice);
 
-const convertedPrice =
-  enableExchange && prev.currencyCode !== "INR"
-    ? apiSellingPrice / Number(prev.exchangeRt || 1)
-    : apiSellingPrice;
+        const convertedPrice =
+          enableExchange && prev.currencyCode !== "INR"
+            ? apiSellingPrice / Number(prev.exchangeRt || 1)
+            : apiSellingPrice;
 
         const existingIdx = items.findIndex(
           (it, i) => i !== index && String(it?.itemCode ?? "").trim() === resolvedId,
@@ -470,15 +476,18 @@ const convertedPrice =
           description: data.description ?? data.itemName ?? "",
           price: Number(convertedPrice),
 
-
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
           vatCode: data.taxInfo?.taxCode ?? "",
 
           quantity: Number(items[index].quantity) || 1,
           discount: Number(items[index].discount) || 0,
+
           batchNo: data.batchInfo?.has_batch_no
-    ? data.batchInfo?.batchNo || ""
-    : "",
+            ? data.batchInfo?.batchNo ?? ""
+            : "",
+          hasBatch: data.batchInfo?.has_batch_no ?? false,
+          packingUnit: data.pakingUnit ?? "",
+          packingSize: data.packingSize ?? "",
         };
 
         return { ...prev, items };
@@ -567,6 +576,8 @@ const convertedPrice =
           discount,
           vatRate: taxRate,
           vatCode: it.vatCode ?? "",
+          packingUnit: it.packingUnit ?? "",
+          packingSize: it.packingSize ?? "",
           _fromInvoice: true,
         };
       }),
@@ -586,53 +597,56 @@ const convertedPrice =
     if (!checked) shippingEditedRef.current = false;
   };
 
- const handleReset = async () => {
-  try {
-    const companyRes = await getCompanyById(COMPANY_ID);
-    const company = companyRes?.data;
+  const handleReset = async () => {
+    try {
+      const companyRes = await getCompanyById(COMPANY_ID);
+      const company = companyRes?.data;
 
-    setFormData({
-      ...(DEFAULT_INVOICE_FORM as Invoice),
+      const today = new Date().toISOString().split("T")[0];
 
-      
-      exchangeRt: enableExchange ? "" : "1",
+      setFormData({
+        ...(DEFAULT_INVOICE_FORM as Invoice),
+        dateOfInvoice: today,
 
-      terms: {
-        selling:
-          company?.terms?.selling ?? EMPTY_TERMS.selling,
-      },
 
-      shippingAddress: {
-        ...DEFAULT_INVOICE_FORM.billingAddress,
-      },
-    });
+        exchangeRt: enableExchange ? "" : "1",
 
-  } catch (err) {
-    setFormData({
-      ...(DEFAULT_INVOICE_FORM as Invoice),
+        terms: {
+          selling:
+            company?.terms?.selling ?? EMPTY_TERMS.selling,
+        },
 
-    
-      exchangeRt: enableExchange ? "" : "1",
+        shippingAddress: {
+          ...DEFAULT_INVOICE_FORM.billingAddress,
+        },
+      });
 
-      terms: { ...EMPTY_TERMS },
+    } catch (err) {
+      setFormData({
+        ...(DEFAULT_INVOICE_FORM as Invoice),
 
-      shippingAddress: {
-        ...DEFAULT_INVOICE_FORM.billingAddress,
-      },
-    });
-  }
 
-  setCustomerDetails(null);
-  setCustomerNameDisplay("");
-  setTaxCategory("");
-  setActiveTab("details");
-  setSameAsBilling(true);
-  setIsShippingOpen(false);
-  setPage(0);
-  shippingEditedRef.current = false;
-  lastCurrencyRef.current = "INR";
-  lastRateRef.current = 1;
-};
+        exchangeRt: enableExchange ? "" : "1",
+
+        terms: { ...EMPTY_TERMS },
+
+        shippingAddress: {
+          ...DEFAULT_INVOICE_FORM.billingAddress,
+        },
+      });
+    }
+
+    setCustomerDetails(null);
+    setCustomerNameDisplay("");
+    setTaxCategory("");
+    setActiveTab("details");
+    setSameAsBilling(true);
+    setIsShippingOpen(false);
+    setPage(0);
+    shippingEditedRef.current = false;
+    lastCurrencyRef.current = "INR";
+    lastRateRef.current = 1;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -700,10 +714,7 @@ const convertedPrice =
       isNonExport:
         String(formData.invoiceType ?? "").trim().toLowerCase() === "non-export",
       exchangeRateLoading: enableExchange ? exchangeRateLoading : false,
-exchangeRateError: enableExchange ? exchangeRateError : null,
-      hasC1: formData.items.some(
-        (it) => String(it?.vatCode ?? "").toUpperCase() === "C1",
-      ),
+      exchangeRateError: enableExchange ? exchangeRateError : null,
     },
     actions: {
       handleInputChange,

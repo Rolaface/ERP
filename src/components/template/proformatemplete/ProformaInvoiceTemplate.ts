@@ -26,7 +26,7 @@ export const generateProformaInvoicePDF = async (
 
   doc.setTextColor(0, 0, 0);
 
-  /* ================= HEADER ================= */
+  /*  HEADER  */
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   doc.text(company.companyName, 15, 15);
@@ -37,7 +37,7 @@ export const generateProformaInvoicePDF = async (
   doc.text(`Phone: ${company.contactInfo.companyPhone}`, 15, 24);
   doc.text(`Email: ${company.contactInfo.companyEmail}`, 15, 28);
 
-  /* ================= LOGO ================= */
+  /*  LOGO  */
   if (company.documents.companyLogoUrl) {
     try {
       console.log(
@@ -58,7 +58,7 @@ export const generateProformaInvoicePDF = async (
   doc.setFont("helvetica", "bold");
   doc.text("PROFORMA INVOICE", 105, 42, { align: "center" });
 
-  /* ================= BILL TO ================= */
+  /*  BILL TO  */
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.text("Bill To:", 15, 52);
@@ -80,24 +80,41 @@ export const generateProformaInvoicePDF = async (
   doc.text(`Date: ${proformaInvoice.dateofinvoice}`, 150, 56);
   doc.text(`Due Date: ${proformaInvoice.dueDate}`, 150, 60);
 
-  /* ================= ITEMS TABLE ================= */
+  /*  ITEMS TABLE  */
   autoTable(doc, {
     startY: 80,
-    head: [
-      ["#", "Name", "Qty", "Unit Price", `Total (${currency})`, "Tax Cat"],
-    ],
+    head: [[
+      "#",
+      "Item Code",
+      "Item Name",
+      "Description",
+      "Packing",
+      "Qty",
+      "Unit Price",
+      "Tax Cat",
+      `Total (${currency})`
+    ]],
     body: proformaInvoice.items.map((i: any, idx: number) => {
-      const qty = Number(i.quantity);
-      const price = Number(i.price);
+      const qty = Number(i.quantity || 0);
+      const price = Number(i.price || 0);
       const discountAmount = qty * price * (Number(i.discount || 0) / 100);
       const totalInclusive = qty * price - discountAmount;
+
+      const packing =
+        i.packingUnit && i.packingSize
+          ? `${i.packingUnit} × ${i.packingSize}`
+          : "-";
+
       return [
         idx + 1,
-        i.description,
+        i.itemCode || "-",
+        i.itemName || "-",
+        i.description || "-",
+        packing,
         qty.toFixed(1),
         price.toFixed(2),
+        i.vatCode || "-",
         totalInclusive.toFixed(2),
-        i.vatCode,
       ];
     }),
     styles: {
@@ -111,9 +128,14 @@ export const generateProformaInvoicePDF = async (
       fontStyle: "bold",
     },
     columnStyles: {
-      1: { halign: "left" },
-      3: { halign: "right" },
-      4: { halign: "right" },
+      1: { halign: "left" },   // Item Code
+      2: { halign: "left" },   // Item Name
+      3: { halign: "left" },   // Description
+      4: { halign: "center" }, // Packing
+      5: { halign: "right" },  // Qty
+      6: { halign: "right" },  // Unit Price
+      7: { halign: "center" }, // Tax Cat
+      8: { halign: "right" },  // Total
     },
     margin: { left: 15, right: 15 },
   });
@@ -122,7 +144,7 @@ export const generateProformaInvoicePDF = async (
 
   doc.setTextColor(0, 0, 0);
 
-  /* ================= TAX SUMMARY ================= */
+  /*  TAX SUMMARY  */
   const summary = proformaInvoice.items.reduce(
     (acc: any, i: any) => {
       const qty = Number(i.quantity || 0);
@@ -159,7 +181,7 @@ export const generateProformaInvoicePDF = async (
   doc.text("Total Amount", 120, y + 20);
   doc.text(`${summary.total.toFixed(2)} ${currency}`, 195, y + 20, { align: "right" });
 
-  /* ================= PROFORMA INFO ================= */
+  /*  PROFORMA INFO  */
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.text("Proforma Invoice Information", 15, y + 32);
@@ -180,7 +202,7 @@ export const generateProformaInvoicePDF = async (
     y + 38,
   );
 
-  /* ================= BANK DETAILS ================= */
+  /*  BANK DETAILS  */
   doc.setFont("helvetica", "bold");
   doc.text("Banking Details", 110, y + 32);
 
@@ -199,7 +221,7 @@ export const generateProformaInvoicePDF = async (
     y + 38,
   );
 
-  /* ================= FOOTER ================= */
+  /*  FOOTER  */
   doc.setFontSize(7);
   doc.setTextColor(120, 120, 120);
   doc.text("Powered by LoremIpsum Smart Invoice!", 105, 287, {

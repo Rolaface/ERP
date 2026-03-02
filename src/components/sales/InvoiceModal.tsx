@@ -66,7 +66,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const symbol = currencySymbols[formData.currencyCode] || "";
   const showExchangeRate =
     String(formData.currencyCode ?? "").trim().toUpperCase() !== "INR";
-  const showExportField = ui.isExport || ui.hasC1;
+  const showExportField = ui.isExport;
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -136,8 +136,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       subtitle="Create and manage invoice details"
       icon={FileText}
       footer={footerContent}
-       customWidth="97vw"
-      height="80vh"
+      customWidth="120vw"
+      height="79vh"
     >
       <form
         id="invoiceForm"
@@ -167,7 +167,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto px-8 py-4 ">
+        <div className="flex-1 overflow-y-auto px-3 py-1 ">
           {/* DETAILS */}
           {ui.activeTab === "details" && (
             <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
@@ -175,12 +175,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
                 <div
                   className={`grid ${showExchangeRate
-                      ? showExportField
-                        ? "grid-cols-[220px_150px_150px_100px_100px_120px_120px_140px]"
-                        : "grid-cols-[220px_150px_150px_100px_100px_120px_120px]"
-                      : showExportField
-                        ? "grid-cols-[220px_150px_150px_100px_120px_120px_140px]"
-                        : "grid-cols-[220px_150px_150px_100px_120px_120px]"
+                    ? showExportField
+                      ? "grid-cols-[220px_150px_150px_100px_100px_120px_120px_140px]"
+                      : "grid-cols-[220px_150px_150px_100px_100px_120px_120px]"
+                    : showExportField
+                      ? "grid-cols-[220px_150px_150px_100px_120px_120px_140px]"
+                      : "grid-cols-[220px_150px_150px_100px_120px_120px]"
                     } gap-3 items-end`}
                 >
                   <CustomerSelect
@@ -216,6 +216,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     value={formData.currencyCode}
                     onChange={actions.handleInputChange}
                     options={[...currencyOptions]}
+                    disabled
                     className="w-full  border border-theme rounded text-[11px] text-main bg-card"
                   />
 
@@ -241,7 +242,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     </div>
                   )}
 
-
                   <ModalSelect
                     label="Invoice Status"
                     name="invoiceStatus"
@@ -250,8 +250,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     options={[...invoiceStatusOptions]}
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
-
-
 
                   <ModalSelect
                     label="Payment Method"
@@ -267,31 +265,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   />
 
 
-                  {/* <div>
-                    <ModalInput
-                      label="Invoice Type"
-                      name="invoiceType"
-                      type="text"
-                      disabled
-                      value={formData.invoiceType}
-                      onChange={actions.handleInputChange}
-                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  </div> */}
-
-                  {(ui.isExport || ui.hasC1) && (
-                    // <CountrySelect
-                    //   value={formData.destnCountryCd}
-                    //   onChange={(c) =>
-                    //     actions.handleInputChange({
-                    //       target: {
-                    //         name: "destnCountryCd",
-                    //         value: c.code,
-                    //       },
-                    //     } as any)
-                    //   }
-                    // />
-
+                  {ui.isExport && (
 
                     <ModalInput
                       label="Export To Country"
@@ -430,15 +404,32 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                   }
                                 />
                               </td>
-
                               <td className="px-0.5 py-1">
-                                <input
-                                  name="packing"
-                                  value={it.packing || ""}
-                                  onChange={(e) => actions.handleItemChange(i, e)}
-                                  placeholder="e.g. 10x10"
-                                  className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                />
+                                <div className="flex items-center gap-1">
+
+                                  {/* PACKING UNIT */}
+                                  <input
+                                    type="number"
+                                    name="packingUnit"
+                                    value={it.packingUnit || ""}
+                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
+                                    placeholder="0"
+                                  />
+
+                                  <span className="text-[10px] text-muted font-semibold">×</span>
+
+                                  {/* PACKING SIZE */}
+                                  <input
+                                    type="number"
+                                    name="packingSize"
+                                    value={it.packingSize || ""}
+                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
+                                    placeholder="0"
+                                  />
+
+                                </div>
                               </td>
 
 

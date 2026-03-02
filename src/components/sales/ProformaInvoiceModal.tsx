@@ -139,6 +139,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
             <Button
               variant="primary"
               type={ui.activeTab === "terms" ? "submit" : "button"}
+              form={ui.activeTab === "terms" ? "proforma-form" : undefined}
               onClick={ui.activeTab !== "terms" ? handleNext : undefined}
             >
               {ui.activeTab === "terms" ? "Submit" : "Next"}
@@ -146,7 +147,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           </div>
         </>
       }
-      customWidth="81vw"
+      customWidth="83vw"
       height="82vh"
     >
       <form id="proforma-form" onSubmit={handleFormSubmit}>
@@ -383,18 +384,7 @@ ${ui.isExport
                                   />
                                 </div>
                               </td>
-                              <td className="px-0.5 py-1">
-                                <input
-                                  className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                  name="batchNo"
-                                  value={it.batchNo}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                  disabled
-                                />
-                              </td>
-
+                              {/* Description */}
                               <td className="px-0.5 py-1">
                                 <input
                                   className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
@@ -404,6 +394,34 @@ ${ui.isExport
                                     actions.handleItemChange(i, e)
                                   }
                                 />
+                              </td>
+
+                              <td className="px-0.5 py-1">
+                                <div className="flex items-center gap-1">
+
+                                  {/* PACKING UNIT */}
+                                  <input
+                                    type="number"
+                                    name="packingUnit"
+                                    value={it.packingUnit || ""}
+                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
+                                    placeholder="0"
+                                  />
+
+                                  <span className="text-[10px] text-muted font-semibold">×</span>
+
+                                  {/* PACKING SIZE */}
+                                  <input
+                                    type="number"
+                                    name="packingSize"
+                                    value={it.packingSize || ""}
+                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
+                                    placeholder="0"
+                                  />
+
+                                </div>
                               </td>
                               <td className="px-0.5 py-1">
                                 <input

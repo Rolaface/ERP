@@ -36,14 +36,13 @@ export const useQuotationForm = (
   initialData?: any,
 ) => {
   type QuotationFormState = Invoice & {
-    quotationStatus: QuotationStatus;
+    invoiceStatus: QuotationStatus;
   };
 
   const [formData, setFormData] = useState<QuotationFormState>({
     ...DEFAULT_INVOICE_FORM,
     invoiceStatus: "Draft",
     invoiceType: "Non-Export",
-    quotationStatus: "Draft",
     industryBases: "",
   });
   const companyLoadedRef = useRef(false);
@@ -97,10 +96,10 @@ export const useQuotationForm = (
         paymentInformation: {
           ...prev.paymentInformation,
           paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
-        bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+          bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+          accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+          routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+          swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
         },
       }));
     });
@@ -133,11 +132,11 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
     shippingEditedRef.current = true;
 
     setFormData({
-  ...DEFAULT_INVOICE_FORM,
-  ...initialData,
-  industryBases: initialData.industryBases || "",
-  dateOfInvoice: initialData.dateOfQuotation,
-  dueDate: initialData.validUntil,
+      ...DEFAULT_INVOICE_FORM,
+      ...initialData,
+      industryBases: initialData.industryBases || "",
+      dateOfInvoice: initialData.dateOfQuotation,
+      dueDate: initialData.validUntil,
       items: (initialData.items || []).map((it: any) => ({
         itemCode: it.itemCode,
        
@@ -276,10 +275,10 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       const paymentInformation = {
         paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
         paymentMethod: "01",
-     bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+        bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+        accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+        routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+        swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       };
 
       setFormData((prev) => {
@@ -345,13 +344,15 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
         items[index] = {
           ...items[index],
           itemCode: resolvedId,
-          description: data.itemDescription ?? data.itemName ?? "",
+          description: data.description ?? data.itemName ?? "",
           price: Number(data.sellingPrice) || 0,
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
           vatCode: data.taxInfo?.taxCode ?? "",
           batchNo: data.batchInfo?.has_batch_no
             ? data.batchInfo?.batchNo || ""
             : "",
+          packingUnit: data.pakingUnit ?? "",
+          packingSize: data.packingSize ?? "",
         };
          
         return { ...prev, items };
@@ -422,19 +423,18 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
 
     setFormData({
       ...DEFAULT_INVOICE_FORM,
-      invoiceStatus: "Draft",
       invoiceType: "Non-Export",
-      quotationStatus: "Draft",
+      invoiceStatus: "Draft",
       industryBases: "",
       shippingAddress: { ...DEFAULT_INVOICE_FORM.billingAddress },
 
       paymentInformation: {
         paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
         paymentMethod: "",
-     bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+        bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+        accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+        routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+        swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       },
     });
 
@@ -506,11 +506,9 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
         throw new Error("Please add at least one item");
       }
 
-      if (hasC1 && !formData.destnCountryCd) {
-        throw new Error(
-          "Destination country (destnCountryCd) is required for VAT code C1 transactions",
-        );
-      }
+      if (formData.invoiceType === "Export" && !formData.destnCountryCd) {
+  throw new Error("Please enter Export To Country");
+}
 
       //  LOADING
       showLoading("Saving quotation...");
@@ -523,12 +521,11 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
         validUntil: formData.dueDate,
         industryBases: formData.industryBases,
         invoiceType: formData.invoiceType,
-        quotationStatus: formData.quotationStatus,
+        invoiceStatus: formData.invoiceStatus,
 
-        ...((formData.invoiceType === "Export" || hasC1) && {
+        ...(formData.invoiceType === "Export" && {
           destnCountryCd: formData.destnCountryCd,
         }),
-
         ...(formData.invoiceType === "Lpo" && {
           lpoNumber: formData.lpoNumber,
         }),
@@ -548,6 +545,8 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
             price: item.price,
             vatCode: item.vatCode,
             batchNo: item.batchNo,
+            packingUnit: item.packingUnit,
+            packingSize: item.packingSize,
           })),
 
         terms: formData.terms,
@@ -603,9 +602,6 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       isExport: formData.invoiceType === "Export",
       isLocal: formData.invoiceType === "Lpo",
       isNonExport: formData.invoiceType === "Non-Export",
-      hasC1: formData.items.some(
-        (it) => String(it?.vatCode ?? "").toUpperCase() === "C1",
-      ),
     },
     actions: {
       handleInputChange,
