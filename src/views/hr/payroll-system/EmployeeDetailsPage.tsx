@@ -187,8 +187,7 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
     const rates = {
       napsaEmployeeRate: statutory?.napsaEmployeeRate,
       napsaEmployerRate: statutory?.napsaEmployerRate,
-      nhimaEmployeeRate: statutory?.nhimaEmployeeRate ?? statutory?.nhimaRate,
-      nhimaEmployerRate: statutory?.nhimaEmployerRate ?? statutory?.nhimaRate,
+      nhimaRate: statutory?.nhimaRate,
     };
 
     return calculateZmPayrollFromGross(grossSalaryForCalc, {
@@ -610,11 +609,11 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
                               },
                               {
                                 label: "Nhima",
-                                rate: statutoryCalc?.rates?.nhimaEmployeeRate,
+                                rate: statutoryCalc?.rates?.nhimaRate,
                                 amount: statutoryCalc?.statutory?.nhima,
                               },
                               {
-                                label: "PAYE",
+                                label: "Paye",
                                 rate: null,
                                 amount: statutoryCalc?.statutory?.paye,
                               },

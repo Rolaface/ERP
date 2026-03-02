@@ -104,9 +104,7 @@ export interface SalaryBreakdown {
 export interface StatutoryDeductions {
   napsaEmployeeRate: number;
   napsaEmployerRate: number;
-  nhimaEmployeeRate?: number;
-  nhimaEmployerRate?: number;
-  nhimaRate?: number;
+  nhimaRate: number;
   payeAmount: number;
 }
 

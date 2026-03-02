@@ -1159,7 +1159,7 @@ function StructureModal({
         return {
           ...c,
           effectiveAmount: statutoryCalc.statutory.napsaEmployee,
-          label: "NAPSA",
+          label: `NAPSA (${statutoryCalc.rates.napsaEmployeeRate}%)`,
         };
       }
 
@@ -1167,11 +1167,11 @@ function StructureModal({
         return {
           ...c,
           effectiveAmount: statutoryCalc.statutory.nhima,
-          label: "NHIMA",
+          label: `NHIMA (${statutoryCalc.rates.nhimaRate}%)`,
         };
       }
 
-      if (key.includes("paye") || key.includes("income tax") || key.includes("payee")) {
+      if (key.includes("income tax") || key.includes("paye") || key.includes("payee")) {
         return {
           ...c,
           effectiveAmount: statutoryCalc.statutory.paye,
@@ -1442,35 +1442,17 @@ function StructureModal({
                   <div className="pt-3">
                     <div className="text-[11px] font-bold text-gray-700">DEDUCTIONS:</div>
                     <div className="mt-2 space-y-1">
-                      {deductionsWithEffectiveAmounts
-                        .flatMap((c: any) => {
-                          const label = String(c?.label ?? "").trim();
-                          const key = label.toLowerCase();
-                          if (key.includes("nhima")) {
-                            return [
-                              { ...c, label: "NHIMA Employee" },
-                              { ...c, label: "NHIMA Employer" },
-                            ];
-                          }
-                          if (key.includes("napsa")) {
-                            return [
-                              { ...c, label: "NAPSA Employee" },
-                              { ...c, label: "NAPSA Employer" },
-                            ];
-                          }
-                          return [c];
-                        })
-                        .map((c: any, idx) => {
-                          const amt = Number(c.effectiveAmount || 0) || 0;
-                          return (
-                            <div key={`${c.component}-${idx}`} className="flex items-center justify-between gap-3">
-                              <div className="text-xs text-gray-700 truncate">{c.label}</div>
-                              <div className="text-xs font-semibold text-gray-900 tabular-nums">
-                                {amt.toLocaleString()}
-                              </div>
+                      {deductionsWithEffectiveAmounts.map((c: any, idx) => {
+                        const amt = Number(c.effectiveAmount || 0) || 0;
+                        return (
+                          <div key={`${c.component}-${idx}`} className="flex items-center justify-between gap-3">
+                            <div className="text-xs text-gray-700 truncate">{c.label}</div>
+                            <div className="text-xs font-semibold text-gray-900 tabular-nums">
+                              {amt.toLocaleString()}
                             </div>
-                          );
-                        })}
+                          </div>
+                        );
+                      })}
                       {deductions.length === 0 && (
                         <div className="text-xs text-gray-500">—</div>
                       )}

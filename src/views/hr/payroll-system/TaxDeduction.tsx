@@ -42,18 +42,10 @@ const TaxDeduction: React.FC<TaxDeductionProps> = ({ employeeId }) => {
     () => [
       { label: "NAPSA (Employee Rate)", value: statutory?.napsaEmployeeRate, unit: "%" },
       { label: "NAPSA (Employer Rate)", value: statutory?.napsaEmployerRate, unit: "%" },
-      { label: "NHIMA (Employee Rate)", value: statutory?.nhimaEmployeeRate ?? statutory?.nhimaRate, unit: "%" },
-      { label: "NHIMA (Employer Rate)", value: statutory?.nhimaEmployerRate ?? statutory?.nhimaRate, unit: "%" },
+      { label: "NHIMA Rate", value: statutory?.nhimaRate, unit: "%" },
       { label: "PAYE Amount", value: statutory?.payeAmount, unit: "" },
     ],
-    [
-      statutory?.napsaEmployeeRate,
-      statutory?.napsaEmployerRate,
-      statutory?.nhimaEmployeeRate,
-      statutory?.nhimaEmployerRate,
-      statutory?.nhimaRate,
-      statutory?.payeAmount,
-    ],
+    [statutory?.napsaEmployeeRate, statutory?.napsaEmployerRate, statutory?.nhimaRate, statutory?.payeAmount],
   );
 
   return (
