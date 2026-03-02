@@ -828,6 +828,7 @@ export default function PayrollManagement() {
                       const rows = filteredSalarySlips.map((s) => ({
                         slip_id: s.name,
                         employee: s.employee,
+                        reference_number: s.referenceNumber ?? "",
                         salary_structure: s.salary_structure,
                         start_date: s.start_date,
                         end_date: s.end_date,
@@ -835,7 +836,7 @@ export default function PayrollManagement() {
                         total_earnings: s.total_earnings,
                         total_deduction: s.total_deduction,
                         net_pay: s.net_pay,
-                        reference_number: s.referenceNumber ?? "",
+                        
                       }));
                       downloadCsv(
                         `salary_slips_${new Date().toISOString().slice(0, 10)}.csv`,
@@ -919,10 +920,10 @@ export default function PayrollManagement() {
                         >
                           <td className="px-4 py-3 text-sm font-medium text-main break-words">{s.name}</td>
                           <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{s.employee}</td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.referenceNumber || "—"}</td>
                           <td className="px-4 py-3 text-sm text-muted break-words">{s.salary_structure}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.end_date}</td>
-                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.referenceNumber || "—"}</td>
                           <td className="px-4 py-3"><StatusChip status={s.status} /></td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_earnings ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
