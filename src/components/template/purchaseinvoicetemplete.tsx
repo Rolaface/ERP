@@ -48,7 +48,7 @@ const addrBlock = (a: any): string[] => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-export const generatePurchaseOrderPDF = async (
+export const generatePurchaseInvoicePDF = async (
   po: any,
   company: any,
   resultType: "save" | "bloburl" = "save"
@@ -434,7 +434,12 @@ contentLines.forEach(line => {
 
   doc.setTextColor(0, 0, 0);
 
-  return resultType === "save"
-    ? doc.save(`Purchase_Order_${po?.poId}.pdf`)
-    : doc.output("bloburl");
+if (resultType === "save") {
+  doc.save(`Purchase_Order_${po?.poId}.pdf`);
+  return;
+}
+
+const blob = doc.output("blob");
+const url = URL.createObjectURL(blob);
+return url;
 };

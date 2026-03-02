@@ -56,6 +56,7 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
   );
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<TermSection | null>(null);
+  const [percentageError, setPercentageError] = useState<string | null>(null);
 
   const baseTerms: TermSection = terms ?? emptyTerms;
   const currentTerms: TermSection = isEditing
@@ -80,6 +81,7 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
   const cancelEditing = () => {
     setDraft(null);
     setIsEditing(false);
+    setPercentageError(null);
   };
 
   const saveEditing = () => {
@@ -90,6 +92,7 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
     setTerms(draft);
     setDraft(null);
     setIsEditing(false);
+    setPercentageError(null);
   };
 
   const updateDraft = (updater: (prev: TermSection) => TermSection) => {
@@ -127,42 +130,49 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
       phases: [...phases, emptyPhase()],
     });
   };
+
   const getTotalPercentage = (phases: TermPhase[]) => {
-  return phases.reduce((sum, phase) => {
-    return sum + Number(phase.percentage || 0);
-  }, 0);
-};
+    return phases.reduce((sum, phase) => {
+      return sum + Number(phase.percentage || 0);
+    }, 0);
+  };
 
-const updatePhase = (index: number, patch: Partial<TermPhase>) => {
-  if (!isEditing) return;
+  const updatePhase = (index: number, patch: Partial<TermPhase>) => {
+    if (!isEditing) return;
 
-  const phases = ensurePayment(currentTerms).phases;
+    const phases = ensurePayment(currentTerms).phases;
+    const next = phases.map((p, i) => (i === index ? { ...p, ...patch } : p));
 
-  const next = phases.map((p, i) =>
-    i === index ? { ...p, ...patch } : p
-  );
+    if (patch.percentage !== undefined) {
+      const newValue = Number(patch.percentage);
 
-  if (patch.percentage !== undefined) {
-    const newValue = Number(patch.percentage);
+      if (newValue > 100) {
+        setPercentageError("A single phase cannot exceed 100%.");
+        return;
+      }
 
-    if (newValue > 100) return;
+      const total = getTotalPercentage(next);
 
-    const total = getTotalPercentage(next);
+      if (total > 100) {
+        setPercentageError(
+          `Total percentage cannot exceed 100%. Current total would be ${total}%.`
+        );
+        return;
+      }
+    }
 
-    if (total > 100) return;
-  }
+    setPercentageError(null);
+    updatePayment({ phases: next });
+  };
 
-  updatePayment({ phases: next });
-};
- const removePhase = (index: number) => {
-  if (!isEditing) return;
+  const removePhase = (index: number) => {
+    if (!isEditing) return;
 
-  const phases = ensurePayment(currentTerms).phases;
+    const phases = ensurePayment(currentTerms).phases;
+    const next = phases.filter((_, i) => i !== index);
 
-  const next = phases.filter((_, i) => i !== index);
-
-  updatePayment({ phases: next });
-};
+    updatePayment({ phases: next });
+  };
 
   const renderPaymentTable = () => {
     const payment = ensurePayment(currentTerms);
@@ -170,6 +180,14 @@ const updatePhase = (index: number, patch: Partial<TermPhase>) => {
 
     return (
       <div className="space-y-5">
+        {/* Percentage Error Banner */}
+        {percentageError && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-300 text-red-600 text-sm rounded-lg">
+            <span className="font-bold text-base leading-none">!</span>
+            {percentageError}
+          </div>
+        )}
+
         {/* Table */}
         <div className="border border-theme rounded-lg overflow-hidden">
           <table className="w-full text-sm">
@@ -220,16 +238,16 @@ const updatePhase = (index: number, patch: Partial<TermPhase>) => {
 
                     <td className="px-3 py-2">
                       {isEditing ? (
-                       <input
-  type="number"
-  min="0"
-  max="100"
-  className="w-full bg-transparent text-muted outline-none"
-  value={p.percentage}
-  onChange={(e) =>
-    updatePhase(idx, { percentage: e.target.value })
-  }
-/>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          className="w-full bg-transparent text-muted outline-none"
+                          value={p.percentage}
+                          onChange={(e) =>
+                            updatePhase(idx, { percentage: e.target.value })
+                          }
+                        />
                       ) : (
                         <span>{p.percentage}</span>
                       )}

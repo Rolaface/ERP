@@ -57,7 +57,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
             type="number"
             value={form.openingBalance}
             onChange={onChange}
-            required
+     
             error={errors.openingBalance}
           />
 

@@ -34,40 +34,29 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({ terms }) => {
     selling: emptySection(),
   });
 
-  useEffect(() => {
-    if (!terms) return;
+ useEffect(() => {
+  if (!terms) return;
 
-    setFormData({
-      buying: {
-        general: terms.buying?.general ?? "",
-        delivery: terms.buying?.delivery ?? "",
-        cancellation: terms.buying?.cancellation ?? "",
-        warranty: terms.buying?.warranty ?? "",
-        liability: terms.buying?.liability ?? "",
-        payment: {
-          phases: terms.buying?.payment?.phases ?? [],
-          dueDates: terms.buying?.payment?.dueDates ?? "",
-          lateCharges: terms.buying?.payment?.lateCharges ?? "",
-          taxes: terms.buying?.payment?.taxes ?? "",
-          notes: terms.buying?.payment?.notes ?? "",
-        },
-      },
-      selling: {
-        general: terms.selling?.general ?? "",
-        delivery: terms.selling?.delivery ?? "",
-        cancellation: terms.selling?.cancellation ?? "",
-        warranty: terms.selling?.warranty ?? "",
-        liability: terms.selling?.liability ?? "",
-        payment: {
-          phases: terms.selling?.payment?.phases ?? [],
-          dueDates: terms.selling?.payment?.dueDates ?? "",
-          lateCharges: terms.selling?.payment?.lateCharges ?? "",
-          taxes: terms.selling?.payment?.taxes ?? "",
-          notes: terms.selling?.payment?.notes ?? "",
-        },
-      },
-    });
-  }, [terms]);
+  const mapSection = (section?: TermSection): TermSection => ({
+    general: section?.general ?? "",
+    delivery: section?.delivery ?? "",
+    cancellation: section?.cancellation ?? "",
+    warranty: section?.warranty ?? "",
+    liability: section?.liability ?? "",
+    payment: {
+      phases: section?.payment?.phases ?? [],
+      dueDates: section?.payment?.dueDates ?? "",
+      lateCharges: section?.payment?.lateCharges ?? "",
+      taxes: section?.payment?.taxes ?? "",
+      notes: section?.payment?.notes ?? "",
+    },
+  });
+
+  setFormData({
+    buying: mapSection(terms.buying),
+    selling: mapSection(terms.selling),
+  });
+}, [terms]);
 
   const handleReset = () => {
     setFormData({

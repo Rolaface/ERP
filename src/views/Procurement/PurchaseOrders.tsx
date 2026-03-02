@@ -163,7 +163,7 @@ const handleView = async (order: PurchaseOrder) => {
 
     closeSwal();
 
-    setSelectedOrder(purchaseInvoice);   // 🔥 IMPORTANT
+    setSelectedOrder(purchaseInvoice);  
     setPdfUrl(blobUrl);
     setPdfOpen(true);
 
@@ -442,7 +442,7 @@ const handleStatusChange = async (
       />
       <PdfPreviewModal
   open={pdfOpen}
-  title="Purchase Invoice Preview"
+  title="Purchase Order Preview"
   pdfUrl={pdfUrl}
   onClose={() => {
     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);

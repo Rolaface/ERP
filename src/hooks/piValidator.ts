@@ -4,7 +4,7 @@ export const validatePI = (form: PurchaseInvoiceFormData) => {
   const errors: string[] = [];
 
   if (!form.supplier) errors.push("Supplier is required");
-  if (!form.taxCategory) errors.push("Tax Category is required");
+
 
   if (!form.items.length) {
     errors.push("At least one item is required");

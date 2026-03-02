@@ -24,6 +24,10 @@ import { getPurchaseInvoiceById } from "../../api/procurement/PurchaseInvoiceApi
 import {  FilterSelect} from "../../components/ui/modal/modalComponent";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import { PurchaseInvoiceFilters } from "../../api/procurement/PurchaseInvoiceApi";
+import { generatePurchaseInvoicePDF } from "../../components/template/purchaseinvoicetemplete";
+import { getCompanyById } from "../../api/companySetupApi";
+const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 interface Purchaseinvoice {
   pId: string;
   supplier: string;
@@ -97,7 +101,9 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
-
+const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+const [pdfOpen, setPdfOpen] = useState(false);
+const [company, setCompany] = useState<any | null>(null);
 
   useEffect(() => {
   const timer = setTimeout(() => {
@@ -111,7 +117,15 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   return () => clearTimeout(timer);
 }, [searchTerm]);
 
-
+useEffect(() => {
+  getCompanyById(COMPANY_ID)
+    .then((res) => {
+      if (res?.status_code === 200) {
+        setCompany(res.data);
+      }
+    })
+    .catch(() => console.error("Failed to load company"));
+}, []);
   //  FETCH ORDERS
   const fetchInvoice = async () => {
   try {
@@ -261,7 +275,35 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       showApiError(error);
     }
   };
+const handleOpenPDF = async (invoice: Purchaseinvoice) => {
+  try {
+    showLoading("Generating PDF...");
 
+    const res = await getPurchaseInvoiceById(invoice.pId);
+
+    if (!res || res.status !== "success") {
+      throw new Error(res?.message || "Failed to load invoice");
+    }
+
+    const purchaseInvoice = res.data;
+
+    const blobUrl = await generatePurchaseInvoicePDF(
+      purchaseInvoice,
+      company,
+      "bloburl"
+    );
+
+    closeSwal();
+
+    setSelectedInvoice(purchaseInvoice);
+    setPdfUrl(blobUrl);
+    setPdfOpen(true);
+
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
   const handleEdit = (Invoice: Purchaseinvoice, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedInvoice(Invoice);
@@ -340,7 +382,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       align: "center",
       render: (o) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={() => handleView(o)} iconOnly />
+       <ActionButton type="view" onClick={() => handleOpenPDF(o)} iconOnly />
 
           <ActionMenu
             // onEdit={(e) => handleEdit(o, e as any)}
@@ -410,6 +452,21 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   </>
 }
       />
+      <PdfPreviewModal
+  open={pdfOpen}
+  title="Purchase Invoice Preview"
+  pdfUrl={pdfUrl}
+  onClose={() => {
+    if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);
+    setPdfOpen(false);
+  }}
+  onDownload={() => {
+    if (selectedInvoice && company) {
+      generatePurchaseInvoicePDF(selectedInvoice, company, "save");
+    }
+  }}
+/>
 
       {/* MODAL */}
       <PurchaseInvoiceModal
@@ -428,6 +485,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
             setModalOpen(true);
           }}
         />
+        
       )}
     </div>
   );

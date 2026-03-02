@@ -83,6 +83,7 @@ export const AddressTab: React.FC<AddressTabProps> = ({
             value={form.billingCity}
             onChange={onChange}
             error={errors.billingCity}
+            required
           />
 
 
@@ -101,6 +102,7 @@ export const AddressTab: React.FC<AddressTabProps> = ({
             value={form.province}
             onChange={onChange}
             error={errors.province}
+            required
           />
 
           <SearchSelect
