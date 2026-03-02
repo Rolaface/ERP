@@ -47,6 +47,11 @@ export const usePurchaseInvoiceForm = ({
   const [customShippingRule, setCustomShippingRule] = useState("");
   const [customIncoterm, setCustomIncoterm] = useState("");
   const [poLoading, setPoLoading] = useState(false);
+  const [companyDefaults, setCompanyDefaults] = useState<
+  Partial<PurchaseInvoiceFormData>
+>({});
+
+
   useEffect(() => {
     if (!isOpen) {
       setForm(emptyPOForm);
@@ -185,25 +190,75 @@ useEffect(() => {
   };
 
 const handlePOSelect = async (po: any) => {
-  if (!po) return;
+  if (!po?.poId) return;
 
   try {
     const res = await getPurchaseOrderById(po.poId);
-    const data = res?.data;
-    if (!data) return;
 
-    setForm(prev => ({
+    if (!res || res.status_code !== 200) {
+      showApiError({ message: "Failed to fetch PO" });
+      return;
+    }
+
+    const data = res.data;
+
+    const taxRate = Number(
+      (data.tax?.taxRate || "0").replace("%", "")
+    );
+
+    // Reset custom fields
+    setCustomIncoterm("");
+    setCustomShippingRule("");
+
+    // Fetch item descriptions from item master
+    const enrichedItems = await Promise.all(
+      (data.items || []).map(async (item: any) => {
+        let description = "";
+
+        try {
+          const itemRes = await getItemByItemCode(item.item_code);
+          if (itemRes?.status_code === 200) {
+            description = itemRes.data?.description || "";
+          }
+        } catch {}
+
+        return {
+          itemCode: item.item_code,
+          itemName: item.item_name,
+          quantity: Number(item.qty || 0),
+          rate: Number(item.rate || 0),
+          uom: item.uom || "",
+          vatCd: item.vatCd || "",
+          vatRate: taxRate,
+          description,
+          packingUnit: Number(item.packingUnit || 0),
+          packingSize: Number(item.packingSize || 0),
+          packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
+          batchNo: item.batchNo || "",
+          mfgDate: item.mfgDate || "",
+          expDate: "",
+          discount: 0,
+        };
+      })
+    );
+
+    setForm((prev) => ({
       ...prev,
 
+      // BASIC INFO
       poNumber: data.poId,
       supplier: data.supplierName,
-      currency: data.currency,
+      currency: data.currency || "",
       taxCategory: data.taxCategory || "",
-      project: data.project,
-      costCenter: data.costCenter,
-      incoterm: data.incoterm,
+      project: data.project || "",
+      costCenter: data.costCenter || "",
+      incoterm:
+        typeof data.incoterm === "string"
+          ? data.incoterm.trim().toUpperCase()
+          : "",
       placeOfSupply: data.placeOfSupply || "",
 
+      // ADDRESSES
       addresses: {
         ...prev.addresses,
         supplierAddress: data.addresses?.supplierAddress || prev.addresses.supplierAddress,
@@ -211,24 +266,15 @@ const handlePOSelect = async (po: any) => {
         shippingAddress: data.addresses?.shippingAddress || prev.addresses.shippingAddress,
       },
 
-      items: (data.items || []).map((item: any) => ({
-        itemCode: item.item_code,
-        itemName: item.item_name,
-        quantity: item.qty,
-        rate: item.rate,
-        uom: item.uom,
-        vatCd: "",
-        vatRate: Number(data.tax?.taxRate?.replace("%", "") || 0),
-        description: "",
-      packingUnit: Number(item.packingUnit || 0),
-packingSize: Number(item.packingSize || 0),
-packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
-        batchNo: "",
-        mfgDate: "",
-        expDate: "",
-        discount: 0,
-      })),
+      // TERMS
+      terms: {
+        buying: data.terms?.terms?.buying || prev.terms?.buying,
+      },
 
+      // ITEMS
+      items: enrichedItems,
+
+      // SUMMARY
       totalQuantity: data.summary?.totalQuantity || 0,
       grandTotal: data.summary?.grandTotal || 0,
       roundingAdjustment: data.summary?.roundingAdjustment || 0,

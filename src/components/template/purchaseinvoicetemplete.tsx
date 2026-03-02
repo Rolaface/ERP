@@ -110,13 +110,13 @@ const infoY = 32;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  [`TPIN: ${company?.tpin || "-"}`,
+  [`TPIN/TAXID: ${company?.tpin || "-"}`,
    `Phone: ${company?.contactInfo?.companyPhone || "-"}`,
    `Email: ${company?.contactInfo?.companyEmail || "-"}`
   ].forEach((l, i) => doc.text(l, 15, infoY + 5 + i * 5));
 
   const poMetaRows: [string, string][] = [
-    ["PO #",         po?.poId       || "-"],
+    ["PI #",         po?.pId       || "-"],
     ["Date:",        po?.poDate     || "-"],
     ["Required By:", po?.requiredBy || "-"],
     ["Status:",      po?.status     || "-"],

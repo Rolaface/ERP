@@ -48,11 +48,14 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     reset,
      poList,
      poLoading,
+
   handlePOSelect,
    customShippingRule,
   setCustomShippingRule,
   customIncoterm,
   setCustomIncoterm
+  
+
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
   const footer = (
@@ -121,6 +124,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               poList={poList}
               poLoading={poLoading}
               onPOSelect={handlePOSelect}
+            
 
             />
           )}
@@ -180,6 +184,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               setTerms={(buying) =>
                 setForm((p) => ({ ...p, terms: { buying } }))
               }
+              type="buying"
             />
           )}
         </section>

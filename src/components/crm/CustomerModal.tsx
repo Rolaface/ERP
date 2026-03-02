@@ -690,9 +690,10 @@ const CustomerModal: React.FC<{
               setTerms={(updated) =>
                 setForm((p) => ({
                   ...p,
-                  terms: { ...p.terms, selling: updated },
+                  terms: { ...p.terms, selling: updated, },
                 }))
               }
+              type="selling"
             />
           )}
 

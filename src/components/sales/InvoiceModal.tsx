@@ -711,6 +711,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <TermsAndCondition
                 terms={formData.terms?.selling}
                 setTerms={actions.setTerms}
+                type="selling"
               />
             </div>
           )}

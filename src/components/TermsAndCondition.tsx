@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import { FaEdit, FaTimes, FaCheck, FaPlus, FaTrash } from "react-icons/fa";
+import { FaEdit, FaTimes, FaCheck, FaPlus, FaTrash, FaFileAlt } from "react-icons/fa";
 import type {
   TermSection,
   PaymentTerms,
   TermPhase,
 } from "../types/termsAndCondition";
-
+import TermsPreviewModal from "./termsprovidemodal";
 interface Props {
   title?: string;
   terms: TermSection | null;
   setTerms: (updated: TermSection) => void;
+    type?: "buying" | "selling";
 }
 
 type LocalPhase = TermPhase & { id?: string; isDelete?: number };
@@ -50,13 +51,19 @@ const emptyTerms: TermSection = {
   liability: "",
 };
 
-const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
+const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms, type}) => {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(
     "General Service Terms",
   );
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<TermSection | null>(null);
-  const [percentageError, setPercentageError] = useState<string | null>(null);
+
+  // Tracks { index, message } of the row with a percentage error — null when no error
+  const [percentageError, setPercentageError] = useState<{
+    index: number;
+    message: string;
+  } | null>(null);
 
   const baseTerms: TermSection = terms ?? emptyTerms;
   const currentTerms: TermSection = isEditing
@@ -147,16 +154,20 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
       const newValue = Number(patch.percentage);
 
       if (newValue > 100) {
-        setPercentageError("A single phase cannot exceed 100%.");
+        setPercentageError({
+          index,
+          message: "Cannot exceed 100%",
+        });
         return;
       }
 
       const total = getTotalPercentage(next);
 
       if (total > 100) {
-        setPercentageError(
-          `Total percentage cannot exceed 100%. Current total would be ${total}%.`
-        );
+        setPercentageError({
+          index,
+          message: `Total would be ${total}%`,
+        });
         return;
       }
     }
@@ -171,6 +182,8 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
     const phases = ensurePayment(currentTerms).phases;
     const next = phases.filter((_, i) => i !== index);
 
+    if (percentageError?.index === index) setPercentageError(null);
+
     updatePayment({ phases: next });
   };
 
@@ -180,40 +193,23 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
 
     return (
       <div className="space-y-5">
-        {/* Percentage Error Banner */}
-        {percentageError && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-300 text-red-600 text-sm rounded-lg">
-            <span className="font-bold text-base leading-none">!</span>
-            {percentageError}
-          </div>
-        )}
-
         {/* Table */}
         <div className="border border-theme rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="table-head">
-                <th className="px-3 py-2 text-left font-medium text-muted">
-                  #
-                </th>
-                <th className="px-3 py-2 text-left font-medium text-muted">
-                  Phase
-                </th>
-                <th className="px-3 py-2 text-left font-medium text-muted">
-                  Percentage
-                </th>
-                <th className="px-3 py-2 text-left font-medium text-muted">
-                  Condition
-                </th>
-                <th className="px-3 py-2 text-center font-medium text-muted">
-                  Action
-                </th>
+                <th className="px-3 py-2 text-left font-medium text-muted">#</th>
+                <th className="px-3 py-2 text-left font-medium text-muted">Phase</th>
+                <th className="px-3 py-2 text-left font-medium text-muted">Percentage</th>
+                <th className="px-3 py-2 text-left font-medium text-muted">Condition</th>
+                <th className="px-3 py-2 text-center font-medium text-muted">Action</th>
               </tr>
             </thead>
 
             <tbody>
               {rawPhases.map((p, idx) => {
                 if (p.isDelete === 1) return null;
+                const hasError = percentageError?.index === idx;
 
                 return (
                   <tr
@@ -236,18 +232,30 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
                       )}
                     </td>
 
+                    {/* Percentage cell — inline error lives here, zero layout shift */}
                     <td className="px-3 py-2">
                       {isEditing ? (
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          className="w-full bg-transparent text-muted outline-none"
-                          value={p.percentage}
-                          onChange={(e) =>
-                            updatePhase(idx, { percentage: e.target.value })
-                          }
-                        />
+                        <div className="flex flex-col gap-0.5">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            className={`w-full bg-transparent outline-none transition-colors ${
+                              hasError
+                                ? "text-red-500 border-b border-red-400"
+                                : "text-muted"
+                            }`}
+                            value={p.percentage}
+                            onChange={(e) =>
+                              updatePhase(idx, { percentage: e.target.value })
+                            }
+                          />
+                          {hasError && (
+                            <span className="text-red-500 text-[10px] leading-tight whitespace-nowrap">
+                              ⚠ {percentageError.message}
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <span>{p.percentage}</span>
                       )}
@@ -284,6 +292,7 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
             </tbody>
           </table>
         </div>
+
         {isEditing && (
           <div className="flex justify-end w-full">
             <button
@@ -304,21 +313,18 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
             disabled={!isEditing}
             onChange={(v) => updatePayment({ dueDates: v })}
           />
-
           <LabeledRow
             label="Late Payment Charges:"
             value={payment.lateCharges ?? ""}
             disabled={!isEditing}
             onChange={(v) => updatePayment({ lateCharges: v })}
           />
-
           <LabeledRow
             label="Tax / Additional Charges:"
             value={payment.taxes ?? ""}
             disabled={!isEditing}
             onChange={(v) => updatePayment({ taxes: v })}
           />
-
           <LabeledRow
             label="Notes:"
             value={payment.notes ?? ""}
@@ -340,7 +346,16 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
     />
   );
 
-  return (
+ return (
+  <>
+    <TermsPreviewModal
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      title={title}
+      terms={terms}
+      type={type}
+    />
+
     <div className="bg-card rounded-xl border border-theme shadow-sm overflow-hidden">
       <div
         className="px-4 py-2 border-b border-theme flex items-center gap-3"
@@ -353,18 +368,27 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
           {title ?? "Terms & Conditions"}
         </h2>
 
-        <select
-          disabled={isEditing}
-          value={selectedTemplate}
-          onChange={(e) => setSelectedTemplate(e.target.value)}
-          className="ml-auto px-2 py-1 rounded bg-card border border-theme text-sm text-white"
-        >
-          {TABS.map((tab) => (
-            <option key={tab} value={tab} className="text-main">
-              {tab}
-            </option>
-          ))}
-        </select>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium text-white border border-white/30 hover:bg-white/15 transition-colors"
+          >
+            <FaFileAlt size={11} />
+            Preview All
+          </button>
+
+          <select
+            disabled={isEditing}
+            value={selectedTemplate}
+            onChange={(e) => setSelectedTemplate(e.target.value)}
+            className="px-2 py-1 rounded bg-card border border-theme text-sm text-white"
+          >
+            {TABS.map((tab) => (
+              <option key={tab} value={tab} className="text-main">{tab}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* CONTENT AREA */}
@@ -409,7 +433,8 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
         )}
       </div>
     </div>
-  );
+  </>
+);
 };
 
 const LabeledRow = ({

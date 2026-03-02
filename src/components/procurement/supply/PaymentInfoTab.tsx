@@ -40,7 +40,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-700">Payment Details</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_160px_1fr] gap-5 items-end">
           <ModalSelect
             label="Currency"
             name="currency"
@@ -51,23 +51,25 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
             error={errors.currency}
           />
 
-           <ModalInput
+          <ModalInput
             label="Opening Balance"
             name="openingBalance"
             type="number"
             value={form.openingBalance}
             onChange={onChange}
-     
             error={errors.openingBalance}
           />
 
           <ModalInput
-            label="Payment Terms "
+            label="Credit Days"
             name="paymentTerms"
-            min={0} // UI block
+            type="number"
+            min={0}
             value={form.paymentTerms}
             onChange={onChange}
             required
+            suffix="Days"
+            className="text-center"
             error={errors.paymentTerms}
           />
 
@@ -80,7 +82,6 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
             required
             error={errors.dateOfAddition}
           />
-
         </div>
       </div>
 
@@ -90,7 +91,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-700">Bank Details</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_160px_1fr] gap-5 items-end">
           <ModalInput
             label="Bank"
             name="bankAccount"
@@ -122,7 +123,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
             label="Sort/IFSC Code"
             name="sortCode"
             value={form.sortCode}
-             required
+            required
             onChange={onChange}
           />
 

@@ -21,6 +21,9 @@ interface DetailsTabProps {
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
   getCurrencySymbol: () => string;
+
+  fromPO: boolean;
+  setFromPO: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const DetailsTab = ({
@@ -33,6 +36,8 @@ export const DetailsTab = ({
   onAddItem,
   onRemoveItem,
   getCurrencySymbol,
+  fromPO,
+  setFromPO,
 }: DetailsTabProps) => {
   const symbol = getCurrencySymbol();
 
@@ -67,6 +72,25 @@ export const DetailsTab = ({
               onChange={onSupplierChange}
             />
           </div>
+          <div className="flex items-center gap-2">
+  <input
+    type="checkbox"
+    checked={fromPO}
+    onChange={(e) => {
+      const checked = e.target.checked;
+      setFromPO(checked);
+
+      if (!checked) {
+        // Clear only PO number
+        onFormChange({
+          target: { name: "poNumber", value: "" },
+        } as React.ChangeEvent<HTMLInputElement>);
+      }
+    }}
+    className="h-4 w-4"
+  />
+  <label className="text-xs text-main">Create from PO</label>
+</div>
           <div className="w-[120px]">
             <ModalInput
               label="Date"
@@ -82,6 +106,7 @@ export const DetailsTab = ({
               label="Status"
               name="status"
               value={form.status}
+              disabled={!fromPO}
               onChange={onFormChange}
               options={[
                 { value: "Draft", label: "Draft" },
