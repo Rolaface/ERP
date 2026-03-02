@@ -74,3 +74,19 @@ export async function updateCompanyFiles(
   
   return resp.data;
 }
+export async function deleteCompanyBankAccount(
+  companyId: string,
+  bankAccountId: string | number
+): Promise<any> {
+  const resp: AxiosResponse = await api.delete(
+    CompanyAPI.deleteCompanyBankAccount,
+    {
+      data: {
+        companyId: companyId,
+        accountId: bankAccountId,
+      },
+    }
+  );
+
+  return resp.data;
+}

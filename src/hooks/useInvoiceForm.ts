@@ -16,6 +16,10 @@ import {
 const ITEMS_PER_PAGE = 5;
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
+const getDefaultBank = (accounts: any[] = []) =>
+  accounts.find((a) => (a.default === "1" || a.default === 1) && a.bankName?.trim()) ??
+  accounts.find((a) => a.bankName?.trim()) ??
+  null;
 type NestedSection =
   | "billingAddress"
   | "shippingAddress"
@@ -69,11 +73,10 @@ export const useInvoiceForm = (
             ...prev.paymentInformation,
             paymentTerms:
               company?.terms?.selling?.payment?.dueDates ?? "",
-
-            bankName: company?.bankAccounts?.[0]?.bankName ?? "",
-            accountNumber: company?.bankAccounts?.[0]?.accountNo ?? "",
-            routingNumber: company?.bankAccounts?.[0]?.sortCode ?? "",
-            swiftCode: company?.bankAccounts?.[0]?.swiftCode ?? "",
+bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
           },
         }));
       } catch (err) {
@@ -375,10 +378,10 @@ export const useInvoiceForm = (
           "",
 
         paymentMethod: "01",
-        bankName: company?.bankAccounts?.[0]?.bankName ?? "",
-        accountNumber: company?.bankAccounts?.[0]?.accountNo ?? "",
-        routingNumber: company?.bankAccounts?.[0]?.sortCode ?? "",
-        swiftCode: company?.bankAccounts?.[0]?.swiftCode ?? "",
+      bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       };
 
       setFormData((prev) => {

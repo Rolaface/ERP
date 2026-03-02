@@ -135,25 +135,15 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
     updatePayment({ phases: next });
   };
 
-  const removePhase = (index: number) => {
-    if (!isEditing) return;
+ const removePhase = (index: number) => {
+  if (!isEditing) return;
 
-    const phases = ensurePayment(currentTerms).phases as LocalPhase[];
+  const phases = ensurePayment(currentTerms).phases;
 
-    const next = phases
-      .map((p, i) => {
-        if (i !== index) return p;
+  const next = phases.filter((_, i) => i !== index);
 
-        if (p.id) {
-          return { ...p, isDelete: 1 };
-        }
-
-        return null;
-      })
-      .filter(Boolean) as LocalPhase[];
-
-    updatePayment({ phases: next });
-  };
+  updatePayment({ phases: next });
+};
 
   const renderPaymentTable = () => {
     const payment = ensurePayment(currentTerms);

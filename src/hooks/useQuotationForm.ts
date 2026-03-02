@@ -18,6 +18,10 @@ import {
   closeSwal,
 } from "../utils/alert";
 
+const getDefaultBank = (accounts: any[] = []) =>
+  accounts.find((a) => (a.default === "1" || a.default === 1) && a.bankName?.trim()) ??
+  accounts.find((a) => a.bankName?.trim()) ??
+  null;
 const ITEMS_PER_PAGE = 5;
 
 type NestedSection =
@@ -93,10 +97,10 @@ export const useQuotationForm = (
         paymentInformation: {
           ...prev.paymentInformation,
           paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
-          bankName: company?.bankAccounts?.[0]?.bankName ?? "",
-          accountNumber: company?.bankAccounts?.[0]?.accountNo ?? "",
-          routingNumber: company?.bankAccounts?.[0]?.sortCode ?? "",
-          swiftCode: company?.bankAccounts?.[0]?.swiftCode ?? "",
+        bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
         },
       }));
     });
@@ -270,10 +274,10 @@ export const useQuotationForm = (
       const paymentInformation = {
         paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
         paymentMethod: "01",
-        bankName: company?.bankAccounts?.[0]?.bankName ?? "",
-        accountNumber: company?.bankAccounts?.[0]?.accountNo ?? "",
-        routingNumber: company?.bankAccounts?.[0]?.sortCode ?? "",
-        swiftCode: company?.bankAccounts?.[0]?.swiftCode ?? "ccccv",
+     bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       };
 
       setFormData((prev) => {
@@ -425,10 +429,10 @@ export const useQuotationForm = (
       paymentInformation: {
         paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
         paymentMethod: "",
-        bankName: company?.bankAccounts?.[0]?.bankName ?? "",
-        accountNumber: company?.bankAccounts?.[0]?.accountNo ?? "",
-        routingNumber: company?.bankAccounts?.[0]?.sortCode ?? "",
-        swiftCode: company?.bankAccounts?.[0]?.swiftCode ?? "",
+     bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       },
     });
 
