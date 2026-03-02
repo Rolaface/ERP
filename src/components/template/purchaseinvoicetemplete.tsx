@@ -2,14 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { ERP_BASE } from "../../config/api";
 
-
-const getFullImageUrl = (path: string): string => {
-  if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${ERP_BASE}${path}`;
-};
-
-// ── Colors ────────────────────────────────────────────────────────────────────
+// ── Colors (same as PO) ───────────────────────────────────────────────────────
 const BLUE  : [number, number, number] = [44, 62, 80];
 const WHITE : [number, number, number] = [255, 255, 255];
 const LIGHT : [number, number, number] = [220, 228, 235];
@@ -21,71 +14,54 @@ const addrBlock = (a: any): string[] => {
     [a.addressLine1, a.addressLine2].filter(Boolean).join(", "),
     [a.city, a.state, a.postalCode].filter(Boolean).join(", "),
     a.country || "",
-    a.phone ? `Ph: ${a.phone}`     : "",
-    a.email ? `Email: ${a.email}`  : "",
+    a.phone ? `Ph: ${a.phone}`    : "",
+    a.email ? `Email: ${a.email}` : "",
   ].filter(Boolean);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const generatePurchaseInvoicePDF = async (
-  po: any,
+  inv: any,
   company: any,
   resultType: "save" | "bloburl" = "save"
 ) => {
   const doc      = new jsPDF("p", "mm", "a4");
   const W        = doc.internal.pageSize.width;
   const H        = doc.internal.pageSize.height;
-  const currency = po?.currency || "INR";
+  const currency = inv?.currency || "INR";
 
   doc.setTextColor(0, 0, 0);
 
   /* ═══════════════════════════════════════════════
-     1. LOGO
+     1. LOGO  (same loader as PO)
   ═══════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════
-   1. LOGO (Same as Purchase Order)
-═══════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════
-   1. LOGO (Stable Direct URL Method)
-═══════════════════════════════════════════════ */
-
-const logoW = 40;
-const logoH = 20;
-
-if (company?.documents?.companyLogoUrl) {
-  const logoPath = company.documents.companyLogoUrl;
-  const fullLogoUrl = logoPath.startsWith("http")
-    ? logoPath
-    : `${ERP_BASE}${logoPath}`;
-
-  try {
-    doc.addImage(
-      fullLogoUrl,
-      "PNG",
-      15,
-      6,
-      logoW,
-      logoH
-    );
-  } catch (e) {
-    console.log("Logo error:", e);
+  if (company?.documents?.companyLogoUrl) {
+    const logoPath    = company.documents.companyLogoUrl;
+    const fullLogoUrl = logoPath.startsWith("http") ? logoPath : `${ERP_BASE}${logoPath}`;
+    try {
+      doc.addImage(fullLogoUrl, "PNG", 15, 6, 40, 20);
+    } catch (e) {
+      console.log("Logo error:", e);
+    }
   }
-}
 
   /* ═══════════════════════════════════════════════
      2. TITLE
   ═══════════════════════════════════════════════ */
-const titleY = 22;
+  const titleY = 22;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
-doc.text("PURCHASE ORDER", W / 2, titleY, { align: "center" });
+  doc.text("PURCHASE INVOICE", W / 2, titleY, { align: "center" });
 
   /* ═══════════════════════════════════════════════
-     3. COMPANY INFO (left)  +  PO META (right)
+     3. COMPANY INFO (left)  +  INVOICE META (right)
+     Fields mapped from API response:
+       pId, spplrInvcNo, pDate, requiredBy,
+       status, lpoNumber, project, costCenter,
+       paymentMethod
   ═══════════════════════════════════════════════ */
-const infoY = 32;
+  const infoY = 32;
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
@@ -93,179 +69,167 @@ const infoY = 32;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  [`TPIN: ${company?.tpin || "-"}`,
-   `Phone: ${company?.contactInfo?.companyPhone || "-"}`,
-   `Email: ${company?.contactInfo?.companyEmail || "-"}`
+  [
+    `TPIN: ${company?.tpin                         || "-"}`,
+    `Phone: ${company?.contactInfo?.companyPhone   || "-"}`,
+    `Email: ${company?.contactInfo?.companyEmail   || "-"}`,
   ].forEach((l, i) => doc.text(l, 15, infoY + 5 + i * 5));
 
-  const poMetaRows: [string, string][] = [
-    ["PO #",         po?.poId       || "-"],
-    ["Date:",        po?.poDate     || "-"],
-    ["Required By:", po?.requiredBy || "-"],
-    ["Status:",      po?.status     || "-"],
+  // Right-side meta — all invoice-specific fields
+  const invMetaRows: [string, string][] = [
+    ["Invoice #:",        inv?.pId            || "-"],
+    ["Supplier Inv #:",   inv?.spplrInvcNo    || "-"],
+    ["Date:",             inv?.pDate          || "-"],
+    ["Required By:",      inv?.requiredBy     || "-"],
+    ["Status:",           inv?.status         || "-"],
+    ["LPO Number:",       inv?.lpoNumber      || "-"],
+    ["Project:",          inv?.project        || "-"],
+    ["Cost Center:",      inv?.costCenter     || "-"],
+    ["Payment Method:",   inv?.paymentMethod  || "-"],
   ];
-  poMetaRows.forEach(([label, value], i) => {
+
+  // Two right-side columns start at different Y; 8 rows × 4.5 gap = 36mm
+  // We shrink line-gap to 4 so all 9 rows fit without overlapping section 4
+  invMetaRows.forEach(([label, value], i) => {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.text(label, 130, infoY + i * 5);
+    doc.setFontSize(8);
+    doc.text(label, 118, infoY + i * 4.2);
     doc.setFont("helvetica", "normal");
-    doc.text(value, W - 15, infoY + i * 5, { align: "right" });
-  });
-/* ═══════════════════════════════════════════════
-   4. ADDRESS BOXES — 3 PERFECT PARALLEL COLUMNS
-═══════════════════════════════════════════════ */
-
-const HDR   = 8;
-const PAD_T = 5;
-const PAD_B = 4;
-const LH    = 4.5;
-
-const supLines  = addrBlock(po?.addresses?.supplierAddress);
-const dispLines = addrBlock(po?.addresses?.dispatchAddress);
-const shipLines = addrBlock(po?.addresses?.shippingAddress);
-
-const gap = 5;
-const totalWidth = W - 30 - (gap * 2);
-const colW = totalWidth / 3;
-const boxY = infoY + 24;
-
-// Helper to calculate dynamic height properly
-const calculateHeight = (lines: string[], includeName = false) => {
-  let height = HDR + PAD_T + PAD_B;
-
-  if (includeName) height += 5;
-
-  lines.forEach(line => {
-    const wrapped = doc.splitTextToSize(line, colW - 8);
-    height += wrapped.length * LH;
+    doc.text(value, W - 15, infoY + i * 4.2, { align: "right" });
   });
 
-  return height;
-};
+  /* ═══════════════════════════════════════════════
+     4. ADDRESS BOXES — compact 3-column (same as PO)
+  ═══════════════════════════════════════════════ */
+  const HDR   = 7;
+  const PAD_T = 3;
+  const PAD_B = 3;
+  const LH    = 4;
 
-const supBoxH  = calculateHeight(supLines, true);
-const dispBoxH = calculateHeight(dispLines);
-const shipBoxH = calculateHeight(shipLines);
+  const supLines  = addrBlock(inv?.addresses?.supplierAddress);
+  const dispLines = addrBlock(inv?.addresses?.dispatchAddress);
+  const shipLines = addrBlock(inv?.addresses?.shippingAddress);
 
-const boxH = Math.max(supBoxH, dispBoxH, shipBoxH);
+  const gap        = 5;
+  const totalWidth = W - 30 - gap * 2;
+  const colW       = totalWidth / 3;
 
-// Render function
-const renderAddressBox = (
-  x: number,
-  title: string,
-  lines: string[],
-  supplierName?: string
-) => {
-  // Header
-  doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.rect(x, boxY, colW, HDR, "F");
+  // Push boxY down enough to clear the taller meta block (9 rows × 4.2 = ~38)
+  const boxY = infoY + 42;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text(title, x + colW / 2, boxY + 5.5, { align: "center" });
+  const calculateHeight = (lines: string[], includeName = false) => {
+    let h = HDR + PAD_T + PAD_B;
+    if (includeName) h += LH + 1;
+    lines.forEach(line => {
+      const wrapped = doc.splitTextToSize(line, colW - 8);
+      h += wrapped.length * LH;
+    });
+    return h;
+  };
 
-  // Border
-  doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.setLineWidth(0.3);
-  doc.rect(x, boxY, colW, boxH, "D");
+  const boxH = Math.max(
+    calculateHeight(supLines, true),
+    calculateHeight(dispLines),
+    calculateHeight(shipLines)
+  );
 
-  // Content
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.8);
-  doc.setTextColor(0, 0, 0);
-
-  let currentY = boxY + HDR + PAD_T;
-
-  // Supplier name only in first column
-  if (supplierName) {
+  const renderAddressBox = (
+    x: number,
+    title: string,
+    lines: string[],
+    supplierName?: string
+  ) => {
+    // Header bar
+    doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.rect(x, boxY, colW, HDR, "F");
     doc.setFont("helvetica", "bold");
-    doc.text(supplierName, x + colW / 2, currentY, { align: "center" });
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text(title, x + colW / 2, boxY + 5, { align: "center" });
+
+    // Border
+    doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.setLineWidth(0.3);
+    doc.rect(x, boxY, colW, boxH, "D");
+
+    // Content
     doc.setFont("helvetica", "normal");
-    currentY += 5;
-  }
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
 
-  lines.forEach(line => {
-    const wrapped = doc.splitTextToSize(line, colW - 8);
-    doc.text(wrapped, x + colW / 2, currentY, { align: "center" });
-    currentY += wrapped.length * LH;
-  });
-};
+    let cy = boxY + HDR + PAD_T;
 
-// Draw 3 columns
-renderAddressBox(
-  15,
-  "Supplier Address:",
-  supLines,
-  po?.supplierName || "-"
-);
+    if (supplierName) {
+      doc.setFont("helvetica", "bold");
+      doc.text(supplierName, x + colW / 2, cy, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      cy += LH + 1;
+    }
 
-renderAddressBox(
-  15 + colW + gap,
-  "Dispatch Address:",
-  dispLines
-);
+    lines.forEach(line => {
+      const wrapped = doc.splitTextToSize(line, colW - 8);
+      doc.text(wrapped, x + colW / 2, cy, { align: "center" });
+      cy += wrapped.length * LH;
+    });
+  };
 
-renderAddressBox(
-  15 + (colW + gap) * 2,
-  "Shipping Address:",
-  shipLines
-);
+  renderAddressBox(15,                    "Supplier Address:",  supLines, inv?.supplierName || "-");
+  renderAddressBox(15 + colW + gap,       "Dispatch Address:",  dispLines);
+  renderAddressBox(15 + (colW + gap) * 2, "Shipping Address:",  shipLines);
+
   /* ═══════════════════════════════════════════════
      5. INCOTERM + TAX CATEGORY strip
   ═══════════════════════════════════════════════ */
-  const stripY = boxY + boxH + 5;
+  const stripY = boxY + boxH + 4;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
-  doc.text(`Incoterm: ${po?.incoterm      || "-"}`, 15,       stripY);
-  doc.text(`Tax Category: ${po?.taxCategory || "-"}`, W / 2,  stripY);
+  doc.text(`Incoterm: ${inv?.incoterm       || "-"}`, 15,      stripY);
+  doc.text(`Tax Category: ${inv?.taxCategory || "-"}`, W / 2,  stripY);
 
   /* ═══════════════════════════════════════════════
      6. ITEMS TABLE
+     Note: API uses VatCd (capital V) — mapped here
   ═══════════════════════════════════════════════ */
   autoTable(doc, {
     startY: stripY + 6,
-head: [["Item #", "Description", "Packaging", "UOM", "Unit Price", "Tax %", "Tax Code", "Quantity", "Total"]],
-body: (po?.items || []).map((item: any) => {
-  const taxRate = po?.tax?.taxRate
-    ? po.tax.taxRate
-    : "0%";
-
-  return [
-  item?.item_code || "-",
-  item?.item_name || "-",
-`(${item?.packingUnit || 0}) x (${item?.packingSize || 0})`,
-  item?.uom || "-",
-  Number(item?.rate || 0).toFixed(2),
-  taxRate,
-  item?.vatCd || "-",     
-  Number(item?.qty || 0).toFixed(2),
-  Number(item?.amount || 0).toFixed(2),
-];
-}),
-    styles: { fontSize: 8, halign: "center", textColor: [0, 0, 0] },
-    headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: [255, 255, 255], fontStyle: "bold", halign: "center" },
+    head: [["Item #", "Description", "Packaging", "UOM", "Unit Price", "Tax %", "Tax Code", "Quantity", "Total"]],
+    body: (inv?.items || []).map((item: any) => {
+      const taxRate = inv?.tax?.taxRate ? inv.tax.taxRate : "0%";
+      return [
+        item?.item_code                                      || "-",
+        item?.item_name                                      || "-",
+        `(${item?.packingUnit || 0}) x (${item?.packingSize || 0})`,
+        item?.uom                                            || "-",
+        Number(item?.rate   || 0).toFixed(2),
+        taxRate,
+        item?.VatCd || item?.vatCd                          || "-",   // ← capital V from API
+        Number(item?.qty    || 0).toFixed(2),
+        Number(item?.amount || 0).toFixed(2),
+      ];
+    }),
+    styles:             { fontSize: 8, halign: "center", textColor: [0, 0, 0] },
+    headStyles:         { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: [255, 255, 255], fontStyle: "bold", halign: "center" },
     alternateRowStyles: { fillColor: [LIGHT[0], LIGHT[1], LIGHT[2]] },
-columnStyles: {
-  0: { halign: "center", cellWidth: 22 },  // Item #
-  1: { halign: "left",   cellWidth: 32, overflow: "linebreak" }, // Description
-  2: { halign: "center", cellWidth: 18 },  // Packaging
-  3: { halign: "center", cellWidth: 18 },  // UOM
-  4: { halign: "right",  cellWidth: 18 },  // Unit Price
-  5: { halign: "center", cellWidth: 16 },  // Tax %
-  6: { halign: "center", cellWidth: 18 },  // Tax Code
-  7: { halign: "right",  cellWidth: 16 },  // Qty
-  8: { halign: "right",  cellWidth: 22 },  // Total
-},
+    columnStyles: {
+      0: { halign: "center", cellWidth: 22 },
+      1: { halign: "left",   cellWidth: 32, overflow: "linebreak" },
+      2: { halign: "center", cellWidth: 18 },
+      3: { halign: "center", cellWidth: 18 },
+      4: { halign: "right",  cellWidth: 18 },
+      5: { halign: "center", cellWidth: 16 },
+      6: { halign: "center", cellWidth: 18 },
+      7: { halign: "right",  cellWidth: 16 },
+      8: { halign: "right",  cellWidth: 22 },
+    },
     margin: { left: 15, right: 15 },
   });
-  
 
   const tableBottom = (doc as any).lastAutoTable.finalY;
 
   /* ═══════════════════════════════════════════════
      7. SIGNATURE (left)  +  SUMMARY (right)
+     Same signature loader as PO (logo/sign URL)
   ═══════════════════════════════════════════════ */
   const secY = tableBottom + 4;
   const sigW = 85;
@@ -276,26 +240,42 @@ columnStyles: {
   doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
   doc.setLineWidth(0.3);
   doc.rect(15, secY, sigW, 32, "D");
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(80, 80, 80);
-  doc.text("Signature of Authorized Person", 15 + sigW / 2, secY + 22, { align: "center" });
-  doc.text("[Title]", 15 + sigW / 2, secY + 27, { align: "center" });
+
+  if (company?.documents?.authorizedSignatureUrl) {
+    const signPath    = company.documents.authorizedSignatureUrl;
+    const fullSignUrl = signPath.startsWith("http") ? signPath : `${ERP_BASE}${signPath}`;
+    try {
+      const imgW = 55;
+      const imgH = 18;
+      const imgX = 15 + (sigW - imgW) / 2;
+      const imgY = secY + 5;
+      const fmt  = fullSignUrl.toLowerCase().includes(".jpg") || fullSignUrl.toLowerCase().includes(".jpeg") ? "JPEG" : "PNG";
+      doc.addImage(fullSignUrl, fmt, imgX, imgY, imgW, imgH);
+    } catch (e) {
+      console.log("Signature error:", e);
+    }
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(80, 80, 80);
+    doc.text("Signature of Authorized Person", 15 + sigW / 2, secY + 22, { align: "center" });
+    doc.text("[Title]", 15 + sigW / 2, secY + 27, { align: "center" });
+  }
 
   // Summary table
   const summaryRows = [
-    ["Subtotal",            `${Number(po?.summary?.subTotal            || 0).toFixed(2)} ${currency}`],
-    ["Tax",                 `${Number(po?.summary?.taxTotal            || 0).toFixed(2)} ${currency}`],
-    ["Rounding Adjustment", `${Number(po?.summary?.roundingAdjustment || 0).toFixed(2)} ${currency}`],
-    ["Total",               `${Number(po?.summary?.grandTotal          || 0).toFixed(2)} ${currency}`],
+    ["Subtotal",            `${Number(inv?.summary?.subTotal            || 0).toFixed(2)} ${currency}`],
+    ["Tax",                 `${Number(inv?.summary?.taxTotal            || 0).toFixed(2)} ${currency}`],
+    ["Rounding Adjustment", `${Number(inv?.summary?.roundingAdjustment || 0).toFixed(2)} ${currency}`],
+    ["Total",               `${Number(inv?.summary?.grandTotal          || 0).toFixed(2)} ${currency}`],
   ];
 
   autoTable(doc, {
     startY: secY,
-    head: [],
-    body: summaryRows,
-    styles: { fontSize: 8.5, textColor: [0, 0, 0], cellPadding: { top: 2.8, bottom: 2.8, left: 4, right: 4 } },
-    bodyStyles: { lineColor: [BLUE[0], BLUE[1], BLUE[2]], lineWidth: 0.2 },
+    head:   [],
+    body:   summaryRows,
+    styles:      { fontSize: 8.5, textColor: [0, 0, 0], cellPadding: { top: 2.8, bottom: 2.8, left: 4, right: 4 } },
+    bodyStyles:  { lineColor: [BLUE[0], BLUE[1], BLUE[2]], lineWidth: 0.2 },
     columnStyles: {
       0: { fontStyle: "bold", fillColor: [LIGHT[0], LIGHT[1], LIGHT[2]], cellWidth: sumW / 2 },
       1: { halign: "right",                                               cellWidth: sumW / 2 },
@@ -312,117 +292,86 @@ columnStyles: {
   });
 
   /* ═══════════════════════════════════════════════
-     8. TERMS & CONDITIONS
-     Only actual term fields — no remarks fallback
+     8. TERMS & CONDITIONS  (dynamic — same as PO)
   ═══════════════════════════════════════════════ */
+  const summaryBottom = (doc as any).lastAutoTable.finalY;
+  const termsY        = Math.max(secY + 36, summaryBottom) + 6;
 
-let termsY = tableBottom + 50;
-const buying = po?.terms?.terms?.buying;
+  const buying    = inv?.terms?.terms?.buying;
+  const boxWidth  = W - 30;
+  const textWidth = boxWidth - 8;
 
-const boxWidth = W - 30;
-const textWidth = boxWidth - 8;
+  let contentLines: string[] = [];
 
-let contentLines: string[] = [];
-
-if (buying) {
-
-  if (buying.general)
-    contentLines.push(`General: ${buying.general}`);
-
-  if (buying.delivery)
-    contentLines.push(`Delivery: ${buying.delivery}`);
-
-  if (buying.payment) {
-
-    contentLines.push("Payment Terms:");
-
-    if (buying.payment.phases?.length) {
-      buying.payment.phases.forEach((phase: any, index: number) => {
-        contentLines.push(
-          `${index + 1}. ${phase.percentage}% - ${phase.condition}`
-        );
-      });
+  if (buying) {
+    if (buying.general)    contentLines.push(`General: ${buying.general}`);
+    if (buying.delivery)   contentLines.push(`Delivery: ${buying.delivery}`);
+    if (buying.payment) {
+      contentLines.push("Payment Terms:");
+      if (buying.payment.phases?.length) {
+        buying.payment.phases.forEach((phase: any, i: number) => {
+          contentLines.push(`${i + 1}. ${phase.percentage}% - ${phase.condition}`);
+        });
+      }
+      if (buying.payment.dueDates)    contentLines.push(`Due Dates: ${buying.payment.dueDates}`);
+      if (buying.payment.lateCharges) contentLines.push(`Late Charges: ${buying.payment.lateCharges}`);
+      if (buying.payment.notes)       contentLines.push(`Notes: ${buying.payment.notes}`);
     }
-
-    if (buying.payment.dueDates)
-      contentLines.push(`Due Dates: ${buying.payment.dueDates}`);
-
-    if (buying.payment.lateCharges)
-      contentLines.push(`Late Charges: ${buying.payment.lateCharges}`);
-
-    if (buying.payment.notes)
-      contentLines.push(`Notes: ${buying.payment.notes}`);
+    if (buying.cancellation) contentLines.push(`Cancellation: ${buying.cancellation}`);
+    if (buying.warranty)     contentLines.push(`Warranty: ${buying.warranty}`);
+    if (buying.liability)    contentLines.push(`Liability: ${buying.liability}`);
+  } else {
+    contentLines.push("No terms specified.");
   }
 
-  if (buying.cancellation)
-    contentLines.push(`Cancellation: ${buying.cancellation}`);
+  // Dynamic height
+  let calcH = 12;
+  contentLines.forEach(line => {
+    const wrapped = doc.splitTextToSize(line, textWidth);
+    calcH += wrapped.length * 5;
+  });
+  const boxHeight = Math.max(30, calcH + 6);
 
-  if (buying.warranty)
-    contentLines.push(`Warranty: ${buying.warranty}`);
+  // Page break check
+  let finalTermsY = termsY;
+  if (finalTermsY + boxHeight > H - 20) {
+    doc.addPage();
+    finalTermsY = 20;
+  }
 
-  if (buying.liability)
-    contentLines.push(`Liability: ${buying.liability}`);
+  // Draw box
+  doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
+  doc.setLineWidth(0.3);
+  doc.rect(15, finalTermsY, boxWidth, boxHeight, "D");
 
-} else {
-  contentLines.push("No terms specified.");
-}
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+  doc.text("Terms & Conditions", 19, finalTermsY + 6);
 
-// ───── Calculate dynamic height ─────
-let calculatedHeight = 12;
-
-contentLines.forEach(line => {
-  const wrapped = doc.splitTextToSize(line, textWidth);
-  calculatedHeight += wrapped.length * 5;
-});
-
-// Minimum height safety
-const boxHeight = Math.max(30, calculatedHeight + 6);
-// 🔴 PAGE BREAK CHECK (ADD THIS)
-let finalTermsY = termsY;
-
-if (finalTermsY + boxHeight > H - 20) {
-  doc.addPage();
-  finalTermsY = 20; // top margin on new page
-}
-
-// ───── Draw Box ─────
-doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
-doc.setLineWidth(0.3);
-doc.rect(15, finalTermsY, boxWidth, boxHeight, "D");
-
-// ───── Title ─────
-doc.setFont("helvetica", "bold");
-doc.setFontSize(9);
-doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
-doc.text("Terms & Conditions", 19, finalTermsY + 6);
-
-// ───── Content ─────
-doc.setFont("helvetica", "normal");
-doc.setFontSize(8);
-doc.setTextColor(0, 0, 0);
-let currentY = finalTermsY + 12;
-contentLines.forEach(line => {
-  const wrapped = doc.splitTextToSize(line, textWidth);
-  doc.text(wrapped, 19, currentY);
-  currentY += wrapped.length * 5;
-});
+  // Content
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(0, 0, 0);
+  let curY = finalTermsY + 12;
+  contentLines.forEach(line => {
+    const wrapped = doc.splitTextToSize(line, textWidth);
+    doc.text(wrapped, 19, curY);
+    curY += wrapped.length * 5;
+  });
 
   /* ═══════════════════════════════════════════════
      9. FOOTER
   ═══════════════════════════════════════════════ */
   doc.setFontSize(7);
   doc.setTextColor(120, 120, 120);
-  doc.text("Powered by ERP System", 105, H - 10, { align: "center" });
-  doc.text(`Created By: ${po?.metadata?.createdBy || "-"}`, 105, H - 5, { align: "center" });
+  doc.text("Powered by ERP System",                              105, H - 10, { align: "center" });
+  doc.text(`Created By: ${inv?.metadata?.createdBy || "-"}`,    105, H - 5,  { align: "center" });
 
   doc.setTextColor(0, 0, 0);
 
-if (resultType === "save") {
-  doc.save(`Purchase_Order_${po?.poId}.pdf`);
-  return;
-}
-
-const blob = doc.output("blob");
-const url = URL.createObjectURL(blob);
-return url;
+  return resultType === "save"
+    ? doc.save(`Purchase_Invoice_${inv?.pId}.pdf`)
+    : doc.output("bloburl");
 };
