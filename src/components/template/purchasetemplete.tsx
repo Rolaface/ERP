@@ -56,14 +56,14 @@ if (company?.documents?.companyLogoUrl) {
     : `${ERP_BASE}${logoPath}`;
 
   try {
-    doc.addImage(
-      fullLogoUrl,
-      "PNG",
-      15,   // X
-      8,    // Y
-      30,   // Width
-      15    // Height
-    );
+doc.addImage(
+  fullLogoUrl,
+  "PNG",
+  15,
+  6,
+  40,   // width ↑
+  20    // height ↑
+);
   } catch (e) {
     console.log("Logo error:", e);
   }

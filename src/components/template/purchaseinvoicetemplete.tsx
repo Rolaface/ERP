@@ -2,27 +2,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { ERP_BASE } from "../../config/api";
 
-// ── Logo loader ───────────────────────────────────────────────────────────────
-const loadImageFromUrl = async (url: string): Promise<{ data: string; format: string } | null> => {
-  try {
-    const res = await fetch(url, { mode: "cors", credentials: "include" });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    const mime = blob.type || "image/png";
-    let format = "PNG";
-    if (mime.includes("jpeg") || mime.includes("jpg")) format = "JPEG";
-    else if (mime.includes("webp")) format = "WEBP";
-    const data = await new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror  = () => resolve("");
-      reader.readAsDataURL(blob);
-    });
-    return data ? { data, format } : null;
-  } catch {
-    return null;
-  }
-};
 
 const getFullImageUrl = (path: string): string => {
   if (!path) return "";
@@ -63,30 +42,34 @@ export const generatePurchaseInvoicePDF = async (
   /* ═══════════════════════════════════════════════
      1. LOGO
   ═══════════════════════════════════════════════ */
- let logoH = 0;
-const logoW = 30;
+/* ═══════════════════════════════════════════════
+   1. LOGO (Same as Purchase Order)
+═══════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════
+   1. LOGO (Stable Direct URL Method)
+═══════════════════════════════════════════════ */
+
+const logoW = 40;
+const logoH = 20;
 
 if (company?.documents?.companyLogoUrl) {
-  const logo = await loadImageFromUrl(
-    getFullImageUrl(company.documents.companyLogoUrl)
-  );
+  const logoPath = company.documents.companyLogoUrl;
+  const fullLogoUrl = logoPath.startsWith("http")
+    ? logoPath
+    : `${ERP_BASE}${logoPath}`;
 
-  if (logo) {
-    try {
-      logoH = 14;
-
-      // 👉 TOP LEFT POSITION
-      doc.addImage(
-        logo.data,
-        logo.format as any,
-        15,   // X position (left margin)
-        8,    // Y position
-        logoW,
-        logoH
-      );
-    } catch {
-      logoH = 0;
-    }
+  try {
+    doc.addImage(
+      fullLogoUrl,
+      "PNG",
+      15,
+      6,
+      logoW,
+      logoH
+    );
+  } catch (e) {
+    console.log("Logo error:", e);
   }
 }
 
