@@ -485,7 +485,6 @@ export const useInvoiceForm = (
           batchNo: data.batchInfo?.has_batch_no
             ? data.batchInfo?.batchNo ?? ""
             : "",
-          hasBatch: data.batchInfo?.has_batch_no ?? false,
           packingUnit: data.pakingUnit ?? "",
           packingSize: data.packingSize ?? "",
         };

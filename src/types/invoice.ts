@@ -63,7 +63,6 @@ export interface InvoiceItem {
   vatCode: string;
   _fromInvoice?: boolean;
   batchNo?: string;
-  hasBatch?: boolean;
   packingUnit?: string;
   packingSize?: string;
   mfgDate?: string;

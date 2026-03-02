@@ -15,7 +15,6 @@ export const EMPTY_ITEM: InvoiceItem = {
   boxStart: "",
   boxEnd: "",
   batchNo: "",
-  hasBatch: false, 
 };
 
 export const EMPTY_TERMS: InvoiceTerms = {

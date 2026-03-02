@@ -51,7 +51,7 @@ export async function updateSupplier(payload: any): Promise<any> {
 
 export async function deleteSupplier(id: string | number): Promise<any> {
   const resp: AxiosResponse = await api.delete(SupplierAPI.delete, {
-    data: { supplierId: id },   // IMPORTANT
+    data: { supplierId: id },   
   });
   return resp.data;
 }
