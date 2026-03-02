@@ -13,6 +13,7 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import type { Supplier } from "../../types/Supply/supplier";
 import type { SupplierFilters } from "../../api/procurement/supplierApi";
+import { showApiError,showSuccess } from "../../utils/alert";
 
 interface Props { }
 
@@ -183,6 +184,7 @@ const SupplierManagement: React.FC<Props> = () => {
     handleEditSupplier(supplier);
   };
 
+
 const handleDeleteSupplier = async (supplier: Supplier) => {
   if (!supplier.supplierId) return;
 
@@ -197,10 +199,16 @@ const handleDeleteSupplier = async (supplier: Supplier) => {
 
     await deleteSupplier(supplier.supplierId);
 
-    await fetchSuppliers(); // refresh table
+    showSuccess("Supplier deleted successfully");
 
-  } catch (err) {
+    await fetchSuppliers();
+
+  } catch (err: any) {
+
     console.error("Delete failed", err);
+
+    showApiError(err);
+
   } finally {
     setLoading(false);
   }

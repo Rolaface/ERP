@@ -92,54 +92,103 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               required
               error={errors.contactPerson}
             />
-            <div className="flex gap-2 items-end">
-              <div className="w-[50px]">
-                <ModalInput
-                  label=" "
+            {/* Phone No */}
+            <div className="flex flex-col min-w-0">
+              <span className="block text-[10px] font-medium text-main mb-1">
+                Phone No <span className="text-danger">*</span>
+              </span>
+              <div className="flex gap-0">
+                <input
                   name="phoneCode"
                   value={form.phoneCode}
                   onChange={onChange}
-                  placeholder="+91"
+                  placeholder="+"
+                  className={[
+                    "w-[50px] py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
+                    errors.phoneNo
+                      ? "border-danger focus:border-danger"
+                      : "border-[var(--border)] hover:border-primary/40",
+                  ].join(" ")}
+                  onFocus={(e) => {
+                    e.currentTarget.style.boxShadow = errors.phoneNo
+                      ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
+                      : "0 0 0 3px rgba(37, 99, 235, 0.16)";
+                  }}
+                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
                 />
-              </div>
-
-              <div className="flex-1">
-                <ModalInput
-                  label="Phone No"
+                <input
                   name="phoneNo"
+                  type="tel"
                   value={form.phoneNo}
                   onChange={onChange}
                   placeholder="Enter mobile number"
-                  type="tel"
-                  required
+                  className={[
+                    "flex-1 py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
+                    errors.phoneNo
+                      ? "border-danger focus:border-danger"
+                      : "border-[var(--border)] hover:border-primary/40",
+                  ].join(" ")}
+                  onFocus={(e) => {
+                    e.currentTarget.style.boxShadow = errors.phoneNo
+                      ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
+                      : "0 0 0 3px rgba(37, 99, 235, 0.16)";
+                  }}
+                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
                 />
               </div>
+              {errors.phoneNo && (
+                <span className="text-[10px] text-danger mt-1">{errors.phoneNo}</span>
+              )}
             </div>
 
-
-            <div className="flex gap-2 items-end">
-              <div className="w-[50px]">
-                <ModalInput
-                  label=" "
+            {/* Alternate No */}
+            <div className="flex flex-col min-w-0">
+              <span className="block text-[10px] font-medium text-main mb-1">
+                Alternate No
+              </span>
+              <div className="flex gap-0">
+                <input
                   name="alternateCode"
                   value={form.alternateCode}
                   onChange={onChange}
-                  placeholder="+91"
+                  placeholder="+"
+                  className={[
+                    "w-[50px] py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
+                    errors.alternateNo
+                      ? "border-danger focus:border-danger"
+                      : "border-[var(--border)] hover:border-primary/40",
+                  ].join(" ")}
+                  onFocus={(e) => {
+                    e.currentTarget.style.boxShadow = errors.alternateNo
+                      ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
+                      : "0 0 0 3px rgba(37, 99, 235, 0.16)";
+                  }}
+                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
                 />
-              </div>
-
-              <div className="flex-1">
-                <ModalInput
-                  label="Alternate No"
+                <input
                   name="alternateNo"
+                  type="tel"
                   value={form.alternateNo}
                   onChange={onChange}
                   placeholder="Enter mobile number"
-                  type="tel"
+                  className={[
+                    "flex-1 py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
+                    errors.alternateNo
+                      ? "border-danger focus:border-danger"
+                      : "border-[var(--border)] hover:border-primary/40",
+                  ].join(" ")}
+                  onFocus={(e) => {
+                    e.currentTarget.style.boxShadow = errors.alternateNo
+                      ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
+                      : "0 0 0 3px rgba(37, 99, 235, 0.16)";
+                  }}
+                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
                 />
               </div>
+              {errors.alternateNo && (
+                <span className="text-[10px] text-danger mt-1">{errors.alternateNo}</span>
+              )}
             </div>
-
             <ModalInput
               label="Email Id"
               name="emailId"

@@ -10,9 +10,9 @@ import Modal from "../ui/modal/modal";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 
-/* ───────────────────────────────
+/* 
    Default Form State
-─────────────────────────────── */
+ */
 
 const emptyForm = {
   id: "",
@@ -30,9 +30,9 @@ const itemTypeOptions = [
   { value: "3", label: "Service" },
 ];
 
-/* ───────────────────────────────
+/* 
    Component
-─────────────────────────────── */
+ */
 
 const ItemsCategoryModal: React.FC<{
   isOpen: boolean;
@@ -45,7 +45,7 @@ const ItemsCategoryModal: React.FC<{
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "pricing">("details");
 
-  /* ───────────────────────────────
+  /* 
      Load Data (Edit Safe)
   ──────────────────────────────── */
 
@@ -63,7 +63,7 @@ const ItemsCategoryModal: React.FC<{
     }
   }, [isOpen, initialData]);
 
-  /* ───────────────────────────────
+  /* 
      Change Handler
   ──────────────────────────────── */
 
@@ -79,7 +79,7 @@ const ItemsCategoryModal: React.FC<{
     }));
   };
 
-  /* ───────────────────────────────
+  /* 
      Submit
   ──────────────────────────────── */
 
@@ -114,7 +114,7 @@ const ItemsCategoryModal: React.FC<{
     }
   };
 
-  /* ───────────────────────────────
+  /* 
      Reset
   ──────────────────────────────── */
 
@@ -133,7 +133,7 @@ const ItemsCategoryModal: React.FC<{
 
   if (!isOpen) return null;
 
-  /* ───────────────────────────────
+  /* 
      UI
   ──────────────────────────────── */
 
@@ -143,8 +143,8 @@ const ItemsCategoryModal: React.FC<{
       onClose={handleClose}
       title={isEditMode ? "Edit Item Category" : "Add Item Category"}
       subtitle="Manage category configuration"
-      maxWidth="5xl"
-      height="75vh"
+      customWidth="50vw"
+      height="45vh"
     >
       <form onSubmit={handleSubmit} className="h-full flex flex-col">
 
