@@ -869,10 +869,10 @@ export default function PayrollManagement() {
                       {[
                         "Slip ID",
                         "Employee",
+                        "Reference #",
                         "Structure",
                         "Start",
                         "End",
-                        "Reference #",
                         "Status",
                         "Earnings",
                         "Deductions",
@@ -929,13 +929,13 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">{Number(s.net_pay ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right">
-                            <button
-                              onClick={() => handleOpenPayslipPdf(s.name)}
-                              className="px-3 py-1.5 rounded-md text-xs font-medium bg-card text-main hover:bg-black/5 transition-colors"
-                            >
-                              View
-                            </button>
-                          </td>
+                          <button
+                            onClick={() => handleOpenPayslipPdf(s.name)}
+                            className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                          >
+                            View Salary Slip
+                          </button>
+                        </td>
                         </tr>
                       ))
                     )}
