@@ -341,7 +341,7 @@ export default function SalaryStructureTab() {
 
       mergedComponents = Array.from(byComponent.values());
     } catch {
-      // keep mergedComponents as-is
+      
     }
 
     setLoading(true);
@@ -1074,7 +1074,6 @@ function SalaryComponentsModal({
   );
 }
 
-// Structure Modal Component
 function StructureModal({
   structure,
   onSave,
@@ -1152,22 +1151,26 @@ function StructureModal({
       const key = String(c.component || "").toLowerCase();
 
       if (rawAmt !== 0) {
-        return { ...c, effectiveAmount: rawAmt, label: String(c.component || "") };
+        return { ...c, effectiveAmount: rawAmt, label: String(c.component || ""), bucket: "employee" as const };
       }
 
       if (key.includes("napsa")) {
+        const side = key.includes("employer") ? "Employer" : key.includes("employee") ? "Employee" : "";
         return {
           ...c,
-          effectiveAmount: statutoryCalc.statutory.napsaEmployee,
-          label: `NAPSA (${statutoryCalc.rates.napsaEmployeeRate}%)`,
+          effectiveAmount: side === "Employer" ? statutoryCalc.statutory.napsaEmployer : statutoryCalc.statutory.napsaEmployee,
+          label: `NAPSA${side ? ` ${side}` : ""} (${statutoryCalc.rates.napsaEmployeeRate}%)`,
+          bucket: side === "Employer" ? ("employer" as const) : ("employee" as const),
         };
       }
 
       if (key.includes("nhima")) {
+        const side = key.includes("employer") ? "Employer" : key.includes("employee") ? "Employee" : "";
         return {
           ...c,
           effectiveAmount: statutoryCalc.statutory.nhima,
-          label: `NHIMA (${statutoryCalc.rates.nhimaRate}%)`,
+          label: `NHIMA${side ? ` ${side}` : ""} (${statutoryCalc.rates.nhimaRate}%)`,
+          bucket: side === "Employer" ? ("employer" as const) : ("employee" as const),
         };
       }
 
@@ -1176,19 +1179,28 @@ function StructureModal({
           ...c,
           effectiveAmount: statutoryCalc.statutory.paye,
           label: "PAYE",
+          bucket: "employee" as const,
         };
       }
 
-      return { ...c, effectiveAmount: 0, label: String(c.component || "") };
+      return { ...c, effectiveAmount: 0, label: String(c.component || ""), bucket: "employee" as const };
     });
   }, [deductions, statutoryCalc]);
 
+  const employeeDeductionsForSummary = useMemo(() => {
+    return deductionsWithEffectiveAmounts.filter((c: any) => String(c?.bucket ?? "employee") !== "employer");
+  }, [deductionsWithEffectiveAmounts]);
+
+  const employerContributionsForSummary = useMemo(() => {
+    return deductionsWithEffectiveAmounts.filter((c: any) => String(c?.bucket ?? "") === "employer");
+  }, [deductionsWithEffectiveAmounts]);
+
   const totalDeductions = useMemo(() => {
-    return deductionsWithEffectiveAmounts.reduce(
+    return employeeDeductionsForSummary.reduce(
       (sum, c: any) => sum + (Number(c.effectiveAmount || 0) || 0),
       0,
     );
-  }, [deductionsWithEffectiveAmounts]);
+  }, [employeeDeductionsForSummary]);
 
   const netPay = useMemo(() => {
     return totalEarnings - totalDeductions;
@@ -1427,7 +1439,10 @@ function StructureModal({
                     <div className="mt-2 space-y-1">
                       {earningsForSummary.map((c, idx) => (
                         <div key={`${c.component}-${idx}`} className="flex items-center justify-between gap-3">
-                          <div className="text-xs text-gray-700 truncate">{c.component}</div>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <input type="checkbox" checked disabled className="w-3.5 h-3.5" />
+                            <div className="text-xs text-gray-700 truncate">{c.component}</div>
+                          </div>
                           <div className="text-xs font-semibold text-gray-900 tabular-nums">
                             {(Number(c.amount || 0) || 0).toLocaleString()}
                           </div>
@@ -1442,22 +1457,47 @@ function StructureModal({
                   <div className="pt-3">
                     <div className="text-[11px] font-bold text-gray-700">DEDUCTIONS:</div>
                     <div className="mt-2 space-y-1">
-                      {deductionsWithEffectiveAmounts.map((c: any, idx) => {
+                      {employeeDeductionsForSummary.map((c: any, idx) => {
                         const amt = Number(c.effectiveAmount || 0) || 0;
                         return (
                           <div key={`${c.component}-${idx}`} className="flex items-center justify-between gap-3">
-                            <div className="text-xs text-gray-700 truncate">{c.label}</div>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <input type="checkbox" checked disabled className="w-3.5 h-3.5" />
+                              <div className="text-xs text-gray-700 truncate">{c.label}</div>
+                            </div>
                             <div className="text-xs font-semibold text-gray-900 tabular-nums">
                               {amt.toLocaleString()}
                             </div>
                           </div>
                         );
                       })}
-                      {deductions.length === 0 && (
+                      {employeeDeductionsForSummary.length === 0 && (
                         <div className="text-xs text-gray-500">—</div>
                       )}
                     </div>
                   </div>
+
+                  {employerContributionsForSummary.length > 0 && (
+                    <div className="pt-3">
+                      <div className="text-[11px] font-bold text-gray-700">EMPLOYER CONTRIBUTIONS:</div>
+                      <div className="mt-2 space-y-1">
+                        {employerContributionsForSummary.map((c: any, idx: number) => {
+                          const amt = Number(c.effectiveAmount || 0) || 0;
+                          return (
+                            <div key={`${c.component}-employer-${idx}`} className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <input type="checkbox" checked disabled className="w-3.5 h-3.5" />
+                                <div className="text-xs text-gray-700 truncate">{c.label}</div>
+                              </div>
+                              <div className="text-xs font-semibold text-gray-900 tabular-nums">
+                                {amt.toLocaleString()}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-4 pt-3 border-t space-y-1 text-xs">
                     <div className="flex items-center justify-between">
