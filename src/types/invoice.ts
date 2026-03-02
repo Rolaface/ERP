@@ -8,7 +8,7 @@ export type InvoiceStatus =
   | "Cancelled"
   | "Approved";
 
-  
+
 export interface Invoice {
   invoiceNumber?: string;
   customerId: string;
@@ -24,7 +24,7 @@ export interface Invoice {
   billingAddress: Address;
   shippingAddress: Address;
   paymentInformation: PaymentInformation;
-industryBases?: string;
+  industryBases?: string;
   items: InvoiceItem[];
   terms: InvoiceTerms;
 }
@@ -39,7 +39,7 @@ export interface InvoiceSummary {
   dateOfInvoice: Date;
   total: number;
   totalTax: string;
-   invoiceStatus: InvoiceStatus;
+  invoiceStatus: InvoiceStatus;
   invoiceTypeParent: string;
   invoiceType: string;
 }
@@ -60,10 +60,12 @@ export interface InvoiceItem {
   discount: number;
   vatRate: number;
   price: number;
-  vatCode: string ;
+  vatCode: string;
   _fromInvoice?: boolean;
   batchNo?: string;
-   packing?: string;
+  hasBatch?: boolean;
+  packingUnit?: string;
+  packingSize?: string;
   mfgDate?: string;
   expDate?: string;
   boxStart?: string;

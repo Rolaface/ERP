@@ -54,8 +54,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   };
 
   const symbol = currencySymbols[formData.currencyCode] || "";
-  const showExchangeRate =
-    formData.currencyCode?.toUpperCase() !== "INR";
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,6 +151,19 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                     className="w-full"
                   />
 
+                  {ui.isExport && (
+                    <div className="mt-2">
+                      <ModalInput
+                        label="Export To Country"
+                        name="destnCountryCd"
+                        type="text"
+                        value={formData.destnCountryCd}
+                        onChange={actions.handleInputChange}
+                        className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                      />
+                    </div>
+                  )}
+
                   {/* Industry Base */}
                   <div>
                     <ModalSelect
@@ -206,8 +217,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   <div>
                     <ModalSelect
                       label="Status"
-                      name="quotationStatus"
-                      value={formData.quotationStatus}
+                      name="invoiceStatus"
+                      value={formData.invoiceStatus}
                       options={[...quotationStatusOptions]}
                       onChange={actions.handleInputChange}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
@@ -229,18 +240,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                     />
                   </div>
 
-                  {(ui.isExport || ui.hasC1) && (
-                    <div>
-                      <ModalInput
-                        label="Export To Country"
-                        name="destnCountryCd"
-                        type="text"
-                        value={formData.destnCountryCd}
-                        onChange={actions.handleInputChange}
-                        className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                      />
-                    </div>
-                  )}
 
                   {/* LPO Number */}
                   {ui.isLocal && (
@@ -282,7 +281,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[110px] whitespace-nowrap">
                             Description
                           </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[110px] whitespace-nowrap">
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[90px] whitespace-nowrap">
                             Packing
                           </th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
@@ -303,7 +302,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
                             Amount
                           </th>
-                           <th></th>
+                          <th></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -322,17 +321,17 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                             >
                               <td className="px-3 py-2 text-[10px]">{i + 1}</td>
                               <td className="px-0.5 py-1">
-                                 <div className="w-[180px]">
-                                <ItemSelect
-                                  taxCategory={ui.taxCategory}
-                                  value={it.itemCode}
-                                  excludeItemCodes={formData.items
-                                    .map((x, j) => (j === i ? "" : x?.itemCode))
-                                    .filter(Boolean) as string[]}
-                                  onChange={(item) => {
-                                    actions.handleItemSelect(i, item.id);
-                                  }}
-                                />
+                                <div className="w-[180px]">
+                                  <ItemSelect
+                                    taxCategory={ui.taxCategory}
+                                    value={it.itemCode}
+                                    excludeItemCodes={formData.items
+                                      .map((x, j) => (j === i ? "" : x?.itemCode))
+                                      .filter(Boolean) as string[]}
+                                    onChange={(item) => {
+                                      actions.handleItemSelect(i, item.id);
+                                    }}
+                                  />
                                 </div>
                               </td>
                               <td className="px-0.5 py-1">
@@ -349,16 +348,31 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                 />
                               </td>
                               <td className="px-0.5 py-1">
-                                <input
-                                  type="text"
-                                  name="batchNo"
-                                  value={it.batchNo}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                  disabled
-                                  className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                />
+                                <div className="flex items-center gap-1">
+
+                                  {/* PACKING UNIT */}
+                                  <input
+                                    type="number"
+                                    name="packingUnit"
+                                    value={it.packingUnit || ""}
+                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    className="w-[42px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
+                                    placeholder="0"
+                                  />
+
+                                  <span className="text-[10px] text-muted font-semibold">×</span>
+
+                                  {/* PACKING SIZE */}
+                                  <input
+                                    type="number"
+                                    name="packingSize"
+                                    value={it.packingSize || ""}
+                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    className="w-[42px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
+                                    placeholder="0"
+                                  />
+
+                                </div>
                               </td>
 
                               <td className="px-0.5 py-1">
