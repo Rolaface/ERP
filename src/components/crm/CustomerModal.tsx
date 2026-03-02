@@ -127,26 +127,26 @@ const CustomerModal: React.FC<{
     if (initialData) {
 
       const splitMobile = (mobile?: string) => {
-  if (!mobile) return { code: "", number: "" };
+        if (!mobile) return { code: "", number: "" };
 
-  const countryCodes = ["+91", "+260", "+1", "+44"]; // add as needed
+        const countryCodes = ["+91", "+260", "+1", "+44"]; // add as needed
 
-  const matchedCode = countryCodes.find(code =>
-    mobile.startsWith(code)
-  );
+        const matchedCode = countryCodes.find(code =>
+          mobile.startsWith(code)
+        );
 
-  if (matchedCode) {
-    return {
-      code: matchedCode,
-      number: mobile.slice(matchedCode.length)
-    };
-  }
+        if (matchedCode) {
+          return {
+            code: matchedCode,
+            number: mobile.slice(matchedCode.length)
+          };
+        }
 
-  return {
-    code: "",
-    number: mobile
-  };
-};
+        return {
+          code: "",
+          number: mobile
+        };
+      };
 
       const mobile = splitMobile(initialData.mobile);
 
@@ -614,37 +614,70 @@ const CustomerModal: React.FC<{
                   placeholder="0.00"
                 />
 
-                <ModalInput
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="email@example.com"
-                  error={errors.email}
-                />
-                <div className="flex gap-2 items-end">
-                  <div className="w-[50px]">
-                    <ModalInput
-                      label=" "
-                      name="mobileCode"
-                      value={form.mobileCode}
-                      onChange={handleChange}
-                      placeholder="+"
-                    />
-                  </div>
+                {/* Email + Mobile - span full width as a separate row */}
+                <div className="col-span-4 grid grid-cols-4 gap-5">
+                  <ModalInput
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                    placeholder="email@example.com"
+                    error={errors.email}
+                  />
 
-                  <div className="flex-1">
-                    <ModalInput
-                      label="Mobile"
-                      name="mobile"
-                      type="tel"
-                      value={form.mobile}
-                      onChange={handleChange}
-                      required
-                      placeholder="Enter mobile number"
-                    />
+                  {/* Mobile with code - matches ModalInput styling exactly */}
+                  <div className="flex flex-col min-w-0">
+                    <span className="block text-[10px] font-medium text-main mb-1">
+                      Mobile <span className="text-danger">*</span>
+                    </span>
+                    <div className="flex gap-2">
+                      <input
+                        name="mobileCode"
+                        value={form.mobileCode}
+                        onChange={handleChange}
+                        placeholder="+"
+                        className={[
+                          "w-[50px] py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
+                          errors.mobile
+                            ? "border-danger focus:border-danger"
+                            : "border-[var(--border)] hover:border-primary/40",
+                        ].join(" ")}
+                        onFocus={(e) => {
+                          e.currentTarget.style.boxShadow = errors.mobile
+                            ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
+                            : "0 0 0 3px rgba(37, 99, 235, 0.16)";
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.boxShadow = "";
+                        }}
+                      />
+                      <input
+                        name="mobile"
+                        type="tel"
+                        value={form.mobile}
+                        onChange={handleChange}
+                        placeholder="Enter mobile number"
+                        className={[
+                          "flex-1 py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
+                          errors.mobile
+                            ? "border-danger focus:border-danger"
+                            : "border-[var(--border)] hover:border-primary/40",
+                        ].join(" ")}
+                        onFocus={(e) => {
+                          e.currentTarget.style.boxShadow = errors.mobile
+                            ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
+                            : "0 0 0 3px rgba(37, 99, 235, 0.16)";
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.boxShadow = "";
+                        }}
+                      />
+                    </div>
+                    {errors.mobile && (
+                      <span className="text-[10px] text-danger mt-1">{errors.mobile}</span>
+                    )}
                   </div>
                 </div>
               </div>
