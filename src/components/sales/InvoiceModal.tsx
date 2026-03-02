@@ -137,7 +137,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       icon={FileText}
       footer={footerContent}
       customWidth="120vw"
-      height="83vh"
+      height="79vh"
     >
       <form
         id="invoiceForm"
