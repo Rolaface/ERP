@@ -29,6 +29,9 @@ export const mapSupplierApi = (d: any): Supplier => ({
   paymentTerms: d.paymentTerms || "",
   dateOfAddition: d.dateOfAddition,
   status: d.status?.toLowerCase(),
+    terms: {
+    buying: d?.terms?.buying || { payment: { phases: [] } }
+  },
 });
 
 
@@ -67,7 +70,11 @@ export const mapSupplierToApi = (
   openingBalance: Number(f.openingBalance || 0),
   paymentTerms: f.paymentTerms || "",
   dateOfAddition: f.dateOfAddition,
+    terms: {
+    buying: f.terms?.buying
+  }
 });
+
 
 
 
@@ -110,6 +117,9 @@ export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
     province: s.province ?? "",
     billingPostalCode: s.billingPostalCode ?? "",
     billingCountry: s.billingCountry ?? "",
+      terms: {
+    buying: s?.terms?.buying || emptySupplierForm.terms?.buying
+  },
   };
 };
 

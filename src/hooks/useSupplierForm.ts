@@ -7,6 +7,9 @@ import { Supplier } from "../types/Supply/supplier";
 import { mapSupplierToForm } from "../types/Supply/supplierMapper";
 import { showApiError, showSuccess } from "../utils/alert";
 import { generateSupplierCode } from "../types/Supply/generateSupplierCode";
+import { getCompanyById } from "../api/companySetupApi";
+const companyId = import.meta.env.VITE_COMPANY_ID;
+import type { TermSection } from "../types/termsAndCondition";
 
 interface UseSupplierFormProps {
   initialData?: Supplier | null;
@@ -50,7 +53,7 @@ export const useSupplierForm = ({
   isEditMode = false,
   onSuccess,
   isOpen,
-  existingSupplierCodes = [] 
+  existingSupplierCodes = []
 }: UseSupplierFormProps) => {
   const [form, setForm] = useState<SupplierFormData>(emptySupplierForm);
   const [loading, setLoading] = useState(false);
@@ -58,6 +61,43 @@ export const useSupplierForm = ({
   const [errors, setErrors] = useState<SupplierErrors>({});
   const [allowSubmit, setAllowSubmit] = useState(false);
   const [isCodeEdited, setIsCodeEdited] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !companyId || isEditMode) return;
+
+    const loadCompanyTerms = async () => {
+      try {
+        const res = await getCompanyById(companyId);
+
+        const buyingTerms = res?.data?.terms?.buying;
+
+        if (!buyingTerms) return;
+
+        setForm(prev => ({
+          ...prev,
+          terms: {
+            ...prev.terms,
+            buying: buyingTerms
+          }
+        }));
+
+      } catch (err) {
+        console.error("Failed to load buying terms", err);
+      }
+    };
+
+    loadCompanyTerms();
+  }, [companyId, isOpen, isEditMode]);
+
+  const handleTermsChange = (type: "buying", updated: TermSection) => {
+    setForm(prev => ({
+      ...prev,
+      terms: {
+        ...prev.terms,
+        [type]: updated
+      }
+    }));
+  };
 
   // Validate Supplier Tab
   const validateSupplierTab = (): boolean => {
@@ -167,16 +207,27 @@ export const useSupplierForm = ({
   useEffect(() => {
     if (!isOpen) return;
 
-if (initialData) {
-  setForm(mapSupplierToForm(initialData));
-  setIsCodeEdited(true); // prevent auto overwrite in edit
-} else {
-  setForm({
-    ...emptySupplierForm,
-    dateOfAddition: new Date().toISOString().split("T")[0],
-  });
-  setIsCodeEdited(false);
-}
+    if (initialData) {
+      const mapped = mapSupplierToForm(initialData);
+
+      setForm(prev => ({
+        ...mapped,
+        terms: {
+          buying:
+            mapped.terms?.buying?.payment?.phases?.length
+              ? mapped.terms.buying
+              : prev.terms?.buying || emptySupplierForm.terms?.buying
+        }
+      }));
+
+      setIsCodeEdited(true);
+    } else {
+      setForm({
+        ...emptySupplierForm,
+        dateOfAddition: new Date().toISOString().split("T")[0],
+      });
+      setIsCodeEdited(false);
+    }
 
     setActiveTab("supplier");
     setErrors({});
@@ -212,34 +263,34 @@ if (initialData) {
 
       if (name === "supplierName") {
 
-  setForm(prev => {
+        setForm(prev => {
 
-    // If user already edited code → don't override
-    if (isCodeEdited) {
-      return { ...prev, supplierName: value };
-    }
+          // If user already edited code → don't override
+          if (isCodeEdited) {
+            return { ...prev, supplierName: value };
+          }
 
-    const autoCode = generateSupplierCode(value, existingSupplierCodes);
-    return {
-      ...prev,
-      supplierName: value,
-      supplierCode: autoCode
-    };
-  });
+          const autoCode = generateSupplierCode(value, existingSupplierCodes);
+          return {
+            ...prev,
+            supplierName: value,
+            supplierCode: autoCode
+          };
+        });
 
-  return;
-}
+        return;
+      }
 
-if (name === "supplierCode") {
-  setIsCodeEdited(true);
+      if (name === "supplierCode") {
+        setIsCodeEdited(true);
 
-  setForm(prev => ({
-    ...prev,
-    supplierCode: value.toUpperCase()
-  }));
+        setForm(prev => ({
+          ...prev,
+          supplierCode: value.toUpperCase()
+        }));
 
-  return;
-}
+        return;
+      }
 
       setForm((p) => ({ ...p, [name]: value }));
     }
@@ -249,9 +300,9 @@ if (name === "supplierCode") {
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
-    // Prevent double submission when navigating to address tab
-    if (!allowSubmit && activeTab === "address" && !isEditMode) {
+    if (!isEditMode && activeTab !== "terms") {
       setAllowSubmit(true);
+      handleNext();
       return;
     }
 
@@ -390,7 +441,7 @@ if (name === "supplierCode") {
         if (!form.supplierName) emptyFields.push("Supplier Name");
         if (!form.taxCategory) emptyFields.push("Tax Category");
         if (!form.contactPerson) emptyFields.push("Contact Person");
-       if (!form.phoneCode || !form.phoneNo) emptyFields.push("Phone Number");
+        if (!form.phoneCode || !form.phoneNo) emptyFields.push("Phone Number");
         if (!form.emailId) emptyFields.push("Email");
 
         const message = emptyFields.length > 0
@@ -400,27 +451,45 @@ if (name === "supplierCode") {
         return;
       }
     } else if (activeTab === "payment") {
-      isValid = validatePaymentTab();
-      if (!isValid) {
-        const emptyFields = [];
-        if (!form.currency) emptyFields.push("Currency");
-        if (!form.paymentTerms) emptyFields.push("Payment Terms");
-        if (!form.dateOfAddition) emptyFields.push("Date of Addition");
-        if (!form.openingBalance && form.openingBalance !== 0) emptyFields.push("Opening Balance");
-        if (!form.bankAccount) emptyFields.push("Bank");
-        if (!form.accountNumber) emptyFields.push("Account Number");
-        if (!form.accountHolder) emptyFields.push("Account Holder Name");
-        if (!form.sortCode) emptyFields.push("Sort Code");
-        if (!form.swiftCode) emptyFields.push("SWIFT Code");
-        if (!form.branchAddress) emptyFields.push("Branch Address");
+  isValid = validatePaymentTab();
+  if (!isValid) {
+    const emptyFields = [];
+    if (!form.currency) emptyFields.push("Currency");
+    if (!form.paymentTerms) emptyFields.push("Payment Terms");
+    if (!form.dateOfAddition) emptyFields.push("Date of Addition");
+    if (!form.openingBalance && form.openingBalance !== 0) emptyFields.push("Opening Balance");
+    if (!form.bankAccount) emptyFields.push("Bank");
+    if (!form.accountNumber) emptyFields.push("Account Number");
+    if (!form.accountHolder) emptyFields.push("Account Holder Name");
+    if (!form.sortCode) emptyFields.push("Sort Code");
+    if (!form.swiftCode) emptyFields.push("SWIFT Code");
+    if (!form.branchAddress) emptyFields.push("Branch Address");
 
-        const message = emptyFields.length > 0
-          ? `Please fill in required fields: ${emptyFields.join(", ")}`
-          : "Please fix validation errors in Payment tab";
-        showApiError({ message });
-        return;
-      }
-    }
+    const message = emptyFields.length > 0
+      ? `Please fill in required fields: ${emptyFields.join(", ")}`
+      : "Please fix validation errors in Payment tab";
+    showApiError({ message });
+    return;
+  }
+}
+else if (activeTab === "address") {
+  isValid = validateAddressTab();
+  if (!isValid) {
+    const emptyFields = [];
+    if (!form.billingAddressLine1) emptyFields.push("Address Line 1");
+    if (!form.billingCity) emptyFields.push("City");
+    if (!form.billingCountry) emptyFields.push("Country");
+    if (!form.district) emptyFields.push("District");
+    if (!form.province) emptyFields.push("Province");
+    if (!form.billingPostalCode) emptyFields.push("Postal Code");
+
+    const message = emptyFields.length > 0
+      ? `Please fill in required fields: ${emptyFields.join(", ")}`
+      : "Please fix validation errors in Address tab";
+    showApiError({ message });
+    return;
+  }
+}
 
     if (isValid) {
       goToNextTab();
@@ -433,6 +502,7 @@ if (name === "supplierCode") {
       "supplier",
       "payment",
       "address",
+      "terms",
     ];
 
     const currentIndex = tabs.indexOf(activeTab);
@@ -453,5 +523,6 @@ if (name === "supplierCode") {
     goToNextTab,
     handleNext,
     errors,
+    handleTermsChange
   };
 };

@@ -1,3 +1,5 @@
+import type { TermSection } from "../termsAndCondition";
+
 export interface SupplierFormData {
   tpin?: string;
   supplierName?: string;
@@ -26,7 +28,9 @@ export interface SupplierFormData {
   province?: string;
   billingCountry?: string;
   billingPostalCode?: string;
-
+    terms?: {
+    buying?: TermSection;
+  };
 }
 
 
@@ -58,6 +62,9 @@ export const emptySupplierForm: SupplierFormData = {
   province: "",
   billingCountry: "",
   billingPostalCode: "",
+  terms: {
+  buying: { payment: { phases: [] } }
+},
 };
 
 export const currencyOptions = ["ZMW", "USD", "INR"] as const;
@@ -66,7 +73,8 @@ export type Currency = typeof currencyOptions[number];
 export type SupplierTab =
   | "supplier"
   | "payment"
-  | "address";
+  | "address"
+  | "terms";
 
 
 export type SupplierStatus = "active" | "inactive";
