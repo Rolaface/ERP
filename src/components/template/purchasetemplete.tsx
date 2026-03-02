@@ -43,46 +43,31 @@ export const generatePurchaseOrderPDF = async (
   /* ═══════════════════════════════════════════════
      1. LOGO
   ═══════════════════════════════════════════════ */
- let logoH = 0;
-const logoW = 30;
-/* ═══════════════════════════════════════════════
-   1. LOGO (Simple & Stable)
-═══════════════════════════════════════════════ */
-
-if (company?.documents?.companyLogoUrl) {
-  const logoPath = company.documents.companyLogoUrl;
-  const fullLogoUrl = logoPath.startsWith("http")
-    ? logoPath
-    : `${ERP_BASE}${logoPath}`;
-
-  try {
-    doc.addImage(
-      fullLogoUrl,
-      "PNG",
-      15,   // X
-      8,    // Y
-      30,   // Width
-      15    // Height
-    );
-  } catch (e) {
-    console.log("Logo error:", e);
+  if (company?.documents?.companyLogoUrl) {
+    const logoPath = company.documents.companyLogoUrl;
+    const fullLogoUrl = logoPath.startsWith("http")
+      ? logoPath
+      : `${ERP_BASE}${logoPath}`;
+    try {
+      doc.addImage(fullLogoUrl, "PNG", 15, 6, 40, 20);
+    } catch (e) {
+      console.log("Logo error:", e);
+    }
   }
-}
-
 
   /* ═══════════════════════════════════════════════
      2. TITLE
   ═══════════════════════════════════════════════ */
-const titleY = 22;
+  const titleY = 22;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
-doc.text("PURCHASE ORDER", W / 2, titleY, { align: "center" });
+  doc.text("PURCHASE ORDER", W / 2, titleY, { align: "center" });
 
   /* ═══════════════════════════════════════════════
      3. COMPANY INFO (left)  +  PO META (right)
   ═══════════════════════════════════════════════ */
-const infoY = 32;
+  const infoY = 32;
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
@@ -108,156 +93,135 @@ const infoY = 32;
     doc.setFont("helvetica", "normal");
     doc.text(value, W - 15, infoY + i * 5, { align: "right" });
   });
-/* ═══════════════════════════════════════════════
-   4. ADDRESS BOXES — 3 PERFECT PARALLEL COLUMNS
-═══════════════════════════════════════════════ */
 
-const HDR   = 8;
-const PAD_T = 5;
-const PAD_B = 4;
-const LH    = 4.5;
+  /* ═══════════════════════════════════════════════
+     4. ADDRESS BOXES — COMPACT 3-COLUMN LAYOUT
+     ✅ Reduced padding, line-height, and font size
+     ✅ Tighter header height for less wasted space
+  ═══════════════════════════════════════════════ */
 
-const supLines  = addrBlock(po?.addresses?.supplierAddress);
-const dispLines = addrBlock(po?.addresses?.dispatchAddress);
-const shipLines = addrBlock(po?.addresses?.shippingAddress);
+  const HDR   = 7;   // ⬇ was 8   — header row height
+  const PAD_T = 3;   // ⬇ was 5   — padding above first content line
+  const PAD_B = 3;   // ⬇ was 4   — padding below last content line
+  const LH    = 4;   // ⬇ was 4.5 — line height between text lines
 
-const gap = 5;
-const totalWidth = W - 30 - (gap * 2);
-const colW = totalWidth / 3;
-const boxY = infoY + 24;
+  const supLines  = addrBlock(po?.addresses?.supplierAddress);
+  const dispLines = addrBlock(po?.addresses?.dispatchAddress);
+  const shipLines = addrBlock(po?.addresses?.shippingAddress);
 
-// Helper to calculate dynamic height properly
-const calculateHeight = (lines: string[], includeName = false) => {
-  let height = HDR + PAD_T + PAD_B;
+  const gap        = 5;
+  const totalWidth = W - 30 - (gap * 2);
+  const colW       = totalWidth / 3;
+  const boxY       = infoY + 24;
 
-  if (includeName) height += 5;
+  // ── Dynamic height per column ──────────────────
+  const calculateHeight = (lines: string[], includeName = false) => {
+    let height = HDR + PAD_T + PAD_B;
+    if (includeName) height += LH + 1; // supplier name row
+    lines.forEach(line => {
+      const wrapped = doc.splitTextToSize(line, colW - 8);
+      height += wrapped.length * LH;
+    });
+    return height;
+  };
 
-  lines.forEach(line => {
-    const wrapped = doc.splitTextToSize(line, colW - 8);
-    height += wrapped.length * LH;
-  });
+  const boxH = Math.max(
+    calculateHeight(supLines, true),
+    calculateHeight(dispLines),
+    calculateHeight(shipLines)
+  );
 
-  return height;
-};
-
-const supBoxH  = calculateHeight(supLines, true);
-const dispBoxH = calculateHeight(dispLines);
-const shipBoxH = calculateHeight(shipLines);
-
-const boxH = Math.max(supBoxH, dispBoxH, shipBoxH);
-
-// Render function
-const renderAddressBox = (
-  x: number,
-  title: string,
-  lines: string[],
-  supplierName?: string
-) => {
-  // Header
-  doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.rect(x, boxY, colW, HDR, "F");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text(title, x + colW / 2, boxY + 5.5, { align: "center" });
-
-  // Border
-  doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.setLineWidth(0.3);
-  doc.rect(x, boxY, colW, boxH, "D");
-
-  // Content
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.8);
-  doc.setTextColor(0, 0, 0);
-
-  let currentY = boxY + HDR + PAD_T;
-
-  // Supplier name only in first column
-  if (supplierName) {
+  // ── Render a single address column ────────────
+  const renderAddressBox = (
+    x: number,
+    title: string,
+    lines: string[],
+    supplierName?: string
+  ) => {
+    // Header bar
+    doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.rect(x, boxY, colW, HDR, "F");
     doc.setFont("helvetica", "bold");
-    doc.text(supplierName, x + colW / 2, currentY, { align: "center" });
+    doc.setFontSize(8);          // ⬇ was 8.5
+    doc.setTextColor(255, 255, 255);
+    doc.text(title, x + colW / 2, boxY + 5, { align: "center" });
+
+    // Border
+    doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.setLineWidth(0.3);
+    doc.rect(x, boxY, colW, boxH, "D");
+
+    // Content
     doc.setFont("helvetica", "normal");
-    currentY += 5;
-  }
+    doc.setFontSize(7.5);        // ⬇ was 7.8
+    doc.setTextColor(0, 0, 0);
 
-  lines.forEach(line => {
-    const wrapped = doc.splitTextToSize(line, colW - 8);
-    doc.text(wrapped, x + colW / 2, currentY, { align: "center" });
-    currentY += wrapped.length * LH;
-  });
-};
+    let currentY = boxY + HDR + PAD_T;
 
-// Draw 3 columns
-renderAddressBox(
-  15,
-  "Supplier Address:",
-  supLines,
-  po?.supplierName || "-"
-);
+    if (supplierName) {
+      doc.setFont("helvetica", "bold");
+      doc.text(supplierName, x + colW / 2, currentY, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      currentY += LH + 1;
+    }
 
-renderAddressBox(
-  15 + colW + gap,
-  "Dispatch Address:",
-  dispLines
-);
+    lines.forEach(line => {
+      const wrapped = doc.splitTextToSize(line, colW - 8);
+      doc.text(wrapped, x + colW / 2, currentY, { align: "center" });
+      currentY += wrapped.length * LH;
+    });
+  };
 
-renderAddressBox(
-  15 + (colW + gap) * 2,
-  "Shipping Address:",
-  shipLines
-);
+  renderAddressBox(15,                      "Supplier Address:",  supLines,  po?.supplierName || "-");
+  renderAddressBox(15 + colW + gap,         "Dispatch Address:",  dispLines);
+  renderAddressBox(15 + (colW + gap) * 2,   "Shipping Address:",  shipLines);
+
   /* ═══════════════════════════════════════════════
      5. INCOTERM + TAX CATEGORY strip
   ═══════════════════════════════════════════════ */
-  const stripY = boxY + boxH + 5;
+  const stripY = boxY + boxH + 4; // ⬇ was +5, minor tightening
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
-  doc.text(`Incoterm: ${po?.incoterm      || "-"}`, 15,       stripY);
-  doc.text(`Tax Category: ${po?.taxCategory || "-"}`, W / 2,  stripY);
+  doc.text(`Incoterm: ${po?.incoterm      || "-"}`, 15,      stripY);
+  doc.text(`Tax Category: ${po?.taxCategory || "-"}`, W / 2, stripY);
 
   /* ═══════════════════════════════════════════════
      6. ITEMS TABLE
   ═══════════════════════════════════════════════ */
   autoTable(doc, {
     startY: stripY + 6,
-head: [["Item #", "Description", "Packaging", "UOM", "Unit Price", "Tax %", "Tax Code", "Quantity", "Total"]],
-body: (po?.items || []).map((item: any) => {
-  const taxRate = po?.tax?.taxRate
-    ? po.tax.taxRate
-    : "0%";
-
-  return [
-  item?.item_code || "-",
-  item?.item_name || "-",
-`(${item?.packingUnit || 0}) x (${item?.packingSize || 0})`,
-  item?.uom || "-",
-  Number(item?.rate || 0).toFixed(2),
-  taxRate,
-  item?.vatCd || "-",     
-  Number(item?.qty || 0).toFixed(2),
-  Number(item?.amount || 0).toFixed(2),
-];
-}),
-    styles: { fontSize: 8, halign: "center", textColor: [0, 0, 0] },
-    headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: [255, 255, 255], fontStyle: "bold", halign: "center" },
+    head: [["Item #", "Description", "Packaging", "UOM", "Unit Price", "Tax %", "Tax Code", "Quantity", "Total"]],
+    body: (po?.items || []).map((item: any) => {
+      const taxRate = po?.tax?.taxRate ? po.tax.taxRate : "0%";
+      return [
+        item?.item_code || "-",
+        item?.item_name || "-",
+        `(${item?.packingUnit || 0}) x (${item?.packingSize || 0})`,
+        item?.uom || "-",
+        Number(item?.rate    || 0).toFixed(2),
+        taxRate,
+        item?.vatCd || "-",
+        Number(item?.qty     || 0).toFixed(2),
+        Number(item?.amount  || 0).toFixed(2),
+      ];
+    }),
+    styles:          { fontSize: 8, halign: "center", textColor: [0, 0, 0] },
+    headStyles:      { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: [255, 255, 255], fontStyle: "bold", halign: "center" },
     alternateRowStyles: { fillColor: [LIGHT[0], LIGHT[1], LIGHT[2]] },
-columnStyles: {
-  0: { halign: "center", cellWidth: 22 },  // Item #
-  1: { halign: "left",   cellWidth: 32, overflow: "linebreak" }, // Description
-  2: { halign: "center", cellWidth: 18 },  // Packaging
-  3: { halign: "center", cellWidth: 18 },  // UOM
-  4: { halign: "right",  cellWidth: 18 },  // Unit Price
-  5: { halign: "center", cellWidth: 16 },  // Tax %
-  6: { halign: "center", cellWidth: 18 },  // Tax Code
-  7: { halign: "right",  cellWidth: 16 },  // Qty
-  8: { halign: "right",  cellWidth: 22 },  // Total
-},
+    columnStyles: {
+      0: { halign: "center", cellWidth: 22 },
+      1: { halign: "left",   cellWidth: 32, overflow: "linebreak" },
+      2: { halign: "center", cellWidth: 18 },
+      3: { halign: "center", cellWidth: 18 },
+      4: { halign: "right",  cellWidth: 18 },
+      5: { halign: "center", cellWidth: 16 },
+      6: { halign: "center", cellWidth: 18 },
+      7: { halign: "right",  cellWidth: 16 },
+      8: { halign: "right",  cellWidth: 22 },
+    },
     margin: { left: 15, right: 15 },
   });
-  
 
   const tableBottom = (doc as any).lastAutoTable.finalY;
 
@@ -270,15 +234,50 @@ columnStyles: {
   const sumW = W - 15 - sumX;
 
   // Signature box
-  doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.setLineWidth(0.3);
-  doc.rect(15, secY, sigW, 32, "D");
+// Signature box
+doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
+doc.setLineWidth(0.3);
+doc.rect(15, secY, sigW, 32, "D");
+
+/* ───────── Authorized Signature Image ───────── */
+
+if (company?.documents?.authorizedSignatureUrl) {
+  const signPath = company.documents.authorizedSignatureUrl;
+  const fullSignUrl = signPath.startsWith("http")
+    ? signPath
+    : `${ERP_BASE}${signPath}`;
+
+  try {
+    // center image inside box
+    const imgWidth = 55;
+    const imgHeight = 18;
+
+    const imgX = 15 + (sigW - imgWidth) / 2;
+    const imgY = secY + 5;
+
+    doc.addImage(
+      fullSignUrl,
+      "PNG",
+      imgX,
+      imgY,
+      imgWidth,
+      imgHeight
+    );
+  } catch (e) {
+    console.log("Signature error:", e);
+  }
+} else {
+  // fallback text if no signature uploaded
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(80, 80, 80);
-  doc.text("Signature of Authorized Person", 15 + sigW / 2, secY + 22, { align: "center" });
-  doc.text("[Title]", 15 + sigW / 2, secY + 27, { align: "center" });
-
+  doc.text(
+    "Signature of Authorized Person",
+    15 + sigW / 2,
+    secY + 22,
+    { align: "center" }
+  );
+}
   // Summary table
   const summaryRows = [
     ["Subtotal",            `${Number(po?.summary?.subTotal            || 0).toFixed(2)} ${currency}`],
@@ -289,10 +288,10 @@ columnStyles: {
 
   autoTable(doc, {
     startY: secY,
-    head: [],
-    body: summaryRows,
-    styles: { fontSize: 8.5, textColor: [0, 0, 0], cellPadding: { top: 2.8, bottom: 2.8, left: 4, right: 4 } },
-    bodyStyles: { lineColor: [BLUE[0], BLUE[1], BLUE[2]], lineWidth: 0.2 },
+    head:   [],
+    body:   summaryRows,
+    styles:      { fontSize: 8.5, textColor: [0, 0, 0], cellPadding: { top: 2.8, bottom: 2.8, left: 4, right: 4 } },
+    bodyStyles:  { lineColor: [BLUE[0], BLUE[1], BLUE[2]], lineWidth: 0.2 },
     columnStyles: {
       0: { fontStyle: "bold", fillColor: [LIGHT[0], LIGHT[1], LIGHT[2]], cellWidth: sumW / 2 },
       1: { halign: "right",                                               cellWidth: sumW / 2 },
@@ -310,99 +309,75 @@ columnStyles: {
 
   /* ═══════════════════════════════════════════════
      8. TERMS & CONDITIONS
-     Only actual term fields — no remarks fallback
+     ✅ termsY now dynamically follows the summary
+        table bottom instead of a hardcoded +50
   ═══════════════════════════════════════════════ */
+  const summaryBottom = (doc as any).lastAutoTable.finalY; // ✅ real bottom
+  const termsY        = Math.max(secY + 36, summaryBottom) + 6; // ✅ was hardcoded tableBottom + 50
 
-let termsY = tableBottom + 50;
-const buying = po?.terms?.terms?.buying;
+  const buying    = po?.terms?.terms?.buying;
+  const boxWidth  = W - 30;
+  const textWidth = boxWidth - 8;
 
-const boxWidth = W - 30;
-const textWidth = boxWidth - 8;
+  let contentLines: string[] = [];
 
-let contentLines: string[] = [];
-
-if (buying) {
-
-  if (buying.general)
-    contentLines.push(`General: ${buying.general}`);
-
-  if (buying.delivery)
-    contentLines.push(`Delivery: ${buying.delivery}`);
-
-  if (buying.payment) {
-
-    contentLines.push("Payment Terms:");
-
-    if (buying.payment.phases?.length) {
-      buying.payment.phases.forEach((phase: any, index: number) => {
-        contentLines.push(
-          `${index + 1}. ${phase.percentage}% - ${phase.condition}`
-        );
-      });
+  if (buying) {
+    if (buying.general)    contentLines.push(`General: ${buying.general}`);
+    if (buying.delivery)   contentLines.push(`Delivery: ${buying.delivery}`);
+    if (buying.payment) {
+      contentLines.push("Payment Terms:");
+      if (buying.payment.phases?.length) {
+        buying.payment.phases.forEach((phase: any, index: number) => {
+          contentLines.push(`${index + 1}. ${phase.percentage}% - ${phase.condition}`);
+        });
+      }
+      if (buying.payment.dueDates)   contentLines.push(`Due Dates: ${buying.payment.dueDates}`);
+      if (buying.payment.lateCharges) contentLines.push(`Late Charges: ${buying.payment.lateCharges}`);
+      if (buying.payment.notes)      contentLines.push(`Notes: ${buying.payment.notes}`);
     }
-
-    if (buying.payment.dueDates)
-      contentLines.push(`Due Dates: ${buying.payment.dueDates}`);
-
-    if (buying.payment.lateCharges)
-      contentLines.push(`Late Charges: ${buying.payment.lateCharges}`);
-
-    if (buying.payment.notes)
-      contentLines.push(`Notes: ${buying.payment.notes}`);
+    if (buying.cancellation) contentLines.push(`Cancellation: ${buying.cancellation}`);
+    if (buying.warranty)     contentLines.push(`Warranty: ${buying.warranty}`);
+    if (buying.liability)    contentLines.push(`Liability: ${buying.liability}`);
+  } else {
+    contentLines.push("No terms specified.");
   }
 
-  if (buying.cancellation)
-    contentLines.push(`Cancellation: ${buying.cancellation}`);
+  // Dynamic box height
+  let calculatedHeight = 12;
+  contentLines.forEach(line => {
+    const wrapped = doc.splitTextToSize(line, textWidth);
+    calculatedHeight += wrapped.length * 5;
+  });
+  const boxHeight = Math.max(30, calculatedHeight + 6);
 
-  if (buying.warranty)
-    contentLines.push(`Warranty: ${buying.warranty}`);
+  // Page break check
+  let finalTermsY = termsY;
+  if (finalTermsY + boxHeight > H - 20) {
+    doc.addPage();
+    finalTermsY = 20;
+  }
 
-  if (buying.liability)
-    contentLines.push(`Liability: ${buying.liability}`);
+  // Draw box
+  doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
+  doc.setLineWidth(0.3);
+  doc.rect(15, finalTermsY, boxWidth, boxHeight, "D");
 
-} else {
-  contentLines.push("No terms specified.");
-}
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+  doc.text("Terms & Conditions", 19, finalTermsY + 6);
 
-// ───── Calculate dynamic height ─────
-let calculatedHeight = 12;
-
-contentLines.forEach(line => {
-  const wrapped = doc.splitTextToSize(line, textWidth);
-  calculatedHeight += wrapped.length * 5;
-});
-
-// Minimum height safety
-const boxHeight = Math.max(30, calculatedHeight + 6);
-// 🔴 PAGE BREAK CHECK (ADD THIS)
-let finalTermsY = termsY;
-
-if (finalTermsY + boxHeight > H - 20) {
-  doc.addPage();
-  finalTermsY = 20; // top margin on new page
-}
-
-// ───── Draw Box ─────
-doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
-doc.setLineWidth(0.3);
-doc.rect(15, finalTermsY, boxWidth, boxHeight, "D");
-
-// ───── Title ─────
-doc.setFont("helvetica", "bold");
-doc.setFontSize(9);
-doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
-doc.text("Terms & Conditions", 19, finalTermsY + 6);
-
-// ───── Content ─────
-doc.setFont("helvetica", "normal");
-doc.setFontSize(8);
-doc.setTextColor(0, 0, 0);
-let currentY = finalTermsY + 12;
-contentLines.forEach(line => {
-  const wrapped = doc.splitTextToSize(line, textWidth);
-  doc.text(wrapped, 19, currentY);
-  currentY += wrapped.length * 5;
-});
+  // Content
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(0, 0, 0);
+  let currentY = finalTermsY + 12;
+  contentLines.forEach(line => {
+    const wrapped = doc.splitTextToSize(line, textWidth);
+    doc.text(wrapped, 19, currentY);
+    currentY += wrapped.length * 5;
+  });
 
   /* ═══════════════════════════════════════════════
      9. FOOTER
