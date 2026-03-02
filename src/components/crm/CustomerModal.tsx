@@ -632,7 +632,7 @@ const CustomerModal: React.FC<{
                     <span className="block text-[10px] font-medium text-main mb-1">
                       Mobile <span className="text-danger">*</span>
                     </span>
-                    <div className="flex gap-2">
+                    <div className="flex gap-0">
                       <input
                         name="mobileCode"
                         value={form.mobileCode}

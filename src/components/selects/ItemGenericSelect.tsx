@@ -158,42 +158,43 @@ const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
     return name.includes(query) || code.includes(query);
   });
 
-  const rootClassName =
-    variant === "modal"
-      ? "flex flex-col text-sm w-full group"
-      : "flex flex-col gap-1";
+const rootClassName = "flex flex-col text-sm group min-w-0";
 
-  const labelClassName =
-    variant === "modal"
-      ? "block text-[10px] font-medium text-main mb-1"
-      : "font-medium text-muted text-sm";
+const labelClassName = "block text-[10px] font-medium text-main mb-1";
 
-  const inputClassName =
-    variant === "modal"
-      ? "w-full py-2 px-3 border rounded text-[13px] text-main bg-card transition-all border-[var(--border)] hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary"
-      : "w-full rounded border border-theme bg-card text-main px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary";
+const inputClassName = `
+  py-1 px-2 border rounded text-[11px] text-main bg-card transition-all
+  w-auto min-w-0 border-[var(--border)] hover:border-primary/40
+`;
 
   return (
     <div className={`${rootClassName} ${className}`}>
-      <span className="flex items-center gap-0.5 font-medium text-muted text-sm">
-  <span>{label}</span>
+    <span className={labelClassName}>
+  {label}
   {required && <span className="text-danger">*</span>}
 </span>
 
 
       <div ref={ref} className="relative w-full">
           <input
-          ref={inputRef}
-          className={inputClassName}
-          placeholder={loading ? "Loading..." : placeholder}
-          value={open ? search : displayValue}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={handleFocus}
-          disabled={loading}
-        />
+  ref={inputRef}
+  className={inputClassName}
+  placeholder={loading ? "Loading..." : placeholder}
+  value={open ? search : displayValue}
+  onChange={(e) => {
+    setSearch(e.target.value);
+    setOpen(true);
+  }}
+  onFocus={(e) => {
+    e.currentTarget.style.boxShadow =
+      "0 0 0 3px rgba(37, 99, 235, 0.16)";
+    handleFocus();
+  }}
+  onBlur={(e) => {
+    e.currentTarget.style.boxShadow = "";
+  }}
+  disabled={loading}
+/>
 
         {open && !loading && createPortal(
           <div
