@@ -36,18 +36,8 @@ export const DetailsTab = ({
 }: DetailsTabProps) => {
   const symbol = getCurrencySymbol();
 
-  // Pagination Logic
-  const ITEMS_PER_PAGE = 7;
+  const ITEMS_PER_PAGE = 5;
   const [page, setPage] = useState(0);
-
-  // Helper function to get VAT description
-  const getVatDescription = (vatCd: string): string => {
-    const descriptions: Record<string, string> = {
-      A: "Standard Rate",
-    };
-
-    return descriptions[vatCd] || "Standard";
-  };
 
   useEffect(() => {
     const newPage = Math.floor((items.length - 1) / ITEMS_PER_PAGE);
@@ -70,7 +60,6 @@ export const DetailsTab = ({
     <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
       <div className="bg-app">
         <div className="grid grid-cols-[minmax(300px,380px)_repeat(4,135px)] gap-x-2 items-end">
-          {/* Supplier */}
           <div className="max-w-[380px]">
             <SupplierSelect
               className="w-full"
@@ -78,8 +67,6 @@ export const DetailsTab = ({
               onChange={onSupplierChange}
             />
           </div>
-
-          {/* Date */}
           <div className="w-[120px]">
             <ModalInput
               label="Date"
@@ -90,10 +77,6 @@ export const DetailsTab = ({
               required
             />
           </div>
-
-
-
-          {/* Status */}
           <div className="w-[120px]">
             <ModalSelect
               label="Status"
@@ -120,7 +103,6 @@ export const DetailsTab = ({
               disabled
             />
           </div>
-
           <div className="w-[120px]">
             <ModalInput
               label="Project"
@@ -132,11 +114,10 @@ export const DetailsTab = ({
         </div>
       </div>
 
-      {/* Main Body - Table LEFT + Sidebar RIGHT */}
+      {/* Main Body */}
       <div className="grid grid-cols-[4fr_1fr] gap-4">
         {/* LEFT: Order Items Table */}
         <div className="bg-card rounded-lg p-2 shadow-sm flex-1">
-          {/* Simple Table Title */}
           <div className="flex items-center gap-1 mb-2">
             <h3 className="text-sm font-semibold text-main">Order Items</h3>
           </div>
@@ -145,39 +126,21 @@ export const DetailsTab = ({
             <table className="w-full border-collapse text-[10px] table-fixed">
               <thead>
                 <tr className="border-b border-theme">
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">
-                    #
-                  </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
-                    Item Name
-                  </th>
-                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">#</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">Item Name</th>
+                  {/* Packing column — wider for comfort */}
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[120px]">
                     Packing
+                    <span className="ml-1 text-[9px] text-muted/60 font-normal">(unit × size)</span>
                   </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
-                    Required By
-                  </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
-                    Qty
-                  </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
-                    UOM
-                  </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
-                    Rate
-                  </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
-                    Tax(%){" "}
-                  </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
-                    Tax Code
-                  </th>
-                  <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">
-                    Amount
-                  </th>
-                  <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[35px]">
-                    -
-                  </th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">Required By</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">Qty</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">UOM</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">Rate</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">Tax(%)</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Tax Code</th>
+                  <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">Amount</th>
+                  <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[35px]">-</th>
                 </tr>
               </thead>
 
@@ -189,34 +152,46 @@ export const DetailsTab = ({
                   const amount = base + tax;
 
                   return (
-                    <tr
-                      key={i}
-                      className="border-b border-theme bg-card row-hover"
-                    >
+                    <tr key={i} className="border-b border-theme bg-card row-hover">
                       <td className="px-3 py-2 text-[10px]">{i + 1}</td>
 
                       <td className="px-0.5 py-1">
                         <POItemSelect
                           value={it.itemName}
                           selectedId={it.itemCode}
-                          onChange={(item) => onItemSelect(item.id, idx)}
+                          onChange={(item: any) => onItemSelect(item.id, i)}
                         />
                       </td>
 
-                         <td className="px-0.5 py-1">
-                        <input
-                          type="text"
-                          className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                          name="packing"
-                          value={it.packing || ""}
-                          onChange={(e) => onItemChange(e, i)}
-                        />
+                      {/* PACKING */}
+                      <td className="px-0.5 py-1">
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            name="packingUnit"
+                            value={it.packingUnit || ""}
+                            onChange={(e) => onItemChange(e, i)}
+                            placeholder="1"
+                            min={1}
+                            className="w-[46px] h-[26px] rounded-md border border-theme bg-card text-main text-center text-[11px] px-1 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <span className="text-muted text-[10px] font-bold select-none">×</span>
+                          <input
+                            type="number"
+                            name="packingSize"
+                            value={it.packingSize || ""}
+                            onChange={(e) => onItemChange(e, i)}
+                            placeholder="1"
+                            min={1}
+                            className="w-[46px] h-[26px] rounded-md border border-theme bg-card text-main text-center text-[11px] px-1 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
                       </td>
 
                       <td className="px-0.5 py-1">
                         <input
                           type="date"
-                          className="w-full py-1 px-2 border border-theme rounded  bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-full py-1 px-2 border border-theme rounded bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary text-[10px]"
                           name="requiredBy"
                           value={it.requiredBy}
                           onChange={(e) => onItemChange(e, i)}
@@ -252,6 +227,7 @@ export const DetailsTab = ({
                           onChange={(e) => onItemChange(e, i)}
                         />
                       </td>
+
                       <td className="px-0.5 py-1">
                         <input
                           type="number"
@@ -263,14 +239,12 @@ export const DetailsTab = ({
                       </td>
 
                       <td className="px-0.5 py-1">
-                        <div className="relative">
-                          <input
-                            className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                            name="vatCd"
-                            value={it.vatCd || ""}
-                            onChange={(e) => onItemChange(e, i)}
-                          />
-                        </div>
+                        <input
+                          className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                          name="vatCd"
+                          value={it.vatCd || ""}
+                          onChange={(e) => onItemChange(e, i)}
+                        />
                       </td>
 
                       <td className="px-1 py-1.5 text-right">
@@ -296,7 +270,6 @@ export const DetailsTab = ({
           </div>
 
           <div className="mt-3 flex justify-between items-center gap-3">
-            {/* Add Item Button */}
             <button
               type="button"
               onClick={onAddItem}
@@ -313,7 +286,6 @@ export const DetailsTab = ({
                   {Math.min((page + 1) * ITEMS_PER_PAGE, items.length)} of{" "}
                   {items.length} items
                 </div>
-
                 <div className="flex gap-1.5 items-center">
                   <button
                     type="button"
@@ -323,7 +295,6 @@ export const DetailsTab = ({
                   >
                     Previous
                   </button>
-
                   <button
                     type="button"
                     onClick={() => setPage(page + 1)}
@@ -340,54 +311,34 @@ export const DetailsTab = ({
 
         {/* RIGHT: Supplier Details + Summary */}
         <div className="flex flex-col gap-2">
-          {/* Supplier Details */}
           <div className="bg-card rounded-lg p-2 w-[220px]">
-            <h3 className="text-[12px] font-semibold text-main mb-2">
-              Supplier Details
-            </h3>
-
+            <h3 className="text-[12px] font-semibold text-main mb-2">Supplier Details</h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5 text-xs text-main">
                 <span className="flex items-center gap-2">
                   <User size={16} className="text-muted" />
-                  <span className="text-xs text-main">
-                    {form.supplier || "Supplier Name"}
-                  </span>
+                  <span className="text-xs text-main">{form.supplier || "Supplier Name"}</span>
                 </span>
               </div>
-
               <div className="flex items-center gap-2 text-[10px] text-muted">
                 <Mail size={14} className="text-muted" />
                 <span>{form.supplierEmail || "supplier@example.com"}</span>
               </div>
-
               <div className="flex items-center gap-2 text-[10px] text-muted">
                 <Phone size={14} className="text-muted" />
                 <span>{form.supplierPhone || "-"}</span>
               </div>
-
-              {/* Tax Category Info */}
               {form.taxCategory && (
                 <div className="bg-card rounded-lg mt-1">
-                  <h3 className="text-[11px] font-semibold text-main mb-1">
-                    Order Information
-                  </h3>
-
+                  <h3 className="text-[11px] font-semibold text-main mb-1">Order Information</h3>
                   <div className="flex flex-col gap-1">
-                    {/* Tax Category */}
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted">Tax Category</span>
-                      <span className="font-medium text-main">
-                        {form.taxCategory}
-                      </span>
+                      <span className="font-medium text-main">{form.taxCategory}</span>
                     </div>
-
-                    {/* Currency  */}
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted">Currency</span>
-                      <span className="font-medium text-main">
-                        {form.currency || "-"}
-                      </span>
+                      <span className="font-medium text-main">{form.currency || "-"}</span>
                     </div>
                   </div>
                 </div>
@@ -395,48 +346,29 @@ export const DetailsTab = ({
             </div>
           </div>
 
-          {/* Summary */}
           <div className="bg-card rounded-lg p-3 w-[220px]">
-            <h3 className="text-[13px] font-semibold text-main mb-2">
-              Summary
-            </h3>
-
+            <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Total Items</span>
                 <span className="font-medium text-main">{items.length}</span>
               </div>
-
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Total Quantity</span>
-                <span className="font-medium text-main">
-                  {form.totalQuantity}
-                </span>
+                <span className="font-medium text-main">{form.totalQuantity}</span>
               </div>
-
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Grand Total</span>
-                <span className="font-medium text-main">
-                  {symbol} {form.grandTotal.toFixed(2)}
-                </span>
+                <span className="font-medium text-main">{symbol} {form.grandTotal.toFixed(2)}</span>
               </div>
-
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Rounding Adj</span>
-                <span className="font-medium text-main">
-                  {symbol} {form.roundingAdjustment.toFixed(2)}
-                </span>
+                <span className="font-medium text-main">{symbol} {form.roundingAdjustment.toFixed(2)}</span>
               </div>
-
-              {/* Grand Total Highlight */}
               <div className="mt-2 p-2 bg-primary rounded-lg w-full">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-white">
-                    Rounded Total
-                  </span>
-                  <span className="text-sm font-bold text-white">
-                    {symbol} {form.roundedTotal.toFixed(2)}
-                  </span>
+                  <span className="text-sm font-semibold text-white">Rounded Total</span>
+                  <span className="text-sm font-bold text-white">{symbol} {form.roundedTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>

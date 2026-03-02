@@ -140,12 +140,14 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
   dueDate: initialData.validUntil,
       items: (initialData.items || []).map((it: any) => ({
         itemCode: it.itemCode,
+       
         description: it.description ?? "",
         quantity: Number(it.quantity),
         price: Number(it.price),
         discount: Number(it.discount),
         vatRate: Number(it.vatRate || 0),
         vatCode: it.vatCode ?? "",
+        
       })),
     });
 
@@ -351,7 +353,7 @@ swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
             ? data.batchInfo?.batchNo || ""
             : "",
         };
-
+         
         return { ...prev, items };
       });
     } catch (err) {

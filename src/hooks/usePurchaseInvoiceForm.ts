@@ -56,30 +56,57 @@ export const usePurchaseInvoiceForm = ({
 
   const isEditMode = !!pId;
 
-  useEffect(() => {
-    if (!isOpen) return;
+  
 
-    const loadCompanyBuyingTerms = async () => {
-      try {
-        const res = await getCompanyById(COMPANY_ID);
-        const buyingTerms = res?.data?.terms?.buying;
+useEffect(() => {
+  if (!isOpen || !COMPANY_ID) return;
 
-        if (!buyingTerms) return;
+  const loadCompanyData = async () => {
+    try {
+      const res = await getCompanyById(COMPANY_ID);
 
-        setForm((prev) => ({
-          ...prev,
-          terms: { buying: buyingTerms },
-        }));
-      } catch (e) {
-        console.error("Failed to load company buying terms", e);
+      console.log("RAW COMPANY RESPONSE:", res);
+
+      const company =
+        res?.data?.data ||   // if wrapped
+        res?.data ||         // if semi wrapped
+        res;                 // fallback
+
+      console.log("FINAL COMPANY:", company);
+
+      if (!company?.companyName) {
+        console.log("Company not found");
+        return;
       }
-    };
 
-    loadCompanyBuyingTerms();
-  }, [isOpen]);
+      setForm((prev) => ({
+        ...prev,
+        terms: {
+          buying: company.terms?.buying || prev.terms?.buying,
+        },
+        addresses: {
+          ...prev.addresses,
+          companyBillingAddress: {
+            addressTitle: company.companyName || "",
+            addressType: "Billing",
+            addressLine1: company.address?.addressLine1 || "",
+            addressLine2: company.address?.addressLine2 || "",
+            city: company.address?.city || "",
+            state: company.address?.province || "",
+            postalCode: company.address?.postalCode || "",
+            country: company.address?.country || "",
+            phone: company.contactInfo?.companyPhone || "",
+            email: company.contactInfo?.companyEmail || "",
+          },
+        },
+      }));
+    } catch (e) {
+      console.error("Failed to load company data", e);
+    }
+  };
 
-
-
+  loadCompanyData();
+}, [isOpen, pId]);
 
   useEffect(() => {
     if (!isOpen || !pId) return;
@@ -193,7 +220,9 @@ const handlePOSelect = async (po: any) => {
         vatCd: "",
         vatRate: Number(data.tax?.taxRate?.replace("%", "") || 0),
         description: "",
-        packing: "",
+      packingUnit: Number(item.packingUnit || 0),
+packingSize: Number(item.packingSize || 0),
+packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
         batchNo: "",
         mfgDate: "",
         expDate: "",
@@ -406,17 +435,20 @@ if (poRes?.status_code === 200) {
 
           itemCode: data.id,
           itemName: data.itemName,
-          uom: data.unitOfMeasureCd || "Unit",
+          uom: data.unitOfMeasureCd || "",
           rate: Number(data.buyingPrice ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
 
-          description: items[idx].description || "",
-          packing: items[idx].packing || "",
+          description: data.description || "",
+        
           batchNo: items[idx].batchNo || "",
           mfgDate: items[idx].mfgDate || "",
           expDate: items[idx].expDate || "",
           discount: items[idx].discount || 0,
+          packingUnit: Number(data.pakingUnit || 0),
+packingSize: Number(data.packingSize || 0),
+packing: `${data.pakingUnit || 0} x ${data.packingSize || 0}`,
         };
 
         return { ...prev, items };

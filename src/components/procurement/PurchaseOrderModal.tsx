@@ -2,8 +2,7 @@ import React from "react";
 import { Building2, MapPin, FileText } from "lucide-react";
 import Modal from "../ui/modal/modal";
 import { Button } from "../ui/modal/formComponent";
-import { DetailsTab } from "../procurement/purchaseorder/DetailsTab";
-import { EmailTab } from "../procurement/purchaseorder/EmailTab";
+import { DetailsTab } from "./purchaseorder/DetailsTab";
 import { TaxTab } from "../procurement/purchaseorder/TaxTab";
 import { AddressTab } from "./purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
@@ -79,8 +78,8 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       title={poId ? "View Purchase Order" : "New Purchase Order"}
       subtitle="Create and manage purchase order"
       icon={Building2}
-      maxWidth="6xl"
-      height="88vh"
+      customWidth="78vw"
+      height="90vh"
       footer={footer}
     >
       <form
@@ -121,32 +120,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
             />
           )}
 
-          {activeTab === "email" && (
-            <EmailTab
-              templateName={form.templateName}
-              templateType={form.templateType}
-              subject={form.subject}
-              sendAttachedFiles={form.sendAttachedFiles}
-              sendPrint={form.sendPrint}
-              onTemplateNameChange={(v) =>
-                setForm((p: any) => ({ ...p, templateName: v }))
-              }
-              onTemplateTypeChange={(v) =>
-                setForm((p: any) => ({ ...p, templateType: v }))
-              }
-              onSubjectChange={(v) =>
-                setForm((p: any) => ({ ...p, subject: v }))
-              }
-              onSendAttachedFilesChange={(v) =>
-                setForm((p: any) => ({ ...p, sendAttachedFiles: v }))
-              }
-              onSendPrintChange={(v) =>
-                setForm((p: any) => ({ ...p, sendPrint: v }))
-              }
-              onSaveTemplate={handleSaveTemplate}
-              onResetTemplate={resetTemplate}
-            />
-          )}
+          
 
           {activeTab === "tax" && (
             <TaxTab
