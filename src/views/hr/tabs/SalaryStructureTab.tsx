@@ -345,7 +345,7 @@ export default function SalaryStructureTab() {
     }
 
     setLoading(true);
-    setError(null);
+    setError("");
     try {
       if (source.id) {
         const payload: SalaryStructureUpdatePayload = {
@@ -354,6 +354,7 @@ export default function SalaryStructureTab() {
           company: source.company,
           components: mergedComponents,
         };
+
         await updateSalaryStructure(payload);
       } else {
         const payload: SalaryStructureCreatePayload = {
@@ -361,13 +362,16 @@ export default function SalaryStructureTab() {
           company: source.company,
           components: mergedComponents,
         };
+
         await createSalaryStructure(payload);
       }
       await refreshStructures();
       setShowModal(false);
-      setEditingStructure(null);
+      toast.success(source.id ? "Salary structure updated" : "Salary structure created");
     } catch (e: any) {
-      setError(e?.message || "Failed to save salary structure");
+      const msg = e?.message || "Failed to save salary structure";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -1536,28 +1540,60 @@ function StructureModal({
           {!readOnly && (
             <button
               onClick={() => {
+                const existingComponents = new Set(
+                  (salaryComponents || [])
+                    .map((x: any) => String(x?.component ?? x?.id ?? "").trim().toLowerCase())
+                    .filter(Boolean),
+                );
+
+                const normalizeComponentName = (name: string) => {
+                  const n = String(name ?? "").trim();
+                  const key = n.toLowerCase();
+                  if (key === "napsa") return "NAPSA Employee";
+                  if (key === "nhima") return "NHIMA Employee";
+                  return n;
+                };
+
                 const finalComponents = (formData.components || []).map((c) => {
+                  const rawName = String(c?.component ?? "");
+                  const normalizedName = normalizeComponentName(rawName);
                   const type = String(c?.type ?? "").toLowerCase();
-                  const key = String(c?.component ?? "").toLowerCase();
+                  const key = normalizedName.toLowerCase();
                   const isDeduction = type === "deduction";
                   const isNapsa = isDeduction && key.includes("napsa");
                   const isNhima = isDeduction && key.includes("nhima");
                   const isPaye =
                     isDeduction &&
                     (key.includes("income tax") || key.includes("paye") || key.includes("payee"));
+                  const isEmployer = isDeduction && key.includes("employer");
 
                   if (isNapsa) {
-                    return { ...c, amount: statutoryCalc.statutory.napsaEmployee };
+                    return {
+                      ...c,
+                      component: normalizedName,
+                      amount: isEmployer ? statutoryCalc.statutory.napsaEmployer : statutoryCalc.statutory.napsaEmployee,
+                    };
                   }
                   if (isNhima) {
-                    return { ...c, amount: statutoryCalc.statutory.nhima };
+                    return { ...c, component: normalizedName, amount: statutoryCalc.statutory.nhima };
                   }
                   if (isPaye) {
-                    return { ...c, amount: statutoryCalc.statutory.paye };
+                    return { ...c, component: normalizedName, amount: statutoryCalc.statutory.paye };
                   }
 
-                  return c;
+                  return { ...c, component: normalizedName };
                 });
+
+                const missing = finalComponents
+                  .map((c) => String(c?.component ?? "").trim())
+                  .filter(Boolean)
+                  .filter((name) => !existingComponents.has(name.toLowerCase()));
+
+                if (missing.length > 0) {
+                  const uniq = Array.from(new Set(missing.map((m) => m)));
+                  toast.error(`Missing salary component(s): ${uniq.join(", ")}. Please create them first.`);
+                  return;
+                }
 
                 onSave({ ...formData, components: finalComponents });
               }}

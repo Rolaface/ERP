@@ -66,7 +66,7 @@ export default function PayrollPreviewModal({
     const name = String(structureName ?? "").trim();
     if (!name) {
       setDetail(null);
-      setError(null);
+      setError("Please select a salary structure");
       setLoading(false);
       return;
     }
@@ -96,8 +96,6 @@ export default function PayrollPreviewModal({
       mounted = false;
     };
   }, [open, structureName]);
-
-  if (!open) return null;
 
   const safeCurrency = String(currency ?? "").trim();
   const earningsRaw = Array.isArray((detail as any)?.earnings) ? (detail as any).earnings : [];
@@ -147,6 +145,8 @@ export default function PayrollPreviewModal({
     const prefix = safeCurrency ? `${safeCurrency} ` : "";
     return `${prefix}${(Number.isFinite(n) ? n : 0).toLocaleString()}`;
   };
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
