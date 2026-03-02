@@ -288,11 +288,13 @@ const SalarySlipDetailsModal: React.FC<{
 
   const earnings = Array.isArray(data?.earnings) ? data?.earnings : [];
   const deductions = Array.isArray(data?.deductions) ? data?.deductions : [];
+  const paySlipUrl = String(data?.paySlipUrl ?? "").trim();
+  const referenceNumber = String(data?.referenceNumber ?? "").trim();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col">
-        <div className="px-6 py-4 flex items-center justify-between">
+      <div className="bg-card rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-border bg-app">
           <div className="min-w-0">
             <h3 className="text-sm font-bold text-main flex items-center gap-2">
               <FileText className="w-4 h-4 text-muted" />
@@ -332,6 +334,61 @@ const SalarySlipDetailsModal: React.FC<{
                   <div className="mt-2"><StatusChip status={data.status} /></div>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-muted/5 rounded-lg p-5">
+                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">Reference Number</div>
+                  <div className="text-sm font-semibold text-main break-words">{referenceNumber || "—"}</div>
+                </div>
+                <div className="bg-muted/5 rounded-lg p-5 md:col-span-2">
+                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-2">Payslip PDF</div>
+                  {paySlipUrl ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <a
+                        href={paySlipUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-2 rounded-md text-xs font-medium border border-border bg-card text-main hover:bg-muted/5 transition-colors"
+                      >
+                        Open PDF
+                      </a>
+                      <a
+                        href={paySlipUrl}
+                        download
+                        className="px-3 py-2 rounded-md text-xs font-medium border border-border bg-card text-main hover:bg-muted/5 transition-colors"
+                      >
+                        Download
+                      </a>
+                      <div className="text-[11px] text-muted break-all">{paySlipUrl}</div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted">No payslip PDF available</div>
+                  )}
+                </div>
+              </div>
+
+              {paySlipUrl ? (
+                <div className="rounded-lg overflow-hidden bg-card shadow-sm border border-border">
+                  <div className="px-5 py-4 bg-muted/5 flex items-center justify-between">
+                    <div className="text-sm font-bold text-main">Payslip Preview</div>
+                    <a
+                      href={paySlipUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      Open in new tab
+                    </a>
+                  </div>
+                  <div className="h-[520px] bg-black/5">
+                    <iframe
+                      title="Payslip PDF"
+                      src={paySlipUrl}
+                      className="w-full h-full"
+                    />
+                  </div>
+                </div>
+              ) : null}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="rounded-lg overflow-hidden bg-card shadow-sm">
@@ -612,6 +669,20 @@ export default function PayrollManagement() {
     showToast(`Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`);
   };
 
+  const handleOpenPayslipPdf = async (slipId: string) => {
+    try {
+      const resp = await getSalarySlipById(slipId);
+      const paySlipUrl = String(resp?.paySlipUrl ?? "").trim();
+      if (paySlipUrl) {
+        window.open(paySlipUrl, "_blank");
+      } else {
+        showToast("No PDF available for this salary slip", "error");
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Failed to open salary slip PDF", "error");
+    }
+  };
+
   const topBarProps = {
     view,
     setView,
@@ -764,6 +835,7 @@ export default function PayrollManagement() {
                         total_earnings: s.total_earnings,
                         total_deduction: s.total_deduction,
                         net_pay: s.net_pay,
+                        reference_number: s.referenceNumber ?? "",
                       }));
                       downloadCsv(
                         `salary_slips_${new Date().toISOString().slice(0, 10)}.csv`,
@@ -799,6 +871,7 @@ export default function PayrollManagement() {
                         "Structure",
                         "Start",
                         "End",
+                        "Reference #",
                         "Status",
                         "Earnings",
                         "Deductions",
@@ -807,7 +880,7 @@ export default function PayrollManagement() {
                       ].map((h, i) => (
                         <th
                           key={String(i)}
-                          className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${i >= 6 && i <= 8 ? "text-right" : "text-left"
+                          className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${i >= 7 && i <= 9 ? "text-right" : "text-left"
                             }`}
                         >
                           {h}
@@ -824,6 +897,7 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3"><div className="h-3 w-24 bg-theme/60 rounded animate-pulse" /></td>
                           <td className="px-4 py-3"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse" /></td>
                           <td className="px-4 py-3"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse" /></td>
+                          <td className="px-4 py-3"><div className="h-3 w-28 bg-theme/60 rounded animate-pulse" /></td>
                           <td className="px-4 py-3"><div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" /></td>
                           <td className="px-4 py-3 text-right"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" /></td>
                           <td className="px-4 py-3 text-right"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" /></td>
@@ -833,7 +907,7 @@ export default function PayrollManagement() {
                       ))
                     ) : filteredSalarySlips.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="px-4 py-10 text-center text-sm text-muted">
+                        <td colSpan={11} className="px-4 py-10 text-center text-sm text-muted">
                           {String(slipsSearch ?? "").trim() ? "No matching salary slips" : "No salary slips found"}
                         </td>
                       </tr>
@@ -848,16 +922,14 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3 text-sm text-muted break-words">{s.salary_structure}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.end_date}</td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.referenceNumber || "—"}</td>
                           <td className="px-4 py-3"><StatusChip status={s.status} /></td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_earnings ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">{Number(s.net_pay ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right">
                             <button
-                              onClick={() => {
-                                setSlipDetailsId(s.name);
-                                setSlipDetailsOpen(true);
-                              }}
+                              onClick={() => handleOpenPayslipPdf(s.name)}
                               className="px-3 py-1.5 rounded-md text-xs font-medium bg-card text-main hover:bg-black/5 transition-colors"
                             >
                               View
