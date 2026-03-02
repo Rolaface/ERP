@@ -61,7 +61,14 @@ export const loginApi = async (
 };
 
 export const logoutApi = async (): Promise<void> => {
-  localStorage.removeItem(SID_KEY);
+  try {
+    await api.post(API.loginApi.logout);
+  } catch (err) {
+    console.warn("Logout API failed, clearing local session anyway");
+  } finally {
+    localStorage.removeItem(SID_KEY);
+    localStorage.removeItem("auth_user");
+  }
 };
 
 export const getCurrentUserApi = async (): Promise<AuthUser | null> => {

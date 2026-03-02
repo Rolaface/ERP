@@ -34,12 +34,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(loggedUser);
   };
 
-  const logout = async () => {
-    await logoutApi();
-    localStorage.removeItem(SID_KEY);
-    localStorage.removeItem("auth_user");
-    setUser(null);
-  };
+ const logout = async () => {
+  await logoutApi();
+  setUser(null);
+};
 
   return (
     <AuthContext.Provider
