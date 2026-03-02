@@ -48,6 +48,9 @@ const logoW = 30;
 /* ═══════════════════════════════════════════════
    1. LOGO (Simple & Stable)
 ═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   1. LOGO
+═══════════════════════════════════════════════ */
 
 if (company?.documents?.companyLogoUrl) {
   const logoPath = company.documents.companyLogoUrl;
@@ -56,17 +59,18 @@ if (company?.documents?.companyLogoUrl) {
     : `${ERP_BASE}${logoPath}`;
 
   try {
-doc.addImage(
-  fullLogoUrl,
-  "PNG",
-  15,
-  6,
-  40,   // width ↑
-  20    // height ↑
-);
+    doc.addImage(
+      fullLogoUrl,
+      "PNG",
+      15,
+      6,
+      40,
+      20
+    );
   } catch (e) {
     console.log("Logo error:", e);
   }
+} // ✅ CLOSE HERE
 
   /* ═══════════════════════════════════════════════
      2. TITLE
@@ -268,14 +272,12 @@ if (company?.documents?.authorizedSignatureUrl) {
     const imgX = 15 + (sigW - imgWidth) / 2;
     const imgY = secY + 5;
 
-    doc.addImage(
-      fullSignUrl,
-      "PNG",
-      imgX,
-      imgY,
-      imgWidth,
-      imgHeight
-    );
+    const format = fullSignUrl.toLowerCase().includes(".jpg") || 
+               fullSignUrl.toLowerCase().includes(".jpeg")
+               ? "JPEG"
+               : "PNG";
+
+doc.addImage(fullSignUrl, format, imgX, imgY, imgWidth, imgHeight);
   } catch (e) {
     console.log("Signature error:", e);
   }
