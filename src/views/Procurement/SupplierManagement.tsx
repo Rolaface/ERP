@@ -281,7 +281,7 @@ const handleDeleteSupplier = async (supplier: Supplier) => {
           data={suppliers}
           showToolbar
           loading={loading}
-          serverSide
+        
           onPageSizeChange={(size) => setPageSize(size)}
           pageSizeOptions={[10, 25, 50, 100]}
           searchValue={searchTerm}

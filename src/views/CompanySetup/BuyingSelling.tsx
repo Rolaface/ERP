@@ -6,7 +6,7 @@ import type { Terms, TermSection } from "../../types/termsAndCondition";
 
 import { updateCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
-
+import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
 interface BuyingSellingProps {
   terms?: Terms | null;
 }
@@ -27,7 +27,7 @@ const emptySection = (): TermSection => ({
 });
 
 const BuyingSelling: React.FC<BuyingSellingProps> = ({ terms }) => {
-  const [showSuccess, setShowSuccess] = useState(false);
+ 
 
   const [formData, setFormData] = useState({
     buying: emptySection(),
@@ -65,32 +65,27 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({ terms }) => {
     });
   };
 
-  const handleSubmit = async () => {
-    const payload = {
-      id: COMPANY_ID,
-      terms: formData,
-    };
-
-    try {
-      console.log("payload:", payload);
-      await updateCompanyById(payload);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    } catch (err) {
-      console.error("Update failed:", err);
-      alert("Failed to update company terms and conditions details.");
-    }
+const handleSubmit = async () => {
+  const payload = {
+    id: COMPANY_ID,
+    terms: formData,
   };
 
+  try {
+    showLoading("Saving Terms...");
+
+    await updateCompanyById(payload);
+
+    closeSwal();
+    showSuccess("Terms and Conditions saved successfully!");
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
   return (
     <div className="min-h-screen bg-app">
-      {/* SUCCESS TOAST */}
-      {showSuccess && (
-        <div className="fixed top-4 right-4 bg-card border border-green-200 px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
-          <Check className="text-success" />
-          <span>Terms saved successfully!</span>
-        </div>
-      )}
+    
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card rounded-xl border border-theme shadow-sm p-4">
