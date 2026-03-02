@@ -16,13 +16,15 @@ export const ZM_PAYE_BANDS_MONTHLY: PayeBand[] = [
 export type StatutoryRates = {
   napsaEmployeeRate: number;
   napsaEmployerRate: number;
-  nhimaRate: number;
+  nhimaEmployeeRate: number;
+  nhimaEmployerRate: number;
 };
 
 export const DEFAULT_ZM_RATES: StatutoryRates = {
   napsaEmployeeRate: 5,
   napsaEmployerRate: 5,
-  nhimaRate: 1,
+  nhimaEmployeeRate: 1,
+  nhimaEmployerRate: 1,
 };
 
 export const DEFAULT_NAPSA_CEILING = 1861.8;
@@ -83,7 +85,7 @@ export const parseNapsaCeilingAmount = (res: NapsaCeilingApiResponse | any): Mon
 
 export const calculateNhima = (
   grossSalary: Money,
-  ratePercent: number = DEFAULT_ZM_RATES.nhimaRate,
+  ratePercent: number = DEFAULT_ZM_RATES.nhimaEmployeeRate,
 ): Money => {
   const gross = clampMoney(grossSalary);
   return (gross * Number(ratePercent ?? 0)) / 100;
@@ -123,6 +125,8 @@ export type ZmPayrollResult = {
   statutory: {
     napsaEmployee: Money;
     napsaEmployer: Money;
+    nhimaEmployee: Money;
+    nhimaEmployer: Money;
     nhima: Money;
     paye: Money;
   };
@@ -163,7 +167,9 @@ export const calculateZmPayrollFromGross = (
     napsaCeiling,
     napsaCeilingMode,
   );
-  const nhima = calculateNhima(contributionBase, rates.nhimaRate);
+  const nhimaEmployee = calculateNhima(contributionBase, rates.nhimaEmployeeRate);
+  const nhimaEmployer = calculateNhima(contributionBase, rates.nhimaEmployerRate);
+  const nhima = nhimaEmployee;
 
   const taxableIncome = clampMoney(opts?.taxableIncome ?? gross);
   const paye = calculatePaye(taxableIncome, opts?.payeBands ?? ZM_PAYE_BANDS_MONTHLY);
@@ -182,6 +188,8 @@ export const calculateZmPayrollFromGross = (
     statutory: {
       napsaEmployee,
       napsaEmployer,
+      nhimaEmployee,
+      nhimaEmployer,
       nhima,
       paye,
     },

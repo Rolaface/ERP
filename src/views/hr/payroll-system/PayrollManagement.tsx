@@ -291,6 +291,28 @@ const SalarySlipDetailsModal: React.FC<{
   const paySlipUrl = String(data?.paySlipUrl ?? "").trim();
   const referenceNumber = String(data?.referenceNumber ?? "").trim();
 
+  const deductionsForDisplay = deductions.flatMap((r: any) => {
+    const component = String(r?.component ?? "").trim();
+    const key = component.toLowerCase();
+    if (!component) return [];
+
+    if (key.includes("nhima")) {
+      return [
+        { ...r, component: "NHIMA Employee" },
+        { ...r, component: "NHIMA Employer" },
+      ];
+    }
+
+    if (key.includes("napsa")) {
+      return [
+        { ...r, component: "NAPSA Employee" },
+        { ...r, component: "NAPSA Employer" },
+      ];
+    }
+
+    return [r];
+  });
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-card rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col">
@@ -432,9 +454,9 @@ const SalarySlipDetailsModal: React.FC<{
                         </tr>
                       </thead>
                       <tbody>
-                        {deductions.length === 0 ? (
+                        {deductionsForDisplay.length === 0 ? (
                           <tr><td colSpan={2} className="px-5 py-8 text-center text-sm text-muted">No deductions</td></tr>
-                        ) : deductions.map((r: any, idx: number) => (
+                        ) : deductionsForDisplay.map((r: any, idx: number) => (
                           <tr key={`${r?.component}-${idx}`} className="last:border-0 hover:bg-muted/5 transition-colors">
                             <td className="px-5 py-3 text-sm font-medium text-main">{String(r?.component ?? "")}</td>
                             <td className="px-5 py-3 text-right text-sm font-medium text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
