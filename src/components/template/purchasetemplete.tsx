@@ -114,96 +114,110 @@ export const generatePurchaseOrderPDF = async (
     doc.setFont("helvetica", "normal");
     doc.text(value, W - 15, infoY + i * 5, { align: "right" });
   });
+/* ═══════════════════════════════════════════════
+   4. ADDRESS BOXES — 3 PERFECT PARALLEL COLUMNS
+═══════════════════════════════════════════════ */
 
-  /* ═══════════════════════════════════════════════
-     4. ADDRESS BOXES — dynamic height, pixel-perfect
-        Left  = Supplier (full height)
-        Right = Dispatch (top) + Shipping (bottom)
-  ═══════════════════════════════════════════════ */
-  const HDR   = 8;    // blue header bar
-  const PAD_T = 5;    // top padding inside content area
-  const PAD_B = 4;    // bottom padding
-  const LH    = 4.5;  // line height per text row
+const HDR   = 8;
+const PAD_T = 5;
+const PAD_B = 4;
+const LH    = 4.5;
 
-  const supLines  = addrBlock(po?.addresses?.supplierAddress);
-  const dispLines = addrBlock(po?.addresses?.dispatchAddress);
-  const shipLines = addrBlock(po?.addresses?.shippingAddress);
+const supLines  = addrBlock(po?.addresses?.supplierAddress);
+const dispLines = addrBlock(po?.addresses?.dispatchAddress);
+const shipLines = addrBlock(po?.addresses?.shippingAddress);
 
-  // Heights based on actual content
-  const supBoxH  = HDR + PAD_T + 5 /*name*/ + supLines.length  * LH + PAD_B;
-  const dispBoxH = HDR + PAD_T + dispLines.length * LH + PAD_B;
-  const shipBoxH = HDR + PAD_T + shipLines.length * LH + PAD_B;
+const gap = 5;
+const totalWidth = W - 30 - (gap * 2);
+const colW = totalWidth / 3;
+const boxY = infoY + 24;
 
-  // Left box must be at least as tall as both right boxes stacked + gap
-  const rightTotal = dispBoxH + 3 + shipBoxH;
-  const leftBoxH   = Math.max(supBoxH, rightTotal);
+// Helper to calculate dynamic height properly
+const calculateHeight = (lines: string[], includeName = false) => {
+  let height = HDR + PAD_T + PAD_B;
 
-  const halfW = (W - 35) / 2;  // ~87.5 mm
-  const rX    = 15 + halfW + 5;
-  const boxY  = infoY + 24;
+  if (includeName) height += 5;
 
-  // ── Supplier ──
-  doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.rect(15, boxY, halfW, HDR, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
-  doc.text("Supplier Address:", 15 + halfW / 2, boxY + 5.5, { align: "center" });
-  doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.setLineWidth(0.3);
-  doc.rect(15, boxY, halfW, leftBoxH, "D");
-
-  doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.text(po?.supplierName || "-", 15 + halfW / 2, boxY + HDR + PAD_T, { align: "center" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.8);
-  supLines.forEach((line, i) => {
-    doc.text(doc.splitTextToSize(line, halfW - 8), 15 + halfW / 2, boxY + HDR + PAD_T + 5 + i * LH, { align: "center" });
+  lines.forEach(line => {
+    const wrapped = doc.splitTextToSize(line, colW - 8);
+    height += wrapped.length * LH;
   });
 
-  // ── Dispatch ──
+  return height;
+};
+
+const supBoxH  = calculateHeight(supLines, true);
+const dispBoxH = calculateHeight(dispLines);
+const shipBoxH = calculateHeight(shipLines);
+
+const boxH = Math.max(supBoxH, dispBoxH, shipBoxH);
+
+// Render function
+const renderAddressBox = (
+  x: number,
+  title: string,
+  lines: string[],
+  supplierName?: string
+) => {
+  // Header
   doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.rect(rX, boxY, halfW, HDR, "F");
+  doc.rect(x, boxY, colW, HDR, "F");
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
-  doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
-  doc.text("Dispatch Address:", rX + halfW / 2, boxY + 5.5, { align: "center" });
+  doc.setTextColor(255, 255, 255);
+  doc.text(title, x + colW / 2, boxY + 5.5, { align: "center" });
+
+  // Border
   doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
   doc.setLineWidth(0.3);
-  doc.rect(rX, boxY, halfW, dispBoxH, "D");
+  doc.rect(x, boxY, colW, boxH, "D");
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.8);
-  doc.setTextColor(0, 0, 0);
-  dispLines.forEach((line, i) => {
-    doc.text(doc.splitTextToSize(line, halfW - 8), rX + halfW / 2, boxY + HDR + PAD_T + i * LH, { align: "center" });
-  });
-
-  // ── Shipping ──
-  const sY = boxY + dispBoxH + 3;
-  doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.rect(rX, sY, halfW, HDR, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
-  doc.text("Shipping Address:", rX + halfW / 2, sY + 5.5, { align: "center" });
-  doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.setLineWidth(0.3);
-  doc.rect(rX, sY, halfW, shipBoxH, "D");
-
+  // Content
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.8);
   doc.setTextColor(0, 0, 0);
-  shipLines.forEach((line, i) => {
-    doc.text(doc.splitTextToSize(line, halfW - 8), rX + halfW / 2, sY + HDR + PAD_T + i * LH, { align: "center" });
-  });
 
+  let currentY = boxY + HDR + PAD_T;
+
+  // Supplier name only in first column
+  if (supplierName) {
+    doc.setFont("helvetica", "bold");
+    doc.text(supplierName, x + colW / 2, currentY, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    currentY += 5;
+  }
+
+  lines.forEach(line => {
+    const wrapped = doc.splitTextToSize(line, colW - 8);
+    doc.text(wrapped, x + colW / 2, currentY, { align: "center" });
+    currentY += wrapped.length * LH;
+  });
+};
+
+// Draw 3 columns
+renderAddressBox(
+  15,
+  "Supplier Address:",
+  supLines,
+  po?.supplierName || "-"
+);
+
+renderAddressBox(
+  15 + colW + gap,
+  "Dispatch Address:",
+  dispLines
+);
+
+renderAddressBox(
+  15 + (colW + gap) * 2,
+  "Shipping Address:",
+  shipLines
+);
   /* ═══════════════════════════════════════════════
      5. INCOTERM + TAX CATEGORY strip
   ═══════════════════════════════════════════════ */
-  const stripY = boxY + leftBoxH + 5;
+  const stripY = boxY + boxH + 5;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
@@ -293,14 +307,14 @@ export const generatePurchaseOrderPDF = async (
   ═══════════════════════════════════════════════ */
   const termsY = Math.max(secY + 36, (doc as any).lastAutoTable.finalY + 5);
 
-  const selling = po?.terms?.terms?.selling;
+  const buying = po?.terms?.terms?.buying;
   const termsContent: string[] = [];
-  if (selling?.general)        termsContent.push(`General: ${selling.general}`);
-  if (selling?.delivery)       termsContent.push(`Delivery: ${selling.delivery}`);
-  if (selling?.payment?.notes) termsContent.push(`Payment: ${selling.payment.notes}`);
-  if (selling?.warranty)       termsContent.push(`Warranty: ${selling.warranty}`);
-  if (selling?.cancellation)   termsContent.push(`Cancellation: ${selling.cancellation}`);
-  if (selling?.liability)      termsContent.push(`Liability: ${selling.liability}`);
+  if (buying?.general)        termsContent.push(`General: ${buying.general}`);
+  if (buying?.delivery)       termsContent.push(`Delivery: ${buying.delivery}`);
+  if (buying?.payment?.notes) termsContent.push(`Payment: ${buying.payment.notes}`);
+  if (buying?.warranty)       termsContent.push(`Warranty: ${buying.warranty}`);
+  if (buying?.cancellation)   termsContent.push(`Cancellation: ${buying.cancellation}`);
+  if (buying?.liability)      termsContent.push(`Liability: ${buying.liability}`);
 
   // Box height: enough for content, min 28mm
   const termsBoxH = Math.max(28, 10 + termsContent.length * 5 + 6);

@@ -221,6 +221,8 @@ const AddressBlock: React.FC<{
     );
   };
 
+
+
 /*  Address Tab  */
 
 export const AddressTab: React.FC<AddressTabProps> = ({
@@ -305,30 +307,36 @@ export const AddressTab: React.FC<AddressTabProps> = ({
     [form.addresses.dispatchAddress]
   );
 
+  /* Reset handlers — clears custom value AND resets form field to "" so select re-appears */
+  const handleResetShippingRule = useCallback(() => {
+    setCustomShippingRule("");
+    onFormChange({
+      target: { name: "shippingRule", value: "" },
+    } as React.ChangeEvent<HTMLSelectElement>);
+  }, [setCustomShippingRule, onFormChange]);
+
+  const handleResetIncoterm = useCallback(() => {
+    setCustomIncoterm("");
+    onFormChange({
+      target: { name: "incoterm", value: "" },
+    } as React.ChangeEvent<HTMLSelectElement>);
+  }, [setCustomIncoterm, onFormChange]);
+
   return (
     <div className="space-y-6">
 
       {/* Top fields */}
       <div className="grid grid-cols-4 gap-4 p-4">
 
-        {form.shippingRule === "OTHER" ? (
-          <ModalInput
-            label="Shipping Rule"
-            value={customShippingRule}
-            onChange={(e) => {
-              setCustomShippingRule(e.target.value);
-            }}
-          />
-        ) : (
+        {/* ── Shipping Rule ── select stays in DOM always (holds height); input overlays when OTHER */}
+        <div className="relative">
           <ModalSelect
             label="Shipping Rule"
             name="shippingRule"
             value={form.shippingRule || ""}
             onChange={(e) => {
               onFormChange(e);
-              if (e.target.value !== "OTHER") {
-                setCustomShippingRule("");
-              }
+              if (e.target.value !== "OTHER") setCustomShippingRule("");
             }}
             options={[
               { value: "STANDARD", label: "Standard Shipping" },
@@ -344,27 +352,37 @@ export const AddressTab: React.FC<AddressTabProps> = ({
               { value: "OTHER", label: "Others" },
             ]}
           />
-        )}
+          {form.shippingRule === "OTHER" && (
+            <div className="absolute inset-0 flex flex-col justify-end">
+              <div className="relative">
+                <ModalInput
+                  label=""
+                  placeholder="Enter custom shipping rule"
+                  value={customShippingRule}
+                  onChange={(e) => setCustomShippingRule(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={handleResetShippingRule}
+                  title="Back to dropdown"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-sub hover:text-main transition-colors text-xs px-1"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
-
-        {form.incoterm === "OTHER" ? (
-          <ModalInput
-            label="Incoterm"
-            value={customIncoterm}
-            onChange={(e) => {
-              setCustomIncoterm(e.target.value);
-            }}
-          />
-        ) : (
+        {/* ── Incoterm ── select stays in DOM always (holds height); input overlays when OTHER */}
+        <div className="relative">
           <ModalSelect
             label="Incoterm"
             name="incoterm"
             value={form.incoterm || ""}
             onChange={(e) => {
               onFormChange(e);
-              if (e.target.value !== "OTHER") {
-                setCustomIncoterm("");
-              }
+              if (e.target.value !== "OTHER") setCustomIncoterm("");
             }}
             options={[
               { value: "EXW", label: "EXW – Ex Works" },
@@ -375,7 +393,28 @@ export const AddressTab: React.FC<AddressTabProps> = ({
               { value: "OTHER", label: "Others" },
             ]}
           />
-        )}
+          {form.incoterm === "OTHER" && (
+            <div className="absolute inset-0 flex flex-col justify-end">
+              <div className="relative">
+                <ModalInput
+                  label=""
+                  placeholder="Enter custom incoterm"
+                  value={customIncoterm}
+                  onChange={(e) => setCustomIncoterm(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={handleResetIncoterm}
+                  title="Back to dropdown"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-sub hover:text-main transition-colors text-xs px-1"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         <ModalInput
           label="Supplier Contact"
           name="supplierContact"

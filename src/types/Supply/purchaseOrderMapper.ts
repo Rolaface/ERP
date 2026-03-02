@@ -36,6 +36,9 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       vatCd: it.vatCd || "A",
       vatRate: vatRate,
       requiredBy: it.requiredBy || form.date,
+        packingUnit: Number(it.packingUnit || 0),
+    packingSize: Number(it.packingSize || 0),
+    packing: it.packing || "",
     };
   });
 

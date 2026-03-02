@@ -221,26 +221,50 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts }) => {
     } catch (error) { closeSwal(); showApiError(error); }
   };
 
-  const handleSetDefault = async () => {
-    if (selectedAccount === null) return;
-    const selected = bankAccounts[selectedAccount];
-    try {
-      showLoading("Setting Default Account...");
-      await updateCompanyById({
-        id: VITE_COMPANY_ID,
-        bankAccounts: [{ id: selected.id, default: 1 }],
-      });
-      closeSwal();
-      showSuccess("Default account updated successfully.");
-      setBankAccounts((prev) =>
-        prev.map((acc) => ({
-          ...acc,
-          isdefault: acc.id === selected.id,
-          default: acc.id === selected.id ? "1" : "0",
-        }))
-      );
-    } catch (error) { closeSwal(); showApiError(error); }
-  };
+ const handleSetDefault = async () => {
+  if (selectedAccount === null) return;
+
+  const selected = bankAccounts[selectedAccount];
+
+  try {
+    showLoading("Setting Default Account...");
+
+    const updatedAccounts = bankAccounts.map((acc) => ({
+      id: acc.id,
+      accountNo: acc.accountNo ?? "",
+      accountHolderName: acc.accountHolderName ?? "",
+      bankName: acc.bankName ?? "",
+      swiftCode: acc.swiftCode ?? "",
+      sortCode: acc.sortCode ?? "",
+      branchAddress: acc.branchAddress ?? "",
+      currency: acc.currency ?? "",
+      dateAdded: acc.dateAdded ?? "",
+      openingBalance: acc.openingBalance ?? 0,
+      default: acc.id === selected.id ? 1 : 0,
+    }));
+
+    await updateCompanyById({
+      id: VITE_COMPANY_ID,
+      bankAccounts: updatedAccounts,
+    });
+
+    closeSwal();
+    showSuccess("Default account updated successfully.");
+
+    // UI update
+    setBankAccounts((prev) =>
+      prev.map((acc) => ({
+        ...acc,
+        isdefault: acc.id === selected.id,
+        default: acc.id === selected.id ? 1 : 0,
+      }))
+    );
+
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
 
   const normalizedAccounts = normalizeBankAccounts(bankAccounts);
 

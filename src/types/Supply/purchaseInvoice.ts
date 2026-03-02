@@ -14,6 +14,9 @@ export interface ItemRow {
   mfgDate?: string;
   expDate?: string;
   discount?: number;
+  packingUnit?: number;
+packingSize?: number;
+  
 }
 
 

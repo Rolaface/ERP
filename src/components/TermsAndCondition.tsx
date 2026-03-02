@@ -127,14 +127,33 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
       phases: [...phases, emptyPhase()],
     });
   };
+  const getTotalPercentage = (phases: TermPhase[]) => {
+  return phases.reduce((sum, phase) => {
+    return sum + Number(phase.percentage || 0);
+  }, 0);
+};
 
-  const updatePhase = (index: number, patch: Partial<TermPhase>) => {
-    if (!isEditing) return;
-    const phases = ensurePayment(currentTerms).phases;
-    const next = phases.map((p, i) => (i === index ? { ...p, ...patch } : p));
-    updatePayment({ phases: next });
-  };
+const updatePhase = (index: number, patch: Partial<TermPhase>) => {
+  if (!isEditing) return;
 
+  const phases = ensurePayment(currentTerms).phases;
+
+  const next = phases.map((p, i) =>
+    i === index ? { ...p, ...patch } : p
+  );
+
+  if (patch.percentage !== undefined) {
+    const newValue = Number(patch.percentage);
+
+    if (newValue > 100) return;
+
+    const total = getTotalPercentage(next);
+
+    if (total > 100) return;
+  }
+
+  updatePayment({ phases: next });
+};
  const removePhase = (index: number) => {
   if (!isEditing) return;
 
@@ -201,13 +220,16 @@ const TermsAndCondition: React.FC<Props> = ({ title, terms, setTerms }) => {
 
                     <td className="px-3 py-2">
                       {isEditing ? (
-                        <input
-                          className="w-full bg-transparent text-muted outline-none"
-                          value={p.percentage}
-                          onChange={(e) =>
-                            updatePhase(idx, { percentage: e.target.value })
-                          }
-                        />
+                       <input
+  type="number"
+  min="0"
+  max="100"
+  className="w-full bg-transparent text-muted outline-none"
+  value={p.percentage}
+  onChange={(e) =>
+    updatePhase(idx, { percentage: e.target.value })
+  }
+/>
                       ) : (
                         <span>{p.percentage}</span>
                       )}

@@ -54,28 +54,56 @@ export const usePurchaseOrderForm = ({
 
   const isEditMode = !!poId;
 
-  useEffect(() => {
-    if (!isOpen) return;
+ useEffect(() => {
+  if (!isOpen || !COMPANY_ID) return;
 
-    const loadCompanyBuyingTerms = async () => {
-      try {
-        const res = await getCompanyById(COMPANY_ID);
-        const buyingTerms = res?.data?.terms?.buying;
+  const loadCompanyData = async () => {
+    try {
+      const res = await getCompanyById(COMPANY_ID);
 
-        if (!buyingTerms) return;
+      const company =
+        res?.data?.data ||   // if wrapped
+        res?.data ||         // if semi wrapped
+        res;
 
-        setForm((prev) => ({
-          ...prev,
-          terms: { buying: buyingTerms },
-        }));
-      } catch (e) {
-        console.error("Failed to load company buying terms", e);
-      }
-    };
+      if (!company?.companyName) return;
 
-    loadCompanyBuyingTerms();
-  }, [isOpen]);
+      setForm((prev) => ({
+        ...prev,
 
+        // ✅ Buying Terms
+        terms: {
+          buying: company.terms?.buying || prev.terms?.buying,
+        },
+
+        // ✅ Base Currency (Recommended)
+        currency:
+          company.financialConfig?.baseCurrency || prev.currency,
+
+        // ✅ Company Billing Address
+        addresses: {
+          ...prev.addresses,
+          companyBillingAddress: {
+            addressTitle: company.companyName || "",
+            addressType: "Billing",
+            addressLine1: company.address?.addressLine1 || "",
+            addressLine2: company.address?.addressLine2 || "",
+            city: company.address?.city || "",
+            state: company.address?.province || "",
+            postalCode: company.address?.postalCode || "",
+            country: company.address?.country || "",
+            phone: company.contactInfo?.companyPhone || "",
+            email: company.contactInfo?.companyEmail || "",
+          },
+        },
+      }));
+    } catch (e) {
+      console.error("Failed to load company data", e);
+    }
+  };
+
+  loadCompanyData();
+}, [isOpen, poId]);
 
 
   // Load PO Data in Edit Mode
@@ -350,11 +378,17 @@ export const usePurchaseOrderForm = ({
           ...items[idx],
           itemCode: data.id,
           itemName: data.itemName,
+          description: data.description,
+     
+        
           rate: Number(data.buyingPrice ?? 0),
-          uom: data.unitOfMeasureCd || "Unit",
+          uom: data.unitOfMeasureCd ,
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
           requiredBy: items[idx].requiredBy || prev.date,
+            packingUnit: Number(data.pakingUnit || 0),
+  packingSize: Number(data.packingSize || 0),
+  packing: `(${data.pakingUnit || 0}) x (${data.packingSize || 0})`,
         };
 
         return { ...prev, items };

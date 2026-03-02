@@ -1,10 +1,7 @@
 import { PurchaseInvoiceFormData, emptyPOForm , TaxRow} from "./purchaseInvoice";
 import type { AddressBlock } from "./purchaseInvoice";
 
-/**
- * UI → Backend API (Create/Update)
- * FINAL VERSION - Based on Invoice pattern analysis
- */
+
 export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
   console.log("MAPPING PI TO BACKEND - Form items:", form.items);
   
@@ -31,8 +28,8 @@ const items = validItems.map((it) => {
     itemName: it.itemName || "",
     quantity,
     rate,
-    uom: it.uom || "Unit",
-    vatCd: it.vatCd || "A",
+    uom: it.uom || "",
+    vatCd: it.vatCd || "",
     vatRate,
     description: it.description || "",
     packing: it.packing || "",
@@ -109,7 +106,7 @@ const payload: any = {
   ...(payments.length > 0 && { payments }),
 
   metadata: {
-    remarks: "Created from UI",
+
   },
 };
 
@@ -138,7 +135,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
       itemName: item.item_name || item.itemName || "",
       quantity: qty,
       rate: rate,
-      uom: item.uom || "Unit",
+      uom: item.uom || "",
       vatCd: item.vatCd || item.VatCd || "A",
       vatRate: vatRate,
       requiredBy: item.requiredBy || "",
@@ -207,16 +204,9 @@ else if (api.tax) {
       postalCode: api.addresses?.shippingAddress?.postalCode || "",
     },
 
-    companyBillingAddress: {
-      addressTitle: "Company HQ Billing",
-      addressType: "Billing" as const,
-      addressLine1: api.addresses?.companyBillingAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.companyBillingAddress?.addressLine2 || "",
-      city: api.addresses?.companyBillingAddress?.city || "",
-      state: api.addresses?.companyBillingAddress?.state || "",
-      country: api.addresses?.companyBillingAddress?.country || "",
-      postalCode: api.addresses?.companyBillingAddress?.postalCode || "",
-    },
+    companyBillingAddress:
+  api.addresses?.companyBillingAddress ||
+  emptyPOForm.addresses.companyBillingAddress,
   };
 
   // Terms
@@ -266,8 +256,8 @@ else if (api.tax) {
     supplierPhone: api.phone || "",
     supplierContact: api.contactPerson || "",
 
-    currency: api.currency || "ZMW",
-    status: api.status || "Draft",
+    currency: api.currency ,
+    status: api.status,
 
     costCenter: api.costCenter || "",
     project: api.project || "",
