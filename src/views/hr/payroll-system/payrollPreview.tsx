@@ -1,6 +1,7 @@
 
 import React from "react";
 import { X } from "lucide-react";
+import Swal from "sweetalert2";
 import { getSalaryStructureById, type SalaryStructureDetail } from "../../../api/salaryStructureApi";
 
 type PayrollPreviewModalProps = {
@@ -33,6 +34,7 @@ export default function PayrollPreviewModal({
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [detail, setDetail] = React.useState<SalaryStructureDetail | null>(null);
+  const missingStructureAlertShownRef = React.useRef(false);
 
   const monthValue = React.useMemo(() => {
     const s = String(payPeriodStart ?? "").trim();
@@ -68,6 +70,17 @@ export default function PayrollPreviewModal({
       setDetail(null);
       setError("Please select a salary structure");
       setLoading(false);
+
+      if (!missingStructureAlertShownRef.current) {
+        missingStructureAlertShownRef.current = true;
+        void Swal.fire({
+          icon: "error",
+          title: "Salary Structure Not Found",
+          text: "Please select a salary structure before running payroll.",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#2563eb",
+        }).then(() => onClose());
+      }
       return;
     }
 
@@ -80,6 +93,24 @@ export default function PayrollPreviewModal({
       try {
         const resp = await getSalaryStructureById(name);
         if (!mounted) return;
+
+        if (!resp) {
+          setDetail(null);
+          setError("Salary structure not found");
+          if (!missingStructureAlertShownRef.current) {
+            missingStructureAlertShownRef.current = true;
+            void Swal.fire({
+              icon: "error",
+              title: "Salary Structure Not Found",
+              text: "The selected salary structure could not be loaded. Please select another one.",
+              confirmButtonText: "OK",
+              confirmButtonColor: "#2563eb",
+            }).then(() => onClose());
+          }
+          return;
+        }
+
+        missingStructureAlertShownRef.current = false;
         setDetail(resp);
       } catch (e: any) {
         if (!mounted) return;
@@ -95,7 +126,7 @@ export default function PayrollPreviewModal({
     return () => {
       mounted = false;
     };
-  }, [open, structureName]);
+  }, [open, structureName, onClose]);
 
   const safeCurrency = String(currency ?? "").trim();
   const earningsRaw = Array.isArray((detail as any)?.earnings) ? (detail as any).earnings : [];
