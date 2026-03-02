@@ -151,18 +151,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                     className="w-full"
                   />
 
-                  {ui.isExport && (
-                    <div className="mt-2">
-                      <ModalInput
-                        label="Export To Country"
-                        name="destnCountryCd"
-                        type="text"
-                        value={formData.destnCountryCd}
-                        onChange={actions.handleInputChange}
-                        className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                      />
-                    </div>
-                  )}
 
                   {/* Industry Base */}
                   <div>
@@ -239,6 +227,19 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   </div>
+
+                    {ui.isExport && (
+                    <div className="mt-2">
+                      <ModalInput
+                        label="Export To Country"
+                        name="destnCountryCd"
+                        type="text"
+                        value={formData.destnCountryCd}
+                        onChange={actions.handleInputChange}
+                        className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                      />
+                    </div>
+                  )} 
 
 
                   {/* LPO Number */}
