@@ -21,8 +21,11 @@ interface DetailsTabProps {
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
   getCurrencySymbol: () => string;
+  poLoading: boolean; 
   poList: any[];
   onPOSelect: (po: any) => void;
+  usePO: boolean;
+onTogglePO: (checked: boolean) => void;
 }
 
 export const DetailsTab = ({
@@ -37,11 +40,16 @@ export const DetailsTab = ({
   getCurrencySymbol,
   poList,
   onPOSelect,
+  usePO,
+onTogglePO,
 }: DetailsTabProps) => {
   const symbol = getCurrencySymbol();
 
   const ITEMS_PER_PAGE = 5;
   const [page, setPage] = useState(0);
+
+  // UI state to toggle between PO selection and manual input
+  
 
   useEffect(() => {
     const newPage = Math.floor((items.length - 1) / ITEMS_PER_PAGE);
@@ -58,27 +66,48 @@ export const DetailsTab = ({
 
       {/* ── Top fields ── */}
       <div className="bg-app">
-        <div className="grid grid-cols-[250px_135px_135px_90px_120px_100px_100px_140px] gap-x-2 items-end">
+        <div className="grid grid-cols-[250px_160px_135px_90px_110px_100px_100px_120px] gap-x-2 items-end">
 
           <div className="w-[250px]">
             <SupplierSelect selectedId={form.supplierId} onChange={onSupplierChange} />
           </div>
 
-          <div className="w-[135px]">
-            <ModalSelect
-              label="PO Number"
-              name="poNumber"
-              value={form.poNumber}
-              placeholder="Select PO"
-              options={(poList || []).map((po) => ({ label: po.poId, value: po.poId }))}
-              onChange={(e) => {
-                const selected = poList.find((p) => p.poId === e.target.value);
-                if (selected) onPOSelect(selected);
-              }}
-            />
+          {/* PO Number Logic: Checkbox + Conditional Field */}
+          <div className="w-[160px] flex flex-col gap-1">
+            <label className="flex items-center gap-2 text-[11px] font-medium text-muted cursor-pointer mb-1">
+              <input 
+                type="checkbox" 
+                className="w-3.5 h-3.5 accent-primary" 
+                checked={usePO}
+               onChange={(e) => onTogglePO(e.target.checked)}
+              />
+              Link PO Number
+            </label>
+            {usePO ? (
+              <ModalSelect
+                label=""
+                name="poNumber"
+                value={form.poNumber}
+                placeholder="Select PO"
+                options={(poList || []).map((po) => ({ label: po.poId, value: po.poId }))}
+                onChange={(e) => {
+                  const selected = poList.find((p) => p.poId === e.target.value);
+                  if (selected) onPOSelect(selected);
+                }}
+              />
+            ) : (
+              <ModalInput
+                label=""
+                name="poNumber"
+                placeholder="Manual PO No."
+                value={form.poNumber}
+                onChange={onFormChange}
+              />
+            )}
           </div>
 
           <div className="w-[135px]">
+            <span className="block h-5"></span> {/* Spacer for alignment */}
             <ModalInput
               label="Supplier Invoice No"
               name="supplierInvoiceNumber"
@@ -193,7 +222,6 @@ export const DetailsTab = ({
                 const i = page * ITEMS_PER_PAGE + idx;
                 const discountAmount = it.quantity * it.rate * (Number(it.discount || 0) / 100);
                 const totalInclusive = it.quantity * it.rate - discountAmount;
-                const exclusive = totalInclusive / (1 + Number(it.vatRate || 0) / 100);
                 const amount = totalInclusive;
 
                 return (

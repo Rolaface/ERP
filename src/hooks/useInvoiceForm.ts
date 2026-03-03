@@ -419,7 +419,10 @@ export const useInvoiceForm = (
 
   const handleItemSelect = async (index: number, itemId: string) => {
     const currentItem = formData.items[index];
-
+if (enableExchange && exchangeRateLoading) {
+  // User ko wait karne ka alert dein ya loader dikhayein
+  throw new Error("Please wait for exchange rate to load...");
+}
     // Invoice-loaded item → do NOT auto override
     if (currentItem?._fromInvoice) {
       setFormData((prev) => {
@@ -596,72 +599,83 @@ export const useInvoiceForm = (
     if (!checked) shippingEditedRef.current = false;
   };
 
-  const handleReset = async () => {
+const handleReset = async () => {
+  if (initialData) {
+    // If in Edit mode, just restore the original invoice data
+    setFormDataFromInvoice(initialData);
+  } else {
+    // NEW MODE: This is where we fix the "Everything Wiped" issue
     try {
+      // 1. Fetch the Company defaults again so they aren't lost
       const companyRes = await getCompanyById(COMPANY_ID);
       const company = companyRes?.data;
-
       const today = new Date().toISOString().split("T")[0];
 
+      // 2. Set the form back to default, BUT inject the company data immediately
       setFormData({
-        ...(DEFAULT_INVOICE_FORM as Invoice),
+        ...DEFAULT_INVOICE_FORM,
         dateOfInvoice: today,
-
-
-        exchangeRt: enableExchange ? "" : "1",
-
-        terms: {
-          selling:
-            company?.terms?.selling ?? EMPTY_TERMS.selling,
+        exchangeRt: "1",
+        // ⭐ RE-FILL COMPANY DATA (So they aren't blank)
+        terms: { 
+          selling: company?.terms?.selling ?? EMPTY_TERMS.selling 
         },
-
-        shippingAddress: {
-          ...DEFAULT_INVOICE_FORM.billingAddress,
+        paymentInformation: {
+          ...DEFAULT_INVOICE_FORM.paymentInformation,
+          paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
+          bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+          accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+          routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+          swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
         },
+        // Reset addresses to the empty default structure
+        shippingAddress: { ...DEFAULT_INVOICE_FORM.billingAddress },
       });
-
     } catch (err) {
-      setFormData({
-        ...(DEFAULT_INVOICE_FORM as Invoice),
-
-
-        exchangeRt: enableExchange ? "" : "1",
-
-        terms: { ...EMPTY_TERMS },
-
-        shippingAddress: {
-          ...DEFAULT_INVOICE_FORM.billingAddress,
-        },
-      });
+      console.error("Failed to re-load company defaults during reset", err);
+      // Fallback to absolute defaults if API fails
+      setFormData({ ...DEFAULT_INVOICE_FORM });
     }
+  }
 
-    setCustomerDetails(null);
-    setCustomerNameDisplay("");
-    setTaxCategory("");
-    setActiveTab("details");
-    setSameAsBilling(true);
-    setIsShippingOpen(false);
-    setPage(0);
-    shippingEditedRef.current = false;
-    lastCurrencyRef.current = "INR";
-    lastRateRef.current = 1;
-  };
+  // Clear User-specific UI states
+  shippingEditedRef.current = false;
+  lastCurrencyRef.current = "INR";
+  lastRateRef.current = 1;
+  setCustomerDetails(null);
+  setCustomerNameDisplay("");
+  setTaxCategory("");
+  setSameAsBilling(true);
+  setPage(0);
+  setActiveTab("details");
+};
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    validateForm();
+  try {
+    validateForm(); 
 
     const payload = {
       ...formData,
-      items: formData.items.map((item) => ({
-        ...item,
-        vatRate: String(item.vatRate), // convert to string only here
-      })),
+      subTotal,
+      totalTax,
+      grandTotal,
+      items: formData.items
+        .filter(it => it.itemCode) 
+        .map((item) => ({
+          ...item,
+          vatRate: String(item.vatRate),
+        })),
     };
 
-    return payload;
-  };
+    return payload; 
+  } catch (error: any) {
+
+    console.error("Validation Error:", error.message);
+    
+    return null;
+  }
+};
 
 
   const { subTotal, totalTax, grandTotal } = useMemo(() => {

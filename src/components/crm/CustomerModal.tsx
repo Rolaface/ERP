@@ -21,6 +21,21 @@ import {
 import AddressBlock from "../ui/modal/AddressBlock";
 import type { CustomerDetail } from "../../types/customer";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
+const defaultSellingTerms: TermSection = {
+  general: "",
+  delivery: "",
+  cancellation: "",
+  warranty: "",
+  liability: "",
+  payment: {
+  
+    dueDates: "",
+    lateCharges: "",
+    taxes: "",
+    notes: "",
+    phases: [],
+  },
+};
 
 const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   id: "",
@@ -51,9 +66,9 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   shippingState: "",
   shippingCountry: "",
 
-  terms: {
-    selling: { payment: { phases: [] } },
-  },
+terms: {
+  selling: defaultSellingTerms,
+},
   sameAsBilling: false,
 };
 
@@ -93,6 +108,8 @@ const CustomerModal: React.FC<{
     "details",
   );
   const [allowSubmit, setAllowSubmit] = useState(false);
+  const [companySellingTerms, setCompanySellingTerms] = useState<TermSection | null>(null);
+  
 
   useEffect(() => {
     if (!isOpen || !companyId || isEditMode) return;
@@ -103,18 +120,17 @@ const CustomerModal: React.FC<{
 
         const sellingTerms = res?.data?.terms?.selling;
 
-        if (!sellingTerms) {
-          console.warn("Company selling terms not found");
-          return;
-        }
+if (!sellingTerms) return;
 
-        setForm((prev) => ({
-          ...prev,
-          terms: {
-            ...prev.terms,
-            selling: sellingTerms,
-          },
-        }));
+setCompanySellingTerms(sellingTerms);
+
+setForm((prev) => ({
+  ...prev,
+  terms: {
+    ...prev.terms,
+    selling: sellingTerms,
+  },
+}));
       } catch (err) {
         console.error("Failed to load company terms", err);
       }
@@ -150,13 +166,15 @@ const CustomerModal: React.FC<{
 
       const mobile = splitMobile(initialData.mobile);
 
-      setForm({
-        ...initialData,
-        mobileCode: mobile.code,
-        mobile: mobile.number,
-        sameAsBilling: false,
-      });
-
+     setForm({
+  ...initialData,
+  terms: initialData.terms ?? {
+    selling: companySellingTerms ?? defaultSellingTerms,
+  },
+  mobileCode: mobile.code,
+  mobile: mobile.number,
+  sameAsBilling: false,
+});
     } else {
       setForm(emptyForm);
     }
@@ -414,17 +432,43 @@ const CustomerModal: React.FC<{
     }
   };
 
-  const handleClose = () => {
-    if (loading) return;
+const handleClose = () => {
+  if (loading) return;
 
-    setForm(emptyForm);
-    onClose();
-  };
+  setForm({
+    ...emptyForm,
+    terms: {
+      selling: companySellingTerms ?? defaultSellingTerms,
+    },
+    sameAsBilling: false,
+  });
 
-  const reset = () => {
-    setForm(initialData ? { ...initialData, sameAsBilling: false } : emptyForm);
-  };
+  setErrors({});
+  setActiveTab("details");
+  onClose();
+};
+const reset = () => {
+ if (initialData) {
+  setForm({
+    ...initialData,
+    terms: initialData.terms ?? {
+      selling: companySellingTerms ?? defaultSellingTerms,
+    },
+    sameAsBilling: false,
+  });
+}else {
+    setForm({
+      ...emptyForm,
+      terms: {
+        selling: companySellingTerms ?? defaultSellingTerms,
+      },
+      sameAsBilling: false,
+    });
+  }
 
+  setErrors({});
+  setActiveTab("details");
+};
   // Footer content
   const footer = (
     <>
@@ -686,7 +730,7 @@ const CustomerModal: React.FC<{
 
           {activeTab === "terms" && (
             <TermsAndCondition
-              terms={form.terms?.selling as TermSection}
+              terms={form.terms.selling}
               setTerms={(updated) =>
                 setForm((p) => ({
                   ...p,

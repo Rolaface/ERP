@@ -61,6 +61,7 @@ export const useSupplierForm = ({
   const [errors, setErrors] = useState<SupplierErrors>({});
   const [allowSubmit, setAllowSubmit] = useState(false);
   const [isCodeEdited, setIsCodeEdited] = useState(false);
+  const [companyBuyingTerms, setCompanyBuyingTerms] = useState<TermSection | null>(null);
 
   useEffect(() => {
     if (!isOpen || !companyId || isEditMode) return;
@@ -71,15 +72,17 @@ export const useSupplierForm = ({
 
         const buyingTerms = res?.data?.terms?.buying;
 
-        if (!buyingTerms) return;
+       if (!buyingTerms) return;
 
-        setForm(prev => ({
-          ...prev,
-          terms: {
-            ...prev.terms,
-            buying: buyingTerms
-          }
-        }));
+setCompanyBuyingTerms(buyingTerms);
+
+setForm(prev => ({
+  ...prev,
+  terms: {
+    ...prev.terms,
+    buying: buyingTerms
+  }
+}));
 
       } catch (err) {
         console.error("Failed to load buying terms", err);
@@ -412,23 +415,34 @@ export const useSupplierForm = ({
 
 
 
-  // Reset Form
-  const reset = () => {
-    if (initialData && isEditMode) {
-      setForm(mapSupplierToForm(initialData));
-    } else {
-      setForm({
-        ...emptySupplierForm,
-        dateOfAddition: new Date().toISOString().split("T")[0],
-      });
-    }
+ const reset = () => {
+  if (initialData && isEditMode) {
+    const mapped = mapSupplierToForm(initialData);
 
-    setErrors({});
-    setIsCodeEdited(false);
-    setAllowSubmit(false);
-    showSuccess("Form reset");
-  };
+    setForm({
+      ...mapped,
+      terms: {
+        buying:
+          mapped.terms?.buying?.payment?.phases?.length
+            ? mapped.terms.buying
+            : companyBuyingTerms ?? emptySupplierForm.terms?.buying
+      }
+    });
+  } else {
+    setForm({
+      ...emptySupplierForm,
+      dateOfAddition: new Date().toISOString().split("T")[0],
+      terms: {
+        buying: companyBuyingTerms ?? emptySupplierForm.terms?.buying
+      }
+    });
+  }
 
+  setErrors({});
+  setIsCodeEdited(false);
+  setAllowSubmit(false);
+  showSuccess("Form reset");
+};
   // Handle Next Tab with Validation
   const handleNext = () => {
     let isValid = false;

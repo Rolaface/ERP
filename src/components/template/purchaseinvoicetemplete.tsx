@@ -256,7 +256,7 @@ body: (po?.items || []).map((item: any) => {
   item?.uom || "-",
   Number(item?.rate || 0).toFixed(2),
   taxRate,
-  item?.vatCd || "-",     
+item?.VatCd || "-",
   Number(item?.qty || 0).toFixed(2),
   Number(item?.amount || 0).toFixed(2),
 ];

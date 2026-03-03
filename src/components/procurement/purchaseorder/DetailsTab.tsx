@@ -72,25 +72,7 @@ export const DetailsTab = ({
               onChange={onSupplierChange}
             />
           </div>
-          <div className="flex items-center gap-2">
-  <input
-    type="checkbox"
-    checked={fromPO}
-    onChange={(e) => {
-      const checked = e.target.checked;
-      setFromPO(checked);
-
-      if (!checked) {
-        // Clear only PO number
-        onFormChange({
-          target: { name: "poNumber", value: "" },
-        } as React.ChangeEvent<HTMLInputElement>);
-      }
-    }}
-    className="h-4 w-4"
-  />
-  <label className="text-xs text-main">Create from PO</label>
-</div>
+          
           <div className="w-[120px]">
             <ModalInput
               label="Date"

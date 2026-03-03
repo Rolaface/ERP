@@ -48,6 +48,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     reset,
      poList,
      poLoading,
+     handleTogglePO,
+     usePO,
 
   handlePOSelect,
    customShippingRule,
@@ -124,6 +126,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               poList={poList}
               poLoading={poLoading}
               onPOSelect={handlePOSelect}
+              usePO={usePO}
+onTogglePO={handleTogglePO}
             
 
             />

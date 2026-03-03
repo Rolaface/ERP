@@ -41,6 +41,7 @@ export const usePurchaseInvoiceForm = ({
   pId,
 }: UsePurchaseInvoiceFormProps) => {
   const [form, setForm] = useState<PurchaseInvoiceFormData>(emptyPOForm);
+const [usePO, setUsePO] = useState(false);
   const [activeTab, setActiveTab] = useState<POTab>("details");
   const [saving, setSaving] = useState(false);
   const [poList, setPoList] = useState<any[]>([]);
@@ -84,27 +85,42 @@ useEffect(() => {
         return;
       }
 
-      setForm((prev) => ({
-        ...prev,
-        terms: {
-          buying: company.terms?.buying || prev.terms?.buying,
-        },
-        addresses: {
-          ...prev.addresses,
-          companyBillingAddress: {
-            addressTitle: company.companyName || "",
-            addressType: "Billing",
-            addressLine1: company.address?.addressLine1 || "",
-            addressLine2: company.address?.addressLine2 || "",
-            city: company.address?.city || "",
-            state: company.address?.province || "",
-            postalCode: company.address?.postalCode || "",
-            country: company.address?.country || "",
-            phone: company.contactInfo?.companyPhone || "",
-            email: company.contactInfo?.companyEmail || "",
-          },
-        },
-      }));
+     const buyingTerms = company.terms?.buying;
+
+const companyBillingAddress: AddressBlock = {
+  addressTitle: company.companyName || "",
+  addressType: "Billing",
+  addressLine1: company.address?.addressLine1 || "",
+  addressLine2: company.address?.addressLine2 || "",
+  city: company.address?.city || "",
+  state: company.address?.province || "",
+  postalCode: company.address?.postalCode || "",
+  country: company.address?.country || "",
+  phone: company.contactInfo?.companyPhone || "",
+  email: company.contactInfo?.companyEmail || "",
+};
+
+setCompanyDefaults({
+  terms: { buying: buyingTerms },
+  addresses: {
+    supplierAddress: emptyPOForm.addresses.supplierAddress,
+    dispatchAddress: emptyPOForm.addresses.dispatchAddress,
+    shippingAddress: emptyPOForm.addresses.shippingAddress,
+    companyBillingAddress,
+  },
+});
+
+setForm((prev) => ({
+  ...prev,
+  terms: {
+    ...prev.terms,
+    buying: buyingTerms || prev.terms?.buying,
+  },
+  addresses: {
+    ...prev.addresses,
+    companyBillingAddress,
+  },
+}));
     } catch (e) {
       console.error("Failed to load company data", e);
     }
@@ -274,15 +290,30 @@ const handlePOSelect = async (po: any) => {
       // ITEMS
       items: enrichedItems,
 
-      // SUMMARY
-      totalQuantity: data.summary?.totalQuantity || 0,
-      grandTotal: data.summary?.grandTotal || 0,
-      roundingAdjustment: data.summary?.roundingAdjustment || 0,
-      roundedTotal: data.summary?.roundedTotal || 0,
+      // // SUMMARY
+      // totalQuantity: data.summary?.totalQuantity || 0,
+      // grandTotal: data.summary?.grandTotal || 0,
+      // roundingAdjustment: data.summary?.roundingAdjustment || 0,
+      // roundedTotal: data.summary?.roundedTotal || 0,
     }));
 
   } catch (e) {
     showApiError({ message: "Failed to load PO details" });
+  }
+};
+const handleTogglePO = (checked: boolean) => {
+  setUsePO(checked);
+
+  if (!checked) {
+    setForm(prev => ({
+      ...prev,
+      poNumber: "",
+      items: [{ ...emptyItem }],
+      totalQuantity: 0,
+      grandTotal: 0,
+      roundingAdjustment: 0,
+      roundedTotal: 0,
+    }));
   }
 };
   const handleFormChange = (
@@ -338,7 +369,13 @@ const handlePOSelect = async (po: any) => {
       }));
 setPoLoading(true);
 setPoList([]);
-setForm(prev => ({ ...prev, poNumber: "" }));
+setUsePO(false);
+
+setForm(prev => ({
+  ...prev,
+  poNumber: "",
+  items: [{ ...emptyItem }],
+}));
 
 try {
   const poRes = await getPurchaseOrders(1, 100, {
@@ -576,10 +613,33 @@ packing: `${data.pakingUnit || 0} x ${data.packingSize || 0}`,
     }
   };
 
-  const reset = () => {
-    setForm(emptyPOForm);
-    setActiveTab("details");
-  };
+const reset = () => {
+  setForm({
+    ...emptyPOForm,
+
+    terms: {
+     buying:
+  companyDefaults.terms?.buying ??
+  emptyPOForm.terms?.buying!,
+    },
+    addresses: {
+      supplierAddress:
+        emptyPOForm.addresses.supplierAddress,
+
+      dispatchAddress:
+        emptyPOForm.addresses.dispatchAddress,
+
+      shippingAddress:
+        emptyPOForm.addresses.shippingAddress,
+
+      companyBillingAddress:
+        companyDefaults.addresses?.companyBillingAddress ??
+        emptyPOForm.addresses.companyBillingAddress,
+    },
+  });
+
+  setActiveTab("details");
+};
 
   return {
     form,
@@ -611,6 +671,8 @@ packing: `${data.pakingUnit || 0} x ${data.packingSize || 0}`,
     setCustomIncoterm,
     poLoading,
     setPoLoading,
+    usePO,
+handleTogglePO,
   };
 };
 
