@@ -14,6 +14,7 @@ export type SalarySlipListItem = {
   total_earnings: number;
   total_deduction: number;
   net_pay: number;
+  referenceNumber?: string;
 };
 
 export type SalarySlipListResponse = {
@@ -46,6 +47,7 @@ export type SalarySlipDetail = SalarySlipListItem & {
   company?: string;
   earnings?: { component: string; amount: number }[];
   deductions?: { component: string; amount: number }[];
+  paySlipUrl?: string;
 };
 
 export async function getSalarySlips(params?: {

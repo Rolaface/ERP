@@ -1,6 +1,7 @@
 
 import React from "react";
 import { X } from "lucide-react";
+import Swal from "sweetalert2";
 import { getSalaryStructureById, type SalaryStructureDetail } from "../../../api/salaryStructureApi";
 
 type PayrollPreviewModalProps = {
@@ -33,6 +34,7 @@ export default function PayrollPreviewModal({
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [detail, setDetail] = React.useState<SalaryStructureDetail | null>(null);
+  const missingStructureAlertShownRef = React.useRef(false);
 
   const monthValue = React.useMemo(() => {
     const s = String(payPeriodStart ?? "").trim();
@@ -66,8 +68,19 @@ export default function PayrollPreviewModal({
     const name = String(structureName ?? "").trim();
     if (!name) {
       setDetail(null);
-      setError(null);
+      setError("Please select a salary structure");
       setLoading(false);
+
+      if (!missingStructureAlertShownRef.current) {
+        missingStructureAlertShownRef.current = true;
+        void Swal.fire({
+          icon: "error",
+          title: "Salary Structure Not Found",
+          text: "Please select a salary structure before running payroll.",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#2563eb",
+        }).then(() => onClose());
+      }
       return;
     }
 
@@ -80,6 +93,24 @@ export default function PayrollPreviewModal({
       try {
         const resp = await getSalaryStructureById(name);
         if (!mounted) return;
+
+        if (!resp) {
+          setDetail(null);
+          setError("Salary structure not found");
+          if (!missingStructureAlertShownRef.current) {
+            missingStructureAlertShownRef.current = true;
+            void Swal.fire({
+              icon: "error",
+              title: "Salary Structure Not Found",
+              text: "The selected salary structure could not be loaded. Please select another one.",
+              confirmButtonText: "OK",
+              confirmButtonColor: "#2563eb",
+            }).then(() => onClose());
+          }
+          return;
+        }
+
+        missingStructureAlertShownRef.current = false;
         setDetail(resp);
       } catch (e: any) {
         if (!mounted) return;
@@ -95,9 +126,7 @@ export default function PayrollPreviewModal({
     return () => {
       mounted = false;
     };
-  }, [open, structureName]);
-
-  if (!open) return null;
+  }, [open, structureName, onClose]);
 
   const safeCurrency = String(currency ?? "").trim();
   const earningsRaw = Array.isArray((detail as any)?.earnings) ? (detail as any).earnings : [];
@@ -115,6 +144,25 @@ export default function PayrollPreviewModal({
     return set;
   }, [detail]);
 
+  const displayComponentName = React.useCallback((name: unknown) => {
+    const raw = String(name ?? "").trim();
+    if (!raw) return "—";
+    const key = raw.toLowerCase();
+    if (key === "income tax") return "PAYE";
+    if (key === "income tax (paye)") return "PAYE";
+    if (key === "paye" || key === "p.a.y.e") return "PAYE";
+    if (key === "it") return "PAYE";
+    return raw;
+  }, []);
+
+  const normalizeComponentKey = React.useCallback(
+    (name: unknown) => {
+      const label = displayComponentName(name);
+      return String(label ?? "").trim().toLowerCase();
+    },
+    [displayComponentName],
+  );
+
   const earnings = React.useMemo(() => {
     if (!enabledComponentKeys || enabledComponentKeys.size === 0) return earningsRaw;
     return (earningsRaw || []).filter((r: any) => enabledComponentKeys.has(String(r?.component ?? "").trim().toLowerCase()));
@@ -128,25 +176,27 @@ export default function PayrollPreviewModal({
   const deductionsDeduped = React.useMemo(() => {
     const map = new Map<string, { component: string; amount: number }>();
     (deductions || []).forEach((row: any) => {
-      const component = String(row?.component ?? "").trim();
-      if (!component) return;
-      const key = component.toLowerCase();
+      const component = displayComponentName(row?.component);
+      const key = normalizeComponentKey(row?.component);
+      if (!key || key === "—") return;
       const amt = Number(row?.amount ?? 0) || 0;
-      const existing = map.get(key);
-      if (!existing) {
+      const prev = map.get(key);
+      if (!prev) {
         map.set(key, { component, amount: amt });
       } else {
-        existing.amount += amt;
+        map.set(key, { component: prev.component, amount: prev.amount + amt });
       }
     });
     return Array.from(map.values());
-  }, [deductions]);
+  }, [deductions, displayComponentName, normalizeComponentKey]);
 
   const fmtMoney = (v: any) => {
     const n = Number(v ?? 0);
     const prefix = safeCurrency ? `${safeCurrency} ` : "";
     return `${prefix}${(Number.isFinite(n) ? n : 0).toLocaleString()}`;
   };
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -260,7 +310,7 @@ export default function PayrollPreviewModal({
                       earnings.map((row: any, idx: number) => (
                         <div key={`${row?.component ?? idx}`} className="border-b border-theme/60 last:border-0 py-2">
                           <div className="flex items-center justify-between gap-3">
-                            <div className="text-xs font-bold text-main truncate">{String(row?.component ?? "—")}</div>
+                            <div className="text-xs font-bold text-main truncate">{displayComponentName(row?.component)}</div>
                             <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
                               {fmtMoney(row?.amount)}
                             </div>
@@ -280,7 +330,7 @@ export default function PayrollPreviewModal({
                       deductionsDeduped.map((row: any, idx: number) => (
                         <div key={`${row?.component ?? idx}`} className="border-b border-theme/60 last:border-0 py-2">
                           <div className="flex items-center justify-between gap-3">
-                            <div className="text-xs font-bold text-main truncate">{String(row?.component ?? "—")}</div>
+                            <div className="text-xs font-bold text-main truncate">{displayComponentName(row?.component)}</div>
                             <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
                               {fmtMoney(row?.amount)}
                             </div>

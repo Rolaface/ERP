@@ -9,7 +9,7 @@ interface PayslipModalProps {
   onEmail?: () => void;
 }
 
-// ── Amount to words (Indian system) ──────────────────────────────────────────
+
 function toWords(n: number): string {
   if (n === 0) return "Zero Rupees Only";
   const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
