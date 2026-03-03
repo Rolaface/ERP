@@ -15,6 +15,7 @@ export type SalarySlipListItem = {
   total_deduction: number;
   net_pay: number;
   referenceNumber?: string;
+  napsaStatus?: string;
 };
 
 export type SalarySlipListResponse = {

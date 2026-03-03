@@ -8,8 +8,6 @@ import {
   CartesianGrid,
   Cell,
   Legend,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -123,8 +121,8 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   const statusData = useMemo(() => {
     const map = filteredSlips.reduce((acc: Record<string, number>, r) => {
       const raw = String(r.status ?? "").trim();
-      const normalized = raw.toLowerCase() === "submitted" ? "Paid" : raw || "Unknown";
-      acc[normalized] = (acc[normalized] || 0) + 1;
+      const label = raw || "Unknown";
+      acc[label] = (acc[label] || 0) + 1;
       return acc;
     }, {});
 
@@ -147,7 +145,6 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   }, [filteredSlips]);
 
   const [advancesLoading, setAdvancesLoading] = useState(false);
-  const [advancesError, setAdvancesError] = useState<string | null>(null);
   const [advances, setAdvances] = useState<EmployeeAdvanceRecord[]>([]);
 
   useEffect(() => {
@@ -155,7 +152,6 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
 
     const run = async () => {
       setAdvancesLoading(true);
-      setAdvancesError(null);
       try {
         const res = await getEmployeeAdvancesPaged({ page: 1, page_size: 1000 });
         if (!mounted) return;
@@ -163,7 +159,6 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
       } catch (e: any) {
         if (!mounted) return;
         setAdvances([]);
-        setAdvancesError(e?.message || "Failed to load advances");
       } finally {
         if (!mounted) return;
         setAdvancesLoading(false);

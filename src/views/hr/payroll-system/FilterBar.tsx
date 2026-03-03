@@ -53,7 +53,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         onChange={e => onStatusChange(e.target.value)}
         className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary cursor-pointer"
       >
-        {["All", "Paid", "Pending", "Processing", "Draft", "Rejected"].map(s => (
+        {["All", "Paid", "Submitted", "Pending", "Processing", "Draft", "Rejected"].map(s => (
           <option key={s} value={s}>{s === "All" ? "All Status" : s}</option>
         ))}
       </select>

@@ -235,17 +235,18 @@ const NewPayrollEntry: React.FC<{
 
 const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
   const raw = String(status ?? "").trim();
-  const normalized = raw.toLowerCase() === "submitted" ? "Paid" : raw;
-  const s = String(normalized ?? "").toLowerCase();
+  const s = String(raw ?? "").toLowerCase();
   const cls =
     s === "paid"
       ? "bg-green-50 text-green-700 border-green-200"
+      : s === "submitted"
+        ? "bg-green-50 text-green-700 border-green-200"
       : s === "draft"
         ? "bg-yellow-50 text-yellow-700 border-yellow-200"
         : "bg-gray-50 text-gray-700 border-gray-200";
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${cls}`}>
-      {normalized || "—"}
+      {raw || "—"}
     </span>
   );
 };
@@ -529,13 +530,10 @@ export default function PayrollManagement() {
         if (!(sStart <= monthEnd && sEnd >= monthStart)) return false;
       }
 
-      const status = String(s.status ?? "").trim();
-      const normalizedStatus = status.toLowerCase() === "submitted" ? "Paid" : status || "Unknown";
       const hay = [
         String(s.name ?? ""),
         String(s.employee ?? ""),
-        String(s.salary_structure ?? ""),
-        normalizedStatus,
+        String(s.referenceNumber ?? ""),
       ]
         .join(" ")
         .toLowerCase();
@@ -832,11 +830,11 @@ export default function PayrollManagement() {
                         salary_structure: s.salary_structure,
                         start_date: s.start_date,
                         end_date: s.end_date,
-                        status: s.status,
+                        payslip_status: s.status,
+                        napsa_status: s.napsaStatus ?? "",
                         total_earnings: s.total_earnings,
                         total_deduction: s.total_deduction,
                         net_pay: s.net_pay,
-                        
                       }));
                       downloadCsv(
                         `salary_slips_${new Date().toISOString().slice(0, 10)}.csv`,
@@ -873,7 +871,8 @@ export default function PayrollManagement() {
                         "Structure",
                         "Start",
                         "End",
-                        "Status",
+                        "Payslip Status",
+                        "Napsa Status",
                         "Earnings",
                         "Deductions",
                         "Net",
@@ -881,7 +880,7 @@ export default function PayrollManagement() {
                       ].map((h, i) => (
                         <th
                           key={String(i)}
-                          className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${i >= 7 && i <= 9 ? "text-right" : "text-left"
+                          className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${i >= 8 && i <= 10 ? "text-right" : "text-left"
                             }`}
                         >
                           {h}
@@ -900,6 +899,7 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse" /></td>
                           <td className="px-4 py-3"><div className="h-3 w-28 bg-theme/60 rounded animate-pulse" /></td>
                           <td className="px-4 py-3"><div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" /></td>
+                          <td className="px-4 py-3"><div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" /></td>
                           <td className="px-4 py-3 text-right"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" /></td>
                           <td className="px-4 py-3 text-right"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" /></td>
                           <td className="px-4 py-3 text-right"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" /></td>
@@ -908,7 +908,7 @@ export default function PayrollManagement() {
                       ))
                     ) : filteredSalarySlips.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="px-4 py-10 text-center text-sm text-muted">
+                        <td colSpan={12} className="px-4 py-10 text-center text-sm text-muted">
                           {String(slipsSearch ?? "").trim() ? "No matching salary slips" : "No salary slips found"}
                         </td>
                       </tr>
@@ -925,6 +925,7 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.end_date}</td>
                           <td className="px-4 py-3"><StatusChip status={s.status} /></td>
+                          <td className="px-4 py-3"><StatusChip status={s.napsaStatus} /></td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_earnings ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">{Number(s.net_pay ?? 0).toLocaleString("en-ZM")}</td>
