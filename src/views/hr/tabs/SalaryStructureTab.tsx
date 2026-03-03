@@ -28,13 +28,6 @@ import {
   type SalaryComponentUpdatePayload,
 } from "../../../api/salaryStructureApi";
 
-const toTitleCase = (value: string) => {
-  return value
-    .split(" ")
-    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : ""))
-    .join(" ");
-};
-
 export default function SalaryStructureTab() {
   const [structures, setStructures] = useState<SalaryStructureListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1248,7 +1241,7 @@ function StructureModal({
                       type="text"
                       value={formData.name}
                       onChange={(e) =>
-                        setFormData({ ...formData, name: toTitleCase(e.target.value) })
+                        setFormData({ ...formData, name: e.target.value })
                       }
                       placeholder="e.g., Executive Level, Mid-Level Staff"
                       disabled={Boolean(readOnly)}
@@ -1263,7 +1256,7 @@ function StructureModal({
                       type="text"
                       value={formData.company}
                       onChange={(e) =>
-                        setFormData({ ...formData, company: toTitleCase(e.target.value) })
+                        setFormData({ ...formData, company: e.target.value })
                       }
                       placeholder="e.g., Izyane"
                       disabled={Boolean(readOnly)}
