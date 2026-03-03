@@ -5,7 +5,6 @@ import {
   Trash2,
   Save,
   X,
-  AlertTriangle,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { calculateZmPayrollFromGross } from "../payroll-system/util";
@@ -13,7 +12,6 @@ import {
   createSalaryStructure,
   createSalaryComponent,
   deleteSalaryComponent,
-  deleteSalaryStructure,
   getSalaryComponents,
   getSalaryStructures,
   getSalaryStructureById,
@@ -27,13 +25,6 @@ import {
   type SalaryComponentListItem,
   type SalaryComponentUpdatePayload,
 } from "../../../api/salaryStructureApi";
-
-const toTitleCase = (value: string) => {
-  return value
-    .split(" ")
-    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : ""))
-    .join(" ");
-};
 
 export default function SalaryStructureTab() {
   const [structures, setStructures] = useState<SalaryStructureListItem[]>([]);
@@ -51,9 +42,6 @@ export default function SalaryStructureTab() {
     company: string;
     components: SalaryStructureComponentCreate[];
   } | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
-    null,
-  );
   const [salaryComponents, setSalaryComponents] = useState<SalaryComponentListItem[]>([]);
   const [structurePreviewMap, setStructurePreviewMap] = useState<
     Record<string, { earnings: any[]; deductions: any[] }>
@@ -248,56 +236,8 @@ export default function SalaryStructureTab() {
     setShowModal(true);
   };
 
-  const handleEdit = async (structure: SalaryStructureListItem) => {
-    await openStructureModalFromDetail(structure, "edit");
-  };
-
   const handleView = async (structure: SalaryStructureListItem) => {
     await openStructureModalFromDetail(structure, "view");
-  };
-
-  const handleDelete = async (name: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await deleteSalaryStructure(name);
-      await refreshStructures();
-      setShowDeleteConfirm(null);
-      toast.success("Salary structure deleted");
-    } catch (e: any) {
-      const html = extractFrappeMessageHtml(e);
-      const msg = html ? html.replace(/<[^>]*>/g, "").trim() : e?.message;
-      setError(msg || "Failed to delete salary structure");
-
-      if (html) {
-        toast.dismiss();
-        toast(
-          (t) => (
-            <div className="bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-[420px]">
-              <div className="text-sm font-semibold text-gray-900">Unable to delete</div>
-              <div
-                className="text-xs text-gray-600 mt-1 [&_a]:text-primary [&_a]:underline"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-              <div className="flex items-center justify-end mt-4">
-                <button
-                  type="button"
-                  onClick={() => toast.dismiss(t.id)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          ),
-          { duration: 8000 },
-        );
-      } else {
-        toast.error(msg || "Failed to delete salary structure");
-      }
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleSave = async (
@@ -563,19 +503,6 @@ export default function SalaryStructureTab() {
                             >
                               View
                             </button>
-                            <button
-                              onClick={() => handleEdit(structure)}
-                              className="p-2 text-gray-600 hover:text-primary hover:bg-primary/10 rounded-lg transition"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteConfirm(structure.name || structure.id)}
-                              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -632,15 +559,6 @@ export default function SalaryStructureTab() {
         <SalaryComponentsModal
           onClose={() => setShowComponentsModal(false)}
           onChanged={refreshComponents}
-        />
-      )}
-
-      {/* Delete Confirmation */}
-      {showDeleteConfirm && (
-        <DeleteConfirmModal
-          structure={structures.find((s) => (s.name || s.id) === showDeleteConfirm)!}
-          onConfirm={() => handleDelete(showDeleteConfirm)}
-          onCancel={() => setShowDeleteConfirm(null)}
         />
       )}
     </div>
@@ -1248,7 +1166,7 @@ function StructureModal({
                       type="text"
                       value={formData.name}
                       onChange={(e) =>
-                        setFormData({ ...formData, name: toTitleCase(e.target.value) })
+                        setFormData({ ...formData, name: e.target.value })
                       }
                       placeholder="e.g., Executive Level, Mid-Level Staff"
                       disabled={Boolean(readOnly)}
@@ -1263,7 +1181,7 @@ function StructureModal({
                       type="text"
                       value={formData.company}
                       onChange={(e) =>
-                        setFormData({ ...formData, company: toTitleCase(e.target.value) })
+                        setFormData({ ...formData, company: e.target.value })
                       }
                       placeholder="e.g., Izyane"
                       disabled={Boolean(readOnly)}
@@ -1610,62 +1528,3 @@ function StructureModal({
   );
 }
 
-// Delete Confirmation Modal
-function DeleteConfirmModal({
-  structure,
-  onConfirm,
-  onCancel,
-}: {
-  structure: SalaryStructureListItem;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
-          <div className="text-base font-semibold">Delete Salary Structure</div>
-          <button onClick={onCancel} className="text-white/80 hover:text-white">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">
-                Are you sure you want to delete{" "}
-                <strong>"{structure.name}"</strong>?
-              </p>
-            </div>
-          </div>
-
-          <div className="p-3 bg-gray-50 rounded-lg mb-4">
-            <p className="text-sm text-gray-700">
-              This action cannot be undone. The structure will be permanently
-              deleted.
-            </p>
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
-            >
-              Delete Structure
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}

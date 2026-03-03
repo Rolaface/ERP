@@ -133,6 +133,17 @@ export default function MultiPayrollPreviewModal({
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<SalaryStructureDetail | null>(null);
 
+  const displayComponentName = (name: unknown) => {
+    const raw = String(name ?? "").trim();
+    if (!raw) return "—";
+    const key = raw.toLowerCase();
+    if (key === "income tax") return "PAYE";
+    if (key === "income tax (paye)") return "PAYE";
+    if (key === "paye" || key === "p.a.y.e") return "PAYE";
+    if (key === "it") return "PAYE";
+    return raw;
+  };
+
   const initialMonth = useMemo(() => {
     const base = String(payPeriodStart || payPeriodEnd || "").trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(base)) return base.slice(0, 7);
@@ -315,7 +326,7 @@ export default function MultiPayrollPreviewModal({
                     ) : (
                       (detail as any).earnings.map((row: any, idx: number) => (
                         <div key={`${row?.component ?? idx}`} className="flex items-center justify-between gap-3 border-b border-gray-200/60 last:border-0 pb-2 last:pb-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate">{String(row?.component ?? "—")}</div>
+                          <div className="text-sm font-semibold text-gray-900 truncate">{displayComponentName(row?.component)}</div>
                           <div className="text-sm font-extrabold text-gray-900 tabular-nums whitespace-nowrap">{currency} {Number(row?.amount ?? 0).toLocaleString("en-ZM")}</div>
                         </div>
                       ))
@@ -331,7 +342,7 @@ export default function MultiPayrollPreviewModal({
                     ) : (
                       (detail as any).deductions.map((row: any, idx: number) => (
                         <div key={`${row?.component ?? idx}`} className="flex items-center justify-between gap-3 border-b border-gray-200/60 last:border-0 pb-2 last:pb-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate">{String(row?.component ?? "—")}</div>
+                          <div className="text-sm font-semibold text-gray-900 truncate">{displayComponentName(row?.component)}</div>
                           <div className="text-sm font-extrabold text-gray-900 tabular-nums whitespace-nowrap">{currency} {Number(row?.amount ?? 0).toLocaleString("en-ZM")}</div>
                         </div>
                       ))

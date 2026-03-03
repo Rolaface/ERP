@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, X } from "lucide-react";
+import { Pencil, RefreshCw, X } from "lucide-react";
 import toast from "react-hot-toast";
 import SalaryStructureAssignmentTab from "./SalaryStructureAssignmentTab";
 import {
@@ -37,6 +37,7 @@ export default function SalaryStructureAssignmentsDashboardTab() {
   const [items, setItems] = useState<SalaryStructureAssignmentListItem[]>([]);
 
   const [assignOpen, setAssignOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<SalaryStructureAssignmentListItem | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -76,7 +77,13 @@ export default function SalaryStructureAssignmentsDashboardTab() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Btn variant="primary" onClick={() => setAssignOpen(true)}>
+            <Btn
+              variant="primary"
+              onClick={() => {
+                setEditingAssignment(null);
+                setAssignOpen(true);
+              }}
+            >
               Assign Salary Structure
             </Btn>
             <Btn
@@ -104,7 +111,7 @@ export default function SalaryStructureAssignmentsDashboardTab() {
               <table className="w-full">
                 <thead className="bg-card border-b border-theme">
                   <tr>
-                    {["Employee ID", "Full Name", "Structure", "Date", "Department", "Currency"].map(
+                    {["Employee ID", "Full Name", "Structure", "Date", "Department", "Currency", "Actions"].map(
                       (h) => (
                         <th
                           key={h}
@@ -119,13 +126,13 @@ export default function SalaryStructureAssignmentsDashboardTab() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted">
+                      <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted">
                         Loading assignments...
                       </td>
                     </tr>
                   ) : rows.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted">
+                      <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted">
                         No assignments found
                       </td>
                     </tr>
@@ -141,6 +148,19 @@ export default function SalaryStructureAssignmentsDashboardTab() {
                         <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{r.from_date}</td>
                         <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{r.department || "—"}</td>
                         <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{r.currency || "—"}</td>
+                        <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAssignment(r);
+                              setAssignOpen(true);
+                            }}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-theme bg-card text-main hover:bg-app transition font-bold"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            Edit
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -156,14 +176,19 @@ export default function SalaryStructureAssignmentsDashboardTab() {
           <div className="bg-card border border-theme rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
             <div className="px-6 py-4 bg-app border-b border-theme flex items-center justify-between">
               <div className="min-w-0">
-                <div className="text-sm font-extrabold text-main">Assign Salary Structure</div>
+                <div className="text-sm font-extrabold text-main">
+                  {editingAssignment ? "Edit Salary Structure Assignment" : "Assign Salary Structure"}
+                </div>
                 <div className="text-xs text-muted mt-0.5">
-                  Create a new salary structure assignment
+                  {editingAssignment ? "Update the selected assignment" : "Create a new salary structure assignment"}
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setAssignOpen(false)}
+                onClick={() => {
+                  setAssignOpen(false);
+                  setEditingAssignment(null);
+                }}
                 className="p-2 rounded-lg hover:bg-card text-muted hover:text-main transition"
               >
                 <X className="w-4 h-4" />
@@ -173,15 +198,22 @@ export default function SalaryStructureAssignmentsDashboardTab() {
             <div className="flex-1 overflow-y-auto p-6">
               <SalaryStructureAssignmentTab
                 editableEmployee
+                editingAssignment={editingAssignment}
                 onAssigned={() => {
                   setAssignOpen(false);
+                  setEditingAssignment(null);
                   load();
                 }}
               />
             </div>
 
             <div className="px-6 py-4 border-t border-theme bg-app flex justify-end">
-              <Btn onClick={() => setAssignOpen(false)}>
+              <Btn
+                onClick={() => {
+                  setAssignOpen(false);
+                  setEditingAssignment(null);
+                }}
+              >
                 Close
               </Btn>
             </div>

@@ -144,6 +144,25 @@ export default function PayrollPreviewModal({
     return set;
   }, [detail]);
 
+  const displayComponentName = React.useCallback((name: unknown) => {
+    const raw = String(name ?? "").trim();
+    if (!raw) return "—";
+    const key = raw.toLowerCase();
+    if (key === "income tax") return "PAYE";
+    if (key === "income tax (paye)") return "PAYE";
+    if (key === "paye" || key === "p.a.y.e") return "PAYE";
+    if (key === "it") return "PAYE";
+    return raw;
+  }, []);
+
+  const normalizeComponentKey = React.useCallback(
+    (name: unknown) => {
+      const label = displayComponentName(name);
+      return String(label ?? "").trim().toLowerCase();
+    },
+    [displayComponentName],
+  );
+
   const earnings = React.useMemo(() => {
     if (!enabledComponentKeys || enabledComponentKeys.size === 0) return earningsRaw;
     return (earningsRaw || []).filter((r: any) => enabledComponentKeys.has(String(r?.component ?? "").trim().toLowerCase()));
@@ -157,19 +176,19 @@ export default function PayrollPreviewModal({
   const deductionsDeduped = React.useMemo(() => {
     const map = new Map<string, { component: string; amount: number }>();
     (deductions || []).forEach((row: any) => {
-      const component = String(row?.component ?? "").trim();
-      if (!component) return;
-      const key = component.toLowerCase();
+      const component = displayComponentName(row?.component);
+      const key = normalizeComponentKey(row?.component);
+      if (!key || key === "—") return;
       const amt = Number(row?.amount ?? 0) || 0;
-      const existing = map.get(key);
-      if (!existing) {
+      const prev = map.get(key);
+      if (!prev) {
         map.set(key, { component, amount: amt });
       } else {
-        existing.amount += amt;
+        map.set(key, { component: prev.component, amount: prev.amount + amt });
       }
     });
     return Array.from(map.values());
-  }, [deductions]);
+  }, [deductions, displayComponentName, normalizeComponentKey]);
 
   const fmtMoney = (v: any) => {
     const n = Number(v ?? 0);
@@ -291,7 +310,7 @@ export default function PayrollPreviewModal({
                       earnings.map((row: any, idx: number) => (
                         <div key={`${row?.component ?? idx}`} className="border-b border-theme/60 last:border-0 py-2">
                           <div className="flex items-center justify-between gap-3">
-                            <div className="text-xs font-bold text-main truncate">{String(row?.component ?? "—")}</div>
+                            <div className="text-xs font-bold text-main truncate">{displayComponentName(row?.component)}</div>
                             <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
                               {fmtMoney(row?.amount)}
                             </div>
@@ -311,7 +330,7 @@ export default function PayrollPreviewModal({
                       deductionsDeduped.map((row: any, idx: number) => (
                         <div key={`${row?.component ?? idx}`} className="border-b border-theme/60 last:border-0 py-2">
                           <div className="flex items-center justify-between gap-3">
-                            <div className="text-xs font-bold text-main truncate">{String(row?.component ?? "—")}</div>
+                            <div className="text-xs font-bold text-main truncate">{displayComponentName(row?.component)}</div>
                             <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
                               {fmtMoney(row?.amount)}
                             </div>

@@ -27,6 +27,12 @@ export type GetSalaryStructureAssignmentsParams = {
   name?: string;
 };
 
+export type SalaryStructureAssignmentReplacePayload = {
+  name: string;
+  salary_structure: string;
+  company: string;
+};
+
 export async function createSalaryStructureAssignment(
   payload: SalaryStructureAssignmentCreatePayload,
 ): Promise<any> {
@@ -53,4 +59,12 @@ export async function getSalaryStructureAssignments(
   if (Array.isArray(nested)) return nested as SalaryStructureAssignmentListItem[];
 
   return [];
+}
+
+export async function replaceSalaryStructureAssignment(
+  payload: SalaryStructureAssignmentReplacePayload,
+): Promise<any> {
+  const url = (API.payrollSetup.salaryStructureAssignment as any).replace;
+  const resp: AxiosResponse = await api.put(url, payload);
+  return resp.data?.data ?? resp.data;
 }
