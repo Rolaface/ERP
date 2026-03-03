@@ -865,10 +865,10 @@ export default function PayrollManagement() {
                   <thead className="bg-muted/5">
                     <tr>
                       {[
-                        "Slip ID",
-                        "Employee",
-                        "Reference #",
-                        "Structure",
+                        "Slip No",
+                        "Employee No",
+                        "Reference No",
+                        "Salary Structure",
                         "Start",
                         "End",
                         "Payslip Status",
