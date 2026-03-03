@@ -64,23 +64,15 @@ export default function PayrollPreviewModal({
   };
 
   React.useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      missingStructureAlertShownRef.current = false;
+      return;
+    }
     const name = String(structureName ?? "").trim();
     if (!name) {
       setDetail(null);
       setError("Please select a salary structure");
       setLoading(false);
-
-      if (!missingStructureAlertShownRef.current) {
-        missingStructureAlertShownRef.current = true;
-        void Swal.fire({
-          icon: "error",
-          title: "Salary Structure Not Found",
-          text: "Please select a salary structure before running payroll.",
-          confirmButtonText: "OK",
-          confirmButtonColor: "#2563eb",
-        }).then(() => onClose());
-      }
       return;
     }
 
@@ -105,7 +97,7 @@ export default function PayrollPreviewModal({
               text: "The selected salary structure could not be loaded. Please select another one.",
               confirmButtonText: "OK",
               confirmButtonColor: "#2563eb",
-            }).then(() => onClose());
+            });
           }
           return;
         }
