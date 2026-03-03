@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Save } from "lucide-react";
 import toast from "react-hot-toast";
 import HrDateInput from "../../../components/Hr/HrDateInput";
-import { createSalaryStructureAssignment } from "../../../api/salaryStructureAssignmentApi";
+import {
+  createSalaryStructureAssignment,
+  replaceSalaryStructureAssignment,
+  type SalaryStructureAssignmentListItem,
+} from "../../../api/salaryStructureAssignmentApi";
 import { getSalaryStructures, type SalaryStructureListItem } from "../../../api/salaryStructureApi";
 import { getAllEmployees } from "../../../api/employeeapi";
 
@@ -10,6 +14,7 @@ type Props = {
   employeeId?: string;
   defaultCompany?: string;
   editableEmployee?: boolean;
+  editingAssignment?: SalaryStructureAssignmentListItem | null;
   onAssigned?: () => void;
 };
 
@@ -22,6 +27,7 @@ export default function SalaryStructureAssignmentTab({
   employeeId,
   defaultCompany,
   editableEmployee,
+  editingAssignment,
   onAssigned,
 }: Props) {
   const [loading, setLoading] = useState(false);
@@ -37,6 +43,19 @@ export default function SalaryStructureAssignmentTab({
     from_date: new Date().toISOString().slice(0, 10),
     company: defaultCompany || "",
   });
+
+  const isEditing = Boolean(editingAssignment?.name);
+
+  useEffect(() => {
+    if (!editingAssignment) return;
+    setForm((p) => ({
+      ...p,
+      employee: String(editingAssignment.employee ?? p.employee ?? ""),
+      salary_structure: String(editingAssignment.salary_structure ?? p.salary_structure ?? ""),
+      from_date: String(editingAssignment.from_date ?? p.from_date ?? ""),
+      company: String(editingAssignment.company ?? p.company ?? ""),
+    }));
+  }, [editingAssignment]);
 
   useEffect(() => {
     if (!employeeId) return;
@@ -128,12 +147,10 @@ export default function SalaryStructureAssignmentTab({
   }, [employees]);
 
   const canSubmit = useMemo(() => {
-    return Boolean(
-      form.employee?.trim() &&
-        form.salary_structure?.trim() &&
-        form.from_date?.trim() &&
-        form.company?.trim(),
-    );
+    if (isEditing) {
+      return Boolean(form.employee?.trim() && form.salary_structure?.trim() && form.company?.trim());
+    }
+    return Boolean(form.employee?.trim() && form.salary_structure?.trim() && form.from_date?.trim() && form.company?.trim());
   }, [form]);
 
   const handleAssign = async () => {
@@ -144,16 +161,25 @@ export default function SalaryStructureAssignmentTab({
 
     setLoading(true);
     try {
-      await createSalaryStructureAssignment({
-        employee: form.employee.trim(),
-        salary_structure: form.salary_structure.trim(),
-        from_date: form.from_date,
-        company: form.company.trim(),
-      });
-      toast.success("Salary structure assigned");
+      if (isEditing && editingAssignment?.name) {
+        await replaceSalaryStructureAssignment({
+          name: String(editingAssignment.name).trim(),
+          salary_structure: form.salary_structure.trim(),
+          company: form.company.trim(),
+        });
+        toast.success("Salary structure assignment updated");
+      } else {
+        await createSalaryStructureAssignment({
+          employee: form.employee.trim(),
+          salary_structure: form.salary_structure.trim(),
+          from_date: form.from_date,
+          company: form.company.trim(),
+        });
+        toast.success("Salary structure assigned");
+      }
       onAssigned?.();
     } catch (e: any) {
-      toast.error(e?.message || "Failed to assign salary structure");
+      toast.error(e?.message || (isEditing ? "Failed to update assignment" : "Failed to assign salary structure"));
     } finally {
       setLoading(false);
     }
@@ -179,7 +205,7 @@ export default function SalaryStructureAssignmentTab({
               value={form.employee}
               onChange={(e) => setForm((p) => ({ ...p, employee: e.target.value }))}
               className={selectCls}
-              disabled={employeesLoading}
+              disabled={employeesLoading || isEditing}
             >
               <option value="">{employeesLoading ? "Loading..." : "Select employee"}</option>
               {employeeOptions.map((o) => (
@@ -236,6 +262,7 @@ export default function SalaryStructureAssignmentTab({
             onChange={(v: string) => setForm((p) => ({ ...p, from_date: v }))}
             placeholder="DD/MM/YYYY"
             inputClassName={inputCls}
+            disabled={isEditing}
           />
         </div>
       </div>
@@ -245,10 +272,10 @@ export default function SalaryStructureAssignmentTab({
           type="button"
           onClick={handleAssign}
           disabled={!canSubmit || loading}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-xs font-extrabold disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-white text-sm font-extrabold shadow-sm hover:opacity-95 active:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-40 disabled:cursor-not-allowed min-w-40"
         >
           <Save className="w-4 h-4" />
-          Assign
+          {loading ? (isEditing ? "Updating..." : "Assigning...") : isEditing ? "Update" : "Assign"}
         </button>
       </div>
     </div>

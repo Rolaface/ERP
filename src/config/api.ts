@@ -28,6 +28,7 @@ export const API = {
     salaryStructureAssignment: {
       create: `${ERP_BASE}/api/method/payroll_rola_izyane.api.salary_structure_assignment.api.create_salary_structure_assignment`,
       getAll: `${ERP_BASE}/api/method/payroll_rola_izyane.api.salary_structure_assignment.api.get_salary_structure_assignment`,
+      replace: `${ERP_BASE}/api/method/payroll_rola_izyane.api.salary_structure_assignment.api.replace_salary_structure_assignment`,
     },
     salaryComponent: {
       create: `${ERP_BASE}/api/method/payroll_rola_izyane.api.salary_component.api.create_salary_component`,
