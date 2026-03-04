@@ -304,7 +304,7 @@ export default function AdvanceLoanTab() {
                 <div className="px-6 py-4 border-b border-theme flex items-center justify-between">
                     <div>
                         <div className="text-xs font-extrabold text-main uppercase tracking-wider">
-                            Advance & Loan
+                            Aditional Salary
                         </div>
                         <div className="text-[11px] text-muted mt-1">
                             Search, view and create advances
