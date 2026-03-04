@@ -620,6 +620,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
               <TermsAndCondition
                 terms={formData.terms?.selling}
                 setTerms={actions.setTerms}
+                 type="selling"
               />
             </div>
           )}

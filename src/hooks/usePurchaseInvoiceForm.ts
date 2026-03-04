@@ -41,12 +41,18 @@ export const usePurchaseInvoiceForm = ({
   pId,
 }: UsePurchaseInvoiceFormProps) => {
   const [form, setForm] = useState<PurchaseInvoiceFormData>(emptyPOForm);
+const [usePO, setUsePO] = useState(false);
   const [activeTab, setActiveTab] = useState<POTab>("details");
   const [saving, setSaving] = useState(false);
   const [poList, setPoList] = useState<any[]>([]);
   const [customShippingRule, setCustomShippingRule] = useState("");
   const [customIncoterm, setCustomIncoterm] = useState("");
   const [poLoading, setPoLoading] = useState(false);
+  const [companyDefaults, setCompanyDefaults] = useState<
+  Partial<PurchaseInvoiceFormData>
+>({});
+
+
   useEffect(() => {
     if (!isOpen) {
       setForm(emptyPOForm);
@@ -79,27 +85,42 @@ useEffect(() => {
         return;
       }
 
-      setForm((prev) => ({
-        ...prev,
-        terms: {
-          buying: company.terms?.buying || prev.terms?.buying,
-        },
-        addresses: {
-          ...prev.addresses,
-          companyBillingAddress: {
-            addressTitle: company.companyName || "",
-            addressType: "Billing",
-            addressLine1: company.address?.addressLine1 || "",
-            addressLine2: company.address?.addressLine2 || "",
-            city: company.address?.city || "",
-            state: company.address?.province || "",
-            postalCode: company.address?.postalCode || "",
-            country: company.address?.country || "",
-            phone: company.contactInfo?.companyPhone || "",
-            email: company.contactInfo?.companyEmail || "",
-          },
-        },
-      }));
+     const buyingTerms = company.terms?.buying;
+
+const companyBillingAddress: AddressBlock = {
+  addressTitle: company.companyName || "",
+  addressType: "Billing",
+  addressLine1: company.address?.addressLine1 || "",
+  addressLine2: company.address?.addressLine2 || "",
+  city: company.address?.city || "",
+  state: company.address?.province || "",
+  postalCode: company.address?.postalCode || "",
+  country: company.address?.country || "",
+  phone: company.contactInfo?.companyPhone || "",
+  email: company.contactInfo?.companyEmail || "",
+};
+
+setCompanyDefaults({
+  terms: { buying: buyingTerms },
+  addresses: {
+    supplierAddress: emptyPOForm.addresses.supplierAddress,
+    dispatchAddress: emptyPOForm.addresses.dispatchAddress,
+    shippingAddress: emptyPOForm.addresses.shippingAddress,
+    companyBillingAddress,
+  },
+});
+
+setForm((prev) => ({
+  ...prev,
+  terms: {
+    ...prev.terms,
+    buying: buyingTerms || prev.terms?.buying,
+  },
+  addresses: {
+    ...prev.addresses,
+    companyBillingAddress,
+  },
+}));
     } catch (e) {
       console.error("Failed to load company data", e);
     }
@@ -185,25 +206,75 @@ useEffect(() => {
   };
 
 const handlePOSelect = async (po: any) => {
-  if (!po) return;
+  if (!po?.poId) return;
 
   try {
     const res = await getPurchaseOrderById(po.poId);
-    const data = res?.data;
-    if (!data) return;
 
-    setForm(prev => ({
+    if (!res || res.status_code !== 200) {
+      showApiError({ message: "Failed to fetch PO" });
+      return;
+    }
+
+    const data = res.data;
+
+    const taxRate = Number(
+      (data.tax?.taxRate || "0").replace("%", "")
+    );
+
+    // Reset custom fields
+    setCustomIncoterm("");
+    setCustomShippingRule("");
+
+    // Fetch item descriptions from item master
+    const enrichedItems = await Promise.all(
+      (data.items || []).map(async (item: any) => {
+        let description = "";
+
+        try {
+          const itemRes = await getItemByItemCode(item.item_code);
+          if (itemRes?.status_code === 200) {
+            description = itemRes.data?.description || "";
+          }
+        } catch {}
+
+        return {
+          itemCode: item.item_code,
+          itemName: item.item_name,
+          quantity: Number(item.qty || 0),
+          rate: Number(item.rate || 0),
+          uom: item.uom || "",
+          vatCd: item.vatCd || "",
+          vatRate: taxRate,
+          description,
+          packingUnit: Number(item.packingUnit || 0),
+          packingSize: Number(item.packingSize || 0),
+          packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
+          batchNo: item.batchNo || "",
+          mfgDate: item.mfgDate || "",
+          expDate: "",
+          discount: 0,
+        };
+      })
+    );
+
+    setForm((prev) => ({
       ...prev,
 
+      // BASIC INFO
       poNumber: data.poId,
       supplier: data.supplierName,
-      currency: data.currency,
+      currency: data.currency || "",
       taxCategory: data.taxCategory || "",
-      project: data.project,
-      costCenter: data.costCenter,
-      incoterm: data.incoterm,
+      project: data.project || "",
+      costCenter: data.costCenter || "",
+      incoterm:
+        typeof data.incoterm === "string"
+          ? data.incoterm.trim().toUpperCase()
+          : "",
       placeOfSupply: data.placeOfSupply || "",
 
+      // ADDRESSES
       addresses: {
         ...prev.addresses,
         supplierAddress: data.addresses?.supplierAddress || prev.addresses.supplierAddress,
@@ -211,32 +282,38 @@ const handlePOSelect = async (po: any) => {
         shippingAddress: data.addresses?.shippingAddress || prev.addresses.shippingAddress,
       },
 
-      items: (data.items || []).map((item: any) => ({
-        itemCode: item.item_code,
-        itemName: item.item_name,
-        quantity: item.qty,
-        rate: item.rate,
-        uom: item.uom,
-        vatCd: "",
-        vatRate: Number(data.tax?.taxRate?.replace("%", "") || 0),
-        description: "",
-      packingUnit: Number(item.packingUnit || 0),
-packingSize: Number(item.packingSize || 0),
-packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
-        batchNo: "",
-        mfgDate: "",
-        expDate: "",
-        discount: 0,
-      })),
+      // TERMS
+      terms: {
+        buying: data.terms?.terms?.buying || prev.terms?.buying,
+      },
 
-      totalQuantity: data.summary?.totalQuantity || 0,
-      grandTotal: data.summary?.grandTotal || 0,
-      roundingAdjustment: data.summary?.roundingAdjustment || 0,
-      roundedTotal: data.summary?.roundedTotal || 0,
+      // ITEMS
+      items: enrichedItems,
+
+      // // SUMMARY
+      // totalQuantity: data.summary?.totalQuantity || 0,
+      // grandTotal: data.summary?.grandTotal || 0,
+      // roundingAdjustment: data.summary?.roundingAdjustment || 0,
+      // roundedTotal: data.summary?.roundedTotal || 0,
     }));
 
   } catch (e) {
     showApiError({ message: "Failed to load PO details" });
+  }
+};
+const handleTogglePO = (checked: boolean) => {
+  setUsePO(checked);
+
+  if (!checked) {
+    setForm(prev => ({
+      ...prev,
+      poNumber: "",
+      items: [{ ...emptyItem }],
+      totalQuantity: 0,
+      grandTotal: 0,
+      roundingAdjustment: 0,
+      roundedTotal: 0,
+    }));
   }
 };
   const handleFormChange = (
@@ -292,7 +369,13 @@ packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
       }));
 setPoLoading(true);
 setPoList([]);
-setForm(prev => ({ ...prev, poNumber: "" }));
+setUsePO(false);
+
+setForm(prev => ({
+  ...prev,
+  poNumber: "",
+  items: [{ ...emptyItem }],
+}));
 
 try {
   const poRes = await getPurchaseOrders(1, 100, {
@@ -530,10 +613,33 @@ packing: `${data.pakingUnit || 0} x ${data.packingSize || 0}`,
     }
   };
 
-  const reset = () => {
-    setForm(emptyPOForm);
-    setActiveTab("details");
-  };
+const reset = () => {
+  setForm({
+    ...emptyPOForm,
+
+    terms: {
+     buying:
+  companyDefaults.terms?.buying ??
+  emptyPOForm.terms?.buying!,
+    },
+    addresses: {
+      supplierAddress:
+        emptyPOForm.addresses.supplierAddress,
+
+      dispatchAddress:
+        emptyPOForm.addresses.dispatchAddress,
+
+      shippingAddress:
+        emptyPOForm.addresses.shippingAddress,
+
+      companyBillingAddress:
+        companyDefaults.addresses?.companyBillingAddress ??
+        emptyPOForm.addresses.companyBillingAddress,
+    },
+  });
+
+  setActiveTab("details");
+};
 
   return {
     form,
@@ -565,6 +671,8 @@ packing: `${data.pakingUnit || 0} x ${data.packingSize || 0}`,
     setCustomIncoterm,
     poLoading,
     setPoLoading,
+    usePO,
+handleTogglePO,
   };
 };
 

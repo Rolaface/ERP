@@ -21,6 +21,9 @@ interface DetailsTabProps {
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
   getCurrencySymbol: () => string;
+
+  fromPO: boolean;
+  setFromPO: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const DetailsTab = ({
@@ -33,6 +36,8 @@ export const DetailsTab = ({
   onAddItem,
   onRemoveItem,
   getCurrencySymbol,
+  fromPO,
+  setFromPO,
 }: DetailsTabProps) => {
   const symbol = getCurrencySymbol();
 
@@ -67,6 +72,7 @@ export const DetailsTab = ({
               onChange={onSupplierChange}
             />
           </div>
+          
           <div className="w-[120px]">
             <ModalInput
               label="Date"
@@ -82,6 +88,7 @@ export const DetailsTab = ({
               label="Status"
               name="status"
               value={form.status}
+              disabled={!fromPO}
               onChange={onFormChange}
               options={[
                 { value: "Draft", label: "Draft" },

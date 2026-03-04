@@ -645,6 +645,7 @@ ${ui.isExport
             <TermsAndCondition
               terms={formData.terms.selling}
               setTerms={actions.setTerms}
+              type="selling"
             />
           )}
 

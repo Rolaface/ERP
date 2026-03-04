@@ -44,6 +44,11 @@ export const usePurchaseOrderForm = ({
   const [saving, setSaving] = useState(false);
   const [customShippingRule, setCustomShippingRule] = useState("");
   const [customIncoterm, setCustomIncoterm] = useState("");
+  const [companyDefaults, setCompanyDefaults] = useState<{
+  buyingTerms?: any;
+  companyBillingAddress?: any;
+  baseCurrency?: string;
+}>({});
 
   useEffect(() => {
     if (!isOpen) {
@@ -67,36 +72,41 @@ export const usePurchaseOrderForm = ({
         res;
 
       if (!company?.companyName) return;
+      const buyingTerms = company?.terms?.buying;
+const baseCurrency = company?.financialConfig?.baseCurrency;
 
-      setForm((prev) => ({
-        ...prev,
+const companyBillingAddress: AddressBlock = {
+  addressTitle: company.companyName || "",
+  addressType: "Billing",
+  addressLine1: company.address?.addressLine1 || "",
+  addressLine2: company.address?.addressLine2 || "",
+  city: company.address?.city || "",
+  state: company.address?.province || "",
+  postalCode: company.address?.postalCode || "",
+  country: company.address?.country || "",
+  phone: company.contactInfo?.companyPhone || "",
+  email: company.contactInfo?.companyEmail || "",
+};
 
-        // ✅ Buying Terms
-        terms: {
-          buying: company.terms?.buying || prev.terms?.buying,
-        },
+setCompanyDefaults({
+  buyingTerms,
+  baseCurrency,
+  companyBillingAddress,
+});
 
-        // ✅ Base Currency (Recommended)
-        currency:
-          company.financialConfig?.baseCurrency || prev.currency,
+setForm((prev) => ({
+  ...prev,
+  terms: {
+    ...prev.terms,
+    buying: buyingTerms || prev.terms?.buying,
+  },
+  currency: baseCurrency || prev.currency,
+  addresses: {
+    ...prev.addresses,
+    companyBillingAddress,
+  },
+}));
 
-        // ✅ Company Billing Address
-        addresses: {
-          ...prev.addresses,
-          companyBillingAddress: {
-            addressTitle: company.companyName || "",
-            addressType: "Billing",
-            addressLine1: company.address?.addressLine1 || "",
-            addressLine2: company.address?.addressLine2 || "",
-            city: company.address?.city || "",
-            state: company.address?.province || "",
-            postalCode: company.address?.postalCode || "",
-            country: company.address?.country || "",
-            phone: company.contactInfo?.companyPhone || "",
-            email: company.contactInfo?.companyEmail || "",
-          },
-        },
-      }));
     } catch (e) {
       console.error("Failed to load company data", e);
     }
@@ -466,11 +476,31 @@ export const usePurchaseOrderForm = ({
     }
   };
 
-  const reset = () => {
-    setForm(emptyPOForm);
-    setActiveTab("details");
-  };
+const reset = () => {
+  setForm({
+    ...emptyPOForm,
 
+    terms: {
+      ...(emptyPOForm.terms ?? {}),
+      buying:
+        companyDefaults.buyingTerms ??
+        emptyPOForm.terms?.buying,
+    },
+
+    currency:
+      companyDefaults.baseCurrency ??
+      emptyPOForm.currency,
+
+    addresses: {
+      ...(emptyPOForm.addresses ?? {}),
+      companyBillingAddress:
+        companyDefaults.companyBillingAddress ??
+        emptyPOForm.addresses?.companyBillingAddress,
+    },
+  });
+
+  setActiveTab("details");
+};
   return {
     form,
     activeTab,

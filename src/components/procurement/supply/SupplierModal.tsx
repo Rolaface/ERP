@@ -152,6 +152,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     setTerms={(updated) =>
       handleTermsChange("buying", updated)
     }
+    type="buying"
   />
 )}
         </div>

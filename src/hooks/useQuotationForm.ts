@@ -59,7 +59,23 @@ export const useQuotationForm = (
   const [sameAsBilling, setSameAsBilling] = useState(true);
   const [itemMaster, setItemMaster] = useState<any[]>([]);
   const [itemMasterLoading, setItemMasterLoading] = useState(false);
-
+// Hook ke andar, states ke upar ya niche ye helper rakhein
+const mapCompanyToForm = (company: any) => {
+  const defaultBank = getDefaultBank(company?.bankAccounts);
+  return {
+    paymentInformation: {
+      paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
+      paymentMethod: "01",
+      bankName: defaultBank?.bankName ?? "",
+      accountNumber: defaultBank?.accountNo ?? "",
+      routingNumber: defaultBank?.sortCode ?? "",
+      swiftCode: defaultBank?.swiftCode ?? "",
+    },
+    terms: {
+      selling: company?.terms?.selling ?? { payment: { phases: [] } },
+    }
+  };
+};
 
   const shippingEditedRef = useRef(false);
 
@@ -81,30 +97,23 @@ export const useQuotationForm = (
 
     setPage(0);
   }, [isOpen]);
+useEffect(() => {
+  if (!isOpen || companyLoadedRef.current) return;
+  companyLoadedRef.current = true;
 
-  useEffect(() => {
-    if (!isOpen || companyLoadedRef.current) return;
+  getCompanyById(COMPANY_ID).then((res) => {
+    const company = res?.data;
+    setCompanyData(company); 
 
-    companyLoadedRef.current = true;
-
-    getCompanyById(COMPANY_ID).then((res) => {
-      const company = res?.data;
-      setCompanyData(company); // store it
-
-      setFormData((prev) => ({
-        ...prev,
-        paymentInformation: {
-          ...prev.paymentInformation,
-          paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
-          bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-          accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-          routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-          swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
-        },
-      }));
-    });
-  }, [isOpen]);
-
+    // Helper use karke data map karein
+    const companyDefaults = mapCompanyToForm(company);
+    
+    setFormData((prev) => ({
+      ...prev,
+      ...companyDefaults, // Direct spread karein
+    }));
+  });
+}, [isOpen]);
   useEffect(() => {
     if (!isOpen) {
       companyLoadedRef.current = false;
@@ -416,36 +425,40 @@ export const useQuotationForm = (
     if (!checked) shippingEditedRef.current = false;
   };
 
-  const handleReset = () => {
+const handleReset = () => {
+  if (initialData) {
+    // Agar Edit mode hai, to initialData par wapas jao
+    setFormData({
+      ...DEFAULT_INVOICE_FORM,
+      ...initialData,
+      dateOfInvoice: initialData.dateOfQuotation,
+      dueDate: initialData.validUntil,
+      // ... baki mapping jo aapne useEffect mein ki hai
+    });
+    setCustomerNameDisplay(initialData.customer?.name ?? "");
+    setCustomerDetails(initialData.customer);
+    setSameAsBilling(false);
+  } else {
+    // Agar New Quotation hai, to purana logic (Company Defaults)
     if (!companyData) return;
-
-    const company = companyData;
+    const companyDefaults = mapCompanyToForm(companyData);
 
     setFormData({
       ...DEFAULT_INVOICE_FORM,
+      ...companyDefaults,
       invoiceType: "Non-Export",
       invoiceStatus: "Draft",
-      industryBases: "",
-      shippingAddress: { ...DEFAULT_INVOICE_FORM.billingAddress },
-
-      paymentInformation: {
-        paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
-        paymentMethod: "",
-        bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-        accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-        routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-        swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
-      },
+      dateOfInvoice: new Date().toISOString().split("T")[0],
     });
-
-    setSameAsBilling(true);
-    shippingEditedRef.current = false;
-    setPage(0);
     setCustomerNameDisplay("");
     setCustomerDetails(null);
-
-  };
-
+    setSameAsBilling(true);
+  }
+  
+  setPage(0);
+  shippingEditedRef.current = false;
+  setTaxCategory("");
+};
   const { subTotal, totalTax, grandTotal } = useMemo(() => {
     let sub = 0;
     let tax = 0;

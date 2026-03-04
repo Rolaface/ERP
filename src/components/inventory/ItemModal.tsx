@@ -8,7 +8,7 @@ import { YesNoCheckbox } from "../ui/modal/modalComponent";
 
 /** Tiny label text with optional required asterisk */
 const FieldLabel: React.FC<{ label: string; required?: boolean }> = ({ label, required }) => (
-  <span className={`text-[11px] font-medium uppercase tracking-wide ${required ? "text-muted" : "text-muted"}`}>
+  <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
     {label}
     {required && <span className="ml-0.5 text-danger">*</span>}
   </span>
@@ -52,26 +52,9 @@ const DynamicFieldWrapper: React.FC<{
     }}
   >
     <style>{`
-   .dynamic-field-wrap label > span:first-child,
-.dynamic-field-wrap span:first-child {
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  text-transform: uppercase !important;
-  line-height: 1 !important;
-  letter-spacing: 0.05em !important;
-}
 
 .dynamic-field-wrap label > span:first-child {
   color: var(--text-muted);
-}
-
-.dynamic-field-wrap label > span:first-child span {
-  color: var(--color-danger) !important;
-}
-
-.dynamic-field-wrap span:has(> span) > span,
-.dynamic-field-wrap label span span {
-  color: var(--color-danger) !important;
 }
       .dynamic-field-wrap input,
       .dynamic-field-wrap select,
@@ -610,6 +593,7 @@ const ItemModal: React.FC<{
                     name="taxCategory"
                     value={form.taxCategory}
                     onChange={handleForm}
+                    required
                   >
                     <option value="">Select…</option>
                     {Object.keys(taxConfigs).map((key) => (

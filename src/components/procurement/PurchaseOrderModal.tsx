@@ -150,6 +150,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
               setTerms={(buying) =>
                 setForm((p) => ({ ...p, terms: { buying } }))
               }
+              type="buying"
             />
           )}
         </section>
