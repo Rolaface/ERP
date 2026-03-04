@@ -64,23 +64,15 @@ export default function PayrollPreviewModal({
   };
 
   React.useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      missingStructureAlertShownRef.current = false;
+      return;
+    }
     const name = String(structureName ?? "").trim();
     if (!name) {
       setDetail(null);
       setError("Please select a salary structure");
       setLoading(false);
-
-      if (!missingStructureAlertShownRef.current) {
-        missingStructureAlertShownRef.current = true;
-        void Swal.fire({
-          icon: "error",
-          title: "Salary Structure Not Found",
-          text: "Please select a salary structure before running payroll.",
-          confirmButtonText: "OK",
-          confirmButtonColor: "#2563eb",
-        }).then(() => onClose());
-      }
       return;
     }
 
@@ -105,7 +97,7 @@ export default function PayrollPreviewModal({
               text: "The selected salary structure could not be loaded. Please select another one.",
               confirmButtonText: "OK",
               confirmButtonColor: "#2563eb",
-            }).then(() => onClose());
+            });
           }
           return;
         }
@@ -296,48 +288,6 @@ export default function PayrollPreviewModal({
                     <div className="text-xs font-bold text-main mt-1">
                       {Boolean((detail as any)?.is_active) ? "Active" : "Inactive"}
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="border border-theme rounded-xl bg-card p-4">
-                  <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">Earnings</div>
-                  <div className="mt-3 space-y-2">
-                    {earnings.length === 0 ? (
-                      <div className="text-xs text-muted">—</div>
-                    ) : (
-                      earnings.map((row: any, idx: number) => (
-                        <div key={`${row?.component ?? idx}`} className="border-b border-theme/60 last:border-0 py-2">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="text-xs font-bold text-main truncate">{displayComponentName(row?.component)}</div>
-                            <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
-                              {fmtMoney(row?.amount)}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="border border-theme rounded-xl bg-card p-4">
-                  <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">Deductions</div>
-                  <div className="mt-3 space-y-2">
-                    {deductionsDeduped.length === 0 ? (
-                      <div className="text-xs text-muted">—</div>
-                    ) : (
-                      deductionsDeduped.map((row: any, idx: number) => (
-                        <div key={`${row?.component ?? idx}`} className="border-b border-theme/60 last:border-0 py-2">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="text-xs font-bold text-main truncate">{displayComponentName(row?.component)}</div>
-                            <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
-                              {fmtMoney(row?.amount)}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
                   </div>
                 </div>
               </div>

@@ -8,15 +8,16 @@ import {
     X,
 } from "lucide-react";
 import {
-    createEmployeeAdvance,
-    getEmployeeAdvanceById,
-    getEmployeeAdvancesPaged,
-    type CreateEmployeeAdvancePayload,
-    type EmployeeAdvanceDetail,
-    type EmployeeAdvanceRecord,
-    type EmployeeAdvancesPage,
-} from "../../../api/advanceLoanApi";
+    createAdditionalSalary,
+    getAdditionalSalaryById,
+    getAdditionalSalariesPaged,
+    type CreateAdditionalSalaryPayload,
+    type AdditionalSalaryDetail,
+    type AdditionalSalaryRecord,
+    type AdditionalSalaryPage,
+} from "../../../api/additionalSalaryApi";
 import { getAllEmployees } from "../../../api/employeeapi";
+import { getSalaryComponents, type SalaryComponentListItem } from "../../../api/salaryStructureApi";
 import { closeSwal, showApiError, showLoading, showSuccess } from "../../../utils/alert";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,11 +68,11 @@ const Btn: React.FC<{
 export default function AdvanceLoanTab() {
     const [searchEmpId, setSearchEmpId] = useState("");
     const [selectedName, setSelectedName] = useState<string | null>(null);
-    const [selectedDetail, setSelectedDetail] = useState<EmployeeAdvanceDetail | null>(null);
+    const [selectedDetail, setSelectedDetail] = useState<AdditionalSalaryDetail | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
-    const [advances, setAdvances] = useState<EmployeeAdvanceRecord[]>([]);
-    const [advancesPage, setAdvancesPage] = useState<EmployeeAdvancesPage | null>(null);
-    const [searchRecords, setSearchRecords] = useState<EmployeeAdvanceRecord[]>([]);
+    const [advances, setAdvances] = useState<AdditionalSalaryRecord[]>([]);
+    const [advancesPage, setAdvancesPage] = useState<AdditionalSalaryPage | null>(null);
+    const [searchRecords, setSearchRecords] = useState<AdditionalSalaryRecord[]>([]);
     const [page, setPage] = useState(1);
     const pageSize = 10;
     const [loading, setLoading] = useState(false);
@@ -83,26 +84,18 @@ export default function AdvanceLoanTab() {
     const [employeeQuery, setEmployeeQuery] = useState("");
     const [employeeDropdownOpen, setEmployeeDropdownOpen] = useState(false);
     const [employeeListLoading, setEmployeeListLoading] = useState(false);
-    const [departmentLocked, setDepartmentLocked] = useState(false);
+    const [salaryComponents, setSalaryComponents] = useState<SalaryComponentListItem[]>([]);
+    const [salaryComponentsLoading, setSalaryComponentsLoading] = useState(false);
 
-    const [createData, setCreateData] = useState<CreateEmployeeAdvancePayload>(
-        {
-            employee: "",
-            department: "",
-            advance_amount: 0,
-            purpose: "",
-            repay_unclaimed_amount_from_salary: 1,
-        }
-    );
-
-    const departmentOptions = useMemo(() => {
-        const set = new Set<string>();
-        employees.forEach((e: any) => {
-            const dept = String(e?.department ?? e?.employmentInfo?.Department ?? e?.employmentInfo?.department ?? "").trim();
-            if (dept) set.add(dept);
-        });
-        return Array.from(set).sort((a, b) => a.localeCompare(b));
-    }, [employees]);
+    const [createData, setCreateData] = useState<CreateAdditionalSalaryPayload>({
+        employee: "",
+        from_date: "",
+        to_date: "",
+        salary_component: "",
+        type: "",
+        amount: 0,
+        is_recurring: 1,
+    });
 
     const filteredEmployees = useMemo(() => {
         const q = String(employeeQuery ?? "").trim().toLowerCase();
@@ -128,7 +121,7 @@ export default function AdvanceLoanTab() {
     const searchQuery = useMemo(() => String(searchEmpId ?? "").trim().toLowerCase(), [searchEmpId]);
 
     const filteredSearchRecords = useMemo(() => {
-        if (!searchQuery) return [] as EmployeeAdvanceRecord[];
+        if (!searchQuery) return [] as AdditionalSalaryRecord[];
         return (Array.isArray(searchRecords) ? searchRecords : []).filter((adv) => {
             return (
                 String(adv.employee ?? "").toLowerCase().includes(searchQuery) ||
@@ -156,12 +149,12 @@ export default function AdvanceLoanTab() {
         setListLoading(true);
         try {
             const p = Number(nextPage ?? page) || 1;
-            const data = await getEmployeeAdvancesPaged({ page: p, page_size: pageSize });
+            const data = await getAdditionalSalariesPaged({ page: p, page_size: pageSize });
             setAdvancesPage(data);
             setAdvances(data?.records || []);
             setPage(Number(data?.pagination?.page ?? p) || p);
         } catch (err) {
-            console.error("Failed to fetch all advances", err);
+            console.error("Failed to fetch additional salaries", err);
             showApiError(err);
         } finally {
             setListLoading(false);
@@ -171,7 +164,7 @@ export default function AdvanceLoanTab() {
     const fetchAllAdvancesForSearch = async () => {
         setListLoading(true);
         try {
-            const data = await getEmployeeAdvancesPaged({ page: 1, page_size: 1000 });
+            const data = await getAdditionalSalariesPaged({ page: 1, page_size: 1000 });
             setSearchRecords(data?.records || []);
         } catch (err) {
             setSearchRecords([]);
@@ -222,11 +215,30 @@ export default function AdvanceLoanTab() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchQuery]);
 
+    const fetchSalaryComponents = async () => {
+        setSalaryComponentsLoading(true);
+        try {
+            const data = await getSalaryComponents();
+            setSalaryComponents(Array.isArray(data) ? data.filter((c) => c.enabled) : []);
+        } catch (e) {
+            setSalaryComponents([]);
+            console.error("Failed to fetch salary components", e);
+        } finally {
+            setSalaryComponentsLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (!isCreating) return;
         if (employees.length > 0) return;
         fetchEmployees();
     }, [employees.length, isCreating]);
+
+    useEffect(() => {
+        if (!isCreating) return;
+        if (salaryComponents.length > 0) return;
+        fetchSalaryComponents();
+    }, [salaryComponents.length, isCreating]);
 
     useEffect(() => {
         const run = async () => {
@@ -236,7 +248,7 @@ export default function AdvanceLoanTab() {
             }
             setDetailLoading(true);
             try {
-                const detail = await getEmployeeAdvanceById(selectedName);
+                const detail = await getAdditionalSalaryById(selectedName);
                 setSelectedDetail(detail);
             } catch (e: any) {
                 setSelectedDetail(null);
@@ -255,29 +267,30 @@ export default function AdvanceLoanTab() {
         setLoading(true);
         setError(null);
         try {
-            showLoading("Creating advance request...");
-            const res = await createEmployeeAdvance(createData);
+            showLoading("Creating additional salary...");
+            const res = await createAdditionalSalary(createData);
             if (res) {
                 setIsCreating(false);
                 fetchAllAdvances(page);
                 setCreateData({
                     employee: "",
-                    department: "",
-                    advance_amount: 0,
-                    purpose: "",
-                    repay_unclaimed_amount_from_salary: 1,
+                    from_date: "",
+                    to_date: "",
+                    salary_component: "",
+                    type: "",
+                    amount: 0,
+                    is_recurring: 1,
                 });
                 setEmployeeQuery("");
-                setDepartmentLocked(false);
                 closeSwal();
-                showSuccess("Advance request created successfully");
+                showSuccess("Additional salary created successfully");
                 return;
             }
 
             closeSwal();
-            showApiError("Failed to create advance.");
+            showApiError("Failed to create additional salary.");
         } catch (err: any) {
-            setError(err.message || "Failed to create advance.");
+            setError(err.message || "Failed to create additional salary.");
             closeSwal();
             showApiError(err);
         } finally {
@@ -291,7 +304,7 @@ export default function AdvanceLoanTab() {
                 <div className="px-6 py-4 border-b border-theme flex items-center justify-between">
                     <div>
                         <div className="text-xs font-extrabold text-main uppercase tracking-wider">
-                            Advance & Loan
+                            Aditional Salary
                         </div>
                         <div className="text-[11px] text-muted mt-1">
                             Search, view and create advances
@@ -305,7 +318,6 @@ export default function AdvanceLoanTab() {
                                 setIsCreating(true);
                                 setEmployeeQuery("");
                                 setEmployeeDropdownOpen(false);
-                                setDepartmentLocked(false);
                             }}
                         >
                             + New Request
@@ -362,15 +374,16 @@ export default function AdvanceLoanTab() {
                                 <table className="w-full">
                                     <thead className="bg-card border-b border-theme">
                                         <tr>
-                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">Employee ID</th>
+                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">ID</th>
+                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">Employee</th>
                                             <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">Employee Name</th>
-                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">Company</th>
                                             <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">Department</th>
-                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">Posting Date</th>
-                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-right whitespace-nowrap">Advance</th>
-                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-right whitespace-nowrap">Paid</th>
-                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-right whitespace-nowrap">Pending</th>
-                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-center whitespace-nowrap">Status</th>
+                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">Component</th>
+                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">Type</th>
+                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-right whitespace-nowrap">Amount</th>
+                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">From</th>
+                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap">To</th>
+                                            <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-center whitespace-nowrap">Recurring</th>
                                             <th className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-right whitespace-nowrap">Action</th>
                                         </tr>
                                     </thead>
@@ -380,17 +393,22 @@ export default function AdvanceLoanTab() {
                                                 key={adv.name || idx}
                                                 className={`border-b border-theme last:border-0 ${idx % 2 === 1 ? "bg-app" : "bg-card"}`}
                                             >
+                                                <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{adv.name || "—"}</td>
                                                 <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{adv.employee}</td>
                                                 <td className="px-4 py-3 text-xs text-muted break-words">{adv.employee_name || "—"}</td>
-                                                <td className="px-4 py-3 text-xs text-muted break-words">{adv.company || "—"}</td>
                                                 <td className="px-4 py-3 text-xs text-muted break-words">{adv.department || "—"}</td>
-                                                <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{adv.posting_date || "—"}</td>
-                                                <td className="px-4 py-3 text-xs font-semibold text-main tabular-nums text-right whitespace-nowrap">{Number(adv.advance_amount || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-4 py-3 text-xs font-semibold text-main tabular-nums text-right whitespace-nowrap">{Number(adv.paid_amount || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-4 py-3 text-xs font-semibold text-main tabular-nums text-right whitespace-nowrap">{Number(adv.pending_amount || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{adv.salary_component || "—"}</td>
+                                                <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${adv.type?.toLowerCase() === "deduction" ? "bg-red-50 text-red-700 border-red-200" : "bg-green-50 text-green-700 border-green-200"}`}>
+                                                        {adv.type || "—"}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-xs font-semibold text-main tabular-nums text-right whitespace-nowrap">{adv.currency || "ZMW"} {Number(adv.amount || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{adv.from_date || "—"}</td>
+                                                <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{adv.to_date || "—"}</td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${adv.status?.toLowerCase() === "unpaid" ? "bg-red-50 text-red-700 border-red-200" : adv.status?.toLowerCase() === "draft" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-green-50 text-green-700 border-green-200"}`}>
-                                                        {adv.status || "—"}
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${adv.is_recurring ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-gray-50 text-gray-600 border-gray-200"}`}>
+                                                        {adv.is_recurring ? "Yes" : "No"}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
@@ -451,12 +469,12 @@ export default function AdvanceLoanTab() {
                             <div>
                                 <h3 className="text-lg font-bold text-main">{selectedName}</h3>
                                 <p className="text-xs text-muted flex items-center gap-1 mt-1">
-                                    <Calendar className="w-3 h-3" /> Advance Request
+                                    <Calendar className="w-3 h-3" /> Additional Salary
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-bold">
-                                    {selectedDetail?.status || "—"}
+                                <span className={`px-3 py-1 rounded text-xs font-bold border ${selectedDetail?.type?.toLowerCase() === "deduction" ? "bg-red-50 text-red-700 border-red-200" : "bg-green-50 text-green-700 border-green-200"}`}>
+                                    {selectedDetail?.type || "—"}
                                 </span>
                                 <button
                                     type="button"
@@ -474,25 +492,16 @@ export default function AdvanceLoanTab() {
                             ) : selectedDetail ? (
                                 <div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <Field label="ID" value={selectedDetail.name} />
                                         <Field label="Employee ID" value={selectedDetail.employee} />
                                         <Field label="Employee Name" value={selectedDetail.employee_name} />
-                                        <Field label="Company" value={selectedDetail.company} />
                                         <Field label="Department" value={selectedDetail.department} />
-                                        <Field label="Posting Date" value={selectedDetail.posting_date} />
-                                        <Field label="Advance Amount" value={Number(selectedDetail.advance_amount || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })} />
-                                        <Field label="Paid Amount" value={Number(selectedDetail.paid_amount || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })} />
-                                        <Field label="Pending Amount" value={Number(selectedDetail.pending_amount || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })} />
-                                        <Field label="Claimed Amount" value={Number(selectedDetail.claimed_amount || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })} />
-                                        <Field label="Return Amount" value={Number(selectedDetail.return_amount || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })} />
-                                    </div>
-
-                                    <div className="mt-6">
-                                        <p className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5">Purpose</p>
-                                        <div className="bg-muted/5 p-4 rounded-lg border border-theme min-h-24">
-                                            <p className="text-sm font-medium text-main leading-relaxed whitespace-pre-wrap break-words">
-                                                {String(selectedDetail.purpose ?? "").trim() || "—"}
-                                            </p>
-                                        </div>
+                                        <Field label="Salary Component" value={selectedDetail.salary_component} />
+                                        <Field label="Type" value={selectedDetail.type} />
+                                        <Field label="Amount" value={`${selectedDetail.currency || "ZMW"} ${Number(selectedDetail.amount || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}`} />
+                                        <Field label="From Date" value={selectedDetail.from_date} />
+                                        <Field label="To Date" value={selectedDetail.to_date} />
+                                        <Field label="Recurring" value={selectedDetail.is_recurring ? "Yes" : "No"} />
                                     </div>
                                 </div>
                             ) : (
@@ -511,8 +520,8 @@ export default function AdvanceLoanTab() {
                     <div className="bg-card border border-theme w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                         <div className="bg-app px-6 py-4 flex items-center justify-between border-b border-theme">
                             <div>
-                                <h3 className="text-base font-bold text-main">New Advance Request</h3>
-                                <p className="text-xs text-muted">Submit a new salary advance request</p>
+                                <h3 className="text-base font-bold text-main">New Additional Salary</h3>
+                                <p className="text-xs text-muted">Create a new advance payment or loan deduction</p>
                             </div>
                             <button
                                 onClick={() => setIsCreating(false)}
@@ -553,7 +562,6 @@ export default function AdvanceLoanTab() {
                                             ) : filteredEmployees.length > 0 ? (
                                                 filteredEmployees.map((e: any, idx: number) => {
                                                     const code = String(e?.employeeId ?? e?.employee_id ?? e?.id ?? e?.name ?? "").trim();
-                                                    const dept = String(e?.department ?? e?.employmentInfo?.Department ?? e?.employmentInfo?.department ?? "").trim();
                                                     return (
                                                         <button
                                                             key={code || idx}
@@ -563,17 +571,14 @@ export default function AdvanceLoanTab() {
                                                                     setCreateData({
                                                                         ...createData,
                                                                         employee: code,
-                                                                        department: dept || createData.department,
                                                                     });
                                                                 }
-                                                                setDepartmentLocked(Boolean(dept));
                                                                 setEmployeeQuery(resolveEmployeeLabel(e));
                                                                 setEmployeeDropdownOpen(false);
                                                             }}
                                                             className="w-full text-left px-3 py-2 text-sm hover:bg-muted/5 transition-colors"
                                                         >
                                                             <div className="text-main font-medium truncate">{resolveEmployeeLabel(e)}</div>
-                                                            {dept ? <div className="text-xs text-muted truncate">{dept}</div> : null}
                                                         </button>
                                                     );
                                                 })
@@ -587,43 +592,72 @@ export default function AdvanceLoanTab() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-main mb-1.5 uppercase tracking-wider">Department</label>
-                                <select
-                                    required
-                                    value={createData.department}
-                                    onChange={(e) => setCreateData({ ...createData, department: e.target.value })}
-                                    disabled={departmentLocked}
-                                    className={`w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors ${departmentLocked ? "opacity-80 cursor-not-allowed" : ""}`}
-                                >
-                                    <option value="" disabled>Select Department</option>
-                                    {departmentOptions.map((d) => (
-                                        <option key={d} value={d}>{d}</option>
-                                    ))}
-                                </select>
-                                {departmentLocked ? (
-                                    <div className="mt-1 text-[11px] text-muted">Auto-filled from employee</div>
-                                ) : null}
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-main mb-1.5 uppercase tracking-wider">Advance Amount</label>
+                                <label className="block text-xs font-bold text-main mb-1.5 uppercase tracking-wider">From Date</label>
                                 <input
-                                    type="number"
+                                    type="date"
                                     required
-                                    min={1}
-                                    value={createData.advance_amount || ""}
-                                    onChange={(e) => setCreateData({ ...createData, advance_amount: Number(e.target.value) })}
+                                    value={createData.from_date}
+                                    onChange={(e) => setCreateData({ ...createData, from_date: e.target.value })}
                                     className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
                                 />
                             </div>
 
-                            <div className="md:col-span-2">
-                                <label className="block text-xs font-bold text-main mb-1.5 uppercase tracking-wider">Purpose</label>
+                            <div>
+                                <label className="block text-xs font-bold text-main mb-1.5 uppercase tracking-wider">To Date</label>
                                 <input
+                                    type="date"
                                     required
-                                    value={createData.purpose}
-                                    onChange={(e) => setCreateData({ ...createData, purpose: e.target.value })}
-                                    placeholder="e.g. Medical emergency"
+                                    value={createData.to_date}
+                                    onChange={(e) => setCreateData({ ...createData, to_date: e.target.value })}
+                                    className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-main mb-1.5 uppercase tracking-wider">Salary Component</label>
+                                <select
+                                    required
+                                    value={createData.salary_component}
+                                    onChange={(e) => {
+                                        const selected = salaryComponents.find((c) => c.id === e.target.value);
+                                        setCreateData({
+                                            ...createData,
+                                            salary_component: e.target.value,
+                                            type: selected?.type || createData.type,
+                                        });
+                                    }}
+                                    className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
+                                >
+                                    <option value="" disabled>Select salary component</option>
+                                    {salaryComponentsLoading ? (
+                                        <option value="" disabled>Loading...</option>
+                                    ) : (
+                                        salaryComponents.map((c) => (
+                                            <option key={c.id} value={c.id}>{c.component}</option>
+                                        ))
+                                    )}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-main mb-1.5 uppercase tracking-wider">Type</label>
+                                <input
+                                    type="text"
+                                    readOnly
+                                    value={createData.type}
+                                    className="w-full px-3 py-2 bg-muted/10 border border-border/50 rounded-md text-sm text-main cursor-not-allowed opacity-80"
+                                />
+                                <div className="mt-1 text-[11px] text-muted">Auto-filled from salary component</div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-main mb-1.5 uppercase tracking-wider">Amount</label>
+                                <input
+                                    type="number"
+                                    required
+                                    min={1}
+                                    value={createData.amount || ""}
+                                    onChange={(e) => setCreateData({ ...createData, amount: Number(e.target.value) })}
                                     className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
                                 />
                             </div>
@@ -633,15 +667,15 @@ export default function AdvanceLoanTab() {
                                     <input
                                         type="checkbox"
                                         className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                                        checked={createData.repay_unclaimed_amount_from_salary === 1}
+                                        checked={createData.is_recurring === 1}
                                         onChange={(e) =>
                                             setCreateData({
                                                 ...createData,
-                                                repay_unclaimed_amount_from_salary: e.target.checked ? 1 : 0,
+                                                is_recurring: e.target.checked ? 1 : 0,
                                             })
                                         }
                                     />
-                                    Repay unclaimed amount from salary
+                                    Is Recurring
                                 </label>
                             </div>
                         </form>
@@ -649,7 +683,7 @@ export default function AdvanceLoanTab() {
                         <div className="px-6 py-4 bg-app border-t border-theme flex items-center justify-end gap-2">
                             <Btn type="button" variant="outline" onClick={() => setIsCreating(false)}>Cancel</Btn>
                             <Btn form="advance-create-form" type="submit" disabled={loading} className="min-w-[140px]" >
-                                {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Submit Request"}
+                                {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Submit"}
                             </Btn>
                         </div>
                     </div>
