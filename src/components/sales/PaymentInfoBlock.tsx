@@ -18,7 +18,7 @@ interface SelectOption {
 export interface PaymentInfoBlockProps {
   data: PaymentInfo;
   onChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   paymentMethodOptions: readonly SelectOption[];
   showPaymentMethod?: boolean;

@@ -32,8 +32,8 @@ const HrPayrollModule: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
-        <FaUserTie /> Human Resources
-      </h2>
+          <FaUserTie /> Human Resources
+        </h2>
       </div>
 
       {/* Navbar */}
@@ -45,8 +45,8 @@ const HrPayrollModule: React.FC = () => {
             className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors whitespace-nowrap 
               ${
                 tab === t.key
-               ? "text-primary border-b-2 border-current"
-                : "text-muted hover:text-main"
+                  ? "text-primary border-b-2 border-current"
+                  : "text-muted hover:text-main"
               }`}
           >
             {t.icon} {t.label}

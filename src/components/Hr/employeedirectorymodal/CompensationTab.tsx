@@ -35,7 +35,6 @@ const ZAMBIAN_BANKS = [
 // ─────────────────────────────────────────────────────────
 // AllowanceRow is defined outside to prevent remount on parent re-render
 // ─────────────────────────────────────────────────────────
- 
 
 // ─────────────────────────────────────────────────────────
 // BankNameField — custom dropdown with 5-item scroll + manual entry fallback
@@ -201,17 +200,21 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
   const [ceilingLoading, setCeilingLoading] = useState(false);
   const [ceilingError, setCeilingError] = useState(false);
 
-  const [salaryStructures, setSalaryStructures] = useState<SalaryStructureListItem[]>(
-    [],
-  );
+  const [salaryStructures, setSalaryStructures] = useState<
+    SalaryStructureListItem[]
+  >([]);
   const [salaryStructureLoading, setSalaryStructureLoading] = useState(false);
-  const [salaryStructureError, setSalaryStructureError] = useState<string | null>(
-    null,
-  );
+  const [salaryStructureError, setSalaryStructureError] = useState<
+    string | null
+  >(null);
 
-  const [salaryStructureDetailLoading, setSalaryStructureDetailLoading] = useState(false);
-  const [salaryStructureDetailError, setSalaryStructureDetailError] = useState<string | null>(null);
-  const [salaryStructureDetail, setSalaryStructureDetail] = useState<SalaryStructureDetail | null>(null);
+  const [salaryStructureDetailLoading, setSalaryStructureDetailLoading] =
+    useState(false);
+  const [salaryStructureDetailError, setSalaryStructureDetailError] = useState<
+    string | null
+  >(null);
+  const [salaryStructureDetail, setSalaryStructureDetail] =
+    useState<SalaryStructureDetail | null>(null);
 
   // Fetch the current NAPSA ceiling on mount (skipped if already populated, e.g. edit mode)
   const fetchCeiling = async () => {
@@ -263,7 +266,9 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
       } catch (e: any) {
         if (!mounted) return;
         setSalaryStructures([]);
-        setSalaryStructureError(e?.message || "Failed to load salary structures");
+        setSalaryStructureError(
+          e?.message || "Failed to load salary structures",
+        );
       } finally {
         if (!mounted) return;
         setSalaryStructureLoading(false);
@@ -280,11 +285,17 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
     opts: { componentNames?: string[]; abbrs?: string[] },
   ): number => {
     const earnings = Array.isArray(detail?.earnings) ? detail.earnings : [];
-    const names = (opts.componentNames ?? []).map((s) => String(s).trim().toLowerCase());
+    const names = (opts.componentNames ?? []).map((s) =>
+      String(s).trim().toLowerCase(),
+    );
     const abbrs = (opts.abbrs ?? []).map((s) => String(s).trim().toLowerCase());
     const row = earnings.find((r: any) => {
-      const cn = String(r?.component ?? "").trim().toLowerCase();
-      const ab = String(r?.abbr ?? "").trim().toLowerCase();
+      const cn = String(r?.component ?? "")
+        .trim()
+        .toLowerCase();
+      const ab = String(r?.abbr ?? "")
+        .trim()
+        .toLowerCase();
       return (cn && names.includes(cn)) || (ab && abbrs.includes(ab));
     });
     const amount = Number(row?.amount ?? 0);
@@ -327,7 +338,10 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
       handleInputChange("basicSalary", basic ? String(basic) : "");
       handleInputChange("housingAllowance", housing ? String(housing) : "");
       handleInputChange("mealAllowance", meal ? String(meal) : "");
-      handleInputChange("transportAllowance", transport ? String(transport) : "");
+      handleInputChange(
+        "transportAllowance",
+        transport ? String(transport) : "",
+      );
       handleInputChange("otherAllowances", "");
 
       const gross = basic + housing + meal + transport;
@@ -342,7 +356,9 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
         e?.message;
 
       const safeMessage = String(serverMessage ?? "").trim();
-      setSalaryStructureDetailError(safeMessage || "Failed to load salary structure details");
+      setSalaryStructureDetailError(
+        safeMessage || "Failed to load salary structure details",
+      );
     } finally {
       setSalaryStructureDetailLoading(false);
     }
@@ -376,10 +392,14 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
             ))}
           </select>
           {salaryStructureDetailError ? (
-            <div className="text-[11px] text-danger mt-1">{salaryStructureDetailError}</div>
+            <div className="text-[11px] text-danger mt-1">
+              {salaryStructureDetailError}
+            </div>
           ) : null}
           {salaryStructureError ? (
-            <div className="text-[11px] text-danger mt-1">{salaryStructureError}</div>
+            <div className="text-[11px] text-danger mt-1">
+              {salaryStructureError}
+            </div>
           ) : null}
         </div>
       </div>
@@ -397,22 +417,37 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
             </div>
 
             {salaryStructureDetailLoading ? (
-              <div className="text-xs text-muted">Loading salary structure…</div>
+              <div className="text-xs text-muted">
+                Loading salary structure…
+              </div>
             ) : !formData.salaryStructure ? (
-              <div className="text-xs text-muted">Select a salary structure to preview its components.</div>
+              <div className="text-xs text-muted">
+                Select a salary structure to preview its components.
+              </div>
             ) : !salaryStructureDetail ? (
               <div className="text-xs text-muted">—</div>
             ) : (
               (() => {
-                const currency = String(formData.currency ?? "ZMW").trim() || "ZMW";
-                const earnings = Array.isArray((salaryStructureDetail as any)?.earnings)
+                const currency =
+                  String(formData.currency ?? "ZMW").trim() || "ZMW";
+                const earnings = Array.isArray(
+                  (salaryStructureDetail as any)?.earnings,
+                )
                   ? (salaryStructureDetail as any).earnings
                   : [];
-                const deductions = Array.isArray((salaryStructureDetail as any)?.deductions)
+                const deductions = Array.isArray(
+                  (salaryStructureDetail as any)?.deductions,
+                )
                   ? (salaryStructureDetail as any).deductions
                   : [];
-                const totalEarnings = earnings.reduce((s: number, r: any) => s + Number(r?.amount ?? 0), 0);
-                const totalDeductions = deductions.reduce((s: number, r: any) => s + Number(r?.amount ?? 0), 0);
+                const totalEarnings = earnings.reduce(
+                  (s: number, r: any) => s + Number(r?.amount ?? 0),
+                  0,
+                );
+                const totalDeductions = deductions.reduce(
+                  (s: number, r: any) => s + Number(r?.amount ?? 0),
+                  0,
+                );
                 const net = totalEarnings - totalDeductions;
                 const monthly = totalEarnings / 12;
 
@@ -420,37 +455,71 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="bg-app border border-theme rounded-lg p-3">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">Salary Structure</div>
-                        <div className="text-xs font-bold text-main mt-1 break-words">{String((salaryStructureDetail as any)?.name ?? formData.salaryStructure)}</div>
+                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
+                          Salary Structure
+                        </div>
+                        <div className="text-xs font-bold text-main mt-1 break-words">
+                          {String(
+                            (salaryStructureDetail as any)?.name ??
+                              formData.salaryStructure,
+                          )}
+                        </div>
                       </div>
                       <div className="bg-app border border-theme rounded-lg p-3">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">Gross Pay</div>
-                        <div className="text-xs font-extrabold text-main mt-1 tabular-nums">{currency} {Number(totalEarnings || 0).toLocaleString()}</div>
-                        <div className="text-[11px] text-muted mt-0.5">Monthly: {currency} {Number(monthly || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
+                          Gross Pay
+                        </div>
+                        <div className="text-xs font-extrabold text-main mt-1 tabular-nums">
+                          {currency}{" "}
+                          {Number(totalEarnings || 0).toLocaleString()}
+                        </div>
+                        <div className="text-[11px] text-muted mt-0.5">
+                          Monthly: {currency}{" "}
+                          {Number(monthly || 0).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })}
+                        </div>
                       </div>
                       <div className="bg-app border border-theme rounded-lg p-3">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">Net</div>
-                        <div className="text-xs font-extrabold text-main mt-1 tabular-nums">{currency} {Number(net || 0).toLocaleString()}</div>
-                        <div className="text-[11px] text-muted mt-0.5">Deductions: {currency} {Number(totalDeductions || 0).toLocaleString()}</div>
+                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
+                          Net
+                        </div>
+                        <div className="text-xs font-extrabold text-main mt-1 tabular-nums">
+                          {currency} {Number(net || 0).toLocaleString()}
+                        </div>
+                        <div className="text-[11px] text-muted mt-0.5">
+                          Deductions: {currency}{" "}
+                          {Number(totalDeductions || 0).toLocaleString()}
+                        </div>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div className="border border-theme rounded-xl bg-card p-4">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">Earnings</div>
+                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
+                          Earnings
+                        </div>
                         <div className="mt-3 space-y-2">
                           {earnings.length === 0 ? (
                             <div className="text-xs text-muted">—</div>
                           ) : (
                             earnings.map((row: any, idx: number) => (
-                              <div key={`${row?.component ?? idx}`} className="border-b border-theme/60 last:border-0 py-2">
+                              <div
+                                key={`${row?.component ?? idx}`}
+                                className="border-b border-theme/60 last:border-0 py-2"
+                              >
                                 <div className="flex items-center justify-between gap-3">
                                   <div className="min-w-0">
-                                    <div className="text-xs font-bold text-main truncate">{String(row?.component ?? "—")}</div>
-                                    <div className="text-[11px] text-muted mt-0.5">abbr: {String(row?.abbr ?? "—")}</div>
+                                    <div className="text-xs font-bold text-main truncate">
+                                      {String(row?.component ?? "—")}
+                                    </div>
+                                    <div className="text-[11px] text-muted mt-0.5">
+                                      abbr: {String(row?.abbr ?? "—")}
+                                    </div>
                                   </div>
                                   <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
-                                    {currency} {Number(row?.amount ?? 0).toLocaleString()}
+                                    {currency}{" "}
+                                    {Number(row?.amount ?? 0).toLocaleString()}
                                   </div>
                                 </div>
                               </div>
@@ -460,20 +529,30 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                       </div>
 
                       <div className="border border-theme rounded-xl bg-card p-4">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">Deductions</div>
+                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
+                          Deductions
+                        </div>
                         <div className="mt-3 space-y-2">
                           {deductions.length === 0 ? (
                             <div className="text-xs text-muted">—</div>
                           ) : (
                             deductions.map((row: any, idx: number) => (
-                              <div key={`${row?.component ?? idx}`} className="border-b border-theme/60 last:border-0 py-2">
+                              <div
+                                key={`${row?.component ?? idx}`}
+                                className="border-b border-theme/60 last:border-0 py-2"
+                              >
                                 <div className="flex items-center justify-between gap-3">
                                   <div className="min-w-0">
-                                    <div className="text-xs font-bold text-main truncate">{String(row?.component ?? "—")}</div>
-                                    <div className="text-[11px] text-muted mt-0.5">abbr: {String(row?.abbr ?? "—")}</div>
+                                    <div className="text-xs font-bold text-main truncate">
+                                      {String(row?.component ?? "—")}
+                                    </div>
+                                    <div className="text-[11px] text-muted mt-0.5">
+                                      abbr: {String(row?.abbr ?? "—")}
+                                    </div>
                                   </div>
                                   <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
-                                    {currency} {Number(row?.amount ?? 0).toLocaleString()}
+                                    {currency}{" "}
+                                    {Number(row?.amount ?? 0).toLocaleString()}
                                   </div>
                                 </div>
                               </div>

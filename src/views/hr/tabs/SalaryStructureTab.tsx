@@ -7,16 +7,13 @@ import {
   createSalaryComponent,
   getSalaryComponents,
   getSalaryStructures,
-  getSalaryStructureById,
   updateSalaryComponent,
   updateSalaryStructure,
   type SalaryStructureComponentCreate,
   type SalaryStructureCreatePayload,
   type SalaryStructureUpdatePayload,
   type SalaryStructureListItem,
-  type SalaryComponentCreatePayload,
   type SalaryComponentListItem,
-  type SalaryComponentUpdatePayload,
 } from "../../../api/salaryStructureApi";
 
 export default function SalaryStructureTab() {
@@ -84,7 +81,6 @@ export default function SalaryStructureTab() {
 
   useEffect(() => {
     refreshStructures();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const refreshComponents = async () => {

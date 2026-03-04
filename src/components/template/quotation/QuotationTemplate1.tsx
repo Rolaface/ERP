@@ -158,18 +158,26 @@ export const generateQuotationPDF = async (
   doc.setFontSize(9);
 
   doc.text(`Taxable Standard Rated`, 120, y);
-  doc.text(`${summary.taxable.toFixed(2)} ${currency}`, 195, y, { align: "right" });
+  doc.text(`${summary.taxable.toFixed(2)} ${currency}`, 195, y, {
+    align: "right",
+  });
 
   doc.text("Sub-total", 120, y + 6);
-  doc.text(`${summary.taxable.toFixed(2)} ${currency}`, 195, y + 6, { align: "right" });
+  doc.text(`${summary.taxable.toFixed(2)} ${currency}`, 195, y + 6, {
+    align: "right",
+  });
 
   doc.text("VAT Total", 120, y + 12);
-  doc.text(`${summary.vat.toFixed(2)} ${currency}`, 195, y + 12, { align: "right" });
+  doc.text(`${summary.vat.toFixed(2)} ${currency}`, 195, y + 12, {
+    align: "right",
+  });
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.text("Total Amount", 120, y + 20);
-  doc.text(`${summary.total.toFixed(2)} ${currency}`, 195, y + 20, { align: "right" });
+  doc.text(`${summary.total.toFixed(2)} ${currency}`, 195, y + 20, {
+    align: "right",
+  });
 
   /* ================= QUOTATION INFO ================= */
   doc.setFontSize(9);

@@ -13,13 +13,12 @@ export interface ItemFilters {
 export async function getAllItems(
   page = 1,
   page_size = 10,
-  filters?: ItemFilters
+  filters?: ItemFilters,
 ): Promise<any> {
-
   const cleanedFilters = Object.fromEntries(
     Object.entries(filters || {}).filter(
-      ([_, v]) => v !== undefined && v !== ""
-    )
+      ([_, v]) => v !== undefined && v !== "",
+    ),
   );
 
   const resp: AxiosResponse = await api.get(ItemAPI.getAll, {

@@ -89,10 +89,9 @@ export default function CountrySelect({
       </span>
 
       <input
-  ref={inputRef}
-  className="w-full rounded border border-theme bg-card text-main px-3 py-2 text-sm 
+        ref={inputRef}
+        className="w-full rounded border border-theme bg-card text-main px-3 py-2 text-sm 
   focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-
         placeholder={loading ? "Loading..." : "Search country..."}
         value={search}
         onChange={(e) => {
@@ -116,14 +115,12 @@ export default function CountrySelect({
               zIndex: 9999,
             }}
             className="bg-card border border-theme rounded shadow-lg"
-
           >
             <ul className="max-h-56 overflow-y-auto text-sm">
               {filtered.map((c) => (
                 <li
                   key={c.sortOrder}
-                className="px-4 py-2 cursor-pointer hover:bg-row-hover text-main"
-
+                  className="px-4 py-2 cursor-pointer hover:bg-row-hover text-main"
                   onClick={() => {
                     setSearch(c.name);
                     setOpen(false);

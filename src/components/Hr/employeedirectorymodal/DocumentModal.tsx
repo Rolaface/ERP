@@ -24,9 +24,7 @@ const DocumentUploadModal: React.FC<Props> = ({ onClose, onUpload }) => {
       <div className="bg-card w-full max-w-md rounded-xl shadow-xl border border-theme">
         {/* Header */}
         <div className="flex justify-between items-center px-5 py-4 border-b border-theme">
-          <h3 className="text-sm font-semibold text-main">
-            Upload Document
-          </h3>
+          <h3 className="text-sm font-semibold text-main">Upload Document</h3>
           <button onClick={onClose}>
             <X className="w-4 h-4 text-muted hover:text-main" />
           </button>
@@ -82,7 +80,6 @@ const DocumentUploadModal: React.FC<Props> = ({ onClose, onUpload }) => {
           <button
             onClick={onClose}
             className="px-4 py-1.5 text-xs rounded-lg border border-theme text-main hover:bg-app"
-
           >
             Cancel
           </button>

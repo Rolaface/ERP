@@ -82,16 +82,16 @@ export default function Pagination({
               <button
                 key={`page-${r}-${i}`}
                 onClick={() => goto(r)}
-                className={`min-w-[36px] h-8 flex items-center justify-center px-2 rounded-md text-sm border border-theme transition-all ${r === currentPage
+                className={`min-w-[36px] h-8 flex items-center justify-center px-2 rounded-md text-sm border border-theme transition-all ${
+                  r === currentPage
                     ? "bg-primary text-white shadow"
                     : "bg-app text-main hover:bg-row-hover"
-                  }`}
+                }`}
               >
                 {r}
               </button>
-            )
+            ),
           )}
-
         </nav>
 
         {/* Next */}

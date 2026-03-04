@@ -12,10 +12,13 @@ import {
 import type { BankAccount } from "../../types/company";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
 import { updateCompanyById } from "../../api/companySetupApi";
-import { showApiError, showSuccess, showLoading, closeSwal, } from "../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
 import Swal from "sweetalert2";
-
-
 
 const VITE_COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
@@ -84,7 +87,8 @@ const normalizeBankAccounts = (accounts: any[]): BankAccount[] =>
   accounts.map((acc) => ({
     ...acc,
     // API returns default as "0"/"1" string — normalize to boolean
-    isdefault: acc.default === "1" || acc.default === 1 || acc.isdefault === true,
+    isdefault:
+      acc.default === "1" || acc.default === 1 || acc.isdefault === true,
   }));
 
 interface Props {
@@ -118,7 +122,7 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts }) => {
 
   const handleAddSubmit = async (newAccount: BankAccount) => {
     try {
-       showLoading("Adding Bank Account...");
+      showLoading("Adding Bank Account...");
       const updatedAccounts = [...bankAccounts, newAccount];
 
       const payload = {
@@ -139,16 +143,16 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts }) => {
       };
 
       await updateCompanyById(payload);
- closeSwal();
-    showSuccess("Bank account added successfully.");
+      closeSwal();
+      showSuccess("Bank account added successfully.");
 
-    setBankAccounts(updatedAccounts);
-    setShowBankModal(false);
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+      setBankAccounts(updatedAccounts);
+      setShowBankModal(false);
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
   const handleEditClick = () => {
     if (selectedAccount !== null && bankAccounts[selectedAccount]) {
       setEditForm(bankAccounts[selectedAccount]);
@@ -190,78 +194,77 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts }) => {
 
       await updateCompanyById(payload);
 
-   closeSwal();
-    showSuccess("Bank account updated successfully.");
+      closeSwal();
+      showSuccess("Bank account updated successfully.");
 
-    setBankAccounts(updatedAccounts);
-    setIsEditing(false);
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+      setBankAccounts(updatedAccounts);
+      setIsEditing(false);
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (editForm) {
       setEditForm({ ...editForm, [e.target.name]: e.target.value });
     }
   };
 
-const handleDelete = async () => {
-  if (selectedAccount === null) return;
+  const handleDelete = async () => {
+    if (selectedAccount === null) return;
 
-  const accountName = bankAccounts[selectedAccount].bankName;
+    const accountName = bankAccounts[selectedAccount].bankName;
 
-  const result = await Swal.fire({
-    icon: "warning",
-    title: "Delete Bank Account?",
-    text: `Are you sure you want to delete ${accountName}?`,
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, Delete",
-  });
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Delete Bank Account?",
+      text: `Are you sure you want to delete ${accountName}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, Delete",
+    });
 
-  if (!result.isConfirmed) return;
+    if (!result.isConfirmed) return;
 
-  try {
-    showLoading("Deleting Bank Account...");
+    try {
+      showLoading("Deleting Bank Account...");
 
-    const updatedAccounts = bankAccounts.filter(
-      (_, index) => index !== selectedAccount,
-    );
+      const updatedAccounts = bankAccounts.filter(
+        (_, index) => index !== selectedAccount,
+      );
 
-    const payload = {
-      id: VITE_COMPANY_ID,
-      bankAccounts: updatedAccounts.map((acc) => ({
-        id: acc.id,
-        accountNo: acc.accountNo,
-        accountHolderName: acc.accountHolderName,
-        bankName: acc.bankName,
-        swiftCode: acc.swiftCode,
-        sortCode: acc.sortCode,
-        branchAddress: acc.branchAddress,
-        currency: acc.currency,
-        dateAdded: acc.dateAdded,
-        openingBalance: acc.openingBalance,
-        default: acc.isdefault ? 1 : 0,
-      })),
-    };
+      const payload = {
+        id: VITE_COMPANY_ID,
+        bankAccounts: updatedAccounts.map((acc) => ({
+          id: acc.id,
+          accountNo: acc.accountNo,
+          accountHolderName: acc.accountHolderName,
+          bankName: acc.bankName,
+          swiftCode: acc.swiftCode,
+          sortCode: acc.sortCode,
+          branchAddress: acc.branchAddress,
+          currency: acc.currency,
+          dateAdded: acc.dateAdded,
+          openingBalance: acc.openingBalance,
+          default: acc.isdefault ? 1 : 0,
+        })),
+      };
 
-    await updateCompanyById(payload);
+      await updateCompanyById(payload);
 
-    closeSwal();
-    showSuccess("Bank account deleted successfully.");
+      closeSwal();
+      showSuccess("Bank account deleted successfully.");
 
-    setBankAccounts(updatedAccounts);
-    setSelectedAccount(null);
-    setIsEditing(false);
-    setEditForm(null);
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
-
+      setBankAccounts(updatedAccounts);
+      setSelectedAccount(null);
+      setIsEditing(false);
+      setEditForm(null);
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
   const handleSetDefault = async () => {
     if (selectedAccount === null) return;
@@ -269,7 +272,7 @@ const handleDelete = async () => {
     const selected = bankAccounts[selectedAccount];
 
     try {
-         showLoading("Setting Default Account...");
+      showLoading("Setting Default Account...");
       const payload = {
         id: VITE_COMPANY_ID,
         bankAccounts: [
@@ -282,28 +285,25 @@ const handleDelete = async () => {
 
       await updateCompanyById(payload);
 
-   closeSwal();
-    showSuccess("Default account updated successfully.");
+      closeSwal();
+      showSuccess("Default account updated successfully.");
 
-    setBankAccounts((prev) =>
-      prev.map((acc) => ({
-        ...acc,
-        isdefault: acc.id === selected.id,
+      setBankAccounts((prev) =>
+        prev.map((acc) => ({
+          ...acc,
+          isdefault: acc.id === selected.id,
           default: acc.id === selected.id ? "1" : "0",
-      })),
-    );
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+        })),
+      );
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
-
- 
   const normalizedAccounts = normalizeBankAccounts(bankAccounts);
 
   const filteredAccounts = normalizedAccounts.filter((acc) => {
-
     if (!acc.bankName?.trim()) return false;
 
     const bankName = acc.bankName ?? "";
@@ -314,7 +314,6 @@ const handleDelete = async () => {
       accountNo.includes(searchTerm)
     );
   });
-
 
   const getGlobalIndex = (filteredIndex: number) => {
     const acc = filteredAccounts[filteredIndex];
@@ -474,17 +473,20 @@ const handleDelete = async () => {
                       >
                         <FaTrash className="w-3.5 h-3.5" /> Delete
                       </button>
-                     
+
                       <button
                         onClick={handleSetDefault}
-                        disabled={normalizedAccounts[selectedAccount]?.isdefault}
+                        disabled={
+                          normalizedAccounts[selectedAccount]?.isdefault
+                        }
                         className={`px-3 py-1.5 rounded-md text-white transition-colors flex items-center gap-2 text-sm font-medium ${
                           normalizedAccounts[selectedAccount]?.isdefault
                             ? "bg-gray-400 cursor-not-allowed"
                             : "hover:bg-white/20"
                         }`}
                         style={{
-                          background: normalizedAccounts[selectedAccount]?.isdefault
+                          background: normalizedAccounts[selectedAccount]
+                            ?.isdefault
                             ? "#9CA3AF"
                             : "rgba(255,255,255,0.12)",
                         }}
@@ -602,7 +604,6 @@ const handleDelete = async () => {
     </div>
   );
 };
-
 
 const FaCheck = ({ className }: { className?: string }) => (
   <svg

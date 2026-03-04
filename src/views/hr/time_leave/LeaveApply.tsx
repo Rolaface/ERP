@@ -11,7 +11,12 @@ import type { LeaveBalanceUI } from "../../../types/leave/leaveBalance";
 
 import { mapLeaveBalanceFromApi } from "../../../types/leave/leaveMapper";
 import { getEmployeeLeaveBalanceReport } from "../../../api/leaveApi";
-import { closeSwal, showApiError, showLoading, showSuccess } from "../../../utils/alert";
+import {
+  closeSwal,
+  showApiError,
+  showLoading,
+  showSuccess,
+} from "../../../utils/alert";
 
 type LeaveFormData = {
   type: string;
@@ -85,31 +90,31 @@ const LeaveApply: React.FC<LeaveApplyProps> = ({ editLeaveId }) => {
     fetchEmployees();
   }, []);
 
-useEffect(() => {
-  if (!editLeaveId) return;
+  useEffect(() => {
+    if (!editLeaveId) return;
 
-  const fetchLeaveDetail = async () => {
-    try {
-      const res = await getLeaveById(editLeaveId);
-      const l = res.data;
+    const fetchLeaveDetail = async () => {
+      try {
+        const res = await getLeaveById(editLeaveId);
+        const l = res.data;
 
-      // MUST use employee.employeeId (DB ID)
-      setEmployeeId(String(l.employee.employeeId));
+        // MUST use employee.employeeId (DB ID)
+        setEmployeeId(String(l.employee.employeeId));
 
-      setFormData({
-        type: l.leaveType,
-        startDate: l.fromDate,
-        endDate: l.toDate,
-        isHalfDay: l.isHalfDay,
-        reason: l.leaveReason,
-      });
-    } catch (err) {
-      console.error("Failed to fetch leave", err);
-    }
-  };
+        setFormData({
+          type: l.leaveType,
+          startDate: l.fromDate,
+          endDate: l.toDate,
+          isHalfDay: l.isHalfDay,
+          reason: l.leaveReason,
+        });
+      } catch (err) {
+        console.error("Failed to fetch leave", err);
+      }
+    };
 
-  fetchLeaveDetail();
-}, [editLeaveId]);
+    fetchLeaveDetail();
+  }, [editLeaveId]);
 
   useEffect(() => {
     if (!formData.startDate) {
@@ -256,59 +261,58 @@ useEffect(() => {
     };
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (!employeeId) {
-    showApiError("Please select employee");
-    return;
-  }
-
-  if (!formData.startDate) {
-    showApiError("Start date is required");
-    return;
-  }
-
-  if (!formData.isHalfDay && !formData.endDate) {
-    showApiError("End date is required");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    showLoading(isEditMode ? "Updating Leave..." : "Applying Leave...");
-
-    if (isEditMode && editLeaveId) {
-      await updateLeaveApplication({
-        leaveId: editLeaveId,
-        leaveType: formData.type,
-        leaveFromDate: formData.startDate,
-        leaveToDate: formData.endDate,
-        isHalfDay: formData.isHalfDay,
-        leaveReason: formData.reason,
-      });
-
-      closeSwal();
-      showSuccess("Leave updated successfully");
-    } else {
-      await applyLeave(buildPayload());
-
-      closeSwal();
-      showSuccess("Leave applied successfully");
+    if (!employeeId) {
+      showApiError("Please select employee");
+      return;
     }
 
-    if (!isEditMode) {
-      handleReset();
+    if (!formData.startDate) {
+      showApiError("Start date is required");
+      return;
     }
-  } catch (err: any) {
-    closeSwal();
-    showApiError(err);
-  } finally {
-    setLoading(false);
-  }
-};
 
+    if (!formData.isHalfDay && !formData.endDate) {
+      showApiError("End date is required");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      showLoading(isEditMode ? "Updating Leave..." : "Applying Leave...");
+
+      if (isEditMode && editLeaveId) {
+        await updateLeaveApplication({
+          leaveId: editLeaveId,
+          leaveType: formData.type,
+          leaveFromDate: formData.startDate,
+          leaveToDate: formData.endDate,
+          isHalfDay: formData.isHalfDay,
+          leaveReason: formData.reason,
+        });
+
+        closeSwal();
+        showSuccess("Leave updated successfully");
+      } else {
+        await applyLeave(buildPayload());
+
+        closeSwal();
+        showSuccess("Leave applied successfully");
+      }
+
+      if (!isEditMode) {
+        handleReset();
+      }
+    } catch (err: any) {
+      closeSwal();
+      showApiError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleReset = () => {
     setFormData({

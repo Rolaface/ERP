@@ -73,23 +73,17 @@ export async function verifyEmployeeIdentity(
   type: "NRC" | "SSN",
   value: string,
 ): Promise<any> {
-
   const paramKey = type === "NRC" ? "nrc" : "ssn";
 
   const resp: AxiosResponse = await api.get(EmployeeAPI.getByNrc, {
-    params: { [paramKey]: value }
+    params: { [paramKey]: value },
   });
 
   return resp.data;
 }
 
 export async function getCurrentCeiling(): Promise<any> {
-  const resp: AxiosResponse = await api.get(
-    EmployeeAPI.getCurrentCeiling
-  );
+  const resp: AxiosResponse = await api.get(EmployeeAPI.getCurrentCeiling);
 
   return resp.data;
 }
-
-
-

@@ -75,7 +75,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   };
 
   const symbol = currencySymbols[formData.currencyCode] ?? "ZK";
-  const currencyCode = String(formData.currencyCode ?? "").trim().toUpperCase();
+  const currencyCode = String(formData.currencyCode ?? "")
+    .trim()
+    .toUpperCase();
   const showExchangeRate = !!currencyCode && currencyCode !== "ZMW";
   useEffect(() => {
     if (!isOpen) return;
@@ -111,7 +113,11 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       subtitle="Create and manage proforma invoice details"
       footer={
         <>
-          <Button variant="secondary" onClick={handleClose} disabled={isSubmitting}>
+          <Button
+            variant="secondary"
+            onClick={handleClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
 
@@ -137,7 +143,11 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       maxWidth="wide"
       height="79vh"
     >
-      <form id="proforma-form" onSubmit={handleFormSubmit} className="h-full flex flex-col min-w-0">
+      <form
+        id="proforma-form"
+        onSubmit={handleFormSubmit}
+        className="h-full flex flex-col min-w-0"
+      >
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
@@ -146,10 +156,11 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                 key={tab}
                 type="button"
                 onClick={() => ui.setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${ui.activeTab === tab
-                  ? "text-primary border-b-[3px] border-primary"
-                  : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${
+                  ui.activeTab === tab
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                }`}
               >
                 {tab === "details" && "Details"}
                 {tab === "address" && "Additional Details"}
@@ -298,15 +309,33 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                     <table className="w-full border-collapse table-fixed text-[10px]">
                       <thead>
                         <tr className="border-b border-theme">
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">#</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[120px] whitespace-nowrap">Item</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[120px] whitespace-nowrap hidden xl:table-cell">Description</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">Quantity</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[80px] md:w-[90px] whitespace-nowrap">Unit Price</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px] md:w-[80px] whitespace-nowrap">Discount (%)</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">Tax</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px] md:w-[70px] whitespace-nowrap hidden lg:table-cell">Tax Code</th>
-                          <th className="px-2 py-3 text-right text-muted font-medium text-[11px] w-[90px] md:w-[100px] whitespace-nowrap">Amount</th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">
+                            #
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[120px] whitespace-nowrap">
+                            Item
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[120px] whitespace-nowrap hidden xl:table-cell">
+                            Description
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
+                            Quantity
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[80px] md:w-[90px] whitespace-nowrap">
+                            Unit Price
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px] md:w-[80px] whitespace-nowrap">
+                            Discount (%)
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
+                            Tax
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px] md:w-[70px] whitespace-nowrap hidden lg:table-cell">
+                            Tax Code
+                          </th>
+                          <th className="px-2 py-3 text-right text-muted font-medium text-[11px] w-[90px] md:w-[100px] whitespace-nowrap">
+                            Amount
+                          </th>
                           <th className="px-2 py-3 text-center text-muted font-medium text-[11px] w-[42px] whitespace-nowrap"></th>
                         </tr>
                       </thead>
@@ -340,7 +369,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                                   value={it.itemCode}
                                   excludeItemCodes={formData.items
                                     .map((x, j) => (j === i ? "" : x?.itemCode))
-                                    .filter(Boolean) as string[]}
+                                    .filter(Boolean)}
                                   onChange={(item) => {
                                     actions.handleItemSelect(i, item.id);
                                   }}
@@ -611,9 +640,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   data={formData.billingAddress}
                   onChange={(
                     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-                  ) =>
-                    actions.handleInputChange(e, "billingAddress")
-                  }
+                  ) => actions.handleInputChange(e, "billingAddress")}
                 />
 
                 {/* Shipping */}
@@ -626,9 +653,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   onSameAsBillingChange={actions.handleSameAsBillingChange}
                   onChange={(
                     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-                  ) =>
-                    actions.handleInputChange(e, "shippingAddress")
-                  }
+                  ) => actions.handleInputChange(e, "shippingAddress")}
                 />
               </div>
             </div>

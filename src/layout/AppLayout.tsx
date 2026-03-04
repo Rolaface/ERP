@@ -10,16 +10,15 @@ const AppLayout: React.FC = () => {
     <div className="flex min-h-screen">
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
-  <div
-  className={`flex-1 transition-all duration-300 bg-app ${
-    sidebarOpen ? "md:ml-64" : "md:ml-16"
-  }`}
->
-  <Suspense fallback={<PageLoader />}>
-    <Outlet />
-  </Suspense>
-</div>
-
+      <div
+        className={`flex-1 transition-all duration-300 bg-app ${
+          sidebarOpen ? "md:ml-64" : "md:ml-16"
+        }`}
+      >
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
+      </div>
     </div>
   );
 };

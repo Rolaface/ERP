@@ -7,17 +7,14 @@ export const validatePO = (form: PurchaseOrderFormData) => {
   if (!form.supplierId) {
     errors.push("Supplier is required");
   }
-  
+
   if (!form.date) {
     errors.push("PO Date is required");
   }
-  
+
   if (!form.requiredBy) {
     errors.push("Required By date is required");
   }
-
-
-
 
   // Items Validation
   if (form.items.length === 0) {
@@ -35,8 +32,6 @@ export const validatePO = (form: PurchaseOrderFormData) => {
       errors.push(`Rate invalid at row ${i + 1}`);
     }
   });
-
- 
 
   return errors;
 };

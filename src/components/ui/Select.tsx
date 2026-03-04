@@ -5,7 +5,6 @@ export type SelectOption = {
   readonly label: string;
 };
 
-
 type SelectProps = {
   label: string;
   name: string;
@@ -31,9 +30,9 @@ const Select: React.FC<SelectProps> = ({
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
-    {o.label}
-  </option>
-))}
+          {o.label}
+        </option>
+      ))}
     </select>
   </label>
 );

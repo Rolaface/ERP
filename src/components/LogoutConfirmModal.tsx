@@ -16,23 +16,17 @@ const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-
       {/* Modal Box */}
       <div className="bg-card w-[92%] max-w-md rounded-2xl shadow-2xl border border-[var(--border)]">
-
         {/* HEADER */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-          
           <div className="flex items-center gap-3">
-
             {/* RED ICON */}
             <div className="w-9 h-9 rounded-xl bg-danger flex items-center justify-center text-white shadow">
               <FaSignOutAlt />
             </div>
 
-            <h2 className="font-bold text-lg text-main">
-              Confirm Logout
-            </h2>
+            <h2 className="font-bold text-lg text-main">Confirm Logout</h2>
           </div>
 
           {/* CLOSE */}
@@ -51,7 +45,6 @@ const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
 
         {/* FOOTER */}
         <div className="flex justify-end gap-3 p-4 border-t border-[var(--border)]">
-
           {/* CANCEL */}
           <button
             onClick={onClose}

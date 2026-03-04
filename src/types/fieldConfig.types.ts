@@ -1,10 +1,9 @@
-
-export type FieldType = 
-  | 'text-input'
-  | 'api-select'
-  | 'static-select'
-  | 'textarea'
-  | 'number-input';
+export type FieldType =
+  | "text-input"
+  | "api-select"
+  | "static-select"
+  | "textarea"
+  | "number-input";
 
 // Base shared properties
 interface BaseFieldConfig {
@@ -17,36 +16,40 @@ interface BaseFieldConfig {
 
 // Text input
 export interface TextFieldConfig extends BaseFieldConfig {
-  fieldType: 'text-input';
+  fieldType: "text-input";
 }
 
 // Textarea
 export interface TextareaFieldConfig extends BaseFieldConfig {
-  fieldType: 'textarea';
+  fieldType: "textarea";
 }
 
 // Number input
 export interface NumberFieldConfig extends BaseFieldConfig {
-  fieldType: 'number-input';
+  fieldType: "number-input";
 }
 
 // API-driven select
 export interface ApiFieldConfig extends BaseFieldConfig {
-  fieldType: 'api-select';
+  fieldType: "api-select";
   apiFunctionName: string;
-  customComponent?: 'ItemTreeSelect' | 'ItemGenericSelect' | 'ItemCategorySelect'|'';
+  customComponent?:
+    | "ItemTreeSelect"
+    | "ItemGenericSelect"
+    | "ItemCategorySelect"
+    | "";
 }
 
 // Static select
 export interface StaticSelectConfig extends BaseFieldConfig {
-  fieldType: 'static-select';
+  fieldType: "static-select";
   options: Array<{ value: string; label: string }>;
 }
 
 // Union type - TypeScript will discriminate based on fieldType
-export type FieldConfig = 
-  | TextFieldConfig 
+export type FieldConfig =
+  | TextFieldConfig
   | TextareaFieldConfig
   | NumberFieldConfig
-  | ApiFieldConfig 
+  | ApiFieldConfig
   | StaticSelectConfig;

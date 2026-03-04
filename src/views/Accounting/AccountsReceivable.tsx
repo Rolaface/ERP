@@ -9,7 +9,6 @@ import {
   FaEdit,
   FaTrash,
   FaEye,
-  FaFileInvoiceDollar,
   FaClock,
   FaExclamationTriangle,
 } from "react-icons/fa";
@@ -83,8 +82,7 @@ const AccountsReceivable = () => {
       inv.id.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesFilter =
-      filterStatus === "all" ||
-      inv.status.toLowerCase() === filterStatus;
+      filterStatus === "all" || inv.status.toLowerCase() === filterStatus;
 
     return matchesSearch && matchesFilter;
   });
@@ -155,9 +153,15 @@ const AccountsReceivable = () => {
       align: "center",
       render: () => (
         <div className="flex justify-center gap-2">
-          <button className="text-primary"><FaEye /></button>
-          <button className="text-info"><FaEdit /></button>
-          <button className="text-danger"><FaTrash /></button>
+          <button className="text-primary">
+            <FaEye />
+          </button>
+          <button className="text-info">
+            <FaEdit />
+          </button>
+          <button className="text-danger">
+            <FaTrash />
+          </button>
         </div>
       ),
     },
@@ -168,10 +172,7 @@ const AccountsReceivable = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s, i) => (
-          <div
-            key={i}
-            className="bg-card rounded-lg border border-theme p-4"
-          >
+          <div key={i} className="bg-card rounded-lg border border-theme p-4">
             <p className="text-xs text-muted">{s.label}</p>
             <p className="text-xl font-bold text-main mt-1">{s.value}</p>
           </div>

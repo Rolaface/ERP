@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   FaBuilding,
   FaCalendarAlt,
-  FaCheckCircle,
   FaEnvelope,
   FaGlobe,
   FaIdCard,
@@ -14,9 +13,13 @@ import {
   FaSave,
   FaUndo,
 } from "react-icons/fa";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
 import Swal from "sweetalert2";
-
 
 import type { BasicDetailsForm } from "../../types/company";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
@@ -115,7 +118,6 @@ interface BasicDetailsProps {
 }
 
 const BasicDetails: React.FC<BasicDetailsProps> = ({ basic }) => {
-
   const [activeTab, setActiveTab] = useState("registration");
 
   const [form, setForm] = useState<BasicDetailsForm>(() => ({
@@ -201,42 +203,40 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({ basic }) => {
   });
 
   const handleSubmit = async () => {
-  const payload = {
-    id: COMPANY_ID,
-    ...mapFormToApiPayload(form),
+    const payload = {
+      id: COMPANY_ID,
+      ...mapFormToApiPayload(form),
+    };
+
+    try {
+      showLoading("Saving Company Details...");
+
+      await updateCompanyById(payload);
+
+      closeSwal();
+      showSuccess("Company basic details updated successfully.");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
   };
 
-  try {
-    showLoading("Saving Company Details...");
+  const handleReset = async () => {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Reset All Fields?",
+      text: "This will clear all entered data.",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, Reset",
+    });
 
-    await updateCompanyById(payload);
+    if (!result.isConfirmed) return;
 
-    closeSwal();
-    showSuccess("Company basic details updated successfully.");
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
-
-
-const handleReset = async () => {
-  const result = await Swal.fire({
-    icon: "warning",
-    title: "Reset All Fields?",
-    text: "This will clear all entered data.",
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, Reset",
-  });
-
-  if (!result.isConfirmed) return;
-
-  setForm(defaultForm);
-  showSuccess("Form reset successfully.");
-};
-
+    setForm(defaultForm);
+    showSuccess("Form reset successfully.");
+  };
 
   const renderField = (
     label: string,
@@ -264,8 +264,6 @@ const handleReset = async () => {
 
   return (
     <div className="w-full">
-      
-
       <div className="bg-card rounded-xl shadow-sm border border-theme overflow-hidden">
         {/* Tabs */}
         <div className="border-b border-theme bg-[var(--card)]">

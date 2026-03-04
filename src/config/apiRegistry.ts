@@ -3,12 +3,11 @@ import {
   getCountries,
   getUOMs,
   getItemClasses,
-  
   getRolaPackagingUnits,
   getRolaCountries,
   getRolaUOMs,
   getRolaItemClasses,
-} from '../api/itemZraApi';
+} from "../api/itemZraApi";
 
 // Map of function names to actual functions
 export const API_REGISTRY = {
@@ -29,7 +28,7 @@ export function getApiFunction(functionName: string) {
   if (functionName in API_REGISTRY) {
     return API_REGISTRY[functionName as ApiRegistryKey];
   }
-  
+
   console.error(`API function "${functionName}" not found in registry`);
   return null;
 }

@@ -10,7 +10,11 @@ import { showApiError, showSuccess } from "../../utils/alert";
 import { getCountryList } from "../../api/lookupApi";
 
 import { createDebitNoteFromInvoice } from "../../api/salesApi";
-import { ModalInput, ModalSelect, ModalTextarea } from "../../components/ui/modal/modalComponent";
+import {
+  ModalInput,
+  ModalSelect,
+  ModalTextarea,
+} from "../../components/ui/modal/modalComponent";
 import SearchSelect from "../../components/ui/modal/SearchSelect";
 
 import ItemSelect from "../../components/selects/ItemSelect";
@@ -21,7 +25,6 @@ import {
 } from "../../constants/invoice.constants";
 import PaymentInfoBlock from "../../components/sales/PaymentInfoBlock";
 import AddressBlock from "../../components/ui/modal/AddressBlock";
-
 
 interface DebitNoteFormProps {
   onSubmit?: (data: any) => void;
@@ -49,21 +52,17 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
   saving,
   setSaving,
 }) => {
-  const {
-    formData,
-    customerDetails,
-    paginatedItems,
-    totals,
-    ui,
-    actions,
-  } = useInvoiceForm(true, () => { }, onSubmit);
+  const { formData, customerDetails, paginatedItems, totals, ui, actions } =
+    useInvoiceForm(true, () => {}, onSubmit);
   const [debitMeta, setDebitMeta] = useState({
     debitNoteReasonCode: "",
     invcAdjustReason: "",
     transactionProgress: "",
   });
 
-  const [countryNameMap, setCountryNameMap] = useState<Record<string, string>>({});
+  const [countryNameMap, setCountryNameMap] = useState<Record<string, string>>(
+    {},
+  );
 
   const fetchInvoiceOptions = async (q: string) => {
     try {
@@ -96,7 +95,6 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
         console.error("Failed to fetch invoice", err);
         showApiError(err);
       }
-
     };
 
     fetchInvoice();
@@ -105,7 +103,9 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
   useEffect(() => {
     let mounted = true;
     const run = async () => {
-      const code = String(formData.destnCountryCd ?? "").trim().toUpperCase();
+      const code = String(formData.destnCountryCd ?? "")
+        .trim()
+        .toUpperCase();
       if (!code) return;
       if (countryNameMap[code]) return;
 
@@ -114,7 +114,9 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
         const list = Array.isArray(resp) ? resp : (resp?.data ?? []);
         const next: Record<string, string> = {};
         (list ?? []).forEach((c: any) => {
-          const cc = String(c?.code ?? "").trim().toUpperCase();
+          const cc = String(c?.code ?? "")
+            .trim()
+            .toUpperCase();
           const name = String(c?.name ?? "").trim();
           if (cc) next[cc] = name || cc;
         });
@@ -165,7 +167,8 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
       }
 
       const normalizeAddress = (addr: any) => {
-        if (addr && typeof addr === "object" && !Array.isArray(addr)) return addr;
+        if (addr && typeof addr === "object" && !Array.isArray(addr))
+          return addr;
         return {
           line1: "",
           line2: "",
@@ -203,13 +206,9 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
         return;
       }
 
-      showSuccess(
-        res.message || "Debit note created successfully"
-      );
+      showSuccess(res.message || "Debit note created successfully");
 
       onSubmit?.(res);
-
-
     } catch (err: any) {
       console.error(err);
 
@@ -231,8 +230,6 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
       }}
       className="flex flex-col"
     >
-
-
       {/* Tabs */}
       <div className="bg-app border-b border-theme px-8 shrink-0">
         <div className="flex gap-8">
@@ -241,10 +238,11 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
               key={tab}
               type="button"
               onClick={() => ui.setActiveTab(tab)}
-              className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${ui.activeTab === tab
+              className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${
+                ui.activeTab === tab
                   ? "text-primary border-b-[3px] border-primary"
                   : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+              }`}
             >
               {tab === "details" && "Details"}
               {tab === "terms" && "Terms & Conditions"}
@@ -261,8 +259,6 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
           <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
             <div className="">
               <div className="grid grid-cols-6 gap-3 items-end">
-
-
                 <SearchSelect
                   label="Invoice Number"
                   value={formData.invoiceNumber ?? ""}
@@ -305,7 +301,6 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                   }
                 />
 
-
                 {debitMeta.debitNoteReasonCode === "04" && (
                   <ModalTextarea
                     label="Reason / Remark"
@@ -320,8 +315,6 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                     }
                   />
                 )}
-
-
 
                 <div>
                   <ModalInput
@@ -340,10 +333,10 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                   options={[...paymentMethodOptions]}
                   name="paymentMethod"
                   value={formData.paymentInformation?.paymentMethod || ""}
-                  onChange={(e) => actions.handleInputChange(e, "paymentInformation")}
+                  onChange={(e) =>
+                    actions.handleInputChange(e, "paymentInformation")
+                  }
                 />
-
-                
 
                 {/* <div className="flex flex-col gap-1">
                           <ModalSelect
@@ -405,8 +398,6 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
               </div>
             </div>
 
-
-
             {/* ITEMS */}
             <div className="grid grid-cols-[4fr_1fr] gap-4">
               <div className="bg-card rounded-lg p-2 shadow-sm flex-1">
@@ -416,24 +407,41 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                   </h3>
                 </div>
 
-
-                <div >
+                <div>
                   <table className="w-full border-collapse text-[10px]">
-                    <thead >
+                    <thead>
                       <tr className="border-b border-theme">
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[25px]">#</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[130px]">Item</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[140px]">Description</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px]">Quantity</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">Unit Price</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">Discount</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">Tax</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">Tax Code</th>
-                        <th className="px-2 py-3 text-right text-muted font-medium text-[11px] w-[70px]">Amount</th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[25px]">
+                          #
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[130px]">
+                          Item
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[140px]">
+                          Description
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px]">
+                          Quantity
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">
+                          Unit Price
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">
+                          Discount
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">
+                          Tax
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">
+                          Tax Code
+                        </th>
+                        <th className="px-2 py-3 text-right text-muted font-medium text-[11px] w-[70px]">
+                          Amount
+                        </th>
                         <th></th>
                       </tr>
                     </thead>
-                    <tbody >
+                    <tbody>
                       {paginatedItems.map((it, i) => {
                         const qty = Number(it.quantity) || 0;
                         const price = Number(it.price) || 0;
@@ -547,10 +555,10 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                 <div className="flex justify-between mt-3">
                   {(ui.itemCount > 5 || ui.page > 0) && (
                     <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
-
                       <div className="text-[11px] text-muted whitespace-nowrap">
                         Showing {ui.page * 5 + 1} to{" "}
-                        {Math.min((ui.page + 1) * 5, ui.itemCount)} of {ui.itemCount} items
+                        {Math.min((ui.page + 1) * 5, ui.itemCount)} of{" "}
+                        {ui.itemCount} items
                       </div>
 
                       <div className="flex gap-1.5 items-center">
@@ -572,10 +580,8 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                           Next
                         </button>
                       </div>
-
                     </div>
                   )}
-
                 </div>
               </div>
 
@@ -624,8 +630,11 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                               </span>
                               <span className="font-medium text-main">
                                 {formData.destnCountryCd
-                                  ? countryNameMap[String(formData.destnCountryCd).trim().toUpperCase()] ??
-                                    formData.destnCountryCd
+                                  ? (countryNameMap[
+                                      String(formData.destnCountryCd)
+                                        .trim()
+                                        .toUpperCase()
+                                    ] ?? formData.destnCountryCd)
                                   : "-"}
                               </span>
                             </div>
@@ -665,7 +674,9 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
 
                     <div className="mt-2 p-2 bg-primary rounded-lg">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-semibold text-white">Grand Total</span>
+                        <span className="text-sm font-semibold text-white">
+                          Grand Total
+                        </span>
                         <span className="text-sm font-bold text-white">
                           {symbol} {totals.grandTotal.toFixed(2)}
                         </span>
@@ -673,7 +684,6 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -690,15 +700,12 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
 
         {ui.activeTab === "address" && (
           <div className="space-y-6 overflow-hidden">
-
             {/*  PAYMENT INFO  */}
             <PaymentInfoBlock
               data={formData.paymentInformation}
               onChange={(
-                e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-              ) =>
-                actions.handleInputChange(e, "paymentInformation")
-              }
+                e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+              ) => actions.handleInputChange(e, "paymentInformation")}
               paymentMethodOptions={paymentMethodOptions}
               showPaymentMethod={false}
               showPaymentTerms={false}
@@ -706,7 +713,6 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
 
             {/*  BILLING + SHIPPING  */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
               {/* Billing */}
               <AddressBlock
                 type="billing"
@@ -714,10 +720,8 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                 subtitle="Invoice and payment details"
                 data={formData.billingAddress}
                 onChange={(
-                  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-                ) =>
-                  actions.handleInputChange(e, "billingAddress")
-                }
+                  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+                ) => actions.handleInputChange(e, "billingAddress")}
               />
 
               {/* Shipping */}
@@ -727,20 +731,14 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                 subtitle="Delivery location"
                 data={formData.shippingAddress}
                 sameAsBilling={ui.sameAsBilling}
-                onSameAsBillingChange={
-                  actions.handleSameAsBillingChange
-                }
+                onSameAsBillingChange={actions.handleSameAsBillingChange}
                 onChange={(
-                  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-                ) =>
-                  actions.handleInputChange(e, "shippingAddress")
-                }
+                  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+                ) => actions.handleInputChange(e, "shippingAddress")}
               />
-
             </div>
           </div>
         )}
-
       </div>
     </form>
   );

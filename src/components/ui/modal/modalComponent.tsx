@@ -189,9 +189,7 @@ export const FilterSelect = React.forwardRef<
         className,
       ].join(" ")}
     >
-      <option value="">
-        {props.placeholder || "Select"}
-      </option>
+      <option value="">{props.placeholder || "Select"}</option>
 
       {options.map((opt, idx) => (
         <option key={`${opt.value}-${idx}`} value={opt.value}>

@@ -1,5 +1,3 @@
-
-
 import type { TermSection } from "../termsAndCondition";
 
 /*  SUPPLIER  */
@@ -45,7 +43,6 @@ export interface RfqFormData {
 
   paymentRows: PaymentRow[];
 
-
   terms?: {
     buying: TermSection;
   };
@@ -86,7 +83,6 @@ export const emptyPaymentRow: PaymentRow = {
 };
 
 /*  EMPTY TERMS  */
-
 
 export const emptyTerms: TermSection = {
   general: "",

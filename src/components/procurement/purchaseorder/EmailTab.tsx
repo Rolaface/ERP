@@ -93,9 +93,27 @@ export const EmailTab: React.FC<EmailTabProps> = ({
       {/* Toolbar */}
       <div className="border border-theme rounded-t-md bg-app p-2 flex items-center gap-2">
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => exec("bold")} className="px-2 py-1 rounded hover:bg-app">B</button>
-          <button type="button" onClick={() => exec("italic")} className="px-2 py-1 rounded hover:bg-app">I</button>
-          <button type="button" onClick={() => exec("underline")} className="px-2 py-1 rounded hover:bg-app">U</button>
+          <button
+            type="button"
+            onClick={() => exec("bold")}
+            className="px-2 py-1 rounded hover:bg-app"
+          >
+            B
+          </button>
+          <button
+            type="button"
+            onClick={() => exec("italic")}
+            className="px-2 py-1 rounded hover:bg-app"
+          >
+            I
+          </button>
+          <button
+            type="button"
+            onClick={() => exec("underline")}
+            className="px-2 py-1 rounded hover:bg-app"
+          >
+            U
+          </button>
         </div>
 
         <div className="w-px h-6 bg-border mx-2" />
@@ -136,7 +154,9 @@ export const EmailTab: React.FC<EmailTabProps> = ({
           suppressContentEditableWarning
           className="min-h-[240px] p-4 prose max-w-none text-sm text-main outline-none"
         >
-          <p style={{ color: "var(--muted)" }}>Start typing your message here...</p>
+          <p style={{ color: "var(--muted)" }}>
+            Start typing your message here...
+          </p>
         </div>
       </div>
 

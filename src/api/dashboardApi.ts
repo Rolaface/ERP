@@ -31,6 +31,8 @@ export type DashboardSummaryResponse = {
 };
 
 export async function getDashboardSummary(): Promise<DashboardSummaryResponse> {
-  const resp: AxiosResponse<DashboardSummaryResponse> = await api.get(DashboardAPI.summary);
+  const resp: AxiosResponse<DashboardSummaryResponse> = await api.get(
+    DashboardAPI.summary,
+  );
   return resp.data;
 }

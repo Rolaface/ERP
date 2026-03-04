@@ -7,8 +7,6 @@ import {
   FaFilter,
   FaDownload,
   FaEdit,
-  FaUniversity,
-  FaExchangeAlt,
   FaArrowUp,
   FaArrowDown,
   FaCheckCircle,
@@ -179,8 +177,7 @@ const Banking = () => {
             row.type === "Credit" ? "text-success" : "text-danger"
           }`}
         >
-          {row.type === "Debit" ? "-" : "+"}₹
-          {row.amount.toLocaleString()}
+          {row.type === "Debit" ? "-" : "+"}₹{row.amount.toLocaleString()}
         </span>
       ),
     },

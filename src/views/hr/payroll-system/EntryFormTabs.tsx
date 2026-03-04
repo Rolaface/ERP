@@ -14,7 +14,10 @@ import { getSalarySlips } from "../../../api/salarySlipApi";
 
 import { getSalaryStructureAssignments } from "../../../api/salaryStructureAssignmentApi";
 
-import { getSalaryStructures, type SalaryStructureListItem } from "../../../api/salaryStructureApi";
+import {
+  getSalaryStructures,
+  type SalaryStructureListItem,
+} from "../../../api/salaryStructureApi";
 
 import PayrollPreviewModal from "./payrollPreview";
 
@@ -35,7 +38,9 @@ const toCsv = (rows: Array<Record<string, any>>): string => {
   };
 
   const header = cols.map(esc).join(",");
-  const lines = rows.map((r) => cols.map((c) => esc((r as any)?.[c])).join(","));
+  const lines = rows.map((r) =>
+    cols.map((c) => esc((r as any)?.[c])).join(","),
+  );
   return [header, ...lines].join("\n");
 };
 
@@ -49,7 +54,10 @@ const downloadCsv = (filename: string, csvContent: string) => {
   URL.revokeObjectURL(url);
 };
 
-const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
+const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
+  children,
+  required,
+}) => (
   <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
     {children}
     {required && <span className="text-danger ml-0.5">*</span>}
@@ -107,7 +115,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => (
     <div className="grid grid-cols-3 gap-5">
       <div>
         <Label required>Currency</Label>
-        <select value={data.currency} onChange={(e) => onChange("currency", e.target.value)} className={selectCls}>
+        <select
+          value={data.currency}
+          onChange={(e) => onChange("currency", e.target.value)}
+          className={selectCls}
+        >
           <option value="ZMW">ZMW — Zambian Kwacha</option>
           <option value="USD">USD — US Dollar</option>
           <option value="EUR">EUR — Euro</option>
@@ -129,7 +141,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => (
           onChange={(e) => onChange("payrollPayableAccount", e.target.value)}
           className={selectCls}
         >
-          <option value="Payroll Payable - Izyane - I">Payroll Payable - Izyane - I</option>
+          <option value="Payroll Payable - Izyane - I">
+            Payroll Payable - Izyane - I
+          </option>
           <option value="Payroll Payable - I">Payroll Payable - I</option>
           <option value="Payroll Payable - II">Payroll Payable - II</option>
         </select>
@@ -159,27 +173,21 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => (
 
     <div className="grid grid-cols-2 gap-4">
       {[
-
         {
-
           field: "deductTaxForProof",
 
           label: "Deduct Tax for Proof Submission",
 
           desc: "Apply TDS based on submitted investment proofs",
-
         },
 
         {
-
           field: "salarySlipTimesheet",
 
           label: "Salary Slip Based on Timesheet",
 
           desc: "Calculate pay using logged timesheet hours",
-
         },
-
       ].map(({ field, label, desc }) => (
         <label
           key={field}
@@ -219,7 +227,10 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   onEditEmployee,
   onViewEmployee,
 }) => {
-  const active = useMemo(() => employees.filter((e) => e.isActive), [employees]);
+  const active = useMemo(
+    () => employees.filter((e) => e.isActive),
+    [employees],
+  );
 
   const isLoading = Boolean(loading);
 
@@ -235,11 +246,16 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
   const [multiModalOpen, setMultiModalOpen] = useState(false);
 
-  const [multiSalaryStructureName, setMultiSalaryStructureName] = useState<string>("");
-  const [salaryStructures, setSalaryStructures] = useState<SalaryStructureListItem[]>([]);
+  const [multiSalaryStructureName, setMultiSalaryStructureName] =
+    useState<string>("");
+  const [salaryStructures, setSalaryStructures] = useState<
+    SalaryStructureListItem[]
+  >([]);
   const [salaryStructuresLoading, setSalaryStructuresLoading] = useState(false);
 
-  const [multiStructureAssignments, setMultiStructureAssignments] = useState<any[]>([]);
+  const [multiStructureAssignments, setMultiStructureAssignments] = useState<
+    any[]
+  >([]);
   const [multiAssignmentsLoading, setMultiAssignmentsLoading] = useState(false);
 
   const lastAutoSelectedStructureRef = useRef<string>("");
@@ -250,7 +266,8 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   const miniSelectCls =
     "w-56 px-2.5 py-2 bg-app border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary transition cursor-pointer";
 
-  const selectionMode: "single" | "multiple" = data.employeeSelectionMode || "multiple";
+  const selectionMode: "single" | "multiple" =
+    data.employeeSelectionMode || "multiple";
 
   const selectedSingleEmployeeId =
     selectionMode === "single" ? String(data.selectedEmployees?.[0] ?? "") : "";
@@ -258,7 +275,9 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   const selectedSingleEmployeeRow = useMemo(() => {
     if (!selectedSingleEmployeeId) return null;
 
-    return active.find((e) => String(e.id) === selectedSingleEmployeeId) ?? null;
+    return (
+      active.find((e) => String(e.id) === selectedSingleEmployeeId) ?? null
+    );
   }, [active, selectedSingleEmployeeId]);
 
   const selectedSingleEmployeeCode = useMemo(() => {
@@ -271,7 +290,8 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
   const fallbackSalaryStructureName = "";
 
-  const [singleSalaryStructureName, setSingleSalaryStructureName] = useState<string>("");
+  const [singleSalaryStructureName, setSingleSalaryStructureName] =
+    useState<string>("");
   const [singleAssignmentLoading, setSingleAssignmentLoading] = useState(false);
 
   React.useEffect(() => {
@@ -307,7 +327,9 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
       try {
         setSingleAssignmentLoading(true);
 
-        const rows = await getSalaryStructureAssignments({ employee: selectedSingleEmployeeCode });
+        const rows = await getSalaryStructureAssignments({
+          employee: selectedSingleEmployeeCode,
+        });
         if (!mounted) return;
         let list = Array.isArray(rows) ? rows : [];
 
@@ -316,16 +338,18 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
           if (!mounted) return;
           const allList = Array.isArray(all) ? all : [];
           const code = String(selectedSingleEmployeeCode).trim();
-          list = allList.filter((r: any) => String(r?.employee ?? "").trim() === code);
+          list = allList.filter(
+            (r: any) => String(r?.employee ?? "").trim() === code,
+          );
         }
 
         const payEnd = String(data.endDate ?? "").trim();
         const effective = /^\d{4}-\d{2}-\d{2}$/.test(payEnd)
           ? list.filter((r: any) => {
-            const fd = String(r?.from_date ?? "");
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(fd)) return false;
-            return fd <= payEnd;
-          })
+              const fd = String(r?.from_date ?? "");
+              if (!/^\d{4}-\d{2}-\d{2}$/.test(fd)) return false;
+              return fd <= payEnd;
+            })
           : list;
 
         const best = (effective.length > 0 ? effective : list)
@@ -336,7 +360,9 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
             return bd.localeCompare(ad);
           })[0];
 
-        setSingleSalaryStructureName(String(best?.salary_structure ?? "").trim());
+        setSingleSalaryStructureName(
+          String(best?.salary_structure ?? "").trim(),
+        );
       } catch (e: any) {
         if (!mounted) return;
         setSingleSalaryStructureName("");
@@ -351,7 +377,12 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
     return () => {
       mounted = false;
     };
-  }, [data.endDate, selectedSingleEmployeeCode, selectionMode, singleModalOpen]);
+  }, [
+    data.endDate,
+    selectedSingleEmployeeCode,
+    selectionMode,
+    singleModalOpen,
+  ]);
 
   React.useEffect(() => {
     if (selectionMode !== "multiple") {
@@ -413,10 +444,14 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   const effectiveStructureIndex = useMemo(() => {
     const byEmployee = new Map<string, string>();
     const byFullNameLower = new Map<string, string>();
-    const list = Array.isArray(multiStructureAssignments) ? multiStructureAssignments : [];
+    const list = Array.isArray(multiStructureAssignments)
+      ? multiStructureAssignments
+      : [];
 
     const effectiveStart = String(data.startDate ?? "").trim();
-    const useDate = /^\d{4}-\d{2}-\d{2}$/.test(effectiveStart) ? effectiveStart : "";
+    const useDate = /^\d{4}-\d{2}-\d{2}$/.test(effectiveStart)
+      ? effectiveStart
+      : "";
 
     const byEmp = new Map<string, any[]>();
     list.forEach((r: any) => {
@@ -438,13 +473,17 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
       const best = (eligible.length > 0 ? eligible : rows)
         .filter((r: any) => String(r?.salary_structure ?? "").trim())
-        .sort((a: any, b: any) => String(b?.from_date ?? "").localeCompare(String(a?.from_date ?? "")))[0];
+        .sort((a: any, b: any) =>
+          String(b?.from_date ?? "").localeCompare(String(a?.from_date ?? "")),
+        )[0];
 
       const structure = String(best?.salary_structure ?? "").trim();
       if (!structure) return;
 
       byEmployee.set(emp, structure);
-      const fullName = String(best?.full_name ?? "").trim().toLowerCase();
+      const fullName = String(best?.full_name ?? "")
+        .trim()
+        .toLowerCase();
       if (fullName) byFullNameLower.set(fullName, structure);
     });
 
@@ -454,7 +493,9 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   const getEffectiveStructureForEmployee = (emp: any): string => {
     const code = String(emp?.employeeId ?? "").trim();
     const id = String(emp?.id ?? "").trim();
-    const nameLower = String(emp?.name ?? "").trim().toLowerCase();
+    const nameLower = String(emp?.name ?? "")
+      .trim()
+      .toLowerCase();
 
     return (
       (code && effectiveStructureIndex.byEmployee.get(code)) ||
@@ -473,7 +514,12 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
       const eff = getEffectiveStructureForEmployee(emp);
       return Boolean(eff) && eff === selectedStructure;
     });
-  }, [active, effectiveStructureIndex, multiSalaryStructureName, selectionMode]);
+  }, [
+    active,
+    effectiveStructureIndex,
+    multiSalaryStructureName,
+    selectionMode,
+  ]);
 
   React.useEffect(() => {
     if (selectionMode !== "multiple") return;
@@ -483,12 +529,20 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
     if (lastAutoSelectedStructureRef.current === selectedStructure) return;
 
-    const ids = employeesMatchingSelectedStructure.map((e) => String((e as any).id)).filter(Boolean);
+    const ids = employeesMatchingSelectedStructure
+      .map((e) => String((e as any).id))
+      .filter(Boolean);
 
     onChange("selectedEmployees", ids);
     lastAutoSelectedStructureRef.current = selectedStructure;
     setPage((p) => (p === 1 ? p : 1));
-  }, [employeesMatchingSelectedStructure, multiAssignmentsLoading, multiSalaryStructureName, onChange, selectionMode]);
+  }, [
+    employeesMatchingSelectedStructure,
+    multiAssignmentsLoading,
+    multiSalaryStructureName,
+    onChange,
+    selectionMode,
+  ]);
 
   React.useEffect(() => {
     if (selectionMode !== "multiple") return;
@@ -523,7 +577,11 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
   const canRunMultiplePayroll = useMemo(() => {
     if (selectionMode !== "multiple") return false;
-    if (!Array.isArray(data.selectedEmployees) || data.selectedEmployees.length === 0) return false;
+    if (
+      !Array.isArray(data.selectedEmployees) ||
+      data.selectedEmployees.length === 0
+    )
+      return false;
     if (!String(multiSalaryStructureName ?? "").trim()) return false;
     if (!String(data.company ?? "").trim()) return false;
     if (!String(data.currency ?? "").trim()) return false;
@@ -547,7 +605,9 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   const runSinglePayroll = async () => {
     if (!canRunSinglePayroll) {
       if (!String(singleSalaryStructureName ?? "").trim()) {
-        toast.error("No salary structure assigned for this employee in the selected period");
+        toast.error(
+          "No salary structure assigned for this employee in the selected period",
+        );
         return;
       }
 
@@ -605,8 +665,12 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
     setMultiSubmitting(true);
     try {
-      const selectedEmployeeData = active.filter((e) => data.selectedEmployees.includes(e.id));
-      let employeeIds = selectedEmployeeData.map((e: any) => e.employeeId || e.id).filter(Boolean);
+      const selectedEmployeeData = active.filter((e) =>
+        data.selectedEmployees.includes(e.id),
+      );
+      let employeeIds = selectedEmployeeData
+        .map((e: any) => e.employeeId || e.id)
+        .filter(Boolean);
 
       const employeeNameByCode = new Map<string, string>();
       selectedEmployeeData.forEach((e: any) => {
@@ -616,7 +680,9 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
       });
 
       const fmtNames = (ids: string[], limit = 5) => {
-        const uniq = Array.from(new Set(ids.map((x) => String(x).trim()).filter(Boolean)));
+        const uniq = Array.from(
+          new Set(ids.map((x) => String(x).trim()).filter(Boolean)),
+        );
         const names = uniq.map((id) => employeeNameByCode.get(id) || id);
         const head = names.slice(0, limit);
         const rest = Math.max(0, names.length - head.length);
@@ -652,8 +718,12 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
           });
         };
 
-        const withStructure = employeeIds.filter((id: any) => hasEffective(String(id)));
-        skippedNoStructureIds = employeeIds.filter((id: any) => !hasEffective(String(id))).map(String);
+        const withStructure = employeeIds.filter((id: any) =>
+          hasEffective(String(id)),
+        );
+        skippedNoStructureIds = employeeIds
+          .filter((id: any) => !hasEffective(String(id)))
+          .map(String);
         skippedNoStructureCount = skippedNoStructureIds.length;
         employeeIds = withStructure;
 
@@ -667,7 +737,9 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
       // Skip duplicates (month-normalized)
       const toIso = (d: Date) => d.toISOString().slice(0, 10);
-      const normalizeMonthRange = (iso: string): { start: string; end: string } | null => {
+      const normalizeMonthRange = (
+        iso: string,
+      ): { start: string; end: string } | null => {
         const s = String(iso ?? "").trim();
         if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
         const [y, m] = s.split("-").map((v) => Number(v));
@@ -677,7 +749,8 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
         return { start: toIso(start), end: toIso(end) };
       };
 
-      const monthRange = normalizeMonthRange(startDate) ?? normalizeMonthRange(endDate);
+      const monthRange =
+        normalizeMonthRange(startDate) ?? normalizeMonthRange(endDate);
       const checkStart = monthRange?.start ?? startDate;
       const checkEnd = monthRange?.end ?? endDate;
 
@@ -694,19 +767,29 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
           .filter(Boolean),
       );
 
-      const toRun = employeeIds.filter((id: any) => !existingEmployees.has(String(id).trim())).map(String);
-      skippedDuplicateIds = employeeIds.filter((id: any) => existingEmployees.has(String(id).trim())).map(String);
+      const toRun = employeeIds
+        .filter((id: any) => !existingEmployees.has(String(id).trim()))
+        .map(String);
+      skippedDuplicateIds = employeeIds
+        .filter((id: any) => existingEmployees.has(String(id).trim()))
+        .map(String);
       skippedDuplicateCount = skippedDuplicateIds.length;
 
       if (toRun.length === 0) {
         const parts: string[] = [];
         if (skippedNoStructureCount > 0) {
-          parts.push(`Skipped ${skippedNoStructureCount} (no salary structure): ${fmtNames(skippedNoStructureIds)}`);
+          parts.push(
+            `Skipped ${skippedNoStructureCount} (no salary structure): ${fmtNames(skippedNoStructureIds)}`,
+          );
         }
         if (skippedDuplicateCount > 0) {
-          parts.push(`Skipped ${skippedDuplicateCount} (already has payroll): ${fmtNames(skippedDuplicateIds)}`);
+          parts.push(
+            `Skipped ${skippedDuplicateCount} (already has payroll): ${fmtNames(skippedDuplicateIds)}`,
+          );
         }
-        toast.error(`No payroll created. ${parts.join(" | ") || "All selected employees were skipped."}`);
+        toast.error(
+          `No payroll created. ${parts.join(" | ") || "All selected employees were skipped."}`,
+        );
         return;
       }
 
@@ -719,15 +802,23 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
       const msg = String((resp as any)?.message ?? "").trim();
       const summaryParts: string[] = [];
       if (skippedNoStructureCount > 0) {
-        summaryParts.push(`Skipped ${skippedNoStructureCount} (no salary structure): ${fmtNames(skippedNoStructureIds)}`);
+        summaryParts.push(
+          `Skipped ${skippedNoStructureCount} (no salary structure): ${fmtNames(skippedNoStructureIds)}`,
+        );
       }
       if (skippedDuplicateCount > 0) {
-        summaryParts.push(`Skipped ${skippedDuplicateCount} (already has payroll): ${fmtNames(skippedDuplicateIds)}`);
+        summaryParts.push(
+          `Skipped ${skippedDuplicateCount} (already has payroll): ${fmtNames(skippedDuplicateIds)}`,
+        );
       }
-      const summary = summaryParts.length ? ` | ${summaryParts.join(" | ")}` : "";
+      const summary = summaryParts.length
+        ? ` | ${summaryParts.join(" | ")}`
+        : "";
 
       toast.success(
-        (msg || `Multiple payroll created for ${toRun.length} employee${toRun.length > 1 ? "s" : ""}`) + summary,
+        (msg ||
+          `Multiple payroll created for ${toRun.length} employee${toRun.length > 1 ? "s" : ""}`) +
+          summary,
       );
       setMultiModalOpen(false);
       onChange("selectedEmployees", []);
@@ -746,10 +837,14 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   };
 
   const filtered = useMemo(() => {
-    const q = String((data as any).nameSearch ?? "").trim().toLowerCase();
+    const q = String((data as any).nameSearch ?? "")
+      .trim()
+      .toLowerCase();
 
     const selectedStructure =
-      selectionMode === "multiple" ? String(multiSalaryStructureName ?? "").trim() : "";
+      selectionMode === "multiple"
+        ? String(multiSalaryStructureName ?? "").trim()
+        : "";
 
     const canFilterByStructure =
       Boolean(selectedStructure) &&
@@ -769,11 +864,22 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
       if (q && !name.includes(q)) return false;
       return true;
     });
-  }, [active, data, effectiveStructureIndex, multiAssignmentsLoading, multiSalaryStructureName, multiStructureAssignments, selectionMode]);
+  }, [
+    active,
+    data,
+    effectiveStructureIndex,
+    multiAssignmentsLoading,
+    multiSalaryStructureName,
+    multiStructureAssignments,
+    selectionMode,
+  ]);
 
   const toggleEmp = (id: string) => {
     if (selectionMode === "single") {
-      onChange("selectedEmployees", data.selectedEmployees[0] === id ? [] : [id]);
+      onChange(
+        "selectedEmployees",
+        data.selectedEmployees[0] === id ? [] : [id],
+      );
       return;
     }
 
@@ -844,7 +950,9 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
           onChange("selectedEmployees", []);
         }}
         onRunPayroll={runSinglePayroll}
-        runPayrollDisabled={!canRunSinglePayroll || singleSubmitting || singleAssignmentLoading}
+        runPayrollDisabled={
+          !canRunSinglePayroll || singleSubmitting || singleAssignmentLoading
+        }
         runPayrollLoading={singleSubmitting}
       />
 
@@ -869,7 +977,10 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                 <label className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-main">
                   <input
                     type="checkbox"
-                    checked={data.selectedEmployees.length === filtered.length && filtered.length > 0}
+                    checked={
+                      data.selectedEmployees.length === filtered.length &&
+                      filtered.length > 0
+                    }
                     onChange={selectAll}
                     className="w-4 h-4 accent-primary cursor-pointer"
                   />
@@ -880,7 +991,9 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
               {isLoading ? (
                 <div className="h-4 w-24 bg-theme/60 rounded animate-pulse" />
               ) : (
-                <div className="text-xs text-muted whitespace-nowrap">{filtered.length} employees</div>
+                <div className="text-xs text-muted whitespace-nowrap">
+                  {filtered.length} employees
+                </div>
               )}
 
               {selectionMode === "multiple" && !isLoading && (
@@ -933,16 +1046,33 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                           return;
                         }
 
-                        if (!String(data.startDate ?? "").trim() || !String(data.endDate ?? "").trim()) {
+                        if (
+                          !String(data.startDate ?? "").trim() ||
+                          !String(data.endDate ?? "").trim()
+                        ) {
                           const now = new Date();
-                          const start = new Date(now.getFullYear(), now.getMonth(), 1);
-                          const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                          onChange("startDate", start.toISOString().slice(0, 10));
+                          const start = new Date(
+                            now.getFullYear(),
+                            now.getMonth(),
+                            1,
+                          );
+                          const end = new Date(
+                            now.getFullYear(),
+                            now.getMonth() + 1,
+                            0,
+                          );
+                          onChange(
+                            "startDate",
+                            start.toISOString().slice(0, 10),
+                          );
                           onChange("endDate", end.toISOString().slice(0, 10));
                         }
                         setMultiModalOpen(true);
                       }}
-                      disabled={data.selectedEmployees.length === 0 || !String(multiSalaryStructureName ?? "").trim()}
+                      disabled={
+                        data.selectedEmployees.length === 0 ||
+                        !String(multiSalaryStructureName ?? "").trim()
+                      }
                       className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-primary text-white hover:opacity-90 disabled:opacity-40"
                     >
                       Preview Payroll
@@ -999,8 +1129,9 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                 ].map((h, i) => (
                   <th
                     key={String(i)}
-                    className={`px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider whitespace-nowrap ${i >= 7 ? "text-right" : "text-left"
-                      }`}
+                    className={`px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider whitespace-nowrap ${
+                      i >= 7 ? "text-right" : "text-left"
+                    }`}
                   >
                     {h}
                   </th>
@@ -1011,12 +1142,16 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
             <tbody>
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, skIdx) => (
-                  <tr key={`sk-${skIdx}`} className={skIdx % 2 === 1 ? "bg-app" : "bg-card"}>
+                  <tr
+                    key={`sk-${skIdx}`}
+                    className={skIdx % 2 === 1 ? "bg-app" : "bg-card"}
+                  >
                     {Array.from({ length: 10 }).map((__, cIdx) => (
                       <td key={String(cIdx)} className="px-4 py-3">
                         <div
-                          className={`h-3 bg-theme/60 rounded animate-pulse ${cIdx === 0 ? "w-4" : cIdx === 3 ? "w-32" : "w-20"
-                            }`}
+                          className={`h-3 bg-theme/60 rounded animate-pulse ${
+                            cIdx === 0 ? "w-4" : cIdx === 3 ? "w-32" : "w-20"
+                          }`}
                         />
                       </td>
                     ))}
@@ -1024,7 +1159,10 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                 ))
               ) : pageEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-sm text-muted">
+                  <td
+                    colSpan={10}
+                    className="px-4 py-10 text-center text-sm text-muted"
+                  >
                     Doesn't exist
                   </td>
                 </tr>
@@ -1034,16 +1172,26 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
                   const gross = Number(emp.grossSalary ?? 0);
 
-                  const statusLabel = String(emp.status ?? (emp.isActive ? "Active" : "Inactive"));
+                  const statusLabel = String(
+                    emp.status ?? (emp.isActive ? "Active" : "Inactive"),
+                  );
 
                   return (
                     <tr
                       key={emp.id}
                       onClick={() => toggleEmp(emp.id)}
-                      className={`border-b border-theme last:border-0 cursor-pointer transition-colors ${isSel ? "bg-primary/5" : i % 2 === 1 ? "bg-app hover:bg-primary/3" : "bg-card hover:bg-app"
-                        }`}
+                      className={`border-b border-theme last:border-0 cursor-pointer transition-colors ${
+                        isSel
+                          ? "bg-primary/5"
+                          : i % 2 === 1
+                            ? "bg-app hover:bg-primary/3"
+                            : "bg-card hover:bg-app"
+                      }`}
                     >
-                      <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="px-4 py-3 whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <input
                           type="checkbox"
                           checked={isSel}
@@ -1051,13 +1199,21 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                           className="w-4 h-4 accent-primary cursor-pointer"
                         />
                       </td>
-                      <td className="px-4 py-3 text-xs font-semibold text-main whitespace-nowrap">{emp.id}</td>
-                      <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{emp.employeeId || "—"}</td>
-                      <td className="px-4 py-3 text-xs font-bold text-main whitespace-nowrap">{emp.name || "—"}</td>
+                      <td className="px-4 py-3 text-xs font-semibold text-main whitespace-nowrap">
+                        {emp.id}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                        {emp.employeeId || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-bold text-main whitespace-nowrap">
+                        {emp.name || "—"}
+                      </td>
                       <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                         {emp.jobTitle || emp.designation || "—"}
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{emp.department || "—"}</td>
+                      <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                        {emp.department || "—"}
+                      </td>
                       <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                         {emp.workLocation || emp.branch || "—"}
                       </td>
@@ -1066,15 +1222,19 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${statusLabel.toLowerCase() === "active"
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
+                            statusLabel.toLowerCase() === "active"
                               ? "bg-success/10 text-success border-success/20"
                               : "bg-warning/10 text-warning border-warning/20"
-                            }`}
+                          }`}
                         >
                           {statusLabel}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="px-4 py-3 text-right whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => onViewEmployee?.(emp.id)}
@@ -1106,211 +1266,149 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
         {filtered.length > 0 && (
           <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 bg-app border-t border-theme">
-
-            <div className="text-xs text-muted">Page {pageSafe} of {totalPages}</div>
-
-            <div className="flex items-center gap-2">
-
-              <button
-
-                type="button"
-
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-
-                disabled={pageSafe <= 1}
-
-                className="px-3 py-2 text-xs font-bold rounded-lg border border-theme bg-card text-main disabled:opacity-40"
-
-              >
-
-                Previous
-
-              </button>
-
-              <button
-
-                type="button"
-
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-
-                disabled={pageSafe >= totalPages}
-
-                className="px-3 py-2 text-xs font-bold rounded-lg border border-theme bg-card text-main disabled:opacity-40"
-
-              >
-
-                Next
-
-              </button>
-
+            <div className="text-xs text-muted">
+              Page {pageSafe} of {totalPages}
             </div>
 
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={pageSafe <= 1}
+                className="px-3 py-2 text-xs font-bold rounded-lg border border-theme bg-card text-main disabled:opacity-40"
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={pageSafe >= totalPages}
+                className="px-3 py-2 text-xs font-bold rounded-lg border border-theme bg-card text-main disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
           </div>
-
         )}
-
       </div>
-
     </div>
-
   );
-
 };
 
-
-
 interface AccountingTabProps {
-
   data: PayrollEntry;
 
   onChange: (field: string, value: any) => void;
 
   employees: Employee[];
-
 }
 
+export const AccountingTab: React.FC<AccountingTabProps> = ({
+  data,
+  onChange,
+  employees,
+}) => {
+  const selectedEmps = employees.filter((e) =>
+    data.selectedEmployees.includes(e.id),
+  );
 
-
-export const AccountingTab: React.FC<AccountingTabProps> = ({ data, onChange, employees }) => {
-
-  const selectedEmps = employees.filter((e) => data.selectedEmployees.includes(e.id));
-
-  const totalGross = selectedEmps.reduce((s, e) => s + Number(e.grossSalary ?? 0), 0);
-
-
+  const totalGross = selectedEmps.reduce(
+    (s, e) => s + Number(e.grossSalary ?? 0),
+    0,
+  );
 
   return (
-
     <div className="space-y-5 animate-[fadeIn_0.2s_ease]">
-
       <div className="grid grid-cols-2 gap-5">
-
         <div>
-
           <Label>Payment Account</Label>
 
           <select
-
             value={(data as any).paymentAccount ?? ""}
-
             onChange={(e) => onChange("paymentAccount", e.target.value)}
-
             className={selectCls}
-
           >
-
             <option value="">Select account</option>
 
             <option value="current">Current Account</option>
 
             <option value="salary">Salary Account</option>
-
           </select>
-
         </div>
 
         <div>
-
           <Label>Cost Center</Label>
 
           <input
-
             type="text"
-
             value={(data as any).costCenter ?? ""}
-
             onChange={(e) => onChange("costCenter", e.target.value)}
-
             placeholder="e.g. HQ-Operations"
-
             className={inputCls}
-
           />
-
         </div>
 
         <div>
-
           <Label>Project</Label>
 
           <input
-
             type="text"
-
             value={(data as any).project ?? ""}
-
             onChange={(e) => onChange("project", e.target.value)}
-
             placeholder="e.g. Internal Payroll"
-
             className={inputCls}
-
           />
-
         </div>
 
         <div>
-
           <Label>Letter Head</Label>
 
           <input
-
             type="text"
-
             value={(data as any).letterHead ?? ""}
-
             onChange={(e) => onChange("letterHead", e.target.value)}
-
             placeholder="e.g. Company Letterhead"
-
             className={inputCls}
-
           />
-
         </div>
-
       </div>
 
-
-
       {data.selectedEmployees.length > 0 && (
-
         <div className="rounded-xl border border-success/30 bg-success/5 p-5">
-
-          <p className="text-xs font-extrabold text-success uppercase tracking-wider mb-4">Payroll Summary</p>
+          <p className="text-xs font-extrabold text-success uppercase tracking-wider mb-4">
+            Payroll Summary
+          </p>
 
           <div className="grid grid-cols-4 gap-4">
-
             {[
-
               { label: "Employees", value: data.selectedEmployees.length },
 
-              { label: "Est. Gross", value: `ZMW ${totalGross.toLocaleString("en-ZM")}` },
+              {
+                label: "Est. Gross",
+                value: `ZMW ${totalGross.toLocaleString("en-ZM")}`,
+              },
 
               { label: "Currency", value: (data as any).currency || "—" },
 
-              { label: "Frequency", value: (data as any).payrollFrequency || "—" },
-
+              {
+                label: "Frequency",
+                value: (data as any).payrollFrequency || "—",
+              },
             ].map(({ label, value }) => (
-
               <div key={label}>
+                <p className="text-[10px] text-success/70 uppercase tracking-wider">
+                  {label}
+                </p>
 
-                <p className="text-[10px] text-success/70 uppercase tracking-wider">{label}</p>
-
-                <p className="text-lg font-extrabold text-success mt-0.5">{value}</p>
-
+                <p className="text-lg font-extrabold text-success mt-0.5">
+                  {value}
+                </p>
               </div>
-
             ))}
-
           </div>
-
         </div>
-
       )}
-
     </div>
-
   );
-
 };

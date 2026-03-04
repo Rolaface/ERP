@@ -1,6 +1,4 @@
-
-import React, { useState } from "react";
-
+import React from "react";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -49,9 +47,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 );
 Input.displayName = "Input";
 
-// 
+//
 // Select Component
-// 
+//
 interface SelectOption {
   label: string;
   value: string | number;
@@ -109,9 +107,9 @@ Select.displayName = "Select";
 
 Select.displayName = "Select";
 
-// 
+//
 // Textarea Component
-// 
+//
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
   icon?: React.ReactNode;
@@ -155,9 +153,8 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 );
 Textarea.displayName = "Textarea";
 
-// 
+//
 // Checkbox Component
-
 
 interface CheckboxProps {
   label: string;
@@ -214,13 +211,13 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         </span>
       </label>
     );
-  }
+  },
 );
 
 Checkbox.displayName = "Checkbox";
-// 
-// Card Component 
-// 
+//
+// Card Component
+//
 interface CardProps {
   title: string;
   subtitle?: string;
@@ -261,9 +258,9 @@ export const Card: React.FC<CardProps> = ({
   </div>
 );
 
-// 
+//
 // Button Component
-// 
+//
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "danger" | "ghost";
   icon?: React.ReactNode;
@@ -272,7 +269,15 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { variant = "primary", icon, loading, children, className = "", type = "button", ...props },
+    {
+      variant = "primary",
+      icon,
+      loading,
+      children,
+      className = "",
+      type = "button",
+      ...props
+    },
     ref,
   ) => {
     const baseClasses =
@@ -323,5 +328,3 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   },
 );
 Button.displayName = "Button";
-
-

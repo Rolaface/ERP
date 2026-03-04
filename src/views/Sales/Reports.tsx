@@ -106,24 +106,35 @@ export default function ReportTable() {
             ? qRes.data.quotations
             : [];
 
-          const mappedQuotations: ReportRow[] = quotationsData.map((q: any) => ({
-            type: "Quotations",
-            documentNo: q?.id ?? q?.quotationNumber ?? "",
-            customerName:
-              q?.customerName ?? q?.customer?.name ?? q?.clientName ?? q?.name ?? "",
-            date: q?.transactionDate ?? q?.quotationDate ?? "",
-            dueDate: q?.validTill ?? q?.validUntil ?? "",
-            currency: q?.currency ?? q?.currencyCode ?? "",
-            amount: Number(q?.grandTotal ?? q?.totalAmount ?? 0),
-          }));
+          const mappedQuotations: ReportRow[] = quotationsData.map(
+            (q: any) => ({
+              type: "Quotations",
+              documentNo: q?.id ?? q?.quotationNumber ?? "",
+              customerName:
+                q?.customerName ??
+                q?.customer?.name ??
+                q?.clientName ??
+                q?.name ??
+                "",
+              date: q?.transactionDate ?? q?.quotationDate ?? "",
+              dueDate: q?.validTill ?? q?.validUntil ?? "",
+              currency: q?.currency ?? q?.currencyCode ?? "",
+              amount: Number(q?.grandTotal ?? q?.totalAmount ?? 0),
+            }),
+          );
 
           const mappedProforma: ReportRow[] = Array.isArray(pRes?.data)
             ? pRes.data.map((p: any) => ({
                 type: "Proforma Invoice",
                 documentNo: p?.proformaId ?? p?.id ?? "",
                 customerName:
-                  p?.customerName ?? p?.customer?.name ?? p?.clientName ?? p?.name ?? "",
-                date: p?.dateofinvoice ?? p?.dateOfInvoice ?? p?.createdAt ?? "",
+                  p?.customerName ??
+                  p?.customer?.name ??
+                  p?.clientName ??
+                  p?.name ??
+                  "",
+                date:
+                  p?.dateofinvoice ?? p?.dateOfInvoice ?? p?.createdAt ?? "",
                 dueDate: p?.dueDate ?? "",
                 currency: p?.currency ?? p?.currencyCode ?? "",
                 amount: Number(p?.totalAmount ?? 0),
@@ -136,7 +147,11 @@ export default function ReportTable() {
                 type: "Invoices",
                 documentNo: inv?.invoiceNumber ?? "",
                 customerName:
-                  inv?.customerName ?? inv?.customer?.name ?? inv?.clientName ?? inv?.name ?? "",
+                  inv?.customerName ??
+                  inv?.customer?.name ??
+                  inv?.clientName ??
+                  inv?.name ??
+                  "",
                 date: inv?.dateOfInvoice ?? "",
                 dueDate: inv?.dueDate ?? "",
                 currency: inv?.currency ?? inv?.currencyCode ?? "",
@@ -150,7 +165,11 @@ export default function ReportTable() {
                 type: "Credit Notes",
                 documentNo: cn?.invoiceNumber ?? cn?.creditNoteNumber ?? "",
                 customerName:
-                  cn?.customerName ?? cn?.customer?.name ?? cn?.clientName ?? cn?.name ?? "",
+                  cn?.customerName ??
+                  cn?.customer?.name ??
+                  cn?.clientName ??
+                  cn?.name ??
+                  "",
                 date: cn?.dateOfInvoice ?? cn?.date ?? "",
                 currency: cn?.currency ?? cn?.currencyCode ?? "",
                 amount: Math.abs(Number(cn?.totalAmount ?? 0)),
@@ -163,7 +182,11 @@ export default function ReportTable() {
                 type: "Debit Notes",
                 documentNo: dn?.invoiceNumber ?? dn?.debitNoteNumber ?? "",
                 customerName:
-                  dn?.customerName ?? dn?.customer?.name ?? dn?.clientName ?? dn?.name ?? "",
+                  dn?.customerName ??
+                  dn?.customer?.name ??
+                  dn?.clientName ??
+                  dn?.name ??
+                  "",
                 date: dn?.dateOfInvoice ?? dn?.date ?? "",
                 currency: dn?.currency ?? dn?.currencyCode ?? dn?.currCd ?? "",
                 amount: Number(dn?.totalAmount ?? 0),
@@ -193,7 +216,11 @@ export default function ReportTable() {
             type: "Quotations",
             documentNo: q?.id ?? q?.quotationNumber ?? "",
             customerName:
-              q?.customerName ?? q?.customer?.name ?? q?.clientName ?? q?.name ?? "",
+              q?.customerName ??
+              q?.customer?.name ??
+              q?.clientName ??
+              q?.name ??
+              "",
             date: q?.transactionDate ?? q?.quotationDate ?? "",
             dueDate: q?.validTill ?? q?.validUntil ?? "",
             currency: q?.currency ?? q?.currencyCode ?? "",
@@ -211,8 +238,13 @@ export default function ReportTable() {
                 type: "Proforma Invoice",
                 documentNo: p?.proformaId ?? p?.id ?? "",
                 customerName:
-                  p?.customerName ?? p?.customer?.name ?? p?.clientName ?? p?.name ?? "",
-                date: p?.dateofinvoice ?? p?.dateOfInvoice ?? p?.createdAt ?? "",
+                  p?.customerName ??
+                  p?.customer?.name ??
+                  p?.clientName ??
+                  p?.name ??
+                  "",
+                date:
+                  p?.dateofinvoice ?? p?.dateOfInvoice ?? p?.createdAt ?? "",
                 dueDate: p?.dueDate ?? "",
                 currency: p?.currency ?? p?.currencyCode ?? "",
                 amount: Number(p?.totalAmount ?? 0),
@@ -231,7 +263,11 @@ export default function ReportTable() {
                 type: "Invoices",
                 documentNo: inv?.invoiceNumber ?? "",
                 customerName:
-                  inv?.customerName ?? inv?.customer?.name ?? inv?.clientName ?? inv?.name ?? "",
+                  inv?.customerName ??
+                  inv?.customer?.name ??
+                  inv?.clientName ??
+                  inv?.name ??
+                  "",
                 date: inv?.dateOfInvoice ?? "",
                 dueDate: inv?.dueDate ?? "",
                 currency: inv?.currency ?? inv?.currencyCode ?? "",
@@ -251,7 +287,11 @@ export default function ReportTable() {
                 type: "Credit Notes",
                 documentNo: cn?.invoiceNumber ?? cn?.creditNoteNumber ?? "",
                 customerName:
-                  cn?.customerName ?? cn?.customer?.name ?? cn?.clientName ?? cn?.name ?? "",
+                  cn?.customerName ??
+                  cn?.customer?.name ??
+                  cn?.clientName ??
+                  cn?.name ??
+                  "",
                 date: cn?.dateOfInvoice ?? cn?.date ?? "",
                 currency: cn?.currency ?? cn?.currencyCode ?? "",
                 amount: Math.abs(Number(cn?.totalAmount ?? 0)),
@@ -270,7 +310,11 @@ export default function ReportTable() {
                 type: "Debit Notes",
                 documentNo: dn?.invoiceNumber ?? dn?.debitNoteNumber ?? "",
                 customerName:
-                  dn?.customerName ?? dn?.customer?.name ?? dn?.clientName ?? dn?.name ?? "",
+                  dn?.customerName ??
+                  dn?.customer?.name ??
+                  dn?.clientName ??
+                  dn?.name ??
+                  "",
                 date: dn?.dateOfInvoice ?? dn?.date ?? "",
                 currency: dn?.currency ?? dn?.currencyCode ?? dn?.currCd ?? "",
                 amount: Number(dn?.totalAmount ?? 0),
@@ -295,16 +339,17 @@ export default function ReportTable() {
     return rows.filter((row) => {
       const term = searchTerm.trim().toLowerCase();
       if (term) {
-  const matches =
-    normalized(row.customerName).includes(term) ||
-    normalized(row.documentNo).includes(term) ||
-    normalized(row.type).includes(term);
+        const matches =
+          normalized(row.customerName).includes(term) ||
+          normalized(row.documentNo).includes(term) ||
+          normalized(row.type).includes(term);
 
-  if (!matches) return false;
-}
+        if (!matches) return false;
+      }
 
       const rowDate = dateStringForInput(row.date);
-      if (filters.dateFrom && rowDate && rowDate < filters.dateFrom) return false;
+      if (filters.dateFrom && rowDate && rowDate < filters.dateFrom)
+        return false;
       if (filters.dateTo && rowDate && rowDate > filters.dateTo) return false;
 
       return true;
@@ -388,8 +433,6 @@ export default function ReportTable() {
               setFilters((f) => ({ ...f, dateTo: e.target.value }))
             }
           />
-
-          
         </div>
 
         <div className="flex items-center justify-end">
@@ -445,93 +488,98 @@ export default function ReportTable() {
       <div className="border border-theme rounded-xl overflow-hidden bg-card">
         <div className="overflow-x-auto">
           <table className="min-w-full">
-          <thead className="bg-app border-b border-theme sticky top-0 z-10">
-            <tr>
-              {[
-                "Type",
-                "Document No",
-                "Customer",
-                "Date",
-                "Due Date",
-                "Receipt No",
-                "Currency",
-                "Amount",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted whitespace-nowrap ${
-                    h === "Amount" ? "text-right" : "text-left"
-                  }`}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              Array.from({ length: pageSize }).map((_, idx) => (
-                <SkeletonRow key={idx} columnsCount={8} />
-              ))
-            ) : paginatedData.length ? (
-              paginatedData.map((row, i) => (
-                <tr
-                  key={`${row.type}-${row.documentNo}-${i}`}
-                  className={`${i % 2 === 0 ? "bg-card" : "bg-app/30"} hover:bg-row-hover transition-colors`}
-                >
-                  <td className="px-4 py-3 text-sm text-main whitespace-nowrap">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-row-hover text-main">
-                      {row.type}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-main whitespace-nowrap">
-                    {row.documentNo || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-main max-w-[260px] truncate" title={row.customerName || ""}>
-                    {row.customerName || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-main whitespace-nowrap">
-                    {formatDate(row.date)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-main whitespace-nowrap">
-                    {row.dueDate ? formatDate(row.dueDate) : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-main whitespace-nowrap">
-                    {row.receiptNo || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-main whitespace-nowrap">
-                    {row.currency || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-main text-right whitespace-nowrap">
-                    {row.amount !== undefined && row.amount !== null ? (
-                      <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold">
-                        {row.currency ? `${row.currency} ` : ""}
-                        {Number(row.amount).toLocaleString()}
-                      </code>
-                    ) : (
-                      "—"
-                    )}
+            <thead className="bg-app border-b border-theme sticky top-0 z-10">
+              <tr>
+                {[
+                  "Type",
+                  "Document No",
+                  "Customer",
+                  "Date",
+                  "Due Date",
+                  "Receipt No",
+                  "Currency",
+                  "Amount",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted whitespace-nowrap ${
+                      h === "Amount" ? "text-right" : "text-left"
+                    }`}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: pageSize }).map((_, idx) => (
+                  <SkeletonRow key={idx} columnsCount={8} />
+                ))
+              ) : paginatedData.length ? (
+                paginatedData.map((row, i) => (
+                  <tr
+                    key={`${row.type}-${row.documentNo}-${i}`}
+                    className={`${i % 2 === 0 ? "bg-card" : "bg-app/30"} hover:bg-row-hover transition-colors`}
+                  >
+                    <td className="px-4 py-3 text-sm text-main whitespace-nowrap">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-row-hover text-main">
+                        {row.type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold text-main whitespace-nowrap">
+                      {row.documentNo || "—"}
+                    </td>
+                    <td
+                      className="px-4 py-3 text-sm text-main max-w-[260px] truncate"
+                      title={row.customerName || ""}
+                    >
+                      {row.customerName || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-main whitespace-nowrap">
+                      {formatDate(row.date)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-main whitespace-nowrap">
+                      {row.dueDate ? formatDate(row.dueDate) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-main whitespace-nowrap">
+                      {row.receiptNo || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-main whitespace-nowrap">
+                      {row.currency || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-main text-right whitespace-nowrap">
+                      {row.amount !== undefined && row.amount !== null ? (
+                        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold">
+                          {row.currency ? `${row.currency} ` : ""}
+                          {Number(row.amount).toLocaleString()}
+                        </code>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="py-10 text-center text-muted text-sm"
+                  >
+                    No records found
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={8}
-                  className="py-10 text-center text-muted text-sm"
-                >
-                  No records found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-theme bg-card">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs text-muted">
-              <span className="font-semibold uppercase tracking-wide">Show:</span>
+              <span className="font-semibold uppercase tracking-wide">
+                Show:
+              </span>
               <select
                 className="filter-input-refined appearance-none w-20 py-1.5 px-2 text-xs"
                 value={pageSize}
@@ -548,7 +596,9 @@ export default function ReportTable() {
             <div className="text-xs text-muted">
               {(() => {
                 const safePage = Math.min(Math.max(1, page), totalPages);
-                const start = filteredData.length ? (safePage - 1) * pageSize + 1 : 0;
+                const start = filteredData.length
+                  ? (safePage - 1) * pageSize + 1
+                  : 0;
                 const end = Math.min(safePage * pageSize, filteredData.length);
                 return `Showing ${start}-${end} of ${filteredData.length}`;
               })()}

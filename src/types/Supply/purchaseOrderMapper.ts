@@ -7,17 +7,15 @@ import type { AddressBlock } from "./purchaseOrder";
  */
 export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
   console.log("MAPPING PO TO BACKEND - Form items:", form.items);
-  
+
   // Filter and map items - CRITICAL: Filter empty items FIRST
   const validItems = form.items.filter((it) => {
     const hasCode = it.itemCode && it.itemCode.trim() !== "";
     const hasQty = it.quantity && Number(it.quantity) > 0;
     const hasRate = it.rate && Number(it.rate) > 0;
-  
-    
+
     return hasCode && hasQty && hasRate; // Only include complete items
   });
-
 
   const items = validItems.map((it, _idx) => {
     // Force number conversion
@@ -25,8 +23,6 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
     const rate = Number(it.rate);
     const vatRate = Number(it.vatRate || 0);
 
-
-   
     return {
       itemCode: it.itemCode,
       itemName: it.itemName || "",
@@ -38,11 +34,15 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
     };
   });
 
-
-
   // Tax rows - only valid ones
   const taxes = form.taxRows
-    .filter((t) => t.type && t.type.trim() !== "" && t.accountHead && t.accountHead.trim() !== "")
+    .filter(
+      (t) =>
+        t.type &&
+        t.type.trim() !== "" &&
+        t.accountHead &&
+        t.accountHead.trim() !== "",
+    )
     .map((t) => ({
       type: t.type,
       accountHead: t.accountHead,
@@ -67,27 +67,30 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
     supplierId: form.supplierId,
     currency: form.currency,
     taxCategory: "Non-Export",
-    
+
     // Optional fields
     ...(form.costCenter && { costCenter: form.costCenter }),
     ...(form.project && { project: form.project }),
     ...(form.shippingRule && { shippingRule: form.shippingRule }),
     ...(form.incoterm && { incoterm: form.incoterm }),
-    ...(form.paymentTermsTemplate && { paymentTermsTemplate: form.paymentTermsTemplate }),
-    ...(form.taxesChargesTemplate && { taxesChargesTemplate: form.taxesChargesTemplate }),
+    ...(form.paymentTermsTemplate && {
+      paymentTermsTemplate: form.paymentTermsTemplate,
+    }),
+    ...(form.taxesChargesTemplate && {
+      taxesChargesTemplate: form.taxesChargesTemplate,
+    }),
 
     addresses: form.addresses,
 
     // Terms - backend expects "selling" structure
     ...(form.terms?.buying && {
       terms: {
-        buying: form.terms.buying
-      }
+        buying: form.terms.buying,
+      },
     }),
 
-
     items: items, // Already filtered and mapped
-    
+
     ...(taxes.length > 0 && { taxes }),
     ...(payments.length > 0 && { payments }),
 
@@ -95,8 +98,6 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       remarks: "Created from UI",
     },
   };
-
-  
 
   return payload;
 };
@@ -107,14 +108,11 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
 export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
   const api = apiResponse.data || apiResponse;
 
-
   // Map items - handle both field name variations
   const items = (api.items || []).map((item: any) => {
     const qty = Number(item.qty || item.quantity || 0);
     const rate = Number(item.rate || item.price || 0); // Try both rate and price
     const vatRate = Number(item.vatRate || item.taxPerct || 0);
-
-  
 
     return {
       itemCode: item.item_code || item.itemCode || "",
@@ -201,8 +199,14 @@ export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
   }));
 
   // Totals
-  const totalQuantity = items.reduce((sum: number, item: any) => sum + item.quantity, 0);
-  const subTotal = items.reduce((sum: number, item: any) => sum + (item.quantity * item.rate), 0);
+  const totalQuantity = items.reduce(
+    (sum: number, item: any) => sum + item.quantity,
+    0,
+  );
+  const subTotal = items.reduce(
+    (sum: number, item: any) => sum + item.quantity * item.rate,
+    0,
+  );
   const itemTaxTotal = items.reduce((sum: number, item: any) => {
     const base = item.quantity * item.rate;
     return sum + (base * (item.vatRate || 0)) / 100;
@@ -210,11 +214,10 @@ export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
   const taxRowTotal = taxRows.reduce((sum: number, tax: any) => {
     return sum + (tax.amount * tax.taxRate) / 100;
   }, 0);
-  
-  const grandTotal = api.grandTotal || (subTotal + itemTaxTotal + taxRowTotal);
+
+  const grandTotal = api.grandTotal || subTotal + itemTaxTotal + taxRowTotal;
   const roundedTotal = Math.round(grandTotal);
   const roundingAdjustment = Number((roundedTotal - grandTotal).toFixed(2));
-
 
   const mappedForm: PurchaseOrderFormData = {
     ...emptyPOForm,
@@ -236,7 +239,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
 
     costCenter: api.costCenter || "",
     project: api.project || "",
-    
+
     destnCountryCd: api.destnCountryCd || api.exportToCountry || "",
     shippingRule: api.shippingRule || "",
     incoterm: api.incoterm || "",
@@ -266,13 +269,12 @@ export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
     acceptedTerms: {},
   };
 
-
   return mappedForm;
 };
 
 export const mapSupplierToAddress = (
   supplier: any,
-  prev: AddressBlock
+  prev: AddressBlock,
 ): AddressBlock => ({
   ...prev,
   addressLine1: supplier?.billingAddressLine1 ?? "",

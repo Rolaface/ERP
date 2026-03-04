@@ -55,8 +55,9 @@ export async function getSalaryStructureAssignments(
   const raw = resp.data?.data ?? resp.data;
   if (Array.isArray(raw)) return raw as SalaryStructureAssignmentListItem[];
 
-  const nested = (raw as any)?.data;
-  if (Array.isArray(nested)) return nested as SalaryStructureAssignmentListItem[];
+  const nested = raw?.data;
+  if (Array.isArray(nested))
+    return nested as SalaryStructureAssignmentListItem[];
 
   return [];
 }

@@ -7,7 +7,10 @@ import {
   replaceSalaryStructureAssignment,
   type SalaryStructureAssignmentListItem,
 } from "../../../api/salaryStructureAssignmentApi";
-import { getSalaryStructures, type SalaryStructureListItem } from "../../../api/salaryStructureApi";
+import {
+  getSalaryStructures,
+  type SalaryStructureListItem,
+} from "../../../api/salaryStructureApi";
 import { getAllEmployees } from "../../../api/employeeapi";
 
 type Props = {
@@ -32,7 +35,9 @@ export default function SalaryStructureAssignmentTab({
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [salaryStructuresLoading, setSalaryStructuresLoading] = useState(false);
-  const [salaryStructures, setSalaryStructures] = useState<SalaryStructureListItem[]>([]);
+  const [salaryStructures, setSalaryStructures] = useState<
+    SalaryStructureListItem[]
+  >([]);
 
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -51,7 +56,9 @@ export default function SalaryStructureAssignmentTab({
     setForm((p) => ({
       ...p,
       employee: String(editingAssignment.employee ?? p.employee ?? ""),
-      salary_structure: String(editingAssignment.salary_structure ?? p.salary_structure ?? ""),
+      salary_structure: String(
+        editingAssignment.salary_structure ?? p.salary_structure ?? "",
+      ),
       from_date: String(editingAssignment.from_date ?? p.from_date ?? ""),
       company: String(editingAssignment.company ?? p.company ?? ""),
     }));
@@ -135,7 +142,9 @@ export default function SalaryStructureAssignmentTab({
     const items = Array.isArray(employees) ? employees : [];
     return items
       .map((e: any) => {
-        const code = String(e?.employeeId ?? e?.employee_id ?? e?.id ?? "").trim();
+        const code = String(
+          e?.employeeId ?? e?.employee_id ?? e?.id ?? "",
+        ).trim();
         const fullName = String(e?.name ?? e?.employeeName ?? "").trim();
         return {
           value: code,
@@ -148,9 +157,18 @@ export default function SalaryStructureAssignmentTab({
 
   const canSubmit = useMemo(() => {
     if (isEditing) {
-      return Boolean(form.employee?.trim() && form.salary_structure?.trim() && form.company?.trim());
+      return Boolean(
+        form.employee?.trim() &&
+        form.salary_structure?.trim() &&
+        form.company?.trim(),
+      );
     }
-    return Boolean(form.employee?.trim() && form.salary_structure?.trim() && form.from_date?.trim() && form.company?.trim());
+    return Boolean(
+      form.employee?.trim() &&
+      form.salary_structure?.trim() &&
+      form.from_date?.trim() &&
+      form.company?.trim(),
+    );
   }, [form]);
 
   const handleAssign = async () => {
@@ -179,7 +197,12 @@ export default function SalaryStructureAssignmentTab({
       }
       onAssigned?.();
     } catch (e: any) {
-      toast.error(e?.message || (isEditing ? "Failed to update assignment" : "Failed to assign salary structure"));
+      toast.error(
+        e?.message ||
+          (isEditing
+            ? "Failed to update assignment"
+            : "Failed to assign salary structure"),
+      );
     } finally {
       setLoading(false);
     }
@@ -188,7 +211,9 @@ export default function SalaryStructureAssignmentTab({
   return (
     <div className="space-y-5">
       <div>
-        <div className="text-sm font-extrabold text-main">Salary Structure Assignment</div>
+        <div className="text-sm font-extrabold text-main">
+          Salary Structure Assignment
+        </div>
         <div className="text-xs text-muted mt-1">
           Assign a salary structure to this employee effective from a start date
         </div>
@@ -203,11 +228,15 @@ export default function SalaryStructureAssignmentTab({
           {editableEmployee ? (
             <select
               value={form.employee}
-              onChange={(e) => setForm((p) => ({ ...p, employee: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, employee: e.target.value }))
+              }
               className={selectCls}
               disabled={employeesLoading || isEditing}
             >
-              <option value="">{employeesLoading ? "Loading..." : "Select employee"}</option>
+              <option value="">
+                {employeesLoading ? "Loading..." : "Select employee"}
+              </option>
               {employeeOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -215,7 +244,11 @@ export default function SalaryStructureAssignmentTab({
               ))}
             </select>
           ) : (
-            <input value={form.employee} readOnly className={`${inputCls} opacity-80`} />
+            <input
+              value={form.employee}
+              readOnly
+              className={`${inputCls} opacity-80`}
+            />
           )}
         </div>
 
@@ -226,7 +259,9 @@ export default function SalaryStructureAssignmentTab({
           </label>
           <input
             value={form.company}
-            onChange={(e) => setForm((p) => ({ ...p, company: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, company: e.target.value }))
+            }
             placeholder="e.g. Izyane"
             className={inputCls}
           />
@@ -239,11 +274,17 @@ export default function SalaryStructureAssignmentTab({
           </label>
           <select
             value={form.salary_structure}
-            onChange={(e) => setForm((p) => ({ ...p, salary_structure: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, salary_structure: e.target.value }))
+            }
             className={selectCls}
             disabled={salaryStructuresLoading}
           >
-            <option value="">{salaryStructuresLoading ? "Loading..." : "Select salary structure"}</option>
+            <option value="">
+              {salaryStructuresLoading
+                ? "Loading..."
+                : "Select salary structure"}
+            </option>
             {structureOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.company ? `${o.label} (${o.company})` : o.label}
@@ -275,7 +316,13 @@ export default function SalaryStructureAssignmentTab({
           className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-white text-sm font-extrabold shadow-sm hover:opacity-95 active:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-40 disabled:cursor-not-allowed min-w-40"
         >
           <Save className="w-4 h-4" />
-          {loading ? (isEditing ? "Updating..." : "Assigning...") : isEditing ? "Update" : "Assign"}
+          {loading
+            ? isEditing
+              ? "Updating..."
+              : "Assigning..."
+            : isEditing
+              ? "Update"
+              : "Assign"}
         </button>
       </div>
     </div>

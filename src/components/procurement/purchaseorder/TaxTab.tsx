@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Input } from "../../ui/modal/formComponent";
-import type { TaxRow, PurchaseOrderFormData } from "../../../types/Supply/purchaseOrder";
+import type {
+  TaxRow,
+  PurchaseOrderFormData,
+} from "../../../types/Supply/purchaseOrder";
 
 interface TaxTabProps {
   form: PurchaseOrderFormData;
@@ -27,7 +30,6 @@ const ACCOUNT_HEADS = [
   "Miscellaneous Expenses - I",
 ];
 
-
 export const TaxTab: React.FC<TaxTabProps> = ({
   form,
   taxRows,
@@ -46,7 +48,7 @@ export const TaxTab: React.FC<TaxTabProps> = ({
 
   const paginatedRows = taxRows.slice(
     page * ITEMS_PER_PAGE,
-    (page + 1) * ITEMS_PER_PAGE
+    (page + 1) * ITEMS_PER_PAGE,
   );
 
   return (
@@ -65,13 +67,16 @@ export const TaxTab: React.FC<TaxTabProps> = ({
       </div>
 
       <div>
-        <span className="font-medium text-muted">Purchase Taxes and Charges</span>
+        <span className="font-medium text-muted">
+          Purchase Taxes and Charges
+        </span>
 
         {/* Pagination */}
         <div className="flex justify-between text-sm text-muted mt-2">
           <span>
             Showing {page * ITEMS_PER_PAGE + 1}–
-            {Math.min((page + 1) * ITEMS_PER_PAGE, taxRows.length)} of {taxRows.length}
+            {Math.min((page + 1) * ITEMS_PER_PAGE, taxRows.length)} of{" "}
+            {taxRows.length}
           </span>
 
           <div className="flex gap-2">
@@ -128,44 +133,67 @@ export const TaxTab: React.FC<TaxTabProps> = ({
                         <select
                           className="w-full rounded border border-theme bg-app p-1 text-sm"
                           value={row.type}
-                          onChange={(e) => onTaxRowChange(i, "type", e.target.value)}
+                          onChange={(e) =>
+                            onTaxRowChange(i, "type", e.target.value)
+                          }
                         >
                           <option value="">Select Type</option>
                           {TAX_TYPES.map((t) => (
-                            <option key={t} value={t}>{t}</option>
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
                           ))}
                         </select>
-
                       </td>
 
                       <td className="px-1 py-1">
                         <select
                           className="w-full rounded border border-theme bg-app p-1 text-sm"
                           value={row.accountHead}
-                          onChange={(e) => onTaxRowChange(i, "accountHead", e.target.value)}
+                          onChange={(e) =>
+                            onTaxRowChange(i, "accountHead", e.target.value)
+                          }
                         >
                           <option value="">Select Account Head</option>
                           {ACCOUNT_HEADS.map((a) => (
-                            <option key={a} value={a}>{a}</option>
+                            <option key={a} value={a}>
+                              {a}
+                            </option>
                           ))}
                         </select>
-
                       </td>
 
                       <td className="px-1 py-1">
-                        <input type="number" className="w-full rounded border border-theme bg-app p-1 text-sm" value={row.taxRate}
-                          onChange={(e) => onTaxRowChange(i, "taxRate", Number(e.target.value))} />
+                        <input
+                          type="number"
+                          className="w-full rounded border border-theme bg-app p-1 text-sm"
+                          value={row.taxRate}
+                          onChange={(e) =>
+                            onTaxRowChange(i, "taxRate", Number(e.target.value))
+                          }
+                        />
                       </td>
 
                       <td className="px-1 py-1">
-                        <input type="number" className="w-full rounded border border-theme bg-app p-1 text-sm" value={row.amount}
-                          onChange={(e) => onTaxRowChange(i, "amount", Number(e.target.value))} />
+                        <input
+                          type="number"
+                          className="w-full rounded border border-theme bg-app p-1 text-sm"
+                          value={row.amount}
+                          onChange={(e) =>
+                            onTaxRowChange(i, "amount", Number(e.target.value))
+                          }
+                        />
                       </td>
 
-                      <td className="px-1 py-1 text-right font-medium">{total.toFixed(2)}</td>
+                      <td className="px-1 py-1 text-right font-medium">
+                        {total.toFixed(2)}
+                      </td>
 
                       <td className="px-1 py-1 text-center">
-                        <button onClick={() => onRemoveTaxRow(i)} className="p-1 text-danger hover:bg-app rounded">
+                        <button
+                          onClick={() => onRemoveTaxRow(i)}
+                          className="p-1 text-danger hover:bg-app rounded"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>

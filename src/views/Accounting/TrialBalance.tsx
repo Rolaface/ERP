@@ -132,9 +132,7 @@ const TrialBalance: React.FC<Props> = ({
                 <div className="mt-2 bg-app border border-theme rounded-lg">
                   <div className="grid grid-cols-4 text-xs font-bold">
                     <div className="col-span-2 px-6 py-3">Total</div>
-                    <div className="px-6 py-3 text-right">
-                      {nf(totalDebit)}
-                    </div>
+                    <div className="px-6 py-3 text-right">{nf(totalDebit)}</div>
                     <div className="px-6 py-3 text-right">
                       {nf(totalCredit)}
                     </div>

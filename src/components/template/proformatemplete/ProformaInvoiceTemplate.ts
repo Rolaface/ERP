@@ -146,18 +146,26 @@ export const generateProformaInvoicePDF = async (
   doc.setFontSize(9);
 
   doc.text(`Taxable Standard Rated`, 120, y);
-  doc.text(`${summary.taxable.toFixed(2)} ${currency}`, 195, y, { align: "right" });
+  doc.text(`${summary.taxable.toFixed(2)} ${currency}`, 195, y, {
+    align: "right",
+  });
 
   doc.text("Sub-total", 120, y + 6);
-  doc.text(`${summary.taxable.toFixed(2)} ${currency}`, 195, y + 6, { align: "right" });
+  doc.text(`${summary.taxable.toFixed(2)} ${currency}`, 195, y + 6, {
+    align: "right",
+  });
 
   doc.text("VAT Total", 120, y + 12);
-  doc.text(`${summary.vat.toFixed(2)} ${currency}`, 195, y + 12, { align: "right" });
+  doc.text(`${summary.vat.toFixed(2)} ${currency}`, 195, y + 12, {
+    align: "right",
+  });
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.text("Total Amount", 120, y + 20);
-  doc.text(`${summary.total.toFixed(2)} ${currency}`, 195, y + 20, { align: "right" });
+  doc.text(`${summary.total.toFixed(2)} ${currency}`, 195, y + 20, {
+    align: "right",
+  });
 
   /* ================= PROFORMA INFO ================= */
   doc.setFontSize(9);
@@ -171,14 +179,12 @@ export const generateProformaInvoicePDF = async (
     `Status: ${proformaInvoice.status}`,
     `Currency: ${currency}`,
     `Exchange Rate: ${proformaInvoice.exchangeRate}`,
-    proformaInvoice.receiptNo ? `Receipt No: ${proformaInvoice.receiptNo}` : null,
+    proformaInvoice.receiptNo
+      ? `Receipt No: ${proformaInvoice.receiptNo}`
+      : null,
     proformaInvoice.receipt ? `Receipt: ${proformaInvoice.receipt}` : null,
   ].filter(Boolean) as string[];
-  doc.text(
-    proformaInfoLines,
-    15,
-    y + 38,
-  );
+  doc.text(proformaInfoLines, 15, y + 38);
 
   /* ================= BANK DETAILS ================= */
   doc.setFont("helvetica", "bold");

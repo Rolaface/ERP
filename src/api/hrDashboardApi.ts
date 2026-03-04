@@ -21,6 +21,8 @@ export type HrDashboardSummaryResponse = {
 };
 
 export async function getHrDashboardSummary(): Promise<HrDashboardSummaryResponse> {
-  const resp: AxiosResponse<HrDashboardSummaryResponse> = await api.get(HrDashboardAPI.summary);
+  const resp: AxiosResponse<HrDashboardSummaryResponse> = await api.get(
+    HrDashboardAPI.summary,
+  );
   return resp.data;
 }

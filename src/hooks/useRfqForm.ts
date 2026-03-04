@@ -46,7 +46,7 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
   const handleSupplierChange = (
     idx: number,
     field: keyof SupplierRow,
-    value: any
+    value: any,
   ) => {
     setForm((p) => {
       const suppliers = [...p.suppliers];
@@ -74,11 +74,7 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
 
   /*  ITEMS  */
 
-  const handleItemChange = (
-    idx: number,
-    field: keyof ItemRow,
-    value: any
-  ) => {
+  const handleItemChange = (idx: number, field: keyof ItemRow, value: any) => {
     setForm((p) => {
       const items = [...p.items];
       items[idx] = { ...items[idx], [field]: value };
@@ -108,7 +104,7 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
   const handlePaymentRowChange = (
     idx: number,
     field: keyof PaymentRow,
-    value: any
+    value: any,
   ) => {
     setForm((p) => {
       const paymentRows = [...p.paymentRows];

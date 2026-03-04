@@ -7,19 +7,16 @@ import { API, ERP_BASE } from "../config/api";
 const api = createAxiosInstance(ERP_BASE);
 export const ItemGroupAPI = API.itemGroup;
 
-
 export interface ItemGroupFilters {
   search?: string;
   itemType?: string;
 }
-
 
 export async function getAllItemGroups(
   page: number = 1,
   page_size: number = 130,
   filters?: ItemGroupFilters,
 ): Promise<any> {
-
   let url = `${ItemGroupAPI.getAll}?page=${page}&page_size=${page_size}`;
 
   if (filters?.itemType) {
@@ -33,7 +30,6 @@ export async function getAllItemGroups(
   const resp = await api.get(url);
   return resp.data;
 }
-
 
 export async function getItemGroupById(
   id: string,

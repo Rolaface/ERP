@@ -2,12 +2,7 @@ import React, { useState } from "react";
 import type { Column } from "./type";
 import ColumnSelector from "./ColumnSelector";
 import Pagination from "../../Pagination";
-import {
-  FaSearch,
-  FaSort,
-  FaSortUp,
-  FaSortDown,
-} from "react-icons/fa";
+import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,14 +127,13 @@ function Table<T extends Record<string, any>>({
   onPageChange,
   onPageSizeChange,
 }: TableProps<T>) {
-
   // Column visibility is the only local UI state that remains
   const allKeys = columns.map((col) => col.key);
   const [visibleKeys, setVisibleKeys] = useState<string[]>(allKeys);
 
   const toggleColumn = (key: string) => {
     setVisibleKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
   };
 
@@ -161,9 +155,12 @@ function Table<T extends Record<string, any>>({
 
   const getAlignment = (align?: "left" | "center" | "right"): string => {
     switch (align) {
-      case "center": return "text-center";
-      case "right":  return "text-right";
-      default:       return "text-left";
+      case "center":
+        return "text-center";
+      case "right":
+        return "text-right";
+      default:
+        return "text-left";
     }
   };
 
@@ -175,11 +172,9 @@ function Table<T extends Record<string, any>>({
 
   return (
     <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col shadow-sm transition-all relative z-10 w-full overflow-hidden">
-
       {/* ── Toolbar ── */}
       {showToolbar && (
         <div className="px-5 py-4 border-b border-[var(--border)] bg-card flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 shrink-0">
-
           {/* Search — value and handler always come from parent */}
           <div className="relative w-52 group">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs group-focus-within:text-primary transition-colors" />
@@ -200,7 +195,6 @@ function Table<T extends Record<string, any>>({
 
           {/* Right-side buttons */}
           <div className="flex items-center gap-2 shrink-0">
-
             {enableColumnSelector && (
               <ColumnSelector
                 columns={columns}
@@ -228,7 +222,6 @@ function Table<T extends Record<string, any>>({
                 Export
               </button>
             )}
-
           </div>
         </div>
       )}
@@ -237,36 +230,51 @@ function Table<T extends Record<string, any>>({
       <div className="w-full overflow-x-auto custom-scrollbar">
         <div className="max-h-[420px] overflow-y-auto min-w-full md:min-w-[800px] relative">
           <table className="w-full min-w-full border-separate border-spacing-0">
-
             {/* Header */}
             <thead className="sticky top-0 z-30 shadow-sm">
               <tr>
                 {visibleColumns.map((column) => {
                   const isSortable = !!column.sortable && !!onSortChange;
-                  const isActive   = sortBy === column.key;
-                  const isAsc      = isActive && sortOrderProp === "asc";
-                  const isDesc     = isActive && sortOrderProp === "desc";
+                  const isActive = sortBy === column.key;
+                  const isAsc = isActive && sortOrderProp === "asc";
+                  const isDesc = isActive && sortOrderProp === "desc";
 
                   return (
                     <th
                       key={column.key}
-                      onClick={isSortable ? () => handleColumnSort(column.key) : undefined}
+                      onClick={
+                        isSortable
+                          ? () => handleColumnSort(column.key)
+                          : undefined
+                      }
                       className={[
                         "px-3 sm:px-5 py-3.5 sm:py-4",
                         "text-[10px] font-black uppercase tracking-[0.08em] sm:tracking-[0.12em]",
                         "text-muted border-b border-[var(--border)] bg-card whitespace-nowrap",
                         getAlignment(column.align),
-                        isSortable ? "cursor-pointer select-none hover:text-primary transition-colors" : "",
-                        isActive   ? "text-primary" : "",
+                        isSortable
+                          ? "cursor-pointer select-none hover:text-primary transition-colors"
+                          : "",
+                        isActive ? "text-primary" : "",
                       ].join(" ")}
                     >
                       <span className="inline-flex items-center gap-1.5">
                         {column.header}
                         {isSortable && (
                           <span className="inline-flex opacity-60">
-                            {isAsc  ? <FaSortUp   size={10} className="text-primary opacity-100" /> :
-                             isDesc ? <FaSortDown size={10} className="text-primary opacity-100" /> :
-                                      <FaSort     size={10} />}
+                            {isAsc ? (
+                              <FaSortUp
+                                size={10}
+                                className="text-primary opacity-100"
+                              />
+                            ) : isDesc ? (
+                              <FaSortDown
+                                size={10}
+                                className="text-primary opacity-100"
+                              />
+                            ) : (
+                              <FaSort size={10} />
+                            )}
                           </span>
                         )}
                       </span>
@@ -284,7 +292,10 @@ function Table<T extends Record<string, any>>({
                 ))
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan={visibleColumns.length} className="px-6 py-24 text-center">
+                  <td
+                    colSpan={visibleColumns.length}
+                    className="px-6 py-24 text-center"
+                  >
                     <p className="text-xs font-bold text-muted uppercase tracking-widest opacity-40">
                       {emptyMessage}
                     </p>
@@ -307,24 +318,23 @@ function Table<T extends Record<string, any>>({
                         key={column.key}
                         className={`px-3 sm:px-5 py-3.5 text-xs font-medium text-main border-b border-[var(--border)]/20 ${getAlignment(column.align)}`}
                       >
-                        {column.render
-                          ? column.render(item)
-                          : <span className="opacity-90">{item[column.key]}</span>
-                        }
+                        {column.render ? (
+                          column.render(item)
+                        ) : (
+                          <span className="opacity-90">{item[column.key]}</span>
+                        )}
                       </td>
                     ))}
                   </tr>
                 ))
               )}
             </tbody>
-
           </table>
         </div>
       </div>
 
       {/* ── Footer / Pagination ── */}
       <div className="px-5 py-3 border-t border-[var(--border)] bg-card flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-
         <div className="text-[9px] font-black uppercase text-muted tracking-[0.2em] opacity-50">
           Total: {totalItems}
         </div>
@@ -340,7 +350,9 @@ function Table<T extends Record<string, any>>({
               className="px-3 py-1.5 bg-card border border-[var(--border)] rounded-lg text-[10px] font-black uppercase text-main focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all cursor-pointer"
             >
               {pageSizeOptions.map((size) => (
-                <option key={size} value={size}>{size}</option>
+                <option key={size} value={size}>
+                  {size}
+                </option>
               ))}
             </select>
           </div>
@@ -353,7 +365,6 @@ function Table<T extends Record<string, any>>({
           totalItems={totalItems}
           onPageChange={onPageChange ?? (() => {})}
         />
-
       </div>
     </div>
   );

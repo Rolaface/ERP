@@ -21,7 +21,6 @@ export async function getAllCustomers(
   return resp.data;
 }
 
-
 export async function deleteCustomerById(id: string): Promise<any> {
   const url = `${CustomerAPI.delete}?id=${id}`;
   const resp: AxiosResponse = await api.delete(url);

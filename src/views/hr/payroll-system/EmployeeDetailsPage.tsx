@@ -40,7 +40,10 @@ const formatValue = (value: any): React.ReactNode => {
   if (Array.isArray(value)) {
     if (value.length === 0) return "—";
     const allPrimitive = value.every(
-      (v) => v === null || v === undefined || ["string", "number", "boolean"].includes(typeof v),
+      (v) =>
+        v === null ||
+        v === undefined ||
+        ["string", "number", "boolean"].includes(typeof v),
     );
     if (allPrimitive) return value.map((v) => String(v)).join(", ");
     return `${value.length} item${value.length === 1 ? "" : "s"}`;
@@ -56,7 +59,10 @@ const formatValue = (value: any): React.ReactNode => {
   return String(value);
 };
 
-const KeyValueGrid: React.FC<{ data: AnyRecord; columns?: 2 | 3 | 4 }> = ({ data, columns = 2 }) => {
+const KeyValueGrid: React.FC<{ data: AnyRecord; columns?: 2 | 3 | 4 }> = ({
+  data,
+  columns = 2,
+}) => {
   const entries = useMemo(
     () =>
       Object.entries(data)
@@ -65,36 +71,43 @@ const KeyValueGrid: React.FC<{ data: AnyRecord; columns?: 2 | 3 | 4 }> = ({ data
     [data],
   );
 
-  if (!entries.length) return <div className="text-sm text-muted">No information available</div>;
+  if (!entries.length)
+    return <div className="text-sm text-muted">No information available</div>;
 
   return (
     <div
-      className={`grid grid-cols-1 gap-y-6 gap-x-8 ${columns === 4
+      className={`grid grid-cols-1 gap-y-6 gap-x-8 ${
+        columns === 4
           ? "md:grid-cols-4"
           : columns === 3
             ? "md:grid-cols-3"
             : "md:grid-cols-2"
-        }`}
+      }`}
     >
       {entries.map(([k, v]) => (
         <div key={k} className="min-w-0">
           <div className="text-xs text-muted font-medium mb-1 capitalize border-none">
             {toTitle(k)}
           </div>
-          <div className="text-sm font-medium text-main break-words">{formatValue(v)}</div>
+          <div className="text-sm font-medium text-main break-words">
+            {formatValue(v)}
+          </div>
         </div>
       ))}
     </div>
   );
 };
 
-const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, onBack }) => {
+const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({
+  employeeId,
+  onBack,
+}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"personal" | "employment" | "compensation" | "documents">(
-    "personal",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "personal" | "employment" | "compensation" | "documents"
+  >("personal");
 
   useEffect(() => {
     let mounted = true;
@@ -138,11 +151,18 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
 
   const profilePictureUrl = data?.ProfilePicture || null;
 
-  const headerJobTitle = String(data?.employmentInfo?.JobTitle ?? data?.jobTitle ?? "");
-  const headerDepartment = String(data?.employmentInfo?.Department ?? data?.department ?? "");
-  const headerStatus = String(data?.status ?? data?.employmentInfo?.Status ?? "").trim() || "—";
+  const headerJobTitle = String(
+    data?.employmentInfo?.JobTitle ?? data?.jobTitle ?? "",
+  );
+  const headerDepartment = String(
+    data?.employmentInfo?.Department ?? data?.department ?? "",
+  );
+  const headerStatus =
+    String(data?.status ?? data?.employmentInfo?.Status ?? "").trim() || "—";
   const headerEmail = String(data?.email ?? data?.contactInfo?.Email ?? "");
-  const employeeCode = String(data?.employeeId ?? data?.identityInfo?.EmployeeId ?? "");
+  const employeeCode = String(
+    data?.employeeId ?? data?.identityInfo?.EmployeeId ?? "",
+  );
 
   const {
     assignedSalaryStructureName,
@@ -178,8 +198,13 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
     const direct = Number(v ?? 0);
     if (Number.isFinite(direct) && direct > 0) return direct;
 
-    const earnings = Array.isArray(salaryStructureDetail?.earnings) ? salaryStructureDetail.earnings : [];
-    const fromStructure = earnings.reduce((sum: number, e: any) => sum + (Number(e?.amount ?? 0) || 0), 0);
+    const earnings = Array.isArray(salaryStructureDetail?.earnings)
+      ? salaryStructureDetail.earnings
+      : [];
+    const fromStructure = earnings.reduce(
+      (sum: number, e: any) => sum + (Number(e?.amount ?? 0) || 0),
+      0,
+    );
     return Number(fromStructure ?? 0) || 0;
   }, [data, payrollInfo, salaryStructureDetail]);
 
@@ -296,21 +321,36 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
   }, [payrollMain]);
 
   const salaryBreakdown = useMemo(() => {
-    const basic = payrollInfo?.basicSalary ?? payrollInfo?.BasicSalary ?? data?.basicSalary;
-    const totalAllowances = payrollInfo?.allowances ?? payrollInfo?.Allowances ?? data?.allowances;
-    const breakdown = payrollInfo?.salaryBreakdown ?? payrollInfo?.SalaryBreakdown ?? null;
+    const basic =
+      payrollInfo?.basicSalary ?? payrollInfo?.BasicSalary ?? data?.basicSalary;
+    const totalAllowances =
+      payrollInfo?.allowances ?? payrollInfo?.Allowances ?? data?.allowances;
+    const breakdown =
+      payrollInfo?.salaryBreakdown ?? payrollInfo?.SalaryBreakdown ?? null;
 
-    const earnings = Array.isArray(salaryStructureDetail?.earnings) ? salaryStructureDetail.earnings : [];
+    const earnings = Array.isArray(salaryStructureDetail?.earnings)
+      ? salaryStructureDetail.earnings
+      : [];
     if (earnings.length > 0) {
       return earnings
-        .map((e: any) => ({ label: String(e?.component ?? "").trim(), amount: e?.amount }))
-        .filter((r: any) => r.label && r.amount !== undefined && r.amount !== null);
+        .map((e: any) => ({
+          label: String(e?.component ?? "").trim(),
+          amount: e?.amount,
+        }))
+        .filter(
+          (r: any) => r.label && r.amount !== undefined && r.amount !== null,
+        );
     }
 
     if (Array.isArray(breakdown)) {
       return breakdown
-        .map((x: any) => ({ label: String(x?.label ?? x?.name ?? ""), amount: x?.amount }))
-        .filter((x: any) => x.label && x.amount !== undefined && x.amount !== null);
+        .map((x: any) => ({
+          label: String(x?.label ?? x?.name ?? ""),
+          amount: x?.amount,
+        }))
+        .filter(
+          (x: any) => x.label && x.amount !== undefined && x.amount !== null,
+        );
     }
 
     if (breakdown && typeof breakdown === "object") {
@@ -320,34 +360,46 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
     }
 
     const rows: { label: string; amount: any }[] = [];
-    if (basic !== undefined && basic !== null && basic !== "") rows.push({ label: "Basic Salary", amount: basic });
-    if (totalAllowances !== undefined && totalAllowances !== null && totalAllowances !== "") rows.push({ label: "Allowances", amount: totalAllowances });
+    if (basic !== undefined && basic !== null && basic !== "")
+      rows.push({ label: "Basic Salary", amount: basic });
+    if (
+      totalAllowances !== undefined &&
+      totalAllowances !== null &&
+      totalAllowances !== ""
+    )
+      rows.push({ label: "Allowances", amount: totalAllowances });
     return rows;
   }, [data?.allowances, data?.basicSalary, payrollInfo, salaryStructureDetail]);
 
   const currency = String(payrollInfo?.currency ?? "ZMW").trim() || "ZMW";
 
   const hasStructureDeductions = useMemo(() => {
-    const d = Array.isArray((salaryStructureDetail as any)?.deductions)
-      ? (salaryStructureDetail as any).deductions
+    const d = Array.isArray(salaryStructureDetail?.deductions)
+      ? salaryStructureDetail.deductions
       : [];
     return d.length > 0;
   }, [salaryStructureDetail]);
 
   const totalEarnings = useMemo(() => {
-    return (salaryBreakdown || []).reduce((s: number, r: any) => s + (Number(r?.amount ?? 0) || 0), 0);
+    return (salaryBreakdown || []).reduce(
+      (s: number, r: any) => s + (Number(r?.amount ?? 0) || 0),
+      0,
+    );
   }, [salaryBreakdown]);
 
   const structureDeductionRows = useMemo(() => {
-    const d = Array.isArray((salaryStructureDetail as any)?.deductions)
-      ? (salaryStructureDetail as any).deductions
+    const d = Array.isArray(salaryStructureDetail?.deductions)
+      ? salaryStructureDetail.deductions
       : [];
     return toSalaryStructureMoneyRows(d);
   }, [salaryStructureDetail]);
 
   const totalDeductions = useMemo(() => {
     if (hasStructureDeductions) {
-      return structureDeductionRows.reduce((s: number, r: any) => s + (Number(r?.amount ?? 0) || 0), 0);
+      return structureDeductionRows.reduce(
+        (s: number, r: any) => s + (Number(r?.amount ?? 0) || 0),
+        0,
+      );
     }
 
     return (
@@ -358,23 +410,43 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
   }, [hasStructureDeductions, statutoryCalc, structureDeductionRows]);
 
   const netSalary = useMemo(() => {
-    return (Number(totalEarnings ?? 0) || 0) - (Number(totalDeductions ?? 0) || 0);
+    return (
+      (Number(totalEarnings ?? 0) || 0) - (Number(totalDeductions ?? 0) || 0)
+    );
   }, [totalDeductions, totalEarnings]);
 
   const getStatusBadge = () => {
     const statusLower = String(headerStatus ?? "").toLowerCase();
-    if (statusLower === "active") return "bg-green-50 text-green-700 border-green-200";
+    if (statusLower === "active")
+      return "bg-green-50 text-green-700 border-green-200";
     if (statusLower === "inactive" || statusLower === "terminated")
       return "bg-red-50 text-red-700 border-red-200";
-    if (statusLower === "on leave") return "bg-yellow-50 text-yellow-700 border-yellow-200";
+    if (statusLower === "on leave")
+      return "bg-yellow-50 text-yellow-700 border-yellow-200";
     return "bg-gray-50 text-gray-700 border-gray-200";
   };
 
   const tabs = [
-    { id: "personal", label: "Personal Info", icon: <User className="w-4 h-4" /> },
-    { id: "employment", label: "Employment", icon: <Briefcase className="w-4 h-4" /> },
-    { id: "compensation", label: "Compensation", icon: <DollarSign className="w-4 h-4" /> },
-    { id: "documents", label: "Documents", icon: <FileText className="w-4 h-4" /> },
+    {
+      id: "personal",
+      label: "Personal Info",
+      icon: <User className="w-4 h-4" />,
+    },
+    {
+      id: "employment",
+      label: "Employment",
+      icon: <Briefcase className="w-4 h-4" />,
+    },
+    {
+      id: "compensation",
+      label: "Compensation",
+      icon: <DollarSign className="w-4 h-4" />,
+    },
+    {
+      id: "documents",
+      label: "Documents",
+      icon: <FileText className="w-4 h-4" />,
+    },
   ] as const;
 
   return (
@@ -391,11 +463,16 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
             <div className="w-14 h-14 bg-muted/10 border border-border rounded-full flex items-center justify-center text-primary text-xl font-bold shrink-0">
-              {String(employeeName || "E").trim().charAt(0).toUpperCase()}
+              {String(employeeName || "E")
+                .trim()
+                .charAt(0)
+                .toUpperCase()}
             </div>
 
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-main truncate">{employeeName}</h1>
+              <h1 className="text-xl font-bold text-main truncate">
+                {employeeName}
+              </h1>
               <div className="flex items-center gap-3 mt-1 text-sm text-muted flex-wrap">
                 <span className="flex items-center gap-1">
                   <Briefcase className="w-3.5 h-3.5" />
@@ -410,7 +487,9 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
           </div>
 
           <div className="flex items-center gap-3">
-            <div className={`px-2.5 py-1 rounded text-xs font-medium border ${getStatusBadge()}`}>
+            <div
+              className={`px-2.5 py-1 rounded text-xs font-medium border ${getStatusBadge()}`}
+            >
               {headerStatus}
             </div>
             <div className="px-2.5 py-1 rounded text-xs font-mono font-medium bg-muted/10 border border-border text-main">
@@ -422,23 +501,43 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
         {loading ? (
-          <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted">Loading employee details…</div>
+          <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted">
+            Loading employee details…
+          </div>
         ) : error ? (
-          <div className="rounded-lg border border-danger/30 bg-danger/5 p-6 text-sm font-semibold text-danger">{error}</div>
+          <div className="rounded-lg border border-danger/30 bg-danger/5 p-6 text-sm font-semibold text-danger">
+            {error}
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-4 xl:col-span-3 space-y-6">
               <div className="bg-card rounded-lg border border-border p-5">
-                <h3 className="text-sm font-bold text-main mb-4 border-b border-border pb-2">Contact Info</h3>
+                <h3 className="text-sm font-bold text-main mb-4 border-b border-border pb-2">
+                  Contact Info
+                </h3>
                 <div className="space-y-4">
-                  <QuickDetail icon={<Mail className="w-3.5 h-3.5" />} label="Email" value={headerEmail} />
-                  <QuickDetail icon={<Phone className="w-3.5 h-3.5" />} label="Phone" value={contactInfo?.phoneNumber} />
-                  <QuickDetail icon={<MapPin className="w-3.5 h-3.5" />} label="Location" value={employmentInfo?.workLocation} />
+                  <QuickDetail
+                    icon={<Mail className="w-3.5 h-3.5" />}
+                    label="Email"
+                    value={headerEmail}
+                  />
+                  <QuickDetail
+                    icon={<Phone className="w-3.5 h-3.5" />}
+                    label="Phone"
+                    value={contactInfo?.phoneNumber}
+                  />
+                  <QuickDetail
+                    icon={<MapPin className="w-3.5 h-3.5" />}
+                    label="Location"
+                    value={employmentInfo?.workLocation}
+                  />
                 </div>
               </div>
 
               <div className="bg-card rounded-lg border border-border p-5">
-                <h3 className="text-sm font-bold text-main mb-4 border-b border-border pb-2">Compensation Summary</h3>
+                <h3 className="text-sm font-bold text-main mb-4 border-b border-border pb-2">
+                  Compensation Summary
+                </h3>
 
                 <div className="mb-4">
                   <p className="text-xs text-muted mb-1">Net</p>
@@ -486,7 +585,9 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
                 {activeTab === "personal" && (
                   <div className="space-y-8 max-w-5xl">
                     <section>
-                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">Profile</h2>
+                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                        Profile
+                      </h2>
                       <KeyValueGrid data={profileInfo} columns={4} />
                     </section>
                   </div>
@@ -495,26 +596,47 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
                 {activeTab === "employment" && (
                   <div className="space-y-8 max-w-5xl">
                     <section>
-                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">Employment & Payroll</h2>
-                      <KeyValueGrid columns={4} data={{ ...(employmentCompact || {}), ...(payrollCompact || {}) }} />
+                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                        Employment & Payroll
+                      </h2>
+                      <KeyValueGrid
+                        columns={4}
+                        data={{
+                          ...(employmentCompact || {}),
+                          ...(payrollCompact || {}),
+                        }}
+                      />
                     </section>
 
                     {weeklyScheduleRows.length > 0 && (
                       <section>
-                        <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">Weekly Schedule</h2>
+                        <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                          Weekly Schedule
+                        </h2>
                         <div className="overflow-x-auto border border-border rounded-lg">
                           <table className="w-full">
                             <thead className="bg-muted/5 border-b border-border">
                               <tr>
-                                <th className="px-4 py-3 text-xs font-semibold text-muted text-left whitespace-nowrap">Day</th>
-                                <th className="px-4 py-3 text-xs font-semibold text-muted text-left whitespace-nowrap">Time</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-muted text-left whitespace-nowrap">
+                                  Day
+                                </th>
+                                <th className="px-4 py-3 text-xs font-semibold text-muted text-left whitespace-nowrap">
+                                  Time
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
                               {weeklyScheduleRows.map((r) => (
-                                <tr key={r.day} className="border-b border-border last:border-0">
-                                  <td className="px-4 py-3 text-sm font-medium text-main whitespace-nowrap">{r.day}</td>
-                                  <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{r.time}</td>
+                                <tr
+                                  key={r.day}
+                                  className="border-b border-border last:border-0"
+                                >
+                                  <td className="px-4 py-3 text-sm font-medium text-main whitespace-nowrap">
+                                    {r.day}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">
+                                    {r.time}
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
@@ -530,28 +652,43 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
                     <div className="bg-muted/5 border border-border rounded-lg p-6">
                       <div className="flex flex-col md:flex-row justify-between gap-6">
                         <div>
-                          <p className="text-xs text-muted uppercase tracking-wider font-semibold mb-1">Assigned Salary Structure</p>
+                          <p className="text-xs text-muted uppercase tracking-wider font-semibold mb-1">
+                            Assigned Salary Structure
+                          </p>
                           <h2 className="text-xl font-bold text-main">
-                            {String(assignedSalaryStructureName ?? "").trim() || "No Structure Assigned"}
+                            {String(assignedSalaryStructureName ?? "").trim() ||
+                              "No Structure Assigned"}
                           </h2>
-                          {String(assignedSalaryStructureFromDate ?? "").trim() ? (
-                            <p className="text-sm text-muted mt-1">Effective from: {assignedSalaryStructureFromDate}</p>
+                          {String(
+                            assignedSalaryStructureFromDate ?? "",
+                          ).trim() ? (
+                            <p className="text-sm text-muted mt-1">
+                              Effective from: {assignedSalaryStructureFromDate}
+                            </p>
                           ) : null}
                         </div>
 
                         <div className="md:text-right">
-                          <p className="text-xs text-muted uppercase tracking-wider font-semibold mb-1">Net</p>
+                          <p className="text-xs text-muted uppercase tracking-wider font-semibold mb-1">
+                            Net
+                          </p>
                           <h3 className="text-2xl font-bold text-main tabular-nums">
                             {currency} {Number(netSalary || 0).toLocaleString()}
                           </h3>
                           <div className="flex md:justify-end gap-6 mt-2 text-sm">
                             <div>
                               <span className="text-muted mr-1">Gross:</span>
-                              <span className="font-medium">{Number(totalEarnings || 0).toLocaleString()}</span>
+                              <span className="font-medium">
+                                {Number(totalEarnings || 0).toLocaleString()}
+                              </span>
                             </div>
                             <div>
-                              <span className="text-muted mr-1">Deductions:</span>
-                              <span className="font-medium">{Number(totalDeductions || 0).toLocaleString()}</span>
+                              <span className="text-muted mr-1">
+                                Deductions:
+                              </span>
+                              <span className="font-medium">
+                                {Number(totalDeductions || 0).toLocaleString()}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -560,14 +697,20 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                       <section>
-                        <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">Earnings</h2>
+                        <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                          Earnings
+                        </h2>
                         <div className="space-y-0 text-sm">
                           {salaryBreakdown.length ? (
                             salaryBreakdown.map((r: any) => (
-                              <div key={r.label} className="flex justify-between py-2.5 border-b border-border/50">
+                              <div
+                                key={r.label}
+                                className="flex justify-between py-2.5 border-b border-border/50"
+                              >
                                 <span className="text-main">{r.label}</span>
                                 <span className="font-medium text-main tabular-nums">
-                                  {currency} {Number(r.amount ?? 0).toLocaleString()}
+                                  {currency}{" "}
+                                  {Number(r.amount ?? 0).toLocaleString()}
                                 </span>
                               </div>
                             ))
@@ -577,60 +720,74 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
                           <div className="flex justify-between py-3 font-bold mt-2">
                             <span className="text-main">Total Gross</span>
                             <span className="text-main tabular-nums">
-                              {currency} {Number(totalEarnings || 0).toLocaleString()}
+                              {currency}{" "}
+                              {Number(totalEarnings || 0).toLocaleString()}
                             </span>
                           </div>
                         </div>
                       </section>
 
                       <section>
-                        <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">Deductions</h2>
+                        <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                          Deductions
+                        </h2>
                         <div className="space-y-0 text-sm">
-                          {hasStructureDeductions ? (
-                            structureDeductionRows.map((d: any) => (
-                              <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
-                                <span className="text-main">{d.label}</span>
-                                <span className="font-medium text-main tabular-nums">
-                                  {currency} {Number(d.amount ?? 0).toLocaleString()}
-                                </span>
-                              </div>
-                            ))
-                          ) : (
-                            [
-                              {
-                                label: "Napsa Employee",
-                                rate: statutoryCalc?.rates?.napsaEmployeeRate,
-                                amount: statutoryCalc?.statutory?.napsaEmployee,
-                              },
-                              {
-                                label: "Napsa Employer",
-                                rate: statutoryCalc?.rates?.napsaEmployerRate,
-                                amount: statutoryCalc?.statutory?.napsaEmployer,
-                              },
-                              {
-                                label: "Nhima",
-                                rate: statutoryCalc?.rates?.nhimaRate,
-                                amount: statutoryCalc?.statutory?.nhima,
-                              },
-                              {
-                                label: "Paye",
-                                rate: null,
-                                amount: statutoryCalc?.statutory?.paye,
-                              },
-                            ].map((r) => (
-                              <div key={r.label} className="flex justify-between py-2.5 border-b border-border/50">
-                                <span className="text-main">{r.label}</span>
-                                <span className="font-medium text-main tabular-nums">
-                                  {r.rate === null || r.rate === undefined ? "" : `${Number(r.rate)}% • `}
-                                  {currency} {Number(r.amount ?? 0).toLocaleString()}
-                                </span>
-                              </div>
-                            ))
-                          )}
+                          {hasStructureDeductions
+                            ? structureDeductionRows.map((d: any) => (
+                                <div
+                                  key={d.label}
+                                  className="flex justify-between py-2.5 border-b border-border/50"
+                                >
+                                  <span className="text-main">{d.label}</span>
+                                  <span className="font-medium text-main tabular-nums">
+                                    {currency}{" "}
+                                    {Number(d.amount ?? 0).toLocaleString()}
+                                  </span>
+                                </div>
+                              ))
+                            : [
+                                {
+                                  label: "Napsa Employee",
+                                  rate: statutoryCalc?.rates?.napsaEmployeeRate,
+                                  amount:
+                                    statutoryCalc?.statutory?.napsaEmployee,
+                                },
+                                {
+                                  label: "Napsa Employer",
+                                  rate: statutoryCalc?.rates?.napsaEmployerRate,
+                                  amount:
+                                    statutoryCalc?.statutory?.napsaEmployer,
+                                },
+                                {
+                                  label: "Nhima",
+                                  rate: statutoryCalc?.rates?.nhimaRate,
+                                  amount: statutoryCalc?.statutory?.nhima,
+                                },
+                                {
+                                  label: "Paye",
+                                  rate: null,
+                                  amount: statutoryCalc?.statutory?.paye,
+                                },
+                              ].map((r) => (
+                                <div
+                                  key={r.label}
+                                  className="flex justify-between py-2.5 border-b border-border/50"
+                                >
+                                  <span className="text-main">{r.label}</span>
+                                  <span className="font-medium text-main tabular-nums">
+                                    {r.rate === null || r.rate === undefined
+                                      ? ""
+                                      : `${Number(r.rate)}% • `}
+                                    {currency}{" "}
+                                    {Number(r.amount ?? 0).toLocaleString()}
+                                  </span>
+                                </div>
+                              ))}
                           <div className="flex justify-between py-3 font-bold mt-2">
                             <span className="text-main">Total Deductions</span>
                             <span className="text-main tabular-nums">
-                              {currency} {Number(totalDeductions || 0).toLocaleString()}
+                              {currency}{" "}
+                              {Number(totalDeductions || 0).toLocaleString()}
                             </span>
                           </div>
                         </div>
@@ -638,7 +795,9 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
                     </div>
 
                     <section>
-                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">Bank</h2>
+                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                        Bank
+                      </h2>
                       <KeyValueGrid data={bankInfo} columns={3} />
                     </section>
                   </div>
@@ -648,31 +807,51 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
                   <div className="space-y-6 max-w-5xl">
                     <div className="flex justify-between items-center border-b border-border pb-4">
                       <div>
-                        <h2 className="text-lg font-bold text-main">Employee Documents</h2>
-                        <p className="text-sm text-muted mt-1">Files and identification documents</p>
+                        <h2 className="text-lg font-bold text-main">
+                          Employee Documents
+                        </h2>
+                        <p className="text-sm text-muted mt-1">
+                          Files and identification documents
+                        </p>
                       </div>
-                      <div className="text-sm text-muted font-medium">{Array.isArray(documents) ? documents.length : 0}</div>
+                      <div className="text-sm text-muted font-medium">
+                        {Array.isArray(documents) ? documents.length : 0}
+                      </div>
                     </div>
 
                     {Array.isArray(documents) && documents.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {documents.map((doc, idx) => (
-                          <div key={idx} className="border border-border rounded-lg p-4 hover:bg-muted/5 transition-colors">
+                          <div
+                            key={idx}
+                            className="border border-border rounded-lg p-4 hover:bg-muted/5 transition-colors"
+                          >
                             <div className="flex items-center gap-3 mb-2">
                               <div className="p-2 bg-muted/10 rounded text-muted">
                                 <FileText className="w-5 h-5" />
                               </div>
-                              <div className="text-sm font-semibold text-main truncate">{String((doc as any)?.description ?? (doc as any)?.name ?? "Document")}</div>
+                              <div className="text-sm font-semibold text-main truncate">
+                                {String(
+                                  doc?.description ?? doc?.name ?? "Document",
+                                )}
+                              </div>
                             </div>
-                            <KeyValueGrid data={(doc || {}) as AnyRecord} columns={4} />
+                            <KeyValueGrid
+                              data={(doc || {}) as AnyRecord}
+                              columns={4}
+                            />
                           </div>
                         ))}
                       </div>
                     ) : (
                       <div className="text-center py-16 border border-dashed border-border rounded-lg bg-muted/5">
                         <FileText className="w-8 h-8 text-muted mx-auto mb-3" />
-                        <h3 className="text-sm font-medium text-main mb-1">No Documents Found</h3>
-                        <p className="text-sm text-muted">No documents uploaded for this employee.</p>
+                        <h3 className="text-sm font-medium text-main mb-1">
+                          No Documents Found
+                        </h3>
+                        <p className="text-sm text-muted">
+                          No documents uploaded for this employee.
+                        </p>
                       </div>
                     )}
                   </div>

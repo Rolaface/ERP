@@ -56,7 +56,6 @@ export const EmailTemplateTab: React.FC<EmailTemplateTabProps> = ({
   return (
     <Card title="Email Template">
       <div className="mx-auto bg-card text-main rounded-lg p-6 border border-theme">
-
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-main">Email Template</h3>
         </div>
@@ -100,9 +99,27 @@ export const EmailTemplateTab: React.FC<EmailTemplateTabProps> = ({
         {/* TOOLBAR */}
         <div className="border border-theme rounded-t-md bg-app p-2 flex items-center gap-2">
           <div className="flex items-center gap-1">
-            <button type="button" onClick={() => exec("bold")} className="px-2 py-1 rounded row-hover">B</button>
-            <button type="button" onClick={() => exec("italic")} className="px-2 py-1 rounded row-hover">I</button>
-            <button type="button" onClick={() => exec("underline")} className="px-2 py-1 rounded row-hover">U</button>
+            <button
+              type="button"
+              onClick={() => exec("bold")}
+              className="px-2 py-1 rounded row-hover"
+            >
+              B
+            </button>
+            <button
+              type="button"
+              onClick={() => exec("italic")}
+              className="px-2 py-1 rounded row-hover"
+            >
+              I
+            </button>
+            <button
+              type="button"
+              onClick={() => exec("underline")}
+              className="px-2 py-1 rounded row-hover"
+            >
+              U
+            </button>
           </div>
 
           <div className="w-px h-6 bg-border mx-2" />
@@ -138,7 +155,9 @@ export const EmailTemplateTab: React.FC<EmailTemplateTabProps> = ({
             >
               <option value="">Insert signature</option>
               <option value="Regards,<br/>[Company Name]">Standard</option>
-              <option value="Best regards,<br/>[Procurement Team]">Procurement</option>
+              <option value="Best regards,<br/>[Procurement Team]">
+                Procurement
+              </option>
             </select>
 
             <button
@@ -209,7 +228,10 @@ export const EmailTemplateTab: React.FC<EmailTemplateTabProps> = ({
             <div className="w-full max-w-3xl bg-card text-main rounded shadow-lg overflow-auto border border-theme">
               <div className="flex items-center justify-between p-4 border-b border-theme">
                 <h4 className="font-semibold">Email Preview</h4>
-                <button onClick={() => setPreviewOpen(false)} className="px-2 py-1 rounded row-hover">
+                <button
+                  onClick={() => setPreviewOpen(false)}
+                  className="px-2 py-1 rounded row-hover"
+                >
                   Close
                 </button>
               </div>

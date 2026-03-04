@@ -15,7 +15,6 @@ export type SalarySlipListItem = {
   total_deduction: number;
   net_pay: number;
   referenceNumber?: string;
-  napsaStatus?: string;
 };
 
 export type SalarySlipListResponse = {
@@ -71,11 +70,7 @@ export async function getSalarySlips(params?: {
     },
   });
 
-  const raw = (resp.data?.data ?? resp.data) as
-    | SalarySlipListResponse
-    | ApiEnvelope<PaginatedRecords<SalarySlipListItem>>
-    | PaginatedRecords<SalarySlipListItem>
-    | any;
+  const raw = resp.data?.data ?? resp.data;
 
   // Case 1: already normalized
   if (raw && Array.isArray(raw.salary_slips)) {
@@ -108,7 +103,9 @@ export async function getSalarySlips(params?: {
   return { salary_slips: [], pagination: raw?.pagination };
 }
 
-export async function getSalarySlipById(salarySlipId: string): Promise<SalarySlipDetail | null> {
+export async function getSalarySlipById(
+  salarySlipId: string,
+): Promise<SalarySlipDetail | null> {
   const base = API.payrollSetup.salarySlip.getById;
   const url = `${base}?salarySlipId=${encodeURIComponent(salarySlipId)}`;
   const resp: AxiosResponse = await api.get(url);

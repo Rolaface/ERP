@@ -37,7 +37,8 @@ export default function SalaryStructureAssignmentsDashboardTab() {
   const [items, setItems] = useState<SalaryStructureAssignmentListItem[]>([]);
 
   const [assignOpen, setAssignOpen] = useState(false);
-  const [editingAssignment, setEditingAssignment] = useState<SalaryStructureAssignmentListItem | null>(null);
+  const [editingAssignment, setEditingAssignment] =
+    useState<SalaryStructureAssignmentListItem | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -54,7 +55,6 @@ export default function SalaryStructureAssignmentsDashboardTab() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const rows = useMemo(() => {
@@ -111,28 +111,40 @@ export default function SalaryStructureAssignmentsDashboardTab() {
               <table className="w-full">
                 <thead className="bg-card border-b border-theme">
                   <tr>
-                    {["Employee ID", "Full Name", "Structure", "Date", "Department", "Currency", "Actions"].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap"
-                        >
-                          {h}
-                        </th>
-                      ),
-                    )}
+                    {[
+                      "Employee ID",
+                      "Full Name",
+                      "Structure",
+                      "Date",
+                      "Department",
+                      "Currency",
+                      "Actions",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted">
+                      <td
+                        colSpan={7}
+                        className="px-4 py-10 text-center text-sm text-muted"
+                      >
                         Loading assignments...
                       </td>
                     </tr>
                   ) : rows.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted">
+                      <td
+                        colSpan={7}
+                        className="px-4 py-10 text-center text-sm text-muted"
+                      >
                         No assignments found
                       </td>
                     </tr>
@@ -142,12 +154,24 @@ export default function SalaryStructureAssignmentsDashboardTab() {
                         key={r.name}
                         className={`border-b border-theme last:border-0 ${idx % 2 === 1 ? "bg-app" : "bg-card"}`}
                       >
-                        <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{r.employee}</td>
-                        <td className="px-4 py-3 text-xs text-muted break-words">{r.full_name || "—"}</td>
-                        <td className="px-4 py-3 text-xs text-muted break-words">{r.salary_structure}</td>
-                        <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{r.from_date}</td>
-                        <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{r.department || "—"}</td>
-                        <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{r.currency || "—"}</td>
+                        <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                          {r.employee}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted break-words">
+                          {r.full_name || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted break-words">
+                          {r.salary_structure}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                          {r.from_date}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                          {r.department || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                          {r.currency || "—"}
+                        </td>
                         <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                           <button
                             type="button"
@@ -177,10 +201,14 @@ export default function SalaryStructureAssignmentsDashboardTab() {
             <div className="px-6 py-4 bg-app border-b border-theme flex items-center justify-between">
               <div className="min-w-0">
                 <div className="text-sm font-extrabold text-main">
-                  {editingAssignment ? "Edit Salary Structure Assignment" : "Assign Salary Structure"}
+                  {editingAssignment
+                    ? "Edit Salary Structure Assignment"
+                    : "Assign Salary Structure"}
                 </div>
                 <div className="text-xs text-muted mt-0.5">
-                  {editingAssignment ? "Update the selected assignment" : "Create a new salary structure assignment"}
+                  {editingAssignment
+                    ? "Update the selected assignment"
+                    : "Create a new salary structure assignment"}
                 </div>
               </div>
               <button

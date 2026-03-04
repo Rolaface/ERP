@@ -4,8 +4,6 @@ import DebitNoteForm from "./debitNoteform";
 import { FileMinus } from "lucide-react";
 import { Button } from "../../components/ui/modal/formComponent";
 
-
-
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -22,21 +20,26 @@ const CreateDebitNoteModal: React.FC<Props> = ({
   const [saving, setSaving] = useState(false);
 
   const footerContent = (
-  <>
-    <Button variant="secondary" onClick={onClose} type="button" disabled={saving}>
-      Cancel
-    </Button>
+    <>
+      <Button
+        variant="secondary"
+        onClick={onClose}
+        type="button"
+        disabled={saving}
+      >
+        Cancel
+      </Button>
 
-    <Button
-      variant="primary"
-      type="submit"
-      form="debit-note-form"
-      loading={saving}
-    >
-      {saving ? "Saving..." : "Create Debit Note"}
-    </Button>
-  </>
-);
+      <Button
+        variant="primary"
+        type="submit"
+        form="debit-note-form"
+        loading={saving}
+      >
+        {saving ? "Saving..." : "Create Debit Note"}
+      </Button>
+    </>
+  );
 
   return (
     <Modal

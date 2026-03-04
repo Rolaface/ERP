@@ -24,16 +24,15 @@ export async function getAllProformaInvoices(
   search?: string,
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(ProformaAPI.getAll, {
-    params: { page, page_size, sortBy, sortOrder, search},
+    params: { page, page_size, sortBy, sortOrder, search },
   });
   return resp.data;
 }
 
 export async function deleteProformaInvoiceById(proformaId: string) {
   const resp = await api.delete(ProformaAPI.delete, {
-    data: { proformaId },   
+    data: { proformaId },
   });
 
   return resp.data;
 }
-

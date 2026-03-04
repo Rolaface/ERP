@@ -4,16 +4,19 @@ import {
   FaChartArea,
   FaSyncAlt,
   FaBullseye,
-  FaCheckCircle,
   FaCalendarAlt,
   FaMoneyBillWave,
   FaCoins,
   FaSave,
   FaUndo,
 } from "react-icons/fa";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
 import Swal from "sweetalert2";
-
 
 import type { AccountingSetup, FinancialConfig } from "../../types/company";
 import { updateCompanyById } from "../../api/companySetupApi";
@@ -141,7 +144,6 @@ const AccountingDetails: React.FC<AccountingDetailsProps> = ({
   financialConfig,
   accountingSetup,
 }) => {
-  
   const [activeTab, setActiveTab] = useState("financial");
 
   const [form, setForm] = useState(() => ({
@@ -183,43 +185,42 @@ const AccountingDetails: React.FC<AccountingDetailsProps> = ({
       },
     }));
   };
-const handleSubmit = async () => {
-  const payload = {
-    id: VITE_COMPANY_ID,
-    accountingSetup: form.accountingSetup,
-    financialConfig: form.financialConfig,
+  const handleSubmit = async () => {
+    const payload = {
+      id: VITE_COMPANY_ID,
+      accountingSetup: form.accountingSetup,
+      financialConfig: form.financialConfig,
+    };
+
+    try {
+      showLoading("Saving Accounting Settings...");
+
+      await updateCompanyById(payload);
+
+      closeSwal();
+      showSuccess("Accounting settings updated successfully.");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
   };
 
-  try {
-    showLoading("Saving Accounting Settings...");
+  const handleReset = async () => {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Reset All Fields?",
+      text: "This will clear all entered accounting settings.",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, Reset",
+    });
 
-    await updateCompanyById(payload);
+    if (!result.isConfirmed) return;
 
-    closeSwal();
-    showSuccess("Accounting settings updated successfully.");
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
-
-const handleReset = async () => {
-  const result = await Swal.fire({
-    icon: "warning",
-    title: "Reset All Fields?",
-    text: "This will clear all entered accounting settings.",
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, Reset",
-  });
-
-  if (!result.isConfirmed) return;
-
-  setForm(defaultForm);
-  showSuccess("Form reset successfully.");
-};
-
+    setForm(defaultForm);
+    showSuccess("Form reset successfully.");
+  };
 
   const renderInput = (
     label: string,
@@ -261,7 +262,6 @@ const handleReset = async () => {
 
   return (
     <div className="w-full">
-
       <div className="bg-card rounded-xl shadow-sm border overflow-hidden">
         {/* TABS */}
         <div className="bg-app border-b flex">
@@ -273,7 +273,9 @@ const handleReset = async () => {
               key={t.id}
               onClick={() => setActiveTab(t.id)}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium border-b-2 ${
-                activeTab === t.id ? "table-head text-table-head-text" : "text-main"
+                activeTab === t.id
+                  ? "table-head text-table-head-text"
+                  : "text-main"
               }`}
             >
               <t.icon />

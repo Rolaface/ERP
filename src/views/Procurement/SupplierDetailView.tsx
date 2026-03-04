@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   X,
   Search,
@@ -14,8 +14,6 @@ import SupplierStatement from "./SupplierStatement";
 import PurchaseInvoiceModal from "../../components/procurement/PurchaseInvoiceModal";
 import PurchaseOrderModal from "../../components/procurement/PurchaseOrderModal";
 import SupplierPurchaseOrders from "./SupplierPurchaseOrders";
-
-
 
 /*  PROPS  */
 
@@ -43,8 +41,6 @@ const SupplierDetailView: React.FC<Props> = ({
   const [showPOModal, setShowPOModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
-
-
   const supplierDetail = suppliers.find((s) =>
     supplier.supplierId
       ? s.supplierId === supplier.supplierId
@@ -52,20 +48,14 @@ const SupplierDetailView: React.FC<Props> = ({
   );
   const supplierName = supplierDetail?.supplierName;
 
-
   const supplierCode = supplierDetail?.supplierCode;
-
 
   const filteredSuppliers = suppliers.filter(
     (s) =>
       (s.supplierName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (s.supplierCode || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (s.tpin || "").toLowerCase().includes(searchTerm.toLowerCase())
+      (s.tpin || "").toLowerCase().includes(searchTerm.toLowerCase()),
   );
-
-
-
-
 
   const renderActionButton = () => {
     switch (activeTab) {
@@ -121,7 +111,7 @@ const SupplierDetailView: React.FC<Props> = ({
   return (
     <div className="flex flex-col bg-app text-main overflow-hidden ">
       {/*  HEADER  */}
-       <header className="bg-card px-5 py-3 flex items-center justify-between border-b border-[var(--border)] shrink-0">
+      <header className="bg-card px-5 py-3 flex items-center justify-between border-b border-[var(--border)] shrink-0">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
@@ -152,7 +142,6 @@ const SupplierDetailView: React.FC<Props> = ({
       </header>
 
       <div className="flex-1 flex overflow-hidden min-h-0">
-
         {/*  SIDEBAR  */}
         <aside className="w-60 bg-card border-r border-[var(--border)] h-130 rounded-2xl">
           <div className="p-3 border-b border-[var(--border)] bg-row-hover/10">
@@ -173,16 +162,18 @@ const SupplierDetailView: React.FC<Props> = ({
               <button
                 key={s.supplierId || s.supplierCode}
                 onClick={() => onSupplierSelect(s)}
-                className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-3 border ${s.supplierCode === supplierDetail?.supplierCode
-                  ? "bg-primary text-white border-primary shadow-sm"
-                  : "bg-transparent border-transparent hover:bg-row-hover"
-                  }`}
+                className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-3 border ${
+                  s.supplierCode === supplierDetail?.supplierCode
+                    ? "bg-primary text-white border-primary shadow-sm"
+                    : "bg-transparent border-transparent hover:bg-row-hover"
+                }`}
               >
                 <div
-                  className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-bold text-[10px] ${s.supplierCode === supplierDetail?.supplierCode
-                    ? "bg-white/20"
-                    : "bg-muted text-white"
-                    }`}
+                  className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-bold text-[10px] ${
+                    s.supplierCode === supplierDetail?.supplierCode
+                      ? "bg-white/20"
+                      : "bg-muted text-white"
+                  }`}
                 >
                   {(s.supplierName || "?").charAt(0).toUpperCase()}
                 </div>
@@ -212,7 +203,6 @@ const SupplierDetailView: React.FC<Props> = ({
 
         {/*  MAIN  */}
         <main className="flex-1 flex flex-col min-w-0 bg-app/20">
-
           {/* Tabs */}
           <div className="bg-card border-b border-[var(--border)] px-4 shrink-0 z-10">
             <div className="flex">
@@ -225,10 +215,11 @@ const SupplierDetailView: React.FC<Props> = ({
                 <button
                   key={t.id}
                   onClick={() => setActiveTab(t.id as any)}
-                  className={`px-4 py-3.5 font-bold text-[10px] uppercase tracking-widest border-b-2 transition-all ${activeTab === t.id
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted hover:text-main"
-                    }`}
+                  className={`px-4 py-3.5 font-bold text-[10px] uppercase tracking-widest border-b-2 transition-all ${
+                    activeTab === t.id
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted hover:text-main"
+                  }`}
                 >
                   {t.label}
                 </button>
@@ -240,29 +231,48 @@ const SupplierDetailView: React.FC<Props> = ({
           <div className="flex-1 overflow-y-auto pt-4 px-2 box-border">
             {activeTab === "overview" && (
               <div className="max-w-6xl mx-auto space-y-4 animate-in fade-in duration-500 p-5">
-
                 {/* Info Strips */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <InfoStrip label="Currency" value={supplierDetail?.currency} icon={<Building2 />} />
-                  <InfoStrip label="TPIN" value={supplierDetail?.tpin} icon={<FileText />} />
-                  <InfoStrip label="Opening Balance" value={supplierDetail?.openingBalance} icon={<Receipt />} />
+                  <InfoStrip
+                    label="Currency"
+                    value={supplierDetail?.currency}
+                    icon={<Building2 />}
+                  />
+                  <InfoStrip
+                    label="TPIN"
+                    value={supplierDetail?.tpin}
+                    icon={<FileText />}
+                  />
+                  <InfoStrip
+                    label="Opening Balance"
+                    value={supplierDetail?.openingBalance}
+                    icon={<Receipt />}
+                  />
                 </div>
 
                 {/* Contact + Address */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="bg-card rounded-2xl border border-[var(--border)] p-5 shadow-sm">
                     <h4 className="text-[10px] font-black text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <Mail size={12} className="text-primary" /> Contact Channels
+                      <Mail size={12} className="text-primary" /> Contact
+                      Channels
                     </h4>
                     <div className="space-y-3">
-                      <DataRow label="Email Address" value={supplierDetail?.emailId} />
-                      <DataRow label="Phone Number" value={supplierDetail?.phoneNo} />
+                      <DataRow
+                        label="Email Address"
+                        value={supplierDetail?.emailId}
+                      />
+                      <DataRow
+                        label="Phone Number"
+                        value={supplierDetail?.phoneNo}
+                      />
                     </div>
                   </div>
 
                   <div className="bg-card rounded-2xl border border-[var(--border)] p-5 shadow-sm">
                     <h4 className="text-[10px] font-black text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <MapPin size={12} className="text-primary" /> Physical Location
+                      <MapPin size={12} className="text-primary" /> Physical
+                      Location
                     </h4>
                     <DataRow label="Billing Address" value={formatAddress()} />
                   </div>
@@ -276,16 +286,13 @@ const SupplierDetailView: React.FC<Props> = ({
               </div>
             )}
 
-           
             {activeTab === "purchase-orders" && supplierName && (
               <SupplierPurchaseOrders supplierName={supplierName} />
             )}
-            
 
             {activeTab === "statement" && supplierDetail && (
               <SupplierStatement supplier={supplierDetail} />
             )}
-
           </div>
         </main>
       </div>
@@ -314,9 +321,7 @@ const InfoStrip = ({ icon, label, value }: any) => (
       <p className="text-[8px] font-black text-muted uppercase tracking-wider">
         {label}
       </p>
-      <p className="text-xs font-bold text-main">
-        {value || "—"}
-      </p>
+      <p className="text-xs font-bold text-main">{value || "—"}</p>
     </div>
   </div>
 );

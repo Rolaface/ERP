@@ -39,25 +39,44 @@ const TaxDeduction: React.FC<TaxDeductionProps> = ({ employeeId }) => {
   const statutory = data?.payrollInfo?.statutoryDeductions || {};
   const rows = useMemo(
     () => [
-      { label: "NAPSA (Employee Rate)", value: statutory?.napsaEmployeeRate, unit: "%" },
-      { label: "NAPSA (Employer Rate)", value: statutory?.napsaEmployerRate, unit: "%" },
+      {
+        label: "NAPSA (Employee Rate)",
+        value: statutory?.napsaEmployeeRate,
+        unit: "%",
+      },
+      {
+        label: "NAPSA (Employer Rate)",
+        value: statutory?.napsaEmployerRate,
+        unit: "%",
+      },
       { label: "NHIMA Rate", value: statutory?.nhimaRate, unit: "%" },
       { label: "PAYE Amount", value: statutory?.payeAmount, unit: "" },
     ],
-    [statutory?.napsaEmployeeRate, statutory?.napsaEmployerRate, statutory?.nhimaRate, statutory?.payeAmount],
+    [
+      statutory?.napsaEmployeeRate,
+      statutory?.napsaEmployerRate,
+      statutory?.nhimaRate,
+      statutory?.payeAmount,
+    ],
   );
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between bg-app border border-theme rounded-xl p-4">
         <div>
-          <h2 className="text-sm font-extrabold text-main">Statutory Deductions</h2>
-          <p className="text-xs text-muted mt-0.5">Live data from employee payroll profile</p>
+          <h2 className="text-sm font-extrabold text-main">
+            Statutory Deductions
+          </h2>
+          <p className="text-xs text-muted mt-0.5">
+            Live data from employee payroll profile
+          </p>
         </div>
       </div>
 
       {loading ? (
-        <div className="rounded-xl border border-theme bg-app p-6 text-sm text-muted">Loading…</div>
+        <div className="rounded-xl border border-theme bg-app p-6 text-sm text-muted">
+          Loading…
+        </div>
       ) : error ? (
         <div className="rounded-xl border border-danger/30 bg-danger/5 p-6">
           <div className="text-sm font-bold text-danger">Failed to load</div>
@@ -68,16 +87,28 @@ const TaxDeduction: React.FC<TaxDeductionProps> = ({ employeeId }) => {
           <table className="w-full text-sm">
             <thead className="bg-app border-b border-theme">
               <tr>
-                <th className="px-5 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left">Type</th>
-                <th className="px-5 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-right">Value</th>
+                <th className="px-5 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-left">
+                  Type
+                </th>
+                <th className="px-5 py-3 text-[10px] font-extrabold text-muted uppercase tracking-wider text-right">
+                  Value
+                </th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={r.label} className={`border-b border-theme last:border-0 ${i % 2 === 1 ? "bg-app" : "bg-card"}`}>
-                  <td className="px-5 py-3 text-xs font-semibold text-main">{r.label}</td>
+                <tr
+                  key={r.label}
+                  className={`border-b border-theme last:border-0 ${i % 2 === 1 ? "bg-app" : "bg-card"}`}
+                >
+                  <td className="px-5 py-3 text-xs font-semibold text-main">
+                    {r.label}
+                  </td>
                   <td className="px-5 py-3 text-right text-xs font-mono font-semibold text-main tabular-nums">
-                    {r.value ?? "—"}{r.value !== undefined && r.value !== null && r.unit ? r.unit : ""}
+                    {r.value ?? "—"}
+                    {r.value !== undefined && r.value !== null && r.unit
+                      ? r.unit
+                      : ""}
                   </td>
                 </tr>
               ))}

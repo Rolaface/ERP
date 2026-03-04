@@ -1,9 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  ArrowUpRight,
-  ArrowDownLeft,
-  FileText,
-} from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, FileText } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import type { Supplier } from "../../types/Supply/supplier";
 
@@ -13,8 +9,8 @@ interface LedgerEntry {
   date: string;
   type: string;
   ref: string;
-  debit: number;   // Purchase
-  credit: number;  // Payment
+  debit: number; // Purchase
+  credit: number; // Payment
   balance: number;
   note?: string;
 }
@@ -73,8 +69,8 @@ const SupplierStatement = ({ supplier }: Props) => {
               row.debit > 0
                 ? "bg-warning text-warning"
                 : row.credit > 0
-                ? "bg-success text-success"
-                : "bg-row-hover text-muted"
+                  ? "bg-success text-success"
+                  : "bg-row-hover text-muted"
             }`}
           >
             {row.debit > 0 ? (
@@ -159,11 +155,8 @@ const SupplierStatement = ({ supplier }: Props) => {
 
   return (
     <div className="max-w-[1400px] mx-auto ">
-
-    
       {/* KPI + AGING */}
       <div className="flex gap-4 items-stretch">
-
         {/* KPI */}
         <div className="grid grid-cols-3 gap-2 ">
           <SummaryCard
@@ -193,7 +186,6 @@ const SupplierStatement = ({ supplier }: Props) => {
             <AgingCell compact label="90+" value={aging["90_plus"]} />
           </div>
         </div>
-
       </div>
 
       {/* TABLE */}
@@ -214,7 +206,6 @@ const SupplierStatement = ({ supplier }: Props) => {
           pageSizeOptions={[4, 10, 25]}
         />
       </div>
-
     </div>
   );
 };
@@ -264,7 +255,9 @@ const SummaryCard = ({
   className: string;
 }) => (
   <div className="bg-card border border-theme rounded-xl p-4">
-    <p className={`text-[9px] font-black uppercase tracking-widest ${className}`}>
+    <p
+      className={`text-[9px] font-black uppercase tracking-widest ${className}`}
+    >
       {label}
     </p>
     <p className={`text-lg font-black ${className}`}>

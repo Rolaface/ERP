@@ -155,10 +155,11 @@ const POS: React.FC = () => {
                 <button
                   onClick={() => addToCart(product)}
                   disabled={product.stock <= 0}
-                  className={`w-full py-2 rounded-lg font-medium text-white transition-all shadow-sm ${product.stock > 0
+                  className={`w-full py-2 rounded-lg font-medium text-white transition-all shadow-sm ${
+                    product.stock > 0
                       ? "bg-indigo-500 hover:bg-indigo-600"
                       : "bg-gray-300 cursor-not-allowed"
-                    }`}
+                  }`}
                 >
                   {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
                 </button>

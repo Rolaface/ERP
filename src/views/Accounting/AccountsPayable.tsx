@@ -9,7 +9,6 @@ import {
   FaEdit,
   FaTrash,
   FaEye,
-  FaMoneyCheckAlt,
   FaClock,
 } from "react-icons/fa";
 
@@ -100,8 +99,7 @@ const AccountsPayable = () => {
       bill.id.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesFilter =
-      filterStatus === "all" ||
-      bill.status.toLowerCase() === filterStatus;
+      filterStatus === "all" || bill.status.toLowerCase() === filterStatus;
 
     return matchesSearch && matchesFilter;
   });
@@ -142,8 +140,8 @@ const AccountsPayable = () => {
               row.days <= 3
                 ? "text-danger"
                 : row.days <= 7
-                ? "text-warning"
-                : "text-muted"
+                  ? "text-warning"
+                  : "text-muted"
             }`}
           >
             {row.days} days
@@ -160,8 +158,8 @@ const AccountsPayable = () => {
             row.priority === "high"
               ? "bg-danger text-danger"
               : row.priority === "medium"
-              ? "bg-warning text-warning"
-              : "bg-success text-success"
+                ? "bg-warning text-warning"
+                : "bg-success text-success"
           }`}
         >
           {row.priority}
@@ -177,8 +175,8 @@ const AccountsPayable = () => {
             row.status.toLowerCase() === "approved"
               ? "bg-info text-info"
               : row.status.toLowerCase() === "pending"
-              ? "bg-warning text-warning"
-              : "bg-primary text-white"
+                ? "bg-warning text-warning"
+                : "bg-primary text-white"
           }`}
         >
           {row.status}
@@ -210,10 +208,7 @@ const AccountsPayable = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s, i) => (
-          <div
-            key={i}
-            className="bg-card rounded-lg border border-theme p-4"
-          >
+          <div key={i} className="bg-card rounded-lg border border-theme p-4">
             <p className="text-xs text-muted">{s.label}</p>
             <p className="text-xl font-bold text-main mt-1">{s.value}</p>
           </div>
@@ -255,7 +250,7 @@ const AccountsPayable = () => {
                     >
                       {s}
                     </button>
-                  )
+                  ),
                 )}
               </div>
             )}

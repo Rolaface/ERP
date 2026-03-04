@@ -42,14 +42,15 @@ export const useInvoiceForm = (
   const [isShippingOpen, setIsShippingOpen] = useState(false);
   const [sameAsBilling, setSameAsBilling] = useState(true);
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
-  const [exchangeRateError, setExchangeRateError] = useState<string | null>(null);
+  const [exchangeRateError, setExchangeRateError] = useState<string | null>(
+    null,
+  );
 
   const shippingEditedRef = useRef(false);
   const lastCurrencyRef = useRef<string>("ZMW");
   const lastRateRef = useRef<number>(1);
   useEffect(() => {
     if (!isOpen || initialData) return;
-
 
     const loadCompanyData = async () => {
       try {
@@ -80,7 +81,9 @@ export const useInvoiceForm = (
   useEffect(() => {
     if (!isOpen) return;
 
-    const code = String(formData.currencyCode ?? "").trim().toUpperCase();
+    const code = String(formData.currencyCode ?? "")
+      .trim()
+      .toUpperCase();
     if (!code) {
       setExchangeRateLoading(false);
       setExchangeRateError(null);
@@ -129,15 +132,21 @@ export const useInvoiceForm = (
   useEffect(() => {
     if (!isOpen) return;
 
-    const newCurrency = String(formData.currencyCode ?? "").trim().toUpperCase();
-    const prevCurrency = String(lastCurrencyRef.current ?? "").trim().toUpperCase();
+    const newCurrency = String(formData.currencyCode ?? "")
+      .trim()
+      .toUpperCase();
+    const prevCurrency = String(lastCurrencyRef.current ?? "")
+      .trim()
+      .toUpperCase();
 
     if (!newCurrency || newCurrency === prevCurrency) return;
     if (exchangeRateLoading) return;
     if (exchangeRateError) return;
 
     const newRate =
-      newCurrency === "ZMW" ? 1 : Number(String(formData.exchangeRt ?? "").trim());
+      newCurrency === "ZMW"
+        ? 1
+        : Number(String(formData.exchangeRt ?? "").trim());
     const prevRate = prevCurrency === "ZMW" ? 1 : Number(lastRateRef.current);
 
     if (!Number.isFinite(prevRate) || prevRate <= 0) return;
@@ -150,10 +159,11 @@ export const useInvoiceForm = (
         const price = Number(it.price);
         if (!Number.isFinite(price)) return it;
 
-        const baseZmw =
-          Number.isFinite(Number((it as any)._priceZmw))
-            ? Number((it as any)._priceZmw)
-            : (prevCurrency === "ZMW" ? price : price * prevRate);
+        const baseZmw = Number.isFinite(Number((it as any)._priceZmw))
+          ? Number((it as any)._priceZmw)
+          : prevCurrency === "ZMW"
+            ? price
+            : price * prevRate;
 
         const nextPrice = newCurrency === "ZMW" ? baseZmw : baseZmw / newRate;
 
@@ -169,10 +179,18 @@ export const useInvoiceForm = (
 
     lastCurrencyRef.current = newCurrency;
     lastRateRef.current = newRate;
-  }, [isOpen, formData.currencyCode, formData.exchangeRt, exchangeRateLoading, exchangeRateError]);
+  }, [
+    isOpen,
+    formData.currencyCode,
+    formData.exchangeRt,
+    exchangeRateLoading,
+    exchangeRateError,
+  ]);
 
   const setInvoiceFromApi = (invoice: any) => {
-    const invoiceCurrency = String(invoice?.currencyCode ?? "").trim().toUpperCase();
+    const invoiceCurrency = String(invoice?.currencyCode ?? "")
+      .trim()
+      .toUpperCase();
     const invoiceRate = Number(
       String(invoice?.exchangeRt ?? invoice?.exchangeRate ?? "1").trim(),
     );
@@ -190,7 +208,8 @@ export const useInvoiceForm = (
     const mappedItems = Array.isArray(invoice?.items)
       ? invoice.items.map((it: any) => {
           const price = Number(it?.price);
-          const rate = lastCurrencyRef.current === "ZMW" ? 1 : Number(lastRateRef.current);
+          const rate =
+            lastCurrencyRef.current === "ZMW" ? 1 : Number(lastRateRef.current);
           const baseZmw =
             Number.isFinite(price) && Number.isFinite(rate) && rate > 0
               ? lastCurrencyRef.current === "ZMW"
@@ -211,7 +230,12 @@ export const useInvoiceForm = (
       exchangeRt:
         invoiceCurrency === "ZMW"
           ? "1"
-          : String(invoice?.exchangeRt ?? invoice?.exchangeRate ?? prev.exchangeRt ?? ""),
+          : String(
+              invoice?.exchangeRt ??
+                invoice?.exchangeRate ??
+                prev.exchangeRt ??
+                "",
+            ),
       items: mappedItems,
     }));
 
@@ -223,7 +247,9 @@ export const useInvoiceForm = (
       (it) => String(it?.vatCode ?? "").toUpperCase() === "C1",
     );
 
-    const invoiceType = String(formData.invoiceType ?? "").trim().toLowerCase();
+    const invoiceType = String(formData.invoiceType ?? "")
+      .trim()
+      .toLowerCase();
 
     if (!formData.customerId) {
       throw new Error("Please select a customer");
@@ -311,7 +337,9 @@ export const useInvoiceForm = (
       }
 
       if (name === "currencyCode") {
-        const next = String(value ?? "").trim().toUpperCase();
+        const next = String(value ?? "")
+          .trim()
+          .toUpperCase();
         setExchangeRateError(null);
         setExchangeRateLoading(!!next && next !== "ZMW");
         setFormData((prev) => ({
@@ -323,7 +351,9 @@ export const useInvoiceForm = (
       }
 
       if (name === "lpoNumber") {
-        const digitsOnly = String(value ?? "").replace(/\D/g, "").slice(0, 10);
+        const digitsOnly = String(value ?? "")
+          .replace(/\D/g, "")
+          .slice(0, 10);
         setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
         return;
       }
@@ -410,7 +440,10 @@ export const useInvoiceForm = (
           shippingAddress: shipping,
           paymentInformation,
           terms: {
-            selling: company?.terms?.selling ?? prev.terms?.selling ?? EMPTY_TERMS.selling,
+            selling:
+              company?.terms?.selling ??
+              prev.terms?.selling ??
+              EMPTY_TERMS.selling,
           },
         };
       });
@@ -450,20 +483,27 @@ export const useInvoiceForm = (
           return prev;
         }
 
-        const currency = String(prev.currencyCode ?? "").trim().toUpperCase();
+        const currency = String(prev.currencyCode ?? "")
+          .trim()
+          .toUpperCase();
         const rate = Number(String(prev.exchangeRt ?? "1").trim());
 
         const apiSellingPrice = Number(data.sellingPrice);
-        const hasApiPrice = Number.isFinite(apiSellingPrice) && apiSellingPrice > 0;
-        const baseZmw = hasApiPrice ? apiSellingPrice : Number(items[index].price);
+        const hasApiPrice =
+          Number.isFinite(apiSellingPrice) && apiSellingPrice > 0;
+        const baseZmw = hasApiPrice
+          ? apiSellingPrice
+          : Number(items[index].price);
         const convertedPrice = (() => {
           if (!Number.isFinite(baseZmw)) return Number(items[index].price);
-          if (currency !== "ZMW" && Number.isFinite(rate) && rate > 0) return baseZmw / rate;
+          if (currency !== "ZMW" && Number.isFinite(rate) && rate > 0)
+            return baseZmw / rate;
           return baseZmw;
         })();
 
         const existingIdx = items.findIndex(
-          (it, i) => i !== index && String(it?.itemCode ?? "").trim() === resolvedId,
+          (it, i) =>
+            i !== index && String(it?.itemCode ?? "").trim() === resolvedId,
         );
 
         if (existingIdx !== -1) {
@@ -550,8 +590,12 @@ export const useInvoiceForm = (
     });
   };
   const setFormDataFromInvoice = async (invoice: any) => {
-    const invoiceCurrency = String(invoice?.currencyCode ?? "").trim().toUpperCase();
-    const invoiceRate = Number(String(invoice?.exchangeRt ?? invoice?.exchangeRate ?? "1").trim());
+    const invoiceCurrency = String(invoice?.currencyCode ?? "")
+      .trim()
+      .toUpperCase();
+    const invoiceRate = Number(
+      String(invoice?.exchangeRt ?? invoice?.exchangeRate ?? "1").trim(),
+    );
 
     setFormData((prev) => ({
       ...prev,
@@ -563,8 +607,7 @@ export const useInvoiceForm = (
       dueDate: invoice.dueDate,
       billingAddress: invoice.billingAddress ?? prev.billingAddress,
       shippingAddress: invoice.shippingAddress ?? prev.shippingAddress,
-      paymentInformation:
-        invoice.paymentInformation ?? prev.paymentInformation,
+      paymentInformation: invoice.paymentInformation ?? prev.paymentInformation,
       terms: invoice.terms ?? prev.terms,
       items: invoice.items.map((it: any) => {
         const quantity = Number(it.quantity);
@@ -572,7 +615,9 @@ export const useInvoiceForm = (
         const discount = Number(it.discount || 0);
 
         const baseZmw =
-          invoiceCurrency === "ZMW" || !Number.isFinite(invoiceRate) || invoiceRate <= 0
+          invoiceCurrency === "ZMW" ||
+          !Number.isFinite(invoiceRate) ||
+          invoiceRate <= 0
             ? price
             : price * invoiceRate;
 
@@ -599,7 +644,6 @@ export const useInvoiceForm = (
           _fromInvoice: true,
         };
       }),
-
     }));
 
     setCustomerDetails(invoice.customer);
@@ -623,11 +667,10 @@ export const useInvoiceForm = (
       const today = new Date().toISOString().slice(0, 10);
 
       setFormData({
-        ...(DEFAULT_INVOICE_FORM as Invoice),
+        ...DEFAULT_INVOICE_FORM,
         dateOfInvoice: today,
         terms: {
-          selling:
-            company?.terms?.selling ?? EMPTY_TERMS.selling,
+          selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
         },
         shippingAddress: {
           ...DEFAULT_INVOICE_FORM.billingAddress,
@@ -636,7 +679,7 @@ export const useInvoiceForm = (
     } catch (err) {
       const today = new Date().toISOString().slice(0, 10);
       setFormData({
-        ...(DEFAULT_INVOICE_FORM as Invoice),
+        ...DEFAULT_INVOICE_FORM,
         dateOfInvoice: today,
         terms: { ...EMPTY_TERMS },
         shippingAddress: {
@@ -678,13 +721,13 @@ export const useInvoiceForm = (
     return payload;
   };
 
-
   const { subTotal, totalTax, grandTotal } = useMemo(() => {
     let sub = 0;
     let tax = 0;
 
     formData.items.forEach((item) => {
-      const discountAmount = item.quantity * item.price * (Number(item.discount || 0) / 100);
+      const discountAmount =
+        item.quantity * item.price * (Number(item.discount || 0) / 100);
       const totalInclusive = item.quantity * item.price - discountAmount;
       const exclusive = totalInclusive / (1 + Number(item.vatRate || 0) / 100);
       const taxAmt = totalInclusive - exclusive;
@@ -698,7 +741,6 @@ export const useInvoiceForm = (
       grandTotal: sub + tax,
     };
   }, [formData.items]);
-
 
   const paginatedItems = formData.items.slice(
     page * ITEMS_PER_PAGE,
@@ -723,10 +765,17 @@ export const useInvoiceForm = (
       sameAsBilling,
       itemCount: formData.items.length,
       isExport:
-        String(formData.invoiceType ?? "").trim().toLowerCase() === "export",
-      isLocal: String(formData.invoiceType ?? "").trim().toLowerCase() === "lpo",
+        String(formData.invoiceType ?? "")
+          .trim()
+          .toLowerCase() === "export",
+      isLocal:
+        String(formData.invoiceType ?? "")
+          .trim()
+          .toLowerCase() === "lpo",
       isNonExport:
-        String(formData.invoiceType ?? "").trim().toLowerCase() === "non-export",
+        String(formData.invoiceType ?? "")
+          .trim()
+          .toLowerCase() === "non-export",
       exchangeRateLoading,
       exchangeRateError,
       hasC1: formData.items.some(

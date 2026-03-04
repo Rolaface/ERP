@@ -101,12 +101,20 @@ const InvoiceDetailsModal: React.FC<Props> = ({
   fetchDetails,
   mapDetails,
 }) => {
-  const Field = ({ label, value }: { label: string; value: React.ReactNode }) => {
+  const Field = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: React.ReactNode;
+  }) => {
     const isPrimitive = typeof value === "string" || typeof value === "number";
 
     return (
       <div className="flex flex-col gap-1">
-        <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">{label}</div>
+        <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+          {label}
+        </div>
         {isPrimitive ? (
           <input
             readOnly
@@ -123,13 +131,17 @@ const InvoiceDetailsModal: React.FC<Props> = ({
   };
 
   const SectionTitle = ({ title }: { title: string }) => (
-    <div className="text-xs font-bold text-main uppercase tracking-wide">{title}</div>
+    <div className="text-xs font-bold text-main uppercase tracking-wide">
+      {title}
+    </div>
   );
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<InvoiceDetails | null>(null);
-  const [countryNameMap, setCountryNameMap] = useState<Record<string, string>>({});
+  const [countryNameMap, setCountryNameMap] = useState<Record<string, string>>(
+    {},
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -151,7 +163,9 @@ const InvoiceDetailsModal: React.FC<Props> = ({
           return;
         }
 
-        const next = mapDetails ? mapDetails(resp.data) : (resp.data as InvoiceDetails);
+        const next = mapDetails
+          ? mapDetails(resp.data)
+          : (resp.data as InvoiceDetails);
         setData(next);
       } catch (e: any) {
         if (!mounted) return;
@@ -173,7 +187,9 @@ const InvoiceDetailsModal: React.FC<Props> = ({
 
     const run = async () => {
       if (!open) return;
-      const code = String(data?.destnCountryCd ?? "").trim().toUpperCase();
+      const code = String(data?.destnCountryCd ?? "")
+        .trim()
+        .toUpperCase();
       if (!code) return;
       if (countryNameMap[code]) return;
 
@@ -182,7 +198,9 @@ const InvoiceDetailsModal: React.FC<Props> = ({
         const list = Array.isArray(resp) ? resp : (resp?.data ?? []);
         const next: Record<string, string> = {};
         (list ?? []).forEach((c: any) => {
-          const cc = String(c?.code ?? "").trim().toUpperCase();
+          const cc = String(c?.code ?? "")
+            .trim()
+            .toUpperCase();
           const name = String(c?.name ?? "").trim();
           if (cc) next[cc] = name || cc;
         });
@@ -205,15 +223,21 @@ const InvoiceDetailsModal: React.FC<Props> = ({
 
   const docNo = String(data?.invoiceNumber ?? "");
   const docNoUpper = docNo.trim().toUpperCase();
-  const invoiceTypeUpper = String(data?.invoiceType ?? "").trim().toUpperCase();
+  const invoiceTypeUpper = String(data?.invoiceType ?? "")
+    .trim()
+    .toUpperCase();
   const isQuoteOrProforma =
     docNoUpper.startsWith("QUO-") || docNoUpper.startsWith("PRO-");
-  const isLpoType = invoiceTypeUpper === "LPO" || invoiceTypeUpper.includes("LPO");
+  const isLpoType =
+    invoiceTypeUpper === "LPO" || invoiceTypeUpper.includes("LPO");
   const isExportType =
     invoiceTypeUpper.includes("EXPORT") && !invoiceTypeUpper.includes("NON");
 
   const computedTotals = useMemo(() => {
-    const subTotal = items.reduce((sum, it) => sum + Number(it.price ?? 0) * Number(it.quantity ?? 0), 0);
+    const subTotal = items.reduce(
+      (sum, it) => sum + Number(it.price ?? 0) * Number(it.quantity ?? 0),
+      0,
+    );
     const discount = items.reduce((sum, it) => {
       const pct = Number(it.discount ?? 0);
       const row = Number(it.price ?? 0) * Number(it.quantity ?? 0);
@@ -249,9 +273,9 @@ const InvoiceDetailsModal: React.FC<Props> = ({
     const out: typeof phases = [];
 
     for (const p of phases) {
-      const key = `${String(p?.name ?? "").trim().toLowerCase()}|${String(
-        p?.percentage ?? "",
-      )
+      const key = `${String(p?.name ?? "")
+        .trim()
+        .toLowerCase()}|${String(p?.percentage ?? "")
         .trim()
         .toLowerCase()}|${String(p?.condition ?? "")
         .trim()
@@ -276,7 +300,11 @@ const InvoiceDetailsModal: React.FC<Props> = ({
     <Modal
       isOpen={open}
       onClose={onClose}
-      title={data?.invoiceNumber ? `Invoice ${data.invoiceNumber}` : "Invoice Details"}
+      title={
+        data?.invoiceNumber
+          ? `Invoice ${data.invoiceNumber}`
+          : "Invoice Details"
+      }
       subtitle={loading ? "Loading invoice details" : undefined}
       icon={FileText}
       maxWidth="6xl"
@@ -319,7 +347,10 @@ const InvoiceDetailsModal: React.FC<Props> = ({
             <div className="lg:col-span-3">
               <SectionTitle title="Basic Information" />
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Field label="Invoice Number" value={data.invoiceNumber ?? "—"} />
+                <Field
+                  label="Invoice Number"
+                  value={data.invoiceNumber ?? "—"}
+                />
                 <Field label="Invoice Type" value={data.invoiceType ?? "—"} />
                 <Field label="Invoice Date" value={data.dateOfInvoice ?? "—"} />
               </div>
@@ -345,8 +376,9 @@ const InvoiceDetailsModal: React.FC<Props> = ({
                     label="Destination Country"
                     value={
                       data.destnCountryCd
-                        ? countryNameMap[String(data.destnCountryCd).trim().toUpperCase()] ??
-                          data.destnCountryCd
+                        ? (countryNameMap[
+                            String(data.destnCountryCd).trim().toUpperCase()
+                          ] ?? data.destnCountryCd)
                         : "—"
                     }
                   />
@@ -355,7 +387,8 @@ const InvoiceDetailsModal: React.FC<Props> = ({
                 <Field
                   label="Discount %"
                   value={
-                    discountPctForDisplay !== undefined && !Number.isNaN(discountPctForDisplay)
+                    discountPctForDisplay !== undefined &&
+                    !Number.isNaN(discountPctForDisplay)
                       ? `${discountPctForDisplay}%`
                       : "—"
                   }
@@ -363,7 +396,8 @@ const InvoiceDetailsModal: React.FC<Props> = ({
                 <Field
                   label="Discount Amount"
                   value={
-                    discountAmountForDisplay !== undefined && !Number.isNaN(discountAmountForDisplay)
+                    discountAmountForDisplay !== undefined &&
+                    !Number.isNaN(discountAmountForDisplay)
                       ? `${currency} ${discountAmountForDisplay.toFixed(2)}`.trim()
                       : "—"
                   }
@@ -395,7 +429,11 @@ const InvoiceDetailsModal: React.FC<Props> = ({
                           return;
                         }
 
-                        window.open("about:blank", "_blank", "noopener,noreferrer");
+                        window.open(
+                          "about:blank",
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
                       }}
                       className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary"
                     >
@@ -410,24 +448,43 @@ const InvoiceDetailsModal: React.FC<Props> = ({
             <div className="lg:col-span-3">
               <SectionTitle title="Payment Information" />
               <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Field label="Payment Terms" value={data.paymentInformation?.paymentTerms ?? "—"} />
+                <Field
+                  label="Payment Terms"
+                  value={data.paymentInformation?.paymentTerms ?? "—"}
+                />
                 <Field
                   label="Payment Method"
                   value={
                     data.paymentInformation?.paymentMethod
-                      ? getPaymentMethodLabel(String(data.paymentInformation.paymentMethod))
+                      ? getPaymentMethodLabel(
+                          String(data.paymentInformation.paymentMethod),
+                        )
                       : "—"
                   }
                 />
-                <Field label="Bank Name" value={data.paymentInformation?.bankName ?? "—"} />
-                <Field label="Account Number" value={data.paymentInformation?.accountNumber ?? "—"} />
-                <Field label="Routing Number / IBAN" value={data.paymentInformation?.routingNumber ?? "—"} />
-                <Field label="SWIFT / BIC" value={data.paymentInformation?.swiftCode ?? "—"} />
+                <Field
+                  label="Bank Name"
+                  value={data.paymentInformation?.bankName ?? "—"}
+                />
+                <Field
+                  label="Account Number"
+                  value={data.paymentInformation?.accountNumber ?? "—"}
+                />
+                <Field
+                  label="Routing Number / IBAN"
+                  value={data.paymentInformation?.routingNumber ?? "—"}
+                />
+                <Field
+                  label="SWIFT / BIC"
+                  value={data.paymentInformation?.swiftCode ?? "—"}
+                />
               </div>
 
               {!!paymentPhases.length && (
                 <div className="mt-4 bg-white border border-gray-200 rounded-xl p-4">
-                  <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">Payment Phases</div>
+                  <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                    Payment Phases
+                  </div>
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                     {paymentPhases.map((p, idx) => (
                       <div
@@ -437,12 +494,18 @@ const InvoiceDetailsModal: React.FC<Props> = ({
                         className="border border-gray-200 rounded-xl p-4 bg-[#fbf7f2]"
                       >
                         {p.name && p.name.trim() !== "-" ? (
-                          <div className="text-sm font-bold text-main">{p.name}</div>
+                          <div className="text-sm font-bold text-main">
+                            {p.name}
+                          </div>
                         ) : null}
                         {p.percentage ? (
-                          <div className="text-xs text-muted font-semibold">{p.percentage}</div>
+                          <div className="text-xs text-muted font-semibold">
+                            {p.percentage}
+                          </div>
                         ) : null}
-                        <div className="text-sm text-main mt-2 whitespace-pre-wrap">{p.condition ?? "—"}</div>
+                        <div className="text-sm text-main mt-2 whitespace-pre-wrap">
+                          {p.condition ?? "—"}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -473,26 +536,43 @@ const InvoiceDetailsModal: React.FC<Props> = ({
                       const lineTotal = lineSubTotal - lineDiscount;
 
                       const vatTaxableAmountNum =
-                        it.vatTaxableAmount === undefined || it.vatTaxableAmount === null
+                        it.vatTaxableAmount === undefined ||
+                        it.vatTaxableAmount === null
                           ? undefined
                           : Number(it.vatTaxableAmount);
 
                       return (
-                        <div key={idx} className="border border-gray-200 rounded-xl p-4 bg-[#fbf7f2]">
+                        <div
+                          key={idx}
+                          className="border border-gray-200 rounded-xl p-4 bg-[#fbf7f2]"
+                        >
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <Field label="Item Code" value={it.itemCode ?? "—"} />
+                            <Field
+                              label="Item Code"
+                              value={it.itemCode ?? "—"}
+                            />
                             <Field label="Quantity" value={String(qty)} />
-                            <Field label="Unit Price" value={`${currency} ${unitPrice.toFixed(2)}`} />
-                            <Field label="Discount %" value={String(discountPct)} />
-                            <Field label="Line Total" value={`${currency} ${lineTotal.toFixed(2)}`} />
+                            <Field
+                              label="Unit Price"
+                              value={`${currency} ${unitPrice.toFixed(2)}`}
+                            />
+                            <Field
+                              label="Discount %"
+                              value={String(discountPct)}
+                            />
+                            <Field
+                              label="Line Total"
+                              value={`${currency} ${lineTotal.toFixed(2)}`}
+                            />
                             <Field label="VAT Code" value={it.vatCode ?? "—"} />
                             <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                               <Field
                                 label="VAT Taxable Amount"
                                 value={
-                                  vatTaxableAmountNum !== undefined && !Number.isNaN(vatTaxableAmountNum)
+                                  vatTaxableAmountNum !== undefined &&
+                                  !Number.isNaN(vatTaxableAmountNum)
                                     ? `${currency} ${vatTaxableAmountNum.toFixed(2)}`
-                                    : it.vatTaxableAmount ?? "—"
+                                    : (it.vatTaxableAmount ?? "—")
                                 }
                               />
                               <Field
@@ -519,26 +599,66 @@ const InvoiceDetailsModal: React.FC<Props> = ({
               <SectionTitle title="Addresses" />
               <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">Billing Address</div>
+                  <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                    Billing Address
+                  </div>
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Line 1" value={data.billingAddress?.line1 ?? "—"} />
-                    <Field label="Line 2" value={data.billingAddress?.line2 ?? "—"} />
-                    <Field label="Postal Code" value={data.billingAddress?.postalCode ?? "—"} />
-                    <Field label="City" value={data.billingAddress?.city ?? "—"} />
-                    <Field label="State" value={data.billingAddress?.state ?? "—"} />
-                    <Field label="Country" value={data.billingAddress?.country ?? "—"} />
+                    <Field
+                      label="Line 1"
+                      value={data.billingAddress?.line1 ?? "—"}
+                    />
+                    <Field
+                      label="Line 2"
+                      value={data.billingAddress?.line2 ?? "—"}
+                    />
+                    <Field
+                      label="Postal Code"
+                      value={data.billingAddress?.postalCode ?? "—"}
+                    />
+                    <Field
+                      label="City"
+                      value={data.billingAddress?.city ?? "—"}
+                    />
+                    <Field
+                      label="State"
+                      value={data.billingAddress?.state ?? "—"}
+                    />
+                    <Field
+                      label="Country"
+                      value={data.billingAddress?.country ?? "—"}
+                    />
                   </div>
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">Shipping Address</div>
+                  <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                    Shipping Address
+                  </div>
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Line 1" value={data.shippingAddress?.line1 ?? "—"} />
-                    <Field label="Line 2" value={data.shippingAddress?.line2 ?? "—"} />
-                    <Field label="Postal Code" value={data.shippingAddress?.postalCode ?? "—"} />
-                    <Field label="City" value={data.shippingAddress?.city ?? "—"} />
-                    <Field label="State" value={data.shippingAddress?.state ?? "—"} />
-                    <Field label="Country" value={data.shippingAddress?.country ?? "—"} />
+                    <Field
+                      label="Line 1"
+                      value={data.shippingAddress?.line1 ?? "—"}
+                    />
+                    <Field
+                      label="Line 2"
+                      value={data.shippingAddress?.line2 ?? "—"}
+                    />
+                    <Field
+                      label="Postal Code"
+                      value={data.shippingAddress?.postalCode ?? "—"}
+                    />
+                    <Field
+                      label="City"
+                      value={data.shippingAddress?.city ?? "—"}
+                    />
+                    <Field
+                      label="State"
+                      value={data.shippingAddress?.state ?? "—"}
+                    />
+                    <Field
+                      label="Country"
+                      value={data.shippingAddress?.country ?? "—"}
+                    />
                   </div>
                 </div>
               </div>
@@ -548,24 +668,46 @@ const InvoiceDetailsModal: React.FC<Props> = ({
               <div className="lg:col-span-3">
                 <SectionTitle title="Terms & Conditions" />
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="General" value={data.terms.selling.general ?? "—"} />
-                  <Field label="Delivery" value={data.terms.selling.delivery ?? "—"} />
-                  <Field label="Cancellation" value={data.terms.selling.cancellation ?? "—"} />
-                  <Field label="Warranty" value={data.terms.selling.warranty ?? "—"} />
-                  <Field label="Liability" value={data.terms.selling.liability ?? "—"} />
+                  <Field
+                    label="General"
+                    value={data.terms.selling.general ?? "—"}
+                  />
+                  <Field
+                    label="Delivery"
+                    value={data.terms.selling.delivery ?? "—"}
+                  />
+                  <Field
+                    label="Cancellation"
+                    value={data.terms.selling.cancellation ?? "—"}
+                  />
+                  <Field
+                    label="Warranty"
+                    value={data.terms.selling.warranty ?? "—"}
+                  />
+                  <Field
+                    label="Liability"
+                    value={data.terms.selling.liability ?? "—"}
+                  />
                   <Field
                     label="Payment"
                     value={
                       <div className="text-sm text-main whitespace-pre-wrap">
-                        {data.terms.selling.payment?.dueDates ? `Due Dates: ${data.terms.selling.payment.dueDates}\n` : ""}
-                        {data.terms.selling.payment?.lateCharges ? `Late Charges: ${data.terms.selling.payment.lateCharges}\n` : ""}
-                        {data.terms.selling.payment?.taxes ? `Taxes: ${data.terms.selling.payment.taxes}\n` : ""}
-                        {data.terms.selling.payment?.notes ? `Notes: ${data.terms.selling.payment.notes}` : ""}
+                        {data.terms.selling.payment?.dueDates
+                          ? `Due Dates: ${data.terms.selling.payment.dueDates}\n`
+                          : ""}
+                        {data.terms.selling.payment?.lateCharges
+                          ? `Late Charges: ${data.terms.selling.payment.lateCharges}\n`
+                          : ""}
+                        {data.terms.selling.payment?.taxes
+                          ? `Taxes: ${data.terms.selling.payment.taxes}\n`
+                          : ""}
+                        {data.terms.selling.payment?.notes
+                          ? `Notes: ${data.terms.selling.payment.notes}`
+                          : ""}
                       </div>
                     }
                   />
                 </div>
-
               </div>
             )}
           </div>

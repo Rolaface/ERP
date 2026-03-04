@@ -9,10 +9,9 @@ export interface ItemRow {
   uom: string;
   rate: number;
 
-  vatCd: string;   
-  vatRate: number; 
+  vatCd: string;
+  vatRate: number;
 }
-
 
 export interface TaxRow {
   type: string;
@@ -54,15 +53,15 @@ export interface PurchaseInvoiceFormData {
   supplierId: string;
   supplierEmail?: string;
   supplierPhone?: string;
- 
+
   supplierCode: string;
   taxCategory: string;
   supplierContact: string;
   paymentType: string;
   transactionProgress: string;
   supplierInvoiceNumber: string;
-  
-destnCountryCd: string; // New field for Export country
+
+  destnCountryCd: string; // New field for Export country
   shippingRule: string;
   incoterm: string;
   taxesChargesTemplate: string;
@@ -97,10 +96,10 @@ destnCountryCd: string; // New field for Export country
   sendPrint: boolean;
 
   terms?: {
-  buying: TermSection;
-};
-  itemTerms: ItemTerms[];  
-  acceptedTerms: Record<string, boolean>; 
+    buying: TermSection;
+  };
+  itemTerms: ItemTerms[];
+  acceptedTerms: Record<string, boolean>;
   paymentRows: PaymentRow[];
 }
 
@@ -114,7 +113,6 @@ export const emptyItem: ItemRow = {
   vatCd: "",
   vatRate: 0,
 };
-
 
 export const emptyTaxRow: TaxRow = {
   type: "",
@@ -207,8 +205,8 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   messageHtml: "",
   sendAttachedFiles: false,
   sendPrint: false,
-terms: undefined,
-  itemTerms: [],  
+  terms: undefined,
+  itemTerms: [],
   acceptedTerms: {},
 };
 

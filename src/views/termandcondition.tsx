@@ -164,9 +164,7 @@ const TermsAndCondition: React.FC<Props> = ({ terms, setTerms }) => {
       <div className="space-y-5">
         {/* Section Title */}
         <div className="flex items-center justify-between pb-1 border-b">
-          <h4 className="text-lg font-semibold text-main">
-            Payment Structure
-          </h4>
+          <h4 className="text-lg font-semibold text-main">Payment Structure</h4>
 
           {isEditing && (
             <button
@@ -181,14 +179,10 @@ const TermsAndCondition: React.FC<Props> = ({ terms, setTerms }) => {
 
         {/* Table */}
         <div className="rounded-lg border border-theme bg-card overflow-hidden">
-
           <table className="w-full text-sm">
             <thead className="table-head border-b border-theme">
-
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-main">
-                  #
-                </th>
+                <th className="px-4 py-3 text-left font-medium text-main">#</th>
                 <th className="px-4 py-3 text-left font-medium text-main">
                   Phase
                 </th>
@@ -209,8 +203,7 @@ const TermsAndCondition: React.FC<Props> = ({ terms, setTerms }) => {
                 if (p.isDelete === 1) return null; // hide deleted rows
 
                 return (
-                 <tr key={realIndex} className="row-hover">
-
+                  <tr key={realIndex} className="row-hover">
                     <td className="px-4 py-2">
                       <span className="text-main">{realIndex + 1}</span>
                     </td>
@@ -336,15 +329,13 @@ const TermsAndCondition: React.FC<Props> = ({ terms, setTerms }) => {
   );
 
   return (
-   <div className="p-6 space-y-8 bg-card text-main rounded-lg border border-theme mt-8">
+    <div className="p-6 space-y-8 bg-card text-main rounded-lg border border-theme mt-8">
       {/* HEADER */}
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-main">
-          Terms & Conditions
-        </h2>
+        <h2 className="text-xl font-semibold text-main">Terms & Conditions</h2>
 
         <div className="flex items-center gap-3">
-         <label className="text-sm text-muted font-medium">
+          <label className="text-sm text-muted font-medium">
             Choose Section
           </label>
 
@@ -353,7 +344,6 @@ const TermsAndCondition: React.FC<Props> = ({ terms, setTerms }) => {
             onChange={(e) => setSelectedTemplate(e.target.value)}
             disabled={isEditing}
             className="px-3 py-1.5 border border-theme rounded-md bg-app row-hover text-sm"
-
           >
             {TABS.map((tab) => (
               <option key={tab}>{tab}</option>
@@ -364,7 +354,6 @@ const TermsAndCondition: React.FC<Props> = ({ terms, setTerms }) => {
 
       {/* CONTENT AREA */}
       <div className="p-5 rounded-lg border border-theme bg-card min-h-[auto]">
-
         {activeKey === "payment"
           ? renderPaymentTable()
           : renderTextSection(activeKey)}

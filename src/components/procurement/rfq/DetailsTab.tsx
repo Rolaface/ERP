@@ -15,18 +15,10 @@ interface DetailsTabProps {
   onRequestDateChange: (v: string) => void;
   onQuoteDeadlineChange: (v: string) => void;
   onStatusChange: (v: string) => void;
-  onSupplierChange: (
-    idx: number,
-    field: keyof SupplierRow,
-    value: any
-  ) => void;
+  onSupplierChange: (idx: number, field: keyof SupplierRow, value: any) => void;
   onAddSupplier: () => void;
   onRemoveSupplier: (idx: number) => void;
-  onItemChange: (
-    idx: number,
-    field: keyof ItemRow,
-    value: any
-  ) => void;
+  onItemChange: (idx: number, field: keyof ItemRow, value: any) => void;
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
 }
@@ -66,17 +58,16 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
 
   const paginatedSuppliers = suppliers.slice(
     supPage * ITEMS_PER_PAGE,
-    (supPage + 1) * ITEMS_PER_PAGE
+    (supPage + 1) * ITEMS_PER_PAGE,
   );
 
   const paginatedItems = items.slice(
     itemPage * ITEMS_PER_PAGE,
-    (itemPage + 1) * ITEMS_PER_PAGE
+    (itemPage + 1) * ITEMS_PER_PAGE,
   );
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-app text-main">
-
       {/* ---------- HEADER ---------- */}
       <div className="grid grid-cols-4 gap-3">
         <ModalInput
@@ -110,10 +101,8 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
 
       {/* ---------- BODY ---------- */}
       <div className="grid grid-cols-[4fr_1fr] gap-4">
-
         {/* ===== LEFT ===== */}
         <div className="flex flex-col gap-4">
-
           {/* SUPPLIERS TABLE */}
           <div className="bg-card rounded-lg p-2 shadow-sm">
             <h3 className="text-sm font-semibold mb-2">Suppliers</h3>
@@ -221,7 +210,9 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                     <button
                       type="button"
                       onClick={() => setSupPage(supPage + 1)}
-                      disabled={(supPage + 1) * ITEMS_PER_PAGE >= suppliers.length}
+                      disabled={
+                        (supPage + 1) * ITEMS_PER_PAGE >= suppliers.length
+                      }
                       className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px] disabled:opacity-40"
                     >
                       Next
@@ -309,10 +300,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                       </td>
 
                       <td className="px-2 py-1 text-center">
-                        <Button
-                          variant="ghost"
-                          onClick={() => onRemoveItem(i)}
-                        >
+                        <Button variant="ghost" onClick={() => onRemoveItem(i)}>
                           <Trash2 size={16} />
                         </Button>
                       </td>
@@ -336,8 +324,8 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                 <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
                   <span className="text-[11px] text-muted whitespace-nowrap">
                     {itemPage * ITEMS_PER_PAGE + 1}–
-                    {Math.min((itemPage + 1) * ITEMS_PER_PAGE, items.length)}{" "}
-                    of {items.length}
+                    {Math.min((itemPage + 1) * ITEMS_PER_PAGE, items.length)} of{" "}
+                    {items.length}
                   </span>
 
                   <div className="flex gap-1.5">
@@ -366,7 +354,6 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
 
         {/* ===== RIGHT SIDEBAR ===== */}
         <div className="flex flex-col gap-3 w-[220px]">
-
           <div className="bg-card rounded-lg p-3">
             <h3 className="text-sm font-semibold mb-2">Supplier Summary</h3>
             <p className="text-xs text-muted">
@@ -379,9 +366,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
 
           <div className="bg-card rounded-lg p-3">
             <h3 className="text-sm font-semibold mb-2">Items Summary</h3>
-            <p className="text-xs text-muted">
-              Total Items: {items.length}
-            </p>
+            <p className="text-xs text-muted">Total Items: {items.length}</p>
             <p className="text-xs text-muted">
               Total Qty: {items.reduce((s, it) => s + it.quantity, 0)}
             </p>

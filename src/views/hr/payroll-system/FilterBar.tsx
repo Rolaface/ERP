@@ -16,10 +16,15 @@ interface FilterBarProps {
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
-  searchQuery, onSearchChange,
-  selectedDept, onDeptChange, departments,
-  filterStatus, onStatusChange,
-  pendingCount, onRunPayroll,
+  searchQuery,
+  onSearchChange,
+  selectedDept,
+  onDeptChange,
+  departments,
+  filterStatus,
+  onStatusChange,
+  pendingCount,
+  onRunPayroll,
   totalShown,
 }) => (
   <div className="flex items-center gap-3 flex-wrap">
@@ -28,7 +33,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
       <input
         value={searchQuery}
-        onChange={e => onSearchChange(e.target.value)}
+        onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Search name or ID…"
         className="w-full pl-9 pr-3 py-2 bg-card border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
       />
@@ -38,10 +43,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     <div className="relative">
       <select
         value={selectedDept}
-        onChange={e => onDeptChange(e.target.value)}
+        onChange={(e) => onDeptChange(e.target.value)}
         className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary cursor-pointer"
       >
-        {departments.map(d => <option key={d}>{d}</option>)}
+        {departments.map((d) => (
+          <option key={d}>{d}</option>
+        ))}
       </select>
       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none" />
     </div>
@@ -50,12 +57,16 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     <div className="relative">
       <select
         value={filterStatus}
-        onChange={e => onStatusChange(e.target.value)}
+        onChange={(e) => onStatusChange(e.target.value)}
         className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary cursor-pointer"
       >
-        {["All", "Paid", "Submitted", "Pending", "Processing", "Draft", "Rejected"].map(s => (
-          <option key={s} value={s}>{s === "All" ? "All Status" : s}</option>
-        ))}
+        {["All", "Paid", "Pending", "Processing", "Draft", "Rejected"].map(
+          (s) => (
+            <option key={s} value={s}>
+              {s === "All" ? "All Status" : s}
+            </option>
+          ),
+        )}
       </select>
       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none" />
     </div>

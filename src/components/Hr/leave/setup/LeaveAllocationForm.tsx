@@ -75,7 +75,7 @@ const LeaveAllocationForm: React.FC<Props> = ({ onClose, onSuccess }) => {
       toast.error("From and To dates are required");
       return false;
     }
-   
+
     return true;
   };
 
@@ -224,8 +224,6 @@ const LeaveAllocationForm: React.FC<Props> = ({ onClose, onSuccess }) => {
 
         {/* Allocation */}
         <div className="pt-4 border-t border-theme space-y-4">
-     
-
           <label className="flex items-center gap-3 text-sm">
             <input
               type="checkbox"

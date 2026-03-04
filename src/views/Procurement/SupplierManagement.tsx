@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import SupplierDetailView from "./SupplierDetailView";
 import SupplierModal from "../../components/procurement/supply/SupplierModal";
-import { getSupplierById, getSuppliers } from "../../api/procurement/supplierApi";
+import {
+  getSupplierById,
+  getSuppliers,
+} from "../../api/procurement/supplierApi";
 import { mapSupplierApi } from "../../types/Supply/supplierMapper";
 
 import Table from "../../components/ui/Table/Table";
@@ -13,13 +16,15 @@ import type { Column } from "../../components/ui/Table/type";
 import type { Supplier } from "../../types/Supply/supplier";
 import type { SupplierFilters } from "../../api/procurement/supplierApi";
 
-interface Props { }
+interface Props {}
 
 const SupplierManagement: React.FC<Props> = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
+    null,
+  );
   const [showModal, setShowModal] = useState(false);
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
   const [page, setPage] = useState(1);
@@ -29,8 +34,6 @@ const SupplierManagement: React.FC<Props> = () => {
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
-
-
 
   const normalizeStatus = (status?: string) => {
     if (!status) return "active";
@@ -60,11 +63,7 @@ const SupplierManagement: React.FC<Props> = () => {
     try {
       setLoading(true);
 
-      const res = await getSuppliers(
-        page,
-        pageSize,
-        filters
-      );
+      const res = await getSuppliers(page, pageSize, filters);
 
       if (!res || res.status_code !== 200) {
         console.error("Failed to load suppliers");
@@ -80,7 +79,6 @@ const SupplierManagement: React.FC<Props> = () => {
 
       setTotalPages(res.data?.pagination?.total_pages || 1);
       setTotalItems(res.data?.pagination?.total || 0);
-
     } catch (err) {
       console.error("Error loading suppliers:", err);
     } finally {
@@ -91,8 +89,6 @@ const SupplierManagement: React.FC<Props> = () => {
   useEffect(() => {
     fetchSuppliers();
   }, [page, pageSize, filters]);
-
-
 
   const fetchAllSuppliers = async () => {
     try {
@@ -111,21 +107,17 @@ const SupplierManagement: React.FC<Props> = () => {
     }
   };
 
-
-
-
-
-
   const ensureAllSuppliers = async () => {
     if (!allSuppliers.length) {
       await fetchAllSuppliers();
     }
   };
 
-
   const handleRowClick = async (supplier: Supplier) => {
     const supplierId =
-      supplier.supplierId ?? (supplier as any)?.id ?? (supplier as any)?.supplier_id;
+      supplier.supplierId ??
+      (supplier as any)?.id ??
+      (supplier as any)?.supplier_id;
     if (!supplierId) return;
 
     try {
@@ -153,7 +145,7 @@ const SupplierManagement: React.FC<Props> = () => {
     setSelectedSupplier(null);
   };
 
-  //  MODAL HANDLERS 
+  //  MODAL HANDLERS
   const handleAddSupplier = () => {
     setEditSupplier(null);
     setShowModal(true);
@@ -161,7 +153,9 @@ const SupplierManagement: React.FC<Props> = () => {
 
   const handleEditSupplier = async (supplier: Supplier) => {
     const supplierId =
-      supplier.supplierId ?? (supplier as any)?.id ?? (supplier as any)?.supplier_id;
+      supplier.supplierId ??
+      (supplier as any)?.id ??
+      (supplier as any)?.supplier_id;
     if (!supplierId) return;
 
     setLoading(true);
@@ -173,20 +167,17 @@ const SupplierManagement: React.FC<Props> = () => {
     setLoading(false);
   };
 
-
   const handleSupplierSaved = async () => {
     await fetchSuppliers();
     setShowModal(false);
     setEditSupplier(null);
   };
 
-
   const handleEditFromDetail = (supplier: Supplier) => {
     handleEditSupplier(supplier);
   };
 
-
-  //  TABLE COLUMNS (ENTERPRISE STYLE) 
+  //  TABLE COLUMNS (ENTERPRISE STYLE)
   const columns: Column<Supplier>[] = [
     { key: "supplierCode", header: "Code", align: "left" },
 
@@ -235,13 +226,17 @@ const SupplierManagement: React.FC<Props> = () => {
             onClick={() => handleRowClick(s)}
             iconOnly
           />
-          <ActionButton type="edit" onClick={() => handleEditSupplier(s)} iconOnly />
+          <ActionButton
+            type="edit"
+            onClick={() => handleEditSupplier(s)}
+            iconOnly
+          />
         </ActionGroup>
       ),
     },
   ];
 
-  //  UI 
+  //  UI
   return (
     <div className="p-8">
       {viewMode === "table" ? (
@@ -274,7 +269,6 @@ const SupplierManagement: React.FC<Props> = () => {
           onEdit={handleEditFromDetail}
         />
       ) : null}
-
 
       {/* SUPPLIER MODAL */}
       <SupplierModal

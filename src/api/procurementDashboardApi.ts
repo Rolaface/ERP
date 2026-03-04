@@ -21,8 +21,7 @@ export type ProcurementDashboardSummaryResponse = {
 };
 
 export async function getProcurementDashboardSummary(): Promise<ProcurementDashboardSummaryResponse> {
-  const resp: AxiosResponse<ProcurementDashboardSummaryResponse> = await api.get(
-    ProcurementDashboardAPI.summary,
-  );
+  const resp: AxiosResponse<ProcurementDashboardSummaryResponse> =
+    await api.get(ProcurementDashboardAPI.summary);
   return resp.data;
 }

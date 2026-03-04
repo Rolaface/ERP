@@ -5,9 +5,7 @@ export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
 export const API = {
-
-
-   /* =========================
+  /* =========================
    * DASHBOARD
    * ========================= */
   dashboard: {
@@ -48,8 +46,7 @@ export const API = {
     singleEmployeePayroll: `${ERP_BASE}/api/method/payroll_rola_izyane.api.payroll_entry.api.create_single_employee_payroll`,
   },
 
-  
-   /* =========================
+  /* =========================
    * SALES DASHBOARD
    * ========================= */
   salesDashboard: {
@@ -122,8 +119,6 @@ export const API = {
     updateDocuments: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.manage_employee_documents`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
-    
-
   },
 
   /* =========================
@@ -311,7 +306,7 @@ export const API = {
 
   /* =========================
    * EXCHANGE RATE
-   * ========================= */ 
+   * ========================= */
   exchangeRate: {
     get: `${CODES_BASE}/exchange/`,
   },

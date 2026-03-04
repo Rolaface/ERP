@@ -13,8 +13,12 @@ export type ExchangeRateResponse = {
   exchange_rate: number;
 };
 
-export async function getExchangeRate(code: string): Promise<ExchangeRateResponse> {
-  const c = String(code ?? "").trim().toUpperCase();
+export async function getExchangeRate(
+  code: string,
+): Promise<ExchangeRateResponse> {
+  const c = String(code ?? "")
+    .trim()
+    .toUpperCase();
   const url = `${API.exchangeRate.get}${encodeURIComponent(c)}/`;
   const resp: AxiosResponse = await api.get(url);
   return resp.data;

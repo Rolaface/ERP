@@ -15,7 +15,7 @@ export async function getAllQuotations(
     toDate?: string;
     sortBy?: string;
     sortOrder?: "asc" | "desc";
-  }
+  },
 ) {
   const params: Record<string, any> = {
     page,

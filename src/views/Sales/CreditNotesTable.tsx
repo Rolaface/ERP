@@ -6,9 +6,16 @@ import { getAllCreditNotes } from "../../api/salesApi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-import { showLoading, closeSwal, showApiError, showSuccess } from "../../utils/alert";
+import {
+  showLoading,
+  closeSwal,
+  showApiError,
+  showSuccess,
+} from "../../utils/alert";
 import InvoiceDetailsModal from "./InvoiceDetailsModal";
-import ActionButton, { ActionGroup } from "../../components/ui/Table/ActionButton";
+import ActionButton, {
+  ActionGroup,
+} from "../../components/ui/Table/ActionButton";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,7 +37,6 @@ type CreditNote = {
 // ---------------------------------------------------------------------------
 
 const CreditNotesTable: React.FC = () => {
-
   const buildDateTime = (dateIso?: string, timeOfInvoice?: string) => {
     const d = String(dateIso ?? "").trim();
     const t = String(timeOfInvoice ?? "").trim();
@@ -43,7 +49,8 @@ const CreditNotesTable: React.FC = () => {
   const formatDateTime = (dateIso?: string, timeOfInvoice?: string) => {
     const dt = buildDateTime(dateIso, timeOfInvoice);
     if (!dt) return "-";
-    const timePart = String(timeOfInvoice ?? "").trim() ||
+    const timePart =
+      String(timeOfInvoice ?? "").trim() ||
       dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     return `${dt.toLocaleDateString()} ${timePart}`;
   };
@@ -72,7 +79,9 @@ const CreditNotesTable: React.FC = () => {
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
   // ── Reset page when search changes ───────────────────────────────────────
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // ── Fetch credit notes ────────────────────────────────────────────────────
   const fetchCreditNotes = async () => {
@@ -80,7 +89,13 @@ const CreditNotesTable: React.FC = () => {
       setLoading(true);
 
       // NOTE: update getAllCreditNotes in salesApi.ts to accept sortBy, sortOrder, search
-      const resp = await getAllCreditNotes(page, pageSize, sortBy, sortOrder, searchTerm);
+      const resp = await getAllCreditNotes(
+        page,
+        pageSize,
+        sortBy,
+        sortOrder,
+        searchTerm,
+      );
 
       const mappedData: CreditNote[] = resp.data.map((item: any) => ({
         noteNo: item.invoiceNumber,
@@ -94,7 +109,7 @@ const CreditNotesTable: React.FC = () => {
       }));
 
       mappedData.sort(
-        (a, b) => (b.dateTime?.getTime() ?? 0) - (a.dateTime?.getTime() ?? 0)
+        (a, b) => (b.dateTime?.getTime() ?? 0) - (a.dateTime?.getTime() ?? 0),
       );
 
       setData(mappedData);
@@ -138,7 +153,10 @@ const CreditNotesTable: React.FC = () => {
         u.port = "";
         return u.toString();
       } catch {
-        return normalizedUrl.replace(/^(https?:\/\/[^\/]+):\d+(\/.*)?$/i, "$1$2");
+        return normalizedUrl.replace(
+          /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
+          "$1$2",
+        );
       }
     })();
 
@@ -159,7 +177,13 @@ const CreditNotesTable: React.FC = () => {
       let total = 1;
 
       do {
-        const resp = await getAllCreditNotes(current, 100, sortBy, sortOrder, searchTerm);
+        const resp = await getAllCreditNotes(
+          current,
+          100,
+          sortBy,
+          sortOrder,
+          searchTerm,
+        );
 
         const mappedData: CreditNote[] = resp.data.map((item: any) => ({
           noteNo: item.invoiceNumber,
@@ -178,7 +202,7 @@ const CreditNotesTable: React.FC = () => {
       } while (current <= total);
 
       allData.sort(
-        (a, b) => (b.dateTime?.getTime() ?? 0) - (a.dateTime?.getTime() ?? 0)
+        (a, b) => (b.dateTime?.getTime() ?? 0) - (a.dateTime?.getTime() ?? 0),
       );
 
       return allData;
@@ -208,18 +232,17 @@ const CreditNotesTable: React.FC = () => {
           "Date/Time": formatDateTime(r.date, r.timeOfInvoice),
           Amount: r.amount,
           Currency: r.currency,
-        }))
+        })),
       );
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Credit Notes");
 
       saveAs(
-        new Blob(
-          [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-          { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-        ),
-        "Credit_Notes.xlsx"
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "Credit_Notes.xlsx",
       );
 
       closeSwal();
@@ -306,7 +329,10 @@ const CreditNotesTable: React.FC = () => {
         loading={loading || initialLoad}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         enableAdd
         addLabel="Add Credit Note"
         onAdd={() => setOpenCreateModal(true)}
@@ -319,7 +345,10 @@ const CreditNotesTable: React.FC = () => {
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
@@ -329,7 +358,10 @@ const CreditNotesTable: React.FC = () => {
       <InvoiceDetailsModal
         open={detailsOpen}
         invoiceId={detailsId}
-        onClose={() => { setDetailsOpen(false); setDetailsId(null); }}
+        onClose={() => {
+          setDetailsOpen(false);
+          setDetailsId(null);
+        }}
         onOpenReceiptPdf={handleOpenReceipt}
         mapDetails={mapCreditNoteToInvoiceDetails}
       />

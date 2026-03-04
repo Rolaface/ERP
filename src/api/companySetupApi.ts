@@ -44,24 +44,20 @@ export async function updateAccountsCompany(payload: any): Promise<any> {
 export async function updateCompanyFiles(
   companyId: string,
   logoFile?: File | null,
-  signatureFile?: File | null
+  signatureFile?: File | null,
 ): Promise<any> {
   const formData = new FormData();
-  
-  
+
   formData.append("id", companyId);
-  
- 
+
   if (logoFile) {
     formData.append("documents[companyLogoUrl]", logoFile);
   }
-  
 
   if (signatureFile) {
     formData.append("documents[authorizedSignatureUrl]", signatureFile);
   }
-  
-  
+
   const resp: AxiosResponse = await api.patch(
     CompanyAPI.updateCompanyFiles,
     formData,
@@ -69,8 +65,8 @@ export async function updateCompanyFiles(
       headers: {
         "Content-Type": "multipart/form-data",
       },
-    }
+    },
   );
-  
+
   return resp.data;
 }

@@ -1,6 +1,10 @@
 export type ChartSkeletonVariant = "line" | "bar" | "pie";
 
-export const ChartSkeleton = ({ variant }: { variant: ChartSkeletonVariant }) => {
+export const ChartSkeleton = ({
+  variant,
+}: {
+  variant: ChartSkeletonVariant;
+}) => {
   if (variant === "pie") {
     return (
       <div className="w-full h-full flex items-center justify-center animate-pulse">

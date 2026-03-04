@@ -48,43 +48,42 @@ const CustomerDetailView: React.FC<Props> = ({
     (c) => c.name?.toLowerCase().includes(q) || c.id?.toLowerCase().includes(q),
   );
 
-const renderActionButton = () => {
-  switch (activeTab) {
-    case "overview":
-      return (
-        <button
-          onClick={() => setCustomerModalOpen(true)}
-          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-        >
-          <Plus size={14} /> New Customer
-        </button>
-      );
+  const renderActionButton = () => {
+    switch (activeTab) {
+      case "overview":
+        return (
+          <button
+            onClick={() => setCustomerModalOpen(true)}
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+          >
+            <Plus size={14} /> New Customer
+          </button>
+        );
 
-    case "quotations":
-      return (
-        <button
-          onClick={() => setShowQuotationModal(true)}
-          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-        >
-          <Plus size={14} /> New Quotation
-        </button>
-      );
+      case "quotations":
+        return (
+          <button
+            onClick={() => setShowQuotationModal(true)}
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+          >
+            <Plus size={14} /> New Quotation
+          </button>
+        );
 
-    case "invoices":
-      return (
-        <button
-          onClick={() => setShowInvoiceModal(true)}
-          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-        >
-          <Plus size={14} /> New Invoice
-        </button>
-      );
+      case "invoices":
+        return (
+          <button
+            onClick={() => setShowInvoiceModal(true)}
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+          >
+            <Plus size={14} /> New Invoice
+          </button>
+        );
 
-    default:
-      return null;
-  }
-};
-
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="flex flex-col  bg-app text-main overflow-hidden">
@@ -111,8 +110,7 @@ const renderActionButton = () => {
             </p>
           </div>
         </div>
-      {renderActionButton()}
-
+        {renderActionButton()}
       </header>
 
       <div className="flex-1 flex overflow-hidden min-h-0">

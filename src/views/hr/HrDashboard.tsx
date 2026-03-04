@@ -133,7 +133,14 @@ const HrDashboard: React.FC = () => {
   const renderDonutLabel = (props: any) => {
     const { x, y, name, value } = props;
     return (
-      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
+      <text
+        x={x}
+        y={y}
+        fill="#374151"
+        fontSize={11}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
         {String(name)}: {String(value)}
       </text>
     );
@@ -214,10 +221,16 @@ const HrDashboard: React.FC = () => {
                 >
                   <div className="flex items-center justify-between h-full">
                     <div>
-                      <p className="text-xs font-semibold text-gray-600">{stat.label}</p>
-                      <p className="text-xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                      <p className="text-xs font-semibold text-gray-600">
+                        {stat.label}
+                      </p>
+                      <p className="text-xl font-bold text-gray-900 mt-1">
+                        {stat.value}
+                      </p>
                     </div>
-                    <div className={`p-3 bg-gradient-to-br ${stat.gradient} rounded-xl shadow-sm`}>
+                    <div
+                      className={`p-3 bg-gradient-to-br ${stat.gradient} rounded-xl shadow-sm`}
+                    >
                       <stat.icon className="text-white" size={22} />
                     </div>
                   </div>
@@ -228,15 +241,23 @@ const HrDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Employee Status (Bar)</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Employee Status (Bar)
+              </h3>
             </div>
 
-            <div className="h-64 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-64 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="bar" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={employeeStatusData} margin={{ top: 28, right: 18, left: 6, bottom: 4 }}>
+                  <BarChart
+                    data={employeeStatusData}
+                    margin={{ top: 28, right: 18, left: 6, bottom: 4 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} width={52} />
@@ -249,12 +270,27 @@ const HrDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                       cursor={{ fill: "var(--primary)", opacity: 0.1 }}
                     />
                     <Legend {...legendProps} />
-                    <Bar dataKey="value" fill={palette.blue} radius={[6, 6, 0, 0]} name="Employees">
-                      <LabelList dataKey="value" position="top" offset={8} fill="#6b7280" fontSize={10} />
+                    <Bar
+                      dataKey="value"
+                      fill={palette.blue}
+                      radius={[6, 6, 0, 0]}
+                      name="Employees"
+                    >
+                      <LabelList
+                        dataKey="value"
+                        position="top"
+                        offset={8}
+                        fill="#6b7280"
+                        fontSize={10}
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -264,10 +300,15 @@ const HrDashboard: React.FC = () => {
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Employee Status </h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Employee Status{" "}
+              </h3>
             </div>
 
-            <div className="h-64 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-64 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="pie" />
               ) : (
@@ -282,7 +323,11 @@ const HrDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                     />
                     <Legend {...legendProps} />
                     <Pie
@@ -298,7 +343,10 @@ const HrDashboard: React.FC = () => {
                       labelLine={false}
                     >
                       {employeeStatusData.map((_, idx) => (
-                        <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
+                        <Cell
+                          key={idx}
+                          fill={pieColors[idx % pieColors.length]}
+                        />
                       ))}
                     </Pie>
                   </PieChart>
@@ -312,12 +360,17 @@ const HrDashboard: React.FC = () => {
               <h3 className="text-sm font-bold text-gray-900">Active Rate</h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="pie" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart margin={{ top: 8, right: 12, bottom: 24, left: 12 }}>
+                  <PieChart
+                    margin={{ top: 8, right: 12, bottom: 24, left: 12 }}
+                  >
                     <Tooltip
                       formatter={(v: any) => Number(v ?? 0)}
                       contentStyle={{
@@ -327,7 +380,11 @@ const HrDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                     />
                     <Legend {...legendProps} />
                     <Pie
@@ -343,7 +400,10 @@ const HrDashboard: React.FC = () => {
                       labelLine={false}
                     >
                       {activeRateDonutData.map((_, idx) => (
-                        <Cell key={idx} fill={idx === 0 ? palette.emerald : palette.slate} />
+                        <Cell
+                          key={idx}
+                          fill={idx === 0 ? palette.emerald : palette.slate}
+                        />
                       ))}
                     </Pie>
                   </PieChart>
@@ -354,15 +414,23 @@ const HrDashboard: React.FC = () => {
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Employees vs Leave Types</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Employees vs Leave Types
+              </h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="bar" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={totalsVsLeaveTypesData} margin={{ top: 28, right: 18, left: 6, bottom: 16 }}>
+                  <BarChart
+                    data={totalsVsLeaveTypesData}
+                    margin={{ top: 28, right: 18, left: 6, bottom: 16 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} width={52} />
@@ -375,15 +443,28 @@ const HrDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                       cursor={{ fill: "var(--primary)", opacity: 0.1 }}
                     />
                     <Legend {...legendProps} />
                     <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Count">
                       {totalsVsLeaveTypesData.map((_, idx) => (
-                        <Cell key={idx} fill={idx === 0 ? palette.blue : palette.purple} />
+                        <Cell
+                          key={idx}
+                          fill={idx === 0 ? palette.blue : palette.purple}
+                        />
                       ))}
-                      <LabelList dataKey="value" position="top" offset={8} fill="#6b7280" fontSize={10} />
+                      <LabelList
+                        dataKey="value"
+                        position="top"
+                        offset={8}
+                        fill="#6b7280"
+                        fontSize={10}
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>

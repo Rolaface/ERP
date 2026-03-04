@@ -6,12 +6,9 @@ const api = createAxiosInstance(CODES_BASE);
 export const PlacesAPI = API.places;
 
 export async function getCountry(q: string = ""): Promise<any> {
-  const resp: AxiosResponse = await api.get(
-    PlacesAPI.getCountry,
-    {
-      params: { q }
-    }
-  );
+  const resp: AxiosResponse = await api.get(PlacesAPI.getCountry, {
+    params: { q },
+  });
   return resp.data;
 }
 
@@ -28,4 +25,3 @@ export async function getTowns(q: string) {
   });
   return resp.data;
 }
-

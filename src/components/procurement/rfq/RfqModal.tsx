@@ -9,7 +9,6 @@ import type { RfqFormData, RfqTab } from "../../../types/Supply/rfq";
 // import { EmailTemplateTab } from "./EmailTemplateTab";
 // import { TermsTab } from "./TermsTab";
 
-
 interface RfqModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -23,11 +22,7 @@ const tabs: { key: RfqTab; icon: typeof Building2; label: string }[] = [
   { key: "terms", icon: FileText, label: "Terms" },
 ];
 
-const RfqModal: React.FC<RfqModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
-}) => {
+const RfqModal: React.FC<RfqModalProps> = ({ isOpen, onClose, onSubmit }) => {
   const {
     form,
     activeTab,
@@ -63,11 +58,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
           Reset
         </Button>
 
-        <Button
-          variant="primary"
-          type="submit"
-          form="rfqForm"
-        >
+        <Button variant="primary" type="submit" form="rfqForm">
           Save RFQ
         </Button>
       </div>
@@ -82,7 +73,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
       subtitle="Create and send RFQ to suppliers"
       icon={Building2}
       maxWidth="6xl"
-      height="81vh"   // same as PO
+      height="81vh" // same as PO
       footer={footer}
     >
       {/* ---------- FORM WRAPPER (PO STYLE) ---------- */}
@@ -92,12 +83,10 @@ const RfqModal: React.FC<RfqModalProps> = ({
         onSubmit={handleSubmit}
         className="h-full flex flex-col"
       >
-
         {/* ---------- TABS HEADER ---------- */}
 
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
-
             {tabs.map(({ key, icon: Icon, label }) => (
               <button
                 key={key}
@@ -114,14 +103,12 @@ const RfqModal: React.FC<RfqModalProps> = ({
                 {label}
               </button>
             ))}
-
           </div>
         </div>
 
         {/* ---------- TAB BODY ---------- */}
 
         <section className="flex-1 overflow-y-auto p-4 space-y-6">
-
           {/* ===== DETAILS ===== */}
 
           {activeTab === "details" && (
@@ -151,12 +138,9 @@ const RfqModal: React.FC<RfqModalProps> = ({
             <TermsAndCondition
               title="RFQ Terms & Conditions"
               terms={form.terms?.buying ?? null}
-              setTerms={(updated) =>
-                setTermsBuying(updated)
-              }
+              setTerms={(updated) => setTermsBuying(updated)}
             />
           )}
-
         </section>
       </form>
     </Modal>
