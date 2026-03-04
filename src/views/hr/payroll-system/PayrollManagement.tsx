@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus, ChevronLeft,
   FileText, Users, CheckCircle,
-  Layers, X, Download, CreditCard
+  Layers, X, Download, CreditCard, ExternalLink
 } from "lucide-react";
 
 import type { PayrollEntry, Employee } from "../../../types/payrolltypes";
@@ -243,7 +243,7 @@ const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
         ? "bg-green-50 text-green-700 border-green-200"
       : s === "draft"
         ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-        : "bg-gray-50 text-gray-700 border-gray-200";
+      : "bg-gray-50 text-gray-700 border-gray-200";
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${cls}`}>
       {raw || "—"}
@@ -289,22 +289,27 @@ const SalarySlipDetailsModal: React.FC<{
 
   const earnings = Array.isArray(data?.earnings) ? data?.earnings : [];
   const deductions = Array.isArray(data?.deductions) ? data?.deductions : [];
-  const paySlipUrl = String(data?.paySlipUrl ?? "").trim();
-  const referenceNumber = String(data?.referenceNumber ?? "").trim();
+  const paySlipUrl = String((data as any)?.custom_slip_url ?? (data as any)?.paySlipUrl ?? "").trim();
+  const referenceNumber = String((data as any)?.custom_reference_number ?? (data as any)?.referenceNumber ?? "").trim();
+
+  const roInputCls = "w-full h-10 px-3 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none";
+  const sectionTitleCls = "text-[11px] font-extrabold text-muted uppercase tracking-wider";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col">
-        <div className="px-6 py-4 flex items-center justify-between border-b border-border bg-app">
+      <div className="bg-card rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-theme">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-theme bg-blue-600 text-white">
           <div className="min-w-0">
-            <h3 className="text-sm font-bold text-main flex items-center gap-2">
-              <FileText className="w-4 h-4 text-muted" />
-              Salary Slip
+            <h3 className="text-sm font-extrabold flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Salary Slip {String((data as any)?.name ?? slipId ?? "")}
             </h3>
-            <div className="text-xs text-muted mt-1 break-words">{slipId}</div>
+            <div className="text-xs text-white/80 mt-1 break-words">
+              {String((data as any)?.employee_name ?? "")} ({String((data as any)?.employee ?? "")})
+            </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-muted/10 transition-colors">
-            <X className="w-5 h-5 text-muted hover:text-main" />
+          <button onClick={onClose} className="p-1 rounded hover:bg-white/10 transition-colors" title="Close">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -318,100 +323,156 @@ const SalarySlipDetailsModal: React.FC<{
 
           {!loading && data && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">Employee</div>
-                  <div className="text-sm font-semibold text-main break-words">{data.employee_name || data.employee}</div>
-                  <div className="text-xs text-muted mt-0.5">{data.employee}</div>
-                </div>
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">Period</div>
-                  <div className="text-sm font-semibold text-main">{data.start_date} → {data.end_date}</div>
-                  <div className="text-xs text-muted mt-0.5">{data.salary_structure}</div>
-                </div>
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">Net Pay</div>
-                  <div className="text-xl font-bold text-main tabular-nums">ZMW {Number(data.net_pay ?? 0).toLocaleString("en-ZM")}</div>
-                  <div className="mt-2"><StatusChip status={data.status} /></div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">Reference Number</div>
-                  <div className="text-sm font-semibold text-main break-words">{referenceNumber || "—"}</div>
-                </div>
-                <div className="bg-muted/5 rounded-lg p-5 md:col-span-2">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-2">Payslip PDF</div>
-                  {paySlipUrl ? (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <a
-                        href={paySlipUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3 py-2 rounded-md text-xs font-medium border border-border bg-card text-main hover:bg-muted/5 transition-colors"
-                      >
-                        Open PDF
-                      </a>
-                      <a
-                        href={paySlipUrl}
-                        download
-                        className="px-3 py-2 rounded-md text-xs font-medium border border-border bg-card text-main hover:bg-muted/5 transition-colors"
-                      >
-                        Download
-                      </a>
-                      <div className="text-[11px] text-muted break-all">{paySlipUrl}</div>
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Basic Information</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Slip No</div>
+                    <input readOnly value={String((data as any)?.name ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Posting Date</div>
+                    <input readOnly value={String((data as any)?.posting_date ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Status</div>
+                    <div className="mt-1">
+                      <StatusChip status={(data as any)?.status} />
                     </div>
-                  ) : (
-                    <div className="text-sm text-muted">No payslip PDF available</div>
-                  )}
+                  </div>
+
+                  <div>
+                    <div className={sectionTitleCls}>Employee</div>
+                    <input readOnly value={String((data as any)?.employee ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Employee Name</div>
+                    <input readOnly value={String((data as any)?.employee_name ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Department</div>
+                    <input readOnly value={String((data as any)?.department ?? "")} className={roInputCls} />
+                  </div>
                 </div>
               </div>
 
-              {paySlipUrl ? (
-                <div className="rounded-lg overflow-hidden bg-card shadow-sm border border-border">
-                  <div className="px-5 py-4 bg-muted/5 flex items-center justify-between">
-                    <div className="text-sm font-bold text-main">Payslip Preview</div>
-                    <a
-                      href={paySlipUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs font-medium text-primary hover:underline"
-                    >
-                      Open in new tab
-                    </a>
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Payroll & Period</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Salary Structure</div>
+                    <input readOnly value={String((data as any)?.salary_structure ?? "")} className={roInputCls} />
                   </div>
-                  <div className="h-[520px] bg-black/5">
-                    <iframe
-                      title="Payslip PDF"
-                      src={paySlipUrl}
-                      className="w-full h-full"
-                    />
+                  <div>
+                    <div className={sectionTitleCls}>Start Date</div>
+                    <input readOnly value={String((data as any)?.start_date ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>End Date</div>
+                    <input readOnly value={String((data as any)?.end_date ?? "")} className={roInputCls} />
+                  </div>
+
+                  <div>
+                    <div className={sectionTitleCls}>Payroll Entry</div>
+                    <input readOnly value={String((data as any)?.payroll_entry ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Currency</div>
+                    <input readOnly value={String((data as any)?.currency ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Exchange Rate</div>
+                    <input readOnly value={String((data as any)?.exchange_rate ?? "")} className={roInputCls} />
                   </div>
                 </div>
-              ) : null}
+              </div>
+
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Payment Information</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Bank Name</div>
+                    <input readOnly value={String((data as any)?.bank_name ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Bank Account No</div>
+                    <input readOnly value={String((data as any)?.bank_account_no ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Reference No</div>
+                    <input readOnly value={referenceNumber || ""} className={roInputCls} />
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <div className={sectionTitleCls}>Payslip PDF</div>
+                    <div className="mt-2">
+                      {paySlipUrl ? (
+                        <a
+                          href={paySlipUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full inline-flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-theme bg-card text-sm font-semibold text-primary hover:bg-muted/5 transition-colors"
+                        >
+                          <span>Open Payslip</span>
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      ) : (
+                        <div className="text-sm text-muted">No payslip PDF available</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Totals</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Gross Pay</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.gross_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Total Deduction</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.total_deduction ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Net Pay</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.net_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Rounded Total</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.rounded_total ?? (data as any)?.net_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div className="md:col-span-4">
+                    <div className={sectionTitleCls}>Total in Words</div>
+                    <input readOnly value={String((data as any)?.total_in_words ?? "")} className={roInputCls} />
+                  </div>
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-lg overflow-hidden bg-card shadow-sm">
-                  <div className="px-5 py-4 bg-muted/5 flex items-center justify-between">
-                    <div className="text-sm font-bold text-main">Earnings</div>
-                    <div className="text-sm font-bold text-main">ZMW {Number(data.total_earnings ?? 0).toLocaleString("en-ZM")}</div>
+                <div className="rounded-xl overflow-hidden bg-card shadow-sm border border-theme">
+                  <div className="px-5 py-4 bg-app border-b border-theme flex items-center justify-between">
+                    <div className="text-sm font-extrabold text-main">Earnings</div>
+                    <div className="text-sm font-extrabold text-main">
+                      {String((data as any)?.currency ?? "ZMW")} {Number((data as any)?.gross_pay ?? 0).toLocaleString("en-ZM")}
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-card">
                         <tr>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-left">Component</th>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-right">Amount</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-left">Component</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-right">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         {earnings.length === 0 ? (
                           <tr><td colSpan={2} className="px-5 py-8 text-center text-sm text-muted">No earnings</td></tr>
-                        ) : earnings.map((r: any) => (
-                          <tr key={`${r?.component}`} className="last:border-0 hover:bg-muted/5 transition-colors">
+                        ) : earnings.map((r: any, idx: number) => (
+                          <tr key={`${r?.component}-${idx}`} className="border-t border-theme/60">
                             <td className="px-5 py-3 text-sm font-medium text-main">{String(r?.component ?? "")}</td>
-                            <td className="px-5 py-3 text-right text-sm font-medium text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
+                            <td className="px-5 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -419,26 +480,28 @@ const SalarySlipDetailsModal: React.FC<{
                   </div>
                 </div>
 
-                <div className="rounded-lg overflow-hidden bg-card shadow-sm">
-                  <div className="px-5 py-4 bg-muted/5 flex items-center justify-between">
-                    <div className="text-sm font-bold text-main">Deductions</div>
-                    <div className="text-sm font-bold text-main">ZMW {Number(data.total_deduction ?? 0).toLocaleString("en-ZM")}</div>
+                <div className="rounded-xl overflow-hidden bg-card shadow-sm border border-theme">
+                  <div className="px-5 py-4 bg-app border-b border-theme flex items-center justify-between">
+                    <div className="text-sm font-extrabold text-main">Deductions</div>
+                    <div className="text-sm font-extrabold text-main">
+                      {String((data as any)?.currency ?? "ZMW")} {Number((data as any)?.total_deduction ?? 0).toLocaleString("en-ZM")}
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-card">
                         <tr>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-left">Component</th>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-right">Amount</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-left">Component</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-right">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         {deductions.length === 0 ? (
                           <tr><td colSpan={2} className="px-5 py-8 text-center text-sm text-muted">No deductions</td></tr>
                         ) : deductions.map((r: any, idx: number) => (
-                          <tr key={`${r?.component}-${idx}`} className="last:border-0 hover:bg-muted/5 transition-colors">
+                          <tr key={`${r?.component}-${idx}`} className="border-t border-theme/60">
                             <td className="px-5 py-3 text-sm font-medium text-main">{String(r?.component ?? "")}</td>
-                            <td className="px-5 py-3 text-right text-sm font-medium text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
+                            <td className="px-5 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -930,13 +993,16 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">{Number(s.net_pay ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => handleOpenPayslipPdf(s.name)}
-                            className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                          >
-                            View Salary Slip
-                          </button>
-                        </td>
+                            <button
+                              onClick={() => {
+                                setSlipDetailsId(s.name);
+                                setSlipDetailsOpen(true);
+                              }}
+                              className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                            >
+                              View
+                            </button>
+                          </td>
                         </tr>
                       ))
                     )}

@@ -46,6 +46,18 @@ type PaginatedRecords<T> = {
 export type SalarySlipDetail = SalarySlipListItem & {
   employee_name?: string;
   company?: string;
+  department?: string;
+  posting_date?: string;
+  payroll_entry?: string;
+  currency?: string;
+  exchange_rate?: number;
+  gross_pay?: number;
+  rounded_total?: number;
+  total_in_words?: string;
+  bank_name?: string;
+  bank_account_no?: string;
+  custom_reference_number?: string | null;
+  custom_slip_url?: string | null;
   earnings?: { component: string; amount: number }[];
   deductions?: { component: string; amount: number }[];
   paySlipUrl?: string;
