@@ -907,15 +907,6 @@ function SalaryComponentsModal({
             </div>
           </div>
         )}
-
-        <div className="px-6 py-4 bg-muted/5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium hover:bg-black/5 transition-colors rounded-md"
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );
