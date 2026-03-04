@@ -367,7 +367,7 @@ const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
       ? "bg-green-50 text-green-700 border-green-200"
       : s === "draft"
         ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-        : "bg-gray-50 text-gray-700 border-gray-200";
+      : "bg-gray-50 text-gray-700 border-gray-200";
   return (
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${cls}`}

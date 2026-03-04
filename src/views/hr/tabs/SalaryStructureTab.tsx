@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
-import { calculateZmPayrollFromGross } from "../payroll-system/util";
+import {
+  calculateZmPayrollFromGross
+} from "../payroll-system/util";
 import {
   createSalaryStructure,
   createSalaryComponent,
@@ -571,8 +573,8 @@ function SalaryComponentsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
-        <div className="px-6 py-4 flex items-center justify-between bg-card text-main">
+      <div className="bg-card rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-theme">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-theme bg-blue-600 text-white">
           <div className="min-w-0">
             <h3 className="text-base font-bold text-main">Salary Components</h3>
             <div className="text-xs text-muted mt-0.5">
@@ -597,11 +599,11 @@ function SalaryComponentsModal({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search components"
-                className="w-full md:w-96 px-3 py-2 text-sm border border-border rounded-md bg-card focus:ring-1 focus:ring-primary outline-none"
+                className="w-full md:w-96 px-3 py-2 text-sm border border-theme rounded-lg bg-card focus:ring-1 focus:ring-primary outline-none"
               />
               <button
                 onClick={startCreate}
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 flex items-center gap-2 text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center gap-2 text-sm font-semibold transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 New Component
@@ -615,10 +617,10 @@ function SalaryComponentsModal({
             </div>
           )}
 
-          <div className="bg-card rounded-lg overflow-hidden flex-1 flex flex-col shadow-sm">
+          <div className="bg-card rounded-xl overflow-hidden flex-1 flex flex-col shadow-sm border border-theme">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/5">
+                <thead className="bg-app border-b border-theme">
                   <tr>
                     <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
                       Component
@@ -688,18 +690,18 @@ function SalaryComponentsModal({
               </table>
             </div>
 
-            <div className="p-4 border-t flex items-center justify-end gap-2">
+            <div className="p-4 border-t border-theme flex items-center justify-end gap-2 bg-app">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-bold border border-theme bg-card text-main rounded-lg hover:bg-muted/5 disabled:opacity-50"
               >
                 Prev
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
                 disabled={page >= pageCount}
-                className="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-bold border border-theme bg-card text-main rounded-lg hover:bg-muted/5 disabled:opacity-50"
               >
                 Next
               </button>
@@ -836,15 +838,6 @@ function SalaryComponentsModal({
             </div>
           </div>
         )}
-
-        <div className="px-6 py-4 bg-muted/5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium hover:bg-black/5 transition-colors rounded-md"
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );
