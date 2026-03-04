@@ -14,6 +14,7 @@ interface CustomerSelectProps {
   className?: string;
   label?: string;
   taxCategory?: string;
+  required?: boolean;
 }
 
 export default function CustomerSelect({
@@ -23,6 +24,7 @@ export default function CustomerSelect({
   className = "",
   label = "Customer",
   taxCategory,
+  required = false,
 }: CustomerSelectProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +86,7 @@ export default function CustomerSelect({
     <div className={`w-full min-w-0 flex flex-col gap-1 ${className}`}>
       <span className="block text-[10px] font-medium text-main mb-1">
         {label}
+        {required && <span className="text-danger">*</span>}
       </span>
 
       <div ref={containerRef} className="relative w-full">

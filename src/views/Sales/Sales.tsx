@@ -108,6 +108,7 @@ const SalesModule: React.FC = () => {
   };
 
 const handleInvoiceSubmit = async (payload: any) => {
+  console.log('[Sales] handleInvoiceSubmit called');
   try {
     const response = await createSalesInvoice(payload);
 
@@ -123,7 +124,7 @@ const handleInvoiceSubmit = async (payload: any) => {
       response.message || "Invoice created successfully"
     );
 
-    setOpenModal(null);
+    setOpenModal(null); // Ensure modal closes immediately after success
     setRefreshKey((prev) => prev + 1);
 
   } catch (error: any) {

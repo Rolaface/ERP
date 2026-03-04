@@ -1,63 +1,58 @@
 import React from "react";
 
-type BadgeVariant = "success" | "warning" | "danger" | "info" | "default";
+type BadgeVariant = "success" | "warning" | "danger" | "info" | "draft" | "default";
 
 interface StatusBadgeProps {
   status?: string | null;
   variant?: BadgeVariant;
 }
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant }) => {
-  const safeStatus = (status ?? "unknown").toLowerCase();
-
-const getVariant = (): BadgeVariant => {
-  if (variant) return variant;
-
-  if (["active", "paid", "completed", "approved"].includes(safeStatus))
-    return "success";
-
-  if (["pending", "processing"].includes(safeStatus))
-    return "warning";
-
-  if (
-    ["inactive", "unactive", "overdue", "cancelled", "failed", "rejected"].includes(safeStatus)
-  )
-    return "danger";
-
-  if (["draft", "new"].includes(safeStatus))
-    return "info";
-
-  return "default";
+// Static — defined once, not recreated on every render
+const VARIANT_MAP: Record<BadgeVariant, string[]> = {
+  success: ["active", "paid", "completed", "approved", "delivered", "verified"],
+  warning: ["pending", "processing", "on hold", "under review"],
+  danger:  ["inactive", "overdue", "cancelled", "failed", "rejected", "expired"],
+  info:    ["sent", "new", "open", "in progress"],
+  draft:   ["draft", "archived"],
+  default: ["unknown"],
 };
 
-
-const variantStyles: Record<BadgeVariant, string> = {
+const VARIANT_STYLES: Record<BadgeVariant, string> = {
   success: "bg-success border-theme",
-  danger: "bg-danger border-theme",
+  danger:  "bg-danger border-theme",
   warning: "bg-warning border-theme",
-  info: "bg-info border-theme",
+  info:    "bg-info border-theme",
+  draft:   "bg-draft border-theme",
   default: "bg-row-hover text-muted border-theme",
 };
 
+// Pure utility — no closure needed
+function resolveVariant(safeStatus: string, override?: BadgeVariant): BadgeVariant {
+  if (override) return override;
+  for (const [variant, statuses] of Object.entries(VARIANT_MAP)) {
+    if (statuses.includes(safeStatus)) return variant as BadgeVariant;
+  }
+  return "default";
+}
 
-  const currentVariant = getVariant();
+function toTitleCase(str: string): string {
+  return str
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
 
- const displayStatus = status
-  ? status
-      .split(" ")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-      .join(" ")
-  : "Unknown";
-
+const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant }) => {
+  const safeStatus  = (status ?? "unknown").toLowerCase();
+  const resolved    = resolveVariant(safeStatus, variant);
+  const displayText = status ? toTitleCase(status) : "Unknown";
 
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
-        variantStyles[currentVariant]
-      }`}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${VARIANT_STYLES[resolved]}`}
     >
       <span className="w-1.5 h-1.5 rounded-full mr-2 bg-current opacity-60" />
-      {displayStatus}
+      {displayText}
     </span>
   );
 };

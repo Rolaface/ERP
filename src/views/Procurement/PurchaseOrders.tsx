@@ -19,7 +19,7 @@ import autoTable from "jspdf-autotable";
 import { getPurchaseOrderById } from "../../api/procurement/PurchaseOrderApi";
 import type { PurchaseOrderFilters } from "../../api/procurement/PurchaseOrderApi";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
-import { generatePurchaseOrderPDF } from "../../components/template/purchasetemplete";
+import { generatePurchaseOrderPDF } from "../../components/template/purchasetOrderemplete";
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
@@ -451,7 +451,7 @@ const handleStatusChange = async (
   }}
   onDownload={() => {
     if (selectedOrder && company) {
-      generatePurchaseInvoicePDF(selectedOrder, company, "save");
+      generatePurchaseOrderPDF(selectedOrder, company, "save");
     }
   }}
 />
