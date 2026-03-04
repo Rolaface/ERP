@@ -1,17 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  Save,
-  X,
-} from "lucide-react";
+import { Plus, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { calculateZmPayrollFromGross } from "../payroll-system/util";
 import {
   createSalaryStructure,
   createSalaryComponent,
-  deleteSalaryComponent,
   getSalaryComponents,
   getSalaryStructures,
   getSalaryStructureById,
@@ -42,30 +35,9 @@ export default function SalaryStructureTab() {
     company: string;
     components: SalaryStructureComponentCreate[];
   } | null>(null);
-  const [salaryComponents, setSalaryComponents] = useState<SalaryComponentListItem[]>([]);
-  const [structurePreviewMap, setStructurePreviewMap] = useState<
-    Record<string, { earnings: any[]; deductions: any[] }>
-  >({});
-  const [structurePreviewLoading, setStructurePreviewLoading] = useState<Record<string, boolean>>({});
-
-  const extractFrappeMessageHtml = (e: any): string | null => {
-    const data = e?.response?.data;
-    if (!data) return null;
-    if (typeof data?.message === "string" && data.message.trim()) return data.message;
-
-    const raw = data?._server_messages;
-    if (typeof raw !== "string" || !raw.trim()) return null;
-    try {
-      const arr = JSON.parse(raw);
-      const first = Array.isArray(arr) ? arr[0] : null;
-      if (!first) return null;
-      const obj = typeof first === "string" ? JSON.parse(first) : first;
-      const msg = obj?.message;
-      return typeof msg === "string" && msg.trim() ? msg : null;
-    } catch {
-      return null;
-    }
-  };
+  const [salaryComponents, setSalaryComponents] = useState<
+    SalaryComponentListItem[]
+  >([]);
 
   const refreshStructures = async () => {
     setLoading(true);
@@ -78,78 +50,6 @@ export default function SalaryStructureTab() {
     } finally {
       setLoading(false);
     }
-
-  };
-
-  const fetchStructurePreview = async (structureNameOrId: string) => {
-    if (!structureNameOrId) return;
-    if (structurePreviewMap[structureNameOrId]) return;
-    if (structurePreviewLoading[structureNameOrId]) return;
-
-    setStructurePreviewLoading((p) => ({ ...p, [structureNameOrId]: true }));
-    try {
-      const detail = await getSalaryStructureById(structureNameOrId);
-      const earnings = Array.isArray((detail as any)?.earnings) ? (detail as any).earnings : [];
-      const deductions = Array.isArray((detail as any)?.deductions) ? (detail as any).deductions : [];
-      setStructurePreviewMap((p) => ({
-        ...p,
-        [structureNameOrId]: { earnings, deductions },
-      }));
-    } catch {
-      setStructurePreviewMap((p) => ({
-        ...p,
-        [structureNameOrId]: { earnings: [], deductions: [] },
-      }));
-    } finally {
-      setStructurePreviewLoading((p) => ({ ...p, [structureNameOrId]: false }));
-    }
-  };
-
-  const openStructureModalFromDetail = async (
-    structure: SalaryStructureListItem,
-    mode: "edit" | "view",
-  ) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const detail = await getSalaryStructureById(structure.name || structure.id);
-      const earnings = Array.isArray((detail as any)?.earnings)
-        ? ((detail as any).earnings as any[])
-        : [];
-      const deductions = Array.isArray((detail as any)?.deductions)
-        ? ((detail as any).deductions as any[])
-        : [];
-
-      const components: SalaryStructureComponentCreate[] = [...earnings, ...deductions]
-        .map((row: any) => {
-          const isDeductionSource = deductions.includes(row);
-          return {
-            component: String(row?.component ?? ""),
-            type: (isDeductionSource ? "deduction" : "earning") as
-              | "deduction"
-              | "earning",
-            amount: Number(row?.amount ?? 0) || 0,
-            enabled: 1 as 1,
-          };
-        })
-        .filter((c) => Boolean(c.component));
-
-      setModalMode(mode);
-      setEditingStructure({
-        id: structure.id,
-        name: (detail as any)?.name ?? structure.name,
-        company: (detail as any)?.company ?? structure.company,
-        components: components.length
-          ? components
-          : [{ component: "Basic", type: "earning", amount: 0, enabled: 1 }],
-      });
-      await refreshComponents();
-      setShowModal(true);
-    } catch (e: any) {
-      setError(e?.message || "Failed to load salary structure");
-    } finally {
-      setLoading(false);
-    }
   };
 
   const filteredStructures = useMemo(() => {
@@ -158,8 +58,12 @@ export default function SalaryStructureTab() {
     if (!q) return items;
     return items.filter((s) => {
       return (
-        String(s.name || "").toLowerCase().includes(q) ||
-        String(s.company || "").toLowerCase().includes(q)
+        String(s.name || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(s.company || "")
+          .toLowerCase()
+          .includes(q)
       );
     });
   }, [structures, query]);
@@ -224,20 +128,16 @@ export default function SalaryStructureTab() {
       components: requiredComponents.length
         ? requiredComponents
         : [
-          {
-            component: "Basic",
-            type: "earning",
-            amount: 0,
-            enabled: 1,
-          },
-        ],
+            {
+              component: "Basic",
+              type: "earning",
+              amount: 0,
+              enabled: 1,
+            },
+          ],
     });
 
     setShowModal(true);
-  };
-
-  const handleView = async (structure: SalaryStructureListItem) => {
-    await openStructureModalFromDetail(structure, "view");
   };
 
   const handleSave = async (
@@ -250,12 +150,20 @@ export default function SalaryStructureTab() {
   ) => {
     const source = draft ?? editingStructure;
     if (!source) return;
-    if (!source?.name?.trim() || !source?.company?.trim() || (source?.components?.length || 0) <= 0) {
-      toast.error("Please provide structure name, company, and at least one component");
+    if (
+      !source?.name?.trim() ||
+      !source?.company?.trim() ||
+      (source?.components?.length || 0) <= 0
+    ) {
+      toast.error(
+        "Please provide structure name, company, and at least one component",
+      );
       return;
     }
 
-    let mergedComponents = (source.components || []).filter((c) => Boolean(c?.component));
+    let mergedComponents = (source.components || []).filter((c) =>
+      Boolean(c?.component),
+    );
 
     try {
       const all = await getSalaryComponents();
@@ -280,9 +188,7 @@ export default function SalaryStructureTab() {
         });
 
       mergedComponents = Array.from(byComponent.values());
-    } catch {
-      
-    }
+    } catch {}
 
     setLoading(true);
     setError("");
@@ -307,7 +213,9 @@ export default function SalaryStructureTab() {
       }
       await refreshStructures();
       setShowModal(false);
-      toast.success(source.id ? "Salary structure updated" : "Salary structure created");
+      toast.success(
+        source.id ? "Salary structure updated" : "Salary structure created",
+      );
     } catch (e: any) {
       const msg = e?.message || "Failed to save salary structure";
       setError(msg);
@@ -380,12 +288,12 @@ export default function SalaryStructureTab() {
                     "Status",
                     "Earnings",
                     "Deductions",
-                    "",
                   ].map((h) => (
                     <th
                       key={h}
-                      className={`px-4 py-3 text-[10px] font-extrabold text-gray-500 uppercase tracking-wider whitespace-nowrap ${h === "" ? "text-right" : "text-left"
-                        }`}
+                      className={`px-4 py-3 text-[10px] font-extrabold text-gray-500 uppercase tracking-wider whitespace-nowrap ${
+                        h === "" ? "text-right" : "text-left"
+                      }`}
                     >
                       {h}
                     </th>
@@ -395,36 +303,46 @@ export default function SalaryStructureTab() {
               <tbody>
                 {loading ? (
                   Array.from({ length: 6 }).map((_, skIdx) => (
-                    <tr key={`sk-${skIdx}`} className={skIdx % 2 === 1 ? "bg-gray-50/40" : "bg-white"}>
-                      <td className="px-4 py-3"><div className="h-3 w-40 bg-gray-200 rounded animate-pulse" /></td>
-                      <td className="px-4 py-3"><div className="h-3 w-24 bg-gray-200 rounded animate-pulse" /></td>
-                      <td className="px-4 py-3"><div className="h-5 w-16 bg-gray-200 rounded-full animate-pulse" /></td>
-                      <td className="px-4 py-3"><div className="h-10 w-full bg-gray-200 rounded animate-pulse" /></td>
-                      <td className="px-4 py-3"><div className="h-10 w-full bg-gray-200 rounded animate-pulse" /></td>
-                      <td className="px-4 py-3 text-right"><div className="h-7 w-40 bg-gray-200 rounded-lg animate-pulse ml-auto" /></td>
+                    <tr
+                      key={`sk-${skIdx}`}
+                      className={skIdx % 2 === 1 ? "bg-gray-50/40" : "bg-white"}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="h-3 w-40 bg-gray-200 rounded animate-pulse" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-5 w-16 bg-gray-200 rounded-full animate-pulse" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+                      </td>
                     </tr>
                   ))
                 ) : pagedStructures.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-sm text-gray-600">
+                    <td
+                      colSpan={5}
+                      className="px-4 py-10 text-center text-sm text-gray-600"
+                    >
                       No salary structures found
                     </td>
                   </tr>
                 ) : (
                   pagedStructures.map((structure, idx) => {
                     const key = String(structure.name || structure.id);
-                    const preview = structurePreviewMap[key];
-                    const isPreviewLoading = Boolean(structurePreviewLoading[key]);
-
-                    const earnings = Array.isArray(preview?.earnings) ? preview?.earnings : [];
-                    const deductions = Array.isArray(preview?.deductions) ? preview?.deductions : [];
 
                     return (
                       <tr
                         key={key}
-                        onMouseEnter={() => fetchStructurePreview(key)}
-                        className={`border-b border-gray-200 last:border-0 ${idx % 2 === 1 ? "bg-gray-50/40" : "bg-white"
-                          }`}
+                        className={`border-b border-gray-200 last:border-0 ${
+                          idx % 2 === 1 ? "bg-gray-50/40" : "bg-white"
+                        }`}
                       >
                         <td className="px-4 py-3">
                           <div className="text-xs font-extrabold text-gray-900 break-words">
@@ -438,72 +356,22 @@ export default function SalaryStructureTab() {
 
                         <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center px-2 py-0.5 text-[11px] font-bold rounded-full border ${structure.is_active
-                              ? "bg-green-50 text-green-700 border-green-200"
-                              : "bg-gray-50 text-gray-600 border-gray-200"
-                              }`}
+                            className={`inline-flex items-center px-2 py-0.5 text-[11px] font-bold rounded-full border ${
+                              structure.is_active
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : "bg-gray-50 text-gray-600 border-gray-200"
+                            }`}
                           >
                             {structure.is_active ? "Active" : "Inactive"}
                           </span>
                         </td>
 
                         <td className="px-4 py-3 align-top">
-                          {isPreviewLoading && !preview ? (
-                            <div className="text-xs text-gray-500">Loading…</div>
-                          ) : earnings.length === 0 ? (
-                            <div className="text-xs text-gray-500">—</div>
-                          ) : (
-                            <div className="space-y-1">
-                              {earnings.slice(0, 2).map((r: any, i: number) => (
-                                <div key={`${r?.component}-${i}`} className="flex items-center justify-between gap-3">
-                                  <div className="text-xs text-gray-700 truncate max-w-[220px]">
-                                    {String(r?.component ?? "")}
-                                  </div>
-                                  <div className="text-xs font-extrabold text-gray-900 tabular-nums whitespace-nowrap">
-                                    {Number(r?.amount ?? 0).toLocaleString()}
-                                  </div>
-                                </div>
-                              ))}
-                              {earnings.length > 2 && (
-                                <div className="text-[11px] text-gray-500">+ {(earnings.length - 2).toString()} more…</div>
-                              )}
-                            </div>
-                          )}
+                          <div className="text-xs text-gray-500">—</div>
                         </td>
 
                         <td className="px-4 py-3 align-top">
-                          {isPreviewLoading && !preview ? (
-                            <div className="text-xs text-gray-500">Loading…</div>
-                          ) : deductions.length === 0 ? (
-                            <div className="text-xs text-gray-500">—</div>
-                          ) : (
-                            <div className="space-y-1">
-                              {deductions.slice(0, 2).map((r: any, i: number) => (
-                                <div key={`${r?.component}-${i}`} className="flex items-center justify-between gap-3">
-                                  <div className="text-xs text-gray-700 truncate max-w-[220px]">
-                                    {String(r?.component ?? "")}
-                                  </div>
-                                  <div className="text-xs font-extrabold text-gray-900 tabular-nums whitespace-nowrap">
-                                    {Number(r?.amount ?? 0).toLocaleString()}
-                                  </div>
-                                </div>
-                              ))}
-                              {deductions.length > 2 && (
-                                <div className="text-[11px] text-gray-500">+ {(deductions.length - 2).toString()} more…</div>
-                              )}
-                            </div>
-                          )}
-                        </td>
-
-                        <td className="px-4 py-3 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleView(structure)}
-                              className="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                            >
-                              View
-                            </button>
-                          </div>
+                          <div className="text-xs text-gray-500">—</div>
                         </td>
                       </tr>
                     );
@@ -614,9 +482,15 @@ function SalaryComponentsModal({
     if (!q) return arr;
     return arr.filter((c) => {
       return (
-        String(c.component || "").toLowerCase().includes(q) ||
-        String(c.abbr || "").toLowerCase().includes(q) ||
-        String(c.type || "").toLowerCase().includes(q)
+        String(c.component || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(c.abbr || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(c.type || "")
+          .toLowerCase()
+          .includes(q)
       );
     });
   }, [items, query]);
@@ -649,21 +523,6 @@ function SalaryComponentsModal({
     });
   };
 
-  const startEdit = (c: SalaryComponentListItem) => {
-    setEditing({
-      id: c.id,
-      name: c.component || c.id,
-      type: String(c.type || "Earning") as any,
-      abbr: c.abbr || "",
-      description: c.description || "",
-      enabled: Boolean(c.enabled),
-      amount_based_on_formula: false,
-      condition: "",
-      formula: "",
-      tax_applicable: Boolean(c.tax_applicable),
-    });
-  };
-
   const save = async () => {
     if (!editing) return;
     if (!editing.name.trim() || !editing.abbr.trim()) {
@@ -675,7 +534,7 @@ function SalaryComponentsModal({
     setError(null);
     try {
       if (editing.id) {
-        const payload: SalaryComponentUpdatePayload = {
+        const payload: any = {
           id: editing.id,
           name: editing.name,
           type: editing.type,
@@ -689,7 +548,7 @@ function SalaryComponentsModal({
         };
         await updateSalaryComponent(payload);
       } else {
-        const payload: SalaryComponentCreatePayload = {
+        const payload: any = {
           name: editing.name,
           type: editing.type,
           abbr: editing.abbr,
@@ -714,70 +573,29 @@ function SalaryComponentsModal({
     }
   };
 
-  const remove = async (name: string) => {
-    toast.dismiss();
-    toast(
-      (t) => (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-[340px]">
-          <div className="text-sm font-semibold text-gray-900">Delete Salary Component</div>
-          <div className="text-xs text-gray-500 mt-1">Are you sure you want to delete "{name}"?</div>
-          <div className="flex items-center justify-end gap-2 mt-4">
-            <button
-              type="button"
-              onClick={() => toast.dismiss(t.id)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                (async () => {
-                  try {
-                    toast.dismiss(t.id);
-                    setLoading(true);
-                    setError(null);
-                    await deleteSalaryComponent(name);
-                    await refresh();
-                    onChanged();
-                    if (editing?.name === name || editing?.id === name) setEditing(null);
-                    toast.success("Salary component deleted");
-                  } catch (e: any) {
-                    const msg = e?.message || "Failed to delete salary component";
-                    setError(msg);
-                    toast.error(msg);
-                  } finally {
-                    setLoading(false);
-                  }
-                })();
-              }}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: Infinity },
-    );
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-card rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
         <div className="px-6 py-4 flex items-center justify-between bg-card text-main">
           <div className="min-w-0">
             <h3 className="text-base font-bold text-main">Salary Components</h3>
-            <div className="text-xs text-muted mt-0.5">Manage earnings and deductions</div>
+            <div className="text-xs text-muted mt-0.5">
+              Manage earnings and deductions
+            </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-muted/5 transition-colors text-muted hover:text-main">
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-muted/5 transition-colors text-muted hover:text-main"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 flex-1 overflow-y-auto">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-            <div className="text-sm text-gray-600">{filtered.length} components</div>
+            <div className="text-sm text-gray-600">
+              {filtered.length} components
+            </div>
             <div className="flex items-center gap-2">
               <input
                 value={query}
@@ -806,59 +624,66 @@ function SalaryComponentsModal({
               <table className="w-full text-sm">
                 <thead className="bg-muted/5">
                   <tr>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Component</th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Abbr</th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Type</th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Tax</th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Enabled</th>
-                    <th className="text-right font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Actions</th>
+                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
+                      Component
+                    </th>
+                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
+                      Abbr
+                    </th>
+                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
+                      Type
+                    </th>
+                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
+                      Tax
+                    </th>
+                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
+                      Enabled
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {paged.map((c) => (
-                    <tr key={c.id} className="hover:bg-muted/5 transition-colors">
+                    <tr
+                      key={c.id}
+                      className="hover:bg-muted/5 transition-colors"
+                    >
                       <td className="px-4 py-3">
-                        <div className="font-semibold text-main">{c.component || c.id}</div>
+                        <div className="font-semibold text-main">
+                          {c.component || c.id}
+                        </div>
                         {c.description && (
-                          <div className="text-xs text-gray-500 line-clamp-1">{c.description}</div>
+                          <div className="text-xs text-gray-500 line-clamp-1">
+                            {c.description}
+                          </div>
                         )}
                       </td>
                       <td className="px-4 py-3 text-main">{c.abbr}</td>
-                      <td className="px-4 py-3 text-main">{String(c.type || "")}</td>
+                      <td className="px-4 py-3 text-main">
+                        {String(c.type || "")}
+                      </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-medium ${c.tax_applicable ? "text-primary" : "text-muted"}`}>
+                        <span
+                          className={`text-xs font-medium ${c.tax_applicable ? "text-primary" : "text-muted"}`}
+                        >
                           {c.tax_applicable ? "Taxable" : "No"}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-medium ${c.enabled ? "text-green-600" : "text-muted"}`}>
+                        <span
+                          className={`text-xs font-medium ${c.enabled ? "text-green-600" : "text-muted"}`}
+                        >
                           {c.enabled ? "Yes" : "No"}
                         </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => startEdit(c)}
-                            className="p-2 text-gray-600 hover:text-primary hover:bg-primary/10 rounded-lg"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => remove(c.id)}
-                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   ))}
 
                   {!loading && paged.length === 0 && (
                     <tr>
-                      <td className="px-4 py-10 text-center text-gray-600" colSpan={6}>
+                      <td
+                        className="px-4 py-10 text-center text-gray-600"
+                        colSpan={5}
+                      >
                         No salary components found
                       </td>
                     </tr>
@@ -891,10 +716,17 @@ function SalaryComponentsModal({
             <div className="bg-card rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col">
               <div className="px-6 py-4 flex items-center justify-between text-main">
                 <div className="min-w-0">
-                  <h3 className="text-base font-bold">{editing?.id ? "Edit" : "Create"} Component</h3>
-                  <div className="text-xs text-muted mt-0.5">Fill in the component details</div>
+                  <h3 className="text-base font-bold">
+                    {editing?.id ? "Edit" : "Create"} Component
+                  </h3>
+                  <div className="text-xs text-muted mt-0.5">
+                    Fill in the component details
+                  </div>
                 </div>
-                <button onClick={() => setEditing(null)} className="p-1 rounded hover:bg-muted/5 transition-colors text-muted hover:text-main">
+                <button
+                  onClick={() => setEditing(null)}
+                  className="p-1 rounded hover:bg-muted/5 transition-colors text-muted hover:text-main"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -902,20 +734,31 @@ function SalaryComponentsModal({
               <div className="flex-1 overflow-y-auto p-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-muted mb-1">Name *</label>
+                    <label className="block text-xs font-medium text-muted mb-1">
+                      Name *
+                    </label>
                     <input
                       value={editing.name}
-                      onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                      onChange={(e) =>
+                        setEditing({ ...editing, name: e.target.value })
+                      }
                       className="w-full px-3 py-2 text-sm border border-border rounded-md bg-card focus:ring-1 focus:ring-primary outline-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-muted mb-1">Type *</label>
+                      <label className="block text-xs font-medium text-muted mb-1">
+                        Type *
+                      </label>
                       <select
                         value={editing.type}
-                        onChange={(e) => setEditing({ ...editing, type: e.target.value as any })}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing,
+                            type: e.target.value as any,
+                          })
+                        }
                         className="w-full px-3 py-2 text-sm border border-border rounded-md bg-card focus:ring-1 focus:ring-primary outline-none"
                       >
                         <option value="Earning">Earning</option>
@@ -923,20 +766,28 @@ function SalaryComponentsModal({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-muted mb-1">Abbr *</label>
+                      <label className="block text-xs font-medium text-muted mb-1">
+                        Abbr *
+                      </label>
                       <input
                         value={editing.abbr}
-                        onChange={(e) => setEditing({ ...editing, abbr: e.target.value })}
+                        onChange={(e) =>
+                          setEditing({ ...editing, abbr: e.target.value })
+                        }
                         className="w-full px-3 py-2 text-sm border border-border rounded-md bg-card focus:ring-1 focus:ring-primary outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-muted mb-1">Description</label>
+                    <label className="block text-xs font-medium text-muted mb-1">
+                      Description
+                    </label>
                     <input
                       value={editing.description}
-                      onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                      onChange={(e) =>
+                        setEditing({ ...editing, description: e.target.value })
+                      }
                       className="w-full px-3 py-2 text-sm border border-border rounded-md bg-card focus:ring-1 focus:ring-primary outline-none"
                     />
                   </div>
@@ -946,7 +797,9 @@ function SalaryComponentsModal({
                       <input
                         type="checkbox"
                         checked={editing.enabled}
-                        onChange={(e) => setEditing({ ...editing, enabled: e.target.checked })}
+                        onChange={(e) =>
+                          setEditing({ ...editing, enabled: e.target.checked })
+                        }
                       />
                       Enabled
                     </label>
@@ -955,7 +808,12 @@ function SalaryComponentsModal({
                       <input
                         type="checkbox"
                         checked={editing.tax_applicable}
-                        onChange={(e) => setEditing({ ...editing, tax_applicable: e.target.checked })}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing,
+                            tax_applicable: e.target.checked,
+                          })
+                        }
                       />
                       Tax applicable
                     </label>
@@ -1073,30 +931,52 @@ function StructureModal({
       const key = String(c.component || "").toLowerCase();
 
       if (rawAmt !== 0) {
-        return { ...c, effectiveAmount: rawAmt, label: String(c.component || ""), bucket: "employee" as const };
+        return {
+          ...c,
+          effectiveAmount: rawAmt,
+          label: String(c.component || ""),
+          bucket: "employee" as const,
+        };
       }
 
       if (key.includes("napsa")) {
-        const side = key.includes("employer") ? "Employer" : key.includes("employee") ? "Employee" : "";
+        const side = key.includes("employer")
+          ? "Employer"
+          : key.includes("employee")
+            ? "Employee"
+            : "";
         return {
           ...c,
-          effectiveAmount: side === "Employer" ? statutoryCalc.statutory.napsaEmployer : statutoryCalc.statutory.napsaEmployee,
+          effectiveAmount:
+            side === "Employer"
+              ? statutoryCalc.statutory.napsaEmployer
+              : statutoryCalc.statutory.napsaEmployee,
           label: `NAPSA${side ? ` ${side}` : ""} (${statutoryCalc.rates.napsaEmployeeRate}%)`,
-          bucket: side === "Employer" ? ("employer" as const) : ("employee" as const),
+          bucket:
+            side === "Employer" ? ("employer" as const) : ("employee" as const),
         };
       }
 
       if (key.includes("nhima")) {
-        const side = key.includes("employer") ? "Employer" : key.includes("employee") ? "Employee" : "";
+        const side = key.includes("employer")
+          ? "Employer"
+          : key.includes("employee")
+            ? "Employee"
+            : "";
         return {
           ...c,
           effectiveAmount: statutoryCalc.statutory.nhima,
           label: `NHIMA${side ? ` ${side}` : ""} (${statutoryCalc.rates.nhimaRate}%)`,
-          bucket: side === "Employer" ? ("employer" as const) : ("employee" as const),
+          bucket:
+            side === "Employer" ? ("employer" as const) : ("employee" as const),
         };
       }
 
-      if (key.includes("income tax") || key.includes("paye") || key.includes("payee")) {
+      if (
+        key.includes("income tax") ||
+        key.includes("paye") ||
+        key.includes("payee")
+      ) {
         return {
           ...c,
           effectiveAmount: statutoryCalc.statutory.paye,
@@ -1105,16 +985,25 @@ function StructureModal({
         };
       }
 
-      return { ...c, effectiveAmount: 0, label: String(c.component || ""), bucket: "employee" as const };
+      return {
+        ...c,
+        effectiveAmount: 0,
+        label: String(c.component || ""),
+        bucket: "employee" as const,
+      };
     });
   }, [deductions, statutoryCalc]);
 
   const employeeDeductionsForSummary = useMemo(() => {
-    return deductionsWithEffectiveAmounts.filter((c: any) => String(c?.bucket ?? "employee") !== "employer");
+    return deductionsWithEffectiveAmounts.filter(
+      (c: any) => String(c?.bucket ?? "employee") !== "employer",
+    );
   }, [deductionsWithEffectiveAmounts]);
 
   const employerContributionsForSummary = useMemo(() => {
-    return deductionsWithEffectiveAmounts.filter((c: any) => String(c?.bucket ?? "") === "employer");
+    return deductionsWithEffectiveAmounts.filter(
+      (c: any) => String(c?.bucket ?? "") === "employer",
+    );
   }, [deductionsWithEffectiveAmounts]);
 
   const totalDeductions = useMemo(() => {
@@ -1138,11 +1027,17 @@ function StructureModal({
         <div className="px-6 py-4 flex items-center justify-between">
           <div className="min-w-0">
             <h3 className="text-base font-bold text-main">
-              {readOnly ? "View" : formData.id ? "Edit" : "Create"} Salary Structure
+              {readOnly ? "View" : formData.id ? "Edit" : "Create"} Salary
+              Structure
             </h3>
-            <div className="text-xs text-muted mt-0.5">Define components and calculations</div>
+            <div className="text-xs text-muted mt-0.5">
+              Define components and calculations
+            </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-muted/10 transition-colors text-muted hover:text-main">
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-muted/10 transition-colors text-muted hover:text-main"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -1214,7 +1109,10 @@ function StructureModal({
                             value={component.component}
                             onChange={(e) => {
                               const next = [...(formData.components || [])];
-                              next[idx] = { ...next[idx], component: e.target.value };
+                              next[idx] = {
+                                ...next[idx],
+                                component: e.target.value,
+                              };
                               setFormData({ ...formData, components: next });
                             }}
                             disabled
@@ -1233,7 +1131,10 @@ function StructureModal({
                             value={component.component}
                             onChange={(e) => {
                               const next = [...(formData.components || [])];
-                              next[idx] = { ...next[idx], component: e.target.value };
+                              next[idx] = {
+                                ...next[idx],
+                                component: e.target.value,
+                              };
                               setFormData({ ...formData, components: next });
                             }}
                             disabled
@@ -1248,7 +1149,9 @@ function StructureModal({
                           Type
                         </label>
                         <select
-                          value={String(component.type || "earning").toLowerCase()}
+                          value={String(
+                            component.type || "earning",
+                          ).toLowerCase()}
                           onChange={(e) => {
                             const next = [...(formData.components || [])];
                             next[idx] = {
@@ -1270,14 +1173,19 @@ function StructureModal({
                           Amount
                         </label>
                         {(() => {
-                          const key = String(component.component || "").toLowerCase();
+                          const key = String(
+                            component.component || "",
+                          ).toLowerCase();
                           const isDeduction =
-                            String(component.type || "").toLowerCase() === "deduction";
+                            String(component.type || "").toLowerCase() ===
+                            "deduction";
                           const isNapsa = isDeduction && key.includes("napsa");
                           const isNhima = isDeduction && key.includes("nhima");
                           const isPaye =
                             isDeduction &&
-                            (key.includes("income tax") || key.includes("paye") || key.includes("payee"));
+                            (key.includes("income tax") ||
+                              key.includes("paye") ||
+                              key.includes("payee"));
                           const isStatutory = isNapsa || isNhima || isPaye;
 
                           const computedAmount = isNapsa
@@ -1288,7 +1196,8 @@ function StructureModal({
                                 ? statutoryCalc.statutory.paye
                                 : Number(component.amount || 0) || 0;
 
-                          const displayAmount = computedAmount === 0 ? "" : computedAmount;
+                          const displayAmount =
+                            computedAmount === 0 ? "" : computedAmount;
 
                           const disabled = Boolean(readOnly) || isStatutory;
 
@@ -1301,7 +1210,10 @@ function StructureModal({
                                 const next = [...(formData.components || [])];
                                 next[idx] = {
                                   ...next[idx],
-                                  amount: e.target.value === "" ? 0 : Number(e.target.value || 0),
+                                  amount:
+                                    e.target.value === ""
+                                      ? 0
+                                      : Number(e.target.value || 0),
                                 };
                                 setFormData({ ...formData, components: next });
                               }}
@@ -1312,8 +1224,7 @@ function StructureModal({
                         })()}
                       </div>
 
-                      <div className="col-span-1 flex items-end justify-end">
-                      </div>
+                      <div className="col-span-1 flex items-end justify-end"></div>
 
                       <div className="col-span-12 flex items-center gap-2">
                         <input
@@ -1353,17 +1264,31 @@ function StructureModal({
                 <div className="bg-white rounded-lg p-4 text-sm">
                   <div className="text-center pb-3 border-b">
                     <p className="text-xs text-gray-600">Gross Pay</p>
-                    <p className="text-xl font-bold text-gray-900">ZMW {totalEarnings.toLocaleString()}</p>
+                    <p className="text-xl font-bold text-gray-900">
+                      ZMW {totalEarnings.toLocaleString()}
+                    </p>
                   </div>
 
                   <div className="pt-3 border-b pb-3">
-                    <div className="text-[11px] font-bold text-gray-700">EARNINGS:</div>
+                    <div className="text-[11px] font-bold text-gray-700">
+                      EARNINGS:
+                    </div>
                     <div className="mt-2 space-y-1">
                       {earningsForSummary.map((c, idx) => (
-                        <div key={`${c.component}-${idx}`} className="flex items-center justify-between gap-3">
+                        <div
+                          key={`${c.component}-${idx}`}
+                          className="flex items-center justify-between gap-3"
+                        >
                           <div className="flex items-center gap-2 min-w-0">
-                            <input type="checkbox" checked disabled className="w-3.5 h-3.5" />
-                            <div className="text-xs text-gray-700 truncate">{c.component}</div>
+                            <input
+                              type="checkbox"
+                              checked
+                              disabled
+                              className="w-3.5 h-3.5"
+                            />
+                            <div className="text-xs text-gray-700 truncate">
+                              {c.component}
+                            </div>
                           </div>
                           <div className="text-xs font-semibold text-gray-900 tabular-nums">
                             {(Number(c.amount || 0) || 0).toLocaleString()}
@@ -1377,15 +1302,27 @@ function StructureModal({
                   </div>
 
                   <div className="pt-3">
-                    <div className="text-[11px] font-bold text-gray-700">DEDUCTIONS:</div>
+                    <div className="text-[11px] font-bold text-gray-700">
+                      DEDUCTIONS:
+                    </div>
                     <div className="mt-2 space-y-1">
                       {employeeDeductionsForSummary.map((c: any, idx) => {
                         const amt = Number(c.effectiveAmount || 0) || 0;
                         return (
-                          <div key={`${c.component}-${idx}`} className="flex items-center justify-between gap-3">
+                          <div
+                            key={`${c.component}-${idx}`}
+                            className="flex items-center justify-between gap-3"
+                          >
                             <div className="flex items-center gap-2 min-w-0">
-                              <input type="checkbox" checked disabled className="w-3.5 h-3.5" />
-                              <div className="text-xs text-gray-700 truncate">{c.label}</div>
+                              <input
+                                type="checkbox"
+                                checked
+                                disabled
+                                className="w-3.5 h-3.5"
+                              />
+                              <div className="text-xs text-gray-700 truncate">
+                                {c.label}
+                              </div>
                             </div>
                             <div className="text-xs font-semibold text-gray-900 tabular-nums">
                               {amt.toLocaleString()}
@@ -1401,22 +1338,36 @@ function StructureModal({
 
                   {employerContributionsForSummary.length > 0 && (
                     <div className="pt-3">
-                      <div className="text-[11px] font-bold text-gray-700">EMPLOYER CONTRIBUTIONS:</div>
+                      <div className="text-[11px] font-bold text-gray-700">
+                        EMPLOYER CONTRIBUTIONS:
+                      </div>
                       <div className="mt-2 space-y-1">
-                        {employerContributionsForSummary.map((c: any, idx: number) => {
-                          const amt = Number(c.effectiveAmount || 0) || 0;
-                          return (
-                            <div key={`${c.component}-employer-${idx}`} className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <input type="checkbox" checked disabled className="w-3.5 h-3.5" />
-                                <div className="text-xs text-gray-700 truncate">{c.label}</div>
+                        {employerContributionsForSummary.map(
+                          (c: any, idx: number) => {
+                            const amt = Number(c.effectiveAmount || 0) || 0;
+                            return (
+                              <div
+                                key={`${c.component}-employer-${idx}`}
+                                className="flex items-center justify-between gap-3"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <input
+                                    type="checkbox"
+                                    checked
+                                    disabled
+                                    className="w-3.5 h-3.5"
+                                  />
+                                  <div className="text-xs text-gray-700 truncate">
+                                    {c.label}
+                                  </div>
+                                </div>
+                                <div className="text-xs font-semibold text-gray-900 tabular-nums">
+                                  {amt.toLocaleString()}
+                                </div>
                               </div>
-                              <div className="text-xs font-semibold text-gray-900 tabular-nums">
-                                {amt.toLocaleString()}
-                              </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          },
+                        )}
                       </div>
                     </div>
                   )}
@@ -1460,7 +1411,11 @@ function StructureModal({
               onClick={() => {
                 const existingComponents = new Set(
                   (salaryComponents || [])
-                    .map((x: any) => String(x?.component ?? x?.id ?? "").trim().toLowerCase())
+                    .map((x: any) =>
+                      String(x?.component ?? x?.id ?? "")
+                        .trim()
+                        .toLowerCase(),
+                    )
                     .filter(Boolean),
                 );
 
@@ -1482,21 +1437,33 @@ function StructureModal({
                   const isNhima = isDeduction && key.includes("nhima");
                   const isPaye =
                     isDeduction &&
-                    (key.includes("income tax") || key.includes("paye") || key.includes("payee"));
+                    (key.includes("income tax") ||
+                      key.includes("paye") ||
+                      key.includes("payee"));
                   const isEmployer = isDeduction && key.includes("employer");
 
                   if (isNapsa) {
                     return {
                       ...c,
                       component: normalizedName,
-                      amount: isEmployer ? statutoryCalc.statutory.napsaEmployer : statutoryCalc.statutory.napsaEmployee,
+                      amount: isEmployer
+                        ? statutoryCalc.statutory.napsaEmployer
+                        : statutoryCalc.statutory.napsaEmployee,
                     };
                   }
                   if (isNhima) {
-                    return { ...c, component: normalizedName, amount: statutoryCalc.statutory.nhima };
+                    return {
+                      ...c,
+                      component: normalizedName,
+                      amount: statutoryCalc.statutory.nhima,
+                    };
                   }
                   if (isPaye) {
-                    return { ...c, component: normalizedName, amount: statutoryCalc.statutory.paye };
+                    return {
+                      ...c,
+                      component: normalizedName,
+                      amount: statutoryCalc.statutory.paye,
+                    };
                   }
 
                   return { ...c, component: normalizedName };
@@ -1505,11 +1472,15 @@ function StructureModal({
                 const missing = finalComponents
                   .map((c) => String(c?.component ?? "").trim())
                   .filter(Boolean)
-                  .filter((name) => !existingComponents.has(name.toLowerCase()));
+                  .filter(
+                    (name) => !existingComponents.has(name.toLowerCase()),
+                  );
 
                 if (missing.length > 0) {
                   const uniq = Array.from(new Set(missing.map((m) => m)));
-                  toast.error(`Missing salary component(s): ${uniq.join(", ")}. Please create them first.`);
+                  toast.error(
+                    `Missing salary component(s): ${uniq.join(", ")}. Please create them first.`,
+                  );
                   return;
                 }
 
@@ -1527,4 +1498,3 @@ function StructureModal({
     </div>
   );
 }
-
