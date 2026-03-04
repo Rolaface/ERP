@@ -114,7 +114,7 @@ const TopBar: React.FC<{
   const navItems: { id: View; label: string; icon: React.ReactNode }[] = [
     { id: "salaryStructure", label: "Salary Structure", icon: <Users className="w-3.5 h-3.5" /> },
     { id: "assignments", label: "Salary Assignments", icon: <Users className="w-3.5 h-3.5" /> },
-    { id: "advanceLoan", label: "Advance  & Loans  ", icon: <CreditCard className="w-3.5 h-3.5" /> },
+    { id: "advanceLoan", label: "Additional Salary", icon: <CreditCard className="w-3.5 h-3.5" /> },
     { id: "reports", label: "Reports", icon: <FileText className="w-3.5 h-3.5" /> }
 
   ];

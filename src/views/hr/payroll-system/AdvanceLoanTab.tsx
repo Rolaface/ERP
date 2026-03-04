@@ -15,7 +15,7 @@ import {
     type AdditionalSalaryDetail,
     type AdditionalSalaryRecord,
     type AdditionalSalaryPage,
-} from "../../../api/advanceLoanApi";
+} from "../../../api/additionalSalaryApi";
 import { getAllEmployees } from "../../../api/employeeapi";
 import { getSalaryComponents, type SalaryComponentListItem } from "../../../api/salaryStructureApi";
 import { closeSwal, showApiError, showLoading, showSuccess } from "../../../utils/alert";

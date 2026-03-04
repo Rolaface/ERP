@@ -17,7 +17,7 @@ import {
 } from "recharts";
 
 import type { SalarySlipListItem } from "../../../api/salarySlipApi";
-import { getAdditionalSalariesPaged, type AdditionalSalaryRecord } from "../../../api/advanceLoanApi";
+import { getAdditionalSalariesPaged, type AdditionalSalaryRecord } from "../../../api/additionalSalaryApi";
 
 const fmtZMW = (n: number) => Number(n || 0).toLocaleString("en-ZM");
 
