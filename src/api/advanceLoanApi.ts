@@ -10,7 +10,8 @@ interface ApiEnvelope<T> {
     data?: T;
 }
 
-interface PaginatedRecords<T> {
+interface PaginatedSalaries {
+    salaries?: AdditionalSalaryRecord[];
     pagination?: {
         page?: number;
         page_size?: number;
@@ -19,65 +20,69 @@ interface PaginatedRecords<T> {
         has_next?: boolean;
         has_prev?: boolean;
     };
-    records?: T[];
 }
 
-export type AdvancesPagination = NonNullable<PaginatedRecords<unknown>["pagination"]>;
+export type AdditionalSalaryPagination = NonNullable<PaginatedSalaries["pagination"]>;
 
-export type EmployeeAdvancesPage = {
-    records: EmployeeAdvanceRecord[];
-    pagination: AdvancesPagination;
+export type AdditionalSalaryPage = {
+    records: AdditionalSalaryRecord[];
+    pagination: AdditionalSalaryPagination;
 };
 
-export interface EmployeeAdvanceRecord {
+export interface AdditionalSalaryRecord {
     name?: string;
     employee: string;
     employee_name?: string;
-    company?: string;
-    department: string;
-    posting_date?: string;
-    advance_amount: number;
-    paid_amount?: number;
-    pending_amount?: number;
-    status?: string;
+    department?: string;
+    salary_component?: string;
+    type?: string;
+    amount: number;
+    from_date?: string;
+    to_date?: string;
+    currency?: string;
+    is_recurring?: number;
 }
 
-export interface EmployeeAdvanceDetail {
-    id?: string;
+export interface AdditionalSalaryDetail {
     name?: string;
     employee: string;
     employee_name?: string;
-    company?: string;
-    department: string;
-    posting_date?: string;
-    advance_amount: number;
-    paid_amount?: number;
-    pending_amount?: number;
-    claimed_amount?: number;
-    return_amount?: number;
-    status?: string;
-    purpose?: string;
-    repay_unclaimed_amount_from_salary?: number;
+    department?: string;
+    salary_component?: string;
+    type?: string;
+    amount: number;
+    from_date?: string;
+    to_date?: string;
+    currency?: string;
+    is_recurring?: number;
 }
 
-export interface CreateEmployeeAdvancePayload {
+export interface CreateAdditionalSalaryPayload {
     employee: string;
-    department: string;
-    advance_amount: number;
-    purpose: string;
-    repay_unclaimed_amount_from_salary: number;
+    from_date: string;
+    to_date: string;
+    salary_component: string;
+    type: string;
+    amount: number | string;
+    is_recurring: number;
 }
+
+// Backward-compatible type aliases (old Advance/Loan names)
+export type EmployeeAdvanceRecord = AdditionalSalaryRecord;
+export type EmployeeAdvanceDetail = AdditionalSalaryDetail;
+export type CreateEmployeeAdvancePayload = CreateAdditionalSalaryPayload;
+export type EmployeeAdvancesPage = AdditionalSalaryPage;
 
 /**
- * Fetches all employee advance records.
+ * Fetches all additional salaries (paginated).
  */
-export const getEmployeeAdvancesPaged = async (params?: {
+export const getAdditionalSalariesPaged = async (params?: {
     page?: number;
     page_size?: number;
-}): Promise<EmployeeAdvancesPage> => {
+}): Promise<AdditionalSalaryPage> => {
     try {
-        const res = await api.get<ApiEnvelope<PaginatedRecords<EmployeeAdvanceRecord>>>(
-            "/api/method/payroll_rola_izyane.api.salary_advance.api.get_employee_advances",
+        const res = await api.get<ApiEnvelope<PaginatedSalaries>>(
+            "/api/method/payroll_rola_izyane.api.salary_advance.api.get_all_additional_salaries",
             { params }
         );
         const envelope = res.data;
@@ -95,7 +100,7 @@ export const getEmployeeAdvancesPaged = async (params?: {
             };
         }
 
-        const rows = envelope?.data?.records;
+        const rows = envelope?.data?.salaries;
         const pagination = envelope?.data?.pagination;
         const page = Number(pagination?.page ?? params?.page ?? 1) || 1;
         const page_size = Number(pagination?.page_size ?? params?.page_size ?? 10) || 10;
@@ -114,7 +119,7 @@ export const getEmployeeAdvancesPaged = async (params?: {
             },
         };
     } catch (error) {
-        console.error("Error fetching employee advances:", error);
+        console.error("Error fetching additional salaries:", error);
         throw error;
     }
 };
@@ -122,46 +127,54 @@ export const getEmployeeAdvancesPaged = async (params?: {
 /**
  * Backward-compatible list fetch.
  */
-export const getEmployeeAdvances = async (): Promise<EmployeeAdvanceRecord[]> => {
-    const res = await getEmployeeAdvancesPaged({ page: 1, page_size: 1000 });
+export const getAllAdditionalSalaries = async (): Promise<AdditionalSalaryRecord[]> => {
+    const res = await getAdditionalSalariesPaged({ page: 1, page_size: 1000 });
     return res.records;
 };
 
-export const getEmployeeAdvanceById = async (name: string): Promise<EmployeeAdvanceDetail | null> => {
+/**
+ * Fetches a single additional salary by its ID.
+ */
+export const getAdditionalSalaryById = async (id: string): Promise<AdditionalSalaryDetail | null> => {
     try {
-        const res = await api.get<ApiEnvelope<EmployeeAdvanceDetail>>(
-            "/api/method/payroll_rola_izyane.api.salary_advance.api.get_employee_advance_by_id",
-            {
-                params: { name },
-            }
+        const res = await api.get<ApiEnvelope<AdditionalSalaryDetail>>(
+            "/api/method/payroll_rola_izyane.api.salary_advance.api.get_additional_salary_by_id",
+            { params: { id } }
         );
         const envelope = res.data;
         if (String(envelope?.status ?? "").toLowerCase() !== "success") return null;
         return envelope?.data ?? null;
     } catch (error) {
-        console.error("Error fetching employee advance by id:", error);
+        console.error("Error fetching additional salary by id:", error);
         throw error;
     }
 };
 
 /**
- * Creates a new employee advance request.
- *
- * @param payload - The data for the new advance request.
+ * Creates a new additional salary (Advance Payment / Loan).
  */
-export const createEmployeeAdvance = async (
-    payload: CreateEmployeeAdvancePayload
-): Promise<EmployeeAdvanceDetail | null> => {
+export const createAdditionalSalary = async (
+    payload: CreateAdditionalSalaryPayload
+): Promise<AdditionalSalaryDetail | null> => {
     try {
-        const res = await api.post<ApiEnvelope<EmployeeAdvanceDetail>>(
-            "/api/method/payroll_rola_izyane.api.salary_advance.api.create_employee_advance",
+        const res = await api.post<ApiEnvelope<AdditionalSalaryDetail>>(
+            "/api/method/payroll_rola_izyane.api.salary_advance.api.create_employee_additional_salary",
             payload
         );
         const envelope = res.data;
         if (String(envelope?.status ?? "").toLowerCase() !== "success") return null;
         return envelope?.data ?? null;
     } catch (error) {
-        console.error("Error creating employee advance:", error);
+        console.error("Error creating additional salary:", error);
         throw error;
     }
 };
+
+// Backward-compatible function exports (old Advance/Loan names)
+export const getEmployeeAdvancesPaged = getAdditionalSalariesPaged;
+
+export const getEmployeeAdvances = getAllAdditionalSalaries;
+
+export const getEmployeeAdvanceById = getAdditionalSalaryById;
+
+export const createEmployeeAdvance = createAdditionalSalary;
