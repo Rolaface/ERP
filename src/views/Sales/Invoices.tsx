@@ -3,6 +3,7 @@ import {
   getAllSalesInvoices,
   updateInvoiceStatus,
   getSalesInvoiceById,
+  deleteSalesInvoiceById,
 } from "../../api/salesApi";
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
@@ -22,6 +23,7 @@ import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/a
 import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import Swal from "sweetalert2";
 
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
@@ -362,15 +364,47 @@ const handlePreviewPDF = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
     showSuccess(`Invoice marked as ${status}`);
   };
 
-  const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (!window.confirm(`Delete invoice ${invoiceNumber}?`)) return;
-    // TODO: wire up delete API call
+const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+
+  const result = await Swal.fire({
+    icon: "warning",
+    title: "Are you sure?",
+    text: `Delete invoice ${invoiceNumber}?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, delete",
+    reverseButtons: true,
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    showLoading("Deleting invoice...");
+
+    const res = await deleteSalesInvoiceById(invoiceNumber);
+
+    if (!res || res.status_code !== 200) {
+      closeSwal();
+      showApiError(res?.message || "Failed to delete invoice");
+      return;
+    }
+
+    closeSwal();
+
+    // Remove from UI
+    setInvoices((prev) =>
+      prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
+    );
+
     showSuccess("Invoice deleted successfully");
-    console.log("Delete invoice:", invoiceNumber);
-  };
 
-
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   const columns: Column<InvoiceSummary>[] = [
     {
@@ -450,21 +484,22 @@ const handlePreviewPDF = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
             onClick={(e) => handleViewClick(inv.invoiceNumber, e)}
             iconOnly
           />
-          <ActionMenu
-            onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
-           customActions={[
-  {
-    label: "View PDF",
-    onClick: (e) => handlePreviewPDF(inv, e),
-  },
-  ...((STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
-    label: `Mark as ${status}`,
-    danger: status === "Paid",
-    onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
-  })))
-]}
-           
-          />
+       <ActionMenu
+  showDownload
+  onDownload={(e) => handleDownload(inv, e)}
+  onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
+  customActions={[
+    {
+      label: "View PDF",
+      onClick: () => handlePreviewPDF(inv),
+    },
+    ...((STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
+      label: `Mark as ${status}`,
+      danger: status === "Paid",
+      onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
+    })))
+  ]}
+/>
         </ActionGroup>
       ),
     },
@@ -512,15 +547,15 @@ const handlePreviewPDF = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
         }
       />
 
-  <InvoiceDetailsModal
+<InvoiceDetailsModal
   open={invoiceDetailsOpen}
   invoiceId={invoiceDetailsId}
   onClose={handleCloseInvoiceDetails}
-  onOpenReceiptPdf={(invoiceNumber) => {
+  onViewPdf={(invoiceNumber) => {
     const invoice = invoices.find(i => i.invoiceNumber === invoiceNumber);
     if (invoice) {
-      handleCloseInvoiceDetails();   
-      handlePreviewPDF(invoice);     
+      handleCloseInvoiceDetails();
+      handlePreviewPDF(invoice);
     }
   }}
 />

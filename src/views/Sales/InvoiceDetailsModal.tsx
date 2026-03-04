@@ -97,7 +97,7 @@ type Props = {
   open: boolean;
   invoiceId: string | null;
   onClose: () => void;
-  onOpenReceiptPdf?: (receiptUrl: string) => void;
+onViewPdf?: (invoiceNumber: string) => void;
   onSend?: (invoiceNumber: string) => void;
   fetchDetails?: (id: string) => Promise<any>;
   mapDetails?: (raw: any) => InvoiceDetails;
@@ -205,7 +205,7 @@ const InvoiceDetailsModal: React.FC<Props> = ({
   open,
   invoiceId,
   onClose,
-  onOpenReceiptPdf,
+  onViewPdf,
   onSend,
   fetchDetails,
   mapDetails,
@@ -318,9 +318,9 @@ const InvoiceDetailsModal: React.FC<Props> = ({
           <button
             type="button"
             onClick={() =>
-              data.invoiceNumber &&
-              onOpenReceiptPdf?.(data.invoiceNumber)
-            }
+  data.invoiceNumber &&
+  onViewPdf?.(data.invoiceNumber)
+}
             className="bg-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
           >
             <Eye size={13} />

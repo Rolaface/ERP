@@ -24,6 +24,7 @@ export interface QuotationSummary {
   validTill: string;
   grandTotal: number;
   currency: string;
+  status: string;
 }
 
 // export interface QuotationData {

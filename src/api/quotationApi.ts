@@ -46,12 +46,14 @@ export async function createQuotation(payload: any): Promise<any> {
 }
 
 export async function deleteQuotationById(id: string): Promise<any> {
-  const resp: AxiosResponse = await api.delete(QuotationAPI.delete, {
-    data: { quotation_id: id },
+  const resp = await api.delete(QuotationAPI.delete, {
+    data: {
+      quotation_id: id,
+    },
   });
+
   return resp.data;
 }
-
 export async function updateQuotationTermsById(payload: any): Promise<any> {
   const resp: AxiosResponse = await api.put(QuotationAPI.updateTerms, payload);
   return resp.data;
@@ -67,5 +69,19 @@ export async function updateQuotationAddressById(payload: any): Promise<any> {
 
 export async function updateQuotationById(payload: any): Promise<any> {
   const resp: AxiosResponse = await api.put(QuotationAPI.update, payload);
+  return resp.data;
+}
+export async function updateQuotationStatus(
+  id: string,
+  Status : string
+): Promise<any> {
+  const resp: AxiosResponse = await api.patch(
+    `${ERP_BASE}/api/method/erpnext.quotation.api.update_quotation_status`,
+    {
+      id: id,
+      invoiceStatus: Status,
+    }
+  );
+
   return resp.data;
 }

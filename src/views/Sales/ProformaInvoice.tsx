@@ -21,6 +21,7 @@ import type { Column } from "../../components/ui/Table/type";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
 import Swal from "sweetalert2";
 import InvoiceDetailsModal, { type InvoiceDetails } from "./InvoiceDetailsModal";
+import PdfPreviewModal from "./PdfPreviewModal";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -94,7 +95,10 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
 
   // ── Reset page when search changes ───────────────────────────────────────
   useEffect(() => { setPage(1); }, [searchTerm]);
-
+  //______________profroma invoice pdf viewer state ________________
+const [selectedProforma, setSelectedProforma] = useState<any>(null);
+const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+const [pdfOpen, setPdfOpen] = useState(false);
   // ── Fetch company once ────────────────────────────────────────────────────
   useEffect(() => {
     getCompanyById(COMPANY_ID)
@@ -159,29 +163,41 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   };
 
   // ── Receipt URL opener (kept — do not remove) ─────────────────────────────
-  const handleOpenReceipt = (receiptUrl: string) => {
-    const normalizedUrl = receiptUrl.startsWith("http://")
-      ? receiptUrl.replace(/^http:\/\//i, "https://")
-      : receiptUrl;
+const handlePreviewProformaPDF = async (proformaId: string) => {
+  try {
+    showLoading("Preparing proforma invoice preview...");
 
-    const urlWithoutPort = (() => {
-      try {
-        const u = new URL(normalizedUrl);
-        u.port = "";
-        return u.toString();
-      } catch {
-        return normalizedUrl.replace(/^(https?:\/\/[^\/]+):\d+(\/.*)?$/i, "$1$2");
-      }
-    })();
+    if (!company) {
+      closeSwal();
+      showApiError("Company data not loaded");
+      return;
+    }
 
-    const a = document.createElement("a");
-    a.href = urlWithoutPort;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
+    const res = await getProformaInvoiceById(proformaId);
+
+    if (!res || res.status_code !== 200) {
+      closeSwal();
+      showApiError("Failed to load proforma invoice");
+      return;
+    }
+
+    const blobUrl = await generateProformaInvoicePDF(
+      res.data,
+      company,
+      "bloburl"
+    );
+
+    closeSwal();
+
+    setPdfUrl(blobUrl);
+    setSelectedProforma(res.data);
+    setPdfOpen(true);
+
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   // ── Export all pages ──────────────────────────────────────────────────────
   const fetchAllInvoicesForExport = async (): Promise<ProformaInvoiceSummary[]> => {
@@ -482,15 +498,21 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
             iconOnly
           />
           <ActionMenu
-            showDownload
-            onDownload={(e) => handleDownload(inv.proformaId, e)}
-            onDelete={(e) => handleDelete(inv.proformaId, e)}
-            customActions={(STATUS_TRANSITIONS[inv.status] ?? []).map((status) => ({
-              label: `Mark as ${status}`,
-              danger: status === "Paid",
-              onClick: () => handleRowStatusChange(inv.proformaId, status),
-            }))}
-          />
+  customActions={[
+    {
+      label: "View PDF",
+      onClick: () => handlePreviewProformaPDF(inv.proformaId),
+    },
+    ...((STATUS_TRANSITIONS[inv.status] ?? []).map((status) => ({
+      label: `Mark as ${status}`,
+      danger: status === "Paid",
+      onClick: () => handleRowStatusChange(inv.proformaId, status),
+    }))),
+  ]}
+  showDownload
+  onDownload={(e) => handleDownload(inv.proformaId, e)}
+  onDelete={(e) => handleDelete(inv.proformaId, e)}
+/>
         </ActionGroup>
       ),
     },
@@ -530,10 +552,25 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
         open={detailsOpen}
         invoiceId={detailsId}
         onClose={() => { setDetailsOpen(false); setDetailsId(null); }}
-        onOpenReceiptPdf={handleOpenReceipt}
+        onViewPdf={handlePreviewProformaPDF}
         fetchDetails={getProformaInvoiceById}
         mapDetails={mapProformaToInvoiceDetails}
       />
+      <PdfPreviewModal
+  open={pdfOpen}
+  title="Proforma Invoice Preview"
+  pdfUrl={pdfUrl}
+  onClose={() => {
+    if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);
+    setSelectedProforma(null);
+    setPdfOpen(false);
+  }}
+  onDownload={() =>
+    selectedProforma && company &&
+    generateProformaInvoicePDF(selectedProforma, company, "save")
+  }
+/>
     </div>
   );
 };

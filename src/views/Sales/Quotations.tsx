@@ -5,7 +5,7 @@ import {
   showLoading,
   closeSwal,
 } from "../../utils/alert";
-import { getAllQuotations, getQuotationById } from "../../api/quotationApi";
+import { getAllQuotations, getQuotationById, updateQuotationStatus } from "../../api/quotationApi";
 import { getCompanyById } from "../../api/companySetupApi";
 import type { QuotationSummary } from "../../types/quotation";
 import Table from "../../components/ui/Table/Table";
@@ -20,6 +20,10 @@ import type { Column } from "../../components/ui/Table/type";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { generateQuotationPDF } from "../../components/template/quotation/QuotationTemplate1";
+import PdfPreviewModal from "./PdfPreviewModal";
+import { deleteQuotationById } from "../../api/quotationApi";
+import Swal from "sweetalert2";
+import StatusBadge from "../../components/ui/Table/StatusBadge";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
@@ -36,7 +40,15 @@ interface QuotationTableProps {
   onAddQuotation?: () => void;
   onExportQuotation?: () => void;
 }
+type QuotationStatus = "Draft" | "Sent" | "Paid" | "Overdue";
 
+const STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
+  Draft: ["Sent"],
+  Sent: ["Paid", "Overdue"],
+  Paid: [],
+  Overdue: ["Paid"],
+
+};
 const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
 
 
@@ -69,6 +81,11 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
 
   // ── Reset page when search changes ──────────────────────────────────────
   useEffect(() => { setPage(1); }, [searchTerm]);
+  //_____quotation details modal state _____
+  const [selectedQuotation, setSelectedQuotation] = useState<any>(null);
+const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+const [pdfOpen, setPdfOpen] = useState(false);
+
 
   // ── Fetch company once ───────────────────────────────────────────────────
   useEffect(() => {
@@ -100,15 +117,16 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
 
       const raw = Array.isArray(res.data?.quotations) ? res.data.quotations : [];
 
-      setQuotations(raw.map((q: any) => ({
-        quotationNumber: q.id            || "",
-        customerName:    q.customerName  || "N/A",
-        industryBases:   q.industryBases || "N/A",
-        transactionDate: q.transactionDate || "",
-        validTill:       q.validTill     || "",
-        grandTotal:      Number(q.grandTotal ?? 0),
-        currency:        q.currency      || "ZMW",
-      })));
+    setQuotations(raw.map((q: any) => ({
+  quotationNumber: q.id || "",
+  customerName: q.customerName || "N/A",
+  industryBases: q.industryBases || "N/A",
+  transactionDate: q.transactionDate || "",
+  validTill: q.validTill || "",
+  grandTotal: Number(q.grandTotal ?? 0),
+  currency: q.currency || "ZMW",
+  status: q.status || "Draft",   
+})));
 
       setTotalPages(res.data?.pagination?.totalPages || 1);
       setTotalItems(res.data?.pagination?.total      || raw.length);
@@ -138,31 +156,118 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
     setSortOrder(order);
     setPage(1);
   };
+  const handleRowStatusChange = async (
+  quotationNumber: string,
+  newStatus: QuotationStatus
+) => {
+  try {
+    showLoading("Updating quotation status...");
 
-    const handleOpenReceipt = (receiptUrl: string) => {
-    const normalizedUrl = receiptUrl.startsWith("http://")
-      ? receiptUrl.replace(/^http:\/\//i, "https://")
-      : receiptUrl;
+    const res = await updateQuotationStatus(quotationNumber, newStatus);
 
-    const urlWithoutPort = (() => {
-      try {
-        const u = new URL(normalizedUrl);
-        u.port = "";
-        return u.toString();
-      } catch {
-        return normalizedUrl.replace(/^(https?:\/\/[^\/]+):\d+(\/.*)?$/i, "$1$2");
-      }
-    })();
+    if (!res || res.status_code !== 200) {
+      closeSwal();
+      showApiError(res?.message || "Failed to update status");
+      return;
+    }
 
-    const a = document.createElement("a");
-    a.href = urlWithoutPort;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }; 
+    closeSwal();
 
+    setQuotations((prev) =>
+      prev.map((q: any) =>
+        q.quotationNumber === quotationNumber
+          ? { ...q, status: newStatus }
+          : q
+      )
+    );
+
+    showSuccess(`Quotation marked as ${newStatus}`);
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+
+const handlePreviewQuotationPDF = async (
+  quotationNumber: string,
+
+) => {
+
+
+  try {
+    showLoading("Preparing quotation preview...");
+
+    if (!company) {
+      closeSwal();
+      showApiError("Company data not loaded");
+      return;
+    }
+
+    const res = await getQuotationById(quotationNumber);
+    if (!res || res.status_code !== 200) {
+      closeSwal();
+      showApiError("Failed to load quotation");
+      return;
+    }
+
+    const blobUrl = await generateQuotationPDF(
+      res.data,
+      company,
+      "bloburl"
+    );
+
+    closeSwal();
+
+    
+    setPdfUrl(blobUrl);
+    setSelectedQuotation(res.data);
+    setPdfOpen(true);
+
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+
+  const result = await Swal.fire({
+    icon: "warning",
+    title: "Are you sure?",
+    text: `Delete quotation ${quotationNumber}?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, delete",
+    reverseButtons: true,
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    showLoading("Deleting quotation...");
+
+    const res = await deleteQuotationById(quotationNumber);
+
+    if (!res || res.status_code !== 200) {
+      closeSwal();
+      showApiError(res?.message || "Failed to delete quotation");
+      return;
+    }
+
+    closeSwal();
+
+    setQuotations((prev) =>
+      prev.filter((q) => q.quotationNumber !== quotationNumber)
+    );
+
+    showSuccess("Quotation deleted successfully");
+
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
   const fetchAllForExport = async (): Promise<QuotationSummary[]> => {
     let allData: QuotationSummary[] = [];
     let current = 1;
@@ -279,8 +384,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
     dateOfInvoice:      raw?.transactionDate ?? raw?.quotationDate,
     dueDate:            raw?.validUntil ?? raw?.validTill,
     invoiceStatus:      raw?.invoiceStatus ?? raw?.status ?? "—",
-    Receipt:            raw?.Receipt ?? raw?.receipt,
-    ReceiptNo:          raw?.ReceiptNo ?? raw?.receiptNo,
+  
     TotalAmount:        raw?.TotalAmount ?? raw?.grandTotal ?? raw?.totalAmount,
     discountPercentage: raw?.discountPercentage,
     discountAmount:     raw?.discountAmount ?? raw?.totalDiscount,
@@ -335,6 +439,13 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
         </code>
       ),
     },
+{
+  key: "status",
+  header: "Status",
+  align: "left",
+  // This uses the same component as your Invoice table
+  render: (q: any) => <StatusBadge status={q.status || "Draft"} />,
+},
     {
       key: "actions",
       header: "Actions",
@@ -346,10 +457,24 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
             onClick={(e) => handleView(q.quotationNumber, e)}
             iconOnly
           />
-          <ActionMenu
-            showDownload
-            onDownload={(e) => handleDownload(q.quotationNumber, e)}
-          />
+<ActionMenu
+  customActions={[
+    {
+      label: "View PDF",
+      onClick: () => handlePreviewQuotationPDF(q.quotationNumber),
+    },
+    ...((STATUS_TRANSITIONS[q.status as QuotationStatus] ?? []).map(
+      (status) => ({
+        label: `Mark as ${status}`,
+        onClick: () =>
+          handleRowStatusChange(q.quotationNumber, status),
+      })
+    )),
+  ]}
+  showDownload
+  onDownload={(e) => handleDownload(q.quotationNumber, e)}
+  onDelete={(e) => handleDelete(q.quotationNumber, e)}
+/>
         </ActionGroup>
       ),
     },
@@ -389,10 +514,25 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
         invoiceId={detailsId}
         onClose={() => { setDetailsOpen(false); setDetailsId(null); }}
         fetchDetails={getQuotationById}
-        onOpenReceiptPdf={handleOpenReceipt}
+     onViewPdf={handlePreviewQuotationPDF}
 
         mapDetails={mapQuotationToInvoiceDetails}
       />
+      <PdfPreviewModal
+  open={pdfOpen}
+  title="Quotation Preview"
+  pdfUrl={pdfUrl}
+  onClose={() => {
+    if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);
+    setSelectedQuotation(null);
+    setPdfOpen(false);
+  }}
+  onDownload={() =>
+    selectedQuotation && company &&
+    generateQuotationPDF(selectedQuotation, company, "save")
+  }
+/>
     </div>
   );
 };

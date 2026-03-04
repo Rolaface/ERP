@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
+import { showApiError } from "../../utils/alert";
 import { User, Mail, Phone } from "lucide-react";
 import CustomerSelect from "../selects/CustomerSelect";
 import Modal from "../../components/ui/modal/modal";
@@ -17,7 +18,7 @@ import {
 } from "../../constants/invoice.constants";
 import PaymentInfoBlock from "./PaymentInfoBlock";
 import AddressBlock from "../ui/modal/AddressBlock";
-import { showApiError } from "../../utils/alert";
+
 
 // import ModalInput from "../ui/ModalInput";
 // import ModalSelect from "../ui/ModalSelect";
@@ -43,23 +44,19 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     totals,
     ui,
     actions,
-  } = useInvoiceForm(isOpen, onClose, onSubmit);
-  const [allowSubmit, setAllowSubmit] = useState(false);
+  } = useInvoiceForm(isOpen, onClose);
+  // Removed allowSubmit state, no longer needed.
   const tabs: Array<"details" | "address" | "terms"> = [
     "details",
     "address",
     "terms",
   ];
-  useEffect(() => {
-    if (isOpen) {
-      setAllowSubmit(false);
-    }
-  }, [isOpen]);
+  // Removed allowSubmit effect, no longer needed.
   const handleNext = () => {
     const currentIndex = tabs.indexOf(ui.activeTab as any);
     if (currentIndex < tabs.length - 1) {
       ui.setActiveTab(tabs[currentIndex + 1]);
-      setAllowSubmit(false);
+      // setAllowSubmit(false); // removed, no longer needed
     }
   };
 
@@ -67,31 +64,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const showExchangeRate =
     String(formData.currencyCode ?? "").trim().toUpperCase() !== "INR";
   const showExportField = ui.isExport;
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Remove internal handleFormSubmit. Let parent handle submit.
 
-    if (ui.activeTab !== "terms") {
-      handleNext();
-      return;
-    }
-
-    if (submitting) return;
-
-    try {
-      setSubmitting(true);
-
-      const payload = await actions.handleSubmit(e);
-      if (!payload) return;
-
-      await onSubmit?.(payload);
-    } catch (err: any) {
-      showApiError(err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  // Removed unused invoiceModalOpen state.
 
   const footerContent = (
     <>
@@ -109,13 +84,26 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         </Button>
         <Button
           variant="primary"
-          type={ui.activeTab !== "terms" ? "button" : "submit"}
-          form={ui.activeTab !== "terms" ? undefined : "invoiceForm"}
-          onClick={
-            ui.activeTab !== "terms"
-              ? handleNext
-              : undefined
-          }
+          type="button"
+          onClick={ui.activeTab !== "terms" ? handleNext : async () => {
+            if (submitting) return;
+            setSubmitting(true);
+            try {
+              // Create a dummy event to satisfy handleSubmit's required argument
+              const dummyEvent = { preventDefault: () => {} } as React.FormEvent;
+              const payload = await actions.handleSubmit(dummyEvent);
+              if (!payload) {
+                showApiError("Please fill all required fields correctly.");
+                setSubmitting(false);
+                return;
+              }
+              await onSubmit?.(payload);
+            } catch (err: any) {
+              showApiError(err);
+            } finally {
+              setSubmitting(false);
+            }
+          }}
           disabled={submitting}
         >
           {ui.activeTab === "terms"
@@ -141,8 +129,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     >
       <form
         id="invoiceForm"
-        onSubmit={handleFormSubmit}
         className="h-full flex flex-col"
+        autoComplete="off"
       >
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
@@ -195,6 +183,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     type="date"
                     value={formData.dateOfInvoice}
                     onChange={actions.handleInputChange}
+                    required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
 
@@ -205,6 +194,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     type="date"
                     value={formData.dueDate}
                     onChange={actions.handleInputChange}
+                    required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
 
@@ -248,6 +238,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     value={formData.invoiceStatus}
                     onChange={actions.handleInputChange}
                     options={[...invoiceStatusOptions]}
+                    required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
 
@@ -261,6 +252,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       >,
                     ) => actions.handleInputChange(e, "paymentInformation")}
                     options={[...paymentMethodOptions]}
+                    required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
 
@@ -472,6 +464,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                   className="w-[75px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                                   name="quantity"
                                   value={it.quantity}
+                               
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
