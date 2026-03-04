@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
-  Edit2,
-  Trash2,
   Save,
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { calculateZmPayrollFromGross } from "../payroll-system/util";
+import {
+  calculateZmPayrollFromGross
+} from "../payroll-system/util";
 import {
   createSalaryStructure,
   createSalaryComponent,
-  deleteSalaryComponent,
   getSalaryComponents,
   getSalaryStructures,
   getSalaryStructureById,
@@ -649,20 +648,7 @@ function SalaryComponentsModal({
     });
   };
 
-  const startEdit = (c: SalaryComponentListItem) => {
-    setEditing({
-      id: c.id,
-      name: c.component || c.id,
-      type: String(c.type || "Earning") as any,
-      abbr: c.abbr || "",
-      description: c.description || "",
-      enabled: Boolean(c.enabled),
-      amount_based_on_formula: false,
-      condition: "",
-      formula: "",
-      tax_applicable: Boolean(c.tax_applicable),
-    });
-  };
+  
 
   const save = async () => {
     if (!editing) return;
@@ -714,53 +700,7 @@ function SalaryComponentsModal({
     }
   };
 
-  const remove = async (name: string) => {
-    toast.dismiss();
-    toast(
-      (t) => (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-[340px]">
-          <div className="text-sm font-semibold text-gray-900">Delete Salary Component</div>
-          <div className="text-xs text-gray-500 mt-1">Are you sure you want to delete "{name}"?</div>
-          <div className="flex items-center justify-end gap-2 mt-4">
-            <button
-              type="button"
-              onClick={() => toast.dismiss(t.id)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                (async () => {
-                  try {
-                    toast.dismiss(t.id);
-                    setLoading(true);
-                    setError(null);
-                    await deleteSalaryComponent(name);
-                    await refresh();
-                    onChanged();
-                    if (editing?.name === name || editing?.id === name) setEditing(null);
-                    toast.success("Salary component deleted");
-                  } catch (e: any) {
-                    const msg = e?.message || "Failed to delete salary component";
-                    setError(msg);
-                    toast.error(msg);
-                  } finally {
-                    setLoading(false);
-                  }
-                })();
-              }}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: Infinity },
-    );
-  };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -811,7 +751,6 @@ function SalaryComponentsModal({
                     <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Type</th>
                     <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Tax</th>
                     <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Enabled</th>
-                    <th className="text-right font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -835,30 +774,12 @@ function SalaryComponentsModal({
                           {c.enabled ? "Yes" : "No"}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => startEdit(c)}
-                            className="p-2 text-gray-600 hover:text-primary hover:bg-primary/10 rounded-lg"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => remove(c.id)}
-                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
                     </tr>
                   ))}
 
                   {!loading && paged.length === 0 && (
                     <tr>
-                      <td className="px-4 py-10 text-center text-gray-600" colSpan={6}>
+                      <td className="px-4 py-10 text-center text-gray-600" colSpan={5}>
                         No salary components found
                       </td>
                     </tr>
