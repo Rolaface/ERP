@@ -15,7 +15,7 @@ import { EmployeesTab } from "./EntryFormTabs";
 import SalaryStructureTab from "../tabs/SalaryStructureTab";
 import SalaryStructureAssignmentsDashboardTab from "./SalaryStructureAssignmentsDashboardTab";
 import PayrollReportsDashboard from "./PayrollReportsDashboard";
-import AdvanceLoanTab from "./AdvanceLoanTab";
+import AdvanceLoanTab from "./AdditionalSalaryTab";
 
 // ── Views ─────────────────────────────────────────────────────────────────────
 import EmployeeDetailsPage from "./EmployeeDetailsPage";
