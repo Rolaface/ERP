@@ -1,6 +1,6 @@
 // CompensationTab.tsx
 import React, { useState, useEffect } from "react";
-import { Calculator, RefreshCw, Lock } from "lucide-react";
+import { RefreshCw, Lock } from "lucide-react";
 import { getCurrentCeiling } from "../../../api/employeeapi";
 import {
   getSalaryStructureById,
@@ -366,205 +366,72 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-5">
-      <div className="bg-card p-5 rounded-lg border border-theme space-y-3">
-        <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
-          Salary Structure
-        </h4>
-        <div>
-          <label className="block text-xs text-main mb-1 font-medium">
-            Select salary structure
-          </label>
-          <select
-            value={String(formData.salaryStructure ?? "")}
-            onChange={(e) => {
-              const v = e.target.value;
-              handleInputChange("salaryStructure", v);
-              applySalaryStructure(v);
-            }}
-            disabled={salaryStructureLoading || salaryStructureDetailLoading}
-            className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-          >
-            <option value="">Select a salary structure</option>
-            {salaryStructures.map((s) => (
-              <option key={String(s.id ?? s.name)} value={String(s.name)}>
-                {String(s.name)}
-              </option>
-            ))}
-          </select>
-          {salaryStructureDetailError ? (
-            <div className="text-[11px] text-danger mt-1">
-              {salaryStructureDetailError}
-            </div>
-          ) : null}
-          {salaryStructureError ? (
-            <div className="text-[11px] text-danger mt-1">
-              {salaryStructureError}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
       <div className="grid grid-cols-2 gap-6">
         {/* ═══════════════ LEFT — Salary & Payroll ═══════════════ */}
         <div className="space-y-5">
-          {/* Salary breakdown */}
+          {/* Salary structure */}
           <div className="bg-card p-5 rounded-lg border border-theme space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
-                Salary Components
+                Salary Structure
               </h4>
-              <Calculator className="w-4 h-4 text-muted" />
             </div>
 
-            {salaryStructureDetailLoading ? (
-              <div className="text-xs text-muted">
-                Loading salary structure…
+            <div>
+              <label className="block text-xs text-main mb-1 font-medium">
+                Select salary structure
+              </label>
+              <select
+                value={String(formData.salaryStructure ?? "")}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  handleInputChange("salaryStructure", v);
+                  applySalaryStructure(v);
+                }}
+                disabled={salaryStructureLoading || salaryStructureDetailLoading}
+                className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+              >
+                <option value="">Select a salary structure</option>
+                {salaryStructures.map((s) => (
+                  <option key={String(s.id ?? s.name)} value={String(s.name)}>
+                    {String(s.name)}
+                  </option>
+                ))}
+              </select>
+
+              <div className="mt-3">
+                <label className="block text-xs text-main mb-1 font-medium">
+                  Basic Salary <span className="text-danger">*</span>
+                </label>
+                <input
+                  aria-label="Basic Salary"
+                  type="number"
+                  step="any"
+                  inputMode="decimal"
+                  value={formData.basicSalary || ""}
+                  onChange={(e) =>
+                    handleInputChange("basicSalary", String(e.target.value))
+                  }
+                  placeholder="Enter basic salary"
+                  className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20"
+                />
               </div>
-            ) : !formData.salaryStructure ? (
-              <div className="text-xs text-muted">
-                Select a salary structure to preview its components.
-              </div>
-            ) : !salaryStructureDetail ? (
-              <div className="text-xs text-muted">—</div>
-            ) : (
-              (() => {
-                const currency =
-                  String(formData.currency ?? "ZMW").trim() || "ZMW";
-                const earnings = Array.isArray(
-                  (salaryStructureDetail as any)?.earnings,
-                )
-                  ? (salaryStructureDetail as any).earnings
-                  : [];
-                const deductions = Array.isArray(
-                  (salaryStructureDetail as any)?.deductions,
-                )
-                  ? (salaryStructureDetail as any).deductions
-                  : [];
-                const totalEarnings = earnings.reduce(
-                  (s: number, r: any) => s + Number(r?.amount ?? 0),
-                  0,
-                );
-                const totalDeductions = deductions.reduce(
-                  (s: number, r: any) => s + Number(r?.amount ?? 0),
-                  0,
-                );
-                const net = totalEarnings - totalDeductions;
-                const monthly = totalEarnings / 12;
-
-                return (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div className="bg-app border border-theme rounded-lg p-3">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                          Salary Structure
-                        </div>
-                        <div className="text-xs font-bold text-main mt-1 break-words">
-                          {String(
-                            (salaryStructureDetail as any)?.name ??
-                              formData.salaryStructure,
-                          )}
-                        </div>
-                      </div>
-                      <div className="bg-app border border-theme rounded-lg p-3">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                          Gross Pay
-                        </div>
-                        <div className="text-xs font-extrabold text-main mt-1 tabular-nums">
-                          {currency}{" "}
-                          {Number(totalEarnings || 0).toLocaleString()}
-                        </div>
-                        <div className="text-[11px] text-muted mt-0.5">
-                          Monthly: {currency}{" "}
-                          {Number(monthly || 0).toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                          })}
-                        </div>
-                      </div>
-                      <div className="bg-app border border-theme rounded-lg p-3">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                          Net
-                        </div>
-                        <div className="text-xs font-extrabold text-main mt-1 tabular-nums">
-                          {currency} {Number(net || 0).toLocaleString()}
-                        </div>
-                        <div className="text-[11px] text-muted mt-0.5">
-                          Deductions: {currency}{" "}
-                          {Number(totalDeductions || 0).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div className="border border-theme rounded-xl bg-card p-4">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                          Earnings
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          {earnings.length === 0 ? (
-                            <div className="text-xs text-muted">—</div>
-                          ) : (
-                            earnings.map((row: any, idx: number) => (
-                              <div
-                                key={`${row?.component ?? idx}`}
-                                className="border-b border-theme/60 last:border-0 py-2"
-                              >
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-bold text-main truncate">
-                                      {String(row?.component ?? "—")}
-                                    </div>
-                                    <div className="text-[11px] text-muted mt-0.5">
-                                      abbr: {String(row?.abbr ?? "—")}
-                                    </div>
-                                  </div>
-                                  <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
-                                    {currency}{" "}
-                                    {Number(row?.amount ?? 0).toLocaleString()}
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="border border-theme rounded-xl bg-card p-4">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                          Deductions
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          {deductions.length === 0 ? (
-                            <div className="text-xs text-muted">—</div>
-                          ) : (
-                            deductions.map((row: any, idx: number) => (
-                              <div
-                                key={`${row?.component ?? idx}`}
-                                className="border-b border-theme/60 last:border-0 py-2"
-                              >
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-bold text-main truncate">
-                                      {String(row?.component ?? "—")}
-                                    </div>
-                                    <div className="text-[11px] text-muted mt-0.5">
-                                      abbr: {String(row?.abbr ?? "—")}
-                                    </div>
-                                  </div>
-                                  <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
-                                    {currency}{" "}
-                                    {Number(row?.amount ?? 0).toLocaleString()}
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                );
-              })()
-            )}
+              {salaryStructureDetailLoading ? (
+                <div className="text-[11px] text-muted mt-1">
+                  Loading salary structure…
+                </div>
+              ) : null}
+              {salaryStructureDetailError ? (
+                <div className="text-[11px] text-danger mt-1">
+                  {salaryStructureDetailError}
+                </div>
+              ) : null}
+              {salaryStructureError ? (
+                <div className="text-[11px] text-danger mt-1">
+                  {salaryStructureError}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           {/* Payroll config — currency, frequency, method */}
@@ -597,6 +464,7 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                     {label}
                   </label>
                   <select
+                    aria-label={label}
                     value={formData[field] || options[0]}
                     onChange={(e) => handleInputChange(field, e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20"
@@ -625,6 +493,7 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                 Account Type <span className="text-danger">*</span>
               </label>
               <select
+                aria-label="Account Type"
                 value={formData.accountType || "Savings"}
                 onChange={(e) =>
                   handleInputChange("accountType", e.target.value)

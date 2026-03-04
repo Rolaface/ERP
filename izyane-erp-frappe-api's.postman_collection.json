@@ -6052,7 +6052,7 @@
 										],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"employee\": \"HR-EMP-00046\",\n    \"salary_structure\": \"Senior-developers-2026\",\n    \"from_date\": \"2026-04-01\",\n    \"company\": \"Izyane\"\n}",
+											"raw": "{\n    \"employee\": \"HR-EMP-00046\",\n    \"salary_structure\": \"Senior-developers-2026\",\n    \"basic\": 12000\n}",
 											"options": {
 												"raw": {
 													"language": "json"

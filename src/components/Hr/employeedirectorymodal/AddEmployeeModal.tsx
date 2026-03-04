@@ -24,7 +24,6 @@ import {
   getSalaryStructureAssignments,
   replaceSalaryStructureAssignment,
 } from "../../../api/salaryStructureAssignmentApi";
-import { getSalaryStructureById } from "../../../api/salaryStructureApi";
 
 import { useCompanySelection } from "../../../hooks/useCompanySelection";
 import { getEmployeeFeatures } from "../../../config/employeeFeatures";
@@ -639,17 +638,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
         const emp = String(employeeCode ?? "").trim();
         if (!emp || !selectedSalaryStructure) return;
 
-        let company = "";
-        try {
-          const detail = await getSalaryStructureById(selectedSalaryStructure);
-          company = String((detail as any)?.company ?? "").trim();
-        } catch {
-          company = "";
-        }
-
-        const from_date =
-          String(formData.engagementDate ?? "").trim() ||
-          new Date().toISOString().slice(0, 10);
+        const basicAmount = Number(formData.basicSalary);
+        if (!Number.isFinite(basicAmount)) return;
 
         try {
           const list = await getSalaryStructureAssignments({ employee: emp });
@@ -663,20 +653,18 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
             )[0];
 
           const assignmentName = String(best?.name ?? "").trim();
-          const resolvedCompany = company || String(companyCode ?? "").trim();
 
           if (assignmentName) {
             await replaceSalaryStructureAssignment({
               name: assignmentName,
               salary_structure: selectedSalaryStructure,
-              company: resolvedCompany,
+              basic: basicAmount,
             });
           } else {
             await createSalaryStructureAssignment({
               employee: emp,
               salary_structure: selectedSalaryStructure,
-              from_date,
-              company: resolvedCompany,
+              basic: basicAmount,
             });
           }
         } catch {

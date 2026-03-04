@@ -3,12 +3,33 @@ import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
 
 const api = createAxiosInstance(ERP_BASE);
+const CREATE_SALARY_STRUCTURE_ASSIGNMENT_ENDPOINT =
+  "https://erp.izyanehub.com/api/method/payroll_rola_izyane.api.salary_structure_assignment.api.create_salary_structure_assignment";
+
+const salaryStructureAssignmentApi: { getAll: string; replace: string } =
+  API.payrollSetup.salaryStructureAssignment;
+
+type AnyRecord = Record<string, unknown>;
+
+const asRecord = (value: unknown): AnyRecord | null => {
+  if (value && typeof value === "object") {
+    return value as AnyRecord;
+  }
+  return null;
+};
+
+const unwrapApiData = (payload: unknown): unknown => {
+  const top = asRecord(payload);
+  if (!top) return payload;
+  return top.data ?? payload;
+};
 
 export type SalaryStructureAssignmentCreatePayload = {
   employee: string;
   salary_structure: string;
-  from_date: string;
-  company: string;
+  basic: number;
+  from_date?: string;
+  company?: string;
 };
 
 export type SalaryStructureAssignmentListItem = {
@@ -18,6 +39,7 @@ export type SalaryStructureAssignmentListItem = {
   salary_structure: string;
   from_date: string;
   company?: string;
+  basic?: number | string;
   department?: string;
   currency?: string;
 };
@@ -30,42 +52,43 @@ export type GetSalaryStructureAssignmentsParams = {
 export type SalaryStructureAssignmentReplacePayload = {
   name: string;
   salary_structure: string;
-  company: string;
+  basic: number;
 };
 
 export async function createSalaryStructureAssignment(
   payload: SalaryStructureAssignmentCreatePayload,
-): Promise<any> {
-  const url = API.payrollSetup.salaryStructureAssignment.create;
-  const resp: AxiosResponse = await api.post(url, payload);
-  return resp.data?.data ?? resp.data;
+): Promise<unknown> {
+  const url = CREATE_SALARY_STRUCTURE_ASSIGNMENT_ENDPOINT;
+  const resp: AxiosResponse<unknown> = await api.post(url, payload);
+  return unwrapApiData(resp.data);
 }
 
 export async function getSalaryStructureAssignments(
   params: GetSalaryStructureAssignmentsParams = {},
 ): Promise<SalaryStructureAssignmentListItem[]> {
-  const url = API.payrollSetup.salaryStructureAssignment.getAll;
-  const resp: AxiosResponse = await api.get(url, {
+  const url = salaryStructureAssignmentApi.getAll;
+  const resp: AxiosResponse<unknown> = await api.get(url, {
     params: {
       ...(params.employee ? { employee: params.employee } : {}),
       ...(params.name ? { name: params.name } : {}),
     },
   });
 
-  const raw = resp.data?.data ?? resp.data;
+  const raw = unwrapApiData(resp.data);
   if (Array.isArray(raw)) return raw as SalaryStructureAssignmentListItem[];
 
-  const nested = raw?.data;
-  if (Array.isArray(nested))
+  const nested = asRecord(raw)?.data;
+  if (Array.isArray(nested)) {
     return nested as SalaryStructureAssignmentListItem[];
+  }
 
   return [];
 }
 
 export async function replaceSalaryStructureAssignment(
   payload: SalaryStructureAssignmentReplacePayload,
-): Promise<any> {
-  const url = (API.payrollSetup.salaryStructureAssignment as any).replace;
-  const resp: AxiosResponse = await api.put(url, payload);
-  return resp.data?.data ?? resp.data;
+): Promise<unknown> {
+  const url = salaryStructureAssignmentApi.replace;
+  const resp: AxiosResponse<unknown> = await api.put(url, payload);
+  return unwrapApiData(resp.data);
 }

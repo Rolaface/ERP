@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Save } from "lucide-react";
 import toast from "react-hot-toast";
-import HrDateInput from "../../../components/Hr/HrDateInput";
 import {
   createSalaryStructureAssignment,
   replaceSalaryStructureAssignment,
@@ -15,7 +14,6 @@ import { getAllEmployees } from "../../../api/employeeapi";
 
 type Props = {
   employeeId?: string;
-  defaultCompany?: string;
   editableEmployee?: boolean;
   editingAssignment?: SalaryStructureAssignmentListItem | null;
   onAssigned?: () => void;
@@ -26,9 +24,32 @@ const inputCls =
 const selectCls =
   "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none focus:border-primary transition cursor-pointer";
 
+type EmployeeOption = {
+  value: string;
+  label: string;
+  joiningDate?: string;
+};
+
+const toIsoDate = (value: unknown): string => {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  const e = error as {
+    message?: string;
+    response?: { data?: { message?: string } };
+  };
+  return e?.response?.data?.message || e?.message || fallback;
+};
+
 export default function SalaryStructureAssignmentTab({
   employeeId,
-  defaultCompany,
   editableEmployee,
   editingAssignment,
   onAssigned,
@@ -45,8 +66,7 @@ export default function SalaryStructureAssignmentTab({
   const [form, setForm] = useState({
     employee: employeeId || "",
     salary_structure: "",
-    from_date: new Date().toISOString().slice(0, 10),
-    company: defaultCompany || "",
+    basic: "",
   });
 
   const isEditing = Boolean(editingAssignment?.name);
@@ -59,8 +79,7 @@ export default function SalaryStructureAssignmentTab({
       salary_structure: String(
         editingAssignment.salary_structure ?? p.salary_structure ?? "",
       ),
-      from_date: String(editingAssignment.from_date ?? p.from_date ?? ""),
-      company: String(editingAssignment.company ?? p.company ?? ""),
+      basic: String(editingAssignment.basic ?? p.basic ?? ""),
     }));
   }, [editingAssignment]);
 
@@ -68,11 +87,6 @@ export default function SalaryStructureAssignmentTab({
     if (!employeeId) return;
     setForm((p) => ({ ...p, employee: employeeId }));
   }, [employeeId]);
-
-  useEffect(() => {
-    if (!defaultCompany) return;
-    setForm((p) => ({ ...p, company: p.company || defaultCompany }));
-  }, [defaultCompany]);
 
   useEffect(() => {
     let mounted = true;
@@ -92,7 +106,7 @@ export default function SalaryStructureAssignmentTab({
       }
     };
 
-    run();
+    void run();
 
     return () => {
       mounted = false;
@@ -138,7 +152,7 @@ export default function SalaryStructureAssignmentTab({
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [salaryStructures]);
 
-  const employeeOptions = useMemo(() => {
+  const employeeOptions = useMemo<EmployeeOption[]>(() => {
     const items = Array.isArray(employees) ? employees : [];
     return items
       .map((e: any) => {
@@ -146,28 +160,42 @@ export default function SalaryStructureAssignmentTab({
           e?.employeeId ?? e?.employee_id ?? e?.id ?? "",
         ).trim();
         const fullName = String(e?.name ?? e?.employeeName ?? "").trim();
+        const joiningDate = String(
+          e?.joiningDate ??
+            e?.engagementDate ??
+            e?.employmentInfo?.joiningDate ??
+            "",
+        ).trim();
         return {
           value: code,
           label: fullName ? `${code} — ${fullName}` : code,
+          joiningDate,
         };
       })
       .filter((o) => o.value)
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [employees]);
 
+  const selectedStructure = useMemo(
+    () =>
+      structureOptions.find(
+        (option) => option.value === form.salary_structure.trim(),
+      ) ?? null,
+    [form.salary_structure, structureOptions],
+  );
+
+  const selectedEmployee = useMemo(
+    () =>
+      employeeOptions.find((option) => option.value === form.employee.trim()) ??
+      null,
+    [employeeOptions, form.employee],
+  );
+
   const canSubmit = useMemo(() => {
-    if (isEditing) {
-      return Boolean(
-        form.employee?.trim() &&
-        form.salary_structure?.trim() &&
-        form.company?.trim(),
-      );
-    }
     return Boolean(
       form.employee?.trim() &&
       form.salary_structure?.trim() &&
-      form.from_date?.trim() &&
-      form.company?.trim(),
+      form.basic?.trim(),
     );
   }, [form]);
 
@@ -177,31 +205,46 @@ export default function SalaryStructureAssignmentTab({
       return;
     }
 
+    const basicAmount = Number(form.basic);
+    if (!Number.isFinite(basicAmount)) {
+      toast.error("Please enter a valid basic salary");
+      return;
+    }
+
     setLoading(true);
     try {
       if (isEditing && editingAssignment?.name) {
         await replaceSalaryStructureAssignment({
           name: String(editingAssignment.name).trim(),
           salary_structure: form.salary_structure.trim(),
-          company: form.company.trim(),
+          basic: basicAmount,
         });
         toast.success("Salary structure assignment updated");
       } else {
+        const fromDate =
+          toIsoDate(selectedEmployee?.joiningDate) ||
+          new Date().toISOString().slice(0, 10);
+
         await createSalaryStructureAssignment({
           employee: form.employee.trim(),
           salary_structure: form.salary_structure.trim(),
-          from_date: form.from_date,
-          company: form.company.trim(),
+          basic: basicAmount,
+          from_date: fromDate,
+          ...(selectedStructure?.company
+            ? { company: selectedStructure.company }
+            : {}),
         });
         toast.success("Salary structure assigned");
       }
       onAssigned?.();
-    } catch (e: any) {
+    } catch (error: unknown) {
       toast.error(
-        e?.message ||
-          (isEditing
+        getErrorMessage(
+          error,
+          isEditing
             ? "Failed to update assignment"
-            : "Failed to assign salary structure"),
+            : "Failed to assign salary structure",
+        ),
       );
     } finally {
       setLoading(false);
@@ -215,7 +258,7 @@ export default function SalaryStructureAssignmentTab({
           Salary Structure Assignment
         </div>
         <div className="text-xs text-muted mt-1">
-          Assign a salary structure to this employee effective from a start date
+          Assign a salary structure and basic salary to this employee
         </div>
       </div>
 
@@ -231,6 +274,8 @@ export default function SalaryStructureAssignmentTab({
               onChange={(e) =>
                 setForm((p) => ({ ...p, employee: e.target.value }))
               }
+              aria-label="Employee"
+              title="Employee"
               className={selectCls}
               disabled={employeesLoading || isEditing}
             >
@@ -247,24 +292,11 @@ export default function SalaryStructureAssignmentTab({
             <input
               value={form.employee}
               readOnly
+              aria-label="Employee"
+              title="Employee"
               className={`${inputCls} opacity-80`}
             />
           )}
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
-            Company
-            <span className="text-danger ml-0.5">*</span>
-          </label>
-          <input
-            value={form.company}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, company: e.target.value }))
-            }
-            placeholder="e.g. Izyane"
-            className={inputCls}
-          />
         </div>
 
         <div>
@@ -277,6 +309,8 @@ export default function SalaryStructureAssignmentTab({
             onChange={(e) =>
               setForm((p) => ({ ...p, salary_structure: e.target.value }))
             }
+            aria-label="Salary Structure"
+            title="Salary Structure"
             className={selectCls}
             disabled={salaryStructuresLoading}
           >
@@ -295,15 +329,18 @@ export default function SalaryStructureAssignmentTab({
 
         <div>
           <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
-            From Date
+            Basic Salary
             <span className="text-danger ml-0.5">*</span>
           </label>
-          <HrDateInput
-            value={form.from_date}
-            onChange={(v: string) => setForm((p) => ({ ...p, from_date: v }))}
-            placeholder="DD/MM/YYYY"
-            inputClassName={inputCls}
-            disabled={isEditing}
+          <input
+            type="number"
+            step="any"
+            value={form.basic}
+            onChange={(e) => setForm((p) => ({ ...p, basic: e.target.value }))}
+            aria-label="Basic Salary"
+            title="Basic Salary"
+            placeholder="e.g. 4000"
+            className={inputCls}
           />
         </div>
       </div>
