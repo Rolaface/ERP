@@ -7,8 +7,7 @@ const api = createAxiosInstance(ERP_BASE);
 export type SalaryStructureAssignmentCreatePayload = {
   employee: string;
   salary_structure: string;
-  from_date: string;
-  company: string;
+  basic: number;
 };
 
 export type SalaryStructureAssignmentListItem = {
@@ -20,6 +19,7 @@ export type SalaryStructureAssignmentListItem = {
   company?: string;
   department?: string;
   currency?: string;
+  basic?: number;
 };
 
 export type GetSalaryStructureAssignmentsParams = {
@@ -30,7 +30,7 @@ export type GetSalaryStructureAssignmentsParams = {
 export type SalaryStructureAssignmentReplacePayload = {
   name: string;
   salary_structure: string;
-  company: string;
+  basic?: number;
 };
 
 export async function createSalaryStructureAssignment(

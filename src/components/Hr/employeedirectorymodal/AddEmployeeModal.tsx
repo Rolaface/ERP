@@ -19,7 +19,6 @@ import {
   getSalaryStructureAssignments,
   replaceSalaryStructureAssignment,
 } from "../../../api/salaryStructureAssignmentApi";
-import { getSalaryStructureById } from "../../../api/salaryStructureApi";
 
 import { useCompanySelection } from "../../../hooks/useCompanySelection";
 import { getEmployeeFeatures } from "../../../config/employeeFeatures";
@@ -639,16 +638,8 @@ const [step, setStep] = useState<"verification" | "form">(
       const emp = String(employeeCode ?? "").trim();
       if (!emp || !selectedSalaryStructure) return;
 
-      let company = "";
-      try {
-        const detail = await getSalaryStructureById(selectedSalaryStructure);
-        company = String((detail as any)?.company ?? "").trim();
-      } catch {
-        company = "";
-      }
-
-      const from_date =
-        String(formData.engagementDate ?? "").trim() || new Date().toISOString().slice(0, 10);
+      const basic = Number(formData.basicSalary || formData.grossSalary) || 0;
+      if (!basic) return;
 
       try {
         const list = await getSalaryStructureAssignments({ employee: emp });
@@ -658,20 +649,17 @@ const [step, setStep] = useState<"verification" | "form">(
           .sort((a: any, b: any) => String(b?.from_date ?? "").localeCompare(String(a?.from_date ?? "")))[0];
 
         const assignmentName = String(best?.name ?? "").trim();
-        const resolvedCompany = company || String(companyCode ?? "").trim();
-
         if (assignmentName) {
           await replaceSalaryStructureAssignment({
             name: assignmentName,
             salary_structure: selectedSalaryStructure,
-            company: resolvedCompany,
+            basic,
           });
         } else {
           await createSalaryStructureAssignment({
             employee: emp,
             salary_structure: selectedSalaryStructure,
-            from_date,
-            company: resolvedCompany,
+            basic,
           });
         }
       } catch {

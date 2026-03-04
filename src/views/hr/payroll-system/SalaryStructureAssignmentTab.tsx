@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Save } from "lucide-react";
 import toast from "react-hot-toast";
-import HrDateInput from "../../../components/Hr/HrDateInput";
 import {
   createSalaryStructureAssignment,
   replaceSalaryStructureAssignment,
@@ -12,7 +11,6 @@ import { getAllEmployees } from "../../../api/employeeapi";
 
 type Props = {
   employeeId?: string;
-  defaultCompany?: string;
   editableEmployee?: boolean;
   editingAssignment?: SalaryStructureAssignmentListItem | null;
   onAssigned?: () => void;
@@ -25,12 +23,12 @@ const selectCls =
 
 export default function SalaryStructureAssignmentTab({
   employeeId,
-  defaultCompany,
   editableEmployee,
   editingAssignment,
   onAssigned,
 }: Props) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [salaryStructuresLoading, setSalaryStructuresLoading] = useState(false);
   const [salaryStructures, setSalaryStructures] = useState<SalaryStructureListItem[]>([]);
 
@@ -40,8 +38,7 @@ export default function SalaryStructureAssignmentTab({
   const [form, setForm] = useState({
     employee: employeeId || "",
     salary_structure: "",
-    from_date: new Date().toISOString().slice(0, 10),
-    company: defaultCompany || "",
+    basic: "",
   });
 
   const isEditing = Boolean(editingAssignment?.name);
@@ -52,8 +49,10 @@ export default function SalaryStructureAssignmentTab({
       ...p,
       employee: String(editingAssignment.employee ?? p.employee ?? ""),
       salary_structure: String(editingAssignment.salary_structure ?? p.salary_structure ?? ""),
-      from_date: String(editingAssignment.from_date ?? p.from_date ?? ""),
-      company: String(editingAssignment.company ?? p.company ?? ""),
+      basic:
+        editingAssignment && (editingAssignment as any)?.basic !== undefined && (editingAssignment as any)?.basic !== null
+          ? String((editingAssignment as any).basic)
+          : p.basic,
     }));
   }, [editingAssignment]);
 
@@ -61,11 +60,6 @@ export default function SalaryStructureAssignmentTab({
     if (!employeeId) return;
     setForm((p) => ({ ...p, employee: employeeId }));
   }, [employeeId]);
-
-  useEffect(() => {
-    if (!defaultCompany) return;
-    setForm((p) => ({ ...p, company: p.company || defaultCompany }));
-  }, [defaultCompany]);
 
   useEffect(() => {
     let mounted = true;
@@ -147,11 +141,23 @@ export default function SalaryStructureAssignmentTab({
   }, [employees]);
 
   const canSubmit = useMemo(() => {
+    const basicOk = Number(String(form.basic ?? "").trim()) > 0;
     if (isEditing) {
-      return Boolean(form.employee?.trim() && form.salary_structure?.trim() && form.company?.trim());
+      return Boolean(form.employee?.trim() && form.salary_structure?.trim() && basicOk);
     }
-    return Boolean(form.employee?.trim() && form.salary_structure?.trim() && form.from_date?.trim() && form.company?.trim());
+    return Boolean(form.employee?.trim() && form.salary_structure?.trim() && basicOk);
   }, [form]);
+
+  const getApiErrorMessage = (e: any): string => {
+    const data = e?.response?.data ?? e?.data;
+    const msg =
+      (typeof data?.message === "string" && data.message.trim() ? data.message : "") ||
+      (typeof data?.data?.message === "string" && data.data.message.trim() ? data.data.message : "") ||
+      (typeof e?.message === "string" && e.message.trim() ? e.message : "") ||
+      "Request failed";
+
+    return msg;
+  };
 
   const handleAssign = async () => {
     if (!canSubmit) {
@@ -159,27 +165,31 @@ export default function SalaryStructureAssignmentTab({
       return;
     }
 
+    const basic = Number(String(form.basic ?? "").trim());
+
     setLoading(true);
+    setError(null);
     try {
       if (isEditing && editingAssignment?.name) {
         await replaceSalaryStructureAssignment({
           name: String(editingAssignment.name).trim(),
           salary_structure: form.salary_structure.trim(),
-          company: form.company.trim(),
+          basic,
         });
         toast.success("Salary structure assignment updated");
       } else {
         await createSalaryStructureAssignment({
           employee: form.employee.trim(),
           salary_structure: form.salary_structure.trim(),
-          from_date: form.from_date,
-          company: form.company.trim(),
+          basic,
         });
         toast.success("Salary structure assigned");
       }
       onAssigned?.();
     } catch (e: any) {
-      toast.error(e?.message || (isEditing ? "Failed to update assignment" : "Failed to assign salary structure"));
+      const msg = getApiErrorMessage(e);
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -193,6 +203,12 @@ export default function SalaryStructureAssignmentTab({
           Assign a salary structure to this employee effective from a start date
         </div>
       </div>
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
@@ -221,19 +237,6 @@ export default function SalaryStructureAssignmentTab({
 
         <div>
           <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
-            Company
-            <span className="text-danger ml-0.5">*</span>
-          </label>
-          <input
-            value={form.company}
-            onChange={(e) => setForm((p) => ({ ...p, company: e.target.value }))}
-            placeholder="e.g. Izyane"
-            className={inputCls}
-          />
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
             Salary Structure
             <span className="text-danger ml-0.5">*</span>
           </label>
@@ -254,17 +257,19 @@ export default function SalaryStructureAssignmentTab({
 
         <div>
           <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
-            From Date
+            Basic Salary
             <span className="text-danger ml-0.5">*</span>
           </label>
-          <HrDateInput
-            value={form.from_date}
-            onChange={(v: string) => setForm((p) => ({ ...p, from_date: v }))}
-            placeholder="DD/MM/YYYY"
-            inputClassName={inputCls}
-            disabled={isEditing}
+          <input
+            type="number"
+            value={form.basic}
+            onChange={(e) => setForm((p) => ({ ...p, basic: e.target.value }))}
+            placeholder="e.g. 4000"
+            className={inputCls}
+            min={0}
           />
         </div>
+
       </div>
 
       <div className="flex items-center justify-end">
