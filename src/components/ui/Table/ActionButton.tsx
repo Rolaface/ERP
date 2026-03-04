@@ -159,7 +159,8 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
       <button
         type="button"
         aria-haspopup="menu"
-        aria-expanded={open}
+        aria-label="Open actions menu"
+        title="Open actions menu"
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);

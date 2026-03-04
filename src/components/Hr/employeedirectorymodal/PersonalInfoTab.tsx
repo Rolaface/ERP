@@ -4,7 +4,18 @@ import { getEmployeeFeatures } from "../../../config/employeeFeatures";
 import HrDateInput from "../HrDateInput";
 
 type PersonalInfoTabProps = {
-  formData: any;
+  formData: {
+    nrcId?: string;
+    socialSecurityNapsa?: string;
+    nhimaHealthInsurance?: string;
+    tpinId?: string;
+    firstName?: string;
+    otherNames?: string;
+    lastName?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    maritalStatus?: string;
+  };
   handleInputChange: (field: string, value: string | boolean) => void;
   verifiedFields: Record<string, boolean>;
 };
@@ -230,6 +241,8 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             <select
               value={formData.gender}
               disabled={verifiedFields.gender}
+              aria-label="Gender"
+              title="Gender"
               onChange={(e) => handleInputChange("gender", e.target.value)}
               className={`w-full px-3 py-2 text-sm rounded-lg border
     ${
@@ -249,6 +262,8 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             </label>
             <select
               value={formData.maritalStatus}
+              aria-label="Marital Status"
+              title="Marital Status"
               onChange={(e) =>
                 handleInputChange("maritalStatus", e.target.value)
               }

@@ -33,6 +33,29 @@ export default function PayrollPreviewModal({
   runPayrollDisabled,
   runPayrollLoading,
 }: PayrollPreviewModalProps) {
+  type PreviewComponent = {
+    component?: string;
+    enabled?: number | boolean | string;
+  };
+
+  const asRecord = (value: unknown): Record<string, unknown> =>
+    typeof value === "object" && value !== null
+      ? (value as Record<string, unknown>)
+      : {};
+
+  const getErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error && error.message) return error.message;
+    return fallback;
+  };
+
+  const toSafeText = (value: unknown): string => {
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean") {
+      return String(value);
+    }
+    return "";
+  };
+
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [detail, setDetail] = React.useState<SalaryStructureDetail | null>(
@@ -116,16 +139,18 @@ export default function PayrollPreviewModal({
 
         missingStructureAlertShownRef.current = false;
         setDetail(resp);
-      } catch (e: any) {
-        if (!mounted) return;
-        setError(e?.message || "Failed to load salary structure");
+      } catch (error: unknown) {
+        if (mounted) {
+          setError(getErrorMessage(error, "Failed to load salary structure"));
+        }
       } finally {
-        if (!mounted) return;
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    run();
+    void run();
 
     return () => {
       mounted = false;
@@ -133,29 +158,37 @@ export default function PayrollPreviewModal({
   }, [open, structureName, onClose]);
 
   const safeCurrency = String(currency ?? "").trim();
-  const earningsRaw = Array.isArray((detail as any)?.earnings)
-    ? (detail as any).earnings
-    : [];
-  const deductionsRaw = Array.isArray((detail as any)?.deductions)
-    ? (detail as any).deductions
-    : [];
+  const earningsSource = detail?.earnings;
+  const earningsRaw = React.useMemo(
+    () => (Array.isArray(earningsSource) ? earningsSource : []),
+    [earningsSource],
+  );
+  const deductionsSource = detail?.deductions;
+  const deductionsRaw = React.useMemo(
+    () => (Array.isArray(deductionsSource) ? deductionsSource : []),
+    [deductionsSource],
+  );
+
+  const detailRecord = React.useMemo(() => asRecord(detail), [detail]);
 
   const enabledComponentKeys = React.useMemo(() => {
-    const comps = Array.isArray((detail as any)?.components)
-      ? (detail as any).components
+    const compsRaw = detailRecord.components;
+    const comps: PreviewComponent[] = Array.isArray(compsRaw)
+      ? compsRaw.map((c) => asRecord(c) as PreviewComponent)
       : [];
+
     const set = new Set<string>();
-    comps.forEach((c: any) => {
-      const name = String(c?.component ?? "").trim();
+    comps.forEach((c) => {
+      const name = toSafeText(c.component).trim();
       if (!name) return;
-      const enabled = Boolean(Number(c?.enabled ?? 0)) || c?.enabled === true;
+      const enabled = Boolean(Number(c.enabled ?? 0)) || c.enabled === true;
       if (enabled) set.add(name.toLowerCase());
     });
     return set;
-  }, [detail]);
+  }, [detailRecord]);
 
   const displayComponentName = React.useCallback((name: unknown) => {
-    const raw = String(name ?? "").trim();
+    const raw = toSafeText(name).trim();
     if (!raw) return "—";
     const key = raw.toLowerCase();
     if (key === "income tax") return "PAYE";
@@ -168,9 +201,7 @@ export default function PayrollPreviewModal({
   const normalizeComponentKey = React.useCallback(
     (name: unknown) => {
       const label = displayComponentName(name);
-      return String(label ?? "")
-        .trim()
-        .toLowerCase();
+      return label.trim().toLowerCase();
     },
     [displayComponentName],
   );
@@ -178,30 +209,22 @@ export default function PayrollPreviewModal({
   const earnings = React.useMemo(() => {
     if (!enabledComponentKeys || enabledComponentKeys.size === 0)
       return earningsRaw;
-    return (earningsRaw || []).filter((r: any) =>
-      enabledComponentKeys.has(
-        String(r?.component ?? "")
-          .trim()
-          .toLowerCase(),
-      ),
+    return earningsRaw.filter((r) =>
+      enabledComponentKeys.has(toSafeText(r?.component).trim().toLowerCase()),
     );
   }, [earningsRaw, enabledComponentKeys]);
 
   const deductions = React.useMemo(() => {
     if (!enabledComponentKeys || enabledComponentKeys.size === 0)
       return deductionsRaw;
-    return (deductionsRaw || []).filter((r: any) =>
-      enabledComponentKeys.has(
-        String(r?.component ?? "")
-          .trim()
-          .toLowerCase(),
-      ),
+    return deductionsRaw.filter((r) =>
+      enabledComponentKeys.has(toSafeText(r?.component).trim().toLowerCase()),
     );
   }, [deductionsRaw, enabledComponentKeys]);
 
   const deductionsDeduped = React.useMemo(() => {
     const map = new Map<string, { component: string; amount: number }>();
-    (deductions || []).forEach((row: any) => {
+    deductions.forEach((row) => {
       const component = displayComponentName(row?.component);
       const key = normalizeComponentKey(row?.component);
       if (!key || key === "—") return;
@@ -216,7 +239,7 @@ export default function PayrollPreviewModal({
     return Array.from(map.values());
   }, [deductions, displayComponentName, normalizeComponentKey]);
 
-  const fmtMoney = (v: any) => {
+  const fmtMoney = (v: unknown) => {
     const n = Number(v ?? 0);
     const prefix = safeCurrency ? `${safeCurrency} ` : "";
     return `${prefix}${(Number.isFinite(n) ? n : 0).toLocaleString()}`;
@@ -233,14 +256,16 @@ export default function PayrollPreviewModal({
               Salary Structure
             </div>
             <div className="text-xs text-muted mt-0.5 break-words">
-              {String(structureName || (detail as any)?.name || "—")}
+              {toSafeText(structureName).trim() || detail?.name || "—"}
             </div>
           </div>
           <div className="flex items-center gap-2">
             {onRunPayroll && (
               <button
                 type="button"
-                onClick={() => onRunPayroll()}
+                onClick={() => {
+                  void onRunPayroll();
+                }}
                 disabled={!!runPayrollDisabled}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-success text-white text-xs font-extrabold disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -249,6 +274,8 @@ export default function PayrollPreviewModal({
             )}
             <button
               type="button"
+              aria-label="Close salary structure preview"
+              title="Close"
               onClick={onClose}
               className="p-2 rounded-lg hover:bg-card text-muted hover:text-main transition"
             >
@@ -269,6 +296,8 @@ export default function PayrollPreviewModal({
                   type="month"
                   value={monthValue}
                   onChange={(e) => fillDatesForMonth(e.target.value)}
+                  aria-label="Month"
+                  title="Month"
                   className="w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
                 />
               </div>
@@ -280,6 +309,8 @@ export default function PayrollPreviewModal({
                   type="date"
                   value={String(payPeriodStart ?? "")}
                   onChange={(e) => onPayPeriodStartChange?.(e.target.value)}
+                  aria-label="Pay Period Start"
+                  title="Pay Period Start"
                   className="w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
                 />
               </div>
@@ -291,6 +322,8 @@ export default function PayrollPreviewModal({
                   type="date"
                   value={String(payPeriodEnd ?? "")}
                   onChange={(e) => onPayPeriodEndChange?.(e.target.value)}
+                  aria-label="Pay Period End"
+                  title="Pay Period End"
                   className="w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
                 />
               </div>
@@ -324,7 +357,7 @@ export default function PayrollPreviewModal({
                       Salary Structure
                     </div>
                     <div className="text-xs font-bold text-main mt-1 break-words">
-                      {String((detail as any)?.name ?? "—")}
+                      {detail?.name ?? "—"}
                     </div>
                   </div>
                   <div className="bg-app border border-theme rounded-lg p-3">
@@ -332,7 +365,7 @@ export default function PayrollPreviewModal({
                       Company
                     </div>
                     <div className="text-xs font-bold text-main mt-1 break-words">
-                      {String((detail as any)?.company ?? "—")}
+                      {detail?.company ?? "—"}
                     </div>
                   </div>
                   <div className="bg-app border border-theme rounded-lg p-3">
@@ -340,7 +373,7 @@ export default function PayrollPreviewModal({
                       Status
                     </div>
                     <div className="text-xs font-bold text-main mt-1">
-                      {(detail as any)?.is_active ? "Active" : "Inactive"}
+                      {detail?.is_active ? "Active" : "Inactive"}
                     </div>
                   </div>
                 </div>
@@ -355,7 +388,7 @@ export default function PayrollPreviewModal({
                     {earnings.length === 0 ? (
                       <div className="text-xs text-muted">—</div>
                     ) : (
-                      earnings.map((row: any, idx: number) => (
+                      earnings.map((row, idx) => (
                         <div
                           key={`${row?.component ?? idx}`}
                           className="border-b border-theme/60 last:border-0 py-2"
@@ -382,7 +415,7 @@ export default function PayrollPreviewModal({
                     {deductionsDeduped.length === 0 ? (
                       <div className="text-xs text-muted">—</div>
                     ) : (
-                      deductionsDeduped.map((row: any, idx: number) => (
+                      deductionsDeduped.map((row, idx) => (
                         <div
                           key={`${row?.component ?? idx}`}
                           className="border-b border-theme/60 last:border-0 py-2"

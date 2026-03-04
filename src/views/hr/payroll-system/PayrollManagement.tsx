@@ -9,6 +9,7 @@ import {
   X,
   Download,
   CreditCard,
+  ExternalLink,
 } from "lucide-react";
 
 import type { PayrollEntry, Employee } from "../../../types/payrolltypes";
@@ -30,6 +31,9 @@ import AdvanceLoanTab from "./AdvanceLoanTab";
 
 // ── Views ─────────────────────────────────────────────────────────────────────
 import EmployeeDetailsPage from "./EmployeeDetailsPage";
+import Modal from "../../../components/ui/modal/modal";
+import { Button } from "../../../components/ui/modal/formComponent";
+import { ActionButton } from "../../../components/ui/Table/ActionButton";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TOAST NOTIFICATION (inline, lightweight)
@@ -107,6 +111,31 @@ type View =
   | "reports"
   | "advanceLoan";
 
+type EmployeeApiRow = {
+  id?: string;
+  employeeId?: string;
+  employee_id?: string;
+  name?: string;
+  email?: string;
+  status?: string;
+  department?: string;
+  jobTitle?: string;
+  workLocation?: string;
+  grossSalary?: number | string;
+};
+
+type EmployeeSummaryApi = {
+  totalEmployees?: number | string;
+  active?: number | string;
+  onLeave?: number | string;
+  inactive?: number | string;
+};
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : {};
+
 const toCsv = (rows: Array<Record<string, any>>): string => {
   const colSet = new Set<string>();
   rows.forEach((r) => {
@@ -114,18 +143,34 @@ const toCsv = (rows: Array<Record<string, any>>): string => {
   });
   const cols = Array.from(colSet);
 
-  const esc = (v: any) => {
-    const s = v === null || v === undefined ? "" : String(v);
-    const needs = /[\n\r,\"]/g.test(s);
-    const out = s.replace(/\"/g, '""');
+  const esc = (v: unknown) => {
+    let s = "";
+    if (v === null || v === undefined) {
+      s = "";
+    } else if (typeof v === "string") {
+      s = v;
+    } else if (typeof v === "number" || typeof v === "boolean") {
+      s = String(v);
+    } else {
+      try {
+        s = JSON.stringify(v) ?? "";
+      } catch {
+        s = "";
+      }
+    }
+    const needs = /[\n\r,"]/g.test(s);
+    const out = s.replace(/"/g, '""');
     return needs ? `"${out}"` : out;
   };
 
   const header = cols.map(esc).join(",");
-  const lines = rows.map((r) =>
-    cols.map((c) => esc((r as any)?.[c])).join(","),
-  );
+  const lines = rows.map((r) => cols.map((c) => esc(r[c])).join(","));
   return [header, ...lines].join("\n");
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
 };
 
 const downloadCsv = (filename: string, csvContent: string) => {
@@ -262,8 +307,8 @@ const NewPayrollEntry: React.FC<{
     selectedEmployees: [],
   });
 
-  const handleFormChange = (field: string, value: any) => {
-    setFormData((p) => ({ ...p, [field]: value }));
+  const handleFormChange = (field: string, value: unknown) => {
+    setFormData((p) => ({ ...p, [field]: value }) as PayrollEntry);
   };
 
   return (
@@ -272,6 +317,9 @@ const NewPayrollEntry: React.FC<{
       <header className="h-12 shrink-0 bg-card border-b border-theme px-5 flex items-center justify-between z-30">
         <div className="flex items-center gap-3">
           <button
+            type="button"
+            title="Back"
+            aria-label="Go back"
             onClick={onBack}
             className="p-1.5 rounded-lg hover:bg-app text-muted hover:text-main transition"
           >
@@ -349,15 +397,17 @@ const SalarySlipDetailsModal: React.FC<{
         const resp = await getSalarySlipById(slipId);
         if (!mounted) return;
         setData(resp);
-      } catch (e: any) {
-        if (!mounted) return;
-        setError(e?.message || "Failed to load salary slip");
+      } catch (error: unknown) {
+        if (mounted) {
+          setError(getErrorMessage(error, "Failed to load salary slip"));
+        }
       } finally {
-        if (!mounted) return;
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
-    run();
+    void run();
     return () => {
       mounted = false;
     };
@@ -365,262 +415,299 @@ const SalarySlipDetailsModal: React.FC<{
 
   if (!open) return null;
 
-  const earnings = Array.isArray(data?.earnings) ? data?.earnings : [];
-  const deductions = Array.isArray(data?.deductions) ? data?.deductions : [];
+  const earningsSource = data?.earnings;
+  const earnings: Array<{ component: string; amount: number }> = Array.isArray(
+    earningsSource,
+  )
+    ? earningsSource
+    : [];
+  const deductionsSource = data?.deductions;
+  const deductions: Array<{ component: string; amount: number }> =
+    Array.isArray(deductionsSource) ? deductionsSource : [];
   const paySlipUrl = String(data?.paySlipUrl ?? "").trim();
   const referenceNumber = String(data?.referenceNumber ?? "").trim();
+  const employeeName = String(
+    data?.employee_name ?? data?.employee ?? "",
+  ).trim();
+
+  const footer = (
+    <div className="w-full flex justify-end">
+      <Button variant="secondary" onClick={onClose}>
+        Close
+      </Button>
+    </div>
+  );
+
+  const Field = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: React.ReactNode;
+  }) => {
+    const isPrimitive = typeof value === "string" || typeof value === "number";
+
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+          {label}
+        </div>
+        {isPrimitive ? (
+          <input
+            readOnly
+            value={String(value)}
+            aria-label={label}
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-main"
+          />
+        ) : (
+          <div className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-main">
+            {value}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const SectionTitle = ({ title }: { title: string }) => (
+    <div className="text-xs font-bold text-main uppercase tracking-wide">
+      {title}
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col">
-        <div className="px-6 py-4 flex items-center justify-between border-b border-border bg-app">
-          <div className="min-w-0">
-            <h3 className="text-sm font-bold text-main flex items-center gap-2">
-              <FileText className="w-4 h-4 text-muted" />
-              Salary Slip
-            </h3>
-            <div className="text-xs text-muted mt-1 break-words">{slipId}</div>
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title={slipId ? `Salary Slip ${slipId}` : "Salary Slip Details"}
+      subtitle={loading ? "Loading salary slip details" : undefined}
+      icon={FileText}
+      maxWidth="6xl"
+      height="82vh"
+      footer={footer}
+    >
+      {error && (
+        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-semibold">
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="animate-pulse">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div
+                key={`slip-skeleton-${idx}`}
+                className="bg-white border border-gray-200 rounded-xl p-4"
+              >
+                <div className="h-3 w-24 bg-gray-300 rounded" />
+                <div className="h-6 w-40 bg-gray-300 rounded mt-2" />
+              </div>
+            ))}
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-muted/10 transition-colors"
-          >
-            <X className="w-5 h-5 text-muted hover:text-main" />
-          </button>
         </div>
+      )}
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {error}
+      {!loading && data && (
+        <div className="bg-[#fbf7f2] border border-gray-200 rounded-2xl p-5 space-y-6">
+          <div>
+            <SectionTitle title="Basic Information" />
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Field label="Slip ID" value={data.name ?? slipId ?? "—"} />
+              <Field label="Employee" value={employeeName || "—"} />
+              <Field label="Employee ID" value={data.employee ?? "—"} />
+              <Field label="Start Date" value={data.start_date ?? "—"} />
+              <Field label="End Date" value={data.end_date ?? "—"} />
+              <Field
+                label="Salary Structure"
+                value={data.salary_structure ?? "—"}
+              />
+              <Field label="Reference #" value={referenceNumber || "—"} />
+              <Field
+                label="Status"
+                value={<StatusChip status={data.status} />}
+              />
             </div>
-          )}
-          {loading && <div className="text-sm text-muted">Loading...</div>}
+          </div>
 
-          {!loading && data && (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">
-                    Employee
-                  </div>
-                  <div className="text-sm font-semibold text-main break-words">
-                    {data.employee_name || data.employee}
-                  </div>
-                  <div className="text-xs text-muted mt-0.5">
-                    {data.employee}
-                  </div>
+          <div>
+            <SectionTitle title="Amounts" />
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Field
+                label="Total Earnings"
+                value={`ZMW ${Number(data.total_earnings ?? 0).toLocaleString("en-ZM")}`}
+              />
+              <Field
+                label="Total Deductions"
+                value={`ZMW ${Number(data.total_deduction ?? 0).toLocaleString("en-ZM")}`}
+              />
+              <Field
+                label="Net Pay"
+                value={`ZMW ${Number(data.net_pay ?? 0).toLocaleString("en-ZM")}`}
+              />
+              <Field
+                label="Receipt"
+                value={
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (paySlipUrl) {
+                        window.open(
+                          paySlipUrl,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                        return;
+                      }
+                      window.open(
+                        "about:blank",
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                    }}
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary"
+                  >
+                    {paySlipUrl ? "Open Receipt" : "Receipt Not Available"}
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                }
+              />
+            </div>
+          </div>
+
+          {paySlipUrl ? (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                <div className="text-xs font-bold text-main uppercase tracking-wide">
+                  Payslip Preview
                 </div>
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">
-                    Period
-                  </div>
-                  <div className="text-sm font-semibold text-main">
-                    {data.start_date} → {data.end_date}
-                  </div>
-                  <div className="text-xs text-muted mt-0.5">
-                    {data.salary_structure}
-                  </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.open(paySlipUrl, "_blank", "noopener,noreferrer")
+                  }
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary"
+                >
+                  Open Receipt
+                  <ExternalLink className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="h-[520px] bg-white">
+                <iframe
+                  title="Payslip PDF"
+                  src={paySlipUrl}
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                <div className="text-xs font-bold text-main uppercase tracking-wide">
+                  Earnings
                 </div>
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">
-                    Net Pay
-                  </div>
-                  <div className="text-xl font-bold text-main tabular-nums">
-                    ZMW {Number(data.net_pay ?? 0).toLocaleString("en-ZM")}
-                  </div>
-                  <div className="mt-2">
-                    <StatusChip status={data.status} />
-                  </div>
+                <div className="text-sm font-semibold text-main">
+                  ZMW {Number(data.total_earnings ?? 0).toLocaleString("en-ZM")}
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">
-                    Reference Number
-                  </div>
-                  <div className="text-sm font-semibold text-main break-words">
-                    {referenceNumber || "—"}
-                  </div>
-                </div>
-                <div className="bg-muted/5 rounded-lg p-5 md:col-span-2">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-2">
-                    Payslip PDF
-                  </div>
-                  {paySlipUrl ? (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <a
-                        href={paySlipUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3 py-2 rounded-md text-xs font-medium border border-border bg-card text-main hover:bg-muted/5 transition-colors"
-                      >
-                        Open PDF
-                      </a>
-                      <a
-                        href={paySlipUrl}
-                        download
-                        className="px-3 py-2 rounded-md text-xs font-medium border border-border bg-card text-main hover:bg-muted/5 transition-colors"
-                      >
-                        Download
-                      </a>
-                      <div className="text-[11px] text-muted break-all">
-                        {paySlipUrl}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted">
-                      No payslip PDF available
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {paySlipUrl ? (
-                <div className="rounded-lg overflow-hidden bg-card shadow-sm border border-border">
-                  <div className="px-5 py-4 bg-muted/5 flex items-center justify-between">
-                    <div className="text-sm font-bold text-main">
-                      Payslip Preview
-                    </div>
-                    <a
-                      href={paySlipUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs font-medium text-primary hover:underline"
-                    >
-                      Open in new tab
-                    </a>
-                  </div>
-                  <div className="h-[520px] bg-black/5">
-                    <iframe
-                      title="Payslip PDF"
-                      src={paySlipUrl}
-                      className="w-full h-full"
-                    />
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-lg overflow-hidden bg-card shadow-sm">
-                  <div className="px-5 py-4 bg-muted/5 flex items-center justify-between">
-                    <div className="text-sm font-bold text-main">Earnings</div>
-                    <div className="text-sm font-bold text-main">
-                      ZMW{" "}
-                      {Number(data.total_earnings ?? 0).toLocaleString("en-ZM")}
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-card">
-                        <tr>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-left">
-                            Component
-                          </th>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-right">
-                            Amount
-                          </th>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-[#fbf7f2]">
+                    <tr>
+                      <th className="px-4 py-2.5 text-xs font-semibold text-muted text-left">
+                        Component
+                      </th>
+                      <th className="px-4 py-2.5 text-xs font-semibold text-muted text-right">
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {earnings.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={2}
+                          className="px-4 py-8 text-center text-sm text-muted"
+                        >
+                          No earnings
+                        </td>
+                      </tr>
+                    ) : (
+                      earnings.map((r) => (
+                        <tr
+                          key={`${r?.component}`}
+                          className="border-t border-gray-100"
+                        >
+                          <td className="px-4 py-3 text-sm text-main">
+                            {String(r?.component ?? "")}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-main tabular-nums">
+                            {Number(r?.amount ?? 0).toLocaleString("en-ZM")}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {earnings.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={2}
-                              className="px-5 py-8 text-center text-sm text-muted"
-                            >
-                              No earnings
-                            </td>
-                          </tr>
-                        ) : (
-                          earnings.map((r: any) => (
-                            <tr
-                              key={`${r?.component}`}
-                              className="last:border-0 hover:bg-muted/5 transition-colors"
-                            >
-                              <td className="px-5 py-3 text-sm font-medium text-main">
-                                {String(r?.component ?? "")}
-                              </td>
-                              <td className="px-5 py-3 text-right text-sm font-medium text-main tabular-nums">
-                                {Number(r?.amount ?? 0).toLocaleString("en-ZM")}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-                <div className="rounded-lg overflow-hidden bg-card shadow-sm">
-                  <div className="px-5 py-4 bg-muted/5 flex items-center justify-between">
-                    <div className="text-sm font-bold text-main">
-                      Deductions
-                    </div>
-                    <div className="text-sm font-bold text-main">
-                      ZMW{" "}
-                      {Number(data.total_deduction ?? 0).toLocaleString(
-                        "en-ZM",
-                      )}
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-card">
-                        <tr>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-left">
-                            Component
-                          </th>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-right">
-                            Amount
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {deductions.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={2}
-                              className="px-5 py-8 text-center text-sm text-muted"
-                            >
-                              No deductions
-                            </td>
-                          </tr>
-                        ) : (
-                          deductions.map((r: any, idx: number) => (
-                            <tr
-                              key={`${r?.component}-${idx}`}
-                              className="last:border-0 hover:bg-muted/5 transition-colors"
-                            >
-                              <td className="px-5 py-3 text-sm font-medium text-main">
-                                {String(r?.component ?? "")}
-                              </td>
-                              <td className="px-5 py-3 text-right text-sm font-medium text-main tabular-nums">
-                                {Number(r?.amount ?? 0).toLocaleString("en-ZM")}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                <div className="text-xs font-bold text-main uppercase tracking-wide">
+                  Deductions
+                </div>
+                <div className="text-sm font-semibold text-main">
+                  ZMW{" "}
+                  {Number(data.total_deduction ?? 0).toLocaleString("en-ZM")}
                 </div>
               </div>
-            </>
-          )}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-[#fbf7f2]">
+                    <tr>
+                      <th className="px-4 py-2.5 text-xs font-semibold text-muted text-left">
+                        Component
+                      </th>
+                      <th className="px-4 py-2.5 text-xs font-semibold text-muted text-right">
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deductions.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={2}
+                          className="px-4 py-8 text-center text-sm text-muted"
+                        >
+                          No deductions
+                        </td>
+                      </tr>
+                    ) : (
+                      deductions.map((r, idx) => (
+                        <tr
+                          key={`${r?.component}-${idx}`}
+                          className="border-t border-gray-100"
+                        >
+                          <td className="px-4 py-3 text-sm text-main">
+                            {String(r?.component ?? "")}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-main tabular-nums">
+                            {Number(r?.amount ?? 0).toLocaleString("en-ZM")}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <div className="px-6 py-4 border-t border-border bg-muted/5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-background transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 };
 
@@ -729,17 +816,11 @@ export default function PayrollManagement() {
 
         const month = String(slipsMonth ?? "").trim();
         const monthMode = /^\d{4}-\d{2}$/.test(month);
-        const resp = await getSalarySlips(
-          monthMode
-            ? {
-                page: 1,
-                page_size: 2000,
-              }
-            : {
-                page: slipsPage,
-                page_size: slipsPageSize,
-              },
-        );
+        const params: { page: number } & Record<string, number> = {
+          page: monthMode ? 1 : slipsPage,
+        };
+        params["page_size"] = monthMode ? 2000 : slipsPageSize;
+        const resp = await getSalarySlips(params);
         if (!mounted) return;
         const list = Array.isArray(resp?.salary_slips) ? resp.salary_slips : [];
         setSalarySlips(list);
@@ -747,18 +828,22 @@ export default function PayrollManagement() {
           monthMode ? 1 : Number(resp?.pagination?.total_pages ?? 1) || 1,
         );
         if (monthMode) setSlipsPage(1);
-      } catch (e: any) {
-        if (!mounted) return;
-        setSalarySlips([]);
-        setSlipsTotalPages(1);
-        setSlipsError(e?.message || "Failed to load salary slips");
+      } catch (error: unknown) {
+        if (mounted) {
+          setSalarySlips([]);
+          setSlipsTotalPages(1);
+          setSlipsError(getErrorMessage(error, "Failed to load salary slips"));
+        }
       } finally {
-        if (!mounted) return;
-        setSlipsLoading(false);
+        if (mounted) {
+          setSlipsLoading(false);
+        }
       }
     };
 
-    if (view === "dashboard" || view === "reports") run();
+    if (view === "dashboard" || view === "reports") {
+      void run();
+    }
     return () => {
       mounted = false;
     };
@@ -771,22 +856,29 @@ export default function PayrollManagement() {
       setEmployeesLoading(true);
       setEmployeesError(null);
       try {
-        const resp = await getAllEmployees({ page: 1, page_size: 200 });
-        const list = Array.isArray(resp?.employees) ? resp.employees : [];
-        const summary = resp?.summary || null;
+        const resp = await getAllEmployees(1, 200);
+        const responseRecord = asRecord(resp);
+        const employeesRaw = responseRecord.employees;
+        const summaryRaw = responseRecord.summary;
+        const list: EmployeeApiRow[] = Array.isArray(employeesRaw)
+          ? employeesRaw.map((row) => asRecord(row) as EmployeeApiRow)
+          : [];
+        const summary: EmployeeSummaryApi | null = summaryRaw
+          ? (asRecord(summaryRaw) as EmployeeSummaryApi)
+          : null;
 
-        const mapped: Employee[] = list.map((e: any) => {
-          const status = String(e?.status ?? "");
+        const mapped: Employee[] = list.map((e) => {
+          const status = String(e.status ?? "");
           return {
-            id: String(e?.id ?? e?.employeeId ?? e?.employee_id ?? ""),
-            employeeId: String(e?.employeeId ?? ""),
-            name: String(e?.name ?? ""),
-            email: String(e?.email ?? ""),
+            id: String(e.id ?? e.employeeId ?? e.employee_id ?? ""),
+            employeeId: String(e.employeeId ?? ""),
+            name: String(e.name ?? ""),
+            email: String(e.email ?? ""),
             status: status || undefined,
-            department: String(e?.department ?? ""),
-            jobTitle: String(e?.jobTitle ?? ""),
-            workLocation: String(e?.workLocation ?? ""),
-            grossSalary: Number(e?.grossSalary ?? 0),
+            department: String(e.department ?? ""),
+            jobTitle: String(e.jobTitle ?? ""),
+            workLocation: String(e.workLocation ?? ""),
+            grossSalary: Number(e.grossSalary ?? 0),
             isActive: status.toLowerCase() === "active",
           };
         });
@@ -803,16 +895,18 @@ export default function PayrollManagement() {
               }
             : null,
         );
-      } catch (err: any) {
-        if (!mounted) return;
-        setEmployeesError(err?.message || "Failed to load employees");
+      } catch (error: unknown) {
+        if (mounted) {
+          setEmployeesError(getErrorMessage(error, "Failed to load employees"));
+        }
       } finally {
-        if (!mounted) return;
-        setEmployeesLoading(false);
+        if (mounted) {
+          setEmployeesLoading(false);
+        }
       }
     };
 
-    loadEmployees();
+    void loadEmployees();
     return () => {
       mounted = false;
     };
@@ -836,20 +930,6 @@ export default function PayrollManagement() {
     showToast(
       `Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`,
     );
-  };
-
-  const handleOpenPayslipPdf = async (slipId: string) => {
-    try {
-      const resp = await getSalarySlipById(slipId);
-      const paySlipUrl = String(resp?.paySlipUrl ?? "").trim();
-      if (paySlipUrl) {
-        window.open(paySlipUrl, "_blank");
-      } else {
-        showToast("No PDF available for this salary slip", "error");
-      }
-    } catch (err: any) {
-      showToast(err?.message || "Failed to open salary slip PDF", "error");
-    }
   };
 
   const topBarProps = {
@@ -1002,6 +1082,8 @@ export default function PayrollManagement() {
                     type="month"
                     value={slipsMonth}
                     onChange={(e) => setSlipsMonth(e.target.value)}
+                    aria-label="Filter salary slips by month"
+                    title="Filter salary slips by month"
                     className="w-40 px-2.5 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary transition"
                   />
                   <Btn
@@ -1010,16 +1092,16 @@ export default function PayrollManagement() {
                     icon={<Download className="w-3.5 h-3.5" />}
                     onClick={() => {
                       const rows = filteredSalarySlips.map((s) => ({
-                        slip_id: s.name,
+                        slipId: s.name,
                         employee: s.employee,
-                        reference_number: s.referenceNumber ?? "",
-                        salary_structure: s.salary_structure,
-                        start_date: s.start_date,
-                        end_date: s.end_date,
+                        referenceNumber: s.referenceNumber ?? "",
+                        salaryStructure: s.salary_structure,
+                        startDate: s.start_date,
+                        endDate: s.end_date,
                         status: s.status,
-                        total_earnings: s.total_earnings,
-                        total_deduction: s.total_deduction,
-                        net_pay: s.net_pay,
+                        totalEarnings: s.total_earnings,
+                        totalDeduction: s.total_deduction,
+                        netPay: s.net_pay,
                       }));
                       downloadCsv(
                         `salary_slips_${new Date().toISOString().slice(0, 10)}.csv`,
@@ -1035,6 +1117,8 @@ export default function PayrollManagement() {
                     value={slipsSearch}
                     onChange={(e) => setSlipsSearch(e.target.value)}
                     placeholder="Search slips…"
+                    aria-label="Search salary slips"
+                    title="Search salary slips"
                     className="w-64 px-2.5 py-2 bg-card border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
                   />
                   <div className="text-xs text-muted whitespace-nowrap">
@@ -1171,12 +1255,14 @@ export default function PayrollManagement() {
                             {Number(s.net_pay ?? 0).toLocaleString("en-ZM")}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <button
-                              onClick={() => handleOpenPayslipPdf(s.name)}
-                              className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                            >
-                              View Salary Slip
-                            </button>
+                            <ActionButton
+                              type="view"
+                              iconOnly
+                              onClick={() => {
+                                setSlipDetailsId(s.name);
+                                setSlipDetailsOpen(true);
+                              }}
+                            />
                           </td>
                         </tr>
                       ))
