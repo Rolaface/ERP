@@ -238,7 +238,7 @@ export const DetailsTab = ({
                       <td className="px-2 py-1">
                         <input
                           type="number"
-                          className="w-[43px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary "
+                          className="w-[54px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary "
                           name="vatRate"
                           value={it.vatRate}
                            min="0"
