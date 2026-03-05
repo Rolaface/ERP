@@ -43,7 +43,6 @@ export const useQuotationForm = (
     ...DEFAULT_INVOICE_FORM,
     invoiceStatus: "Draft",
     invoiceType: "Non-Export",
-    industryBases: "",
   });
   const companyLoadedRef = useRef(false);
   const [companyData, setCompanyData] = useState<any>(null);
@@ -59,7 +58,8 @@ export const useQuotationForm = (
   const [sameAsBilling, setSameAsBilling] = useState(true);
   const [itemMaster, setItemMaster] = useState<any[]>([]);
   const [itemMasterLoading, setItemMasterLoading] = useState(false);
-// Hook ke andar, states ke upar ya niche ye helper rakhein
+
+  
 const mapCompanyToForm = (company: any) => {
   const defaultBank = getDefaultBank(company?.bankAccounts);
   return {
@@ -92,7 +92,6 @@ const mapCompanyToForm = (company: any) => {
       validUntil: "",
       invoiceStatus: "Draft",
       invoiceType: "Non-Export",
-      industryBases: prev.industryBases || "",
     }));
 
     setPage(0);
@@ -143,7 +142,6 @@ useEffect(() => {
     setFormData({
       ...DEFAULT_INVOICE_FORM,
       ...initialData,
-      industryBases: initialData.industryBases || "",
       dateOfInvoice: initialData.dateOfQuotation,
       dueDate: initialData.validUntil,
       items: (initialData.items || []).map((it: any) => ({
@@ -319,73 +317,56 @@ useEffect(() => {
     }
   };
 
-  const handleItemSelect = async (index: number, itemId: string) => {
-    try {
-      const res = await getItemByItemCode(itemId);
-      if (!res || res.status_code !== 200) return;
+ const handleItemSelect = async (index: number, itemId: string) => {
+  try {
+    const res = await getItemByItemCode(itemId);
+    if (!res || res.status_code !== 200) return;
 
-      const data = res.data;
-      setFormData((prev) => {
-        const items = [...prev.items];
+    const data = res.data;
 
-        const resolvedId = String(data?.id ?? itemId).trim();
-        const currentCode = String(items[index]?.itemCode ?? "").trim();
-        if (currentCode && currentCode === resolvedId) {
-          return prev;
-        }
-
-        const existingIdx = items.findIndex(
-          (it, i) =>
-            i !== index && String(it?.itemCode ?? "").trim() === resolvedId,
-        );
-
-        if (existingIdx !== -1) {
-          const currentQty = Number(items[existingIdx]?.quantity) || 0;
-          items[existingIdx] = {
-            ...items[existingIdx],
-            quantity: currentQty + 1,
-          };
-
-          items[index] = { ...EMPTY_ITEM };
-          return { ...prev, items };
-        }
-
-        items[index] = {
-          ...items[index],
-          itemCode: resolvedId,
-          description: data.description ?? data.itemName ?? "",
-          price: Number(data.sellingPrice) || 0,
-          vatRate: Number(data.taxInfo?.taxPerct ?? 0),
-          vatCode: data.taxInfo?.taxCode ?? "",
-          batchNo: data.batchInfo?.has_batch_no
-            ? data.batchInfo?.batchNo || ""
-            : "",
-          packingUnit: data.pakingUnit ?? "",
-          packingSize: data.packingSize ?? "",
-        };
-         
-        return { ...prev, items };
-      });
-    } catch (err) {
-      console.error("Failed to fetch item details", err);
-    }
-  };
-
-  const handleItemChange = (
-    idx: number,
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const { name, value } = e.target;
-    const isNum = ["quantity", "price", "discount", "vatRate"].includes(name);
     setFormData((prev) => {
       const items = [...prev.items];
-      items[idx] = {
-        ...items[idx],
-        [name]: isNum ? Number(value) : value,
+
+      const resolvedId = String(data?.id ?? itemId).trim();
+
+      items[index] = {
+        ...items[index],
+        itemCode: resolvedId,
+        description: data.description ?? data.itemName ?? "",
+        price: Number(data.sellingPrice) || 0,
+        vatRate: Number(data.taxInfo?.taxPerct ?? 0),
+        vatCode: data.taxInfo?.taxCode ?? "",
+        batchNo: data.batchInfo?.has_batch_no
+          ? data.batchInfo?.batchNo || ""
+          : "",
+        packingUnit: data.pakingUnit ?? "",
+        packingSize: data.packingSize ?? "",
       };
+
       return { ...prev, items };
     });
-  };
+  } catch (err) {
+    console.error("Failed to fetch item details", err);
+  }
+};
+
+const handleItemChange = (
+  idx: number,
+  e: React.ChangeEvent<HTMLInputElement>,
+) => {
+  const { name, value } = e.target;
+
+  setFormData((prev) => {
+    const items = [...prev.items];
+
+    items[idx] = {
+      ...items[idx],
+      [name]: value === "" ? "" : parseFloat(value)
+    };
+
+    return { ...prev, items };
+  });
+};
 
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
@@ -485,18 +466,9 @@ const handleReset = () => {
     e.preventDefault();
 
     try {
-      const hasC1 = formData.items.some(
-        (it) => String(it?.vatCode ?? "").toUpperCase() === "C1",
-      );
-
-
       //  VALIDATION
       if (!formData.customerId) {
         throw new Error("Please select a customer");
-      }
-
-      if (!formData.industryBases) {
-        throw new Error("Please select Industry Base (Product / Service)");
       }
 
       if (!formData.dateOfInvoice) {
@@ -532,7 +504,6 @@ const handleReset = () => {
         currencyCode: formData.currencyCode,
         dateOfQuotation: formData.dateOfInvoice,
         validUntil: formData.dueDate,
-        industryBases: formData.industryBases,
         invoiceType: formData.invoiceType,
         invoiceStatus: formData.invoiceStatus,
 

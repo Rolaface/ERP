@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import { showApiError, showSuccess } from "../../utils/alert";
-import { User, Mail, Phone } from "lucide-react";
+import { User, Mail, Phone , Plus, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 interface ProformaInvoiceModalProps {
@@ -335,12 +334,14 @@ ${ui.isExport
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">#</th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">Item</th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[110px] whitespace-nowrap">Description</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">Packing</th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">Packing
+                            <span className="ml-1 text-[9px] text-muted/60 font-normal">(unit × size)</span>
+                          </th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">Quantity</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">Unit Price</th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[55px]  whitespace-nowrap">Unit Price</th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">Dis(%)</th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">Tax(%)</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px]  whitespace-nowrap">Tax Code</th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[45px]  whitespace-nowrap">Tax Code</th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">Amount</th>
                           <th></th>
                         </tr>
@@ -372,16 +373,13 @@ ${ui.isExport
                                                   }}
                                                 /> */}
                                 <div className="w-[180px]">
-                                  <ItemSelect
-                                    taxCategory={ui.taxCategory}
-                                    value={it.itemCode}
-                                    excludeItemCodes={formData.items
-                                      .map((x, j) => (j === i ? "" : x?.itemCode))
-                                      .filter(Boolean) as string[]}
-                                    onChange={(item) => {
-                                      actions.handleItemSelect(i, item.id);
-                                    }}
-                                  />
+                                <ItemSelect
+  taxCategory={ui.taxCategory}
+  value={it.itemCode}
+  onChange={(item) => {
+    actions.handleItemSelect(i, item.id);
+  }}
+/>
                                 </div>
                               </td>
                               {/* Description */}
@@ -389,7 +387,7 @@ ${ui.isExport
                                 <input
                                   className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                                   name="description"
-                                  value={it.description}
+                                  value={it.description ?? ""}
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
@@ -426,9 +424,9 @@ ${ui.isExport
                               <td className="px-0.5 py-1">
                                 <input
                                   type="number"
-                                  className="w-[70px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[76px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                   name="quantity"
-                                  value={it.quantity}
+                                  value={it.quantity ?? ""}
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
@@ -437,9 +435,9 @@ ${ui.isExport
                               <td className="px-0.5 py-1">
                                 <input
                                   type="number"
-                                  className="w-[86px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[66px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                   name="price"
-                                  value={it.price}
+                                  value={it.price ?? ""}
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
@@ -448,9 +446,10 @@ ${ui.isExport
                               <td className="px-0.5 py-1">
                                 <input
                                   type="number"
-                                  className="w-[65px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[53px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                                   name="discount"
-                                  value={it.discount}
+                                  value={it.discount ?? ""}
+                                  min="0"
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
@@ -461,7 +460,8 @@ ${ui.isExport
                                   type="number"
                                   className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                                   name="vatRate"
-                                  value={it.vatRate}
+                                  value={it.vatRate ?? ""}
+                                  min="0"
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
@@ -470,7 +470,7 @@ ${ui.isExport
                               <td className="px-0.5 py-1">
                                 <input
                                   type="text"
-                                  className="w-[40px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[45px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                                   name="vatCode"
                                   value={it.vatCode}
                                   onChange={(e) =>

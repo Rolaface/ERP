@@ -120,11 +120,10 @@ const [pdfOpen, setPdfOpen] = useState(false);
     setQuotations(raw.map((q: any) => ({
   quotationNumber: q.id || "",
   customerName: q.customerName || "N/A",
-  industryBases: q.industryBases || "N/A",
   transactionDate: q.transactionDate || "",
   validTill: q.validTill || "",
   grandTotal: Number(q.grandTotal ?? 0),
-  currency: q.currency || "ZMW",
+  currency: q.currency ,
   status: q.status || "Draft",   
 })));
 
@@ -280,7 +279,7 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
         fromDate,
         toDate,
         sortBy:    SORT_FIELD_MAP[sortBy] || sortBy,  // ← same mapping
-        sortOrder,
+        sortOrder: sortOrder === "desc" ? "desc" : "asc",
       });
 
       if (res?.status_code === 200) {
@@ -289,12 +288,11 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
           ...allData,
           ...raw.map((q: any) => ({
             quotationNumber: q.id            || "",
-            customerName:    q.customerName  || "N/A",
-            industryBases:   q.industryBases || "N/A",
+            customerName:    q.customerName  ,
             transactionDate: q.transactionDate || "",
             validTill:       q.validTill     || "",
             grandTotal:      Number(q.grandTotal ?? 0),
-            currency:        q.currency      || "ZMW",
+            currency:        q.currency   ,
           })),
         ];
         total = res.data?.pagination?.totalPages || 1;
@@ -321,7 +319,6 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
         data.map((q) => ({
           "Quotation No": q.quotationNumber,
           Customer:       q.customerName,
-          Industry:       q.industryBases,
           Date:           q.transactionDate,
           "Valid Till":   q.validTill,
           Amount:         q.grandTotal,
@@ -425,7 +422,6 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
       render: (q) => <span className="font-semibold text-main">{q.quotationNumber}</span>,
     },
     { key: "customerName",    header: "Customer",    align: "left",  sortable: true },
-    { key: "industryBases",   header: "Industry",    align: "left" },
     { key: "transactionDate", header: "Date",        align: "left",  sortable: true },
     { key: "validTill",       header: "Valid Till",  align: "left",  sortable: true },
     {
