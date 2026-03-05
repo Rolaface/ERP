@@ -112,7 +112,7 @@ export const emptyItem: ItemRow = {
   itemCode: "",
   itemName: "",
   requiredBy: "",
-  quantity: 0,
+  quantity: 1,
   uom: "",
   rate: 0,
   vatCd: "",

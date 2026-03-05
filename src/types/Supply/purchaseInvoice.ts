@@ -112,7 +112,7 @@ export interface PurchaseInvoiceFormData {
 export const emptyItem: ItemRow = {
   itemCode: "",
   itemName: "",
-  quantity: 0,
+  quantity: 1,
   uom: "Unit",
   rate: 0,
   vatCd: "",
