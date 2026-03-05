@@ -35,6 +35,14 @@ type Props = {
   onDocumentUploaded: () => Promise<void>;
 };
 
+const toTitle = (key: string) =>
+  String(key ?? "")
+    .replace(/([A-Z])/g, " $1")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (c) => c.toUpperCase());
+
 const getFileUrl = (file?: string | null) => {
   if (!file) return null;
   return `${ERP_BASE}${file}`;
@@ -324,9 +332,30 @@ const EmployeeDetailView: React.FC<Props> = ({
   const salaryBreakdownRows = useMemo(() => {
     const currency = String(payrollInfo?.currency ?? "ZMW").trim() || "ZMW";
 
-    const earnings = Array.isArray(salaryStructureDetail?.earnings)
-      ? salaryStructureDetail.earnings
-      : [];
+    const breakdown = payrollInfo?.salaryBreakdown ?? payrollInfo?.SalaryBreakdown ?? null;
+    if (Array.isArray(breakdown)) {
+      const rows = breakdown
+        .map((x: any) => ({
+          label: String(x?.label ?? x?.name ?? "").trim(),
+          amount: x?.amount,
+          currency,
+        }))
+        .filter((x: any) => x.label && x.amount !== undefined && x.amount !== null);
+      if (rows.length > 0) return rows;
+    }
+
+    if (breakdown && typeof breakdown === "object") {
+      const rows = Object.entries(breakdown)
+        .map(([k, v]) => ({
+          label: toTitle(k),
+          amount: v,
+          currency,
+        }))
+        .filter((x: any) => x.label && x.amount !== undefined && x.amount !== null);
+      if (rows.length > 0) return rows;
+    }
+
+    const earnings = Array.isArray(salaryStructureDetail?.earnings) ? salaryStructureDetail.earnings : [];
     if (earnings.length > 0) {
       return earnings
         .map((e: any) => ({
@@ -338,34 +367,80 @@ const EmployeeDetailView: React.FC<Props> = ({
           (r: any) => r.label && r.amount !== undefined && r.amount !== null,
         );
     }
-
     return [];
-  }, [
-    payrollInfo?.currency,
-    payrollInfo?.salaryBreakdown,
-    salaryStructureDetail,
-  ]);
+  }, [payrollInfo?.currency, payrollInfo?.salaryBreakdown, salaryStructureDetail]);
+
+  const statutoryDeductionRows = useMemo(() => {
+    const currency = String(payrollInfo?.currency ?? "ZMW").trim() || "ZMW";
+    const raw = payrollInfo?.statutoryDeductions ?? payrollInfo?.StatutoryDeductions ?? null;
+    const obj = raw && typeof raw === "object" ? raw : {};
+
+    const keyMap: Record<string, string> = {
+      employeenapsa: "NAPSA Employee",
+      employeernapsa: "NAPSA Employer",
+      employeenhima: "NHIMA Employee",
+      employeernhima: "NHIMA Employer",
+      payasyouearn: "PAYE",
+      paye: "PAYE",
+    };
+
+    return Object.entries(obj as any)
+      .map(([k, v]) => {
+        const lk = String(k ?? "").replace(/\s+/g, "").toLowerCase();
+        const label = keyMap[lk] ?? toTitle(k);
+        return {
+          label,
+          amount: Number(v ?? 0),
+          currency,
+          rawKey: lk,
+        };
+      })
+      .filter((r) => r.label && Number.isFinite(r.amount));
+  }, [payrollInfo?.currency, payrollInfo?.statutoryDeductions]);
+
+  const employeeDeductionRows = useMemo(() => {
+    const keep = new Set(["employeenapsa", "employeenhima", "payasyouearn", "paye"]);
+    return statutoryDeductionRows.filter((r: any) => keep.has(String(r.rawKey ?? "")));
+  }, [statutoryDeductionRows]);
+
+  const hasPayrollEmployeeDeductions = useMemo(() => {
+    return employeeDeductionRows.some((r: any) => Number(r?.amount ?? 0) !== 0);
+  }, [employeeDeductionRows]);
 
   const compensationHeader = useMemo(() => {
     const currency = String(payrollInfo?.currency ?? "ZMW").trim() || "ZMW";
     const structureName = String(assignedSalaryStructureName ?? "").trim();
     const fromDate = String(assignedSalaryStructureFromDate ?? "").trim();
 
-    const earnings = Array.isArray(salaryStructureDetail?.earnings)
-      ? salaryStructureDetail.earnings
+    const payrollGross = Number(payrollInfo?.grossSalary ?? 0);
+    const payrollRowsSum = salaryBreakdownRows.reduce(
+      (s: number, r: any) => s + Number(r?.amount ?? 0),
+      0,
+    );
+    const payrollEarnings = payrollGross > 0 ? payrollGross : payrollRowsSum;
+    const payrollDeductions = employeeDeductionRows.reduce(
+      (s: number, r: any) => s + Number(r?.amount ?? 0),
+      0,
+    );
+    const hasPayroll = payrollEarnings > 0 || payrollDeductions > 0;
+
+    const earnings = Array.isArray((salaryStructureDetail as any)?.earnings)
+      ? (salaryStructureDetail as any).earnings
       : [];
     const deductions = Array.isArray(salaryStructureDetail?.deductions)
       ? salaryStructureDetail.deductions
       : [];
-    const totalEarnings = earnings.reduce(
-      (s: number, r: any) => s + Number(r?.amount ?? 0),
-      0,
-    );
-    const totalDeductions = deductions.reduce(
-      (s: number, r: any) => s + Number(r?.amount ?? 0),
-      0,
-    );
-    const net = totalEarnings - totalDeductions;
+    const totalEarnings = hasPayroll
+      ? payrollEarnings
+      : earnings.length > 0
+        ? earnings.reduce((s: number, r: any) => s + Number(r?.amount ?? 0), 0)
+        : payrollRowsSum;
+    const totalDeductions = hasPayroll
+      ? payrollDeductions
+      : deductions.length > 0
+        ? deductions.reduce((s: number, r: any) => s + Number(r?.amount ?? 0), 0)
+        : payrollDeductions;
+    const net = (Number(totalEarnings ?? 0) || 0) - (Number(totalDeductions ?? 0) || 0);
 
     return {
       currency,
@@ -378,7 +453,10 @@ const EmployeeDetailView: React.FC<Props> = ({
   }, [
     assignedSalaryStructureFromDate,
     assignedSalaryStructureName,
+    employeeDeductionRows,
+    payrollInfo?.grossSalary,
     payrollInfo?.currency,
+    salaryBreakdownRows,
     salaryStructureDetail,
   ]);
 
@@ -855,7 +933,7 @@ const EmployeeDetailView: React.FC<Props> = ({
                         Earnings & Allowances
                       </h2>
                       <div className="space-y-0 text-sm">
-                        {!hasStructureEarnings ? (
+                        {salaryBreakdownRows.length === 0 ? (
                           <div className="text-muted font-medium py-2">—</div>
                         ) : (
                           salaryBreakdownRows.map((row: any) => (
@@ -889,20 +967,32 @@ const EmployeeDetailView: React.FC<Props> = ({
                         Statutory & Deductions
                       </h2>
                       <div className="space-y-0 text-sm">
-                        {!hasStructureDeductions ? (
-                          <div className="text-muted font-medium py-2">—</div>
-                        ) : (
-                          toSalaryStructureMoneyRows(
-                            salaryStructureDetail.deductions,
-                          ).map((d: any) => (
-                            <div
-                              key={d.label}
-                              className="flex justify-between py-2.5 border-b border-border/50"
-                            >
+                        {hasPayrollEmployeeDeductions ? (
+                          employeeDeductionRows.map((d: any) => (
+                            <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
                               <span className="text-main">{d.label}</span>
                               <span className="font-medium text-main">
-                                - {payrollInfo?.currency || "ZMW"}{" "}
-                                {Number(d.amount ?? 0).toLocaleString()}
+                                - {d.currency} {Number(d.amount ?? 0).toLocaleString()}
+                              </span>
+                            </div>
+                          ))
+                        ) : hasStructureDeductions ? (
+                          toSalaryStructureMoneyRows((salaryStructureDetail as any).deductions).map((d: any) => (
+                            <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
+                              <span className="text-main">{d.label}</span>
+                              <span className="font-medium text-main">
+                                - {payrollInfo?.currency || "ZMW"} {Number(d.amount ?? 0).toLocaleString()}
+                              </span>
+                            </div>
+                          ))
+                        ) : employeeDeductionRows.length === 0 ? (
+                          <div className="text-muted font-medium py-2">—</div>
+                        ) : (
+                          employeeDeductionRows.map((d: any) => (
+                            <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
+                              <span className="text-main">{d.label}</span>
+                              <span className="font-medium text-main">
+                                - {d.currency} {Number(d.amount ?? 0).toLocaleString()}
                               </span>
                             </div>
                           ))

@@ -300,8 +300,8 @@ const NewPayrollEntry: React.FC<{
     selectedEmployees: [],
   });
 
-  const handleFormChange = (field: string, value: unknown) => {
-    setFormData((p) => ({ ...p, [field]: value }) as PayrollEntry);
+  const handleFormChange = (field: string, value: any) => {
+    setFormData((p) => ({ ...p, [field]: value }));
   };
 
   return (
@@ -374,7 +374,9 @@ const derivePayslipStatus = (
   napsaStatus?: string,
   payslipStatus?: string,
 ): string => {
-  const ns = String(napsaStatus ?? "").trim().toLowerCase();
+  const ns = String(napsaStatus ?? "")
+    .trim()
+    .toLowerCase();
 
   if (ns === "pending") return "Pending";
   if (ns === "failed") return "Failed";
@@ -421,10 +423,23 @@ const SalarySlipDetailsModal: React.FC<{
 
   if (!open) return null;
 
-  const earnings = Array.isArray(data?.earnings) ? data?.earnings : [];
-  const deductions = Array.isArray(data?.deductions) ? data?.deductions : [];
+  const earningsRaw = data?.earnings;
+  const deductionsRaw = data?.deductions;
+  const earnings: Array<{ component: string; amount: number }> = Array.isArray(earningsRaw)
+    ? earningsRaw
+    : [];
+  const deductions: Array<{ component: string; amount: number }> = Array.isArray(deductionsRaw)
+    ? deductionsRaw
+    : [];
   const paySlipUrl = String((data as any)?.custom_slip_url ?? (data as any)?.paySlipUrl ?? "").trim();
   const referenceNumber = String((data as any)?.custom_reference_number ?? (data as any)?.referenceNumber ?? "").trim();
+  const dataRec: Record<string, unknown> =
+    data && typeof data === "object"
+      ? (data as unknown as Record<string, unknown>)
+      : {};
+  const pickString = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
+  const modalNapsaStatus = pickString(dataRec["napsaStatus"]) ?? pickString(dataRec["napsa_status"]);
+  const modalPayslipStatus = pickString(dataRec["status"]) ?? pickString(dataRec["payslip_status"]);
 
   const roInputCls = "w-full h-10 px-3 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none";
   const sectionTitleCls = "text-[11px] font-extrabold text-muted uppercase tracking-wider";
@@ -471,7 +486,12 @@ const SalarySlipDetailsModal: React.FC<{
                   <div>
                     <div className={sectionTitleCls}>Status</div>
                     <div className="mt-1">
-                      <StatusChip status={derivePayslipStatus((data as any)?.napsaStatus, (data as any)?.status)} />
+                      <StatusChip
+                        status={derivePayslipStatus(
+                          modalNapsaStatus,
+                          modalPayslipStatus,
+                        )}
+                      />
                     </div>
                   </div>
 
