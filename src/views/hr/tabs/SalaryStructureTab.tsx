@@ -1,19 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
-  Edit2,
-  Trash2,
   Save,
   X,
-  AlertTriangle,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { calculateZmPayrollFromGross } from "../payroll-system/util";
+import {
+  calculateZmPayrollFromGross
+} from "../payroll-system/util";
 import {
   createSalaryStructure,
   createSalaryComponent,
-  deleteSalaryComponent,
-  deleteSalaryStructure,
   getSalaryComponents,
   getSalaryStructures,
   getSalaryStructureById,
@@ -27,13 +24,6 @@ import {
   type SalaryComponentListItem,
   type SalaryComponentUpdatePayload,
 } from "../../../api/salaryStructureApi";
-
-const toTitleCase = (value: string) => {
-  return value
-    .split(" ")
-    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : ""))
-    .join(" ");
-};
 
 export default function SalaryStructureTab() {
   const [structures, setStructures] = useState<SalaryStructureListItem[]>([]);
@@ -51,9 +41,6 @@ export default function SalaryStructureTab() {
     company: string;
     components: SalaryStructureComponentCreate[];
   } | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
-    null,
-  );
   const [salaryComponents, setSalaryComponents] = useState<SalaryComponentListItem[]>([]);
   const [structurePreviewMap, setStructurePreviewMap] = useState<
     Record<string, { earnings: any[]; deductions: any[] }>
@@ -248,56 +235,8 @@ export default function SalaryStructureTab() {
     setShowModal(true);
   };
 
-  const handleEdit = async (structure: SalaryStructureListItem) => {
-    await openStructureModalFromDetail(structure, "edit");
-  };
-
   const handleView = async (structure: SalaryStructureListItem) => {
     await openStructureModalFromDetail(structure, "view");
-  };
-
-  const handleDelete = async (name: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await deleteSalaryStructure(name);
-      await refreshStructures();
-      setShowDeleteConfirm(null);
-      toast.success("Salary structure deleted");
-    } catch (e: any) {
-      const html = extractFrappeMessageHtml(e);
-      const msg = html ? html.replace(/<[^>]*>/g, "").trim() : e?.message;
-      setError(msg || "Failed to delete salary structure");
-
-      if (html) {
-        toast.dismiss();
-        toast(
-          (t) => (
-            <div className="bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-[420px]">
-              <div className="text-sm font-semibold text-gray-900">Unable to delete</div>
-              <div
-                className="text-xs text-gray-600 mt-1 [&_a]:text-primary [&_a]:underline"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-              <div className="flex items-center justify-end mt-4">
-                <button
-                  type="button"
-                  onClick={() => toast.dismiss(t.id)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          ),
-          { duration: 8000 },
-        );
-      } else {
-        toast.error(msg || "Failed to delete salary structure");
-      }
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleSave = async (
@@ -341,11 +280,11 @@ export default function SalaryStructureTab() {
 
       mergedComponents = Array.from(byComponent.values());
     } catch {
-      // keep mergedComponents as-is
+      
     }
 
     setLoading(true);
-    setError(null);
+    setError("");
     try {
       if (source.id) {
         const payload: SalaryStructureUpdatePayload = {
@@ -354,6 +293,7 @@ export default function SalaryStructureTab() {
           company: source.company,
           components: mergedComponents,
         };
+
         await updateSalaryStructure(payload);
       } else {
         const payload: SalaryStructureCreatePayload = {
@@ -361,13 +301,16 @@ export default function SalaryStructureTab() {
           company: source.company,
           components: mergedComponents,
         };
+
         await createSalaryStructure(payload);
       }
       await refreshStructures();
       setShowModal(false);
-      setEditingStructure(null);
+      toast.success(source.id ? "Salary structure updated" : "Salary structure created");
     } catch (e: any) {
-      setError(e?.message || "Failed to save salary structure");
+      const msg = e?.message || "Failed to save salary structure";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -559,19 +502,6 @@ export default function SalaryStructureTab() {
                             >
                               View
                             </button>
-                            <button
-                              onClick={() => handleEdit(structure)}
-                              className="p-2 text-gray-600 hover:text-primary hover:bg-primary/10 rounded-lg transition"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteConfirm(structure.name || structure.id)}
-                              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -628,15 +558,6 @@ export default function SalaryStructureTab() {
         <SalaryComponentsModal
           onClose={() => setShowComponentsModal(false)}
           onChanged={refreshComponents}
-        />
-      )}
-
-      {/* Delete Confirmation */}
-      {showDeleteConfirm && (
-        <DeleteConfirmModal
-          structure={structures.find((s) => (s.name || s.id) === showDeleteConfirm)!}
-          onConfirm={() => handleDelete(showDeleteConfirm)}
-          onCancel={() => setShowDeleteConfirm(null)}
         />
       )}
     </div>
@@ -727,20 +648,7 @@ function SalaryComponentsModal({
     });
   };
 
-  const startEdit = (c: SalaryComponentListItem) => {
-    setEditing({
-      id: c.id,
-      name: c.component || c.id,
-      type: String(c.type || "Earning") as any,
-      abbr: c.abbr || "",
-      description: c.description || "",
-      enabled: Boolean(c.enabled),
-      amount_based_on_formula: false,
-      condition: "",
-      formula: "",
-      tax_applicable: Boolean(c.tax_applicable),
-    });
-  };
+  
 
   const save = async () => {
     if (!editing) return;
@@ -792,80 +700,38 @@ function SalaryComponentsModal({
     }
   };
 
-  const remove = async (name: string) => {
-    toast.dismiss();
-    toast(
-      (t) => (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-[340px]">
-          <div className="text-sm font-semibold text-gray-900">Delete Salary Component</div>
-          <div className="text-xs text-gray-500 mt-1">Are you sure you want to delete "{name}"?</div>
-          <div className="flex items-center justify-end gap-2 mt-4">
-            <button
-              type="button"
-              onClick={() => toast.dismiss(t.id)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                (async () => {
-                  try {
-                    toast.dismiss(t.id);
-                    setLoading(true);
-                    setError(null);
-                    await deleteSalaryComponent(name);
-                    await refresh();
-                    onChanged();
-                    if (editing?.name === name || editing?.id === name) setEditing(null);
-                    toast.success("Salary component deleted");
-                  } catch (e: any) {
-                    const msg = e?.message || "Failed to delete salary component";
-                    setError(msg);
-                    toast.error(msg);
-                  } finally {
-                    setLoading(false);
-                  }
-                })();
-              }}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: Infinity },
-    );
-  };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
-        <div className="px-6 py-4 flex items-center justify-between bg-card text-main">
+      <div className="bg-card rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-theme">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-theme bg-blue-600 text-white">
           <div className="min-w-0">
-            <h3 className="text-base font-bold text-main">Salary Components</h3>
-            <div className="text-xs text-muted mt-0.5">Manage earnings and deductions</div>
+            <h3 className="text-sm font-extrabold">Salary Components</h3>
+            <div className="text-xs text-white/80 mt-0.5">Manage earnings and deductions</div>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-muted/5 transition-colors text-muted hover:text-main">
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-white/10 transition-colors text-white"
+            title="Close"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 flex-1 overflow-y-auto">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-            <div className="text-sm text-gray-600">{filtered.length} components</div>
+            <div className="text-xs text-muted">{filtered.length} components</div>
             <div className="flex items-center gap-2">
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search components"
-                className="w-full md:w-96 px-3 py-2 text-sm border border-border rounded-md bg-card focus:ring-1 focus:ring-primary outline-none"
+                className="w-full md:w-96 px-3 py-2 text-sm border border-theme rounded-lg bg-card focus:ring-1 focus:ring-primary outline-none"
               />
               <button
                 onClick={startCreate}
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 flex items-center gap-2 text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center gap-2 text-sm font-semibold transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 New Component
@@ -879,22 +745,21 @@ function SalaryComponentsModal({
             </div>
           )}
 
-          <div className="bg-card rounded-lg overflow-hidden flex-1 flex flex-col shadow-sm">
+          <div className="bg-card rounded-xl overflow-hidden flex-1 flex flex-col shadow-sm border border-theme">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/5">
+                <thead className="bg-app border-b border-theme">
                   <tr>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Component</th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Abbr</th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Type</th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Tax</th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Enabled</th>
-                    <th className="text-right font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">Actions</th>
+                    <th className="text-left font-extrabold text-muted text-[11px] px-4 py-3 whitespace-nowrap uppercase tracking-wider">Component</th>
+                    <th className="text-left font-extrabold text-muted text-[11px] px-4 py-3 whitespace-nowrap uppercase tracking-wider">Abbr</th>
+                    <th className="text-left font-extrabold text-muted text-[11px] px-4 py-3 whitespace-nowrap uppercase tracking-wider">Type</th>
+                    <th className="text-left font-extrabold text-muted text-[11px] px-4 py-3 whitespace-nowrap uppercase tracking-wider">Tax</th>
+                    <th className="text-left font-extrabold text-muted text-[11px] px-4 py-3 whitespace-nowrap uppercase tracking-wider">Enabled</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paged.map((c) => (
-                    <tr key={c.id} className="hover:bg-muted/5 transition-colors">
+                    <tr key={c.id} className="hover:bg-muted/5 transition-colors border-b border-theme/40 last:border-0">
                       <td className="px-4 py-3">
                         <div className="font-semibold text-main">{c.component || c.id}</div>
                         {c.description && (
@@ -913,30 +778,12 @@ function SalaryComponentsModal({
                           {c.enabled ? "Yes" : "No"}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => startEdit(c)}
-                            className="p-2 text-gray-600 hover:text-primary hover:bg-primary/10 rounded-lg"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => remove(c.id)}
-                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
                     </tr>
                   ))}
 
                   {!loading && paged.length === 0 && (
                     <tr>
-                      <td className="px-4 py-10 text-center text-gray-600" colSpan={6}>
+                      <td className="px-4 py-10 text-center text-gray-600" colSpan={5}>
                         No salary components found
                       </td>
                     </tr>
@@ -945,18 +792,18 @@ function SalaryComponentsModal({
               </table>
             </div>
 
-            <div className="p-4 border-t flex items-center justify-end gap-2">
+            <div className="p-4 border-t border-theme flex items-center justify-end gap-2 bg-app">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-bold border border-theme bg-card text-main rounded-lg hover:bg-muted/5 disabled:opacity-50"
               >
                 Prev
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
                 disabled={page >= pageCount}
-                className="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-bold border border-theme bg-card text-main rounded-lg hover:bg-muted/5 disabled:opacity-50"
               >
                 Next
               </button>
@@ -1060,21 +907,11 @@ function SalaryComponentsModal({
             </div>
           </div>
         )}
-
-        <div className="px-6 py-4 bg-muted/5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium hover:bg-black/5 transition-colors rounded-md"
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );
 }
 
-// Structure Modal Component
 function StructureModal({
   structure,
   onSave,
@@ -1152,22 +989,26 @@ function StructureModal({
       const key = String(c.component || "").toLowerCase();
 
       if (rawAmt !== 0) {
-        return { ...c, effectiveAmount: rawAmt, label: String(c.component || "") };
+        return { ...c, effectiveAmount: rawAmt, label: String(c.component || ""), bucket: "employee" as const };
       }
 
       if (key.includes("napsa")) {
+        const side = key.includes("employer") ? "Employer" : key.includes("employee") ? "Employee" : "";
         return {
           ...c,
-          effectiveAmount: statutoryCalc.statutory.napsaEmployee,
-          label: `NAPSA (${statutoryCalc.rates.napsaEmployeeRate}%)`,
+          effectiveAmount: side === "Employer" ? statutoryCalc.statutory.napsaEmployer : statutoryCalc.statutory.napsaEmployee,
+          label: `NAPSA${side ? ` ${side}` : ""} (${statutoryCalc.rates.napsaEmployeeRate}%)`,
+          bucket: side === "Employer" ? ("employer" as const) : ("employee" as const),
         };
       }
 
       if (key.includes("nhima")) {
+        const side = key.includes("employer") ? "Employer" : key.includes("employee") ? "Employee" : "";
         return {
           ...c,
           effectiveAmount: statutoryCalc.statutory.nhima,
-          label: `NHIMA (${statutoryCalc.rates.nhimaRate}%)`,
+          label: `NHIMA${side ? ` ${side}` : ""} (${statutoryCalc.rates.nhimaRate}%)`,
+          bucket: side === "Employer" ? ("employer" as const) : ("employee" as const),
         };
       }
 
@@ -1176,19 +1017,28 @@ function StructureModal({
           ...c,
           effectiveAmount: statutoryCalc.statutory.paye,
           label: "PAYE",
+          bucket: "employee" as const,
         };
       }
 
-      return { ...c, effectiveAmount: 0, label: String(c.component || "") };
+      return { ...c, effectiveAmount: 0, label: String(c.component || ""), bucket: "employee" as const };
     });
   }, [deductions, statutoryCalc]);
 
+  const employeeDeductionsForSummary = useMemo(() => {
+    return deductionsWithEffectiveAmounts.filter((c: any) => String(c?.bucket ?? "employee") !== "employer");
+  }, [deductionsWithEffectiveAmounts]);
+
+  const employerContributionsForSummary = useMemo(() => {
+    return deductionsWithEffectiveAmounts.filter((c: any) => String(c?.bucket ?? "") === "employer");
+  }, [deductionsWithEffectiveAmounts]);
+
   const totalDeductions = useMemo(() => {
-    return deductionsWithEffectiveAmounts.reduce(
+    return employeeDeductionsForSummary.reduce(
       (sum, c: any) => sum + (Number(c.effectiveAmount || 0) || 0),
       0,
     );
-  }, [deductionsWithEffectiveAmounts]);
+  }, [employeeDeductionsForSummary]);
 
   const netPay = useMemo(() => {
     return totalEarnings - totalDeductions;
@@ -1232,7 +1082,7 @@ function StructureModal({
                       type="text"
                       value={formData.name}
                       onChange={(e) =>
-                        setFormData({ ...formData, name: toTitleCase(e.target.value) })
+                        setFormData({ ...formData, name: e.target.value })
                       }
                       placeholder="e.g., Executive Level, Mid-Level Staff"
                       disabled={Boolean(readOnly)}
@@ -1247,7 +1097,7 @@ function StructureModal({
                       type="text"
                       value={formData.company}
                       onChange={(e) =>
-                        setFormData({ ...formData, company: toTitleCase(e.target.value) })
+                        setFormData({ ...formData, company: e.target.value })
                       }
                       placeholder="e.g., Izyane"
                       disabled={Boolean(readOnly)}
@@ -1427,7 +1277,10 @@ function StructureModal({
                     <div className="mt-2 space-y-1">
                       {earningsForSummary.map((c, idx) => (
                         <div key={`${c.component}-${idx}`} className="flex items-center justify-between gap-3">
-                          <div className="text-xs text-gray-700 truncate">{c.component}</div>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <input type="checkbox" checked disabled className="w-3.5 h-3.5" />
+                            <div className="text-xs text-gray-700 truncate">{c.component}</div>
+                          </div>
                           <div className="text-xs font-semibold text-gray-900 tabular-nums">
                             {(Number(c.amount || 0) || 0).toLocaleString()}
                           </div>
@@ -1442,22 +1295,47 @@ function StructureModal({
                   <div className="pt-3">
                     <div className="text-[11px] font-bold text-gray-700">DEDUCTIONS:</div>
                     <div className="mt-2 space-y-1">
-                      {deductionsWithEffectiveAmounts.map((c: any, idx) => {
+                      {employeeDeductionsForSummary.map((c: any, idx) => {
                         const amt = Number(c.effectiveAmount || 0) || 0;
                         return (
                           <div key={`${c.component}-${idx}`} className="flex items-center justify-between gap-3">
-                            <div className="text-xs text-gray-700 truncate">{c.label}</div>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <input type="checkbox" checked disabled className="w-3.5 h-3.5" />
+                              <div className="text-xs text-gray-700 truncate">{c.label}</div>
+                            </div>
                             <div className="text-xs font-semibold text-gray-900 tabular-nums">
                               {amt.toLocaleString()}
                             </div>
                           </div>
                         );
                       })}
-                      {deductions.length === 0 && (
+                      {employeeDeductionsForSummary.length === 0 && (
                         <div className="text-xs text-gray-500">—</div>
                       )}
                     </div>
                   </div>
+
+                  {employerContributionsForSummary.length > 0 && (
+                    <div className="pt-3">
+                      <div className="text-[11px] font-bold text-gray-700">EMPLOYER CONTRIBUTIONS:</div>
+                      <div className="mt-2 space-y-1">
+                        {employerContributionsForSummary.map((c: any, idx: number) => {
+                          const amt = Number(c.effectiveAmount || 0) || 0;
+                          return (
+                            <div key={`${c.component}-employer-${idx}`} className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <input type="checkbox" checked disabled className="w-3.5 h-3.5" />
+                                <div className="text-xs text-gray-700 truncate">{c.label}</div>
+                              </div>
+                              <div className="text-xs font-semibold text-gray-900 tabular-nums">
+                                {amt.toLocaleString()}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-4 pt-3 border-t space-y-1 text-xs">
                     <div className="flex items-center justify-between">
@@ -1496,28 +1374,60 @@ function StructureModal({
           {!readOnly && (
             <button
               onClick={() => {
+                const existingComponents = new Set(
+                  (salaryComponents || [])
+                    .map((x: any) => String(x?.component ?? x?.id ?? "").trim().toLowerCase())
+                    .filter(Boolean),
+                );
+
+                const normalizeComponentName = (name: string) => {
+                  const n = String(name ?? "").trim();
+                  const key = n.toLowerCase();
+                  if (key === "napsa") return "NAPSA Employee";
+                  if (key === "nhima") return "NHIMA Employee";
+                  return n;
+                };
+
                 const finalComponents = (formData.components || []).map((c) => {
+                  const rawName = String(c?.component ?? "");
+                  const normalizedName = normalizeComponentName(rawName);
                   const type = String(c?.type ?? "").toLowerCase();
-                  const key = String(c?.component ?? "").toLowerCase();
+                  const key = normalizedName.toLowerCase();
                   const isDeduction = type === "deduction";
                   const isNapsa = isDeduction && key.includes("napsa");
                   const isNhima = isDeduction && key.includes("nhima");
                   const isPaye =
                     isDeduction &&
                     (key.includes("income tax") || key.includes("paye") || key.includes("payee"));
+                  const isEmployer = isDeduction && key.includes("employer");
 
                   if (isNapsa) {
-                    return { ...c, amount: statutoryCalc.statutory.napsaEmployee };
+                    return {
+                      ...c,
+                      component: normalizedName,
+                      amount: isEmployer ? statutoryCalc.statutory.napsaEmployer : statutoryCalc.statutory.napsaEmployee,
+                    };
                   }
                   if (isNhima) {
-                    return { ...c, amount: statutoryCalc.statutory.nhima };
+                    return { ...c, component: normalizedName, amount: statutoryCalc.statutory.nhima };
                   }
                   if (isPaye) {
-                    return { ...c, amount: statutoryCalc.statutory.paye };
+                    return { ...c, component: normalizedName, amount: statutoryCalc.statutory.paye };
                   }
 
-                  return c;
+                  return { ...c, component: normalizedName };
                 });
+
+                const missing = finalComponents
+                  .map((c) => String(c?.component ?? "").trim())
+                  .filter(Boolean)
+                  .filter((name) => !existingComponents.has(name.toLowerCase()));
+
+                if (missing.length > 0) {
+                  const uniq = Array.from(new Set(missing.map((m) => m)));
+                  toast.error(`Missing salary component(s): ${uniq.join(", ")}. Please create them first.`);
+                  return;
+                }
 
                 onSave({ ...formData, components: finalComponents });
               }}
@@ -1534,62 +1444,3 @@ function StructureModal({
   );
 }
 
-// Delete Confirmation Modal
-function DeleteConfirmModal({
-  structure,
-  onConfirm,
-  onCancel,
-}: {
-  structure: SalaryStructureListItem;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
-          <div className="text-base font-semibold">Delete Salary Structure</div>
-          <button onClick={onCancel} className="text-white/80 hover:text-white">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">
-                Are you sure you want to delete{" "}
-                <strong>"{structure.name}"</strong>?
-              </p>
-            </div>
-          </div>
-
-          <div className="p-3 bg-gray-50 rounded-lg mb-4">
-            <p className="text-sm text-gray-700">
-              This action cannot be undone. The structure will be permanently
-              deleted.
-            </p>
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
-            >
-              Delete Structure
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}

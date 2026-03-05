@@ -133,6 +133,17 @@ export default function MultiPayrollPreviewModal({
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<SalaryStructureDetail | null>(null);
 
+  const displayComponentName = (name: unknown) => {
+    const raw = String(name ?? "").trim();
+    if (!raw) return "—";
+    const key = raw.toLowerCase();
+    if (key === "income tax") return "PAYE";
+    if (key === "income tax (paye)") return "PAYE";
+    if (key === "paye" || key === "p.a.y.e") return "PAYE";
+    if (key === "it") return "PAYE";
+    return raw;
+  };
+
   const initialMonth = useMemo(() => {
     const base = String(payPeriodStart || payPeriodEnd || "").trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(base)) return base.slice(0, 7);
@@ -212,9 +223,31 @@ export default function MultiPayrollPreviewModal({
             <div className="text-lg font-semibold">Preview</div>
             <div className="text-xs text-white/80 mt-0.5">Multiple Employees</div>
           </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {!isLastEmployee ? (
+              <button
+                type="button"
+                onClick={() => setActiveIndex((i) => Math.min(selected.length - 1, i + 1))}
+                disabled={selected.length === 0 || activeIndex >= selected.length - 1}
+                className="px-3 py-1.5 text-xs font-extrabold bg-white/15 text-white rounded-lg hover:bg-white/20 disabled:opacity-50"
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onRunPayroll}
+                disabled={Boolean(runPayrollDisabled) || Boolean(runPayrollLoading) || selected.length === 0}
+                className="px-3 py-1.5 text-xs font-extrabold bg-white text-blue-700 rounded-lg hover:bg-white/90 disabled:opacity-50"
+              >
+                {runPayrollLoading ? "Running…" : `Run Payroll (${selected.length})`}
+              </button>
+            )}
+
+            <button onClick={onClose} className="text-white/80 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -305,73 +338,11 @@ export default function MultiPayrollPreviewModal({
               <div className="text-sm text-red-600 mt-4">{error}</div>
             ) : !detail ? (
               <div className="text-sm text-gray-500 mt-4">—</div>
-            ) : (
-              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="border border-gray-200 rounded-2xl overflow-hidden">
-                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider">Earnings</div>
-                  <div className="p-4 space-y-2">
-                    {(Array.isArray((detail as any)?.earnings) ? (detail as any).earnings : []).length === 0 ? (
-                      <div className="text-sm text-gray-500">—</div>
-                    ) : (
-                      (detail as any).earnings.map((row: any, idx: number) => (
-                        <div key={`${row?.component ?? idx}`} className="flex items-center justify-between gap-3 border-b border-gray-200/60 last:border-0 pb-2 last:pb-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate">{String(row?.component ?? "—")}</div>
-                          <div className="text-sm font-extrabold text-gray-900 tabular-nums whitespace-nowrap">{currency} {Number(row?.amount ?? 0).toLocaleString("en-ZM")}</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="border border-gray-200 rounded-2xl overflow-hidden">
-                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider">Deductions</div>
-                  <div className="p-4 space-y-2">
-                    {(Array.isArray((detail as any)?.deductions) ? (detail as any).deductions : []).length === 0 ? (
-                      <div className="text-sm text-gray-500">—</div>
-                    ) : (
-                      (detail as any).deductions.map((row: any, idx: number) => (
-                        <div key={`${row?.component ?? idx}`} className="flex items-center justify-between gap-3 border-b border-gray-200/60 last:border-0 pb-2 last:pb-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate">{String(row?.component ?? "—")}</div>
-                          <div className="text-sm font-extrabold text-gray-900 tabular-nums whitespace-nowrap">{currency} {Number(row?.amount ?? 0).toLocaleString("en-ZM")}</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
-        </div>
-
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          {!isLastEmployee ? (
-            <button
-              type="button"
-              onClick={() => setActiveIndex((i) => Math.min(selected.length - 1, i + 1))}
-              disabled={selected.length === 0 || activeIndex >= selected.length - 1}
-              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50"
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onRunPayroll}
-              disabled={Boolean(runPayrollDisabled) || Boolean(runPayrollLoading) || selected.length === 0}
-              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50"
-            >
-              {runPayrollLoading ? "Running…" : `Run Payroll (${selected.length})`}
-            </button>
-          )}
         </div>
       </div>
     </div>
+
   );
 }

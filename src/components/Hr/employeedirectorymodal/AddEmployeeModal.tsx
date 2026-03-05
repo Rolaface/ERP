@@ -14,7 +14,11 @@ import { filterEmployeesByRole } from "../../../api/config/employeeRoleFilter";
 import { getAllEmployees } from "../../../api/employeeapi";
  
 import { createEmployee, getEmployeeById, updateEmployeeById, updateEmployeeDocuments } from "../../../api/employeeapi";
-import { createSalaryStructureAssignment } from "../../../api/salaryStructureAssignmentApi";
+import {
+  createSalaryStructureAssignment,
+  getSalaryStructureAssignments,
+  replaceSalaryStructureAssignment,
+} from "../../../api/salaryStructureAssignmentApi";
 import { getSalaryStructureById } from "../../../api/salaryStructureApi";
 
 import { useCompanySelection } from "../../../hooks/useCompanySelection";
@@ -647,12 +651,29 @@ const [step, setStep] = useState<"verification" | "form">(
         String(formData.engagementDate ?? "").trim() || new Date().toISOString().slice(0, 10);
 
       try {
-        await createSalaryStructureAssignment({
-          employee: emp,
-          salary_structure: selectedSalaryStructure,
-          from_date,
-          company: company || String(companyCode ?? "").trim(),
-        });
+        const list = await getSalaryStructureAssignments({ employee: emp });
+        const rows = Array.isArray(list) ? list : [];
+        const best = rows
+          .filter((r: any) => String(r?.name ?? "").trim())
+          .sort((a: any, b: any) => String(b?.from_date ?? "").localeCompare(String(a?.from_date ?? "")))[0];
+
+        const assignmentName = String(best?.name ?? "").trim();
+        const resolvedCompany = company || String(companyCode ?? "").trim();
+
+        if (assignmentName) {
+          await replaceSalaryStructureAssignment({
+            name: assignmentName,
+            salary_structure: selectedSalaryStructure,
+            company: resolvedCompany,
+          });
+        } else {
+          await createSalaryStructureAssignment({
+            employee: emp,
+            salary_structure: selectedSalaryStructure,
+            from_date,
+            company: resolvedCompany,
+          });
+        }
       } catch {
         // Do not block employee create/update if assignment fails
       }

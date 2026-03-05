@@ -8,8 +8,6 @@ import {
   CartesianGrid,
   Cell,
   Legend,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -19,7 +17,7 @@ import {
 } from "recharts";
 
 import type { SalarySlipListItem } from "../../../api/salarySlipApi";
-import { getEmployeeAdvancesPaged, type EmployeeAdvanceRecord } from "../../../api/advanceLoanApi";
+import { getAdditionalSalariesPaged, type AdditionalSalaryRecord } from "../../../api/additionalSalaryApi";
 
 const fmtZMW = (n: number) => Number(n || 0).toLocaleString("en-ZM");
 
@@ -123,8 +121,8 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   const statusData = useMemo(() => {
     const map = filteredSlips.reduce((acc: Record<string, number>, r) => {
       const raw = String(r.status ?? "").trim();
-      const normalized = raw.toLowerCase() === "submitted" ? "Paid" : raw || "Unknown";
-      acc[normalized] = (acc[normalized] || 0) + 1;
+      const label = raw || "Unknown";
+      acc[label] = (acc[label] || 0) + 1;
       return acc;
     }, {});
 
@@ -147,23 +145,20 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   }, [filteredSlips]);
 
   const [advancesLoading, setAdvancesLoading] = useState(false);
-  const [advancesError, setAdvancesError] = useState<string | null>(null);
-  const [advances, setAdvances] = useState<EmployeeAdvanceRecord[]>([]);
+  const [advances, setAdvances] = useState<AdditionalSalaryRecord[]>([]);
 
   useEffect(() => {
     let mounted = true;
 
     const run = async () => {
       setAdvancesLoading(true);
-      setAdvancesError(null);
       try {
-        const res = await getEmployeeAdvancesPaged({ page: 1, page_size: 1000 });
+        const res = await getAdditionalSalariesPaged({ page: 1, page_size: 1000 });
         if (!mounted) return;
         setAdvances(Array.isArray(res?.records) ? res.records : []);
       } catch (e: any) {
         if (!mounted) return;
         setAdvances([]);
-        setAdvancesError(e?.message || "Failed to load advances");
       } finally {
         if (!mounted) return;
         setAdvancesLoading(false);
@@ -177,7 +172,7 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   }, []);
 
   const advancesKpis = useMemo(() => {
-    const totalAdvance = advances.reduce((s, r) => s + Number(r.advance_amount ?? 0), 0);
+    const totalAdvance = advances.reduce((s, r) => s + Number(r.amount ?? 0), 0);
     return {
       count: advances.length,
       totalAdvance,
@@ -200,9 +195,9 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
     });
 
     advances.forEach((r) => {
-      const key = getMonthKey(String(r.posting_date ?? "").trim()) || "Unknown";
+      const key = getMonthKey(String(r.from_date ?? "").trim()) || "Unknown";
       if (!map[key]) map[key] = { month: key, gross: 0, deductions: 0, net: 0, advances: 0, slips: 0 };
-      map[key].advances += Number(r.advance_amount ?? 0);
+      map[key].advances += Number(r.amount ?? 0);
     });
 
     return Object.values(map)

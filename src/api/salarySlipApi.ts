@@ -14,6 +14,8 @@ export type SalarySlipListItem = {
   total_earnings: number;
   total_deduction: number;
   net_pay: number;
+  referenceNumber?: string;
+  napsaStatus?: string;
 };
 
 export type SalarySlipListResponse = {
@@ -44,8 +46,21 @@ type PaginatedRecords<T> = {
 export type SalarySlipDetail = SalarySlipListItem & {
   employee_name?: string;
   company?: string;
+  department?: string;
+  posting_date?: string;
+  payroll_entry?: string;
+  currency?: string;
+  exchange_rate?: number;
+  gross_pay?: number;
+  rounded_total?: number;
+  total_in_words?: string;
+  bank_name?: string;
+  bank_account_no?: string;
+  custom_reference_number?: string | null;
+  custom_slip_url?: string | null;
   earnings?: { component: string; amount: number }[];
   deductions?: { component: string; amount: number }[];
+  paySlipUrl?: string;
 };
 
 export async function getSalarySlips(params?: {

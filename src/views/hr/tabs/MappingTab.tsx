@@ -1,4 +1,3 @@
-// CompanyMappingTab.tsx - REPLACES MappingTab.tsx
 import { useState } from "react";
 import {
   Save,

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus, ChevronLeft,
   FileText, Users, CheckCircle,
-  Layers, X, Download, CreditCard
+  Layers, X, Download, CreditCard, ExternalLink
 } from "lucide-react";
 
 import type { PayrollEntry, Employee } from "../../../types/payrolltypes";
@@ -15,7 +15,7 @@ import { EmployeesTab } from "./EntryFormTabs";
 import SalaryStructureTab from "../tabs/SalaryStructureTab";
 import SalaryStructureAssignmentsDashboardTab from "./SalaryStructureAssignmentsDashboardTab";
 import PayrollReportsDashboard from "./PayrollReportsDashboard";
-import AdvanceLoanTab from "./AdvanceLoanTab";
+import AdvanceLoanTab from "./AdditionalSalaryTab";
 
 // ── Views ─────────────────────────────────────────────────────────────────────
 import EmployeeDetailsPage from "./EmployeeDetailsPage";
@@ -113,8 +113,8 @@ const TopBar: React.FC<{
 }> = ({ view, setView, onNewPayroll, totalEmployees }) => {
   const navItems: { id: View; label: string; icon: React.ReactNode }[] = [
     { id: "salaryStructure", label: "Salary Structure", icon: <Users className="w-3.5 h-3.5" /> },
-    { id: "assignments", label: "Employee Assignment", icon: <Users className="w-3.5 h-3.5" /> },
-    { id: "advanceLoan", label: "Advance  & Loans  ", icon: <CreditCard className="w-3.5 h-3.5" /> },
+    { id: "assignments", label: "Salary Assignments", icon: <Users className="w-3.5 h-3.5" /> },
+    { id: "advanceLoan", label: "Additional Salary", icon: <CreditCard className="w-3.5 h-3.5" /> },
     { id: "reports", label: "Reports", icon: <FileText className="w-3.5 h-3.5" /> }
 
   ];
@@ -235,17 +235,18 @@ const NewPayrollEntry: React.FC<{
 
 const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
   const raw = String(status ?? "").trim();
-  const normalized = raw.toLowerCase() === "submitted" ? "Paid" : raw;
-  const s = String(normalized ?? "").toLowerCase();
+  const s = String(raw ?? "").toLowerCase();
   const cls =
     s === "paid"
       ? "bg-green-50 text-green-700 border-green-200"
+      : s === "submitted"
+        ? "bg-green-50 text-green-700 border-green-200"
       : s === "draft"
         ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-        : "bg-gray-50 text-gray-700 border-gray-200";
+      : "bg-gray-50 text-gray-700 border-gray-200";
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${cls}`}>
-      {normalized || "—"}
+      {raw || "—"}
     </span>
   );
 };
@@ -288,20 +289,27 @@ const SalarySlipDetailsModal: React.FC<{
 
   const earnings = Array.isArray(data?.earnings) ? data?.earnings : [];
   const deductions = Array.isArray(data?.deductions) ? data?.deductions : [];
+  const paySlipUrl = String((data as any)?.custom_slip_url ?? (data as any)?.paySlipUrl ?? "").trim();
+  const referenceNumber = String((data as any)?.custom_reference_number ?? (data as any)?.referenceNumber ?? "").trim();
+
+  const roInputCls = "w-full h-10 px-3 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none";
+  const sectionTitleCls = "text-[11px] font-extrabold text-muted uppercase tracking-wider";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col">
-        <div className="px-6 py-4 flex items-center justify-between">
+      <div className="bg-card rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-theme">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-theme bg-blue-600 text-white">
           <div className="min-w-0">
-            <h3 className="text-sm font-bold text-main flex items-center gap-2">
-              <FileText className="w-4 h-4 text-muted" />
-              Salary Slip
+            <h3 className="text-sm font-extrabold flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Salary Slip {String((data as any)?.name ?? slipId ?? "")}
             </h3>
-            <div className="text-xs text-muted mt-1 break-words">{slipId}</div>
+            <div className="text-xs text-white/80 mt-1 break-words">
+              {String((data as any)?.employee_name ?? "")} ({String((data as any)?.employee ?? "")})
+            </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-muted/10 transition-colors">
-            <X className="w-5 h-5 text-muted hover:text-main" />
+          <button onClick={onClose} className="p-1 rounded hover:bg-white/10 transition-colors" title="Close">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -315,45 +323,156 @@ const SalarySlipDetailsModal: React.FC<{
 
           {!loading && data && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">Employee</div>
-                  <div className="text-sm font-semibold text-main break-words">{data.employee_name || data.employee}</div>
-                  <div className="text-xs text-muted mt-0.5">{data.employee}</div>
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Basic Information</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Slip No</div>
+                    <input readOnly value={String((data as any)?.name ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Posting Date</div>
+                    <input readOnly value={String((data as any)?.posting_date ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Status</div>
+                    <div className="mt-1">
+                      <StatusChip status={(data as any)?.status} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className={sectionTitleCls}>Employee</div>
+                    <input readOnly value={String((data as any)?.employee ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Employee Name</div>
+                    <input readOnly value={String((data as any)?.employee_name ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Department</div>
+                    <input readOnly value={String((data as any)?.department ?? "")} className={roInputCls} />
+                  </div>
                 </div>
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">Period</div>
-                  <div className="text-sm font-semibold text-main">{data.start_date} → {data.end_date}</div>
-                  <div className="text-xs text-muted mt-0.5">{data.salary_structure}</div>
+              </div>
+
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Payroll & Period</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Salary Structure</div>
+                    <input readOnly value={String((data as any)?.salary_structure ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Start Date</div>
+                    <input readOnly value={String((data as any)?.start_date ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>End Date</div>
+                    <input readOnly value={String((data as any)?.end_date ?? "")} className={roInputCls} />
+                  </div>
+
+                  <div>
+                    <div className={sectionTitleCls}>Payroll Entry</div>
+                    <input readOnly value={String((data as any)?.payroll_entry ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Currency</div>
+                    <input readOnly value={String((data as any)?.currency ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Exchange Rate</div>
+                    <input readOnly value={String((data as any)?.exchange_rate ?? "")} className={roInputCls} />
+                  </div>
                 </div>
-                <div className="bg-muted/5 rounded-lg p-5">
-                  <div className="text-xs text-muted font-medium uppercase tracking-wider mb-1">Net Pay</div>
-                  <div className="text-xl font-bold text-main tabular-nums">ZMW {Number(data.net_pay ?? 0).toLocaleString("en-ZM")}</div>
-                  <div className="mt-2"><StatusChip status={data.status} /></div>
+              </div>
+
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Payment Information</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Bank Name</div>
+                    <input readOnly value={String((data as any)?.bank_name ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Bank Account No</div>
+                    <input readOnly value={String((data as any)?.bank_account_no ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Reference No</div>
+                    <input readOnly value={referenceNumber || ""} className={roInputCls} />
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <div className={sectionTitleCls}>Payslip PDF</div>
+                    <div className="mt-2">
+                      {paySlipUrl ? (
+                        <a
+                          href={paySlipUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full inline-flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-theme bg-card text-sm font-semibold text-primary hover:bg-muted/5 transition-colors"
+                        >
+                          <span>Open Payslip</span>
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      ) : (
+                        <div className="text-sm text-muted">No payslip PDF available</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Totals</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Gross Pay</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.gross_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Total Deduction</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.total_deduction ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Net Pay</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.net_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Rounded Total</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.rounded_total ?? (data as any)?.net_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div className="md:col-span-4">
+                    <div className={sectionTitleCls}>Total in Words</div>
+                    <input readOnly value={String((data as any)?.total_in_words ?? "")} className={roInputCls} />
+                  </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-lg overflow-hidden bg-card shadow-sm">
-                  <div className="px-5 py-4 bg-muted/5 flex items-center justify-between">
-                    <div className="text-sm font-bold text-main">Earnings</div>
-                    <div className="text-sm font-bold text-main">ZMW {Number(data.total_earnings ?? 0).toLocaleString("en-ZM")}</div>
+                <div className="rounded-xl overflow-hidden bg-card shadow-sm border border-theme">
+                  <div className="px-5 py-4 bg-app border-b border-theme flex items-center justify-between">
+                    <div className="text-sm font-extrabold text-main">Earnings</div>
+                    <div className="text-sm font-extrabold text-main">
+                      {String((data as any)?.currency ?? "ZMW")} {Number((data as any)?.gross_pay ?? 0).toLocaleString("en-ZM")}
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-card">
                         <tr>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-left">Component</th>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-right">Amount</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-left">Component</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-right">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         {earnings.length === 0 ? (
                           <tr><td colSpan={2} className="px-5 py-8 text-center text-sm text-muted">No earnings</td></tr>
-                        ) : earnings.map((r: any) => (
-                          <tr key={`${r?.component}`} className="last:border-0 hover:bg-muted/5 transition-colors">
+                        ) : earnings.map((r: any, idx: number) => (
+                          <tr key={`${r?.component}-${idx}`} className="border-t border-theme/60">
                             <td className="px-5 py-3 text-sm font-medium text-main">{String(r?.component ?? "")}</td>
-                            <td className="px-5 py-3 text-right text-sm font-medium text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
+                            <td className="px-5 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -361,26 +480,28 @@ const SalarySlipDetailsModal: React.FC<{
                   </div>
                 </div>
 
-                <div className="rounded-lg overflow-hidden bg-card shadow-sm">
-                  <div className="px-5 py-4 bg-muted/5 flex items-center justify-between">
-                    <div className="text-sm font-bold text-main">Deductions</div>
-                    <div className="text-sm font-bold text-main">ZMW {Number(data.total_deduction ?? 0).toLocaleString("en-ZM")}</div>
+                <div className="rounded-xl overflow-hidden bg-card shadow-sm border border-theme">
+                  <div className="px-5 py-4 bg-app border-b border-theme flex items-center justify-between">
+                    <div className="text-sm font-extrabold text-main">Deductions</div>
+                    <div className="text-sm font-extrabold text-main">
+                      {String((data as any)?.currency ?? "ZMW")} {Number((data as any)?.total_deduction ?? 0).toLocaleString("en-ZM")}
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-card">
                         <tr>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-left">Component</th>
-                          <th className="px-5 py-3 text-xs font-semibold text-muted text-right">Amount</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-left">Component</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-right">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         {deductions.length === 0 ? (
                           <tr><td colSpan={2} className="px-5 py-8 text-center text-sm text-muted">No deductions</td></tr>
                         ) : deductions.map((r: any, idx: number) => (
-                          <tr key={`${r?.component}-${idx}`} className="last:border-0 hover:bg-muted/5 transition-colors">
+                          <tr key={`${r?.component}-${idx}`} className="border-t border-theme/60">
                             <td className="px-5 py-3 text-sm font-medium text-main">{String(r?.component ?? "")}</td>
-                            <td className="px-5 py-3 text-right text-sm font-medium text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
+                            <td className="px-5 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -472,13 +593,10 @@ export default function PayrollManagement() {
         if (!(sStart <= monthEnd && sEnd >= monthStart)) return false;
       }
 
-      const status = String(s.status ?? "").trim();
-      const normalizedStatus = status.toLowerCase() === "submitted" ? "Paid" : status || "Unknown";
       const hay = [
         String(s.name ?? ""),
         String(s.employee ?? ""),
-        String(s.salary_structure ?? ""),
-        normalizedStatus,
+        String(s.referenceNumber ?? ""),
       ]
         .join(" ")
         .toLowerCase();
@@ -610,6 +728,20 @@ export default function PayrollManagement() {
     });
 
     showToast(`Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`);
+  };
+
+  const handleOpenPayslipPdf = async (slipId: string) => {
+    try {
+      const resp = await getSalarySlipById(slipId);
+      const paySlipUrl = String(resp?.paySlipUrl ?? "").trim();
+      if (paySlipUrl) {
+        window.open(paySlipUrl, "_blank");
+      } else {
+        showToast("No PDF available for this salary slip", "error");
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Failed to open salary slip PDF", "error");
+    }
   };
 
   const topBarProps = {
@@ -757,10 +889,12 @@ export default function PayrollManagement() {
                       const rows = filteredSalarySlips.map((s) => ({
                         slip_id: s.name,
                         employee: s.employee,
+                        reference_number: s.referenceNumber ?? "",
                         salary_structure: s.salary_structure,
                         start_date: s.start_date,
                         end_date: s.end_date,
-                        status: s.status,
+                        payslip_status: s.status,
+                        napsa_status: s.napsaStatus ?? "",
                         total_earnings: s.total_earnings,
                         total_deduction: s.total_deduction,
                         net_pay: s.net_pay,
@@ -794,12 +928,14 @@ export default function PayrollManagement() {
                   <thead className="bg-muted/5">
                     <tr>
                       {[
-                        "Slip ID",
-                        "Employee",
-                        "Structure",
+                        "Slip No",
+                        "Employee No",
+                        "Reference No",
+                        "Salary Structure",
                         "Start",
                         "End",
-                        "Status",
+                        "Payslip Status",
+                        "Napsa Status",
                         "Earnings",
                         "Deductions",
                         "Net",
@@ -807,7 +943,7 @@ export default function PayrollManagement() {
                       ].map((h, i) => (
                         <th
                           key={String(i)}
-                          className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${i >= 6 && i <= 8 ? "text-right" : "text-left"
+                          className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${i >= 8 && i <= 10 ? "text-right" : "text-left"
                             }`}
                         >
                           {h}
@@ -824,6 +960,8 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3"><div className="h-3 w-24 bg-theme/60 rounded animate-pulse" /></td>
                           <td className="px-4 py-3"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse" /></td>
                           <td className="px-4 py-3"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse" /></td>
+                          <td className="px-4 py-3"><div className="h-3 w-28 bg-theme/60 rounded animate-pulse" /></td>
+                          <td className="px-4 py-3"><div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" /></td>
                           <td className="px-4 py-3"><div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" /></td>
                           <td className="px-4 py-3 text-right"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" /></td>
                           <td className="px-4 py-3 text-right"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" /></td>
@@ -833,7 +971,7 @@ export default function PayrollManagement() {
                       ))
                     ) : filteredSalarySlips.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="px-4 py-10 text-center text-sm text-muted">
+                        <td colSpan={12} className="px-4 py-10 text-center text-sm text-muted">
                           {String(slipsSearch ?? "").trim() ? "No matching salary slips" : "No salary slips found"}
                         </td>
                       </tr>
@@ -845,10 +983,12 @@ export default function PayrollManagement() {
                         >
                           <td className="px-4 py-3 text-sm font-medium text-main break-words">{s.name}</td>
                           <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{s.employee}</td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.referenceNumber || "—"}</td>
                           <td className="px-4 py-3 text-sm text-muted break-words">{s.salary_structure}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.end_date}</td>
                           <td className="px-4 py-3"><StatusChip status={s.status} /></td>
+                          <td className="px-4 py-3"><StatusChip status={s.napsaStatus} /></td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_earnings ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">{Number(s.net_pay ?? 0).toLocaleString("en-ZM")}</td>
@@ -858,7 +998,7 @@ export default function PayrollManagement() {
                                 setSlipDetailsId(s.name);
                                 setSlipDetailsOpen(true);
                               }}
-                              className="px-3 py-1.5 rounded-md text-xs font-medium bg-card text-main hover:bg-black/5 transition-colors"
+                              className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                             >
                               View
                             </button>
