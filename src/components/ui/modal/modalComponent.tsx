@@ -9,16 +9,14 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   icon?: React.ReactNode;
   options?: SelectOption[];
   children?: React.ReactNode;
-  placeholder?: string;
+  placeholder? : string;
   error?: string;
 }
 
 export const ModalSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
-  (
-    { label, icon, options = [], children, className = "", error, ...props },
-    ref,
-  ) => (
+  ({ label, icon, options = [], children, className = "", error, ...props }, ref) => (
     <label className="flex flex-col text-sm group min-w-0">
+
       {/* LABEL */}
       <span className="block text-[10px] font-medium text-main mb-1">
         {icon && (
@@ -36,7 +34,7 @@ export const ModalSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         {...props}
         value={props.value ?? ""}
         className={[
-          "py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-full min-w-0",
+          "py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0",
 
           error
             ? "border-danger"
@@ -70,12 +68,18 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   icon?: React.ReactNode;
   error?: string;
-  suffix?: string;
+}
+
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+  icon?: React.ReactNode;
+  error?: string;
 }
 
 export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, icon, className = "", error, suffix, ...props }, ref) => (
+  ({ label, icon, className = "", error, ...props }, ref) => (
     <label className="flex flex-col text-sm group min-w-0">
+
       {/* LABEL */}
       <span className="block text-[10px] font-medium text-main mb-1">
         {icon && (
@@ -88,43 +92,34 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
       </span>
 
       {/* INPUT */}
-      <div className="relative w-full min-w-0">
-        <input
-          ref={ref}
-          {...props}
-          value={props.value ?? ""}
-          className={[
-            "py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-full appearance-none",
-      suffix ? "pr-8" : "",
+      <input
+        ref={ref}
+        {...props}
+        value={props.value ?? ""}
+        className={[
+          "py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0",
 
-            error
-              ? "border-danger focus:border-danger"
-              : props.disabled
-                ? "bg-app cursor-not-allowed opacity-60 border-theme"
-                : "border-[var(--border)] hover:border-primary/40",
+          error
+            ? "border-danger focus:border-danger"
+            : props.disabled
+              ? "bg-app cursor-not-allowed opacity-60 border-theme"
+              : "border-[var(--border)] hover:border-primary/40",
 
-            className,
-          ].join(" ")}
-          onFocus={(e) => {
-            if (!props.disabled) {
-              e.currentTarget.style.boxShadow = error
-                ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
-                : "0 0 0 3px rgba(37, 99, 235, 0.16)";
-            }
-            props.onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.boxShadow = "";
-            props.onBlur?.(e);
-          }}
-        />
-
-        {suffix && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted font-medium pointer-events-none">
-            {suffix}
-          </span>
-        )}
-      </div>
+          className,
+        ].join(" ")}
+        onFocus={(e) => {
+          if (!props.disabled) {
+            e.currentTarget.style.boxShadow = error
+              ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
+              : "0 0 0 3px rgba(37, 99, 235, 0.16)";
+          }
+          props.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.boxShadow = "";
+          props.onBlur?.(e);
+        }}
+      />
 
       {error && <span className="text-[10px] text-danger mt-1">{error}</span>}
     </label>
@@ -245,7 +240,8 @@ export const YesNoCheckbox: React.FC<YesNoCheckboxProps> = ({
   };
 
   return (
-    <label className="flex flex-col text-sm min-w-0 w-fit">
+   <label className="flex flex-col text-sm min-w-0 w-fit">
+
       {/* LABEL */}
       <span className="text-[11px] font-medium uppercase tracking-wide text-muted mb-1">
         {label}
@@ -253,39 +249,44 @@ export const YesNoCheckbox: React.FC<YesNoCheckboxProps> = ({
       </span>
 
       {/* CHECKBOX */}
-      <div className="flex items-center gap-2 cursor-pointer select-none">
-        <div
-          onClick={() => !disabled && onChange(name, checked ? "N" : "Y")}
-          className={[
-            "w-7 h-7 rounded-md border flex items-center justify-center transition-all",
-            checked
-              ? "bg-primary border-primary"
-              : "bg-card border-theme hover:border-primary/60",
-            disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
-          ].join(" ")}
-        >
-          {checked && (
-            <svg
-              className="w-4 h-4 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={3}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          )}
-        </div>
+    <div className="flex items-center gap-2 cursor-pointer select-none">
+  
+  <div
+    onClick={() => !disabled && onChange(name, checked ? "N" : "Y")}
+    className={[
+      "w-7 h-7 rounded-md border flex items-center justify-center transition-all",
+      checked
+        ? "bg-primary border-primary"
+        : "bg-card border-theme hover:border-primary/60",
+      disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+    ].join(" ")}
+  >
+    {checked && (
+      <svg
+        className="w-4 h-4 text-white"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={3}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    )}
+  </div>
 
-        <span className="text-[11px] text-main">{checked ? "Yes" : "No"}</span>
-      </div>
+ <span className="text-[11px] text-main">
+    {checked ? "Yes" : "No"}
+  </span>
+
+</div>
 
       {/* Hidden field ensures form always submits Y/N */}
-      <input type="hidden" name={name} value={normalizedValue} />
+      <input
+        type="hidden"
+        name={name}
+        value={normalizedValue}
+      />
+
     </label>
   );
 };

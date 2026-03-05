@@ -24,6 +24,18 @@ type NestedSection =
   | "billingAddress"
   | "shippingAddress"
   | "paymentInformation";
+//---------------------- Utility Function to Calculate Due Date Based on Invoice Date and Terms --//
+const calculateDueDate = (invoiceDate: string, terms: string) => {
+  if (!invoiceDate) return "";
+
+  const match = terms?.match(/(\d+)/);
+  const days = match ? Number(match[1]) : 0;
+
+  const date = new Date(invoiceDate);
+  date.setDate(date.getDate() + days);
+
+  return date.toISOString().split("T")[0];
+};
 
 export const useInvoiceForm = (
   isOpen: boolean,
@@ -48,6 +60,19 @@ export const useInvoiceForm = (
     }));
 
   }, [isOpen]);
+  useEffect(() => {
+  const terms = formData.paymentInformation?.paymentTerms;
+
+  if (!terms || !formData.dateOfInvoice) return;
+
+const due = calculateDueDate(formData.dateOfInvoice, terms);
+
+setFormData(prev => ({
+  ...prev,
+  dueDate: prev.dueDate || due
+}));
+
+}, [formData.dateOfInvoice, formData.paymentInformation?.paymentTerms]);
 
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
@@ -69,33 +94,44 @@ export const useInvoiceForm = (
     if (!isOpen || initialData) return;
 
 
-    const loadCompanyData = async () => {
-      try {
-        const companyRes = await getCompanyById(COMPANY_ID);
-        const company = companyRes?.data;
+const loadCompanyData = async () => {
+  try {
+    const companyRes = await getCompanyById(COMPANY_ID);
+    const company = companyRes?.data;
 
-        setFormData((prev) => ({
-          ...prev,
-          invoiceStatus: prev.invoiceStatus || (mode === "proforma" ? "Draft" : prev.invoiceStatus),
-          invoiceType: prev.invoiceType || (mode === "proforma" ? "Non-Export" : prev.invoiceType),
-          terms: {
-            selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
-          },
-          paymentInformation: {
-            ...prev.paymentInformation,
-            paymentTerms:
-              company?.terms?.selling?.payment?.dueDates ?? "",
-            bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-            accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-            routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-            swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
-          },
-        }));
-      } catch (err) {
-        console.error("Failed to load company data", err);
-      }
-    };
+    const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
 
+    setFormData((prev) => {
+      const dueDate = calculateDueDate(prev.dateOfInvoice, paymentTerms);
+
+      return {
+        ...prev,
+        invoiceStatus:
+          prev.invoiceStatus || (mode === "proforma" ? "Draft" : prev.invoiceStatus),
+
+        invoiceType:
+          prev.invoiceType || (mode === "proforma" ? "Non-Export" : prev.invoiceType),
+
+        dueDate: prev.dueDate || dueDate,
+
+        terms: {
+          selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
+        },
+
+        paymentInformation: {
+          ...prev.paymentInformation,
+          paymentTerms: paymentTerms,
+          bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+          accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+          routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+          swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+        },
+      };
+    });
+  } catch (err) {
+    console.error("Failed to load company data", err);
+  }
+};
     loadCompanyData();
   }, [isOpen, mode]);
 
@@ -601,44 +637,44 @@ if (enableExchange && exchangeRateLoading) {
 
 const handleReset = async () => {
   if (initialData) {
-    // If in Edit mode, just restore the original invoice data
     setFormDataFromInvoice(initialData);
   } else {
-    // NEW MODE: This is where we fix the "Everything Wiped" issue
     try {
-      // 1. Fetch the Company defaults again so they aren't lost
       const companyRes = await getCompanyById(COMPANY_ID);
       const company = companyRes?.data;
+
       const today = new Date().toISOString().split("T")[0];
 
-      // 2. Set the form back to default, BUT inject the company data immediately
+      const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
+      const dueDate = calculateDueDate(today, paymentTerms);
+
       setFormData({
         ...DEFAULT_INVOICE_FORM,
         dateOfInvoice: today,
+        dueDate: dueDate,
         exchangeRt: "1",
-        // ⭐ RE-FILL COMPANY DATA (So they aren't blank)
-        terms: { 
-          selling: company?.terms?.selling ?? EMPTY_TERMS.selling 
+
+        terms: {
+          selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
         },
+
         paymentInformation: {
           ...DEFAULT_INVOICE_FORM.paymentInformation,
-          paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
+          paymentTerms: paymentTerms,
           bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
           accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
           routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
           swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
         },
-        // Reset addresses to the empty default structure
+
         shippingAddress: { ...DEFAULT_INVOICE_FORM.billingAddress },
       });
     } catch (err) {
       console.error("Failed to re-load company defaults during reset", err);
-      // Fallback to absolute defaults if API fails
       setFormData({ ...DEFAULT_INVOICE_FORM });
     }
   }
 
-  // Clear User-specific UI states
   shippingEditedRef.current = false;
   lastCurrencyRef.current = "INR";
   lastRateRef.current = 1;

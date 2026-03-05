@@ -327,16 +327,16 @@
   background: #4780db !important; /* dark blue */
   color: #dbeafe !important;
 }
-/* Remove number input arrows */
+/* Remove number input arrows
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
-}
+} */
 
-input[type=number] {
+/* input[type=number] {
   -moz-appearance: textfield;
-}
+} */
 .bg-draft {
   background: #6b7280 !important;
   color: #f3f4f6 !important;
