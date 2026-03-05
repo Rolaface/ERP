@@ -88,7 +88,7 @@ export default function ItemCategorySelect({
       <div ref={ref} className="relative w-full">
         {/* Search Input */}
         <input
-          className="w-full rounded border border-theme bg-card text-main px-3 py-2 text-sm 
+          className="form-input w-full
            focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           placeholder={loading ? "Loading..." : "Search category..."}
           value={search}

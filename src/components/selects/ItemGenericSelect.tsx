@@ -158,13 +158,14 @@ const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
     return name.includes(query) || code.includes(query);
   });
 
-const rootClassName = "flex flex-col text-sm group min-w-0";
+const rootClassName = "flex flex-col gap-0.5 w-full";
 
-const labelClassName = "block text-[10px] font-medium text-main mb-1";
+const labelClassName =
+  "text-[11px] font-medium uppercase tracking-wide text-muted";
 
 const inputClassName = `
-  py-1 px-2 border rounded text-[11px] text-main bg-card transition-all
-  w-auto min-w-0 border-[var(--border)] hover:border-primary/40
+  h-8 rounded-md border border-theme bg-card text-main text-sm px-2.5
+  focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary
 `;
 
   return (
