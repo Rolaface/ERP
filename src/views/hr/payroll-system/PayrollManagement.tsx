@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  Plus,
-  ChevronLeft,
-  FileText,
-  Users,
-  CheckCircle,
-  Layers,
-  X,
-  Download,
-  CreditCard,
-  ExternalLink,
+  Plus, ChevronLeft,
+  FileText, Users, CheckCircle,
+  Layers, X, Download, CreditCard, ExternalLink
 } from "lucide-react";
 
 import type { PayrollEntry, Employee } from "../../../types/payrolltypes";
@@ -367,7 +360,7 @@ const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
       ? "bg-green-50 text-green-700 border-green-200"
       : s === "draft"
         ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-        : "bg-gray-50 text-gray-700 border-gray-200";
+      : "bg-gray-50 text-gray-700 border-gray-200";
   return (
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${cls}`}
@@ -415,299 +408,233 @@ const SalarySlipDetailsModal: React.FC<{
 
   if (!open) return null;
 
-  const earningsSource = data?.earnings;
-  const earnings: Array<{ component: string; amount: number }> = Array.isArray(
-    earningsSource,
-  )
-    ? earningsSource
-    : [];
-  const deductionsSource = data?.deductions;
-  const deductions: Array<{ component: string; amount: number }> =
-    Array.isArray(deductionsSource) ? deductionsSource : [];
-  const paySlipUrl = String(data?.paySlipUrl ?? "").trim();
-  const referenceNumber = String(data?.referenceNumber ?? "").trim();
-  const employeeName = String(
-    data?.employee_name ?? data?.employee ?? "",
-  ).trim();
+  const earnings = Array.isArray(data?.earnings) ? data?.earnings : [];
+  const deductions = Array.isArray(data?.deductions) ? data?.deductions : [];
+  const paySlipUrl = String((data as any)?.custom_slip_url ?? (data as any)?.paySlipUrl ?? "").trim();
+  const referenceNumber = String((data as any)?.custom_reference_number ?? (data as any)?.referenceNumber ?? "").trim();
 
-  const footer = (
-    <div className="w-full flex justify-end">
-      <Button variant="secondary" onClick={onClose}>
-        Close
-      </Button>
-    </div>
-  );
-
-  const Field = ({
-    label,
-    value,
-  }: {
-    label: string;
-    value: React.ReactNode;
-  }) => {
-    const isPrimitive = typeof value === "string" || typeof value === "number";
-
-    return (
-      <div className="flex flex-col gap-1">
-        <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
-          {label}
-        </div>
-        {isPrimitive ? (
-          <input
-            readOnly
-            value={String(value)}
-            aria-label={label}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-main"
-          />
-        ) : (
-          <div className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-main">
-            {value}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const SectionTitle = ({ title }: { title: string }) => (
-    <div className="text-xs font-bold text-main uppercase tracking-wide">
-      {title}
-    </div>
-  );
+  const roInputCls = "w-full h-10 px-3 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none";
+  const sectionTitleCls = "text-[11px] font-extrabold text-muted uppercase tracking-wider";
 
   return (
-    <Modal
-      isOpen={open}
-      onClose={onClose}
-      title={slipId ? `Salary Slip ${slipId}` : "Salary Slip Details"}
-      subtitle={loading ? "Loading salary slip details" : undefined}
-      icon={FileText}
-      maxWidth="6xl"
-      height="82vh"
-      footer={footer}
-    >
-      {error && (
-        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-semibold">
-          {error}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-card rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-theme">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-theme bg-blue-600 text-white">
+          <div className="min-w-0">
+            <h3 className="text-sm font-extrabold flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Salary Slip {String((data as any)?.name ?? slipId ?? "")}
+            </h3>
+            <div className="text-xs text-white/80 mt-1 break-words">
+              {String((data as any)?.employee_name ?? "")} ({String((data as any)?.employee ?? "")})
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 rounded hover:bg-white/10 transition-colors" title="Close">
+            <X className="w-5 h-5" />
+          </button>
         </div>
-      )}
 
-      {loading && (
-        <div className="animate-pulse">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            {Array.from({ length: 3 }).map((_, idx) => (
-              <div
-                key={`slip-skeleton-${idx}`}
-                className="bg-white border border-gray-200 rounded-xl p-4"
-              >
-                <div className="h-3 w-24 bg-gray-300 rounded" />
-                <div className="h-6 w-40 bg-gray-300 rounded mt-2" />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!loading && data && (
-        <div className="bg-[#fbf7f2] border border-gray-200 rounded-2xl p-5 space-y-6">
-          <div>
-            <SectionTitle title="Basic Information" />
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Field label="Slip ID" value={data.name ?? slipId ?? "—"} />
-              <Field label="Employee" value={employeeName || "—"} />
-              <Field label="Employee ID" value={data.employee ?? "—"} />
-              <Field label="Start Date" value={data.start_date ?? "—"} />
-              <Field label="End Date" value={data.end_date ?? "—"} />
-              <Field
-                label="Salary Structure"
-                value={data.salary_structure ?? "—"}
-              />
-              <Field label="Reference #" value={referenceNumber || "—"} />
-              <Field
-                label="Status"
-                value={<StatusChip status={data.status} />}
-              />
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {error}
             </div>
-          </div>
+          )}
+          {loading && <div className="text-sm text-muted">Loading...</div>}
 
-          <div>
-            <SectionTitle title="Amounts" />
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Field
-                label="Total Earnings"
-                value={`ZMW ${Number(data.total_earnings ?? 0).toLocaleString("en-ZM")}`}
-              />
-              <Field
-                label="Total Deductions"
-                value={`ZMW ${Number(data.total_deduction ?? 0).toLocaleString("en-ZM")}`}
-              />
-              <Field
-                label="Net Pay"
-                value={`ZMW ${Number(data.net_pay ?? 0).toLocaleString("en-ZM")}`}
-              />
-              <Field
-                label="Receipt"
-                value={
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (paySlipUrl) {
-                        window.open(
-                          paySlipUrl,
-                          "_blank",
-                          "noopener,noreferrer",
-                        );
-                        return;
-                      }
-                      window.open(
-                        "about:blank",
-                        "_blank",
-                        "noopener,noreferrer",
-                      );
-                    }}
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary"
-                  >
-                    {paySlipUrl ? "Open Receipt" : "Receipt Not Available"}
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
-                }
-              />
-            </div>
-          </div>
+          {!loading && data && (
+            <>
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Basic Information</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Slip No</div>
+                    <input readOnly value={String((data as any)?.name ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Posting Date</div>
+                    <input readOnly value={String((data as any)?.posting_date ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Status</div>
+                    <div className="mt-1">
+                      <StatusChip status={(data as any)?.status} />
+                    </div>
+                  </div>
 
-          {paySlipUrl ? (
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                <div className="text-xs font-bold text-main uppercase tracking-wide">
-                  Payslip Preview
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    window.open(paySlipUrl, "_blank", "noopener,noreferrer")
-                  }
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary"
-                >
-                  Open Receipt
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="h-[520px] bg-white">
-                <iframe
-                  title="Payslip PDF"
-                  src={paySlipUrl}
-                  className="w-full h-full"
-                />
-              </div>
-            </div>
-          ) : null}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                <div className="text-xs font-bold text-main uppercase tracking-wide">
-                  Earnings
-                </div>
-                <div className="text-sm font-semibold text-main">
-                  ZMW {Number(data.total_earnings ?? 0).toLocaleString("en-ZM")}
+                  <div>
+                    <div className={sectionTitleCls}>Employee</div>
+                    <input readOnly value={String((data as any)?.employee ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Employee Name</div>
+                    <input readOnly value={String((data as any)?.employee_name ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Department</div>
+                    <input readOnly value={String((data as any)?.department ?? "")} className={roInputCls} />
+                  </div>
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#fbf7f2]">
-                    <tr>
-                      <th className="px-4 py-2.5 text-xs font-semibold text-muted text-left">
-                        Component
-                      </th>
-                      <th className="px-4 py-2.5 text-xs font-semibold text-muted text-right">
-                        Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {earnings.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={2}
-                          className="px-4 py-8 text-center text-sm text-muted"
+
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Payroll & Period</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Salary Structure</div>
+                    <input readOnly value={String((data as any)?.salary_structure ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Start Date</div>
+                    <input readOnly value={String((data as any)?.start_date ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>End Date</div>
+                    <input readOnly value={String((data as any)?.end_date ?? "")} className={roInputCls} />
+                  </div>
+
+                  <div>
+                    <div className={sectionTitleCls}>Payroll Entry</div>
+                    <input readOnly value={String((data as any)?.payroll_entry ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Currency</div>
+                    <input readOnly value={String((data as any)?.currency ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Exchange Rate</div>
+                    <input readOnly value={String((data as any)?.exchange_rate ?? "")} className={roInputCls} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Payment Information</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Bank Name</div>
+                    <input readOnly value={String((data as any)?.bank_name ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Bank Account No</div>
+                    <input readOnly value={String((data as any)?.bank_account_no ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Reference No</div>
+                    <input readOnly value={referenceNumber || ""} className={roInputCls} />
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <div className={sectionTitleCls}>Payslip PDF</div>
+                    <div className="mt-2">
+                      {paySlipUrl ? (
+                        <a
+                          href={paySlipUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full inline-flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-theme bg-card text-sm font-semibold text-primary hover:bg-muted/5 transition-colors"
                         >
-                          No earnings
-                        </td>
-                      </tr>
-                    ) : (
-                      earnings.map((r) => (
-                        <tr
-                          key={`${r?.component}`}
-                          className="border-t border-gray-100"
-                        >
-                          <td className="px-4 py-3 text-sm text-main">
-                            {String(r?.component ?? "")}
-                          </td>
-                          <td className="px-4 py-3 text-right text-sm text-main tabular-nums">
-                            {Number(r?.amount ?? 0).toLocaleString("en-ZM")}
-                          </td>
+                          <span>Open Payslip</span>
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      ) : (
+                        <div className="text-sm text-muted">No payslip PDF available</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-app/30 border border-theme rounded-xl p-6">
+                <div className={sectionTitleCls}>Totals</div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-5">
+                  <div>
+                    <div className={sectionTitleCls}>Gross Pay</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.gross_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Total Deduction</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.total_deduction ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Net Pay</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.net_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Rounded Total</div>
+                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.rounded_total ?? (data as any)?.net_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                  </div>
+                  <div className="md:col-span-4">
+                    <div className={sectionTitleCls}>Total in Words</div>
+                    <input readOnly value={String((data as any)?.total_in_words ?? "")} className={roInputCls} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="rounded-xl overflow-hidden bg-card shadow-sm border border-theme">
+                  <div className="px-5 py-4 bg-app border-b border-theme flex items-center justify-between">
+                    <div className="text-sm font-extrabold text-main">Earnings</div>
+                    <div className="text-sm font-extrabold text-main">
+                      {String((data as any)?.currency ?? "ZMW")} {Number((data as any)?.gross_pay ?? 0).toLocaleString("en-ZM")}
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-card">
+                        <tr>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-left">Component</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-right">Amount</th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                      </thead>
+                      <tbody>
+                        {earnings.length === 0 ? (
+                          <tr><td colSpan={2} className="px-5 py-8 text-center text-sm text-muted">No earnings</td></tr>
+                        ) : earnings.map((r: any, idx: number) => (
+                          <tr key={`${r?.component}-${idx}`} className="border-t border-theme/60">
+                            <td className="px-5 py-3 text-sm font-medium text-main">{String(r?.component ?? "")}</td>
+                            <td className="px-5 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                <div className="text-xs font-bold text-main uppercase tracking-wide">
-                  Deductions
-                </div>
-                <div className="text-sm font-semibold text-main">
-                  ZMW{" "}
-                  {Number(data.total_deduction ?? 0).toLocaleString("en-ZM")}
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#fbf7f2]">
-                    <tr>
-                      <th className="px-4 py-2.5 text-xs font-semibold text-muted text-left">
-                        Component
-                      </th>
-                      <th className="px-4 py-2.5 text-xs font-semibold text-muted text-right">
-                        Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {deductions.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={2}
-                          className="px-4 py-8 text-center text-sm text-muted"
-                        >
-                          No deductions
-                        </td>
-                      </tr>
-                    ) : (
-                      deductions.map((r, idx) => (
-                        <tr
-                          key={`${r?.component}-${idx}`}
-                          className="border-t border-gray-100"
-                        >
-                          <td className="px-4 py-3 text-sm text-main">
-                            {String(r?.component ?? "")}
-                          </td>
-                          <td className="px-4 py-3 text-right text-sm text-main tabular-nums">
-                            {Number(r?.amount ?? 0).toLocaleString("en-ZM")}
-                          </td>
+                <div className="rounded-xl overflow-hidden bg-card shadow-sm border border-theme">
+                  <div className="px-5 py-4 bg-app border-b border-theme flex items-center justify-between">
+                    <div className="text-sm font-extrabold text-main">Deductions</div>
+                    <div className="text-sm font-extrabold text-main">
+                      {String((data as any)?.currency ?? "ZMW")} {Number((data as any)?.total_deduction ?? 0).toLocaleString("en-ZM")}
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-card">
+                        <tr>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-left">Component</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-right">Amount</th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody>
+                        {deductions.length === 0 ? (
+                          <tr><td colSpan={2} className="px-5 py-8 text-center text-sm text-muted">No deductions</td></tr>
+                        ) : deductions.map((r: any, idx: number) => (
+                          <tr key={`${r?.component}-${idx}`} className="border-t border-theme/60">
+                            <td className="px-5 py-3 text-sm font-medium text-main">{String(r?.component ?? "")}</td>
+                            <td className="px-5 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
-      )}
-    </Modal>
+      </div>
+    </div>
   );
 };
 
@@ -1255,14 +1182,15 @@ export default function PayrollManagement() {
                             {Number(s.net_pay ?? 0).toLocaleString("en-ZM")}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <ActionButton
-                              type="view"
-                              iconOnly
+                            <button
                               onClick={() => {
                                 setSlipDetailsId(s.name);
                                 setSlipDetailsOpen(true);
                               }}
-                            />
+                              className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                            >
+                              View
+                            </button>
                           </td>
                         </tr>
                       ))

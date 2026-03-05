@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Save, X } from "lucide-react";
+import {
+  Plus,
+  Save,
+  X,
+} from "lucide-react";
 import toast from "react-hot-toast";
-import { calculateZmPayrollFromGross } from "../payroll-system/util";
+import {
+  calculateZmPayrollFromGross
+} from "../payroll-system/util";
 import {
   createSalaryStructure,
   createSalaryComponent,
@@ -519,6 +525,8 @@ function SalaryComponentsModal({
     });
   };
 
+  
+
   const save = async () => {
     if (!editing) return;
     if (!editing.name.trim() || !editing.abbr.trim()) {
@@ -569,19 +577,20 @@ function SalaryComponentsModal({
     }
   };
 
+
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
-        <div className="px-6 py-4 flex items-center justify-between bg-card text-main">
+      <div className="bg-card rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-theme">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-theme bg-blue-600 text-white">
           <div className="min-w-0">
-            <h3 className="text-base font-bold text-main">Salary Components</h3>
-            <div className="text-xs text-muted mt-0.5">
-              Manage earnings and deductions
-            </div>
+            <h3 className="text-sm font-extrabold">Salary Components</h3>
+            <div className="text-xs text-white/80 mt-0.5">Manage earnings and deductions</div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-muted/5 transition-colors text-muted hover:text-main"
+            className="p-1 rounded hover:bg-white/10 transition-colors text-white"
+            title="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -589,19 +598,17 @@ function SalaryComponentsModal({
 
         <div className="p-6 flex-1 overflow-y-auto">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-            <div className="text-sm text-gray-600">
-              {filtered.length} components
-            </div>
+            <div className="text-xs text-muted">{filtered.length} components</div>
             <div className="flex items-center gap-2">
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search components"
-                className="w-full md:w-96 px-3 py-2 text-sm border border-border rounded-md bg-card focus:ring-1 focus:ring-primary outline-none"
+                className="w-full md:w-96 px-3 py-2 text-sm border border-theme rounded-lg bg-card focus:ring-1 focus:ring-primary outline-none"
               />
               <button
                 onClick={startCreate}
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 flex items-center gap-2 text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center gap-2 text-sm font-semibold transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 New Component
@@ -615,34 +622,21 @@ function SalaryComponentsModal({
             </div>
           )}
 
-          <div className="bg-card rounded-lg overflow-hidden flex-1 flex flex-col shadow-sm">
+          <div className="bg-card rounded-xl overflow-hidden flex-1 flex flex-col shadow-sm border border-theme">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/5">
+                <thead className="bg-app border-b border-theme">
                   <tr>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
-                      Component
-                    </th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
-                      Abbr
-                    </th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
-                      Type
-                    </th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
-                      Tax
-                    </th>
-                    <th className="text-left font-semibold text-muted text-xs px-4 py-3 whitespace-nowrap">
-                      Enabled
-                    </th>
+                    <th className="text-left font-extrabold text-muted text-[11px] px-4 py-3 whitespace-nowrap uppercase tracking-wider">Component</th>
+                    <th className="text-left font-extrabold text-muted text-[11px] px-4 py-3 whitespace-nowrap uppercase tracking-wider">Abbr</th>
+                    <th className="text-left font-extrabold text-muted text-[11px] px-4 py-3 whitespace-nowrap uppercase tracking-wider">Type</th>
+                    <th className="text-left font-extrabold text-muted text-[11px] px-4 py-3 whitespace-nowrap uppercase tracking-wider">Tax</th>
+                    <th className="text-left font-extrabold text-muted text-[11px] px-4 py-3 whitespace-nowrap uppercase tracking-wider">Enabled</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paged.map((c) => (
-                    <tr
-                      key={c.id}
-                      className="hover:bg-muted/5 transition-colors"
-                    >
+                    <tr key={c.id} className="hover:bg-muted/5 transition-colors border-b border-theme/40 last:border-0">
                       <td className="px-4 py-3">
                         <div className="font-semibold text-main">
                           {c.component || c.id}
@@ -676,10 +670,7 @@ function SalaryComponentsModal({
 
                   {!loading && paged.length === 0 && (
                     <tr>
-                      <td
-                        className="px-4 py-10 text-center text-gray-600"
-                        colSpan={5}
-                      >
+                      <td className="px-4 py-10 text-center text-gray-600" colSpan={5}>
                         No salary components found
                       </td>
                     </tr>
@@ -688,18 +679,18 @@ function SalaryComponentsModal({
               </table>
             </div>
 
-            <div className="p-4 border-t flex items-center justify-end gap-2">
+            <div className="p-4 border-t border-theme flex items-center justify-end gap-2 bg-app">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-bold border border-theme bg-card text-main rounded-lg hover:bg-muted/5 disabled:opacity-50"
               >
                 Prev
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
                 disabled={page >= pageCount}
-                className="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-bold border border-theme bg-card text-main rounded-lg hover:bg-muted/5 disabled:opacity-50"
               >
                 Next
               </button>
@@ -836,15 +827,6 @@ function SalaryComponentsModal({
             </div>
           </div>
         )}
-
-        <div className="px-6 py-4 bg-muted/5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium hover:bg-black/5 transition-colors rounded-md"
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );
