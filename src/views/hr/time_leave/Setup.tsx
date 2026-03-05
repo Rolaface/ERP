@@ -1,11 +1,28 @@
 import React, { useState } from "react";
 import { Settings, Users } from "lucide-react";
 import LeaveSetupModal from "../../../components/Hr/leave/setup/leavesetupmodal";
+import LeaveAllocation from "../../../components/Hr/leave/setup/LeaveAllocation";
+import { LeavePolicyAssignment } from "../../../components/Hr/leave/setup/LeavePolicyAssignment";
+import { LeaveEncashment } from "../../../components/Hr/leave/setup/LeaveEncashment";
+import LeaveAllocationForm from "../../../components/Hr/leave/setup/LeaveAllocationForm";
+import { LeaveType } from "../../../components/Hr/leave/setup/LeaveType";
+import { LeavePeriod } from "../../../components/Hr/leave/setup/LeavePeriod";
+import { LeavePolicy } from "../../../components/Hr/leave/setup/LeavePolicy";
+import { HolidayList } from "../../../components/Hr/leave/setup/HolidayList";
+import { LeaveBlockList, LeaveBlockListForm } from "../../../components/Hr/leave/setup/LeaveBlockList";
 
 type ModalType = "setup" | "allocation" | null;
 
 const Setup: React.FC = () => {
   const [modalType, setModalType] = useState<ModalType>(null);
+  const [showLeaveType, setShowLeaveType] = useState(false);
+  const [showLeavePeriod, setShowLeavePeriod] = useState(false);
+  const [showLeavePolicy, setShowLeavePolicy] = useState(false);
+  const [showHolidayList, setShowHolidayList] = useState(false);
+  const [showLeaveBlockList, setShowLeaveBlockList] = useState(false);
+  const [showLeavePolicyAssignment, setShowLeavePolicyAssignment] = useState(false);
+  const [showLeaveEncashment, setShowLeaveEncashment] = useState(false);
+  const [showLeaveAllocation, setShowLeaveAllocation] = useState(false);
 
   const setupCategories = [
     {
@@ -59,13 +76,33 @@ const Setup: React.FC = () => {
 
               <div className="space-y-2">
                 {category.items.map((item, itemIdx) => (
-                  <div
+                  <button
                     key={itemIdx}
-                    className="flex items-center gap-2 text-sm text-muted group-hover:text-primary transition"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted bg-muted/5 border border-border rounded-lg transition hover:bg-primary/10 hover:text-primary hover:border-primary active:scale-95"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (item === "Leave Types") {
+                        setShowLeaveType(true);
+                      } else if (item === "Leave Periods") {
+                        setShowLeavePeriod(true);
+                      } else if (item === "Leave Policies") {
+                        setShowLeavePolicy(true);
+                      } else if (item === "Holiday Lists") {
+                        setShowHolidayList(true);
+                      } else if (item === "Leave Block List") {
+                        setShowLeaveBlockList(true);
+                      } else if (item === "Leave Policy Assignment") {
+                        setShowLeavePolicyAssignment(true);
+                      } else if (item === "Leave Encashment") {
+                        setShowLeaveEncashment(true);
+                      } else if (item === "Leave Allocation") {
+                        setShowLeaveAllocation(true);
+                      }
+                    }}
                   >
                     <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                     {item}
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -73,14 +110,102 @@ const Setup: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal */}
-      <LeaveSetupModal
-        isOpen={modalType !== null}
-        onClose={() => setModalType(null)}
-        initialView={
-          modalType === "allocation" ? "allocation-menu" : "setup-menu"
-        }
-      />
+      {showLeaveType && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
+            <LeaveType
+              onAdd={() => {
+              }}
+              onClose={() => setShowLeaveType(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showLeavePeriod && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
+            <LeavePeriod
+              onAdd={() => {
+              }}
+              onClose={() => setShowLeavePeriod(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showLeavePolicy && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
+            <LeavePolicy
+              onAdd={() => {
+              }}
+              onClose={() => setShowLeavePolicy(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showHolidayList && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
+            <HolidayList
+              onAdd={() => {
+              }}
+              onClose={() => setShowHolidayList(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showLeaveBlockList && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
+            <LeaveBlockList
+              onAdd={() => {
+              }}
+              onClose={() => setShowLeaveBlockList(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showLeaveAllocation && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
+            <LeaveAllocation
+              employeeId=""
+              onAdd={() => {
+              }}
+              onClose={() => setShowLeaveAllocation(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showLeavePolicyAssignment && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
+            <LeavePolicyAssignment
+              onAdd={() => {
+              }}
+              onClose={() => setShowLeavePolicyAssignment(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showLeaveEncashment && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
+            <LeaveEncashment
+              onAdd={() => {
+              }}
+              onClose={() => setShowLeaveEncashment(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

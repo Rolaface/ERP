@@ -1,13 +1,14 @@
 // LeaveType.tsx
-import React from "react";
+import React, { useState } from "react";
 import { ArrowLeft, Plus } from "lucide-react";
-
+import { LeaveTypeForm } from "./LeaveTypeForm";
 export interface LeaveTypeProps {
   onAdd: () => void;
   onClose?: () => void;
 }
 
 export const LeaveType: React.FC<LeaveTypeProps> = ({ onAdd, onClose }) => {
+  const [showForm, setShowForm] = useState(false);
   const rows = [
     { name: "Leave Without Pay", count: 0 },
     { name: "Privilege Leave", count: 0 },
@@ -17,7 +18,8 @@ export const LeaveType: React.FC<LeaveTypeProps> = ({ onAdd, onClose }) => {
   ];
 
   return (
-    <div className="bg-card border border-theme rounded-2xl overflow-hidden">
+    <>
+      <div className="bg-card border border-theme rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="p-6 flex items-center justify-between border-b border-theme">
         <div className="flex items-center gap-3">
@@ -33,8 +35,8 @@ export const LeaveType: React.FC<LeaveTypeProps> = ({ onAdd, onClose }) => {
         </div>
 
         <button
-          onClick={onAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl font-semibold transition"
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl font-semibold transition hover:bg-primary/90"
         >
           <Plus size={18} />
           Add Leave Type
@@ -55,7 +57,7 @@ export const LeaveType: React.FC<LeaveTypeProps> = ({ onAdd, onClose }) => {
           <thead>
             <tr className="table-head">
               <th className="px-6 py-3 text-left text-sm font-semibold">
-                <input type="checkbox" className="w-4 h-4" />
+                {/* <input type="checkbox" className="w-4 h-4" /> */}
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold">
                 Leave Type Name
@@ -116,5 +118,20 @@ export const LeaveType: React.FC<LeaveTypeProps> = ({ onAdd, onClose }) => {
         </div>
       </div>
     </div>
-  );
+
+    {showForm && (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-background w-full max-w-2xl rounded-lg">
+          <LeaveTypeForm
+            onClose={() => setShowForm(false)}
+            onSubmit={() => {
+              setShowForm(false);
+              onAdd();
+            }}
+          />
+        </div>
+      </div>
+    )}
+  </>
+);
 };
