@@ -242,8 +242,7 @@ export const AddressTab: React.FC<AddressTabProps> = ({
     companyBillingAddress: true,
   });
 
-  const [copyBillingToShipping, setCopyBillingToShipping] = useState(false);
-  const [copySupplierToDispatch, setCopySupplierToDispatch] = useState(false);
+
 
 
   const toggle = useCallback((key: AddressKey) => {
@@ -267,19 +266,33 @@ export const AddressTab: React.FC<AddressTabProps> = ({
     [onFormChange]
   );
 
-  const handleCopySupplierToDispatch = useCallback(
-    (checked: boolean) => {
-      setCopySupplierToDispatch(checked);
-      if (checked) {
-        copyAddress(form.addresses.supplierAddress, "dispatchAddress");
-      }
-    },
-    [form.addresses.supplierAddress, copyAddress]
-  );
+const handleCopySupplierToDispatch = useCallback(
+  (checked: boolean) => {
+    onFormChange({
+      target: {
+        name: "useDispatchAddress",
+        value: checked,
+        type: "checkbox",
+        checked,
+      },
+    } as any);
 
+    if (checked) {
+      copyAddress(form.addresses.supplierAddress, "dispatchAddress");
+    }
+  },
+  [form.addresses.supplierAddress, copyAddress]
+);
   const handleCopyBillingToShipping = useCallback(
     (checked: boolean) => {
-      setCopyBillingToShipping(checked);
+      onFormChange({
+        target: {
+          name: "useShippingAddress",
+          value: checked,
+          type: "checkbox",
+          checked,
+        },
+      } as any);
       if (checked) {
         copyAddress(form.addresses.companyBillingAddress, "shippingAddress");
       }
@@ -468,7 +481,7 @@ export const AddressTab: React.FC<AddressTabProps> = ({
             onFormChange={onFormChange}
             showCopyCheckbox
             copyCheckboxLabel="Same as Billing"
-            copyChecked={copyBillingToShipping}
+            copyChecked={form.useShippingAddress}
             onCopyToggle={handleCopyBillingToShipping}
           />
 
@@ -482,7 +495,7 @@ export const AddressTab: React.FC<AddressTabProps> = ({
             onFormChange={onFormChange}
             showCopyCheckbox
             copyCheckboxLabel="Same as Supplier"
-            copyChecked={copySupplierToDispatch}
+            copyChecked={form.useDispatchAddress}
             onCopyToggle={handleCopySupplierToDispatch}
           />
         </div>

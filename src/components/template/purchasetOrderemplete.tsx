@@ -185,7 +185,7 @@ export const generatePurchaseOrderPDF = async (
 
   const stripCols: [string, string][] = [
     ["PO DATE", po.poDate ?? "-"],
-    ["REQUIRED BY", po.requiredBy ?? "-"],
+
     ["INCOTERM", po.incoterm ?? "-"],
     ["STATUS", po.status ?? "-"],
     ["CURRENCY", cur],
@@ -290,12 +290,7 @@ export const generatePurchaseOrderPDF = async (
   doc.setFontSize(7.5);
   doc.setTextColor(...INK_SOFT);
 
-  const metaL = [
-    po?.project ? `Project: ${po.project}` : null,
-    po?.costCenter ? `Cost Center: ${po.costCenter}` : null,
-  ]
-    .filter(Boolean)
-    .join("   ");
+  const metaL = [].filter(Boolean).join("   ");
 
   const metaR = [
     po?.taxCategory ? `Tax Category: ${po.taxCategory}` : null,
@@ -327,10 +322,9 @@ export const generatePurchaseOrderPDF = async (
         "#",
         "Item Code",
         "Item Name",
-        "Batch",
         "Packing",
         "UOM",
-        "Schedule Date",
+        "Required By",
         "Qty",
         "Rate",
         "TAX",
@@ -346,7 +340,7 @@ export const generatePurchaseOrderPDF = async (
         idx + 1,
         item.item_code ?? "-",
         item.item_name ?? "-",
-        item.batchNo ?? "-",
+
         packing,
         item.uom ?? "-",
         item.schedule_date ?? "-",
@@ -374,16 +368,15 @@ export const generatePurchaseOrderPDF = async (
     alternateRowStyles: { fillColor: TINT },
     columnStyles: {
       0: { cellWidth: 7, halign: "center" },
-      1: { cellWidth: 24, halign: "left", fontStyle: "bold", textColor: INK },
-      2: { cellWidth: 26, halign: "left" },
-      3: { cellWidth: 14, halign: "center" },
+      1: { cellWidth: 26, halign: "left", fontStyle: "bold", textColor: INK },
+      2: { cellWidth: 32, halign: "left" },
+      3: { cellWidth: 16, halign: "center" },
       4: { cellWidth: 14, halign: "center" },
-      5: { cellWidth: 14, halign: "center" },
-      6: { cellWidth: 18, halign: "center" },
-      7: { cellWidth: 10, halign: "right" },
-      8: { cellWidth: 14, halign: "right" },
-      9: { cellWidth: 10, halign: "center" },
-      10: { halign: "right", fontStyle: "bold", textColor: AMT_BLUE },
+      5: { cellWidth: 20, halign: "center" },
+      6: { cellWidth: 12, halign: "right" },
+      7: { cellWidth: 16, halign: "right" },
+      8: { cellWidth: 12, halign: "center" },
+      9: { halign: "right", fontStyle: "bold", textColor: AMT_BLUE },
     },
     margin: { left: M, right: M },
     tableWidth: W - M * 2,
@@ -447,7 +440,7 @@ export const generatePurchaseOrderPDF = async (
   const subTotal = Number(po?.summary?.subTotal ?? 0);
   const taxTotal = Number(po?.summary?.taxTotal ?? 0);
   const grandTotal = Number(po?.summary?.grandTotal ?? 0);
-  const rounding = Number(po?.summary?.roundingAdjustment ?? 0);
+  const rounding = Number(po?.summary?.roundedTotal ?? 0);
   const taxRate = po?.tax?.taxRate ?? "-";
 
   type TRK = "normal" | "tax" | "rounding" | "grand";

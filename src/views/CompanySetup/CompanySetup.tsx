@@ -176,6 +176,8 @@ const CompanySetup: React.FC = () => {
           <BasicDetails
             basic={basicDetail}
             onSaveSuccess={fetchCompanyDetail}
+            terms={terms}
+
           />
         )}
         {tab === "bank" && (
@@ -189,6 +191,7 @@ const CompanySetup: React.FC = () => {
           <AccountingDetails
             financialConfig={financialConfig}
             accountingSetup={accountingSetup}
+            terms={terms}
           />
         )}
         {tab === "buyingSelling" && (

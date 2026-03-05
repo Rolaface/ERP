@@ -159,8 +159,10 @@ export const generatePurchaseInvoicePDF = async (
   infoLines.forEach((l, i) => doc.text(l, TX, infoY + i * 5.5));
 
   // Badge — top right
-const BW = 40, BH = 8;
-const BX = MR - BW, BY = 5;
+  const BW = 40,
+    BH = 8;
+  const BX = MR - BW,
+    BY = 5;
   doc.setFillColor(...BADGE_BG);
   doc.roundedRect(BX, BY, BW, BH, 2, 2, "F");
   doc.setFont("helvetica", "bold");
@@ -187,7 +189,7 @@ const BX = MR - BW, BY = 5;
 
   const stripCols: [string, string][] = [
     ["INVOICE DATE", pi.pDate ?? "-"],
-    ["REQUIRED BY", pi.requiredBy ?? "-"],
+
     ["PAYMENT METHOD", pi.paymentMethod ?? "-"],
     ["STATUS", pi.status ?? "-"],
     ["CURRENCY", cur],
@@ -292,11 +294,7 @@ const BX = MR - BW, BY = 5;
   doc.setFontSize(7.5);
   doc.setTextColor(...INK_SOFT);
 
-  const metaL = [
-    pi?.lpoNumber ? `LPO No: ${pi.lpoNumber}` : null,
-    pi?.project ? `Project: ${pi.project}` : null,
-    pi?.costCenter ? `Cost Center: ${pi.costCenter}` : null,
-  ]
+  const metaL = [pi?.lpoNumber ? `LPO No: ${pi.lpoNumber}` : null]
     .filter(Boolean)
     .join("   ");
 
@@ -330,7 +328,9 @@ const BX = MR - BW, BY = 5;
         "#",
         "Item Code",
         "Item Name",
+        "Packing",
         "UOM",
+        "Required By",
         "Qty",
         "Rate",
         "Tax",
@@ -341,8 +341,11 @@ const BX = MR - BW, BY = 5;
       idx + 1,
       item.item_code ?? "-",
       item.item_name ?? "-",
+      item.packing ?? "-",
       item.uom ?? "-",
+      item.requiredBy ?? "-",
       fmt2(item.qty),
+
       fmt2(item.rate),
       item.VatCd ?? "-",
       fmt2(item.amount),
@@ -365,13 +368,15 @@ const BX = MR - BW, BY = 5;
     alternateRowStyles: { fillColor: TINT },
     columnStyles: {
       0: { cellWidth: 7, halign: "center" },
-      1: { cellWidth: 38, halign: "left", fontStyle: "bold", textColor: INK },
-      2: { cellWidth: 52, halign: "left" },
-      3: { cellWidth: 22, halign: "center" },
-      4: { cellWidth: 14, halign: "right" },
-      5: { cellWidth: 16, halign: "right" },
-      6: { cellWidth: 12, halign: "center" },
-      7: { halign: "right", fontStyle: "bold", textColor: AMT_BLUE },
+      1: { cellWidth: 26, halign: "left", fontStyle: "bold", textColor: INK },
+      2: { cellWidth: 32, halign: "left" },
+      3: { cellWidth: 16, halign: "center" },
+      4: { cellWidth: 14, halign: "center" },
+      5: { cellWidth: 20, halign: "center" },
+      6: { cellWidth: 12, halign: "right" },
+      7: { cellWidth: 16, halign: "right" },
+      8: { cellWidth: 12, halign: "center" },
+      9: { halign: "right", fontStyle: "bold", textColor: AMT_BLUE },
     },
     margin: { left: M, right: M },
     tableWidth: W - M * 2,
@@ -442,7 +447,7 @@ const BX = MR - BW, BY = 5;
   const totRows: [string, string, TRK][] = [
     ["Sub Total", `${fmt2(subTotal)} ${cur}`, "normal"],
     [`Tax (${taxRate})`, `${fmt2(taxTotal)} ${cur}`, "tax"],
-    ["Rounding Adjustment", `${fmt2(rounding)} ${cur}`, "rounding"],
+    ["Rounding ", `${fmt2(rounding)} ${cur}`, "rounding"],
     ["Grand Total", `${fmt2(grandTotal)} ${cur}`, "grand"],
   ];
 
