@@ -26,8 +26,8 @@ export async function getAllQuotations(
   if (options?.status) params.status = options.status;
   if (options?.fromDate) params.fromDate = options.fromDate;
   if (options?.toDate) params.toDate = options.toDate;
-  if (options?.sortBy) params.sortBy = options.sortBy;
-  if (options?.sortOrder) params.sortOrder = options.sortOrder;
+params.sortBy = options?.sortBy || "id";
+params.sortOrder = options?.sortOrder || "desc";
 
   const resp = await api.get(QuotationAPI.getAll, { params });
 
