@@ -202,7 +202,7 @@ const fetchItemGroups = useCallback(async (itemType?: string) => {
     setLoadingItemGroups(true);
 
     const res = await getAllItemGroups(1, 1000, {
-      itemType: itemType,   // 🔥 send filter to backend
+      itemType: itemType,  
     });
 
     if (res?.status_code !== 200) {
@@ -245,7 +245,7 @@ const mapped = list.map((supplier: any) => ({
   }
 }, []);
   // ── Data fetchers ──────────────────────────────────────────────────────────
-
+ 
   // const fetchItemClassList = useCallback(async () => {
   //   try {
   //     setLoadingItemClasses(true);

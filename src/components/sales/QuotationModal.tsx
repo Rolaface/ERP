@@ -16,7 +16,6 @@ import {
   currencySymbols,
   paymentMethodOptions,
   currencyOptions,
-  industryBaseOptions
 } from "../../constants/invoice.constants";
 
 interface QuotationModalProps {
@@ -152,18 +151,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   />
 
 
-                  {/* Industry Base */}
-                  <div>
-                    <ModalSelect
-                      label="Industry Base"
-                      name="industryBases"
-                      value={formData.industryBases}
-                      onChange={actions.handleInputChange}
-                      options={industryBaseOptions}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  </div>
-
                   {/* Date of Quotation */}
                   <div>
                     <ModalInput
@@ -228,7 +215,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                     />
                   </div>
 
-                    {ui.isExport && (
+                  {ui.isExport && (
                     <div className="mt-2">
                       <ModalInput
                         label="Export To Country"
@@ -239,7 +226,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                         className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                       />
                     </div>
-                  )} 
+                  )}
 
 
                   {/* LPO Number */}
@@ -284,6 +271,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                           </th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[90px] whitespace-nowrap">
                             Packing
+                            <span className="ml-1 text-[9px] text-muted/60 font-normal">(unit × size)</span>
                           </th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
                             Qty
@@ -326,9 +314,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                   <ItemSelect
                                     taxCategory={ui.taxCategory}
                                     value={it.itemCode}
-                                    excludeItemCodes={formData.items
-                                      .map((x, j) => (j === i ? "" : x?.itemCode))
-                                      .filter(Boolean) as string[]}
                                     onChange={(item) => {
                                       actions.handleItemSelect(i, item.id);
                                     }}
@@ -340,7 +325,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                 <input
                                   type="text"
                                   name="description"
-                                  value={it.description}
+                                  value={it.description ?? ""}
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
@@ -357,7 +342,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                     name="packingUnit"
                                     value={it.packingUnit || ""}
                                     onChange={(e) => actions.handleItemChange(i, e)}
-                                    className="w-[42px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
+                                    className="w-[40px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
                                     placeholder="0"
                                   />
 
@@ -369,7 +354,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                     name="packingSize"
                                     value={it.packingSize || ""}
                                     onChange={(e) => actions.handleItemChange(i, e)}
-                                    className="w-[42px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
+                                    className="w-[40px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
                                     placeholder="0"
                                   />
 
@@ -380,51 +365,48 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                 <input
                                   type="number"
                                   name="quantity"
-                                  value={it.quantity}
+                                  value={it.quantity ?? ""}
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
-                                  min="1"
-                                  className="w-[70px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[80px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                 />
                               </td>
                               <td className="px-0.5 py-1">
                                 <input
                                   type="number"
                                   name="price"
-                                  value={it.price}
+                                  value={it.price ?? ""}
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
-                                  min="0"
-                                  step="0.01"
-                                  className="w-[90px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[66px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                 />
                               </td>
                               <td className="px-0.5 py-1">
                                 <input
                                   type="number"
                                   name="discount"
-                                  value={it.discount}
+                                 value={it.discount ?? ""}
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
                                   min="0"
                                   placeholder="0"
-                                  className="w-[65px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[53px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                                 />
                               </td>
                               <td className="px-0.5 py-1">
                                 <input
                                   type="number"
                                   name="vatRate"
-                                  value={it.vatRate}
+                                  value={it.vatRate ?? ""}
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
                                   min="0"
                                   placeholder="0"
-                                  className="w-[60px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                                 />
                               </td>
                               <td className="px-0.5 py-1">
@@ -435,7 +417,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
-                                  className="w-[50px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[48px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                                 />
                               </td>
                               <td className="px-0.5 py-1">
@@ -620,7 +602,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
               <TermsAndCondition
                 terms={formData.terms?.selling}
                 setTerms={actions.setTerms}
-                 type="selling"
+                type="selling"
               />
             </div>
           )}
