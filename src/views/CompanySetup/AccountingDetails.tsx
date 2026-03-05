@@ -17,6 +17,7 @@ import Swal from "sweetalert2";
 
 import type { AccountingSetup, FinancialConfig } from "../../types/company";
 import { updateCompanyById } from "../../api/companySetupApi";
+import { Terms } from "../../types/termsAndCondition";
 
 const defaultForm = {
   accountingSetup: {
@@ -135,12 +136,18 @@ const SelectField: React.FC<SelectFieldProps> = ({
 interface AccountingDetailsProps {
   financialConfig?: FinancialConfig | null;
   accountingSetup?: AccountingSetup | null;
+  terms?: Terms | null;
 }
 
 const AccountingDetails: React.FC<AccountingDetailsProps> = ({
   financialConfig,
   accountingSetup,
+  terms
 }) => {
+   const basePayload = () => ({
+    id: VITE_COMPANY_ID,
+    ...(terms !== undefined && terms !== null ? { terms } : {}),
+  });
   
   const [activeTab, setActiveTab] = useState("financial");
 
@@ -185,10 +192,10 @@ const AccountingDetails: React.FC<AccountingDetailsProps> = ({
   };
 const handleSubmit = async () => {
   const payload = {
-    id: VITE_COMPANY_ID,
-    accountingSetup: form.accountingSetup,
-    financialConfig: form.financialConfig,
-  };
+  ...basePayload(),
+  accountingSetup: form.accountingSetup,
+  financialConfig: form.financialConfig,
+};
 
   try {
     showLoading("Saving Accounting Settings...");

@@ -374,7 +374,7 @@ export const generateProformaInvoicePDF = async (
     afterBoxY,
   );
   if (proformaInvoice?.exchangeRt)
-    doc.text(`Exchange Rate:  ${proformaInvoice.exchangeRt}`, W / 2, afterBoxY);
+    
   rule(doc, afterBoxY + 3);
 
   /* ════════════════════════════════════════════════════════════
@@ -395,6 +395,7 @@ export const generateProformaInvoicePDF = async (
         "Unit Price",
         "Disc%",
         "Tax",
+        "Tax Code",
         `Amount\n(${cur})`,
       ],
     ],
@@ -415,8 +416,9 @@ export const generateProformaInvoicePDF = async (
         packing,
         qty.toFixed(2),
         price.toFixed(2),
-        disc > 0 ? `${disc}%` : "-",
-        item.tax != null && item.tax !== "0" ? item.tax : "-",
+        disc > 0 ? `${disc}%` : "0",
+        item.tax != null && item.tax !== "0" ? item.tax : "0",
+        item.vatCode ?? "0",
         net.toFixed(2),
       ];
     }),
@@ -436,18 +438,19 @@ export const generateProformaInvoicePDF = async (
       cellPadding: { top: 3, bottom: 3, left: 2.5, right: 2.5 },
     },
     alternateRowStyles: { fillColor: TINT },
-    columnStyles: {
-      0: { cellWidth: 7, halign: "center" },
-      1: { cellWidth: 24, halign: "left", textColor: INK, fontStyle: "bold" },
-      2: { cellWidth: 22, halign: "left" },
-      3: { cellWidth: 30, halign: "left" },
-      4: { cellWidth: 14, halign: "center" },
-      5: { cellWidth: 10, halign: "right" },
-      6: { cellWidth: 14, halign: "right" },
-      7: { cellWidth: 10, halign: "center" },
-      8: { cellWidth: 10, halign: "center" },
-      9: { halign: "right", fontStyle: "bold", textColor: HDR_BASE },
-    },
+   columnStyles: {
+  0: { cellWidth: 7, halign: "center" },
+  1: { cellWidth: 22, halign: "left", textColor: INK, fontStyle: "bold" },
+  2: { cellWidth: 22, halign: "left" },
+  3: { cellWidth: 28, halign: "left" },
+  4: { cellWidth: 14, halign: "center" },
+  5: { cellWidth: 10, halign: "right" },
+  6: { cellWidth: 14, halign: "right" },
+  7: { cellWidth: 10, halign: "center" },
+  8: { cellWidth: 10, halign: "center" },
+  9: { cellWidth: 14, halign: "center" },
+  10: { halign: "right", fontStyle: "bold", textColor: HDR_BASE },
+},
     margin: { left: M, right: M },
     tableWidth: W - M * 2,
   });

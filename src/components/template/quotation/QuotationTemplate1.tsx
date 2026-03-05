@@ -414,7 +414,7 @@ export const generateQuotationPDF = async (
       
         qty.toFixed(2),
         price.toFixed(2),
-        disc > 0 ? `${disc}%` : "-",
+        disc > 0 ? `${disc}%` : "0",
         item.vatCode ?? "-",
         net.toFixed(2),
       ];
