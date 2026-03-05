@@ -29,7 +29,7 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
   if (config.fieldType === "text-input") {
     return (
       <label className={`flex flex-col gap-1 text-sm ${colSpanClass}`}>
-        <span className="font-medium text-muted flex items-center gap-0.5">
+        <span className="form-label flex items-center gap-0.5">
           <span>{config.label}</span>
           {config.required && (
             <span className="text-danger">*</span>
@@ -42,7 +42,7 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
           onChange={(e) => onChange(config.fieldName, e.target.value)}
           placeholder={config.placeholder}
           required={config.required}
-          className="rounded border border-theme bg-card text-main px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+          className="form-input focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
         />
       </label>
     );
@@ -54,21 +54,21 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
   if (config.fieldType === "textarea") {
     return (
       <label className={`flex flex-col gap-1 text-sm ${colSpanClass}`}>
-        <span className="font-medium text-muted flex items-center gap-0.5">
+        <span className="form-label flex items-center gap-0.5">
   <span>{config.label}</span>
   {config.required && (
     <span className="text-danger">*</span>
   )}
 </span>
-        <textarea
-          name={config.fieldName}
-          value={value || ""}
-          onChange={(e) => onChange(config.fieldName, e.target.value)}
-          placeholder={config.placeholder}
-          required={config.required}
-          rows={1}
-          className="rounded border border-theme bg-card text-main px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-        />
+       <textarea
+  name={config.fieldName}
+  value={value || ""}
+  onChange={(e) => onChange(config.fieldName, e.target.value)}
+  placeholder={config.placeholder}
+  required={config.required}
+  rows={1}
+  className="form-input focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+/>
       </label>
     );
   }
@@ -88,13 +88,13 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
     <span className="text-danger">*</span>
   )}
 </span>
-        <select
-          name={selectConfig.fieldName}
-          value={value || ""}
-          onChange={(e) => onChange(selectConfig.fieldName, e.target.value)}
-          required={selectConfig.required}
-          className="rounded border border-theme bg-card text-main px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-        >
+       <select
+  name={selectConfig.fieldName}
+  value={value || ""}
+  onChange={(e) => onChange(selectConfig.fieldName, e.target.value)}
+  required={selectConfig.required}
+  className="form-input focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+>
           <option value="">Select...</option>
           {selectConfig.options.map((opt) => (
             <option key={opt.value} value={opt.value}>

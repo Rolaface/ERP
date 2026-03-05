@@ -73,6 +73,11 @@ const DynamicFieldWrapper: React.FC<{
         max-height: 64px !important;
         resize: none !important;
       }
+
+      .dynamic-field-wrap input,
+.dynamic-field-wrap select {
+  width: 100% !important;
+}
     `}</style>
     {children}
   </div>
@@ -153,7 +158,7 @@ const ToggleField: React.FC<{
             type="button"
             onClick={() => !isOn && onChange(name, onValue)}
             className={[
-              "px-3 text-xs font-semibold transition-colors select-none",
+              "px-3 text-sm font-semibold transition-colors select-none",
               isOn
                 ? "bg-primary text-white"
                 : "bg-card text-muted hover:bg-primary/10 hover:text-primary",
@@ -166,7 +171,7 @@ const ToggleField: React.FC<{
             type="button"
             onClick={() => isOn && onChange(name, offValue)}
             className={[
-              "px-3 text-xs font-semibold transition-colors select-none",
+              "px-3 text-sm font-semibold transition-colors select-none",
               !isOn
                 ? "bg-primary text-white"
                 : "bg-card text-muted hover:bg-primary/10 hover:text-primary"
@@ -232,7 +237,7 @@ const TabButton: React.FC<{
     onClick={onClick}
     disabled={disabled}
     className={[
-      "py-2.5 px-1 bg-transparent border-none text-xs font-semibold cursor-pointer transition-all tracking-wide",
+      "py-2.5 px-1 bg-transparent border-none text-sm font-semibold cursor-pointer transition-all tracking-wide",
       active
         ? "text-primary border-b-2 border-primary"
         : "text-muted border-b-2 border-transparent hover:text-main",
@@ -356,7 +361,7 @@ const ItemModal: React.FC<{
                       return (
                         <div
                           key="uom-svc-ins-sku"
-                          className="col-span-3 grid grid-cols-[90px_130px_130px_160px_auto_auto_auto] gap-4 items-end"
+                          className="col-span-3 grid grid-cols-[90px_140px_160px_180px_80px_80px_90px] gap-3 items-end"
                         >
 
                           {/* Packing */}
@@ -374,7 +379,7 @@ const ItemModal: React.FC<{
                                   className="w-10 h-8 rounded-md border border-theme bg-card text-main text-center text-sm px-1
                                 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                                 />
-                                <span className="text-muted text-xs font-bold">×</span>
+                                <span className="text-muted text-sm font-bold">×</span>
                                 <input
                                   type="number"
                                   name="packingsize"
@@ -400,7 +405,7 @@ const ItemModal: React.FC<{
                           </DynamicFieldWrapper>
 
                           {/* SKU */}
-                          <DynamicFieldWrapper className="max-w-[130px]">
+                          <DynamicFieldWrapper className="w-[160px] shrink-0">
                             <DynamicField
                               config={fieldConfigs.find(f => f.fieldName === "sku")!}
                               value={form.sku}
@@ -411,7 +416,7 @@ const ItemModal: React.FC<{
 
 
                           {/* Country of Origin */}
-                          <DynamicFieldWrapper className="max-w-[150px]">
+                         <DynamicFieldWrapper className="w-[180px] shrink-0">
                             <DynamicField
                               config={fieldConfigs.find(f => f.fieldName === "originNationCode")!}
                               value={form.originNationCode}
@@ -419,7 +424,7 @@ const ItemModal: React.FC<{
                             />
                           </DynamicFieldWrapper>
 
-                          <div className="w-full min-w-[70px]">
+                          <div className="w-[80px] shrink-0">
                             <YesNoCheckbox
                               label="Svc Charge"
                               name="svcCharge"
@@ -428,7 +433,7 @@ const ItemModal: React.FC<{
                             />
                           </div>
 
-                          <div className="w-full min-w-[70px]">
+                          <div className="w-[80px] shrink-0">
                             <YesNoCheckbox
                               label="Insurance"
                               name="ins"
@@ -601,7 +606,7 @@ const ItemModal: React.FC<{
                     ))}
                   </CompactSelect>
                   {form.taxCategory && (
-                    <p className="mt-1.5 text-xs text-muted">
+                    <p className="mt-1.5 text-sm text-muted">
                       {taxConfigs[form.taxCategory]?.taxDescription}
                     </p>
                   )}
@@ -662,7 +667,7 @@ const ItemModal: React.FC<{
                         ].join(" ")}
                         disabled={autoPopulateTax}
                       />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted font-semibold">%</span>
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted font-semibold">%</span>
                     </div>
                   </div>
                   <div className="w-[210px]">
@@ -680,7 +685,7 @@ const ItemModal: React.FC<{
                 {/* Summary card */}
                 <div className="mt-4 bg-card border border-theme rounded-lg p-3 w-fit min-w-[420px]">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Current Configuration</p>
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
                     {[
                       { label: "Category", value: form.taxCategory },
                       { label: "Type", value: form.taxType },
@@ -718,14 +723,14 @@ const ItemModal: React.FC<{
                     <div className="flex items-center gap-1 h-8">
                       {["dimensionLength", "dimensionWidth", "dimensionHeight"].map((dim, i) => (
                         <React.Fragment key={dim}>
-                          {i > 0 && <span className="text-muted text-xs font-bold">×</span>}
+                          {i > 0 && <span className="text-muted text-sm font-bold">×</span>}
                           <input
                             type="number"
                             name={dim}
                             value={form[dim] || ""}
                             onChange={handleForm}
                             placeholder={["L", "W", "H"][i]}
-                            className="w-10 h-8 rounded-md border border-theme bg-card text-main text-center text-xs px-1
+                            className="w-10 h-8 rounded-md border border-theme bg-card text-main text-center text-sm px-1
                               focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                           />
                         </React.Fragment>
@@ -734,7 +739,7 @@ const ItemModal: React.FC<{
                         name="dimensionUnit"
                         value={form.dimensionUnit || "cm"}
                         onChange={handleForm}
-                        className="h-8 w-12 rounded-md border border-theme bg-card text-main text-xs px-1
+                        className="h-8 w-12 rounded-md border border-theme bg-card text-main text-sm px-1
                           focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="cm">cm</option>
@@ -762,7 +767,7 @@ const ItemModal: React.FC<{
                         name="weightUnit"
                         value={form.weightUnit || "kg"}
                         onChange={handleForm}
-                        className="h-8 w-14 rounded-md border border-theme bg-card text-main text-xs px-1
+                        className="h-8 w-14 rounded-md border border-theme bg-card text-main text-sm px-1
                           focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="gm">gm</option>

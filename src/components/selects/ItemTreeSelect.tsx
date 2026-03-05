@@ -275,7 +275,7 @@ export default function ItemTreeSelect({
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {/* Label */}
-      <label className="flex items-center gap-0.5 font-medium text-muted text-sm">
+      <label className="text-[11px] font-medium uppercase tracking-wide text-muted">
         <span>{label}</span>
         {required && <span className="text-danger">*</span>}
       </label>
@@ -288,7 +288,7 @@ export default function ItemTreeSelect({
             disabled={loading}
             onClick={handleOpen}
             className={`
-              w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border
+              w-full flex items-center gap-2 h-8 px-3 rounded-lg border
               text-left text-sm transition-all
               ${loading
                 ? "bg-gray-50 border-gray-200 cursor-not-allowed"
