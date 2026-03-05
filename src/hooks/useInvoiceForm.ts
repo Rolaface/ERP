@@ -308,7 +308,7 @@ const loadCompanyData = async () => {
           setFormData((prev) => ({
             ...prev,
             currencyCode: value,
-            exchangeRt: "1",   // ⭐ lock for proforma
+            exchangeRt: "1",   
           }));
           return;
         }
@@ -494,20 +494,6 @@ if (enableExchange && exchangeRateLoading) {
             ? apiSellingPrice / Number(prev.exchangeRt || 1)
             : apiSellingPrice;
 
-        const existingIdx = items.findIndex(
-          (it, i) => i !== index && String(it?.itemCode ?? "").trim() === resolvedId,
-        );
-
-        if (existingIdx !== -1) {
-          const currentQty = Number(items[existingIdx]?.quantity) || 0;
-          items[existingIdx] = {
-            ...items[existingIdx],
-            quantity: currentQty + 1,
-          };
-
-          items[index] = { ...EMPTY_ITEM };
-          return { ...prev, items };
-        }
 
         items[index] = {
           ...items[index],
@@ -536,22 +522,35 @@ if (enableExchange && exchangeRateLoading) {
   };
 
   /* ---------------- ITEMS ---------------- */
+const handleItemChange = (
+  idx: number,
+  e: React.ChangeEvent<HTMLInputElement>,
+) => {
+  const { name, value } = e.target;
+  const isNum = ["quantity", "price", "discount", "vatRate"].includes(name);
 
-  const handleItemChange = (
-    idx: number,
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const { name, value } = e.target;
-    const isNum = ["quantity", "price", "discount", "vatRate"].includes(name);
-    setFormData((prev) => {
-      const items = [...prev.items];
-      items[idx] = {
-        ...items[idx],
-        [name]: isNum ? Number(value) : value,
-      };
-      return { ...prev, items };
-    });
-  };
+  setFormData((prev) => {
+    const items = [...prev.items];
+
+    let nextValue: any = value;
+
+    if (isNum) {
+      if (value === "") {
+        nextValue = "";
+      } else {
+        const parsed = Number(value);
+        nextValue = Number.isFinite(parsed) ? parsed : "";
+      }
+    }
+
+    items[idx] = {
+      ...items[idx],
+      [name]: nextValue,
+    };
+
+    return { ...prev, items };
+  });
+};
 
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
@@ -569,13 +568,18 @@ if (enableExchange && exchangeRateLoading) {
     });
   };
 
-  const removeItem = (idx: number) => {
-    setFormData((prev) => {
-      if (prev.items.length === 1) return prev;
-      const items = prev.items.filter((_, i) => i !== idx);
-      return { ...prev, items };
-    });
-  };
+const removeItem = (idx: number) => {
+  setFormData((prev) => {
+    if (prev.items.length === 1) return prev;
+
+    const items = prev.items.filter((_, i) => i !== idx);
+
+    const maxPage = Math.max(0, Math.ceil(items.length / ITEMS_PER_PAGE) - 1);
+    setPage((p) => Math.min(p, maxPage));
+
+    return { ...prev, items };
+  });
+};
   const setFormDataFromInvoice = async (invoice: any) => {
     setFormData((prev: any) => ({
       ...prev,

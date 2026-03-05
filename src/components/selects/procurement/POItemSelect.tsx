@@ -132,8 +132,8 @@ export default function POItemSelect({
     <div className={`w-full ${className}`}>
       <input
         ref={inputRef}
-        className="w-full rounded border border-theme bg-card text-main px-3 py-1.5 text-sm
-          focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+        className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main
+            focus:outline-none focus:ring-1 focus:ring-primary"
         placeholder={loading ? "Loading items..." : "Search item..."}
         value={search}
         onChange={(e) => {

@@ -71,6 +71,10 @@ destnCountryCd: string; // New field for Export country
   status: string;
   costCenter: string;
   project: string;
+   useSupplierAddress: boolean;
+  useDispatchAddress: boolean;
+  useShippingAddress: boolean;
+  useCompanyBillingAddress: boolean;
 
   addresses: {
     supplierAddress: AddressBlock;
@@ -109,7 +113,7 @@ export const emptyItem: ItemRow = {
   itemName: "",
   requiredBy: "",
   quantity: 0,
-  uom: "Unit",
+  uom: "",
   rate: 0,
   vatCd: "",
   vatRate: 0,
@@ -157,8 +161,8 @@ export const emptyPOForm: PurchaseOrderFormData = {
   currency: "INR",
   status: "Draft",
   destnCountryCd: "",
-  shippingRule: "",
-  incoterm: "",
+  shippingRule: "STANDARD",
+  incoterm: "EXW",
   taxesChargesTemplate: "",
   costCenter: "UD-001 - Udvil - RI",
   project: "Project-0001",
@@ -209,6 +213,11 @@ export const emptyPOForm: PurchaseOrderFormData = {
 terms: undefined,
   itemTerms: [],  
   acceptedTerms: {},
+  useSupplierAddress: true,
+  useDispatchAddress: false,
+  useShippingAddress: false,
+  useCompanyBillingAddress: true,
+
 };
 
 export type POTab = "details" | "email" | "tax" | "address" | "terms";

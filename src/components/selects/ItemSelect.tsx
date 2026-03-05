@@ -53,23 +53,23 @@ export default function ItemSelect({
           taxCategory ? { taxCategory } : undefined,
         );
 
-if (!cancelled && res?.status_code === 200) {
-  
-  const rawList = Array.isArray(res?.data?.data)
-    ? res.data.data        
-    : Array.isArray(res?.data)
-      ? res.data             
-      : [];             
+        if (!cancelled && res?.status_code === 200) {
 
-  setItems(
-    rawList.map((it: any) => ({
-      id: it.id,
-      itemCode: it.id,
-      itemName: it.itemName,
-      sellingPrice: it.sellingPrice ?? 0,
-    })),
-  );
-}
+          const rawList = Array.isArray(res?.data?.data)
+            ? res.data.data
+            : Array.isArray(res?.data)
+              ? res.data
+              : [];
+
+          setItems(
+            rawList.map((it: any) => ({
+              id: it.id,
+              itemCode: it.id,
+              itemName: it.itemName,
+              sellingPrice: it.sellingPrice ?? 0,
+            })),
+          );
+        }
       } catch (err) {
         if (!cancelled) {
           console.error("Failed to load items", err);
@@ -141,8 +141,7 @@ if (!cancelled && res?.status_code === 200) {
     <div className={`w-full ${className}`}>
       <input
         ref={inputRef}
-        className="w-full rounded border border-theme bg-card text-main px-3 py-1.5 text-sm 
-        focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+        className="w-full h-[26px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
         placeholder={loading ? "Loading items..." : "Search item"}
         value={search}
         onChange={(e) => {

@@ -57,29 +57,28 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
   const [initialLoad, setInitialLoad] = useState(true);
   const [company, setCompany]         = useState<any>(null);
 
-  // ── Pagination state (server) ────────────────────────────────────────────
+  // ── Pagination state (server) 
   const [page, setPage]           = useState(1);
   const [pageSize, setPageSize]   = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Search state (server) ────────────────────────────────────────────────
+  // ── Search state (server) 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ── Sort state (server) — always store column key, not backend field ─────
-  const [sortBy, setSortBy]       = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState("quotationNumber");
+const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // ── Filter state (server) ────────────────────────────────────────────────
+  // ── Filter state (server) 
   const [status]   = useState("");
   const [fromDate] = useState("");
   const [toDate]   = useState("");
 
-  // ── Modal state ──────────────────────────────────────────────────────────
+  // ── Modal state 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsId, setDetailsId]     = useState<string | null>(null);
 
-  // ── Reset page when search changes ──────────────────────────────────────
+  // ── Reset page when search changes 
   useEffect(() => { setPage(1); }, [searchTerm]);
   //_____quotation details modal state _____
   const [selectedQuotation, setSelectedQuotation] = useState<any>(null);
@@ -87,7 +86,7 @@ const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 const [pdfOpen, setPdfOpen] = useState(false);
 
 
-  // ── Fetch company once ───────────────────────────────────────────────────
+  // ── Fetch company once 
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
@@ -106,7 +105,7 @@ const [pdfOpen, setPdfOpen] = useState(false);
         status,
         fromDate,
         toDate,
-        sortBy:    SORT_FIELD_MAP[sortBy] || sortBy,  // ← map here, not in state
+        sortBy:    SORT_FIELD_MAP[sortBy] || sortBy,  
         sortOrder,
       });
 
@@ -120,11 +119,10 @@ const [pdfOpen, setPdfOpen] = useState(false);
     setQuotations(raw.map((q: any) => ({
   quotationNumber: q.id || "",
   customerName: q.customerName || "N/A",
-  industryBases: q.industryBases || "N/A",
   transactionDate: q.transactionDate || "",
   validTill: q.validTill || "",
   grandTotal: Number(q.grandTotal ?? 0),
-  currency: q.currency || "ZMW",
+  currency: q.currency ,
   status: q.status || "Draft",   
 })));
 
@@ -280,7 +278,7 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
         fromDate,
         toDate,
         sortBy:    SORT_FIELD_MAP[sortBy] || sortBy,  // ← same mapping
-        sortOrder,
+        sortOrder: sortOrder === "desc" ? "desc" : "asc",
       });
 
       if (res?.status_code === 200) {
@@ -289,12 +287,11 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
           ...allData,
           ...raw.map((q: any) => ({
             quotationNumber: q.id            || "",
-            customerName:    q.customerName  || "N/A",
-            industryBases:   q.industryBases || "N/A",
+            customerName:    q.customerName  ,
             transactionDate: q.transactionDate || "",
             validTill:       q.validTill     || "",
             grandTotal:      Number(q.grandTotal ?? 0),
-            currency:        q.currency      || "ZMW",
+            currency:        q.currency   ,
           })),
         ];
         total = res.data?.pagination?.totalPages || 1;
@@ -321,7 +318,6 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
         data.map((q) => ({
           "Quotation No": q.quotationNumber,
           Customer:       q.customerName,
-          Industry:       q.industryBases,
           Date:           q.transactionDate,
           "Valid Till":   q.validTill,
           Amount:         q.grandTotal,
@@ -425,7 +421,6 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
       render: (q) => <span className="font-semibold text-main">{q.quotationNumber}</span>,
     },
     { key: "customerName",    header: "Customer",    align: "left",  sortable: true },
-    { key: "industryBases",   header: "Industry",    align: "left" },
     { key: "transactionDate", header: "Date",        align: "left",  sortable: true },
     { key: "validTill",       header: "Valid Till",  align: "left",  sortable: true },
     {

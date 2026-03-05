@@ -78,7 +78,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       title={poId ? "View Purchase Order" : "New Purchase Order"}
       subtitle="Create and manage purchase order"
       icon={Building2}
-      customWidth="78vw"
+      customWidth="85vw"
       height="90vh"
       footer={footer}
     >

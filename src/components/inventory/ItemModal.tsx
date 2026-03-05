@@ -522,7 +522,6 @@ const ItemModal: React.FC<{
                       type="number"
                       value={form.sellingPrice || ""}
                       onChange={handleForm}
-                      required
                       placeholder="0.00"
                     />
                   </div>
@@ -534,7 +533,6 @@ const ItemModal: React.FC<{
                       name="salesAccount"
                       value={form.salesAccount || ""}
                       onChange={handleForm}
-                      required
                       placeholder="e.g. 4000-Sales"
                     />
                   </div>
@@ -546,7 +544,6 @@ const ItemModal: React.FC<{
                       type="number"
                       value={form.buyingPrice || ""}
                       onChange={handleForm}
-                      required
                       placeholder="0.00"
                     />
                   </div>
@@ -557,7 +554,6 @@ const ItemModal: React.FC<{
                       name="purchaseAccount"
                       value={form.purchaseAccount || ""}
                       onChange={handleForm}
-                      required
                       placeholder="e.g. 5000-COGS"
                     />
                   </div>
