@@ -566,9 +566,6 @@ ${ui.isExport
                       </div>
                       {customerDetails && (
                         <div className="bg-card rounded-lg ">
-                          <h3 className="text-[11px] font-semibold text-main mb-1">
-                            Invoice Information
-                          </h3>
 
                           <div className="flex flex-col gap-1">
                             {/* Invoice Type */}

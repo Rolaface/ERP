@@ -129,7 +129,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       icon={FileText}
       footer={footerContent}
       customWidth="125vw"
-      height="79vh"
+      height="81vh"
     >
       <form
         id="invoiceForm"
@@ -187,7 +187,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     type="date"
                     value={formData.dateOfInvoice}
                     onChange={actions.handleInputChange}
-                     lang="en-IN"
+                    lang="en-IN"
                     required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
@@ -627,22 +627,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       </div>
                       {customerDetails && (
                         <div className="bg-card rounded-lg ">
-                          <h3 className="text-[11px] font-semibold text-main mb-1">
-                            Invoice Information
-                          </h3>
                           <div className="flex items-center gap-10 text-xs">
-  <span className="text-muted">Invoice Date</span>
-  <span className="font-medium text-main">
-    {formatDate(formData.dateOfInvoice)}
-  </span>
-</div>
+                            <span className="text-muted">Invoice Date</span>
+                            <span className="font-medium text-main">
+                              {formatDate(formData.dateOfInvoice)}
+                            </span>
+                          </div>
 
-<div className="flex items-center gap-12 text-xs">
-  <span className="text-muted">Due Date</span>
-  <span className="font-medium text-main">
-    {formatDate(formData.dueDate)}
-  </span>
-</div>
+
 
                           <div className="flex flex-col gap-1">
                             {/* Invoice Type */}
