@@ -373,7 +373,7 @@ export const generateQuotationPDF = async (
   if (quotation?.lpoNumber)
     doc.text(`LPO No:  ${quotation.lpoNumber}`, W / 2, afterBoxY);
   else if (quotation?.exchangeRt)
-    doc.text(`Exchange Rate:  ${quotation.exchangeRt}`, W / 2, afterBoxY);
+   
   rule(doc, afterBoxY + 3);
 
   /* ════════════════════════════════════════════════════════════
@@ -389,11 +389,11 @@ export const generateQuotationPDF = async (
         "Item Code",
         "Item Name",
         "Description",
-        "Packing",
+       
         "Qty",
         "Unit Price",
         "Disc%",
-        "Tax Cat",
+        "Tax Code",
         `Amount\n(${cur})`,
       ],
     ],
@@ -410,8 +410,8 @@ export const generateQuotationPDF = async (
         idx + 1,
         item.itemCode ?? "-",
         item.itemName ?? "-",
-        item.description ?? "-",
-        packing,
+        item.description ?? "0",
+      
         qty.toFixed(2),
         price.toFixed(2),
         disc > 0 ? `${disc}%` : "-",
@@ -435,18 +435,17 @@ export const generateQuotationPDF = async (
       cellPadding: { top: 3, bottom: 3, left: 2.5, right: 2.5 },
     },
     alternateRowStyles: { fillColor: TINT },
-    columnStyles: {
-      0: { cellWidth: 7, halign: "center" },
-      1: { cellWidth: 22, halign: "left", textColor: INK, fontStyle: "bold" },
-      2: { cellWidth: 22, halign: "left" },
-      3: { cellWidth: 28, halign: "left" },
-      4: { cellWidth: 14, halign: "center" },
-      5: { cellWidth: 10, halign: "right" },
-      6: { cellWidth: 14, halign: "right" },
-      7: { cellWidth: 10, halign: "center" },
-      8: { cellWidth: 10, halign: "center" },
-      9: { halign: "right", fontStyle: "bold", textColor: HDR_BASE },
-    },
+   columnStyles: {
+  0: { cellWidth: 7, halign: "center" },
+  1: { cellWidth: 26, halign: "left", textColor: INK, fontStyle: "bold" },
+  2: { cellWidth: 26, halign: "left" },
+  3: { cellWidth: 40, halign: "left" },
+  4: { cellWidth: 14, halign: "right" },
+  5: { cellWidth: 18, halign: "right" },
+  6: { cellWidth: 14, halign: "right" },
+  7: { cellWidth: 16, halign: "center" },
+  8: { halign: "right", fontStyle: "bold", textColor: HDR_BASE },
+},
     margin: { left: M, right: M },
     tableWidth: W - M * 2,
   });
