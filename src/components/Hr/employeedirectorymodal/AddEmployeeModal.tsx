@@ -178,6 +178,43 @@ const [step, setStep] = useState<"verification" | "form">(
 
   const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
 
+  const handleInputChange = (field: string, value: string | boolean | any) => {
+    const noUppercaseFields = new Set([
+      "email",
+      "CompanyEmail",
+      "province",
+      "country",
+      "gender",
+      "maritalStatus",
+      "emergencyContactRelationship",
+      "department",
+      "level",
+      "reportingManager",
+      "hrManager",
+      "employeeType",
+      "employmentStatus",
+      "shift",
+      "currency",
+      "paymentFrequency",
+      "paymentMethod",
+      "salaryStructure",
+      "accountType",
+      "openingLeaveBalance",
+      "leavePolicy",
+      "leavePolicyDetails",
+      "dateOfBirth",
+      "engagementDate",
+      "contractEndDate",
+    ]);
+
+    const normalized =
+      typeof value === "string" && !noUppercaseFields.has(field)
+        ? String(value ?? "").toUpperCase()
+        : value;
+
+    setFormData((prev) => ({ ...prev, [field]: normalized }));
+  };
+
   const profileInputRef = useRef<HTMLInputElement | null>(null);
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [profilePreviewUrl, setProfilePreviewUrl] = useState<string>("");
@@ -249,9 +286,9 @@ const [step, setStep] = useState<"verification" | "form">(
       ...prev,
 
       // ===== PERSONAL INFO =====
-      firstName: editData.personalInfo?.FirstName || "",
-      OtherNames: editData.personalInfo?.OtherNames || "",
-      lastName: editData.personalInfo?.LastName || "",
+      firstName: String(editData.personalInfo?.FirstName || "").toUpperCase(),
+      otherNames: String(editData.personalInfo?.OtherNames || "").toUpperCase(),
+      lastName: String(editData.personalInfo?.LastName || "").toUpperCase(),
       dateOfBirth: editData.personalInfo?.Dob || "",
       gender: editData.personalInfo?.Gender || "",
       nationality: editData.personalInfo?.Nationality || "Zambian",
@@ -264,14 +301,18 @@ const [step, setStep] = useState<"verification" | "form">(
       alternatePhone: editData.contactInfo?.alternatePhone || "",
 
       // Address
-      street: editData.contactInfo?.address?.street || "",
-      city: editData.contactInfo?.address?.city || "",
+      street: String(editData.contactInfo?.address?.street || "").toUpperCase(),
+      city: String(editData.contactInfo?.address?.city || "").toUpperCase(),
       province: editData.contactInfo?.address?.province || "",
-      postalCode: editData.contactInfo?.address?.postalCode || "",
+      postalCode: String(
+        editData.contactInfo?.address?.postalCode || "",
+      ).toUpperCase(),
       country: editData.contactInfo?.address?.country || "Zambia",
 
       // Emergency Contact
-      emergencyContactName: editData.contactInfo?.emergencyContact?.name || "",
+      emergencyContactName: String(
+        editData.contactInfo?.emergencyContact?.name || "",
+      ).toUpperCase(),
       emergencyContactPhone:
         editData.contactInfo?.emergencyContact?.phone || "",
       emergencyContactRelationship:
@@ -280,23 +321,23 @@ const [step, setStep] = useState<"verification" | "form">(
       // ===== EMPLOYMENT INFO =====
       employeeId: editData.employmentInfo?.employeeId || "",
       department: editData.employmentInfo?.Department || "",
-      jobTitle: editData.employmentInfo?.JobTitle || "",
+      jobTitle: String(editData.employmentInfo?.JobTitle || "").toUpperCase(),
       employeeType: editData.employmentInfo?.EmployeeType || "Permanent",
       employmentStatus: editData.status || "Active",
       engagementDate: editData.employmentInfo?.joiningDate || "",
       probationPeriod: editData.employmentInfo?.probationPeriod || "",
       contractEndDate: editData.employmentInfo?.contractEndDate || "",
-      workLocation: editData.employmentInfo?.workLocation || "",
-      workAddress: editData.employmentInfo?.workAddress || "",
+      workLocation: String(editData.employmentInfo?.workLocation || "").toUpperCase(),
+      workAddress: String(editData.employmentInfo?.workAddress || "").toUpperCase(),
       shift: editData.employmentInfo?.shift || "Day",
       reportingManager: editData.employmentInfo?.reportingManager || "",
       hrManager: editData.employmentInfo?.hrManager || "",
 
       // ===== IDs =====
-      NrcId: editData.identityInfo?.nrc || "",
-      SocialSecurityNapsa: editData.identityInfo?.napsa || "",
+      nrcId: editData.identityInfo?.nrc || "",
+      socialSecurityNapsa: editData.identityInfo?.napsa || "",
       nhimaHealthInsurance: editData.identityInfo?.nhima || "",
-      TpinId: editData.identityInfo?.tpin || "",
+      tpinId: editData.identityInfo?.tpin || "",
 
       // ===== SALARY COMPONENTS =====
       basicSalary: editData.payrollInfo?.salaryBreakdown?.BasicSalary || editData.payrollInfo?.salaryBreakdown?.basic || editData.basic || "",
@@ -316,9 +357,15 @@ const [step, setStep] = useState<"verification" | "form">(
 
       // ===== BANK DETAILS =====
       accountNumber: editData.payrollInfo?.bankAccount?.AccountNumber || "",
-      accountName: editData.payrollInfo?.bankAccount?.AccountName || "",
-      bankName: editData.payrollInfo?.bankAccount?.BankName || "",
-      branchCode: editData.payrollInfo?.bankAccount?.branchCode || "",
+      accountName: String(
+        editData.payrollInfo?.bankAccount?.AccountName || "",
+      ).toUpperCase(),
+      bankName: String(
+        editData.payrollInfo?.bankAccount?.BankName || "",
+      ).toUpperCase(),
+      branchCode: String(
+        editData.payrollInfo?.bankAccount?.branchCode || "",
+      ).toUpperCase(),
       accountType: editData.payrollInfo?.bankAccount?.AccountType || "Savings",
 
       // ===== LEAVE SETUP =====
@@ -348,7 +395,7 @@ const [step, setStep] = useState<"verification" | "form">(
         editData.employmentInfo?.weeklySchedule?.sunday || "",
 
       // ===== NOTES =====
-      notes: editData.notes || "",
+      notes: String(editData.notes || "").toUpperCase(),
     }));
   }, [editData]);
 
@@ -359,8 +406,12 @@ const [step, setStep] = useState<"verification" | "form">(
       ...prev,
       nrcId: verifiedData.identityInfo?.nrc || "",
       socialSecurityNapsa: verifiedData.identityInfo?.ssn || "",
-      firstName: verifiedData.personalInfo?.firstName || "",
-      lastName: verifiedData.personalInfo?.lastName || "",
+      firstName: String(
+        verifiedData.personalInfo?.firstName || "",
+      ).toUpperCase(),
+      lastName: String(
+        verifiedData.personalInfo?.lastName || "",
+      ).toUpperCase(),
       gender: verifiedData.personalInfo?.gender || "",
     }));
 
@@ -392,6 +443,11 @@ const [step, setStep] = useState<"verification" | "form">(
     return /^\d{6}\/\d{2}\/\d$/.test(v);
   };
 
+  const isValidDigitsLength = (value: string, length: number): boolean => {
+    const digits = String(value ?? "").replace(/\D/g, "");
+    return digits.length === length;
+  };
+
   const isValidPhone = (value: string): boolean => {
     const v = String(value ?? "").trim();
     if (!v) return false;
@@ -412,10 +468,17 @@ const [step, setStep] = useState<"verification" | "form">(
           if (!formData.nrcId) return "NRC number is required";
           if (!isValidNrc(formData.nrcId))
             return "NRC number must be in the format 123456/78/9";
+
+          if (!formData.socialSecurityNapsa) return "SSN is required";
+          if (!isValidDigitsLength(formData.socialSecurityNapsa, 9))
+            return "SSN must be exactly 9 digits";
+
           if (!formData.nhimaHealthInsurance)
             return "NHIMA number is required";
           if (!formData.tpinId)
             return "TPIN is required";
+          if (!isValidDigitsLength(formData.tpinId, 10))
+            return "TPIN must be exactly 10 digits";
         }
         return null;
 
@@ -464,6 +527,19 @@ const [step, setStep] = useState<"verification" | "form">(
         return null;
     }
   };
+  const handleNext = () => {
+    const validationError = validateCurrentTab();
+    if (validationError) {
+      showApiError(validationError);
+      return;
+    }
+    setCurrentTabIndex((prev) => Math.min(prev + 1, TAB_ORDER.length - 1));
+  };
+
+  const handlePrevious = () => {
+    setCurrentTabIndex((prev) => Math.max(prev - 1, 0));
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -490,26 +566,6 @@ const [step, setStep] = useState<"verification" | "form">(
     fetchEmployees();
   }, [isOpen]);
 
-  const handleNext = () => {
-    const error = validateCurrentTab();
-  if (error) {
-  showApiError(error);
-  return;
-}
-
-    
-    setCurrentTabIndex((prev) => prev + 1);
-  };
-
-  const handlePrevious = () => {
-    
-    setCurrentTabIndex((prev) => prev - 1);
-  };
-
-  const handleInputChange = (field: string, value: string | boolean | any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
   const buildPayload = () => {
     const basicSalaryNum = Number(formData.basicSalary) || 0;
 
@@ -528,19 +584,16 @@ const [step, setStep] = useState<"verification" | "form">(
       PhoneNumber: formData.phoneNumber,
       AlternatePhone: formData.alternatePhone,
 
-      // Address
       addressStreet: formData.street,
       addressCity: formData.city,
       addressProvince: formData.province,
       addressPostalCode: formData.postalCode,
       addressCountry: formData.country,
 
-      // Emergency Contact
       emergencyContactName: formData.emergencyContactName,
       emergencyContactPhone: formData.emergencyContactPhone,
       emergencyContactRelationship: formData.emergencyContactRelationship,
 
-      // Employment
       Department: formData.department,
       JobTitle: formData.jobTitle,
       EmployeeType: formData.employeeType,
@@ -559,20 +612,17 @@ const [step, setStep] = useState<"verification" | "form">(
       // Salary Structure + Basic Amount
       BasicAmount: basicSalaryNum,
 
-      // Payroll
       currency: formData.currency,
       PaymentFrequency: formData.paymentFrequency,
       PaymentMethod: formData.paymentMethod,
       SalaryStructure: formData.salaryStructure,
 
-      // Bank
       AccountType: formData.accountType,
       BankName: formData.bankName,
       AccountName: formData.accountName,
       AccountNumber: formData.accountNumber,
       BranchCode: formData.branchCode,
 
-      // Work Schedule - Send as empty string instead of undefined/null
       weeklyScheduleMonday: formData.weeklyScheduleMonday || "",
       weeklyScheduleTuesday: formData.weeklyScheduleTuesday || "",
       weeklyScheduleWednesday: formData.weeklyScheduleWednesday || "",
@@ -581,7 +631,6 @@ const [step, setStep] = useState<"verification" | "form">(
       weeklyScheduleSaturday: formData.weeklyScheduleSaturday || "",
       weeklyScheduleSunday: formData.weeklyScheduleSunday || "",
 
-      // Leave
       OpeningLeaveBalance: formData.openingLeaveBalance,
       InitialLeaveRateMonthly: Number(formData.initialLeaveRateMonthly) || 0,
       CeilingYear: Number(formData.ceilingYear) || 0,
@@ -589,6 +638,7 @@ const [step, setStep] = useState<"verification" | "form">(
 
       verifiedFromSource: !!verifiedData,
     };
+
     if (!editData) {
       payload.NrcId = formData.nrcId;
       payload.SocialSecurityNapsa = formData.socialSecurityNapsa;
@@ -896,6 +946,19 @@ if (step === "verification" && features.requireIdentityVerification) {
               handleInputChange={handleInputChange}
             />
           )}
+
+          <div className="mt-6 bg-card p-5 rounded-lg border border-theme space-y-2">
+            <label className="block text-xs text-main mb-1 font-medium">
+              Notes
+            </label>
+            <textarea
+              value={formData.notes || ""}
+              onChange={(e) => handleInputChange("notes", e.target.value)}
+              placeholder="Enter notes"
+              rows={3}
+              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
         </div>
 
         {/* Footer */}
