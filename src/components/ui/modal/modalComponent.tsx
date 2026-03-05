@@ -355,3 +355,59 @@ export const YesNoCheckbox: React.FC<YesNoCheckboxProps> = ({
     </label>
   );
 };
+
+
+
+interface CreditDaysInputProps {
+  value: string | number;
+  name: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  required?: boolean;
+  error?: string;
+}
+
+export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
+  value,
+  name,
+  onChange,
+  required,
+  error,
+}) => {
+  return (
+    <label className="flex flex-col text-sm group min-w-0">
+      <span className="block text-[10px] font-medium text-main mb-1">
+        Credit Days
+        {required && <span className="text-danger">*</span>}
+      </span>
+
+      <div className="relative flex items-center">
+        <input
+          type="number"
+          name={name}
+          value={value ?? ""}
+          min={0}
+          onChange={onChange}
+          className={[
+            "py-1 pl-2 pr-10 border rounded text-[11px] text-main bg-card transition-all w-full min-w-0",
+            error
+              ? "border-danger focus:border-danger"
+              : "border-[var(--border)] hover:border-primary/40",
+          ].join(" ")}
+          onFocus={(e) => {
+            e.currentTarget.style.boxShadow = error
+              ? "0 0 0 3px rgba(239,68,68,0.18)"
+              : "0 0 0 3px rgba(37,99,235,0.16)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.boxShadow = "";
+          }}
+        />
+        <span className="absolute right-2 text-[11px] text-muted pointer-events-none">
+          Days
+        </span>
+      </div>
+
+      {error && <span className="text-[10px] text-danger mt-1">{error}</span>}
+    </label>
+  );
+};

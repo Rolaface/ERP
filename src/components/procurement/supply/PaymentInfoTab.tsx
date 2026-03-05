@@ -1,7 +1,7 @@
 import React from "react";
 import type { SupplierFormData } from "../../../types/Supply/supplier";
 import { currencyOptions } from "../../../types/Supply/supplier";
-import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
+import { CreditDaysInput, ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 
 interface PaymentInfoTabProps {
   form: SupplierFormData;
@@ -35,12 +35,12 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
   errors = {},
 }) => {
   return (
-    <section className="flex-1 overflow-y-auto p-4 space-y-6 bg-app">
+    <section className="flex-1 overflow-y-auto p-4 space-y-4 bg-app">
       {/* Payment Details */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <h3 className="text-sm font-semibold text-gray-700">Payment Details</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_160px_1fr] gap-5 items-end">
+        <div className="grid grid-cols-4 gap-x-2 gap-y-2 items-end max-w-2xl">
           <ModalSelect
             label="Currency"
             name="currency"
@@ -60,16 +60,11 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
             error={errors.openingBalance}
           />
 
-          <ModalInput
-            label="Credit Days"
+          <CreditDaysInput
             name="paymentTerms"
-            type="number"
-            min={0}
             value={form.paymentTerms}
             onChange={onChange}
             required
-            suffix="Days"
-            className="text-center"
             error={errors.paymentTerms}
           />
 
@@ -88,10 +83,10 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
       <div className="my-6 border-t border-gray-200" />
 
       {/* Bank Details */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <h3 className="text-sm font-semibold text-gray-700">Bank Details</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_160px_1fr] gap-5 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-x-2 gap-y-2 items-end">
           <ModalInput
             label="Bank"
             name="bankAccount"

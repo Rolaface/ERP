@@ -132,23 +132,25 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
             <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
               <div className="">
                 <div
-                  className={`
-                      grid
-                   ${ui.isExport
-                      ? "grid-cols-[minmax(150px,1fr)_100px_100px_100px_100px_90px_110px_110px]"
-                      : "grid-cols-[minmax(180px,1fr)_110px_110px_110px_110px_110px_110px]"
-                    }
-                    gap-x-2
-                      items-end
-                       `}
-                >
+  className={`
+    grid
+    ${ui.isExport
+      ? "grid-cols-[minmax(220px,1.5fr)_repeat(6,minmax(100px,1fr))]"
+      : "grid-cols-[minmax(220px,1.5fr)_repeat(5,minmax(100px,1fr))]"
+    }
+    gap-x-2
+    items-end
+  `}
+>
                   {/* Customer */}
 
-                  <CustomerSelect
-                    value={customerNameDisplay}
-                    onChange={actions.handleCustomerSelect}
-                    className="w-full"
-                  />
+                <div className="min-w-0">
+  <CustomerSelect
+    value={customerNameDisplay}
+    onChange={actions.handleCustomerSelect}
+    className="w-full"
+  />
+</div>
 
 
                   {/* Date of Quotation */}
@@ -520,9 +522,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                         </div>
                         {customerDetails && (
                           <div className="bg-card rounded-lg ">
-                            <h3 className="text-[11px] font-semibold text-main mb-1">
-                              Invoice Information
-                            </h3>
 
                             <div className="flex flex-col gap-1">
                               {/* Invoice Type */}
