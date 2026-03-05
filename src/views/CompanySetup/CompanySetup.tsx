@@ -18,7 +18,6 @@ import BankDetails from "./BankDetails";
 import Upload from "./upload";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID as string;
 
-
 import type {
   CompanyDocuments,
   AccountingSetup,
@@ -97,7 +96,6 @@ const CompanySetup: React.FC = () => {
       const response = await getCompanyById(COMPANY_ID);
       setCompanyDetail(response.data as Company);
 
-      // console.log("response: ", response);
       const registrationDetails: RegistrationDetails = {
         registerNo: response.data.registrationNumber ?? "",
         tpin: response.data.tpin ?? "",
@@ -133,11 +131,6 @@ const CompanySetup: React.FC = () => {
       setModules(response.data.modules);
       setCompanyTemplates(response.data.templates);
       setCompanyDocuments(response.data.documents);
-
-      // console.log("accounsetup: ", response);
-      // console.log("modules: ", response.data.modules);
-      // console.log("document: ", response.data.documents);
-      // console.log("templates: ", response.data.templates);
     } catch (err) {
       console.error("Error loading company data:", err);
     } finally {
@@ -150,14 +143,14 @@ const CompanySetup: React.FC = () => {
   }, []);
 
   return (
-    <div className="bg-app min-h-screen p-8 pb-20 text-main">
+    <div className="bg-app p-8 pb-20 text-main">
       {/* Header */}
       <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
         <FaBuilding className="text-primary" /> Company Setup
       </h1>
 
       {/* Navbar */}
-      <div className="flex  mb-4 border-b border-gray-200 ">
+      <div className="flex mb-4 border-b border-gray-200">
         {navTabs.map((t) => (
           <button
             key={t.key}
@@ -165,8 +158,8 @@ const CompanySetup: React.FC = () => {
             className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors
               ${
                 tab === t.key
-                ? "text-primary border-b-2 border-current"
-                : "text-muted hover:text-main"
+                  ? "text-primary border-b-2 border-current"
+                  : "text-muted hover:text-main"
               }
             `}
             style={{ background: "transparent" }}
@@ -179,16 +172,17 @@ const CompanySetup: React.FC = () => {
 
       {/* Tab content */}
       <div>
-       {tab === "basic" && (
-  <BasicDetails
-    basic={basicDetail}
-    onSaveSuccess={fetchCompanyDetail}
-  />
-)}
+        {tab === "basic" && (
+          <BasicDetails
+            basic={basicDetail}
+            onSaveSuccess={fetchCompanyDetail}
+          />
+        )}
         {tab === "bank" && (
           <BankDetails
             bankAccounts={bankAccounts}
             setBankAccounts={setBankAccounts}
+            terms={terms} 
           />
         )}
         {tab === "accounting" && (
@@ -197,10 +191,17 @@ const CompanySetup: React.FC = () => {
             accountingSetup={accountingSetup}
           />
         )}
-        {tab === "buyingSelling" && <BuyingSelling terms={terms} />}
+        {tab === "buyingSelling" && (
+          <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
+        )}
         {tab === "subscribed" && <SubscribedModules />}
         {/* {tab === "Templates" && <Templates templates={companyTemplates} />} */}
-      {tab === "logo" && <Upload COMPANY_ID={COMPANY_ID} onUploadSuccess={fetchCompanyDetail} />}
+        {tab === "logo" && (
+          <Upload
+            COMPANY_ID={COMPANY_ID}
+            onUploadSuccess={fetchCompanyDetail}
+          />
+        )}
       </div>
     </div>
   );

@@ -29,6 +29,7 @@ interface InvoiceModalProps {
   onSubmit?: (data: any) => void;
 }
 const ITEMS_PER_PAGE = 5;
+
 const InvoiceModal: React.FC<InvoiceModalProps> = ({
   isOpen,
   onClose,
@@ -459,18 +460,16 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                               </td>
 
                               <td className="px-0.5 py-1">
-                                <input
-                                  type="number"
-                                  className="w-[75px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                  name="quantity"
-                                  value={it.quantity}
-                               
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                />
+                               <input
+  type="number"
+  step="1"
+  min="0"
+  className="w-[75px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+  name="quantity"
+  value={it.quantity}
+  onChange={(e) => actions.handleItemChange(i, e)}
+/>
                               </td>
-
                               <td className="px-0.5 py-1">
                                 <input
                                   type="date"

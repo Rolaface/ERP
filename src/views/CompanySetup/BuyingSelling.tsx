@@ -1,15 +1,36 @@
 import React, { useEffect, useState } from "react";
 import TermsAndCondition from "../../components/TermsAndCondition";
-import { Check, RotateCcw, Save } from "lucide-react";
+import { RotateCcw, Save } from "lucide-react";
 
 import type { Terms, TermSection } from "../../types/termsAndCondition";
-
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
 import { updateCompanyById } from "../../api/companySetupApi";
+import Swal from "sweetalert2";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+
 interface BuyingSellingProps {
   terms?: Terms | null;
+  onSaveSuccess?: () => void;
 }
+const normalizeSection = (section?: TermSection): TermSection => ({
+  general: section?.general ?? "",
+  delivery: section?.delivery ?? "",
+  cancellation: section?.cancellation ?? "",
+  warranty: section?.warranty ?? "",
+  liability: section?.liability ?? "",
+  payment: {
+    phases: section?.payment?.phases ?? [],
+    dueDates: section?.payment?.dueDates ?? "",
+    lateCharges: section?.payment?.lateCharges ?? "",
+    taxes: section?.payment?.taxes ?? "",
+    notes: section?.payment?.notes ?? "",
+  },
+});
 
 const emptySection = (): TermSection => ({
   general: "",
@@ -26,66 +47,84 @@ const emptySection = (): TermSection => ({
   },
 });
 
-const BuyingSelling: React.FC<BuyingSellingProps> = ({ terms }) => {
- 
-
+const BuyingSelling: React.FC<BuyingSellingProps> = ({
+  terms,
+  onSaveSuccess,
+}) => {
   const [formData, setFormData] = useState({
     buying: emptySection(),
     selling: emptySection(),
   });
+  const hasChanges = React.useMemo(() => {
+    if (!terms) return false;
 
- useEffect(() => {
-  if (!terms) return;
+    const original = JSON.stringify({
+      buying: normalizeSection(terms.buying),
+      selling: normalizeSection(terms.selling),
+    });
+    const current = JSON.stringify(formData);
 
-  const mapSection = (section?: TermSection): TermSection => ({
-    general: section?.general ?? "",
-    delivery: section?.delivery ?? "",
-    cancellation: section?.cancellation ?? "",
-    warranty: section?.warranty ?? "",
-    liability: section?.liability ?? "",
-    payment: {
-      phases: section?.payment?.phases ?? [],
-      dueDates: section?.payment?.dueDates ?? "",
-      lateCharges: section?.payment?.lateCharges ?? "",
-      taxes: section?.payment?.taxes ?? "",
-      notes: section?.payment?.notes ?? "",
-    },
-  });
+    return original !== current;
+  }, [formData, terms]);
+  useEffect(() => {
+    if (!terms) return;
 
-  setFormData({
-    buying: mapSection(terms.buying),
-    selling: mapSection(terms.selling),
-  });
-}, [terms]);
+    setFormData({
+      buying: normalizeSection(terms.buying),
+      selling: normalizeSection(terms.selling),
+    });
+  }, [terms]);
 
   const handleReset = () => {
+    if (!terms) return;
+
     setFormData({
-      buying: emptySection(),
-      selling: emptySection(),
+      buying: normalizeSection(terms.buying),
+      selling: normalizeSection(terms.selling),
     });
   };
+  const handleSubmit = async () => {
+    if (!hasChanges) {
+      Swal.fire({
+        icon: "info",
+        title: "No Changes",
+        text: "Please apply changes before saving.",
+      });
+      return;
+    }
+    const confirm = await Swal.fire({
+      title: "Save Terms?",
+      text: "Do you want to update company terms and conditions?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#22c55e",
+      cancelButtonColor: "#ef4444",
+      confirmButtonText: "Yes, Save",
+    });
 
-const handleSubmit = async () => {
-  const payload = {
-    id: COMPANY_ID,
-    terms: formData,
+    if (!confirm.isConfirmed) return;
+
+    const payload = {
+      id: COMPANY_ID,
+      terms: formData,
+    };
+
+    try {
+      showLoading("Saving Terms...");
+
+      await updateCompanyById(payload);
+
+      closeSwal();
+      onSaveSuccess && onSaveSuccess();
+      showSuccess("Terms saved successfully!");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
   };
-
-  try {
-    showLoading("Saving Terms...");
-
-    await updateCompanyById(payload);
-
-    closeSwal();
-    showSuccess("Terms and Conditions saved successfully!");
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
   return (
-    <div className="min-h-screen bg-app">
-    
+    <div className=" bg-app">
+      {/* SUCCESS TOAST */}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card rounded-xl border border-theme shadow-sm p-4">
@@ -121,7 +160,11 @@ const handleSubmit = async () => {
 
         <button
           onClick={handleSubmit}
-          className="px-5 py-2 rounded bg-primary text-white"
+          disabled={!hasChanges}
+          title={!hasChanges ? "Apply changes before saving" : ""}
+          className={`px-5 py-2 rounded text-white flex items-center gap-2
+    ${hasChanges ? "bg-primary hover:opacity-90" : "bg-gray-300 cursor-not-allowed"}
+  `}
         >
           <Save className="inline-block mr-2" />
           Save Terms

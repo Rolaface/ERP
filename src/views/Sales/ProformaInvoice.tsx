@@ -18,9 +18,16 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
 import Swal from "sweetalert2";
-import InvoiceDetailsModal, { type InvoiceDetails } from "./InvoiceDetailsModal";
+import InvoiceDetailsModal, {
+  type InvoiceDetails,
+} from "./InvoiceDetailsModal";
 import PdfPreviewModal from "./PdfPreviewModal";
 
 // ---------------------------------------------------------------------------
@@ -30,11 +37,11 @@ import PdfPreviewModal from "./PdfPreviewModal";
 type InvoiceStatus = "Draft" | "Rejected" | "Paid" | "Cancelled" | "Approved";
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
-  Draft:     ["Rejected", "Approved"],
-  Rejected:  ["Draft", "Approved"],
-  Paid:      [],
+  Draft: ["Rejected", "Approved"],
+  Rejected: ["Draft", "Approved"],
+  Paid: [],
   Cancelled: ["Draft"],
-  Approved:  ["Paid", "Cancelled"],
+  Approved: ["Paid", "Cancelled"],
 };
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
@@ -43,12 +50,12 @@ const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
 // All keys are identical here so the map is 1:1,
 // but keeping it explicit makes future changes safe
 const SORT_FIELD_MAP: Record<string, string> = {
-  proformaId:   "proformaId",
+  proformaId: "proformaId",
   customerName: "customerName",
-  createdAt:    "createdAt",
-  dueDate:      "dueDate",
-  totalAmount:  "totalAmount",
-  status:       "status",
+  createdAt: "createdAt",
+  dueDate: "dueDate",
+  totalAmount: "totalAmount",
+  status: "status",
 };
 
 // ---------------------------------------------------------------------------
@@ -69,16 +76,15 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   onAddProformaInvoice,
   refreshKey,
 }) => {
-
   // ── Data ──────────────────────────────────────────────────────────────────
-  const [invoices, setInvoices]       = useState<ProformaInvoiceSummary[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [invoices, setInvoices] = useState<ProformaInvoiceSummary[]>([]);
+  const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [company, setCompany]         = useState<any>(null);
+  const [company, setCompany] = useState<any>(null);
 
   // ── Pagination (server) ───────────────────────────────────────────────────
-  const [page, setPage]             = useState(1);
-  const [pageSize, setPageSize]     = useState(10);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -86,19 +92,21 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
 
   // ── Sort (server) — always store column key, map to backend at call site ──
-  const [sortBy, setSortBy]       = useState("");
+  const [sortBy, setSortBy] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // ── Modal ─────────────────────────────────────────────────────────────────
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsId, setDetailsId]     = useState<string | null>(null);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   // ── Reset page when search changes ───────────────────────────────────────
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
   //______________profroma invoice pdf viewer state ________________
-const [selectedProforma, setSelectedProforma] = useState<any>(null);
-const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-const [pdfOpen, setPdfOpen] = useState(false);
+  const [selectedProforma, setSelectedProforma] = useState<any>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
   // ── Fetch company once ────────────────────────────────────────────────────
   useEffect(() => {
     getCompanyById(COMPANY_ID)
@@ -118,27 +126,27 @@ const [pdfOpen, setPdfOpen] = useState(false);
       const res = await getAllProformaInvoices(
         page,
         pageSize,
-        SORT_FIELD_MAP[sortBy] || sortBy,  // ← map column key → backend field here
+        SORT_FIELD_MAP[sortBy] || sortBy, // ← map column key → backend field here
         sortOrder,
-        searchTerm,                         // ← search sent to backend
+        searchTerm, // ← search sent to backend
       );
 
       if (!res || res.status_code !== 200) return;
 
       const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
-        proformaId:   inv.proformaId,
+        proformaId: inv.proformaId,
         customerName: inv.customerName,
-        currency:     inv.currency,
+        currency: inv.currency,
         exchangeRate: inv.exchangeRate,
-        dueDate:      inv.dueDate,
-        totalAmount:  Number(inv.totalAmount),
-        status:       inv.status as InvoiceStatus,
-        createdAt:    new Date(inv.createdAt.replace(" ", "T")),
+        dueDate: inv.dueDate,
+        totalAmount: Number(inv.totalAmount),
+        status: inv.status as InvoiceStatus,
+        createdAt: new Date(inv.createdAt.replace(" ", "T")),
       }));
 
       setInvoices(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
-      setTotalItems(res.pagination?.total       || mapped.length);
+      setTotalItems(res.pagination?.total || mapped.length);
     } finally {
       setLoading(false);
       setInitialLoad(false);
@@ -157,78 +165,79 @@ const [pdfOpen, setPdfOpen] = useState(false);
     sortBy: string;
     sortOrder: "asc" | "desc";
   }) => {
-    setSortBy(colKey);   // ← store "proformaId", not "proformaId" (same here, but correct pattern)
+    setSortBy(colKey); // ← store "proformaId", not "proformaId" (same here, but correct pattern)
     setSortOrder(order);
     setPage(1);
   };
 
   // ── Receipt URL opener (kept — do not remove) ─────────────────────────────
-const handlePreviewProformaPDF = async (proformaId: string) => {
-  try {
-    showLoading("Preparing proforma invoice preview...");
+  const handlePreviewProformaPDF = async (proformaId: string) => {
+    try {
+      showLoading("Preparing proforma invoice preview...");
 
-    if (!company) {
+      if (!company) {
+        closeSwal();
+        showApiError("Company data not loaded");
+        return;
+      }
+
+      const res = await getProformaInvoiceById(proformaId);
+
+      if (!res || res.status_code !== 200) {
+        closeSwal();
+        showApiError("Failed to load proforma invoice");
+        return;
+      }
+
+      const blobUrl = await generateProformaInvoicePDF(
+        res.data,
+        company,
+        "bloburl",
+      );
+
       closeSwal();
-      showApiError("Company data not loaded");
-      return;
-    }
 
-    const res = await getProformaInvoiceById(proformaId);
-
-    if (!res || res.status_code !== 200) {
+      setPdfUrl(blobUrl);
+      setSelectedProforma(res.data);
+      setPdfOpen(true);
+    } catch (err) {
       closeSwal();
-      showApiError("Failed to load proforma invoice");
-      return;
+      showApiError(err);
     }
-
-    const blobUrl = await generateProformaInvoicePDF(
-      res.data,
-      company,
-      "bloburl"
-    );
-
-    closeSwal();
-
-    setPdfUrl(blobUrl);
-    setSelectedProforma(res.data);
-    setPdfOpen(true);
-
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+  };
 
   // ── Export all pages ──────────────────────────────────────────────────────
-  const fetchAllInvoicesForExport = async (): Promise<ProformaInvoiceSummary[]> => {
+  const fetchAllInvoicesForExport = async (): Promise<
+    ProformaInvoiceSummary[]
+  > => {
     try {
       let allData: ProformaInvoiceSummary[] = [];
       let current = 1;
-      let total   = 1;
+      let total = 1;
 
       do {
         const res = await getAllProformaInvoices(
           current,
           100,
-          SORT_FIELD_MAP[sortBy] || sortBy,  // ← same mapping for export
+          SORT_FIELD_MAP[sortBy] || sortBy, // ← same mapping for export
           sortOrder,
           searchTerm,
         );
 
         if (res?.status_code === 200) {
           const mapped = res.data.map((inv: any) => ({
-            proformaId:   inv.proformaId,
+            proformaId: inv.proformaId,
             customerName: inv.customerName,
-            currency:     inv.currency,
+            currency: inv.currency,
             exchangeRate: inv.exchangeRate,
-            dueDate:      inv.dueDate,
-            totalAmount:  Number(inv.totalAmount),
-            status:       inv.status as InvoiceStatus,
-            createdAt:    new Date(inv.createdAt.replace(" ", "T")),
+            dueDate: inv.dueDate,
+            totalAmount: Number(inv.totalAmount),
+            status: inv.status as InvoiceStatus,
+            createdAt: new Date(inv.createdAt.replace(" ", "T")),
           }));
 
           allData = [...allData, ...mapped];
-          total   = res.pagination?.total_pages || 1;
+          total = res.pagination?.total_pages || 1;
         }
 
         current++;
@@ -256,24 +265,25 @@ const handlePreviewProformaPDF = async (proformaId: string) => {
       const worksheet = XLSX.utils.json_to_sheet(
         dataToExport.map((inv) => ({
           "Proforma No": inv.proformaId,
-          Customer:      inv.customerName,
-          Date:          inv.createdAt.toLocaleDateString(),
-          "Due Date":    inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "",
-          Amount:        inv.totalAmount,
-          Currency:      inv.currency,
-          Status:        inv.status,
-        }))
+          Customer: inv.customerName,
+          Date: inv.createdAt.toLocaleDateString(),
+          "Due Date": inv.dueDate
+            ? new Date(inv.dueDate).toLocaleDateString()
+            : "",
+          Amount: inv.totalAmount,
+          Currency: inv.currency,
+          Status: inv.status,
+        })),
       );
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Proforma Invoices");
 
       saveAs(
-        new Blob(
-          [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-          { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-        ),
-        "Proforma_Invoices.xlsx"
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "Proforma_Invoices.xlsx",
       );
 
       closeSwal();
@@ -353,7 +363,9 @@ const handlePreviewProformaPDF = async (proformaId: string) => {
       }
 
       // Optimistic remove from table
-      setInvoices((prev) => prev.filter((inv) => inv.proformaId !== proformaId));
+      setInvoices((prev) =>
+        prev.filter((inv) => inv.proformaId !== proformaId),
+      );
       showSuccess("Proforma invoice deleted successfully");
     } catch (err) {
       Swal.close();
@@ -367,7 +379,9 @@ const handlePreviewProformaPDF = async (proformaId: string) => {
   ) => {
     if (
       CRITICAL_STATUSES.includes(status) &&
-      !window.confirm(`Mark invoice ${invoiceNumber} as ${status}? This action cannot be undone.`)
+      !window.confirm(
+        `Mark invoice ${invoiceNumber} as ${status}? This action cannot be undone.`,
+      )
     ) {
       return;
     }
@@ -380,8 +394,8 @@ const handlePreviewProformaPDF = async (proformaId: string) => {
 
     setInvoices((prev) =>
       prev.map((inv) =>
-        inv.proformaId === invoiceNumber ? { ...inv, status } : inv
-      )
+        inv.proformaId === invoiceNumber ? { ...inv, status } : inv,
+      ),
     );
 
     showSuccess(`Invoice marked as ${status}`);
@@ -391,35 +405,34 @@ const handlePreviewProformaPDF = async (proformaId: string) => {
   const mapProformaToInvoiceDetails = (raw: any): InvoiceDetails => {
     const items = Array.isArray(raw?.items)
       ? raw.items.map((it: any) => ({
-          itemCode:    it?.itemCode ?? it?.productName,
-          quantity:    Number(it?.quantity ?? 0),
+          itemCode: it?.itemCode ?? it?.productName,
+          quantity: Number(it?.quantity ?? 0),
           description: it?.description,
-          discount:    Number(it?.discount ?? 0),
-          price:       Number(it?.price ?? it?.listPrice ?? 0),
-          vatCode:     it?.vatCode,
+          discount: Number(it?.discount ?? 0),
+          price: Number(it?.price ?? it?.listPrice ?? 0),
+          vatCode: it?.vatCode,
         }))
       : [];
 
     return {
-      invoiceNumber:      raw?.invoiceNumber ?? raw?.proformaId ?? raw?.id,
-      invoiceType:        raw?.invoiceType ?? "Proforma",
-      originInvoice:      raw?.originInvoice ?? null,
-      customerName:       raw?.customerName ?? raw?.customer?.name,
-      customerTpin:       raw?.customerTpin ?? raw?.customer?.tpin,
-      currencyCode:       raw?.currencyCode ?? raw?.currency,
-      exchangeRt:         raw?.exchangeRt ?? raw?.exchangeRate,
-      dateOfInvoice:      raw?.dateOfInvoice ?? raw?.dateofinvoice ?? raw?.createdAt,
-      dueDate:            raw?.dueDate,
-      invoiceStatus:      raw?.invoiceStatus ?? raw?.status,
-      Receipt:            raw?.Receipt ?? raw?.receipt,
-      ReceiptNo:          raw?.ReceiptNo ?? raw?.receiptNo,
-      TotalAmount:        raw?.TotalAmount ?? raw?.totalAmount,
+      invoiceNumber: raw?.invoiceNumber ?? raw?.proformaId ?? raw?.id,
+      invoiceType: raw?.invoiceType ?? "Proforma",
+      originInvoice: raw?.originInvoice ?? null,
+      customerName: raw?.customerName ?? raw?.customer?.name,
+      customerTpin: raw?.customerTpin ?? raw?.customer?.tpin,
+      currencyCode: raw?.currencyCode ?? raw?.currency,
+      exchangeRt: raw?.exchangeRt ?? raw?.exchangeRate,
+      dateOfInvoice: raw?.dateOfInvoice ?? raw?.dateofinvoice ?? raw?.createdAt,
+      dueDate: raw?.dueDate,
+      invoiceStatus: raw?.invoiceStatus ?? raw?.status,
+
+      TotalAmount: raw?.TotalAmount ?? raw?.totalAmount,
       discountPercentage: raw?.discountPercentage,
-      discountAmount:     raw?.discountAmount,
-      lpoNumber:          raw?.lpoNumber,
-      destnCountryCd:     raw?.destnCountryCd,
-      billingAddress:     raw?.billingAddress,
-      shippingAddress:    raw?.shippingAddress,
+      discountAmount: raw?.discountAmount,
+      lpoNumber: raw?.lpoNumber,
+      destnCountryCd: raw?.destnCountryCd,
+      billingAddress: raw?.billingAddress,
+      shippingAddress: raw?.shippingAddress,
       paymentInformation: raw?.paymentInformation,
       items,
       terms: raw?.terms,
@@ -498,21 +511,21 @@ const handlePreviewProformaPDF = async (proformaId: string) => {
             iconOnly
           />
           <ActionMenu
-  customActions={[
-    {
-      label: "View PDF",
-      onClick: () => handlePreviewProformaPDF(inv.proformaId),
-    },
-    ...((STATUS_TRANSITIONS[inv.status] ?? []).map((status) => ({
-      label: `Mark as ${status}`,
-      danger: status === "Paid",
-      onClick: () => handleRowStatusChange(inv.proformaId, status),
-    }))),
-  ]}
-  showDownload
-  onDownload={(e) => handleDownload(inv.proformaId, e)}
-  onDelete={(e) => handleDelete(inv.proformaId, e)}
-/>
+            customActions={[
+              {
+                label: "View PDF",
+                onClick: () => handlePreviewProformaPDF(inv.proformaId),
+              },
+              ...(STATUS_TRANSITIONS[inv.status] ?? []).map((status) => ({
+                label: `Mark as ${status}`,
+                danger: status === "Paid",
+                onClick: () => handleRowStatusChange(inv.proformaId, status),
+              })),
+            ]}
+            showDownload
+            onDownload={(e) => handleDownload(inv.proformaId, e)}
+            onDelete={(e) => handleDelete(inv.proformaId, e)}
+          />
         </ActionGroup>
       ),
     },
@@ -525,11 +538,14 @@ const handlePreviewProformaPDF = async (proformaId: string) => {
       <Table
         loading={loading || initialLoad}
         columns={columns}
-        data={invoices}                      // ← raw server data, no local filter
+        data={invoices} // ← raw server data, no local filter
         rowKey={(row) => row.proformaId}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         enableAdd
         addLabel="Add Proforma Invoice"
         onAdd={onAddProformaInvoice}
@@ -541,7 +557,10 @@ const handlePreviewProformaPDF = async (proformaId: string) => {
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
@@ -551,26 +570,30 @@ const handlePreviewProformaPDF = async (proformaId: string) => {
       <InvoiceDetailsModal
         open={detailsOpen}
         invoiceId={detailsId}
-        onClose={() => { setDetailsOpen(false); setDetailsId(null); }}
+        onClose={() => {
+          setDetailsOpen(false);
+          setDetailsId(null);
+        }}
         onViewPdf={handlePreviewProformaPDF}
         fetchDetails={getProformaInvoiceById}
         mapDetails={mapProformaToInvoiceDetails}
       />
       <PdfPreviewModal
-  open={pdfOpen}
-  title="Proforma Invoice Preview"
-  pdfUrl={pdfUrl}
-  onClose={() => {
-    if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
-    setPdfUrl(null);
-    setSelectedProforma(null);
-    setPdfOpen(false);
-  }}
-  onDownload={() =>
-    selectedProforma && company &&
-    generateProformaInvoicePDF(selectedProforma, company, "save")
-  }
-/>
+        open={pdfOpen}
+        title="Proforma Invoice Preview"
+        pdfUrl={pdfUrl}
+        onClose={() => {
+          if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
+          setPdfUrl(null);
+          setSelectedProforma(null);
+          setPdfOpen(false);
+        }}
+        onDownload={() =>
+          selectedProforma &&
+          company &&
+          generateProformaInvoicePDF(selectedProforma, company, "save")
+        }
+      />
     </div>
   );
 };

@@ -10,6 +10,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import type { BankAccount } from "../../types/company";
+import type { Terms } from "../../types/termsAndCondition";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
 import { updateCompanyById } from "../../api/companySetupApi";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
@@ -97,21 +98,22 @@ const normalizeBankAccounts = (accounts: any[]): BankAccount[] =>
 interface Props {
   bankAccounts: BankAccount[];
   setBankAccounts: React.Dispatch<React.SetStateAction<BankAccount[]>>;
+  // FIX: terms must be passed in and included in every update payload
+  // so the backend never wipes it when only bankAccounts is sent
+  terms?: Terms | null;
 }
 
-const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts }) => {
+const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showBankModal, setShowBankModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<BankAccount | null>(null);
 
-  // ✅ FIX: initialize to first account that actually has a bankName (not index 0 blindly)
   const [selectedAccount, setSelectedAccount] = useState<number | null>(() => {
     const idx = bankAccounts.findIndex((a) => a.bankName?.trim());
     return idx !== -1 ? idx : null;
   });
 
-  // ✅ FIX: when bankAccounts loads/updates, re-sync if current selection is invalid
   useEffect(() => {
     if (
       selectedAccount === null ||
@@ -131,19 +133,35 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts }) => {
     }
   }, [selectedAccount, bankAccounts]);
 
+  // ── Helper: base payload always includes terms so backend never wipes it ──
+  const basePayload = () => ({
+    id: VITE_COMPANY_ID,
+    ...(terms !== undefined && terms !== null ? { terms } : {}),
+  });
+
+  const mapAccounts = (accounts: BankAccount[]) =>
+    accounts.map((acc) => ({
+      id: acc.id,
+      accountNo: acc.accountNo,
+      accountHolderName: acc.accountHolderName,
+      bankName: acc.bankName,
+      swiftCode: acc.swiftCode,
+      sortCode: acc.sortCode,
+      branchAddress: acc.branchAddress,
+      currency: acc.currency,
+      dateAdded: acc.dateAdded,
+      openingBalance: acc.openingBalance,
+      default: acc.isdefault ? "1" : 0,
+    }));
+
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleAddSubmit = async (newAccount: BankAccount) => {
     try {
       showLoading("Adding Bank Account...");
       const updatedAccounts = [...bankAccounts, newAccount];
       await updateCompanyById({
-        id: VITE_COMPANY_ID,
-        bankAccounts: updatedAccounts.map((acc) => ({
-          id: acc.id, accountNo: acc.accountNo, accountHolderName: acc.accountHolderName,
-          bankName: acc.bankName, swiftCode: acc.swiftCode, sortCode: acc.sortCode,
-          branchAddress: acc.branchAddress, currency: acc.currency, dateAdded: acc.dateAdded,
-          openingBalance: acc.openingBalance, default: acc.isdefault ? "1" : 0,
-        })),
+        ...basePayload(),
+        bankAccounts: mapAccounts(updatedAccounts),
       });
       closeSwal();
       showSuccess("Bank account added successfully.");
@@ -171,12 +189,10 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts }) => {
       const updatedAccounts = [...bankAccounts];
       updatedAccounts[selectedAccount] = editForm;
       await updateCompanyById({
-        id: VITE_COMPANY_ID,
-        bankAccounts: updatedAccounts.map((acc) => ({
-          id: acc.id, accountNo: acc.accountNo, accountHolderName: acc.accountHolderName,
-          bankName: acc.bankName, swiftCode: acc.swiftCode, sortCode: acc.sortCode,
-          branchAddress: acc.branchAddress, currency: acc.currency, dateAdded: acc.dateAdded,
-          openingBalance: acc.openingBalance, default: acc.isdefault ? "1" : "0",
+        ...basePayload(),
+        bankAccounts: mapAccounts(updatedAccounts).map((acc, i) => ({
+          ...acc,
+          default: updatedAccounts[i].isdefault ? "1" : "0",
         })),
       });
       closeSwal();
@@ -193,7 +209,6 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts }) => {
   const handleDelete = async () => {
     if (selectedAccount === null) return;
     const selected = bankAccounts[selectedAccount];
-    // ✅ FIX: don't use !id (blocks 0/"")
     if (selected?.id === undefined || selected?.id === null) return;
 
     const result = await Swal.fire({
@@ -221,50 +236,47 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts }) => {
     } catch (error) { closeSwal(); showApiError(error); }
   };
 
- const handleSetDefault = async () => {
-  if (selectedAccount === null) return;
+  const handleSetDefault = async () => {
+    if (selectedAccount === null) return;
+    const selected = bankAccounts[selectedAccount];
 
-  const selected = bankAccounts[selectedAccount];
+    try {
+      showLoading("Setting Default Account...");
 
-  try {
-    showLoading("Setting Default Account...");
-
-    const updatedAccounts = bankAccounts.map((acc) => ({
-      id: acc.id,
-      accountNo: acc.accountNo ?? "",
-      accountHolderName: acc.accountHolderName ?? "",
-      bankName: acc.bankName ?? "",
-      swiftCode: acc.swiftCode ?? "",
-      sortCode: acc.sortCode ?? "",
-      branchAddress: acc.branchAddress ?? "",
-      currency: acc.currency ?? "",
-      dateAdded: acc.dateAdded ?? "",
-      openingBalance: acc.openingBalance ?? 0,
-      default: acc.id === selected.id ? 1 : 0,
-    }));
-
-    await updateCompanyById({
-      id: VITE_COMPANY_ID,
-      bankAccounts: updatedAccounts,
-    });
-
-    closeSwal();
-    showSuccess("Default account updated successfully.");
-
-    // UI update
-    setBankAccounts((prev) =>
-      prev.map((acc) => ({
-        ...acc,
-        isdefault: acc.id === selected.id,
+      const updatedAccounts = bankAccounts.map((acc) => ({
+        id: acc.id,
+        accountNo: acc.accountNo ?? "",
+        accountHolderName: acc.accountHolderName ?? "",
+        bankName: acc.bankName ?? "",
+        swiftCode: acc.swiftCode ?? "",
+        sortCode: acc.sortCode ?? "",
+        branchAddress: acc.branchAddress ?? "",
+        currency: acc.currency ?? "",
+        dateAdded: acc.dateAdded ?? "",
+        openingBalance: acc.openingBalance ?? 0,
         default: acc.id === selected.id ? 1 : 0,
-      }))
-    );
+      }));
 
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+      await updateCompanyById({
+        ...basePayload(),
+        bankAccounts: updatedAccounts,
+      });
+
+      closeSwal();
+      showSuccess("Default account updated successfully.");
+
+      setBankAccounts((prev) =>
+        prev.map((acc) => ({
+          ...acc,
+          isdefault: acc.id === selected.id,
+          default: acc.id === selected.id ? 1 : 0,
+        }))
+      );
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
   const normalizedAccounts = normalizeBankAccounts(bankAccounts);
 
@@ -419,14 +431,11 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts }) => {
                   if (!data) return null;
                   return (
                     <div className="grid grid-cols-2 gap-5">
-                      {/* Plain */}
                       <Detail label="Bank Name"       name="bankName"          value={data.bankName}          isEditing={isEditing} onChange={handleInputChange} />
                       <Detail label="Account Holder"  name="accountHolderName" value={data.accountHolderName} isEditing={isEditing} onChange={handleInputChange} />
-                      {/* Masked */}
                       <Detail label="Account Number"  name="accountNo"         value={data.accountNo}         isEditing={isEditing} onChange={handleInputChange} masked />
                       <Detail label="Swift/BIC Code"  name="swiftCode"         value={data.swiftCode}         isEditing={isEditing} onChange={handleInputChange} masked />
                       <Detail label="Sort Code"       name="sortCode"          value={data.sortCode}          isEditing={isEditing} onChange={handleInputChange} masked />
-                      {/* Plain */}
                       <Detail label="Currency"        name="currency"          value={data.currency}          isEditing={isEditing} onChange={handleInputChange} />
                       <Detail label="Opening Balance" name="openingBalance"    value={data.openingBalance}    isEditing={isEditing} onChange={handleInputChange} />
                       <Detail label="Date Added"      name="dateAdded"         value={data.dateAdded}         isEditing={isEditing} onChange={handleInputChange} />

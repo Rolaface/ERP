@@ -212,14 +212,10 @@ export const generateInvoicePDF = async (
 
   const detailLines: string[] = (
     [
-      [
-        company?.tpin ? `TPIN: ${company.tpin}` : null,
-        company?.contactInfo?.companyPhone
-          ? `  Phone: ${company.contactInfo.companyPhone}`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(""),
+      company?.tpin ? `TPIN / TAX ID: ${company.tpin}` : null,
+      company?.contactInfo?.companyPhone
+        ? `Phone: ${company.contactInfo.companyPhone}`
+        : null,
       company?.contactInfo?.companyEmail
         ? `Email: ${company.contactInfo.companyEmail}`
         : null,
@@ -561,7 +557,7 @@ export const generateInvoicePDF = async (
 
     ["Total Discount", money(totalDisc, cur), "discount"],
     ["Taxable Amount", money(taxable, cur), "normal"],
-    ["VAT Total", money(vat, cur), "tax"],
+    ["Tax Total", money(vat, cur), "tax"],
     ["Grand Total", money(finalNet, cur), "grand"],
   ];
 
