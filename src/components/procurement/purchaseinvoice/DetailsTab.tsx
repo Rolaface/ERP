@@ -21,11 +21,11 @@ interface DetailsTabProps {
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
   getCurrencySymbol: () => string;
-  poLoading: boolean; 
+  poLoading: boolean;
   poList: any[];
   onPOSelect: (po: any) => void;
   usePO: boolean;
-onTogglePO: (checked: boolean) => void;
+  onTogglePO: (checked: boolean) => void;
 }
 
 export const DetailsTab = ({
@@ -41,7 +41,7 @@ export const DetailsTab = ({
   poList,
   onPOSelect,
   usePO,
-onTogglePO,
+  onTogglePO,
 }: DetailsTabProps) => {
   const symbol = getCurrencySymbol();
 
@@ -49,7 +49,7 @@ onTogglePO,
   const [page, setPage] = useState(0);
 
   // UI state to toggle between PO selection and manual input
-  
+
 
   useEffect(() => {
     const newPage = Math.floor((items.length - 1) / ITEMS_PER_PAGE);
@@ -62,7 +62,7 @@ onTogglePO,
   );
 
   return (
-    <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
+    <div className="flex flex-col gap-4 max-h-screen overflow-auto  bg-app text-main">
 
       {/* ── Top fields ── */}
       <div className="bg-app">
@@ -73,40 +73,43 @@ onTogglePO,
           </div>
 
           {/* PO Number Logic: Checkbox + Conditional Field */}
-          <div className="w-[160px] flex flex-col gap-1">
-            <label className="flex items-center gap-2 text-[11px] font-medium text-muted cursor-pointer mb-1">
-              <input 
-                type="checkbox" 
-                className="w-3.5 h-3.5 accent-primary" 
-                checked={usePO}
-               onChange={(e) => onTogglePO(e.target.checked)}
-              />
-              Link PO Number
-            </label>
-            {usePO ? (
-              <ModalSelect
-                label=""
-                name="poNumber"
-                value={form.poNumber}
-                placeholder="Select PO"
-                options={(poList || []).map((po) => ({ label: po.poId, value: po.poId }))}
-                onChange={(e) => {
-                  const selected = poList.find((p) => p.poId === e.target.value);
-                  if (selected) onPOSelect(selected);
-                }}
-              />
-            ) : (
-              <ModalInput
-                label=""
-                name="poNumber"
-                placeholder="Manual PO No."
-                value={form.poNumber}
-                onChange={onFormChange}
-              />
-            )}
-          </div>
+          <div className="w-[160px] flex items-end gap-2">
+  <input
+    type="checkbox"
+    className="w-3.5 h-3.5 accent-primary mb-[6px]"
+    checked={usePO}
+    onChange={(e) => onTogglePO(e.target.checked)}
+  />
 
-          <div className="w-[135px]">
+  <div className="flex-1">
+    {usePO ? (
+      <ModalSelect
+        label=""
+        name="poNumber"
+        value={form.poNumber}
+        placeholder="Select PO"
+        options={(poList || []).map((po) => ({
+          label: po.poId,
+          value: po.poId,
+        }))}
+        onChange={(e) => {
+          const selected = poList.find((p) => p.poId === e.target.value);
+          if (selected) onPOSelect(selected);
+        }}
+      />
+    ) : (
+      <ModalInput
+        label=""
+        name="poNumber"
+        placeholder="PO No."
+        value={form.poNumber}
+        onChange={onFormChange}
+      />
+    )}
+  </div>
+</div>
+
+          <div className="w-[135px] ml-2">
             <span className="block h-5"></span> {/* Spacer for alignment */}
             <ModalInput
               label="Supplier Invoice No"
@@ -117,11 +120,11 @@ onTogglePO,
             />
           </div>
 
-          <div className="w-[90px]">
+          <div className="w-[100px] ml-2">
             <ModalInput label="Date" type="date" name="date" value={form.date} onChange={onFormChange} required />
           </div>
 
-          <div className="w-[110px]">
+          <div className="w-[110px] ml-4">
             <ModalSelect
               label="Status"
               name="status"
@@ -140,15 +143,15 @@ onTogglePO,
             />
           </div>
 
-          <div className="w-[100px]">
+          <div className="w-[100px] ml-3">
             <ModalInput label="Cost Center" name="costCenter" value={form.costCenter} disabled />
           </div>
 
-          <div className="w-[100px]">
+          <div className="w-[100px] ml-3">
             <ModalInput label="Project" name="project" value={form.project} disabled />
           </div>
 
-          <div className="w-[120px]">
+          <div className="w-[120px] ml-3">
             <ModalSelect
               label="Transaction Progress"
               name="transactionProgress"
@@ -195,25 +198,25 @@ onTogglePO,
             <h3 className="text-sm font-semibold text-main">Order Items</h3>
           </div>
 
-          <table className="w-full border-collapse text-[10px]">
+          <table className="w-full border-collapse text-[10px] table-fixed">
             <thead>
-              <tr className="border-b border-theme text-left text-muted font-medium text-[11px]">
-                <th className="px-2 py-1 w-[25px]">#</th>
-                <th className="px-2 py-1 w-[130px]">Item</th>
-                <th className="px-2 py-1 w-[140px]">Description</th>
-                <th className="px-2 py-1 w-[115px]">
+              <tr className="border-b border-theme">
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">#</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">Item</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[76px]">Description</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
                   Packing
                   <span className="ml-1 text-[9px] font-normal text-muted/60">(unit × size)</span>
                 </th>
-                <th className="px-2 py-1 w-[110px]">Batch No</th>
-                <th className="px-2 py-1 w-[55px]">Qty</th>
-                <th className="px-2 py-1 w-[90px]">Mfg Date</th>
-                <th className="px-2 py-1 w-[90px]">Expiry Date</th>
-                <th className="px-2 py-1 w-[70px]">Unit Price</th>
-                <th className="px-2 py-1 w-[60px]">Dis (%)</th>
-                <th className="px-2 py-1 w-[60px]">Tax</th>
-                <th className="px-2 py-1 w-[60px]">Tax Code</th>
-                <th className="px-2 py-1 w-[80px] text-right">Amount</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px]">Batch No</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">Qty</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">Mfg Date</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">Expiry Date</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">Unit Price</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Dis (%)</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Tax</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px]">Tax Code</th>
+                <th className="px-2 py-1  text-muted font-medium text-[11px] w-[80px] text-right">Amount</th>
                 <th className="w-[30px]" />
               </tr>
             </thead>
@@ -230,132 +233,135 @@ onTogglePO,
                     <td className="px-2 py-1 text-[10px]">{i + 1}</td>
 
                     {/* ITEM */}
-                    <td className="px-0.5 py-1 min-w-[130px]">
+                    <td className="px-2 py-1">
+                       <div className="w-[125px]">
                       <POItemSelect
                         value={it.itemName}
                         selectedId={it.itemCode}
                         onChange={(item: any) => onItemSelect(item.id, i)}
                       />
+                      </div>
                     </td>
 
                     {/* DESCRIPTION */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-2 py-1">
                       <input
                         name="description"
                         value={it.description || ""}
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-full h-[26px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[70px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </td>
 
                     {/* PACKING */}
-                    <td className="px-0.5 py-1">
-                      <div className="flex items-center gap-1">
+                    <td className="px-2 py-1">
+                      <div className="flex items-center justify-center gap-1">
                         <input
                           type="number"
                           name="packingUnit"
                           value={it.packingUnit || ""}
                           onChange={(e) => onItemChange(e, i)}
-                          placeholder="1"
-                          min={1}
-                          className="w-[46px] h-[26px] rounded-md border border-theme bg-card text-main text-center text-[11px] px-1 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center"
                         />
-                        <span className="text-muted text-[10px] font-bold select-none">×</span>
+
+
+                        <span className="text-muted text-[10px] font-bold">×</span>
+
                         <input
                           type="number"
                           name="packingSize"
                           value={it.packingSize || ""}
                           onChange={(e) => onItemChange(e, i)}
-                          placeholder="1"
-                          min={1}
-                          className="w-[46px] h-[26px] rounded-md border border-theme bg-card text-main text-center text-[11px] px-1 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center"
                         />
                       </div>
                     </td>
 
                     {/* BATCH */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-2 py-1">
                       <input
                         name="batchNo"
                         value={it.batchNo || ""}
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-full h-[26px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[50px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </td>
 
                     {/* QTY */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-2 py-1">
                       <input
                         type="number"
                         name="quantity"
                         value={it.quantity}
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-[50px] h-[26px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[75px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                       />
                     </td>
 
                     {/* MFG DATE */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-2 py-1">
                       <input
                         type="date"
                         name="mfgDate"
                         value={it.mfgDate || ""}
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-[90px] h-[26px] py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[90px] py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </td>
 
                     {/* EXPIRY DATE */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-2 py-1">
                       <input
                         type="date"
                         name="expDate"
                         value={it.expDate || ""}
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-[90px] h-[26px] py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[90px] py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </td>
 
                     {/* RATE */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-2 py-1">
                       <input
                         type="number"
                         name="rate"
                         value={it.rate}
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-[65px] h-[26px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[65px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                       />
                     </td>
 
                     {/* DISCOUNT */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-2 py-1">
                       <input
                         type="number"
                         name="discount"
                         value={it.discount || 0}
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-[55px] h-[26px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        min="0"
+                        className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </td>
 
                     {/* TAX */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-2 py-1">
                       <input
                         type="number"
                         name="vatRate"
                         value={it.vatRate}
+                        min="0"
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-[55px] h-[26px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </td>
 
                     {/* TAX CODE */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-2 py-1">
                       <input
                         name="vatCd"
                         value={it.vatCd || ""}
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-[55px] h-[26px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[50px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </td>
 
