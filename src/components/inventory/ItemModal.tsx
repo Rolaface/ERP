@@ -54,7 +54,11 @@ const DynamicFieldWrapper: React.FC<{
     <style>{`
 
 .dynamic-field-wrap label > span:first-child {
-  color: var(--text-muted);
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  color: rgb(107 114 128) !important;
 }
       .dynamic-field-wrap input,
       .dynamic-field-wrap select,
@@ -328,11 +332,11 @@ const ItemModal: React.FC<{
           </div>
         </div>
 
-        {/* ── Tab content ─────────────────────────────────────────────── */}
+        {/* ── Tab content  */}
         <section className="flex-1 overflow-y-auto bg-app">
           <div className="p-5 max-w-full">
 
-            {/* ══════════════ ITEM DETAILS TAB ══════════════ */}
+            {/*  ITEM DETAILS TAB  */}
             {activeTab === "details" && (
               <>
 
@@ -361,11 +365,11 @@ const ItemModal: React.FC<{
                       return (
                         <div
                           key="uom-svc-ins-sku"
-                          className="col-span-3 grid grid-cols-[90px_140px_160px_180px_80px_80px_90px] gap-3 items-end"
+                          className="col-span-3 grid grid-cols-[120px_140px_160px_180px_80px_80px_90px] gap-3 items-end"
                         >
 
                           {/* Packing */}
-                          <DynamicFieldWrapper className="max-w-[90px]">
+                          <DynamicFieldWrapper className="w-[120px]">
                             <div className="flex flex-col gap-0.5">
                               <FieldLabel label="Packing Unit" />
                               <div className="flex items-center gap-1 h-8">
@@ -376,7 +380,7 @@ const ItemModal: React.FC<{
                                   onChange={handleForm}
                                   placeholder="1"
                                   min={1}
-                                  className="w-10 h-8 rounded-md border border-theme bg-card text-main text-center text-sm px-1
+                                  className="w-15 h-8 rounded-md border border-theme bg-card text-main  text-sm px-1
                                 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                                 />
                                 <span className="text-muted text-sm font-bold">×</span>
@@ -387,7 +391,7 @@ const ItemModal: React.FC<{
                                   onChange={handleForm}
                                   placeholder="1"
                                   min={1}
-                                  className="w-10 h-8 rounded-md border border-theme bg-card text-main text-center text-sm px-1
+                                  className="w-15 h-8 rounded-md border border-theme bg-card text-main text-sm px-1
                                   focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                                 />
                               </div>
@@ -522,7 +526,7 @@ const ItemModal: React.FC<{
                       type="number"
                       value={form.sellingPrice || ""}
                       onChange={handleForm}
-                      placeholder="0.00"
+                      className="no-spinner"
                     />
                   </div>
 
@@ -545,6 +549,7 @@ const ItemModal: React.FC<{
                       value={form.buyingPrice || ""}
                       onChange={handleForm}
                       placeholder="0.00"
+                      className="no-spinner"
                     />
                   </div>
 
@@ -584,7 +589,7 @@ const ItemModal: React.FC<{
               </>
             )}
 
-            {/* ══════════════ TAX DETAILS TAB ══════════════ */}
+            {/*  TAX DETAILS TAB  */}
             {activeTab === "taxDetails" && (
               <>
 
@@ -654,6 +659,7 @@ const ItemModal: React.FC<{
                         value={form.taxPerct || ""}
                         onChange={handleForm}
                         placeholder="12"
+                         min="0"
                         className={[
                           "h-8 w-full rounded-md border border-theme text-sm px-2.5 pr-7",
                           "focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary",
@@ -698,7 +704,7 @@ const ItemModal: React.FC<{
               </>
             )}
 
-            {/* ══════════════ INVENTORY DETAILS TAB ══════════════ */}
+            {/*  INVENTORY DETAILS TAB  */}
             {activeTab === "inventoryDetails" && (
               <>
 
@@ -726,6 +732,7 @@ const ItemModal: React.FC<{
                             value={form[dim] || ""}
                             onChange={handleForm}
                             placeholder={["L", "W", "H"][i]}
+                             min="0"
                             className="w-10 h-8 rounded-md border border-theme bg-card text-main text-center text-sm px-1
                               focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                           />
@@ -753,6 +760,7 @@ const ItemModal: React.FC<{
                       <input
                         type="number"
                         name="weight"
+                         min="0"
                         value={form.weight || ""}
                         onChange={handleForm}
                         placeholder="0"
