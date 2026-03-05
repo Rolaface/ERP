@@ -11,7 +11,6 @@ import {
   User,
 } from "lucide-react";
 import { getEmployeeById } from "../../../api/employeeapi";
-import { calculateZmPayrollFromGross } from "./util";
 import { useAssignedSalaryStructure } from "../../../hooks/useAssignedSalaryStructure";
 import { toSalaryStructureMoneyRows } from "../../../utils/salaryStructureDisplay";
 
@@ -183,18 +182,6 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
     return Number(fromStructure ?? 0) || 0;
   }, [data, payrollInfo, salaryStructureDetail]);
 
-  const statutoryCalc = useMemo(() => {
-    const rates = {
-      napsaEmployeeRate: statutory?.napsaEmployeeRate,
-      napsaEmployerRate: statutory?.napsaEmployerRate,
-      nhimaRate: statutory?.nhimaRate,
-    };
-
-    return calculateZmPayrollFromGross(grossSalaryForCalc, {
-      rates,
-    });
-  }, [grossSalaryForCalc, statutory]);
-
   const profileInfo = useMemo(
     () => ({ ...identityInfo, ...personalInfo, ...contactInfo }),
     [identityInfo, personalInfo, contactInfo],
@@ -350,12 +337,13 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
       return structureDeductionRows.reduce((s: number, r: any) => s + (Number(r?.amount ?? 0) || 0), 0);
     }
 
+    // Use statutory deductions from payroll info (calculated by backend)
     return (
-      (Number(statutoryCalc?.statutory?.napsaEmployee ?? 0) || 0) +
-      (Number(statutoryCalc?.statutory?.nhima ?? 0) || 0) +
-      (Number(statutoryCalc?.statutory?.paye ?? 0) || 0)
+      (Number(statutory?.napsaEmployee ?? 0) || 0) +
+      (Number(statutory?.nhima ?? 0) || 0) +
+      (Number(statutory?.paye ?? 0) || 0)
     );
-  }, [hasStructureDeductions, statutoryCalc, structureDeductionRows]);
+  }, [hasStructureDeductions, statutory, structureDeductionRows]);
 
   const netSalary = useMemo(() => {
     return (Number(totalEarnings ?? 0) || 0) - (Number(totalDeductions ?? 0) || 0);
@@ -599,33 +587,30 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({ employeeId, o
                             [
                               {
                                 label: "Napsa Employee",
-                                rate: statutoryCalc?.rates?.napsaEmployeeRate,
-                                amount: statutoryCalc?.statutory?.napsaEmployee,
+                                amount: statutory?.napsaEmployee,
                               },
                               {
                                 label: "Napsa Employer",
-                                rate: statutoryCalc?.rates?.napsaEmployerRate,
-                                amount: statutoryCalc?.statutory?.napsaEmployer,
+                                amount: statutory?.napsaEmployer,
                               },
                               {
                                 label: "Nhima",
-                                rate: statutoryCalc?.rates?.nhimaRate,
-                                amount: statutoryCalc?.statutory?.nhima,
+                                amount: statutory?.nhima,
                               },
                               {
                                 label: "Paye",
-                                rate: null,
-                                amount: statutoryCalc?.statutory?.paye,
+                                amount: statutory?.paye,
                               },
-                            ].map((r) => (
-                              <div key={r.label} className="flex justify-between py-2.5 border-b border-border/50">
-                                <span className="text-main">{r.label}</span>
-                                <span className="font-medium text-main tabular-nums">
-                                  {r.rate === null || r.rate === undefined ? "" : `${Number(r.rate)}% • `}
-                                  {currency} {Number(r.amount ?? 0).toLocaleString()}
-                                </span>
-                              </div>
-                            ))
+                            ]
+                              .filter((r) => (r.amount ?? 0) > 0)
+                              .map((r) => (
+                                <div key={r.label} className="flex justify-between py-2.5 border-b border-border/50">
+                                  <span className="text-main">{r.label}</span>
+                                  <span className="font-medium text-main tabular-nums">
+                                    {currency} {Number(r.amount ?? 0).toLocaleString()}
+                                  </span>
+                                </div>
+                              ))
                           )}
                           <div className="flex justify-between py-3 font-bold mt-2">
                             <span className="text-main">Total Deductions</span>

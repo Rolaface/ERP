@@ -153,12 +153,12 @@ export default function SalaryStructureAssignmentTab({
 
     setLoading(true);
     try {
-      const basicNum = Number(form.basic);
+      const basicNum = Number(form.basic) || 0;
       if (isEditing && editingAssignment?.name) {
         await replaceSalaryStructureAssignment({
           name: String(editingAssignment.name).trim(),
           salary_structure: form.salary_structure.trim(),
-          basic: Number.isFinite(basicNum) ? basicNum : undefined,
+          basic: Number.isFinite(basicNum) ? basicNum : 0,
         });
         toast.success("Salary structure assignment updated");
       } else {

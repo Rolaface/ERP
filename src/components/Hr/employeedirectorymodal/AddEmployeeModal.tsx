@@ -299,7 +299,7 @@ const [step, setStep] = useState<"verification" | "form">(
       TpinId: editData.identityInfo?.tpin || "",
 
       // ===== SALARY COMPONENTS =====
-      basicSalary: editData.payrollInfo?.salaryBreakdown?.BasicSalary || "",
+      basicSalary: editData.payrollInfo?.salaryBreakdown?.BasicSalary || editData.payrollInfo?.salaryBreakdown?.basic || editData.basic || "",
       housingAllowance:
         editData.payrollInfo?.salaryBreakdown?.HousingAllowance || "",
       mealAllowance: editData.payrollInfo?.salaryBreakdown?.MealAllowance || "",
@@ -513,11 +513,6 @@ const [step, setStep] = useState<"verification" | "form">(
   const buildPayload = () => {
     const basicSalaryNum = Number(formData.basicSalary) || 0;
 
-    const housingAmount = Number(formData.housingAllowance) || 0;
-    const mealAmount = Number(formData.mealAllowance) || 0;
-    const transportAmount = Number(formData.transportAllowance) || 0;
-    const otherAmount = Number(formData.otherAllowances) || 0;
-
     const payload: any = {
       FirstName: formData.firstName,
       LastName: formData.lastName,
@@ -561,13 +556,8 @@ const [step, setStep] = useState<"verification" | "form">(
       workAddress: formData.workAddress,
       shift: formData.shift,
 
-      // Salary Components - ALWAYS send final amounts
-      BasicSalary: basicSalaryNum,
-      HousingAllowance: housingAmount,
-      MealAllowance: mealAmount,
-      TransportAllowance: transportAmount,
-      otherAllowances: otherAmount,
-      GrossSalary: Number(formData.grossSalary) || 0,
+      // Salary Structure + Basic Amount
+      BasicAmount: basicSalaryNum,
 
       // Payroll
       currency: formData.currency,
@@ -638,7 +628,9 @@ const [step, setStep] = useState<"verification" | "form">(
       const emp = String(employeeCode ?? "").trim();
       if (!emp || !selectedSalaryStructure) return;
 
+      // Ensure we have a valid basic salary number
       const basicNum = Number(formData.basicSalary) || 0;
+      if (!Number.isFinite(basicNum) || basicNum <= 0) return;
 
       try {
         const list = await getSalaryStructureAssignments({ employee: emp });

@@ -6,9 +6,6 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
-  calculateZmPayrollFromGross
-} from "../payroll-system/util";
-import {
   createSalaryStructure,
   createSalaryComponent,
   getSalaryComponents,
@@ -979,10 +976,6 @@ function StructureModal({
     return arr;
   }, [earnings]);
 
-  const statutoryCalc = useMemo(() => {
-    return calculateZmPayrollFromGross(totalEarnings);
-  }, [totalEarnings]);
-
   const deductionsWithEffectiveAmounts = useMemo(() => {
     return deductions.map((c) => {
       const rawAmt = Number(c.amount || 0) || 0;
@@ -992,12 +985,14 @@ function StructureModal({
         return { ...c, effectiveAmount: rawAmt, label: String(c.component || ""), bucket: "employee" as const };
       }
 
+      // For calculated statutory components (NAPSA, NHIMA, PAYE), show 0 in preview
+      // Actual amounts are calculated by backend when applied to employees
       if (key.includes("napsa")) {
         const side = key.includes("employer") ? "Employer" : key.includes("employee") ? "Employee" : "";
         return {
           ...c,
-          effectiveAmount: side === "Employer" ? statutoryCalc.statutory.napsaEmployer : statutoryCalc.statutory.napsaEmployee,
-          label: `NAPSA${side ? ` ${side}` : ""} (${statutoryCalc.rates.napsaEmployeeRate}%)`,
+          effectiveAmount: 0,
+          label: `NAPSA${side ? ` ${side}` : ""} (Calculated)`,
           bucket: side === "Employer" ? ("employer" as const) : ("employee" as const),
         };
       }
@@ -1006,8 +1001,8 @@ function StructureModal({
         const side = key.includes("employer") ? "Employer" : key.includes("employee") ? "Employee" : "";
         return {
           ...c,
-          effectiveAmount: statutoryCalc.statutory.nhima,
-          label: `NHIMA${side ? ` ${side}` : ""} (${statutoryCalc.rates.nhimaRate}%)`,
+          effectiveAmount: 0,
+          label: `NHIMA${side ? ` ${side}` : ""} (Calculated)`,
           bucket: side === "Employer" ? ("employer" as const) : ("employee" as const),
         };
       }
@@ -1015,15 +1010,15 @@ function StructureModal({
       if (key.includes("income tax") || key.includes("paye") || key.includes("payee")) {
         return {
           ...c,
-          effectiveAmount: statutoryCalc.statutory.paye,
-          label: "PAYE",
+          effectiveAmount: 0,
+          label: "PAYE (Calculated)",
           bucket: "employee" as const,
         };
       }
 
       return { ...c, effectiveAmount: 0, label: String(c.component || ""), bucket: "employee" as const };
     });
-  }, [deductions, statutoryCalc]);
+  }, [deductions]);
 
   const employeeDeductionsForSummary = useMemo(() => {
     return deductionsWithEffectiveAmounts.filter((c: any) => String(c?.bucket ?? "employee") !== "employer");
@@ -1196,13 +1191,8 @@ function StructureModal({
                             (key.includes("income tax") || key.includes("paye") || key.includes("payee"));
                           const isStatutory = isNapsa || isNhima || isPaye;
 
-                          const computedAmount = isNapsa
-                            ? statutoryCalc.statutory.napsaEmployee
-                            : isNhima
-                              ? statutoryCalc.statutory.nhima
-                              : isPaye
-                                ? statutoryCalc.statutory.paye
-                                : Number(component.amount || 0) || 0;
+                          // For statutory components, show entered amount or 0 (calculated by backend at runtime)
+                          const computedAmount = isStatutory ? 0 : Number(component.amount || 0) || 0;
 
                           const displayAmount = computedAmount === 0 ? "" : computedAmount;
 
@@ -1405,14 +1395,14 @@ function StructureModal({
                     return {
                       ...c,
                       component: normalizedName,
-                      amount: isEmployer ? statutoryCalc.statutory.napsaEmployer : statutoryCalc.statutory.napsaEmployee,
+                      amount: 0, // Calculated by backend at runtime
                     };
                   }
                   if (isNhima) {
-                    return { ...c, component: normalizedName, amount: statutoryCalc.statutory.nhima };
+                    return { ...c, component: normalizedName, amount: 0 }; // Calculated by backend at runtime
                   }
                   if (isPaye) {
-                    return { ...c, component: normalizedName, amount: statutoryCalc.statutory.paye };
+                    return { ...c, component: normalizedName, amount: 0 }; // Calculated by backend at runtime
                   }
 
                   return { ...c, component: normalizedName };
