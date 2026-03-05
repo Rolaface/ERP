@@ -271,7 +271,10 @@ setForm((prev) => ({
     const { name, value } = e.target;
     const isNum = ["quantity", "rate"].includes(name);
     const items = [...form.items];
-    items[idx] = { ...items[idx], [name]: isNum ? Number(value) : value };
+   items[idx] = {
+  ...items[idx],
+  [name]: isNum ? (value === "" ? "" : Number(value)) : value,
+};
     setForm((p) => ({ ...p, items }));
   };
 
@@ -294,7 +297,6 @@ setForm((prev) => ({
       return;
     }
     setForm((p) => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
-    toast.success("Item removed");
   };
 
   const handleTaxRowChange = (idx: number, key: keyof TaxRow, value: any) => {

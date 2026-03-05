@@ -72,7 +72,7 @@ export const DetailsTab = ({
               onChange={onSupplierChange}
             />
           </div>
-          
+
           <div className="w-[120px]">
             <ModalInput
               label="Date"
@@ -136,16 +136,16 @@ export const DetailsTab = ({
                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">#</th>
                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">Item Name</th>
                   {/* Packing column — wider for comfort */}
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[120px]">
+                  <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[120px]">
                     Packing
                     <span className="ml-1 text-[9px] text-muted/60 font-normal">(unit × size)</span>
                   </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">Required By</th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">Qty</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">Required By</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">Qty</th>
                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">UOM</th>
                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">Rate</th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">Tax(%)</th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Tax Code</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Tax(%)</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px]">Tax Code</th>
                   <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">Amount</th>
                   <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[35px]">-</th>
                 </tr>
@@ -160,64 +160,64 @@ export const DetailsTab = ({
 
                   return (
                     <tr key={i} className="border-b border-theme bg-card row-hover">
-                      <td className="px-3 py-2 text-[10px]">{i + 1}</td>
+                      <td className="px-2 py-1 text-[10px]">{i + 1}</td>
 
-                      <td className="px-0.5 py-1">
+                      <td className="px-2 py-1">
+                         <div className="w-[153px]">
                         <POItemSelect
                           value={it.itemName}
                           selectedId={it.itemCode}
                           onChange={(item: any) => onItemSelect(item.id, i)}
                         />
+                        </div>
                       </td>
 
                       {/* PACKING */}
-                      <td className="px-0.5 py-1">
-                        <div className="flex items-center gap-1">
+                      <td className="px-2 py-1">
+                        <div className="flex items-center justify-center gap-1">
                           <input
                             type="number"
                             name="packingUnit"
                             value={it.packingUnit || ""}
                             onChange={(e) => onItemChange(e, i)}
-                            placeholder="1"
-                            min={1}
-                            className="w-[46px] h-[26px] rounded-md border border-theme bg-card text-main text-center text-[11px] px-1 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center"
                           />
-                          <span className="text-muted text-[10px] font-bold select-none">×</span>
+
+                          <span className="text-muted text-[10px] font-bold">×</span>
+
                           <input
                             type="number"
                             name="packingSize"
                             value={it.packingSize || ""}
                             onChange={(e) => onItemChange(e, i)}
-                            placeholder="1"
-                            min={1}
-                            className="w-[46px] h-[26px] rounded-md border border-theme bg-card text-main text-center text-[11px] px-1 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center"
                           />
                         </div>
                       </td>
 
-                      <td className="px-0.5 py-1">
+                      <td className="px-2 py-1">
                         <input
                           type="date"
-                          className="w-full py-1 px-2 border border-theme rounded bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary text-[10px]"
+                          className="w-[94px] py-1 px-2 border border-theme rounded bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary text-[10px]"
                           name="requiredBy"
                           value={it.requiredBy}
                           onChange={(e) => onItemChange(e, i)}
                         />
                       </td>
 
-                      <td className="px-0.5 py-1">
+                      <td className="px-2 py-1">
                         <input
                           type="number"
-                          className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-[80px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                           name="quantity"
                           value={it.quantity}
                           onChange={(e) => onItemChange(e, i)}
                         />
                       </td>
 
-                      <td className="px-0.5 py-1">
+                      <td className="px-2 py-1">
                         <input
-                          className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-[60px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                           name="uom"
                           value={it.uom}
                           onChange={(e) => onItemChange(e, i)}
@@ -225,42 +225,43 @@ export const DetailsTab = ({
                         />
                       </td>
 
-                      <td className="px-0.5 py-1">
+                      <td className="px-2 py-1">
                         <input
                           type="number"
-                          className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                           name="rate"
                           value={it.rate}
                           onChange={(e) => onItemChange(e, i)}
                         />
                       </td>
 
-                      <td className="px-0.5 py-1">
+                      <td className="px-2 py-1">
                         <input
                           type="number"
-                          className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-[43px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary "
                           name="vatRate"
                           value={it.vatRate}
+                           min="0"
                           onChange={(e) => onItemChange(e, i)}
                         />
                       </td>
 
-                      <td className="px-0.5 py-1">
+                      <td className="px-2 py-1">
                         <input
-                          className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-[46px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                           name="vatCd"
                           value={it.vatCd || ""}
                           onChange={(e) => onItemChange(e, i)}
                         />
                       </td>
 
-                      <td className="px-1 py-1.5 text-right">
+                      <td className="px-2 py-1 text-right">
                         <span className="text-[10px] font-medium text-main">
                           {symbol} {amount.toFixed(2)}
                         </span>
                       </td>
 
-                      <td className="px-1 py-1.5 text-center">
+                      <td className="px-2 py-1 text-center">
                         <button
                           type="button"
                           onClick={() => onRemoveItem(i)}

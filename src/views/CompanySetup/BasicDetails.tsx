@@ -63,8 +63,13 @@ interface InputFieldProps {
   placeholder?: string;
   colSpan?: number;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  options?: { label: string; value: string }[];
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
 }
+
+
 
 const InputField: React.FC<InputFieldProps> = ({
   label,
@@ -75,6 +80,7 @@ const InputField: React.FC<InputFieldProps> = ({
   placeholder = "",
   colSpan = 1,
   value,
+  options,
   onChange,
 }) => {
   const colClass = colSpan >= 2 ? "md:col-span-2" : "";
@@ -94,17 +100,35 @@ const InputField: React.FC<InputFieldProps> = ({
           <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-4 h-4 pointer-events-none z-10" />
         )}
 
-        <input
-          id={id}
-          type={type}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          required={required}
-          className={`w-full border border-theme rounded-lg ${
-            Icon ? "pl-10" : "pl-3.5"
-          } pr-3.5 py-2.5 text-sm focus:outline-none bg-card text-main`}
-        />
+        {options ? (
+          <select
+            id={id}
+            value={value}
+            onChange={onChange as any}
+            required={required}
+            className={`w-full border border-theme rounded-lg ${Icon ? "pl-10" : "pl-3.5"
+              } pr-3.5 py-2.5 text-sm focus:outline-none bg-card text-main`}
+          >
+            <option value="">Select {label}</option>
+
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            id={id}
+            type={type}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            required={required}
+            className={`w-full border border-theme rounded-lg ${Icon ? "pl-10" : "pl-3.5"
+              } pr-3.5 py-2.5 text-sm focus:outline-none bg-card text-main`}
+          />
+        )}
       </div>
     </div>
   );
@@ -312,10 +336,27 @@ const handleReset = async () => {
               )}
               {renderField("Company Type", "companyType", "registration", {
                 icon: FaBuilding,
+                options: [
+                  { label: "Private Limited", value: "PRIVATE_LIMITED" },
+                  { label: "Public Limited", value: "PUBLIC_LIMITED" },
+                  { label: "Partnership", value: "PARTNERSHIP" }
+                ],
               })}
-              {renderField("Company Status", "companyStatus", "registration")}
+              {renderField("Company Status", "companyStatus", "registration", {
+                options: [
+                  { label: "Active", value: "ACTIVE" },
+                  { label: "Inactive", value: "INACTIVE" }
+                ],
+              })}
               {renderField("Industry Type", "industryType", "registration", {
                 icon: FaIndustry,
+                options: [
+                  { label: "Manufacturing", value: "MANUFACTURING" },
+                  { label: "Retail", value: "RETAIL" },
+                  { label: "Wholesale", value: "WHOLESALE" },
+                  { label: "IT / Software", value: "IT_SOFTWARE" },
+                  { label: "Healthcare", value: "HEALTHCARE" },
+                ],
               })}
             </div>
           )}
