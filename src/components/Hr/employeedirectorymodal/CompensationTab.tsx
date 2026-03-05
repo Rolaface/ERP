@@ -30,6 +30,7 @@ const ZAMBIAN_BANKS = [
   "NEDBANK ZAMBIA",
   "ABSA BANK ZAMBIA",
   "CITIBANK ZAMBIA",
+  "INDO ZAMBIA BANK"
 ];
 
 // ─────────────────────────────────────────────────────────
@@ -83,7 +84,7 @@ const BankNameField: React.FC<BankNameFieldProps> = ({ value, onChange }) => {
     } else {
       setIsOther(false);
       setIsEditing(false);
-      onChange(bank);
+      onChange(String(bank ?? "").toUpperCase());
     }
     setOpen(false);
   };
@@ -181,7 +182,9 @@ const BankNameField: React.FC<BankNameFieldProps> = ({ value, onChange }) => {
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) =>
+            onChange(String(e.target.value ?? "").toUpperCase())
+          }
           onBlur={handleInputBlur}
           placeholder="Type bank name here..."
           autoFocus
@@ -579,7 +582,13 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                 <input
                   type="text"
                   value={formData[field] || ""}
-                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    handleInputChange(
+                      field,
+                      String(next ?? "").toUpperCase(),
+                    );
+                  }}
                   placeholder={placeholder}
                   className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20"
                 />
@@ -589,7 +598,12 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
             {/* Bank name — custom dropdown with manual fallback */}
             <BankNameField
               value={formData.bankName || ""}
-              onChange={(val) => handleInputChange("bankName", val)}
+              onChange={(val) =>
+                handleInputChange(
+                  "bankName",
+                  String(val ?? "").toUpperCase(),
+                )
+              }
             />
 
             {/* Branch Code */}
@@ -601,7 +615,10 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                 type="text"
                 value={formData.branchCode || ""}
                 onChange={(e) =>
-                  handleInputChange("branchCode", e.target.value)
+                  handleInputChange(
+                    "branchCode",
+                    String(e.target.value ?? "").toUpperCase(),
+                  )
                 }
                 placeholder="e.g., 027"
                 className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20"

@@ -21,6 +21,11 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
   const { companyCode } = useCompanySelection();
   const features = getEmployeeFeatures(companyCode);
 
+  const digitsOnly = (raw: string, maxLen: number): string =>
+    String(raw ?? "")
+      .replace(/\D/g, "")
+      .slice(0, maxLen);
+
   const formatNrc = (raw: string): string => {
     const digits = String(raw ?? "").replace(/\D/g, "").slice(0, 9);
     const part1 = digits.slice(0, 6);
@@ -82,8 +87,13 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
                 disabled={verifiedFields.socialSecurityNapsa}
                 placeholder="Enter SSN"
                 onChange={(e) =>
-                  handleInputChange("socialSecurityNapsa", e.target.value)
+                  handleInputChange(
+                    "socialSecurityNapsa",
+                    digitsOnly(e.target.value, 9),
+                  )
                 }
+                inputMode="numeric"
+                maxLength={9}
                 className={`w-full px-3 py-2 text-sm rounded-lg border
                   ${verifiedFields.socialSecurityNapsa
                     ? verifiedInputStyle
@@ -117,9 +127,13 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
               <input
                 type="text"
                 value={formData.tpinId}
-                onChange={(e) => handleInputChange("tpinId", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("tpinId", digitsOnly(e.target.value, 10))
+                }
                 placeholder="e.g., 10000000000"
                 required={features.statutoryFieldsRequired}
+                inputMode="numeric"
+                maxLength={10}
                 className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
@@ -141,7 +155,12 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
               value={formData.firstName}
               disabled={verifiedFields.firstName}
               placeholder="Enter first name"
-              onChange={(e) => handleInputChange("firstName", e.target.value)}
+              onChange={(e) =>
+                handleInputChange(
+                  "firstName",
+                  String(e.target.value ?? "").toUpperCase(),
+                )
+              }
               className={`w-full px-3 py-2 text-sm rounded-lg border
     ${
       verifiedFields.firstName
@@ -158,7 +177,12 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
               type="text"
               value={formData.otherNames}
               placeholder="Enter other names"
-              onChange={(e) => handleInputChange("otherNames", e.target.value)}
+              onChange={(e) =>
+                handleInputChange(
+                  "otherNames",
+                  String(e.target.value ?? "").toUpperCase(),
+                )
+              }
               className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
@@ -170,7 +194,12 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
               value={formData.lastName}
               disabled={verifiedFields.lastName}
               placeholder="Enter last name"
-              onChange={(e) => handleInputChange("lastName", e.target.value)}
+              onChange={(e) =>
+                handleInputChange(
+                  "lastName",
+                  String(e.target.value ?? "").toUpperCase(),
+                )
+              }
               className={`w-full px-3 py-2 text-sm rounded-lg border
     ${
       verifiedFields.lastName

@@ -146,7 +146,9 @@ const DepartmentField: React.FC<DepartmentFieldProps> = ({
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) =>
+            onChange(String(e.target.value ?? "").toUpperCase())
+          }
           onBlur={handleInputBlur}
           placeholder="Type department name here..."
           autoFocus
@@ -270,7 +272,12 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             <input
               type="text"
               value={formData.jobTitle}
-              onChange={(e) => handleInputChange("jobTitle", e.target.value)}
+              onChange={(e) =>
+                handleInputChange(
+                  "jobTitle",
+                  String(e.target.value ?? "").toUpperCase(),
+                )
+              }
               placeholder="e.g., Software Developer"
               className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg  focus:outline-none focus:border-primary  focus:ring-primary/20"
             />
@@ -419,7 +426,12 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
                 <input
                   type="text"
                   value={addressRows[index] ?? ""}
-                  onChange={(e) => handleAddressChange(index, e.target.value)}
+                  onChange={(e) =>
+                    handleAddressChange(
+                      index,
+                      String(e.target.value ?? "").toUpperCase(),
+                    )
+                  }
                   placeholder="Office Address"
                   className="flex-1 px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:border-primary focus:ring-primary/20"
                 />
@@ -428,7 +440,12 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
                 <input
                   type="text"
                   value={locationRows[index] ?? ""}
-                  onChange={(e) => handleLocationChange(index, e.target.value)}
+                  onChange={(e) =>
+                    handleLocationChange(
+                      index,
+                      String(e.target.value ?? "").toUpperCase(),
+                    )
+                  }
                   placeholder="Office Location"
                   className="flex-1 px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:border-primary focus:ring-primary/20"
                 />
