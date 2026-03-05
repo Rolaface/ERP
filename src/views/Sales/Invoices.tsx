@@ -47,38 +47,38 @@ interface InvoiceTableProps {
 
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
-  // ── Data ─────────────────────────────────────────────────────────────────
+  // ── Data 
   const [invoices, setInvoices]       = useState<InvoiceSummary[]>([]);
   const [loading, setLoading]         = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [company, setCompany]         = useState<Company | null>(null);
 
-  // ── PDF preview (kept — do not remove) ───────────────────────────────────
+  // ── PDF preview (kept — do not remove) 
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [pdfUrl, setPdfUrl]                   = useState<string | null>(null);
   const [pdfOpen, setPdfOpen]                 = useState(false);
 
-  // ── Invoice details modal ─────────────────────────────────────────────────
+  // ── Invoice details modal 
   const [invoiceDetailsOpen, setInvoiceDetailsOpen] = useState(false);
   const [invoiceDetailsId, setInvoiceDetailsId]     = useState<string | null>(null);
 
-  // ── Pagination (server) ──────────────────────────────────────────────────
+  // ── Pagination (server) 
   const [page, setPage]           = useState(1);
   const [pageSize, setPageSize]   = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Search (server) ──────────────────────────────────────────────────────
+  // ── Search (server) 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ── Sort (server) — always store column key ──────────────────────────────
-  const [sortBy, setSortBy]       = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // ── Reset page when search changes ───────────────────────────────────────
+  const [sortBy, setSortBy]       = useState("invoiceNumber");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // ── Reset page when search changes 
   useEffect(() => { setPage(1); }, [searchTerm]);
 
-  // ── Fetch company once ────────────────────────────────────────────────────
+  // ── Fetch company once 
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
@@ -87,7 +87,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       .catch(() => console.error("Failed to load company data"));
   }, []);
 
-  // ── Fetch invoices ────────────────────────────────────────────────────────
+  // ── Fetch invoices 
   const fetchInvoices = async () => {
     try {
       setLoading(true);
@@ -133,7 +133,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     sortBy: string;
     sortOrder: "asc" | "desc";
   }) => {
-    setSortBy(colKey);   // store column key, not a backend alias
+    setSortBy(colKey); 
     setSortOrder(order);
     setPage(1);
   };

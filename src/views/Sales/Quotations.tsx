@@ -57,29 +57,28 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
   const [initialLoad, setInitialLoad] = useState(true);
   const [company, setCompany]         = useState<any>(null);
 
-  // ── Pagination state (server) ────────────────────────────────────────────
+  // ── Pagination state (server) 
   const [page, setPage]           = useState(1);
   const [pageSize, setPageSize]   = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Search state (server) ────────────────────────────────────────────────
+  // ── Search state (server) 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ── Sort state (server) — always store column key, not backend field ─────
-  const [sortBy, setSortBy]       = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState("quotationNumber");
+const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // ── Filter state (server) ────────────────────────────────────────────────
+  // ── Filter state (server) 
   const [status]   = useState("");
   const [fromDate] = useState("");
   const [toDate]   = useState("");
 
-  // ── Modal state ──────────────────────────────────────────────────────────
+  // ── Modal state 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsId, setDetailsId]     = useState<string | null>(null);
 
-  // ── Reset page when search changes ──────────────────────────────────────
+  // ── Reset page when search changes 
   useEffect(() => { setPage(1); }, [searchTerm]);
   //_____quotation details modal state _____
   const [selectedQuotation, setSelectedQuotation] = useState<any>(null);
@@ -87,7 +86,7 @@ const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 const [pdfOpen, setPdfOpen] = useState(false);
 
 
-  // ── Fetch company once ───────────────────────────────────────────────────
+  // ── Fetch company once 
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
@@ -106,7 +105,7 @@ const [pdfOpen, setPdfOpen] = useState(false);
         status,
         fromDate,
         toDate,
-        sortBy:    SORT_FIELD_MAP[sortBy] || sortBy,  // ← map here, not in state
+        sortBy:    SORT_FIELD_MAP[sortBy] || sortBy,  
         sortOrder,
       });
 

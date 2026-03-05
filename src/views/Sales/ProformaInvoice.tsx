@@ -30,9 +30,9 @@ import InvoiceDetailsModal, {
 } from "./InvoiceDetailsModal";
 import PdfPreviewModal from "./PdfPreviewModal";
 
-// ---------------------------------------------------------------------------
+
 // Constants
-// ---------------------------------------------------------------------------
+
 
 type InvoiceStatus = "Draft" | "Rejected" | "Paid" | "Cancelled" | "Approved";
 
@@ -58,9 +58,9 @@ const SORT_FIELD_MAP: Record<string, string> = {
   status: "status",
 };
 
-// ---------------------------------------------------------------------------
+
 // Types
-// ---------------------------------------------------------------------------
+
 
 interface ProformaInvoiceTableProps {
   onAddProformaInvoice?: () => void;
@@ -68,46 +68,45 @@ interface ProformaInvoiceTableProps {
   refreshKey: number;
 }
 
-// ---------------------------------------------------------------------------
+
 // Component
-// ---------------------------------------------------------------------------
+
 
 const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   onAddProformaInvoice,
   refreshKey,
 }) => {
-  // ── Data ──────────────────────────────────────────────────────────────────
+  // ── Data 
   const [invoices, setInvoices] = useState<ProformaInvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [company, setCompany] = useState<any>(null);
 
-  // ── Pagination (server) ───────────────────────────────────────────────────
+  // ── Pagination (server) 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Search (server) ───────────────────────────────────────────────────────
+  // ── Search (server) 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ── Sort (server) — always store column key, map to backend at call site ──
-  const [sortBy, setSortBy] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // ── Modal ─────────────────────────────────────────────────────────────────
+  const [sortBy, setSortBy] = useState("proformaId");
+const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // ── Modal 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
-  // ── Reset page when search changes ───────────────────────────────────────
+  // ── Reset page when search changes 
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
-  //______________profroma invoice pdf viewer state ________________
   const [selectedProforma, setSelectedProforma] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
-  // ── Fetch company once ────────────────────────────────────────────────────
+  // ── Fetch company once 
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
