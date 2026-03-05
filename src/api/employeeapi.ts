@@ -39,6 +39,14 @@ export async function getEmployeeById(id: string): Promise<any> {
   return (resp.data?.data ?? resp.data) || null;
 }
 
+export async function getNapsaEmployeeById(id: string | number): Promise<any> {
+  const url = "/api/method/hrms.napsa_client.employee.api.get_employee";
+  const resp: AxiosResponse = await api.get(url, {
+    params: { id: String(id) },
+  });
+  return (resp.data?.data ?? resp.data) || null;
+}
+
 export async function createEmployee(payload: any): Promise<any> {
   const resp: AxiosResponse = await api.post(EmployeeAPI.create, payload);
   return resp.data;

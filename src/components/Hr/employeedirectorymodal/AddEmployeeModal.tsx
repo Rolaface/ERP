@@ -76,6 +76,12 @@ const DEFAULT_FORM_DATA = {
   otherAllowances: "",
   grossSalary: "",
 
+  employeeNapsa: "",
+  employeerNapsa: "",
+  employeeNhima: "",
+  employeerNhima: "",
+  payAsYouEarn: "",
+
   // Payroll
   currency: "ZMW",
   paymentFrequency: "Monthly",
@@ -309,6 +315,17 @@ const [step, setStep] = useState<"verification" | "form">(
       otherAllowances:
         editData.payrollInfo?.salaryBreakdown?.otherAllowances || "",
       grossSalary: editData.payrollInfo?.grossSalary || "",
+
+      employeeNapsa:
+        editData.payrollInfo?.statutoryDeductions?.EmployeeNapsa || "",
+      employeerNapsa:
+        editData.payrollInfo?.statutoryDeductions?.EmployeerNapsa || "",
+      employeeNhima:
+        editData.payrollInfo?.statutoryDeductions?.EmployeeNhima || "",
+      employeerNhima:
+        editData.payrollInfo?.statutoryDeductions?.EmployeerNhima || "",
+      payAsYouEarn:
+        editData.payrollInfo?.statutoryDeductions?.PayAsYouEarn || "",
 
       // ===== PAYROLL CONFIG =====
       currency: editData.payrollInfo?.currency || "ZMW",

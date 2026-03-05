@@ -10,6 +10,7 @@ import {
 import {
   getAllEmployees,
   getEmployeeById,
+  getNapsaEmployeeById,
   deleteEmployeeById,
 } from "../../../api/employeeapi";
 
@@ -45,11 +46,24 @@ const EmployeeDirectory: React.FC = () => {
     null,
   );
 
+  const fetchEmployee = async (id: string): Promise<any> => {
+    const base = await getEmployeeById(id);
+    const napsa = await getNapsaEmployeeById(id);
+    if (base && napsa) {
+      return {
+        ...base,
+        ...napsa,
+        payrollInfo: napsa.payrollInfo ?? base.payrollInfo,
+      };
+    }
+    return base ?? napsa;
+  };
+
   //function to handle view employee details
  const handleViewEmployee = async (id: string) => {
   try {
     showLoading("Loading Employee...");
-    const res = await getEmployeeById(id);
+    const res = await fetchEmployee(id);
     setSelectedEmployee(res);
     setViewMode("detail");
     closeSwal();
@@ -63,7 +77,7 @@ const EmployeeDirectory: React.FC = () => {
   const refreshSelectedEmployee = async () => {
     if (!selectedEmployee?.id) return;
 
-    const res = await getEmployeeById(selectedEmployee.id);
+    const res = await fetchEmployee(selectedEmployee.id);
     setSelectedEmployee(res);
   };
 
@@ -99,7 +113,7 @@ const handleEdit = async (id: string, e: React.MouseEvent) => {
   e.stopPropagation();
   try {
     showLoading("Fetching Employee...");
-    const res = await getEmployeeById(id);
+    const res = await fetchEmployee(id);
     setEditEmployee(res);
     setShowModal(true);
     closeSwal();
