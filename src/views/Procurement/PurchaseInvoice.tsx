@@ -21,13 +21,14 @@ import {
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { getPurchaseInvoiceById } from "../../api/procurement/PurchaseInvoiceApi";
-import {  FilterSelect} from "../../components/ui/modal/modalComponent";
+import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import { PurchaseInvoiceFilters } from "../../api/procurement/PurchaseInvoiceApi";
 import { generatePurchaseInvoicePDF } from "../../components/template/purchaseinvoicetemplete";
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
+import PurchaseInvoiceDetailsModal from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
 interface Purchaseinvoice {
   pId: string;
   supplier: string;
@@ -101,71 +102,73 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
-const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-const [pdfOpen, setPdfOpen] = useState(false);
-const [company, setCompany] = useState<any | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [invoiceDetailsOpen, setInvoiceDetailsOpen] = useState(false);
+  const [invoiceDetailsId, setInvoiceDetailsId] = useState<string | null>(null);
+  const [company, setCompany] = useState<any | null>(null);
 
   useEffect(() => {
-  const timer = setTimeout(() => {
-    setFilters((prev) => ({
-      ...prev,
-      search: searchTerm || undefined,
-    }));
-    setPage(1);
-  }, 600);
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({
+        ...prev,
+        search: searchTerm || undefined,
+      }));
+      setPage(1);
+    }, 600);
 
-  return () => clearTimeout(timer);
-}, [searchTerm]);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-useEffect(() => {
-  getCompanyById(COMPANY_ID)
-    .then((res) => {
-      if (res?.status_code === 200) {
-        setCompany(res.data);
-      }
-    })
-    .catch(() => console.error("Failed to load company"));
-}, []);
+  useEffect(() => {
+    getCompanyById(COMPANY_ID)
+      .then((res) => {
+        if (res?.status_code === 200) {
+          setCompany(res.data);
+        }
+      })
+      .catch(() => console.error("Failed to load company"));
+  }, []);
   //  FETCH ORDERS
   const fetchInvoice = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const res = await getPurchaseInvoices(page, pageSize, filters);
+      const res = await getPurchaseInvoices(page, pageSize, filters);
 
-   
-    if (!res?.data || res.data.length === 0) {
-      setOrders([]);        
-      setTotalItems(0);
-      setTotalPages(1);
-      return;
+
+      if (!res?.data || res.data.length === 0) {
+        setOrders([]);
+        setTotalItems(0);
+        setTotalPages(1);
+        return;
+      }
+
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total || 0);
+
+      const mappedInvoice: Purchaseinvoice[] = res.data.map((pi: any) => ({
+        pId: pi.pId,
+        supplier: pi.supplierName,
+        podate: pi.poDate,
+        deliveryDate: pi.deliveryDate,
+        amount: pi.grandTotal,
+        status: pi.status,
+        registrationType: pi.registrationType,
+      }));
+
+      setOrders(mappedInvoice);
+
+    } catch (err) {
+      setOrders([]);
+    } finally {
+      setLoading(false);
     }
-
-    setTotalPages(res.pagination?.total_pages || 1);
-    setTotalItems(res.pagination?.total || 0);
-
-    const mappedInvoice: Purchaseinvoice[] = res.data.map((pi: any) => ({
-      pId: pi.pId,
-      supplier: pi.supplierName,
-      podate: pi.poDate,
-      deliveryDate: pi.deliveryDate,
-      amount: pi.grandTotal,
-      status: pi.status,
-      registrationType: pi.registrationType,
-    }));
-
-    setOrders(mappedInvoice);
-
-  } catch (err) {
-    setOrders([]);   
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchInvoice();
-  }, [page, pageSize,filters]);
+  }, [page, pageSize, filters]);
 
   const handleView = async (invoice: Purchaseinvoice) => {
     try {
@@ -203,7 +206,7 @@ useEffect(() => {
       let totalPagesLocal = 1;
 
       do {
-        const res = await getPurchaseInvoices(currentPage, 100,filters);
+        const res = await getPurchaseInvoices(currentPage, 100, filters);
 
         if (res?.status_code === 200) {
           const mapped = res.data.map((pi: any) => ({
@@ -275,39 +278,45 @@ useEffect(() => {
       showApiError(error);
     }
   };
-const handleOpenPDF = async (invoice: Purchaseinvoice) => {
-  try {
-    showLoading("Generating PDF...");
+  const handleOpenPDF = async (invoice: Purchaseinvoice) => {
+    try {
+      showLoading("Generating PDF...");
 
-    const res = await getPurchaseInvoiceById(invoice.pId);
+      const res = await getPurchaseInvoiceById(invoice.pId);
 
-    if (!res || res.status !== "success") {
-      throw new Error(res?.message || "Failed to load invoice");
+      if (!res || res.status !== "success") {
+        throw new Error(res?.message || "Failed to load invoice");
+      }
+
+      const purchaseInvoice = res.data;
+
+      const blobUrl = await generatePurchaseInvoicePDF(
+        purchaseInvoice,
+        company,
+        "bloburl"
+      );
+
+      closeSwal();
+
+      setSelectedInvoice(purchaseInvoice);
+      setPdfUrl(blobUrl);
+      setPdfOpen(true);
+
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
     }
-
-    const purchaseInvoice = res.data;
-
-    const blobUrl = await generatePurchaseInvoicePDF(
-      purchaseInvoice,
-      company,
-      "bloburl"
-    );
-
-    closeSwal();
-
-    setSelectedInvoice(purchaseInvoice);
-    setPdfUrl(blobUrl);
-    setPdfOpen(true);
-
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+  };
   const handleEdit = (Invoice: Purchaseinvoice, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedInvoice(Invoice);
     setModalOpen(true);
+  };
+
+  const handleViewClick = (pId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setInvoiceDetailsId(pId);
+    setInvoiceDetailsOpen(true);
   };
 
   const handleDelete = (Invoice: Purchaseinvoice, e: React.MouseEvent) => {
@@ -382,20 +391,27 @@ const handleOpenPDF = async (invoice: Purchaseinvoice) => {
       align: "center",
       render: (o) => (
         <ActionGroup>
-       <ActionButton type="view" onClick={() => handleOpenPDF(o)} iconOnly />
+          <ActionButton
+            type="view"
+            onClick={(e) => handleViewClick(o.pId, e)}
+            iconOnly
+          />
 
           <ActionMenu
-            // onEdit={(e) => handleEdit(o, e as any)}
             onDelete={(e) => handleDelete(o, e as any)}
-            customActions={(STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
-              (status) => ({
+            customActions={[
+              {
+                label: "View PDF",
+                onClick: () => handleOpenPDF(o),
+              },
+
+              ...(STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map((status) => ({
                 label: `Mark as ${status}`,
                 danger:
                   status === "Cancelled" || status === "Debit Note Issued",
-
                 onClick: () => handleStatusChange(o.pId, status),
-              }),
-            )}
+              })),
+            ]}
           />
         </ActionGroup>
       ),
@@ -424,49 +440,49 @@ const handleOpenPDF = async (invoice: Purchaseinvoice) => {
         onPageChange={setPage}
         onPageSizeChange={(size) => setPageSize(size)}
         pageSizeOptions={[10, 25, 50, 100]}
-  extraFilters={
-  <>
-    <FilterSelect
-      value={filters.status}
-      options={invoiceStatusOptions}
-      onChange={(e) => {
-        setFilters((prev) => ({
-          ...prev,
-          status: e.target.value || undefined,
-        }));
-        setPage(1);
-      }}
-    />
+        extraFilters={
+          <>
+            <FilterSelect
+              value={filters.status}
+              options={invoiceStatusOptions}
+              onChange={(e) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  status: e.target.value || undefined,
+                }));
+                setPage(1);
+              }}
+            />
 
-    <DateRangeFilter
-      from={filters.from_date}
-      to={filters.to_date}
-      onChange={(range) => {
-        setFilters((prev) => ({
-          ...prev,
-          ...range,
-        }));
-        setPage(1);
-      }}
-    />
-  </>
-}
+            <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  ...range,
+                }));
+                setPage(1);
+              }}
+            />
+          </>
+        }
       />
       <PdfPreviewModal
-  open={pdfOpen}
-  title="Purchase Invoice Preview"
-  pdfUrl={pdfUrl}
-  onClose={() => {
-    if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
-    setPdfUrl(null);
-    setPdfOpen(false);
-  }}
-  onDownload={() => {
-    if (selectedInvoice && company) {
-      generatePurchaseInvoicePDF(selectedInvoice, company, "save");
-    }
-  }}
-/>
+        open={pdfOpen}
+        title="Purchase Invoice Preview"
+        pdfUrl={pdfUrl}
+        onClose={() => {
+          if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
+          setPdfUrl(null);
+          setPdfOpen(false);
+        }}
+        onDownload={() => {
+          if (selectedInvoice && company) {
+            generatePurchaseInvoicePDF(selectedInvoice, company, "save");
+          }
+        }}
+      />
 
       {/* MODAL */}
       <PurchaseInvoiceModal
@@ -485,8 +501,24 @@ const handleOpenPDF = async (invoice: Purchaseinvoice) => {
             setModalOpen(true);
           }}
         />
-        
+
       )}
+
+      <PurchaseInvoiceDetailsModal
+        open={invoiceDetailsOpen}
+        invoiceId={invoiceDetailsId}
+        onClose={() => {
+          setInvoiceDetailsOpen(false);
+          setInvoiceDetailsId(null);
+        }}
+        onViewPdf={(pId) => {
+          const invoice = orders.find((o) => o.pId === pId);
+          if (invoice) {
+            setInvoiceDetailsOpen(false);
+            handleOpenPDF(invoice);
+          }
+        }}
+      />
     </div>
   );
 };

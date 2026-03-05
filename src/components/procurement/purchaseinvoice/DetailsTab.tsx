@@ -113,6 +113,7 @@ onTogglePO,
               name="supplierInvoiceNumber"
               value={form.supplierInvoiceNumber}
               onChange={onFormChange}
+              required
             />
           </div>
 

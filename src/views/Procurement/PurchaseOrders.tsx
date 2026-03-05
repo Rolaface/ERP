@@ -12,8 +12,8 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import type { Column } from "../../components/ui/Table/type";
-import { showApiError,showSuccess ,showLoading,closeSwal } from "../../utils/alert";
-import { getPurchaseOrders ,updatePurchaseOrderStatus } from "../../api/procurement/PurchaseOrderApi";
+import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import { getPurchaseOrders, updatePurchaseOrderStatus } from "../../api/procurement/PurchaseOrderApi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { getPurchaseOrderById } from "../../api/procurement/PurchaseOrderApi";
@@ -23,6 +23,7 @@ import { generatePurchaseOrderPDF } from "../../components/template/purchasetOrd
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
+import PurchaseOrderDetailsModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 interface PurchaseOrder {
   id: string;
   supplier: string;
@@ -66,113 +67,121 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-const [page, setPage] = useState(1);
+  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] =  useState<any | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
-const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-const [pdfOpen, setPdfOpen] = useState(false);
-const [company, setCompany] = useState<any | null>(null);
-useEffect(() => {
-  const timer = setTimeout(() => {
-    setFilters((prev) => ({
-      ...prev,
-      search: searchTerm || undefined,
-    }));
-    setPage(1);
-  }, 600);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [company, setCompany] = useState<any | null>(null);
+  const [poDetailsOpen, setPoDetailsOpen] = useState(false);
+  const [poDetailsId, setPoDetailsId] = useState<string | null>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({
+        ...prev,
+        search: searchTerm || undefined,
+      }));
+      setPage(1);
+    }, 600);
 
-  return () => clearTimeout(timer);
-}, [searchTerm]);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-useEffect(() => {
-  getCompanyById(COMPANY_ID)
-    .then((res) => {
-      if (res?.status_code === 200) {
-        setCompany(res.data);
-      }
-    })
-    .catch(() => console.error("Failed to load company"));
-}, []);
+  useEffect(() => {
+    getCompanyById(COMPANY_ID)
+      .then((res) => {
+        if (res?.status_code === 200) {
+          setCompany(res.data);
+        }
+      })
+      .catch(() => console.error("Failed to load company"));
+  }, []);
   //  FETCH ORDERS 
-const fetchOrders = async () => {
-  try {
-    setLoading(true);
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
 
-    const res = await getPurchaseOrders(page, pageSize, filters);
+      const res = await getPurchaseOrders(page, pageSize, filters);
 
-    
-    if (!res?.data || res.data.length === 0) {
-      setOrders([]);                
-      setTotalItems(0);
-      setTotalPages(1);
-      return;
+
+      if (!res?.data || res.data.length === 0) {
+        setOrders([]);
+        setTotalItems(0);
+        setTotalPages(1);
+        return;
+      }
+
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total || 0);
+
+      const mappedOrders: PurchaseOrder[] = res.data.map((po: any) => ({
+        id: po.poId,
+        supplier: po.supplierName,
+        date: po.poDate,
+        deliveryDate:
+          po.deliveryDate ||
+          po.items?.[0]?.requiredBy ||
+          "",
+        amount: po.grandTotal,
+        status: po.status,
+      }));
+
+      setOrders(mappedOrders);
+
+    } catch (err) {
+      setOrders([]);
+    } finally {
+      setLoading(false);
     }
-
-    setTotalPages(res.pagination?.total_pages || 1);
-    setTotalItems(res.pagination?.total || 0);
-
-    const mappedOrders: PurchaseOrder[] = res.data.map((po: any) => ({
-      id: po.poId,
-      supplier: po.supplierName,
-      date: po.poDate,
-     deliveryDate:
-  po.deliveryDate ||
-  po.items?.[0]?.requiredBy ||
-  "",
-      amount: po.grandTotal,
-      status: po.status,
-    }));
-
-    setOrders(mappedOrders);
-
-  } catch (err) {
-    setOrders([]); 
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
-useEffect(() => {
-  fetchOrders();
-}, [page, pageSize,filters]);
+  useEffect(() => {
+    fetchOrders();
+  }, [page, pageSize, filters]);
 
 
-const handleView = async (order: PurchaseOrder) => {
-  try {
-    showLoading("Generating PDF...");
+  const handleView = async (order: PurchaseOrder) => {
+    try {
+      showLoading("Generating PDF...");
 
-    const res = await getPurchaseOrderById(order.id);
+      const res = await getPurchaseOrderById(order.id);
 
-    if (!res || res.status !== "success") {
-      throw new Error(res?.message || "Failed to load invoice");
+      if (!res || res.status !== "success") {
+        throw new Error(res?.message || "Failed to load invoice");
+      }
+
+      const purchaseInvoice = res.data;
+
+      const blobUrl = await generatePurchaseOrderPDF(
+        purchaseInvoice,
+        company,
+        "bloburl"
+      );
+
+      closeSwal();
+
+      setSelectedOrder(purchaseInvoice);
+      setPdfUrl(blobUrl);
+      setPdfOpen(true);
+
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
     }
+  };
 
-    const purchaseInvoice = res.data;
 
-    const blobUrl = await generatePurchaseOrderPDF(
-      purchaseInvoice,
-      company,
-      "bloburl"
-    );
-
-    closeSwal();
-
-    setSelectedOrder(purchaseInvoice);  
-    setPdfUrl(blobUrl);
-    setPdfOpen(true);
-
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
-
+  const handleViewClick = (poId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setPoDetailsId(poId);
+    setPoDetailsOpen(true);
+  };
 
   //  MODAL HANDLERS 
   const handleAddClick = () => {
@@ -196,134 +205,134 @@ const handleView = async (order: PurchaseOrder) => {
 
   const handleCloseModal = () => setModalOpen(false);
   const handlePOSaved = async () => {
-  await fetchOrders();   //  Refresh table
-};
+    await fetchOrders();   //  Refresh table
+  };
 
 
-const fetchAllPOsForExport = async () => {
-  try {
-    let allData: PurchaseOrder[] = [];
-    let currentPage = 1;
-    let totalPagesLocal = 1;
+  const fetchAllPOsForExport = async () => {
+    try {
+      let allData: PurchaseOrder[] = [];
+      let currentPage = 1;
+      let totalPagesLocal = 1;
 
-    do {
-      const res = await getPurchaseOrders(currentPage, 100,filters);
+      do {
+        const res = await getPurchaseOrders(currentPage, 100, filters);
 
-      if (res?.status_code === 200) {
-        const mapped = res.data.map((po: any) => ({
-          id: po.poId,
-          supplier: po.supplierName,
-          date: po.poDate,
-          deliveryDate: po.deliveryDate,
-          amount: po.grandTotal,
-          status: po.status,
-        }));
+        if (res?.status_code === 200) {
+          const mapped = res.data.map((po: any) => ({
+            id: po.poId,
+            supplier: po.supplierName,
+            date: po.poDate,
+            deliveryDate: po.deliveryDate,
+            amount: po.grandTotal,
+            status: po.status,
+          }));
 
-        allData = [...allData, ...mapped];
-        totalPagesLocal = res.pagination?.total_pages || 1;
+          allData = [...allData, ...mapped];
+          totalPagesLocal = res.pagination?.total_pages || 1;
+        }
+
+        currentPage++;
+      } while (currentPage <= totalPagesLocal);
+
+      return allData;
+    } catch (error) {
+      showApiError(error);
+      return [];
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      showLoading("Generating PDF...");
+
+      const dataToExport = await fetchAllPOsForExport();
+
+      if (!dataToExport.length) {
+        closeSwal();
+        showApiError("No purchase orders to export");
+        return;
       }
 
-      currentPage++;
-    } while (currentPage <= totalPagesLocal);
+      const doc = new jsPDF("p", "mm", "a4");
 
-    return allData;
-  } catch (error) {
-    showApiError(error);
-    return [];
-  }
-};
+      doc.setFontSize(14);
+      doc.text("Purchase Orders Report", 14, 15);
 
-const handleExportPDF = async () => {
-  try {
-    showLoading("Generating PDF...");
+      const tableData = dataToExport.map((po, index) => [
+        index + 1,
+        po.id,
+        po.supplier,
+        po.date,
+        po.deliveryDate,
+        `INR ${Number(po.amount || 0).toFixed(2)}`,
+        po.status,
+      ]);
 
-    const dataToExport = await fetchAllPOsForExport();
+      autoTable(doc, {
+        startY: 22,
+        head: [[
+          "SN",
+          "PO ID",
+          "Supplier",
+          "Date",
+          "Delivery Date",
+          "Amount",
+          "Status",
+        ]],
+        body: tableData,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [41, 128, 185] },
+      });
 
-    if (!dataToExport.length) {
+      doc.save("Purchase_Orders_Report.pdf");
+
       closeSwal();
-      showApiError("No purchase orders to export");
-      return;
+      showSuccess("PDF exported successfully");
+
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
     }
-
-    const doc = new jsPDF("p", "mm", "a4");
-
-    doc.setFontSize(14);
-    doc.text("Purchase Orders Report", 14, 15);
-
-    const tableData = dataToExport.map((po, index) => [
-      index + 1,
-      po.id,
-      po.supplier,
-      po.date,
-      po.deliveryDate,
-      `INR ${Number(po.amount || 0).toFixed(2)}`,
-      po.status,
-    ]);
-
-    autoTable(doc, {
-      startY: 22,
-      head: [[
-        "SN",
-        "PO ID",
-        "Supplier",
-        "Date",
-        "Delivery Date",
-        "Amount",
-        "Status",
-      ]],
-      body: tableData,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [41, 128, 185] },
-    });
-
-    doc.save("Purchase_Orders_Report.pdf");
-
-    closeSwal();
-    showSuccess("PDF exported successfully");
-
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+  };
 
 
 
-const handleStatusChange = async (
-  poId: string,
-  newStatus: POStatus,
-) => {
-  try {
-    const res = await updatePurchaseOrderStatus(
-      poId,
-      newStatus
-    );
+  const handleStatusChange = async (
+    poId: string,
+    newStatus: POStatus,
+  ) => {
+    try {
+      const res = await updatePurchaseOrderStatus(
+        poId,
+        newStatus
+      );
 
- 
-    if (!res || res.status_code !== 200) {
-      showApiError(res);
-      return;
-    }
 
- 
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === poId
-          ? { ...o, status: res.data?.status || newStatus }
-          : o,
-      ),
-    );
+      if (!res || res.status_code !== 200) {
+        showApiError(res);
+        return;
+      }
 
-  
-    showSuccess(
-      res.message ||
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === poId
+            ? { ...o, status: res.data?.status || newStatus }
+            : o,
+        ),
+      );
+
+
+      showSuccess(
+        res.message ||
         `Purchase Order marked as ${newStatus}`,
-    );
+      );
 
-  } catch (error: any) {
-    showApiError(error);
-  }
-};
+    } catch (error: any) {
+      showApiError(error);
+    }
+  };
 
 
 
@@ -339,9 +348,9 @@ const handleStatusChange = async (
       header: "Amount",
       align: "right",
       render: (o) => (
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-    INR {Number(o.amount || 0).toFixed(2)}
-  </code>
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          INR {Number(o.amount || 0).toFixed(2)}
+        </code>
       ),
     },
 
@@ -355,28 +364,36 @@ const handleStatusChange = async (
     { key: "deliveryDate", header: "Delivery Date", align: "left" },
 
     {
-  key: "actions",
-  header: "Actions",
-  align: "center",
-  render: (o) => (
-    <ActionGroup>
-      <ActionButton type="view" onClick={() => handleView(o)} iconOnly />
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (o) => (
+        <ActionGroup>
+          <ActionButton
+            type="view"
+            onClick={(e) => handleViewClick(o.id, e)}
+            iconOnly
+          />
 
-<ActionMenu
-  // onEdit={(e) => handleEdit(o, e as any)}
-  onDelete={(e) => handleDelete(o, e as any)}
-  customActions={(
-    STATUS_TRANSITIONS[o.status as POStatus] ?? []
-  ).map((status) => ({
-    label: `Mark as ${status}`,
-    danger: status === "Completed",
-    onClick: () => handleStatusChange(o.id, status),
-  }))}
-/>
+          <ActionMenu
+            onDelete={(e) => handleDelete(o, e as any)}
+            customActions={[
+              {
+                label: "View PDF",
+                onClick: () => handleView(o),
+              },
 
-    </ActionGroup>
-  ),
-},
+              ...(STATUS_TRANSITIONS[o.status as POStatus] ?? []).map((status) => ({
+                label: `Mark as ${status}`,
+                danger: status === "Completed",
+                onClick: () => handleStatusChange(o.id, status),
+              })),
+            ]}
+          />
+
+        </ActionGroup>
+      ),
+    },
 
   ];
 
@@ -390,7 +407,7 @@ const handleStatusChange = async (
         showToolbar
         loading={loading}
         searchValue={searchTerm}
-         enableExport
+        enableExport
         onExport={handleExportPDF}
         onSearch={setSearchTerm}
         enableAdd
@@ -398,76 +415,92 @@ const handleStatusChange = async (
         onAdd={handleAddClick}
         enableColumnSelector
         currentPage={page}
-              totalPages={totalPages}
-              pageSize={pageSize}
-              totalItems={totalItems}
-              onPageChange={setPage}
-              onPageSizeChange={(size) => setPageSize(size)}
-              pageSizeOptions={[10, 25, 50, 100]}
-     extraFilters={
-  <>
-    <FilterSelect
-      value={filters.status}
-      options={statusOptions}
-      onChange={(e) => {
-        setFilters((prev) => ({
-          ...prev,
-          status: e.target.value || undefined,
-        }));
-        setPage(1);
-      }}
-    />
+        totalPages={totalPages}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => setPageSize(size)}
+        pageSizeOptions={[10, 25, 50, 100]}
+        extraFilters={
+          <>
+            <FilterSelect
+              value={filters.status}
+              options={statusOptions}
+              onChange={(e) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  status: e.target.value || undefined,
+                }));
+                setPage(1);
+              }}
+            />
 
-    <DateRangeFilter
-      from={filters.from_date}
-      to={filters.to_date}
-      onChange={(range) => {
-        setFilters((prev) => ({
-          ...prev,
-          ...range,
-        }));
-        setPage(1);
-      }}
-    />
-  </>
-}
+            <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  ...range,
+                }));
+                setPage(1);
+              }}
+            />
+          </>
+        }
       />
 
       {/* MODAL */}
       <PurchaseOrderModal
         isOpen={modalOpen}
         onClose={handleCloseModal}
-         poId={selectedOrder?.poId}
-          onSubmit={handlePOSaved} 
+        poId={selectedOrder?.poId}
+        onSubmit={handlePOSaved}
       />
       <PdfPreviewModal
-  open={pdfOpen}
-  title="Purchase Order Preview"
-  pdfUrl={pdfUrl}
-  onClose={() => {
-    if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
-    setPdfUrl(null);
-    setPdfOpen(false);
-  }}
-  onDownload={() => {
-    if (selectedOrder && company) {
-      generatePurchaseOrderPDF(selectedOrder, company, "save");
-    }
-  }}
-/>
-      {/* VIEW MODAL */}
-    {viewModalOpen && selectedOrder && (
-      <PurchaseOrderView
-        poData={selectedOrder}
-        onClose={() => setViewModalOpen(false)}
-        onEdit={() => {
-          setViewModalOpen(false);
-          setModalOpen(true);
+        open={pdfOpen}
+        title="Purchase Order Preview"
+        pdfUrl={pdfUrl}
+        onClose={() => {
+          if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
+          setPdfUrl(null);
+          setPdfOpen(false);
+        }}
+        onDownload={() => {
+          if (selectedOrder && company) {
+            generatePurchaseOrderPDF(selectedOrder, company, "save");
+          }
         }}
       />
-      
-    )}
-  </div>  
+      {/* VIEW MODAL */}
+      {viewModalOpen && selectedOrder && (
+        <PurchaseOrderView
+          poData={selectedOrder}
+          onClose={() => setViewModalOpen(false)}
+          onEdit={() => {
+            setViewModalOpen(false);
+            setModalOpen(true);
+          }}
+        />
+
+      )}
+
+      <PurchaseOrderDetailsModal
+        open={poDetailsOpen}
+        poId={poDetailsId}
+        onClose={() => {
+          setPoDetailsOpen(false);
+          setPoDetailsId(null);
+        }}
+        onViewPdf={(poId) => {
+          const po = orders.find((o) => o.id === poId);
+          if (po) {
+            setPoDetailsOpen(false);
+            handleView(po);
+          }
+        }}
+      />
+    </div>
   );
 };
 
