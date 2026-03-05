@@ -1,8 +1,9 @@
 // CompensationTab.tsx
 import React, { useCallback, useEffect, useState } from "react";
-import { Calculator, RefreshCw, Lock } from "lucide-react";
+import { RefreshCw, Lock } from "lucide-react";
 import { getCurrentCeiling } from "../../../api/employeeapi";
 import {
+  getSalaryStructureById,
   getSalaryStructures,
   type SalaryStructureDetail,
   type SalaryStructureLineItem,
@@ -273,8 +274,6 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
   handleInputChange,
 }) => {
   const form = (formData ?? {}) as FormDataShape;
-  const currency =
-    (typeof form.currency === "string" ? form.currency : "ZMW").trim() || "ZMW";
 
   const [ceilingLoading, setCeilingLoading] = useState(false);
   const [ceilingError, setCeilingError] = useState(false);
@@ -443,295 +442,61 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-5">
-      <div className="bg-card p-5 rounded-lg border border-theme space-y-3">
-        <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
-          Salary Structure
-        </h4>
-        <div>
-          <label className="block text-xs text-main mb-1 font-medium">
-            Select salary structure
-          </label>
-          <select
-            value={toText(form.salaryStructure)}
-            onChange={(e) => {
-              const v = e.target.value;
-              handleInputChange("salaryStructure", v);
-              void applySalaryStructure(v);
-            }}
-            disabled={salaryStructureLoading || salaryStructureDetailLoading}
-            className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-          >
-            <option value="">Select a salary structure</option>
-            {salaryStructures.map((s) => (
-              <option key={String(s.id ?? s.name)} value={String(s.name)}>
-                {String(s.name)}
-              </option>
-            ))}
-          </select>
-          {salaryStructureDetailError ? (
-            <div className="text-[11px] text-danger mt-1">
-              {salaryStructureDetailError}
-            </div>
-          ) : null}
-          {salaryStructureError ? (
-            <div className="text-[11px] text-danger mt-1">
-              {salaryStructureError}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
       <div className="grid grid-cols-2 gap-6">
         {/* ═══════════════ LEFT — Salary & Payroll ═══════════════ */}
         <div className="space-y-5">
-          {/* Salary breakdown */}
-          <div className="bg-card p-5 rounded-lg border border-theme space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
-                Salary Components
-              </h4>
-              <Calculator className="w-4 h-4 text-muted" />
+          <div className="bg-card p-5 rounded-lg border border-theme space-y-3">
+            <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
+              Salary Structure
+            </h4>
+            <div>
+              <label className="block text-xs text-main mb-1 font-medium">
+                Select salary structure
+              </label>
+              <select
+                aria-label="Select salary structure"
+                value={toText(form.salaryStructure)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  handleInputChange("salaryStructure", v);
+                  void applySalaryStructure(v);
+                }}
+                disabled={salaryStructureLoading || salaryStructureDetailLoading}
+                className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+              >
+                <option value="">Select a salary structure</option>
+                {salaryStructures.map((s) => (
+                  <option key={String(s.id ?? s.name)} value={String(s.name)}>
+                    {String(s.name)}
+                  </option>
+                ))}
+              </select>
+              {salaryStructureDetailError ? (
+                <div className="text-[11px] text-danger mt-1">
+                  {salaryStructureDetailError}
+                </div>
+              ) : null}
+              {salaryStructureError ? (
+                <div className="text-[11px] text-danger mt-1">
+                  {salaryStructureError}
+                </div>
+              ) : null}
             </div>
 
-            {salaryStructureDetailLoading ? (
-              <div className="text-xs text-muted">
-                Loading salary structure…
-              </div>
-            ) : (
-              (() => {
-                type MoneyRow = { label: string; amount: number };
-                type StatRow = MoneyRow & { includeInTotal: boolean };
-
-                const selectedStructure = toText(form.salaryStructure).trim();
-                const detailName = String(
-                  salaryStructureDetail?.name ?? "",
-                ).trim();
-                const structureLabel =
-                  detailName || selectedStructure || "Manual";
-
-                const detail = salaryStructureDetail;
-                const earnings: SalaryStructureLineItem[] =
-                  detail && Array.isArray(detail.earnings)
-                    ? detail.earnings
-                    : [];
-                const deductions: SalaryStructureLineItem[] =
-                  detail && Array.isArray(detail.deductions)
-                    ? detail.deductions
-                    : [];
-
-                const earningsRows: MoneyRow[] = salaryStructureDetail
-                  ? earnings
-                      .map((r) => ({
-                        label: String(r.component ?? "").trim(),
-                        amount: toNum(r.amount),
-                      }))
-                      .filter((r) => r.label && r.amount !== 0)
-                  : [
-                      {
-                        label: "Basic Salary",
-                        amount: toNum(form.basicSalary),
-                      },
-                      {
-                        label: "Housing Allowance",
-                        amount: toNum(form.housingAllowance),
-                      },
-                      {
-                        label: "Meal Allowance",
-                        amount: toNum(form.mealAllowance),
-                      },
-                      {
-                        label: "Transport Allowance",
-                        amount: toNum(form.transportAllowance),
-                      },
-                      {
-                        label: "Other Allowances",
-                        amount: toNum(form.otherAllowances),
-                      },
-                    ].filter((r) => r.amount !== 0);
-
-                const grossFromRows = earningsRows.reduce(
-                  (s, r) => s + toNum(r.amount),
-                  0,
-                );
-                const grossFromField = toNum(form.grossSalary);
-                const gross =
-                  grossFromRows !== 0 ? grossFromRows : grossFromField;
-
-                const structureDeductionsRows: MoneyRow[] =
-                  salaryStructureDetail
-                    ? deductions
-                        .map((r) => ({
-                          label: String(r.component ?? "").trim(),
-                          amount: toNum(r.amount),
-                        }))
-                        .filter((r) => r.label && r.amount !== 0)
-                    : [];
-
-                const statutoryRows: StatRow[] = [
-                  {
-                    label: "NAPSA Employee",
-                    amount: toNum(form.employeeNapsa),
-                    includeInTotal: true,
-                  },
-                  {
-                    label: "NAPSA Employer",
-                    amount: toNum(form.employeerNapsa),
-                    includeInTotal: false,
-                  },
-                  {
-                    label: "NHIMA Employee",
-                    amount: toNum(form.employeeNhima),
-                    includeInTotal: true,
-                  },
-                  {
-                    label: "NHIMA Employer",
-                    amount: toNum(form.employeerNhima),
-                    includeInTotal: false,
-                  },
-                  {
-                    label: "PAYE",
-                    amount: toNum(form.payAsYouEarn),
-                    includeInTotal: true,
-                  },
-                ].filter((r) => r.amount !== 0);
-
-                const totalEmployeeDeductions = statutoryRows
-                  .filter((r) => r.includeInTotal)
-                  .reduce((s, r) => s + toNum(r.amount), 0);
-
-                const totalDeductions = salaryStructureDetail
-                  ? structureDeductionsRows.reduce(
-                      (s, r) => s + toNum(r.amount),
-                      0,
-                    )
-                  : totalEmployeeDeductions;
-
-                const net = gross - totalDeductions;
-                const monthly = salaryStructureDetail ? gross / 12 : gross;
-
-                if (
-                  earningsRows.length === 0 &&
-                  structureDeductionsRows.length === 0 &&
-                  statutoryRows.length === 0 &&
-                  gross === 0
-                ) {
-                  return (
-                    <div className="text-xs text-muted">
-                      {!selectedStructure
-                        ? "Select a salary structure to preview its components."
-                        : "—"}
-                    </div>
-                  );
+            <div>
+              <label className="block text-xs text-main mb-1 font-medium">
+                Basic Salary
+              </label>
+              <input
+                type="number"
+                value={toText(form.basicSalary)}
+                onChange={(e) =>
+                  handleInputChange("basicSalary", e.target.value)
                 }
-
-                const deductionsRowsToShow: MoneyRow[] = salaryStructureDetail
-                  ? structureDeductionsRows
-                  : statutoryRows;
-
-                return (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div className="bg-app border border-theme rounded-lg p-3">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                          Salary Structure
-                        </div>
-                        <div className="text-xs font-bold text-main mt-1 break-words">
-                          {structureLabel}
-                        </div>
-                      </div>
-                      <div className="bg-app border border-theme rounded-lg p-3">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                          Gross Pay
-                        </div>
-                        <div className="text-xs font-extrabold text-main mt-1 tabular-nums">
-                          {currency} {Number(gross || 0).toLocaleString()}
-                        </div>
-                        <div className="text-[11px] text-muted mt-0.5">
-                          Monthly: {currency}{" "}
-                          {Number(monthly || 0).toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                          })}
-                        </div>
-                      </div>
-                      <div className="bg-app border border-theme rounded-lg p-3">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                          Net
-                        </div>
-                        <div className="text-xs font-extrabold text-main mt-1 tabular-nums">
-                          {currency} {Number(net || 0).toLocaleString()}
-                        </div>
-                        <div className="text-[11px] text-muted mt-0.5">
-                          Deductions: {currency}{" "}
-                          {Number(totalDeductions || 0).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div className="border border-theme rounded-xl bg-card p-4">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                          Earnings
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          {earningsRows.length === 0 ? (
-                            <div className="text-xs text-muted">—</div>
-                          ) : (
-                            earningsRows.map((row, idx) => (
-                              <div
-                                key={`${row.label}-${idx}`}
-                                className="border-b border-theme/60 last:border-0 py-2"
-                              >
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-bold text-main truncate">
-                                      {row.label || "—"}
-                                    </div>
-                                  </div>
-                                  <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
-                                    {currency}{" "}
-                                    {Number(row.amount || 0).toLocaleString()}
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="border border-theme rounded-xl bg-card p-4">
-                        <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                          Deductions
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          {deductionsRowsToShow.length === 0 ? (
-                            <div className="text-xs text-muted">—</div>
-                          ) : (
-                            deductionsRowsToShow.map((row, idx) => (
-                              <div
-                                key={`${row.label}-${idx}`}
-                                className="border-b border-theme/60 last:border-0 py-2"
-                              >
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-bold text-main truncate">
-                                      {row.label || "—"}
-                                    </div>
-                                  </div>
-                                  <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
-                                    {currency}{" "}
-                                    {Number(row.amount || 0).toLocaleString()}
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                );
-              })()
-            )}
+                placeholder="e.g., 70000"
+                className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
           </div>
 
           {/* Payroll config — currency, frequency, method */}
@@ -764,6 +529,7 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                     {label}
                   </label>
                   <select
+                    aria-label={label}
                     value={
                       toText(form[field as keyof FormDataShape], options[0]) ||
                       options[0]
@@ -795,6 +561,7 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                 Account Type <span className="text-danger">*</span>
               </label>
               <select
+                aria-label="Account Type"
                 value={toText(form.accountType, "Savings") || "Savings"}
                 onChange={(e) =>
                   handleInputChange("accountType", e.target.value)

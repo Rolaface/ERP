@@ -353,10 +353,9 @@ const NewPayrollEntry: React.FC<{
 
 const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
   const raw = String(status ?? "").trim();
-  const normalized = raw.toLowerCase() === "submitted" ? "Paid" : raw;
-  const s = String(normalized ?? "").toLowerCase();
+  const s = raw.toLowerCase();
   const cls =
-    s === "paid"
+    s === "paid" || s === "submitted"
       ? "bg-green-50 text-green-700 border-green-200"
       : s === "draft"
         ? "bg-yellow-50 text-yellow-700 border-yellow-200"
@@ -365,7 +364,7 @@ const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${cls}`}
     >
-      {normalized || "—"}
+      {raw || "—"}
     </span>
   );
 };
@@ -385,11 +384,25 @@ const derivePayslipStatus = (
   return String(payslipStatus ?? "").trim();
 };
 
+const getSlipNapsaStatus = (s: unknown): string | undefined => {
+  if (!s || typeof s !== "object") return undefined;
+  const rec = s as Record<string, unknown>;
+  const v = rec["napsaStatus"] ?? rec["napsa_status"];
+  const raw = typeof v === "string" ? v.trim() : "";
+  return raw || undefined;
+};
+
+type SlipStatusFallback = {
+  napsaStatus?: string;
+  payslipStatus?: string;
+};
+
 const SalarySlipDetailsModal: React.FC<{
   open: boolean;
   slipId: string | null;
   onClose: () => void;
-}> = ({ open, slipId, onClose }) => {
+  statusFallback?: SlipStatusFallback | null;
+}> = ({ open, slipId, onClose, statusFallback }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<SalarySlipDetail | null>(null);
@@ -438,8 +451,34 @@ const SalarySlipDetailsModal: React.FC<{
       ? (data as unknown as Record<string, unknown>)
       : {};
   const pickString = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
-  const modalNapsaStatus = pickString(dataRec["napsaStatus"]) ?? pickString(dataRec["napsa_status"]);
-  const modalPayslipStatus = pickString(dataRec["status"]) ?? pickString(dataRec["payslip_status"]);
+  const modalNapsaStatus =
+    pickString(dataRec["napsaStatus"]) ?? pickString(dataRec["napsa_status"]);
+  const modalPayslipStatus =
+    pickString(dataRec["status"]) ?? pickString(dataRec["payslip_status"]);
+
+  const modalPayslipStatusClean = String(modalPayslipStatus ?? "").trim();
+  const useFallbackPayslipStatus =
+    !modalPayslipStatusClean || modalPayslipStatusClean.toLowerCase() === "draft";
+  const payslipStatusForDerive = useFallbackPayslipStatus
+    ? String(statusFallback?.payslipStatus ?? modalPayslipStatusClean).trim()
+    : modalPayslipStatusClean;
+
+  const docstatusRaw = dataRec["docstatus"];
+  const docstatus = typeof docstatusRaw === "number" ? docstatusRaw : Number.NaN;
+  const docstatusStatus = Number.isFinite(docstatus)
+    ? docstatus === 0
+      ? "Draft"
+      : docstatus === 1
+        ? "Submitted"
+        : docstatus === 2
+          ? "Cancelled"
+          : undefined
+    : undefined;
+
+  const statusToShow = derivePayslipStatus(
+    modalNapsaStatus ?? statusFallback?.napsaStatus,
+    payslipStatusForDerive || docstatusStatus,
+  );
 
   const roInputCls = "w-full h-10 px-3 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none";
   const sectionTitleCls = "text-[11px] font-extrabold text-muted uppercase tracking-wider";
@@ -487,10 +526,7 @@ const SalarySlipDetailsModal: React.FC<{
                     <div className={sectionTitleCls}>Status</div>
                     <div className="mt-1">
                       <StatusChip
-                        status={derivePayslipStatus(
-                          modalNapsaStatus,
-                          modalPayslipStatus,
-                        )}
+                        status={statusToShow}
                       />
                     </div>
                   </div>
@@ -706,6 +742,8 @@ export default function PayrollManagement() {
   const [slipsTotalPages, setSlipsTotalPages] = useState(1);
   const [slipDetailsOpen, setSlipDetailsOpen] = useState(false);
   const [slipDetailsId, setSlipDetailsId] = useState<string | null>(null);
+  const [slipDetailsStatusFallback, setSlipDetailsStatusFallback] =
+    useState<SlipStatusFallback | null>(null);
   const [slipsSearch, setSlipsSearch] = useState("");
   const [slipsMonth, setSlipsMonth] = useState("");
 
@@ -741,8 +779,7 @@ export default function PayrollManagement() {
       }
 
       const status = String(s.status ?? "").trim();
-      const normalizedStatus =
-        status.toLowerCase() === "submitted" ? "Paid" : status || "Unknown";
+      const normalizedStatus = status || "Unknown";
       const hay = [
         String(s.name ?? ""),
         String(s.employee ?? ""),
@@ -1052,14 +1089,17 @@ export default function PayrollManagement() {
                     icon={<Download className="w-3.5 h-3.5" />}
                     onClick={() => {
                       const rows = filteredSalarySlips.map((s) => ({
+                        napsa_status: getSlipNapsaStatus(s) ?? "",
                         slipId: s.name,
                         employee: s.employee,
                         reference_number: s.referenceNumber ?? "",
                         salary_structure: s.salary_structure,
                         start_date: s.start_date,
                         end_date: s.end_date,
-                        payslip_status: derivePayslipStatus(s.napsaStatus, s.status),
-                        napsa_status: s.napsaStatus ?? "",
+                        payslip_status: derivePayslipStatus(
+                          getSlipNapsaStatus(s),
+                          s.status,
+                        ),
                         total_earnings: s.total_earnings,
                         total_deduction: s.total_deduction,
                         net_pay: s.net_pay,
@@ -1105,7 +1145,8 @@ export default function PayrollManagement() {
                         "Structure",
                         "Start",
                         "End",
-                        "Status",
+                        "Payslip Status",
+                        "NAPSA Status",
                         "Earnings",
                         "Deductions",
                         "Net",
@@ -1114,7 +1155,7 @@ export default function PayrollManagement() {
                         <th
                           key={String(i)}
                           className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${
-                            i >= 7 && i <= 9 ? "text-right" : "text-left"
+                            i >= 8 && i <= 10 ? "text-right" : "text-left"
                           }`}
                         >
                           {h}
@@ -1150,6 +1191,9 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3">
                             <div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" />
                           </td>
+                          <td className="px-4 py-3">
+                            <div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" />
+                          </td>
                           <td className="px-4 py-3 text-right">
                             <div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" />
                           </td>
@@ -1167,7 +1211,7 @@ export default function PayrollManagement() {
                     ) : filteredSalarySlips.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={11}
+                          colSpan={12}
                           className="px-4 py-10 text-center text-sm text-muted"
                         >
                           {String(slipsSearch ?? "").trim()
@@ -1187,21 +1231,24 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3 text-sm text-muted break-words">{s.salary_structure}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.end_date}</td>
-                          <td className="px-4 py-3"><StatusChip status={derivePayslipStatus(s.napsaStatus, s.status)} /></td>
-                          <td className="px-4 py-3"><StatusChip status={s.napsaStatus} /></td>
+                          <td className="px-4 py-3"><StatusChip status={derivePayslipStatus(getSlipNapsaStatus(s), s.status)} /></td>
+                          <td className="px-4 py-3"><StatusChip status={getSlipNapsaStatus(s)} /></td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_earnings ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">{Number(s.net_pay ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right">
-                            <button
+                            <ActionButton
+                              type="view"
+                              iconOnly
                               onClick={() => {
                                 setSlipDetailsId(s.name);
+                                setSlipDetailsStatusFallback({
+                                  napsaStatus: getSlipNapsaStatus(s),
+                                  payslipStatus: s.status,
+                                });
                                 setSlipDetailsOpen(true);
                               }}
-                              className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                            >
-                              View
-                            </button>
+                            />
                           </td>
                         </tr>
                       ))
@@ -1243,9 +1290,11 @@ export default function PayrollManagement() {
       <SalarySlipDetailsModal
         open={slipDetailsOpen}
         slipId={slipDetailsId}
+        statusFallback={slipDetailsStatusFallback}
         onClose={() => {
           setSlipDetailsOpen(false);
           setSlipDetailsId(null);
+          setSlipDetailsStatusFallback(null);
         }}
       />
     </div>

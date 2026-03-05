@@ -359,15 +359,26 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       grossSalary: editData.payrollInfo?.grossSalary || "",
 
       employeeNapsa:
-        editData.payrollInfo?.statutoryDeductions?.EmployeeNapsa || "",
+        editData.payrollInfo?.statutoryDeductions?.Employeenapsa ||
+        editData.payrollInfo?.statutoryDeductions?.EmployeeNapsa ||
+        "",
       employeerNapsa:
-        editData.payrollInfo?.statutoryDeductions?.EmployeerNapsa || "",
+        editData.payrollInfo?.statutoryDeductions?.Employeernapsa ||
+        editData.payrollInfo?.statutoryDeductions?.EmployeerNapsa ||
+        "",
       employeeNhima:
-        editData.payrollInfo?.statutoryDeductions?.EmployeeNhima || "",
+        editData.payrollInfo?.statutoryDeductions?.Employeenhima ||
+        editData.payrollInfo?.statutoryDeductions?.EmployeeNhima ||
+        "",
       employeerNhima:
-        editData.payrollInfo?.statutoryDeductions?.EmployeerNhima || "",
+        editData.payrollInfo?.statutoryDeductions?.Employeernhima ||
+        editData.payrollInfo?.statutoryDeductions?.EmployeerNhima ||
+        "",
       payAsYouEarn:
-        editData.payrollInfo?.statutoryDeductions?.PayAsYouEarn || "",
+        editData.payrollInfo?.statutoryDeductions?.Payasyouearn ||
+        editData.payrollInfo?.statutoryDeductions?.PayAsYouEarn ||
+        editData.payrollInfo?.statutoryDeductions?.paye ||
+        "",
 
       // ===== PAYROLL CONFIG =====
       currency: editData.payrollInfo?.currency || "ZMW",
