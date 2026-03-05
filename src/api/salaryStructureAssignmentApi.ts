@@ -37,7 +37,8 @@ export type SalaryStructureAssignmentListItem = {
   employee: string;
   full_name?: string;
   salary_structure: string;
-  from_date: string;
+  basic?: number;
+  from_date?: string;
   company?: string;
   basic?: number | string;
   department?: string;

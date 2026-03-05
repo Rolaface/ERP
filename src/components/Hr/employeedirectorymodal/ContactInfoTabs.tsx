@@ -126,7 +126,12 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             <input
               type="text"
               value={formData.street}
-              onChange={(e) => handleInputChange("street", e.target.value)}
+              onChange={(e) =>
+                handleInputChange(
+                  "street",
+                  String(e.target.value ?? "").toUpperCase(),
+                )
+              }
               placeholder="Plot number, street name"
               className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
@@ -139,7 +144,12 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
               <input
                 type="text"
                 value={formData.city}
-                onChange={(e) => handleInputChange("city", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange(
+                    "city",
+                    String(e.target.value ?? "").toUpperCase(),
+                  )
+                }
                 placeholder="Enter city"
                 className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
@@ -174,7 +184,10 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
                 type="text"
                 value={formData.postalCode}
                 onChange={(e) =>
-                  handleInputChange("postalCode", e.target.value)
+                  handleInputChange(
+                    "postalCode",
+                    String(e.target.value ?? "").toUpperCase(),
+                  )
                 }
                 placeholder="Enter postal code"
                 className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -198,7 +211,10 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
               type="text"
               value={formData.emergencyContactName}
               onChange={(e) =>
-                handleInputChange("emergencyContactName", e.target.value)
+                handleInputChange(
+                  "emergencyContactName",
+                  String(e.target.value ?? "").toUpperCase(),
+                )
               }
               placeholder="Enter contact name"
               className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"

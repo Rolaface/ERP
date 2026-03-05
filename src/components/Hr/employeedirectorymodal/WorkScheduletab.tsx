@@ -115,7 +115,10 @@ export const WorkScheduleTab: React.FC<WorkScheduleTabProps> = ({
                   placeholder="e.g., 10:00-14:00"
                   value={formData[`${day.field}Custom`] || ""}
                   onChange={(e) =>
-                    handleInputChange(`${day.field}Custom`, e.target.value)
+                    handleInputChange(
+                      `${day.field}Custom`,
+                      String(e.target.value ?? "").toUpperCase(),
+                    )
                   }
                   className="col-span-2 px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />

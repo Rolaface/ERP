@@ -370,6 +370,19 @@ const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
   );
 };
 
+const derivePayslipStatus = (
+  napsaStatus?: string,
+  payslipStatus?: string,
+): string => {
+  const ns = String(napsaStatus ?? "").trim().toLowerCase();
+
+  if (ns === "pending") return "Pending";
+  if (ns === "failed") return "Failed";
+  if (ns === "approved") return "Submitted";
+
+  return String(payslipStatus ?? "").trim();
+};
+
 const SalarySlipDetailsModal: React.FC<{
   open: boolean;
   slipId: string | null;
@@ -458,7 +471,7 @@ const SalarySlipDetailsModal: React.FC<{
                   <div>
                     <div className={sectionTitleCls}>Status</div>
                     <div className="mt-1">
-                      <StatusChip status={(data as any)?.status} />
+                      <StatusChip status={derivePayslipStatus((data as any)?.napsaStatus, (data as any)?.status)} />
                     </div>
                   </div>
 
@@ -1021,14 +1034,15 @@ export default function PayrollManagement() {
                       const rows = filteredSalarySlips.map((s) => ({
                         slipId: s.name,
                         employee: s.employee,
-                        referenceNumber: s.referenceNumber ?? "",
-                        salaryStructure: s.salary_structure,
-                        startDate: s.start_date,
-                        endDate: s.end_date,
-                        status: s.status,
-                        totalEarnings: s.total_earnings,
-                        totalDeduction: s.total_deduction,
-                        netPay: s.net_pay,
+                        reference_number: s.referenceNumber ?? "",
+                        salary_structure: s.salary_structure,
+                        start_date: s.start_date,
+                        end_date: s.end_date,
+                        payslip_status: derivePayslipStatus(s.napsaStatus, s.status),
+                        napsa_status: s.napsaStatus ?? "",
+                        total_earnings: s.total_earnings,
+                        total_deduction: s.total_deduction,
+                        net_pay: s.net_pay,
                       }));
                       downloadCsv(
                         `salary_slips_${new Date().toISOString().slice(0, 10)}.csv`,
@@ -1147,40 +1161,17 @@ export default function PayrollManagement() {
                           key={s.name}
                           className={`hover:bg-muted/5 transition-colors`}
                         >
-                          <td className="px-4 py-3 text-sm font-medium text-main break-words">
-                            {s.name}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">
-                            {s.employee}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
-                            {s.referenceNumber || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-muted break-words">
-                            {s.salary_structure}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
-                            {s.start_date}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
-                            {s.end_date}
-                          </td>
-                          <td className="px-4 py-3">
-                            <StatusChip status={s.status} />
-                          </td>
-                          <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">
-                            {Number(s.total_earnings ?? 0).toLocaleString(
-                              "en-ZM",
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">
-                            {Number(s.total_deduction ?? 0).toLocaleString(
-                              "en-ZM",
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">
-                            {Number(s.net_pay ?? 0).toLocaleString("en-ZM")}
-                          </td>
+                          <td className="px-4 py-3 text-sm font-medium text-main break-words">{s.name}</td>
+                          <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{s.employee}</td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.referenceNumber || "—"}</td>
+                          <td className="px-4 py-3 text-sm text-muted break-words">{s.salary_structure}</td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.end_date}</td>
+                          <td className="px-4 py-3"><StatusChip status={derivePayslipStatus(s.napsaStatus, s.status)} /></td>
+                          <td className="px-4 py-3"><StatusChip status={s.napsaStatus} /></td>
+                          <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_earnings ?? 0).toLocaleString("en-ZM")}</td>
+                          <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
+                          <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">{Number(s.net_pay ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right">
                             <button
                               onClick={() => {

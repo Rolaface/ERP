@@ -82,6 +82,27 @@ export async function verifyEmployeeIdentity(
   return resp.data;
 }
 
+export async function updateEmployeeProfilePhoto(
+  employeeId: string,
+  file: File,
+): Promise<any> {
+  const formData = new FormData();
+  formData.append("employeeId", employeeId);
+  formData.append("profilePhoto", file);
+
+  const resp: AxiosResponse = await api.patch(
+    EmployeeAPI.updateProfilePhoto,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    },
+  );
+
+  return resp.data;
+}
+
 export async function getCurrentCeiling(): Promise<any> {
   const resp: AxiosResponse = await api.get(EmployeeAPI.getCurrentCeiling);
 

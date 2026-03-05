@@ -3,6 +3,7 @@ import { Save } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   createSalaryStructureAssignment,
+  getSalaryStructureAssignments,
   replaceSalaryStructureAssignment,
   type SalaryStructureAssignmentListItem,
 } from "../../../api/salaryStructureAssignmentApi";
@@ -24,28 +25,22 @@ const inputCls =
 const selectCls =
   "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none focus:border-primary transition cursor-pointer";
 
-type EmployeeOption = {
-  value: string;
-  label: string;
-  joiningDate?: string;
-};
+const getFriendlyErrorMessage = (e: any) => {
+  const data = e?.response?.data;
+  const status = Number(e?.response?.status ?? data?.status_code ?? 0) || 0;
+  const backendMsg =
+    data?.message ??
+    data?.error?.message ??
+    data?.exc ??
+    data?._server_messages ??
+    e?.message;
+  const msg = String(backendMsg ?? "").trim();
 
-const toIsoDate = (value: unknown): string => {
-  const raw = String(value ?? "").trim();
-  if (!raw) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  if (status === 409) {
+    return "This salary structure is already assigned to the employee.";
+  }
 
-  const parsed = new Date(raw);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toISOString().slice(0, 10);
-};
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  const e = error as {
-    message?: string;
-    response?: { data?: { message?: string } };
-  };
-  return e?.response?.data?.message || e?.message || fallback;
+  return msg || "Request failed";
 };
 
 export default function SalaryStructureAssignmentTab({
@@ -63,6 +58,8 @@ export default function SalaryStructureAssignmentTab({
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
 
+  const [assignedEmployees, setAssignedEmployees] = useState<Set<string>>(new Set());
+
   const [form, setForm] = useState({
     employee: employeeId || "",
     salary_structure: "",
@@ -76,10 +73,8 @@ export default function SalaryStructureAssignmentTab({
     setForm((p) => ({
       ...p,
       employee: String(editingAssignment.employee ?? p.employee ?? ""),
-      salary_structure: String(
-        editingAssignment.salary_structure ?? p.salary_structure ?? "",
-      ),
-      basic: String(editingAssignment.basic ?? p.basic ?? ""),
+      salary_structure: String(editingAssignment.salary_structure ?? p.salary_structure ?? ""),
+      basic: String((editingAssignment as any)?.basic ?? p.basic ?? ""),
     }));
   }, [editingAssignment]);
 
@@ -141,6 +136,34 @@ export default function SalaryStructureAssignmentTab({
     };
   }, [editableEmployee]);
 
+  useEffect(() => {
+    if (!editableEmployee) return;
+
+    let mounted = true;
+
+    const run = async () => {
+      try {
+        const rows = await getSalaryStructureAssignments();
+        if (!mounted) return;
+        const set = new Set<string>();
+        (Array.isArray(rows) ? rows : []).forEach((r: any) => {
+          const emp = String(r?.employee ?? "").trim();
+          if (emp) set.add(emp);
+        });
+        setAssignedEmployees(set);
+      } catch {
+        if (!mounted) return;
+        setAssignedEmployees(new Set());
+      }
+    };
+
+    run();
+
+    return () => {
+      mounted = false;
+    };
+  }, [editableEmployee]);
+
   const structureOptions = useMemo(() => {
     const items = Array.isArray(salaryStructures) ? salaryStructures : [];
     return items
@@ -154,6 +177,13 @@ export default function SalaryStructureAssignmentTab({
 
   const employeeOptions = useMemo<EmployeeOption[]>(() => {
     const items = Array.isArray(employees) ? employees : [];
+    const selectedEmployee = String(form.employee ?? employeeId ?? "").trim();
+    const allowEmployee = (code: string) => {
+      if (!code) return false;
+      if (code === selectedEmployee) return true;
+      return !assignedEmployees.has(code);
+    };
+
     return items
       .map((e: any) => {
         const code = String(
@@ -172,31 +202,17 @@ export default function SalaryStructureAssignmentTab({
           joiningDate,
         };
       })
-      .filter((o) => o.value)
+      .filter((o) => allowEmployee(o.value))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [employees]);
-
-  const selectedStructure = useMemo(
-    () =>
-      structureOptions.find(
-        (option) => option.value === form.salary_structure.trim(),
-      ) ?? null,
-    [form.salary_structure, structureOptions],
-  );
-
-  const selectedEmployee = useMemo(
-    () =>
-      employeeOptions.find((option) => option.value === form.employee.trim()) ??
-      null,
-    [employeeOptions, form.employee],
-  );
+  }, [employees, assignedEmployees, employeeId, form.employee]);
 
   const canSubmit = useMemo(() => {
-    return Boolean(
-      form.employee?.trim() &&
-      form.salary_structure?.trim() &&
-      form.basic?.trim(),
-    );
+    const basicNum = Number(form.basic);
+    const basicOk = Number.isFinite(basicNum) && basicNum > 0;
+    if (isEditing) {
+      return Boolean(form.employee?.trim() && form.salary_structure?.trim() && basicOk);
+    }
+    return Boolean(form.employee?.trim() && form.salary_structure?.trim() && basicOk);
   }, [form]);
 
   const handleAssign = async () => {
@@ -213,11 +229,12 @@ export default function SalaryStructureAssignmentTab({
 
     setLoading(true);
     try {
+      const basicNum = Number(form.basic) || 0;
       if (isEditing && editingAssignment?.name) {
         await replaceSalaryStructureAssignment({
           name: String(editingAssignment.name).trim(),
           salary_structure: form.salary_structure.trim(),
-          basic: basicAmount,
+          basic: Number.isFinite(basicNum) ? basicNum : 0,
         });
         toast.success("Salary structure assignment updated");
       } else {
@@ -228,23 +245,15 @@ export default function SalaryStructureAssignmentTab({
         await createSalaryStructureAssignment({
           employee: form.employee.trim(),
           salary_structure: form.salary_structure.trim(),
-          basic: basicAmount,
-          from_date: fromDate,
-          ...(selectedStructure?.company
-            ? { company: selectedStructure.company }
-            : {}),
+          basic: Number.isFinite(basicNum) ? basicNum : 0,
         });
         toast.success("Salary structure assigned");
       }
       onAssigned?.();
-    } catch (error: unknown) {
+    } catch (e: any) {
+      const friendly = getFriendlyErrorMessage(e);
       toast.error(
-        getErrorMessage(
-          error,
-          isEditing
-            ? "Failed to update assignment"
-            : "Failed to assign salary structure",
-        ),
+        friendly || (isEditing ? "Failed to update assignment" : "Failed to assign salary structure"),
       );
     } finally {
       setLoading(false);
@@ -334,13 +343,12 @@ export default function SalaryStructureAssignmentTab({
           </label>
           <input
             type="number"
-            step="any"
+            inputMode="decimal"
             value={form.basic}
             onChange={(e) => setForm((p) => ({ ...p, basic: e.target.value }))}
-            aria-label="Basic Salary"
-            title="Basic Salary"
             placeholder="e.g. 4000"
             className={inputCls}
+            min={0}
           />
         </div>
       </div>

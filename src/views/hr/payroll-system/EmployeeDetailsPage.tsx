@@ -11,7 +11,6 @@ import {
   User,
 } from "lucide-react";
 import { getEmployeeById } from "../../../api/employeeapi";
-import { calculateZmPayrollFromGross } from "./util";
 import { useAssignedSalaryStructure } from "../../../hooks/useAssignedSalaryStructure";
 import { toSalaryStructureMoneyRows } from "../../../utils/salaryStructureDisplay";
 
@@ -208,18 +207,6 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({
     return Number(fromStructure ?? 0) || 0;
   }, [data, payrollInfo, salaryStructureDetail]);
 
-  const statutoryCalc = useMemo(() => {
-    const rates = {
-      napsaEmployeeRate: statutory?.napsaEmployeeRate,
-      napsaEmployerRate: statutory?.napsaEmployerRate,
-      nhimaRate: statutory?.nhimaRate,
-    };
-
-    return calculateZmPayrollFromGross(grossSalaryForCalc, {
-      rates,
-    });
-  }, [grossSalaryForCalc, statutory]);
-
   const profileInfo = useMemo(
     () => ({ ...identityInfo, ...personalInfo, ...contactInfo }),
     [identityInfo, personalInfo, contactInfo],
@@ -402,12 +389,13 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({
       );
     }
 
+    // Use statutory deductions from payroll info (calculated by backend)
     return (
-      (Number(statutoryCalc?.statutory?.napsaEmployee ?? 0) || 0) +
-      (Number(statutoryCalc?.statutory?.nhima ?? 0) || 0) +
-      (Number(statutoryCalc?.statutory?.paye ?? 0) || 0)
+      (Number(statutory?.napsaEmployee ?? 0) || 0) +
+      (Number(statutory?.nhima ?? 0) || 0) +
+      (Number(statutory?.paye ?? 0) || 0)
     );
-  }, [hasStructureDeductions, statutoryCalc, structureDeductionRows]);
+  }, [hasStructureDeductions, statutory, structureDeductionRows]);
 
   const netSalary = useMemo(() => {
     return (
@@ -732,57 +720,44 @@ const EmployeeDetailsPage: React.FC<EmployeeDetailsPageProps> = ({
                           Deductions
                         </h2>
                         <div className="space-y-0 text-sm">
-                          {hasStructureDeductions
-                            ? structureDeductionRows.map((d: any) => (
-                                <div
-                                  key={d.label}
-                                  className="flex justify-between py-2.5 border-b border-border/50"
-                                >
-                                  <span className="text-main">{d.label}</span>
+                          {hasStructureDeductions ? (
+                            structureDeductionRows.map((d: any) => (
+                              <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
+                                <span className="text-main">{d.label}</span>
+                                <span className="font-medium text-main tabular-nums">
+                                  {currency} {Number(d.amount ?? 0).toLocaleString()}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            [
+                              {
+                                label: "Napsa Employee",
+                                amount: statutory?.napsaEmployee,
+                              },
+                              {
+                                label: "Napsa Employer",
+                                amount: statutory?.napsaEmployer,
+                              },
+                              {
+                                label: "Nhima",
+                                amount: statutory?.nhima,
+                              },
+                              {
+                                label: "Paye",
+                                amount: statutory?.paye,
+                              },
+                            ]
+                              .filter((r) => (r.amount ?? 0) > 0)
+                              .map((r) => (
+                                <div key={r.label} className="flex justify-between py-2.5 border-b border-border/50">
+                                  <span className="text-main">{r.label}</span>
                                   <span className="font-medium text-main tabular-nums">
-                                    {currency}{" "}
-                                    {Number(d.amount ?? 0).toLocaleString()}
+                                    {currency} {Number(r.amount ?? 0).toLocaleString()}
                                   </span>
                                 </div>
                               ))
-                            : [
-                                {
-                                  label: "Napsa Employee",
-                                  rate: statutoryCalc?.rates?.napsaEmployeeRate,
-                                  amount:
-                                    statutoryCalc?.statutory?.napsaEmployee,
-                                },
-                                {
-                                  label: "Napsa Employer",
-                                  rate: statutoryCalc?.rates?.napsaEmployerRate,
-                                  amount:
-                                    statutoryCalc?.statutory?.napsaEmployer,
-                                },
-                                {
-                                  label: "Nhima",
-                                  rate: statutoryCalc?.rates?.nhimaRate,
-                                  amount: statutoryCalc?.statutory?.nhima,
-                                },
-                                {
-                                  label: "Paye",
-                                  rate: null,
-                                  amount: statutoryCalc?.statutory?.paye,
-                                },
-                              ].map((r) => (
-                                <div
-                                  key={r.label}
-                                  className="flex justify-between py-2.5 border-b border-border/50"
-                                >
-                                  <span className="text-main">{r.label}</span>
-                                  <span className="font-medium text-main tabular-nums">
-                                    {r.rate === null || r.rate === undefined
-                                      ? ""
-                                      : `${Number(r.rate)}% • `}
-                                    {currency}{" "}
-                                    {Number(r.amount ?? 0).toLocaleString()}
-                                  </span>
-                                </div>
-                              ))}
+                          )}
                           <div className="flex justify-between py-3 font-bold mt-2">
                             <span className="text-main">Total Deductions</span>
                             <span className="text-main tabular-nums">

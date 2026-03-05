@@ -3,9 +3,7 @@ import React, { useState, useEffect } from "react";
 import { RefreshCw, Lock } from "lucide-react";
 import { getCurrentCeiling } from "../../../api/employeeapi";
 import {
-  getSalaryStructureById,
   getSalaryStructures,
-  type SalaryStructureDetail,
   type SalaryStructureListItem,
 } from "../../../api/salaryStructureApi";
 
@@ -30,6 +28,7 @@ const ZAMBIAN_BANKS = [
   "NEDBANK ZAMBIA",
   "ABSA BANK ZAMBIA",
   "CITIBANK ZAMBIA",
+  "INDO ZAMBIA BANK"
 ];
 
 // ─────────────────────────────────────────────────────────
@@ -82,7 +81,7 @@ const BankNameField: React.FC<BankNameFieldProps> = ({ value, onChange }) => {
     } else {
       setIsOther(false);
       setIsEditing(false);
-      onChange(bank);
+      onChange(String(bank ?? "").toUpperCase());
     }
     setOpen(false);
   };
@@ -180,7 +179,9 @@ const BankNameField: React.FC<BankNameFieldProps> = ({ value, onChange }) => {
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) =>
+            onChange(String(e.target.value ?? "").toUpperCase())
+          }
           onBlur={handleInputBlur}
           placeholder="Type bank name here..."
           autoFocus
@@ -208,15 +209,6 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
     string | null
   >(null);
 
-  const [salaryStructureDetailLoading, setSalaryStructureDetailLoading] =
-    useState(false);
-  const [salaryStructureDetailError, setSalaryStructureDetailError] = useState<
-    string | null
-  >(null);
-  const [salaryStructureDetail, setSalaryStructureDetail] =
-    useState<SalaryStructureDetail | null>(null);
-
-  // Fetch the current NAPSA ceiling on mount (skipped if already populated, e.g. edit mode)
   const fetchCeiling = async () => {
     try {
       setCeilingLoading(true);
@@ -249,7 +241,6 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
     }
   }, []);
 
-  // Once fetched successfully, ceiling fields go read-only
   const ceilingLocked = !ceilingError && !!formData.ceilingAmount;
   const lockedClass = "bg-app text-main cursor-default";
   const editableClass = "bg-card text-main";
@@ -280,160 +271,66 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
     };
   }, []);
 
-  const extractAmount = (
-    detail: SalaryStructureDetail | any,
-    opts: { componentNames?: string[]; abbrs?: string[] },
-  ): number => {
-    const earnings = Array.isArray(detail?.earnings) ? detail.earnings : [];
-    const names = (opts.componentNames ?? []).map((s) =>
-      String(s).trim().toLowerCase(),
-    );
-    const abbrs = (opts.abbrs ?? []).map((s) => String(s).trim().toLowerCase());
-    const row = earnings.find((r: any) => {
-      const cn = String(r?.component ?? "")
-        .trim()
-        .toLowerCase();
-      const ab = String(r?.abbr ?? "")
-        .trim()
-        .toLowerCase();
-      return (cn && names.includes(cn)) || (ab && abbrs.includes(ab));
-    });
-    const amount = Number(row?.amount ?? 0);
-    return Number.isFinite(amount) ? amount : 0;
-  };
-
-  const applySalaryStructure = async (structureName: string) => {
-    const name = String(structureName ?? "").trim();
-    if (!name) {
-      setSalaryStructureDetail(null);
-      setSalaryStructureDetailError(null);
-      setSalaryStructureDetailLoading(false);
-      return;
-    }
-
-    setSalaryStructureDetailLoading(true);
-    setSalaryStructureDetailError(null);
-    try {
-      const detail = await getSalaryStructureById(name);
-
-      setSalaryStructureDetail(detail);
-
-      const basic = extractAmount(detail, {
-        componentNames: ["basic", "basic salary"],
-        abbrs: ["basic"],
-      });
-      const housing = extractAmount(detail, {
-        componentNames: ["housing allowance"],
-        abbrs: ["ha"],
-      });
-      const meal = extractAmount(detail, {
-        componentNames: ["meal allowance"],
-        abbrs: ["ma", "meal"],
-      });
-      const transport = extractAmount(detail, {
-        componentNames: ["transport allowance"],
-        abbrs: ["ta", "transport"],
-      });
-
-      handleInputChange("basicSalary", basic ? String(basic) : "");
-      handleInputChange("housingAllowance", housing ? String(housing) : "");
-      handleInputChange("mealAllowance", meal ? String(meal) : "");
-      handleInputChange(
-        "transportAllowance",
-        transport ? String(transport) : "",
-      );
-      handleInputChange("otherAllowances", "");
-
-      const gross = basic + housing + meal + transport;
-      handleInputChange("grossSalary", gross > 0 ? String(gross) : "");
-    } catch (e: any) {
-      setSalaryStructureDetail(null);
-      const serverMessage =
-        e?.response?.data?.message ??
-        e?.response?.data?.exc ??
-        e?.response?.data?._server_messages ??
-        e?.response?.data?.error?.message ??
-        e?.message;
-
-      const safeMessage = String(serverMessage ?? "").trim();
-      setSalaryStructureDetailError(
-        safeMessage || "Failed to load salary structure details",
-      );
-    } finally {
-      setSalaryStructureDetailLoading(false);
-    }
-  };
-
   return (
     <div className="w-full max-w-5xl mx-auto space-y-5">
+      <div className="bg-card p-5 rounded-lg border border-theme space-y-3">
+        <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
+          Salary Structure
+        </h4>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs text-main mb-1 font-medium">
+              Select salary structure <span className="text-danger">*</span>
+            </label>
+            <select
+              value={String(formData.salaryStructure ?? "")}
+              onChange={(e) => {
+                const v = e.target.value;
+                handleInputChange("salaryStructure", v);
+              }}
+              disabled={salaryStructureLoading}
+              className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            >
+              <option value="">Select a salary structure</option>
+              {salaryStructures.map((s) => (
+                <option key={String(s.id ?? s.name)} value={String(s.name)}>
+                  {String(s.name)}
+                </option>
+              ))}
+            </select>
+            {salaryStructureError ? (
+              <div className="text-[11px] text-danger mt-1">{salaryStructureError}</div>
+            ) : null}
+          </div>
+
+          <div>
+            <label className="block text-xs text-main mb-1 font-medium">
+              Basic Salary (Base) <span className="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={String(formData.basicSalary ?? "")}
+              onChange={(e) => handleInputChange("basicSalary", e.target.value)}
+              placeholder="Enter basic salary amount"
+              disabled={!formData.salaryStructure}
+              className={`w-full px-3 py-2 text-sm border border-theme rounded-lg focus:ring-2 focus:ring-primary/20 ${
+                !formData.salaryStructure ? "bg-muted/20 cursor-not-allowed" : "bg-card"
+              }`}
+              min={0}
+            />
+            <div className="text-[11px] text-muted mt-1">
+              {formData.salaryStructure 
+                ? "Enter the base amount used to calculate all salary components."
+                : "Select a salary structure first."}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-6">
         {/* ═══════════════ LEFT — Salary & Payroll ═══════════════ */}
         <div className="space-y-5">
-          {/* Salary structure */}
-          <div className="bg-card p-5 rounded-lg border border-theme space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
-                Salary Structure
-              </h4>
-            </div>
-
-            <div>
-              <label className="block text-xs text-main mb-1 font-medium">
-                Select salary structure
-              </label>
-              <select
-                value={String(formData.salaryStructure ?? "")}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  handleInputChange("salaryStructure", v);
-                  applySalaryStructure(v);
-                }}
-                disabled={salaryStructureLoading || salaryStructureDetailLoading}
-                className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-              >
-                <option value="">Select a salary structure</option>
-                {salaryStructures.map((s) => (
-                  <option key={String(s.id ?? s.name)} value={String(s.name)}>
-                    {String(s.name)}
-                  </option>
-                ))}
-              </select>
-
-              <div className="mt-3">
-                <label className="block text-xs text-main mb-1 font-medium">
-                  Basic Salary <span className="text-danger">*</span>
-                </label>
-                <input
-                  aria-label="Basic Salary"
-                  type="number"
-                  step="any"
-                  inputMode="decimal"
-                  value={formData.basicSalary || ""}
-                  onChange={(e) =>
-                    handleInputChange("basicSalary", String(e.target.value))
-                  }
-                  placeholder="Enter basic salary"
-                  className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-              {salaryStructureDetailLoading ? (
-                <div className="text-[11px] text-muted mt-1">
-                  Loading salary structure…
-                </div>
-              ) : null}
-              {salaryStructureDetailError ? (
-                <div className="text-[11px] text-danger mt-1">
-                  {salaryStructureDetailError}
-                </div>
-              ) : null}
-              {salaryStructureError ? (
-                <div className="text-[11px] text-danger mt-1">
-                  {salaryStructureError}
-                </div>
-              ) : null}
-            </div>
-          </div>
-
           {/* Payroll config — currency, frequency, method */}
           <div className="bg-card p-5 rounded-lg border border-theme space-y-4">
             <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
@@ -527,7 +424,13 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                 <input
                   type="text"
                   value={formData[field] || ""}
-                  onChange={(e) => handleInputChange(field, e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    handleInputChange(
+                      field,
+                      String(next ?? "").toUpperCase(),
+                    );
+                  }}
                   placeholder={placeholder}
                   className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20"
                 />
@@ -537,7 +440,12 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
             {/* Bank name — custom dropdown with manual fallback */}
             <BankNameField
               value={formData.bankName || ""}
-              onChange={(val) => handleInputChange("bankName", val)}
+              onChange={(val) =>
+                handleInputChange(
+                  "bankName",
+                  String(val ?? "").toUpperCase(),
+                )
+              }
             />
 
             {/* Branch Code */}
@@ -549,7 +457,10 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                 type="text"
                 value={formData.branchCode || ""}
                 onChange={(e) =>
-                  handleInputChange("branchCode", e.target.value)
+                  handleInputChange(
+                    "branchCode",
+                    String(e.target.value ?? "").toUpperCase(),
+                  )
                 }
                 placeholder="e.g., 027"
                 className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20"
@@ -583,7 +494,7 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
 
             {ceilingError && (
               <div className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
-                ⚠ Could not fetch from NAPSA. Enter manually.
+                 Could not fetch from NAPSA. Enter manually.
               </div>
             )}
 

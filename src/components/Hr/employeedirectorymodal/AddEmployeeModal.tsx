@@ -182,6 +182,43 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
 
   const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
 
+  const handleInputChange = (field: string, value: string | boolean | any) => {
+    const noUppercaseFields = new Set([
+      "email",
+      "CompanyEmail",
+      "province",
+      "country",
+      "gender",
+      "maritalStatus",
+      "emergencyContactRelationship",
+      "department",
+      "level",
+      "reportingManager",
+      "hrManager",
+      "employeeType",
+      "employmentStatus",
+      "shift",
+      "currency",
+      "paymentFrequency",
+      "paymentMethod",
+      "salaryStructure",
+      "accountType",
+      "openingLeaveBalance",
+      "leavePolicy",
+      "leavePolicyDetails",
+      "dateOfBirth",
+      "engagementDate",
+      "contractEndDate",
+    ]);
+
+    const normalized =
+      typeof value === "string" && !noUppercaseFields.has(field)
+        ? String(value ?? "").toUpperCase()
+        : value;
+
+    setFormData((prev) => ({ ...prev, [field]: normalized }));
+  };
+
   const profileInputRef = useRef<HTMLInputElement | null>(null);
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [profilePreviewUrl, setProfilePreviewUrl] = useState<string>("");
@@ -251,9 +288,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       ...prev,
 
       // ===== PERSONAL INFO =====
-      firstName: editData.personalInfo?.FirstName || "",
-      OtherNames: editData.personalInfo?.OtherNames || "",
-      lastName: editData.personalInfo?.LastName || "",
+      firstName: String(editData.personalInfo?.FirstName || "").toUpperCase(),
+      otherNames: String(editData.personalInfo?.OtherNames || "").toUpperCase(),
+      lastName: String(editData.personalInfo?.LastName || "").toUpperCase(),
       dateOfBirth: editData.personalInfo?.Dob || "",
       gender: editData.personalInfo?.Gender || "",
       nationality: editData.personalInfo?.Nationality || "Zambian",
@@ -266,14 +303,18 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       alternatePhone: editData.contactInfo?.alternatePhone || "",
 
       // Address
-      street: editData.contactInfo?.address?.street || "",
-      city: editData.contactInfo?.address?.city || "",
+      street: String(editData.contactInfo?.address?.street || "").toUpperCase(),
+      city: String(editData.contactInfo?.address?.city || "").toUpperCase(),
       province: editData.contactInfo?.address?.province || "",
-      postalCode: editData.contactInfo?.address?.postalCode || "",
+      postalCode: String(
+        editData.contactInfo?.address?.postalCode || "",
+      ).toUpperCase(),
       country: editData.contactInfo?.address?.country || "Zambia",
 
       // Emergency Contact
-      emergencyContactName: editData.contactInfo?.emergencyContact?.name || "",
+      emergencyContactName: String(
+        editData.contactInfo?.emergencyContact?.name || "",
+      ).toUpperCase(),
       emergencyContactPhone:
         editData.contactInfo?.emergencyContact?.phone || "",
       emergencyContactRelationship:
@@ -282,26 +323,26 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       // ===== EMPLOYMENT INFO =====
       employeeId: editData.employmentInfo?.employeeId || "",
       department: editData.employmentInfo?.Department || "",
-      jobTitle: editData.employmentInfo?.JobTitle || "",
+      jobTitle: String(editData.employmentInfo?.JobTitle || "").toUpperCase(),
       employeeType: editData.employmentInfo?.EmployeeType || "Permanent",
       employmentStatus: editData.status || "Active",
       engagementDate: editData.employmentInfo?.joiningDate || "",
       probationPeriod: editData.employmentInfo?.probationPeriod || "",
       contractEndDate: editData.employmentInfo?.contractEndDate || "",
-      workLocation: editData.employmentInfo?.workLocation || "",
-      workAddress: editData.employmentInfo?.workAddress || "",
+      workLocation: String(editData.employmentInfo?.workLocation || "").toUpperCase(),
+      workAddress: String(editData.employmentInfo?.workAddress || "").toUpperCase(),
       shift: editData.employmentInfo?.shift || "Day",
       reportingManager: editData.employmentInfo?.reportingManager || "",
       hrManager: editData.employmentInfo?.hrManager || "",
 
       // ===== IDs =====
-      NrcId: editData.identityInfo?.nrc || "",
-      SocialSecurityNapsa: editData.identityInfo?.napsa || "",
+      nrcId: editData.identityInfo?.nrc || "",
+      socialSecurityNapsa: editData.identityInfo?.napsa || "",
       nhimaHealthInsurance: editData.identityInfo?.nhima || "",
-      TpinId: editData.identityInfo?.tpin || "",
+      tpinId: editData.identityInfo?.tpin || "",
 
       // ===== SALARY COMPONENTS =====
-      basicSalary: editData.payrollInfo?.salaryBreakdown?.BasicSalary || "",
+      basicSalary: editData.payrollInfo?.salaryBreakdown?.BasicSalary || editData.payrollInfo?.salaryBreakdown?.basic || editData.basic || "",
       housingAllowance:
         editData.payrollInfo?.salaryBreakdown?.HousingAllowance || "",
       mealAllowance: editData.payrollInfo?.salaryBreakdown?.MealAllowance || "",
@@ -318,9 +359,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
 
       // ===== BANK DETAILS =====
       accountNumber: editData.payrollInfo?.bankAccount?.AccountNumber || "",
-      accountName: editData.payrollInfo?.bankAccount?.AccountName || "",
-      bankName: editData.payrollInfo?.bankAccount?.BankName || "",
-      branchCode: editData.payrollInfo?.bankAccount?.branchCode || "",
+      accountName: String(
+        editData.payrollInfo?.bankAccount?.AccountName || "",
+      ).toUpperCase(),
+      bankName: String(
+        editData.payrollInfo?.bankAccount?.BankName || "",
+      ).toUpperCase(),
+      branchCode: String(
+        editData.payrollInfo?.bankAccount?.branchCode || "",
+      ).toUpperCase(),
       accountType: editData.payrollInfo?.bankAccount?.AccountType || "Savings",
 
       // ===== LEAVE SETUP =====
@@ -350,7 +397,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
         editData.employmentInfo?.weeklySchedule?.sunday || "",
 
       // ===== NOTES =====
-      notes: editData.notes || "",
+      notes: String(editData.notes || "").toUpperCase(),
     }));
   }, [editData]);
 
@@ -361,8 +408,12 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       ...prev,
       nrcId: verifiedData.identityInfo?.nrc || "",
       socialSecurityNapsa: verifiedData.identityInfo?.ssn || "",
-      firstName: verifiedData.personalInfo?.firstName || "",
-      lastName: verifiedData.personalInfo?.lastName || "",
+      firstName: String(
+        verifiedData.personalInfo?.firstName || "",
+      ).toUpperCase(),
+      lastName: String(
+        verifiedData.personalInfo?.lastName || "",
+      ).toUpperCase(),
       gender: verifiedData.personalInfo?.gender || "",
     }));
 
@@ -394,6 +445,11 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
     return /^\d{6}\/\d{2}\/\d$/.test(v);
   };
 
+  const isValidDigitsLength = (value: string, length: number): boolean => {
+    const digits = String(value ?? "").replace(/\D/g, "");
+    return digits.length === length;
+  };
+
   const isValidPhone = (value: string): boolean => {
     const v = String(value ?? "").trim();
     if (!v) return false;
@@ -414,8 +470,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
           if (!formData.nrcId) return "NRC number is required";
           if (!isValidNrc(formData.nrcId))
             return "NRC number must be in the format 123456/78/9";
+
+          if (!formData.socialSecurityNapsa) return "SSN is required";
+          if (!isValidDigitsLength(formData.socialSecurityNapsa, 9))
+            return "SSN must be exactly 9 digits";
+
           if (!formData.nhimaHealthInsurance) return "NHIMA number is required";
           if (!formData.tpinId) return "TPIN is required";
+          if (!isValidDigitsLength(formData.tpinId, 10))
+            return "TPIN must be exactly 10 digits";
         }
         return null;
 
@@ -464,6 +527,19 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
         return null;
     }
   };
+  const handleNext = () => {
+    const validationError = validateCurrentTab();
+    if (validationError) {
+      showApiError(validationError);
+      return;
+    }
+    setCurrentTabIndex((prev) => Math.min(prev + 1, TAB_ORDER.length - 1));
+  };
+
+  const handlePrevious = () => {
+    setCurrentTabIndex((prev) => Math.max(prev - 1, 0));
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -490,31 +566,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
     fetchEmployees();
   }, [isOpen]);
 
-  const handleNext = () => {
-    const error = validateCurrentTab();
-    if (error) {
-      showApiError(error);
-      return;
-    }
-
-    setCurrentTabIndex((prev) => prev + 1);
-  };
-
-  const handlePrevious = () => {
-    setCurrentTabIndex((prev) => prev - 1);
-  };
-
-  const handleInputChange = (field: string, value: string | boolean | any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
   const buildPayload = () => {
     const basicSalaryNum = Number(formData.basicSalary) || 0;
-
-    const housingAmount = Number(formData.housingAllowance) || 0;
-    const mealAmount = Number(formData.mealAllowance) || 0;
-    const transportAmount = Number(formData.transportAllowance) || 0;
-    const otherAmount = Number(formData.otherAllowances) || 0;
 
     const payload: any = {
       FirstName: formData.firstName,
@@ -531,19 +584,16 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       PhoneNumber: formData.phoneNumber,
       AlternatePhone: formData.alternatePhone,
 
-      // Address
       addressStreet: formData.street,
       addressCity: formData.city,
       addressProvince: formData.province,
       addressPostalCode: formData.postalCode,
       addressCountry: formData.country,
 
-      // Emergency Contact
       emergencyContactName: formData.emergencyContactName,
       emergencyContactPhone: formData.emergencyContactPhone,
       emergencyContactRelationship: formData.emergencyContactRelationship,
 
-      // Employment
       Department: formData.department,
       JobTitle: formData.jobTitle,
       EmployeeType: formData.employeeType,
@@ -559,28 +609,20 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       workAddress: formData.workAddress,
       shift: formData.shift,
 
-      // Salary Components - ALWAYS send final amounts
-      BasicSalary: basicSalaryNum,
-      HousingAllowance: housingAmount,
-      MealAllowance: mealAmount,
-      TransportAllowance: transportAmount,
-      otherAllowances: otherAmount,
-      GrossSalary: Number(formData.grossSalary) || 0,
+      // Salary Structure + Basic Amount
+      BasicAmount: basicSalaryNum,
 
-      // Payroll
       currency: formData.currency,
       PaymentFrequency: formData.paymentFrequency,
       PaymentMethod: formData.paymentMethod,
       SalaryStructure: formData.salaryStructure,
 
-      // Bank
       AccountType: formData.accountType,
       BankName: formData.bankName,
       AccountName: formData.accountName,
       AccountNumber: formData.accountNumber,
       BranchCode: formData.branchCode,
 
-      // Work Schedule - Send as empty string instead of undefined/null
       weeklyScheduleMonday: formData.weeklyScheduleMonday || "",
       weeklyScheduleTuesday: formData.weeklyScheduleTuesday || "",
       weeklyScheduleWednesday: formData.weeklyScheduleWednesday || "",
@@ -589,7 +631,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       weeklyScheduleSaturday: formData.weeklyScheduleSaturday || "",
       weeklyScheduleSunday: formData.weeklyScheduleSunday || "",
 
-      // Leave
       OpeningLeaveBalance: formData.openingLeaveBalance,
       InitialLeaveRateMonthly: Number(formData.initialLeaveRateMonthly) || 0,
       CeilingYear: Number(formData.ceilingYear) || 0,
@@ -597,6 +638,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
 
       verifiedFromSource: !!verifiedData,
     };
+
     if (!editData) {
       payload.NrcId = formData.nrcId;
       payload.SocialSecurityNapsa = formData.socialSecurityNapsa;
@@ -638,8 +680,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
         const emp = String(employeeCode ?? "").trim();
         if (!emp || !selectedSalaryStructure) return;
 
-        const basicAmount = Number(formData.basicSalary);
-        if (!Number.isFinite(basicAmount)) return;
+      // Ensure we have a valid basic salary number
+      const basicNum = Number(formData.basicSalary) || 0;
+      if (!Number.isFinite(basicNum) || basicNum <= 0) return;
 
         try {
           const list = await getSalaryStructureAssignments({ employee: emp });
@@ -652,25 +695,24 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               ),
             )[0];
 
-          const assignmentName = String(best?.name ?? "").trim();
-
-          if (assignmentName) {
-            await replaceSalaryStructureAssignment({
-              name: assignmentName,
-              salary_structure: selectedSalaryStructure,
-              basic: basicAmount,
-            });
-          } else {
-            await createSalaryStructureAssignment({
-              employee: emp,
-              salary_structure: selectedSalaryStructure,
-              basic: basicAmount,
-            });
-          }
-        } catch {
-          // Do not block employee create/update if assignment fails
+        const assignmentName = String(best?.name ?? "").trim();
+        if (assignmentName) {
+          await replaceSalaryStructureAssignment({
+            name: assignmentName,
+            salary_structure: selectedSalaryStructure,
+            basic: basicNum,
+          });
+        } else {
+          await createSalaryStructureAssignment({
+            employee: emp,
+            salary_structure: selectedSalaryStructure,
+            basic: basicNum,
+          });
         }
-      };
+      } catch {
+        // Do not block employee create/update if assignment fails
+      }
+    };
 
       if (editData?.id) {
         const payload = {
@@ -920,6 +962,19 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               handleInputChange={handleInputChange}
             />
           )}
+
+          <div className="mt-6 bg-card p-5 rounded-lg border border-theme space-y-2">
+            <label className="block text-xs text-main mb-1 font-medium">
+              Notes
+            </label>
+            <textarea
+              value={formData.notes || ""}
+              onChange={(e) => handleInputChange("notes", e.target.value)}
+              placeholder="Enter notes"
+              rows={3}
+              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
         </div>
 
         {/* Footer */}

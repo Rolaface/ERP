@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, Plus, Calendar } from "lucide-react";
 import { getAllHolidays } from "../../../../api/HolidayApi";
+import { HolidayListForm } from "./HolidayListForm";
 
 export interface HolidayListProps {
   onAdd: () => void;
   onClose?: () => void;
 }
 
-export const HolidayList: React.FC<HolidayListProps> = ({ onAdd, onClose }) => {
+export const HolidayList: React.FC<HolidayListProps> = ({
+  onAdd,
+  onClose,
+}) => {
+    const [showForm, setShowForm] = useState(false);
   const [holidays, setHolidays] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +40,7 @@ export const HolidayList: React.FC<HolidayListProps> = ({ onAdd, onClose }) => {
      UI
   ========================= */
   return (
+    <>
     <div className="bg-card border border-theme rounded-2xl overflow-hidden">
       {/* HEADER */}
       <div className="p-6 flex items-center justify-between border-b border-theme">
@@ -51,8 +57,8 @@ export const HolidayList: React.FC<HolidayListProps> = ({ onAdd, onClose }) => {
         </div>
 
         <button
-          onClick={onAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl font-semibold transition"
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl font-semibold transition hover:bg-primary/90"
         >
           <Plus size={18} />
           Add Holiday
@@ -114,5 +120,19 @@ export const HolidayList: React.FC<HolidayListProps> = ({ onAdd, onClose }) => {
         </div>
       )}
     </div>
+    {showForm && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                <div className="bg-background w-full max-w-2xl rounded-lg">
+                  <HolidayListForm
+                    onClose={() => setShowForm(false)}
+                    onSubmit={() => {
+                      setShowForm(false);
+                      onAdd();
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            </>
   );
 };
