@@ -251,6 +251,19 @@ const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
   );
 };
 
+const derivePayslipStatus = (
+  napsaStatus?: string,
+  payslipStatus?: string,
+): string => {
+  const ns = String(napsaStatus ?? "").trim().toLowerCase();
+
+  if (ns === "pending") return "Pending";
+  if (ns === "failed") return "Failed";
+  if (ns === "approved") return "Submitted";
+
+  return String(payslipStatus ?? "").trim();
+};
+
 const SalarySlipDetailsModal: React.FC<{
   open: boolean;
   slipId: string | null;
@@ -337,7 +350,7 @@ const SalarySlipDetailsModal: React.FC<{
                   <div>
                     <div className={sectionTitleCls}>Status</div>
                     <div className="mt-1">
-                      <StatusChip status={(data as any)?.status} />
+                      <StatusChip status={derivePayslipStatus((data as any)?.napsaStatus, (data as any)?.status)} />
                     </div>
                   </div>
 
@@ -893,7 +906,7 @@ export default function PayrollManagement() {
                         salary_structure: s.salary_structure,
                         start_date: s.start_date,
                         end_date: s.end_date,
-                        payslip_status: s.status,
+                        payslip_status: derivePayslipStatus(s.napsaStatus, s.status),
                         napsa_status: s.napsaStatus ?? "",
                         total_earnings: s.total_earnings,
                         total_deduction: s.total_deduction,
@@ -987,7 +1000,7 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3 text-sm text-muted break-words">{s.salary_structure}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.end_date}</td>
-                          <td className="px-4 py-3"><StatusChip status={s.status} /></td>
+                          <td className="px-4 py-3"><StatusChip status={derivePayslipStatus(s.napsaStatus, s.status)} /></td>
                           <td className="px-4 py-3"><StatusChip status={s.napsaStatus} /></td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_earnings ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
