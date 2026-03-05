@@ -1,6 +1,7 @@
 // LeavePeriod.tsx
-import React from "react";
+import React, { useState } from "react";
 import { ArrowLeft, Plus, Calendar } from "lucide-react";
+import { LeavePeriodForm } from "./LeavePeriodForm";
 
 export interface LeavePeriodProps {
   onAdd: () => void;
@@ -8,6 +9,7 @@ export interface LeavePeriodProps {
 }
 
 export const LeavePeriod: React.FC<LeavePeriodProps> = ({ onAdd, onClose }) => {
+  const [showForm, setShowForm] = useState(false);
   const periods = [
     {
       name: "2025",
@@ -24,6 +26,7 @@ export const LeavePeriod: React.FC<LeavePeriodProps> = ({ onAdd, onClose }) => {
   ];
 
   return (
+    <>
     <div className="bg-card border border-theme rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="p-6 flex items-center justify-between border-b border-theme">
@@ -40,8 +43,8 @@ export const LeavePeriod: React.FC<LeavePeriodProps> = ({ onAdd, onClose }) => {
         </div>
 
         <button
-          onClick={onAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl font-semibold transition"
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl font-semibold transition hover:bg-primary/90"
         >
           <Plus size={18} />
           Add Leave Period
@@ -64,7 +67,7 @@ export const LeavePeriod: React.FC<LeavePeriodProps> = ({ onAdd, onClose }) => {
           <thead>
             <tr className="table-head">
               <th className="px-6 py-3 text-left text-sm font-semibold">
-                <input type="checkbox" className="w-4 h-4" />
+                {/* <input type="checkbox" className="w-4 h-4" /> */}
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold">
                 Period Name
@@ -133,5 +136,19 @@ export const LeavePeriod: React.FC<LeavePeriodProps> = ({ onAdd, onClose }) => {
         </div>
       </div>
     </div>
+    {showForm && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-background w-full max-w-2xl rounded-lg">
+                <LeavePeriodForm
+                  onClose={() => setShowForm(false)}
+                  onSubmit={() => {
+                    setShowForm(false);
+                    onAdd();
+                  }}
+                />
+              </div>
+            </div>
+          )}
+    </>
   );
 };

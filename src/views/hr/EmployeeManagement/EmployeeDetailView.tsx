@@ -26,8 +26,9 @@ import {
   Clock,
   TrendingUp,
   CreditCard as BankIcon,
+  Edit2,
 } from "lucide-react";
-import { updateEmployeeDocuments } from "../../../api/employeeapi";
+import { updateEmployeeDocuments, updateEmployeeProfilePhoto } from "../../../api/employeeapi";
 import { ERP_BASE } from "../../../config/api";
 import { useAssignedSalaryStructure } from "../../../hooks/useAssignedSalaryStructure";
 import { toSalaryStructureMoneyRows } from "../../../utils/salaryStructureDisplay";
@@ -143,6 +144,115 @@ const DocumentUploadModal: React.FC<{
   );
 };
 
+const ProfilePhotoUploadModal: React.FC<{
+  onClose: () => void;
+  onUpload: (file: File) => Promise<void>;
+}> = ({ onClose, onUpload }) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const handleFileChange = (selectedFile: File | null) => {
+    setFile(selectedFile);
+    if (selectedFile) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result as string);
+      };
+      reader.readAsDataURL(selectedFile);
+    } else {
+      setPreview(null);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      await onUpload(file);
+      onClose();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-card w-full max-w-md rounded-lg shadow-xl border border-border overflow-hidden">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-border">
+          <h3 className="text-sm font-bold text-main flex items-center gap-2">
+            <Upload className="w-4 h-4 text-muted" />
+            Update Profile Photo
+          </h3>
+          <button onClick={onClose} className="p-1 rounded hover:bg-muted/10 transition-colors">
+            <X className="w-4 h-4 text-muted hover:text-main" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {preview && (
+            <div className="flex justify-center mb-4">
+              <div className="w-24 h-24 bg-muted/10 border border-border rounded-full flex items-center justify-center overflow-hidden">
+                <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          )}
+
+          <label className="block group">
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+              <Upload className="w-5 h-5 text-muted mx-auto mb-2 group-hover:text-primary transition-colors" />
+              <p className="text-sm font-medium text-main mb-1">
+                Click to upload or drag & drop
+              </p>
+              <p className="text-xs text-muted">
+                JPG, PNG (max 5MB)
+              </p>
+            </div>
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png"
+              onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+              className="hidden"
+            />
+          </label>
+
+          {file && (
+            <div className="flex items-center gap-3 bg-muted/5 border border-border rounded-md px-3 py-2">
+              <FileText className="w-4 h-4 text-muted" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-main truncate">{file.name}</p>
+                <p className="text-xs text-muted">
+                  {(file.size / 1024).toFixed(1)} KB
+                </p>
+              </div>
+              <button onClick={(e) => { e.preventDefault(); handleFileChange(null); }} className="p-1 hover:bg-background rounded">
+                <X className="w-3.5 h-3.5 text-muted hover:text-red-500" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3 px-6 py-4 bg-muted/5 border-t border-border">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-background transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={!file || loading}
+            onClick={handleSubmit}
+            className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-md disabled:opacity-50 hover:bg-primary/90 transition-colors flex items-center gap-2"
+          >
+            {loading ? "Uploading..." : "Update Photo"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EmployeeDetailView: React.FC<Props> = ({
   employee,
   onBack,
@@ -152,6 +262,7 @@ const EmployeeDetailView: React.FC<Props> = ({
     "personal" | "employment" | "compensation" | "documents"
   >("personal");
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showProfilePhotoModal, setShowProfilePhotoModal] = useState(false);
 
   const {
     status,
@@ -284,6 +395,22 @@ const EmployeeDetailView: React.FC<Props> = ({
     }
   };
 
+  const handleUploadProfilePhoto = async (file: File) => {
+    try {
+      showLoading("Uploading Profile Photo...");
+
+      await updateEmployeeProfilePhoto(employee.id, file);
+
+      await onDocumentUploaded();
+
+      closeSwal();
+      showSuccess("Profile photo updated successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
+
   const tabs = [
     { id: "personal", label: "Personal Info", icon: <User className="w-4 h-4" /> },
     { id: "employment", label: "Employment", icon: <Briefcase className="w-4 h-4" /> },
@@ -305,15 +432,24 @@ const EmployeeDetailView: React.FC<Props> = ({
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-muted/10 border border-border rounded-full flex items-center justify-center overflow-hidden">
-              {profilePhotoUrl ? (
-                <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <div className="text-primary text-xl font-bold">
-                  {personalInfo?.FirstName?.[0]}
-                  {personalInfo?.LastName?.[0]}
-                </div>
-              )}
+            <div className="relative group w-14 h-14">
+              <div className="w-14 h-14 bg-muted/10 border border-border rounded-full flex items-center justify-center overflow-hidden">
+                {profilePhotoUrl ? (
+                  <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-primary text-xl font-bold">
+                    {personalInfo?.FirstName?.[0]}
+                    {personalInfo?.LastName?.[0]}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setShowProfilePhotoModal(true)}
+                className="absolute -bottom-1 -right-1 p-1.5 bg-primary text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-primary/90"
+                title="Edit profile photo"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
             </div>
             <div>
               <h1 className="text-xl font-bold text-main">
@@ -685,6 +821,13 @@ const EmployeeDetailView: React.FC<Props> = ({
         <DocumentUploadModal
           onClose={() => setShowUploadModal(false)}
           onUpload={handleUploadDocument}
+        />
+      )}
+
+      {showProfilePhotoModal && (
+        <ProfilePhotoUploadModal
+          onClose={() => setShowProfilePhotoModal(false)}
+          onUpload={handleUploadProfilePhoto}
         />
       )}
     </div>
