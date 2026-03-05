@@ -312,7 +312,10 @@ const SalarySlipDetailsModal: React.FC<{
     : [];
   const paySlipUrl = String((data as any)?.custom_slip_url ?? (data as any)?.paySlipUrl ?? "").trim();
   const referenceNumber = String((data as any)?.custom_reference_number ?? (data as any)?.referenceNumber ?? "").trim();
-  const dataRec = data as unknown as Record<string, unknown>;
+  const dataRec: Record<string, unknown> =
+    data && typeof data === "object"
+      ? (data as unknown as Record<string, unknown>)
+      : {};
   const pickString = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
   const modalNapsaStatus = pickString(dataRec["napsaStatus"]) ?? pickString(dataRec["napsa_status"]);
   const modalPayslipStatus = pickString(dataRec["status"]) ?? pickString(dataRec["payslip_status"]);
