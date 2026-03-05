@@ -28,7 +28,6 @@ export default function SalaryStructureAssignmentTab({
   onAssigned,
 }: Props) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [salaryStructuresLoading, setSalaryStructuresLoading] = useState(false);
   const [salaryStructures, setSalaryStructures] = useState<SalaryStructureListItem[]>([]);
 
@@ -49,10 +48,7 @@ export default function SalaryStructureAssignmentTab({
       ...p,
       employee: String(editingAssignment.employee ?? p.employee ?? ""),
       salary_structure: String(editingAssignment.salary_structure ?? p.salary_structure ?? ""),
-      basic:
-        editingAssignment && (editingAssignment as any)?.basic !== undefined && (editingAssignment as any)?.basic !== null
-          ? String((editingAssignment as any).basic)
-          : p.basic,
+      basic: String((editingAssignment as any)?.basic ?? p.basic ?? ""),
     }));
   }, [editingAssignment]);
 
@@ -141,23 +137,13 @@ export default function SalaryStructureAssignmentTab({
   }, [employees]);
 
   const canSubmit = useMemo(() => {
-    const basicOk = Number(String(form.basic ?? "").trim()) > 0;
+    const basicNum = Number(form.basic);
+    const basicOk = Number.isFinite(basicNum) && basicNum > 0;
     if (isEditing) {
       return Boolean(form.employee?.trim() && form.salary_structure?.trim() && basicOk);
     }
     return Boolean(form.employee?.trim() && form.salary_structure?.trim() && basicOk);
   }, [form]);
-
-  const getApiErrorMessage = (e: any): string => {
-    const data = e?.response?.data ?? e?.data;
-    const msg =
-      (typeof data?.message === "string" && data.message.trim() ? data.message : "") ||
-      (typeof data?.data?.message === "string" && data.data.message.trim() ? data.data.message : "") ||
-      (typeof e?.message === "string" && e.message.trim() ? e.message : "") ||
-      "Request failed";
-
-    return msg;
-  };
 
   const handleAssign = async () => {
     if (!canSubmit) {
@@ -165,31 +151,27 @@ export default function SalaryStructureAssignmentTab({
       return;
     }
 
-    const basic = Number(String(form.basic ?? "").trim());
-
     setLoading(true);
-    setError(null);
     try {
+      const basicNum = Number(form.basic);
       if (isEditing && editingAssignment?.name) {
         await replaceSalaryStructureAssignment({
           name: String(editingAssignment.name).trim(),
           salary_structure: form.salary_structure.trim(),
-          basic,
+          basic: Number.isFinite(basicNum) ? basicNum : undefined,
         });
         toast.success("Salary structure assignment updated");
       } else {
         await createSalaryStructureAssignment({
           employee: form.employee.trim(),
           salary_structure: form.salary_structure.trim(),
-          basic,
+          basic: Number.isFinite(basicNum) ? basicNum : 0,
         });
         toast.success("Salary structure assigned");
       }
       onAssigned?.();
     } catch (e: any) {
-      const msg = getApiErrorMessage(e);
-      setError(msg);
-      toast.error(msg);
+      toast.error(e?.message || (isEditing ? "Failed to update assignment" : "Failed to assign salary structure"));
     } finally {
       setLoading(false);
     }
@@ -203,12 +185,6 @@ export default function SalaryStructureAssignmentTab({
           Assign a salary structure to this employee effective from a start date
         </div>
       </div>
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          {error}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
@@ -262,6 +238,7 @@ export default function SalaryStructureAssignmentTab({
           </label>
           <input
             type="number"
+            inputMode="decimal"
             value={form.basic}
             onChange={(e) => setForm((p) => ({ ...p, basic: e.target.value }))}
             placeholder="e.g. 4000"
@@ -269,7 +246,6 @@ export default function SalaryStructureAssignmentTab({
             min={0}
           />
         </div>
-
       </div>
 
       <div className="flex items-center justify-end">

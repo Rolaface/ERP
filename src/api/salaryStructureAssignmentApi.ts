@@ -15,11 +15,11 @@ export type SalaryStructureAssignmentListItem = {
   employee: string;
   full_name?: string;
   salary_structure: string;
-  from_date: string;
+  basic?: number;
+  from_date?: string;
   company?: string;
   department?: string;
   currency?: string;
-  basic?: number;
 };
 
 export type GetSalaryStructureAssignmentsParams = {

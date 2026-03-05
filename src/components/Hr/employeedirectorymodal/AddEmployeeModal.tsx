@@ -638,8 +638,7 @@ const [step, setStep] = useState<"verification" | "form">(
       const emp = String(employeeCode ?? "").trim();
       if (!emp || !selectedSalaryStructure) return;
 
-      const basic = Number(formData.basicSalary || formData.grossSalary) || 0;
-      if (!basic) return;
+      const basicNum = Number(formData.basicSalary) || 0;
 
       try {
         const list = await getSalaryStructureAssignments({ employee: emp });
@@ -653,13 +652,13 @@ const [step, setStep] = useState<"verification" | "form">(
           await replaceSalaryStructureAssignment({
             name: assignmentName,
             salary_structure: selectedSalaryStructure,
-            basic,
+            basic: basicNum,
           });
         } else {
           await createSalaryStructureAssignment({
             employee: emp,
             salary_structure: selectedSalaryStructure,
-            basic,
+            basic: basicNum,
           });
         }
       } catch {
