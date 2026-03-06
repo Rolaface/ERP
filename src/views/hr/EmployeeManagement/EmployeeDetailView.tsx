@@ -70,8 +70,8 @@ const DocumentUploadModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-card w-full max-w-md rounded-lg shadow-xl border border-border overflow-hidden">
-        <div className="flex justify-between items-center px-6 py-4 border-b border-border">
+      <div className="bg-card w-full max-w-md rounded-2xl shadow-xl border border-theme overflow-hidden">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-theme">
           <h3 className="text-sm font-bold text-main flex items-center gap-2">
             <Upload className="w-4 h-4 text-muted" />
             Upload Document
@@ -92,13 +92,13 @@ const DocumentUploadModal: React.FC<{
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-background text-main"
+              className="w-full border border-theme rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[rgba(204,0,0,0.2)] focus:border-[var(--primary)] bg-card text-main"
               placeholder="e.g. NRC, Offer Letter, Resume"
             />
           </div>
 
           <label className="block group">
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+            <div className="border-2 border-dashed border-theme rounded-2xl p-6 text-center cursor-pointer hover:border-[var(--primary)] hover:bg-primary/5 transition-colors">
               <Upload className="w-5 h-5 text-muted mx-auto mb-2 group-hover:text-primary transition-colors" />
               <p className="text-sm font-medium text-main mb-1">
                 Click to upload or drag & drop
@@ -114,7 +114,7 @@ const DocumentUploadModal: React.FC<{
           </label>
 
           {file && (
-            <div className="flex items-center gap-3 bg-muted/5 border border-border rounded-md px-3 py-2">
+            <div className="flex items-center gap-3 bg-app border border-theme rounded-xl px-3 py-2">
               <FileText className="w-4 h-4 text-muted" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-main truncate">
@@ -129,7 +129,7 @@ const DocumentUploadModal: React.FC<{
                   e.preventDefault();
                   setFile(null);
                 }}
-                className="p-1 hover:bg-background rounded"
+                className="p-1 hover:bg-app rounded"
               >
                 <X className="w-3.5 h-3.5 text-muted hover:text-red-500" />
               </button>
@@ -137,10 +137,10 @@ const DocumentUploadModal: React.FC<{
           )}
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 bg-muted/5 border-t border-border">
+        <div className="flex justify-end gap-3 px-6 py-4 bg-app border-t border-theme">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-background transition-colors"
+            className="px-4 py-2 text-sm font-medium border border-theme rounded-xl hover:bg-app transition-colors text-main"
           >
             Cancel
           </button>
@@ -192,8 +192,8 @@ const ProfilePhotoUploadModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-card w-full max-w-md rounded-lg shadow-xl border border-border overflow-hidden">
-        <div className="flex justify-between items-center px-6 py-4 border-b border-border">
+      <div className="bg-card w-full max-w-md rounded-2xl shadow-xl border border-theme overflow-hidden">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-theme">
           <h3 className="text-sm font-bold text-main flex items-center gap-2">
             <Upload className="w-4 h-4 text-muted" />
             Update Profile Photo
@@ -206,14 +206,14 @@ const ProfilePhotoUploadModal: React.FC<{
         <div className="p-6 space-y-5">
           {preview && (
             <div className="flex justify-center mb-4">
-              <div className="w-24 h-24 bg-muted/10 border border-border rounded-full flex items-center justify-center overflow-hidden">
+              <div className="w-24 h-24 bg-app border border-theme rounded-full flex items-center justify-center overflow-hidden">
                 <img src={preview} alt="Preview" className="w-full h-full object-cover" />
               </div>
             </div>
           )}
 
           <label className="block group">
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+            <div className="border-2 border-dashed border-theme rounded-2xl p-6 text-center cursor-pointer hover:border-[var(--primary)] hover:bg-primary/5 transition-colors">
               <Upload className="w-5 h-5 text-muted mx-auto mb-2 group-hover:text-primary transition-colors" />
               <p className="text-sm font-medium text-main mb-1">
                 Click to upload or drag & drop
@@ -231,7 +231,7 @@ const ProfilePhotoUploadModal: React.FC<{
           </label>
 
           {file && (
-            <div className="flex items-center gap-3 bg-muted/5 border border-border rounded-md px-3 py-2">
+            <div className="flex items-center gap-3 bg-app border border-theme rounded-xl px-3 py-2">
               <FileText className="w-4 h-4 text-muted" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-main truncate">{file.name}</p>
@@ -239,17 +239,17 @@ const ProfilePhotoUploadModal: React.FC<{
                   {(file.size / 1024).toFixed(1)} KB
                 </p>
               </div>
-              <button onClick={(e) => { e.preventDefault(); handleFileChange(null); }} className="p-1 hover:bg-background rounded">
+              <button onClick={(e) => { e.preventDefault(); handleFileChange(null); }} className="p-1 hover:bg-app rounded">
                 <X className="w-3.5 h-3.5 text-muted hover:text-red-500" />
               </button>
             </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 bg-muted/5 border-t border-border">
+        <div className="flex justify-end gap-3 px-6 py-4 bg-app border-t border-theme">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-background transition-colors"
+            className="px-4 py-2 text-sm font-medium border border-theme rounded-xl hover:bg-app transition-colors text-main"
           >
             Cancel
           </button>
@@ -487,12 +487,12 @@ const EmployeeDetailView: React.FC<Props> = ({
   const getStatusBadge = () => {
     const statusLower = status?.toLowerCase() || "";
     if (statusLower === "active")
-      return "bg-green-50 text-green-700 border-green-200";
+      return "bg-success/10 text-success border-success/20";
     if (statusLower === "inactive" || statusLower === "terminated")
-      return "bg-red-50 text-red-700 border-red-200";
+      return "bg-danger/10 text-danger border-danger/20";
     if (statusLower === "on leave")
-      return "bg-yellow-50 text-yellow-700 border-yellow-200";
-    return "bg-gray-50 text-gray-700 border-gray-200";
+      return "bg-primary/10 text-primary border-[var(--primary)]/20";
+    return "bg-row-hover/40 text-main border-theme";
   };
 
   const handleUploadDocument = async ({
@@ -565,9 +565,9 @@ const EmployeeDetailView: React.FC<Props> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-app">
       {/* Structural Header */}
-      <div className="bg-card border-b border-border px-8 py-4 sticky top-0 z-10">
+      <div className="bg-card border-b border-theme px-4 sm:px-8 py-4 sticky top-0 z-20">
         <button
           onClick={onBack}
           className="group flex items-center gap-1.5 text-muted hover:text-main text-sm font-medium transition-colors mb-4"
@@ -579,7 +579,7 @@ const EmployeeDetailView: React.FC<Props> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="relative group w-14 h-14">
-              <div className="w-14 h-14 bg-muted/10 border border-border rounded-full flex items-center justify-center overflow-hidden">
+              <div className="w-14 h-14 bg-app border border-theme rounded-full flex items-center justify-center overflow-hidden">
                 {profilePhotoUrl ? (
                   <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -598,10 +598,10 @@ const EmployeeDetailView: React.FC<Props> = ({
               </button>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-main">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-main leading-tight">
                 {personalInfo?.FirstName} {personalInfo?.LastName}
               </h1>
-              <div className="flex items-center gap-3 mt-1 text-sm text-muted">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted">
                 <span className="flex items-center gap-1">
                   <Briefcase className="w-3.5 h-3.5" />
                   {employmentInfo?.JobTitle || "—"}
@@ -616,11 +616,11 @@ const EmployeeDetailView: React.FC<Props> = ({
 
           <div className="flex items-center gap-3">
             <div
-              className={`px-2.5 py-1 rounded text-xs font-medium border ${getStatusBadge()}`}
+              className={`px-3 py-1 rounded-full text-[11px] font-bold border ${getStatusBadge()}`}
             >
               {status}
             </div>
-            <div className="px-2.5 py-1 rounded text-xs font-mono font-medium bg-muted/10 border border-border text-main">
+            <div className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-app border border-theme text-main">
               ID: {employeeCode || "—"}
             </div>
           </div>
@@ -628,12 +628,35 @@ const EmployeeDetailView: React.FC<Props> = ({
       </div>
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-card rounded-2xl border border-theme p-4 shadow-sm">
+            <p className="text-[11px] font-black tracking-widest uppercase text-muted">Department</p>
+            <p className="text-sm font-bold text-main mt-1 truncate">{employmentInfo?.Department || "—"}</p>
+          </div>
+          <div className="bg-card rounded-2xl border border-theme p-4 shadow-sm">
+            <p className="text-[11px] font-black tracking-widest uppercase text-muted">Location</p>
+            <p className="text-sm font-bold text-main mt-1 truncate">{employmentInfo?.workLocation || "—"}</p>
+          </div>
+          <div className="bg-card rounded-2xl border border-theme p-4 shadow-sm">
+            <p className="text-[11px] font-black tracking-widest uppercase text-muted">Gross Salary</p>
+            <p className="text-sm font-bold text-main mt-1 tabular-nums">
+              {payrollInfo?.currency || "ZMW"} {Number(payrollInfo?.grossSalary || 0).toLocaleString()}
+            </p>
+          </div>
+          <div className="bg-card rounded-2xl border border-theme p-4 shadow-sm">
+            <p className="text-[11px] font-black tracking-widest uppercase text-muted">Leave Balance</p>
+            <p className="text-sm font-bold text-main mt-1">
+              {leaveInfo?.openingLeaveBalance || "0"} Days
+            </p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Sidebar Info Cards */}
           <div className="lg:col-span-4 xl:col-span-3 space-y-6">
             {/* Quick Contact Card */}
-            <div className="bg-card rounded-lg border border-border p-5">
-              <h3 className="text-sm font-bold text-main mb-4 border-b border-border pb-2">
+            <div className="bg-card rounded-2xl border border-theme p-5 shadow-sm">
+              <h3 className="text-sm font-black text-main mb-4 border-b border-theme pb-2 tracking-wide">
                 Contact Info
               </h3>
               <div className="space-y-4">
@@ -656,8 +679,8 @@ const EmployeeDetailView: React.FC<Props> = ({
             </div>
 
             {/* KPI Cards Striped Back */}
-            <div className="bg-card rounded-lg border border-border p-5">
-              <h3 className="text-sm font-bold text-main mb-4 border-b border-border pb-2">
+            <div className="bg-card rounded-2xl border border-theme p-5 shadow-sm">
+              <h3 className="text-sm font-black text-main mb-4 border-b border-theme pb-2 tracking-wide">
                 Compensation Summary
               </h3>
               <div className="mb-4">
@@ -672,7 +695,7 @@ const EmployeeDetailView: React.FC<Props> = ({
               </div>
 
               {leaveInfo && (
-                <div className="pt-4 border-t border-border">
+                <div className="pt-4 border-t border-theme">
                   <p className="text-xs text-muted mb-1">Leave Balance</p>
                   <p className="text-xl font-bold text-main">
                     {leaveInfo?.openingLeaveBalance || "0"}{" "}
@@ -686,15 +709,15 @@ const EmployeeDetailView: React.FC<Props> = ({
           {/* Right Content Area */}
           <div className="lg:col-span-8 xl:col-span-9">
             {/* Clean Tabs */}
-            <div className="flex overflow-x-auto border-b border-border mb-6">
+            <div className="flex overflow-x-auto border-b border-theme mb-6">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                     activeTab === tab.id
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted hover:text-main hover:border-border"
+                      ? "border-[var(--primary)] text-primary"
+                      : "border-transparent text-muted hover:text-main hover:border-theme"
                   }`}
                 >
                   {tab.icon}
@@ -704,12 +727,12 @@ const EmployeeDetailView: React.FC<Props> = ({
             </div>
 
             {/* Content Container */}
-            <div className="bg-card rounded-lg border border-border p-6 md:p-8 min-h-[500px]">
+            <div className="bg-card rounded-2xl border border-theme p-6 md:p-8 min-h-[500px] shadow-sm">
               {/* PERSONAL TAB */}
               {activeTab === "personal" && (
                 <div className="space-y-8 max-w-4xl">
                   <section>
-                    <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                    <h2 className="text-sm font-black text-main uppercase tracking-wider mb-4 text-muted border-b border-theme pb-2">
                       Personal Information
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
@@ -734,7 +757,7 @@ const EmployeeDetailView: React.FC<Props> = ({
                   </section>
 
                   <section>
-                    <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                    <h2 className="text-sm font-black text-main uppercase tracking-wider mb-4 text-muted border-b border-theme pb-2">
                       Contact Details
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
@@ -764,7 +787,7 @@ const EmployeeDetailView: React.FC<Props> = ({
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <section>
-                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                      <h2 className="text-sm font-black text-main uppercase tracking-wider mb-4 text-muted border-b border-theme pb-2">
                         Emergency Contact
                       </h2>
                       <div className="space-y-4">
@@ -784,7 +807,7 @@ const EmployeeDetailView: React.FC<Props> = ({
                     </section>
 
                     <section>
-                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                      <h2 className="text-sm font-black text-main uppercase tracking-wider mb-4 text-muted border-b border-theme pb-2">
                         Compliance IDs
                       </h2>
                       <div className="grid grid-cols-2 gap-y-4 gap-x-4">
@@ -811,7 +834,7 @@ const EmployeeDetailView: React.FC<Props> = ({
               {activeTab === "employment" && (
                 <div className="space-y-8 max-w-4xl">
                   <section>
-                    <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                    <h2 className="text-sm font-black text-main uppercase tracking-wider mb-4 text-muted border-b border-theme pb-2">
                       Employment Details
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
@@ -849,7 +872,7 @@ const EmployeeDetailView: React.FC<Props> = ({
 
                   {employmentInfo?.weeklySchedule && (
                     <section>
-                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                      <h2 className="text-sm font-black text-main uppercase tracking-wider mb-4 text-muted border-b border-theme pb-2">
                         Weekly Schedule
                       </h2>
                       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4">
@@ -877,7 +900,7 @@ const EmployeeDetailView: React.FC<Props> = ({
 
                   {leaveInfo && (
                     <section>
-                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                      <h2 className="text-sm font-black text-main uppercase tracking-wider mb-4 text-muted border-b border-theme pb-2">
                         Leave Policy Setup
                       </h2>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8">
@@ -903,7 +926,7 @@ const EmployeeDetailView: React.FC<Props> = ({
               {activeTab === "compensation" && (
                 <div className="space-y-8 max-w-4xl">
                   {/* Clean Salary Header */}
-                  <div className="bg-muted/5 border border-border rounded-lg p-6">
+                  <div className="bg-app border border-theme rounded-2xl p-6">
                     <div className="flex flex-col md:flex-row justify-between gap-6">
                       <div>
                         <p className="text-xs text-muted uppercase tracking-wider font-semibold mb-1">
@@ -951,7 +974,7 @@ const EmployeeDetailView: React.FC<Props> = ({
                   </div>
 
                   <section>
-                    <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                    <h2 className="text-sm font-black text-main uppercase tracking-wider mb-4 text-muted border-b border-theme pb-2">
                       Bank Details
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
@@ -981,7 +1004,7 @@ const EmployeeDetailView: React.FC<Props> = ({
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Earnings */}
                     <section>
-                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                      <h2 className="text-sm font-black text-main uppercase tracking-wider mb-4 text-muted border-b border-theme pb-2">
                         Earnings & Allowances
                       </h2>
                       <div className="space-y-0 text-sm">
@@ -1015,7 +1038,7 @@ const EmployeeDetailView: React.FC<Props> = ({
 
                     {/* Deductions */}
                     <section>
-                      <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                      <h2 className="text-sm font-black text-main uppercase tracking-wider mb-4 text-muted border-b border-theme pb-2">
                         Statutory & Deductions
                       </h2>
                       <div className="space-y-0 text-sm">
