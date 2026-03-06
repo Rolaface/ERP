@@ -23,7 +23,6 @@ type PayrollPreviewModalProps = {
 export default function PayrollPreviewModal({
   open,
   structureName,
-  currency,
   payPeriodStart,
   payPeriodEnd,
   onPayPeriodStartChange,
@@ -33,16 +32,6 @@ export default function PayrollPreviewModal({
   runPayrollDisabled,
   runPayrollLoading,
 }: PayrollPreviewModalProps) {
-  type PreviewComponent = {
-    component?: string;
-    enabled?: number | boolean | string;
-  };
-
-  const asRecord = (value: unknown): Record<string, unknown> =>
-    typeof value === "object" && value !== null
-      ? (value as Record<string, unknown>)
-      : {};
-
   const getErrorMessage = (error: unknown, fallback: string): string => {
     if (error instanceof Error && error.message) return error.message;
     return fallback;
@@ -156,94 +145,6 @@ export default function PayrollPreviewModal({
       mounted = false;
     };
   }, [open, structureName, onClose]);
-
-  const safeCurrency = String(currency ?? "").trim();
-  const earningsSource = detail?.earnings;
-  const earningsRaw = React.useMemo(
-    () => (Array.isArray(earningsSource) ? earningsSource : []),
-    [earningsSource],
-  );
-  const deductionsSource = detail?.deductions;
-  const deductionsRaw = React.useMemo(
-    () => (Array.isArray(deductionsSource) ? deductionsSource : []),
-    [deductionsSource],
-  );
-
-  const detailRecord = React.useMemo(() => asRecord(detail), [detail]);
-
-  const enabledComponentKeys = React.useMemo(() => {
-    const compsRaw = detailRecord.components;
-    const comps: PreviewComponent[] = Array.isArray(compsRaw)
-      ? compsRaw.map((c) => asRecord(c) as PreviewComponent)
-      : [];
-
-    const set = new Set<string>();
-    comps.forEach((c) => {
-      const name = toSafeText(c.component).trim();
-      if (!name) return;
-      const enabled = Boolean(Number(c.enabled ?? 0)) || c.enabled === true;
-      if (enabled) set.add(name.toLowerCase());
-    });
-    return set;
-  }, [detailRecord]);
-
-  const displayComponentName = React.useCallback((name: unknown) => {
-    const raw = toSafeText(name).trim();
-    if (!raw) return "—";
-    const key = raw.toLowerCase();
-    if (key === "income tax") return "PAYE";
-    if (key === "income tax (paye)") return "PAYE";
-    if (key === "paye" || key === "p.a.y.e") return "PAYE";
-    if (key === "it") return "PAYE";
-    return raw;
-  }, []);
-
-  const normalizeComponentKey = React.useCallback(
-    (name: unknown) => {
-      const label = displayComponentName(name);
-      return label.trim().toLowerCase();
-    },
-    [displayComponentName],
-  );
-
-  const earnings = React.useMemo(() => {
-    if (!enabledComponentKeys || enabledComponentKeys.size === 0)
-      return earningsRaw;
-    return earningsRaw.filter((r) =>
-      enabledComponentKeys.has(toSafeText(r?.component).trim().toLowerCase()),
-    );
-  }, [earningsRaw, enabledComponentKeys]);
-
-  const deductions = React.useMemo(() => {
-    if (!enabledComponentKeys || enabledComponentKeys.size === 0)
-      return deductionsRaw;
-    return deductionsRaw.filter((r) =>
-      enabledComponentKeys.has(toSafeText(r?.component).trim().toLowerCase()),
-    );
-  }, [deductionsRaw, enabledComponentKeys]);
-
-  const deductionsDeduped = React.useMemo(() => {
-    const map = new Map<string, { component: string; amount: number }>();
-    deductions.forEach((row) => {
-      const component = displayComponentName(row?.component);
-      const key = normalizeComponentKey(row?.component);
-      if (!key || key === "—") return;
-      const amt = Number(row?.amount ?? 0) || 0;
-      const prev = map.get(key);
-      if (!prev) {
-        map.set(key, { component, amount: amt });
-      } else {
-        map.set(key, { component: prev.component, amount: prev.amount + amt });
-      }
-    });
-    return Array.from(map.values());
-  }, [deductions, displayComponentName, normalizeComponentKey]);
-
-  const fmtMoney = (v: unknown) => {
-    const n = Number(v ?? 0);
-    const prefix = safeCurrency ? `${safeCurrency} ` : "";
-    return `${prefix}${(Number.isFinite(n) ? n : 0).toLocaleString()}`;
-  };
 
   if (!open) return null;
 
@@ -375,62 +276,6 @@ export default function PayrollPreviewModal({
                     <div className="text-xs font-bold text-main mt-1">
                       {detail?.is_active ? "Active" : "Inactive"}
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="border border-theme rounded-xl bg-card p-4">
-                  <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                    Earnings
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {earnings.length === 0 ? (
-                      <div className="text-xs text-muted">—</div>
-                    ) : (
-                      earnings.map((row, idx) => (
-                        <div
-                          key={`${row?.component ?? idx}`}
-                          className="border-b border-theme/60 last:border-0 py-2"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="text-xs font-bold text-main truncate">
-                              {displayComponentName(row?.component)}
-                            </div>
-                            <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
-                              {fmtMoney(row?.amount)}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="border border-theme rounded-xl bg-card p-4">
-                  <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
-                    Deductions
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {deductionsDeduped.length === 0 ? (
-                      <div className="text-xs text-muted">—</div>
-                    ) : (
-                      deductionsDeduped.map((row, idx) => (
-                        <div
-                          key={`${row?.component ?? idx}`}
-                          className="border-b border-theme/60 last:border-0 py-2"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="text-xs font-bold text-main truncate">
-                              {displayComponentName(row?.component)}
-                            </div>
-                            <div className="text-xs font-extrabold text-main tabular-nums whitespace-nowrap">
-                              {fmtMoney(row?.amount)}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
                   </div>
                 </div>
               </div>

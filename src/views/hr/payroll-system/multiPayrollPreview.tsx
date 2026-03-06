@@ -33,7 +33,6 @@ export default function MultiPayrollPreviewModal({
   employees,
   selectedEmployeeIds,
   structureName,
-  currency,
   payPeriodStart,
   payPeriodEnd,
   onPayPeriodStartChange,
@@ -141,17 +140,6 @@ export default function MultiPayrollPreviewModal({
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<SalaryStructureDetail | null>(null);
 
-  const displayComponentName = (name: unknown) => {
-    const raw = String(name ?? "").trim();
-    if (!raw) return "—";
-    const key = raw.toLowerCase();
-    if (key === "income tax") return "PAYE";
-    if (key === "income tax (paye)") return "PAYE";
-    if (key === "paye" || key === "p.a.y.e") return "PAYE";
-    if (key === "it") return "PAYE";
-    return raw;
-  };
-
   const initialMonth = useMemo(() => {
     const base = String(payPeriodStart || payPeriodEnd || "").trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(base)) return base.slice(0, 7);
@@ -245,18 +233,16 @@ export default function MultiPayrollPreviewModal({
                 <div className="text-sm font-semibold text-gray-600">
                   Salary Structure Components
                 </div>
-                <div className="text-xs text-gray-500 mt-0.5">
-                  Earnings and deductions for this run
-                </div>
                 <div className="text-xs text-gray-600 mt-1 font-semibold break-words">
-                  Employee: {activeEmployeeCode || "—"}
+                  Employee: {activeEmployeeCode || "—" }
                 </div>
                 <div className="text-xs text-gray-600 mt-0.5 font-semibold break-words">
-                  Structure: {activeStructureName || "—"}
-                  {assignmentLoading ? " (loading...)" : ""}
+                  Structure: {activeStructureName || "—" }
+                  {assignmentLoading ? " (loading...)" : "" }
                 </div>
                 {assignmentError && (
                   <div className="text-xs text-red-600 mt-0.5 break-words">
+                    {assignmentError }
                     {assignmentError}
                   </div>
                 )}
@@ -345,69 +331,7 @@ export default function MultiPayrollPreviewModal({
               <div className="text-sm text-red-600 mt-4">{error}</div>
             ) : !detail ? (
               <div className="text-sm text-gray-500 mt-4">—</div>
-            ) : (
-              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="border border-gray-200 rounded-2xl overflow-hidden">
-                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider">
-                    Earnings
-                  </div>
-                  <div className="p-4 space-y-2">
-                    {(Array.isArray((detail as any)?.earnings)
-                      ? (detail as any).earnings
-                      : []
-                    ).length === 0 ? (
-                      <div className="text-sm text-gray-500">—</div>
-                    ) : (
-                      (detail as any).earnings.map((row: any, idx: number) => (
-                        <div
-                          key={`${row?.component ?? idx}`}
-                          className="flex items-center justify-between gap-3 border-b border-gray-200/60 last:border-0 pb-2 last:pb-0"
-                        >
-                          <div className="text-sm font-semibold text-gray-900 truncate">
-                            {displayComponentName(row?.component)}
-                          </div>
-                          <div className="text-sm font-extrabold text-gray-900 tabular-nums whitespace-nowrap">
-                            {currency}{" "}
-                            {Number(row?.amount ?? 0).toLocaleString("en-ZM")}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="border border-gray-200 rounded-2xl overflow-hidden">
-                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider">
-                    Deductions
-                  </div>
-                  <div className="p-4 space-y-2">
-                    {(Array.isArray((detail as any)?.deductions)
-                      ? (detail as any).deductions
-                      : []
-                    ).length === 0 ? (
-                      <div className="text-sm text-gray-500">—</div>
-                    ) : (
-                      (detail as any).deductions.map(
-                        (row: any, idx: number) => (
-                          <div
-                            key={`${row?.component ?? idx}`}
-                            className="flex items-center justify-between gap-3 border-b border-gray-200/60 last:border-0 pb-2 last:pb-0"
-                          >
-                            <div className="text-sm font-semibold text-gray-900 truncate">
-                              {displayComponentName(row?.component)}
-                            </div>
-                            <div className="text-sm font-extrabold text-gray-900 tabular-nums whitespace-nowrap">
-                              {currency}{" "}
-                              {Number(row?.amount ?? 0).toLocaleString("en-ZM")}
-                            </div>
-                          </div>
-                        ),
-                      )
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -419,35 +343,29 @@ export default function MultiPayrollPreviewModal({
           >
             Cancel
           </button>
-          {!isLastEmployee ? (
-            <button
-              type="button"
-              onClick={() =>
-                setActiveIndex((i) => Math.min(selected.length - 1, i + 1))
-              }
-              disabled={
-                selected.length === 0 || activeIndex >= selected.length - 1
-              }
-              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50"
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onRunPayroll}
-              disabled={
-                Boolean(runPayrollDisabled) ||
-                Boolean(runPayrollLoading) ||
-                selected.length === 0
-              }
-              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50"
-            >
-              {runPayrollLoading
-                ? "Running…"
-                : `Run Payroll (${selected.length})`}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() =>
+              setActiveIndex((i) => Math.min(selected.length - 1, i + 1))
+            }
+            disabled={selected.length === 0 || isLastEmployee}
+            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            Preview Payroll
+          </button>
+
+          <button
+            type="button"
+            onClick={onRunPayroll}
+            disabled={
+              Boolean(runPayrollDisabled) ||
+              Boolean(runPayrollLoading) ||
+              selected.length === 0
+            }
+            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50"
+          >
+            {runPayrollLoading ? "Running…" : `Run Payroll (${selected.length})`}
+          </button>
         </div>
       </div>
     </div>

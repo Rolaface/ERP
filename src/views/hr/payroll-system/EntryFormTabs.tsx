@@ -303,7 +303,7 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
     }
 
     if (selectedSingleEmployeeId) {
-      setSingleModalOpen(true);
+      setSingleModalOpen(false);
       const now = new Date();
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
       const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -315,7 +315,6 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
   React.useEffect(() => {
     if (selectionMode !== "single") return;
-    if (!singleModalOpen) return;
     if (!selectedSingleEmployeeCode) {
       setSingleSalaryStructureName("");
       setSingleAssignmentLoading(false);
@@ -377,12 +376,7 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
     return () => {
       mounted = false;
     };
-  }, [
-    data.endDate,
-    selectedSingleEmployeeCode,
-    selectionMode,
-    singleModalOpen,
-  ]);
+  }, [data.endDate, selectedSingleEmployeeCode, selectionMode]);
 
   React.useEffect(() => {
     if (selectionMode !== "multiple") {
@@ -1032,51 +1026,132 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                 <div className="h-6 w-24 bg-theme/60 rounded-full animate-pulse" />
               ) : (
                 <div className="flex items-center gap-2">
+                  {selectionMode === "single" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (singleSubmitting) return;
+                          void runSinglePayroll();
+                        }}
+                        disabled={!canRunSinglePayroll || singleSubmitting || singleAssignmentLoading}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-primary text-white hover:opacity-90 disabled:opacity-40"
+                      >
+                        Run Payroll
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSingleModalOpen(true)}
+                        disabled={!selectedSingleEmployeeId}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border border-theme bg-card text-main hover:bg-app disabled:opacity-40"
+                      >
+                        Preview Payroll
+                      </button>
+                    </>
+                  )}
+
                   {selectionMode === "multiple" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!data.selectedEmployees.length) {
-                          toast.error("Please select employees");
-                          return;
-                        }
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (multiSubmitting) return;
 
-                        if (!String(multiSalaryStructureName ?? "").trim()) {
-                          toast.error("Please select a salary structure");
-                          return;
-                        }
+                          if (data.selectedEmployees.length === 0) {
+                            toast.error("Please select employees");
+                            return;
+                          }
 
-                        if (
-                          !String(data.startDate ?? "").trim() ||
-                          !String(data.endDate ?? "").trim()
-                        ) {
-                          const now = new Date();
-                          const start = new Date(
-                            now.getFullYear(),
-                            now.getMonth(),
-                            1,
-                          );
-                          const end = new Date(
-                            now.getFullYear(),
-                            now.getMonth() + 1,
-                            0,
-                          );
-                          onChange(
-                            "startDate",
-                            start.toISOString().slice(0, 10),
-                          );
-                          onChange("endDate", end.toISOString().slice(0, 10));
+                          if (!String(multiSalaryStructureName ?? "").trim()) {
+                            toast.error("Please select a salary structure");
+                            return;
+                          }
+
+                          if (
+                            !String(data.startDate ?? "").trim() ||
+                            !String(data.endDate ?? "").trim()
+                          ) {
+                            const now = new Date();
+                            const start = new Date(
+                              now.getFullYear(),
+                              now.getMonth(),
+                              1,
+                            );
+                            const end = new Date(
+                              now.getFullYear(),
+                              now.getMonth() + 1,
+                              0,
+                            );
+                            onChange(
+                              "startDate",
+                              start.toISOString().slice(0, 10),
+                            );
+                            onChange(
+                              "endDate",
+                              end.toISOString().slice(0, 10),
+                            );
+                          }
+
+                          void runMultiplePayroll();
+                        }}
+                        disabled={!canRunMultiplePayroll || multiSubmitting}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-primary text-white hover:opacity-90 disabled:opacity-40"
+                      >
+                        Run Payroll
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (multiSubmitting) return;
+
+                          if (data.selectedEmployees.length === 0) {
+                            toast.error("Please select employees");
+                            return;
+                          }
+
+                          if (!String(multiSalaryStructureName ?? "").trim()) {
+                            toast.error("Please select a salary structure");
+                            return;
+                          }
+
+                          if (
+                            !String(data.startDate ?? "").trim() ||
+                            !String(data.endDate ?? "").trim()
+                          ) {
+                            const now = new Date();
+                            const start = new Date(
+                              now.getFullYear(),
+                              now.getMonth(),
+                              1,
+                            );
+                            const end = new Date(
+                              now.getFullYear(),
+                              now.getMonth() + 1,
+                              0,
+                            );
+                            onChange(
+                              "startDate",
+                              start.toISOString().slice(0, 10),
+                            );
+                            onChange(
+                              "endDate",
+                              end.toISOString().slice(0, 10),
+                            );
+                          }
+
+                          setMultiModalOpen(true);
+                        }}
+                        disabled={
+                          data.selectedEmployees.length === 0 ||
+                          !String(multiSalaryStructureName ?? "").trim()
                         }
-                        setMultiModalOpen(true);
-                      }}
-                      disabled={
-                        data.selectedEmployees.length === 0 ||
-                        !String(multiSalaryStructureName ?? "").trim()
-                      }
-                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-primary text-white hover:opacity-90 disabled:opacity-40"
-                    >
-                      Preview Payroll
-                    </button>
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border border-theme bg-card text-main hover:bg-app disabled:opacity-40"
+                      >
+                        Preview Payroll
+                      </button>
+                    </>
                   )}
 
                   <button
