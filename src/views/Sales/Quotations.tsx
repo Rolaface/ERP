@@ -419,47 +419,6 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
   };
 
 
-  const mapQuotationToInvoiceDetails = (raw: any): InvoiceDetails => ({
-    invoiceNumber:      raw?.id ?? raw?.quotationNumber ?? raw?.quotationId,
-    invoiceType:        raw?.invoiceType ?? "Quotation",
-    originInvoice:      null,
-    customerName:       raw?.customerName ?? raw?.customerId,
-    customerTpin:       raw?.customerTpin,
-    currencyCode:       raw?.currencyCode ?? raw?.currency,
-    exchangeRt:         raw?.exchangeRt,
-    dateOfInvoice:      raw?.transactionDate ?? raw?.quotationDate,
-    dueDate:            raw?.validUntil ?? raw?.validTill,
-    invoiceStatus:      raw?.invoiceStatus ?? raw?.status ?? "—",
-  
-    TotalAmount:        raw?.TotalAmount ?? raw?.grandTotal ?? raw?.totalAmount,
-    discountPercentage: raw?.discountPercentage,
-    discountAmount:     raw?.discountAmount ?? raw?.totalDiscount,
-    lpoNumber:          raw?.lpoNumber ?? raw?.poNumber,
-    destnCountryCd:     raw?.destnCountryCd ?? null,
-    billingAddress:     raw?.billingAddress,
-    shippingAddress:    raw?.shippingAddress,
-    paymentInformation: raw?.paymentInformation ?? {
-      paymentTerms:  raw?.paymentTerms,
-      paymentMethod: raw?.paymentMethod,
-      bankName:      raw?.bankName,
-      accountNumber: raw?.accountNumber,
-      routingNumber: raw?.routingNumber,
-      swiftCode:     raw?.swiftCode,
-    },
-    items: Array.isArray(raw?.items)
-      ? raw.items.map((it: any) => ({
-          itemCode:    it?.itemCode ?? it?.productName,
-          quantity:    Number(it?.quantity ?? 0),
-          description: it?.description,
-          discount:    Number(it?.discount ?? 0),
-          price:       Number(it?.price ?? it?.listPrice ?? 0),
-          vatCode:     it?.vatCode,
-        }))
-      : [],
-    terms: raw?.terms ?? {
-      selling: { general: raw?.termsAndConditions ?? raw?.notes },
-    },
-  });
 
  
   const columns: Column<QuotationSummary>[] = [

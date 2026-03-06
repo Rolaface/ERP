@@ -466,6 +466,22 @@ const handleReset = () => {
       grandTotal: sub + tax,
     };
   }, [formData.items]);
+  const validateDetails = (): string | null => {
+  if (!formData.customerId) return "Please select a customer";
+  if (!formData.dateOfInvoice) return "Please select quotation date";
+  if (!formData.dueDate) return "Please select valid until date";
+  if (formData.dueDate < formData.dateOfInvoice) return "Valid until date cannot be before quotation date";
+  if (formData.items.length === 0 || !formData.items[0].itemCode) return "Please add at least one item";
+
+  for (let i = 0; i < formData.items.length; i++) {
+    const item = formData.items[i];
+    if (!item.itemCode) return `Row ${i + 1}: Item is required`;
+    if (!item.quantity || Number(item.quantity) <= 0) return `Row ${i + 1}: Quantity is required`;
+    if (!item.price || Number(item.price) <= 0) return `Row ${i + 1}: Unit Price is required`;
+  }
+
+  return null;
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -604,6 +620,7 @@ const handleReset = () => {
       handleSameAsBillingChange,
       handleReset,
       handleSubmit,
+      validateDetails,
     },
   };
 };

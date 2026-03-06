@@ -33,7 +33,7 @@ import type { Column } from "../../components/ui/Table/type";
 import type { ItemSummary, Item } from "../../types/item";
 
 const Items: React.FC = () => {
-const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -51,41 +51,40 @@ const [items, setItems] = useState<any[]>([]);
   const [itemToDelete, setItemToDelete] = useState<ItemSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchItems = async () => {
-    try {
-      setLoading(true);
-      const apiData = await getAllStockEntries(page, pageSize);
+ const fetchItems = async () => {
+  try {
+    setLoading(true);
 
-      // Map API data to ItemSummary[]
-      const list = Array.isArray(apiData) ? apiData : apiData?.data || [];
+    const res = await getAllStockEntries(page, pageSize);
 
-      
-const mapped = list.flatMap((entry: any) =>
-  (entry.items || []).map((item: any) => ({
-    id: entry.name || "",
-    date: entry.posting_date || "",
-    itemCode: item.item_code || "",
-    qty: item.qty || 0,
-    totalAmount: Number(item.custom_total_amount || 0),
-  }))
-);
+    const list = res?.message?.data || [];
 
-setItems(mapped as any);
+   const mapped = list.map((item: any) => ({
+  id: item.item_code || "",
+  itemCode: item.item_code || "",
+  itemGroup: item.item_group || "",
+  warehouse: item.warehouse || "",
+  uom: item.stock_uom || "",
+  inQty: item.in_qty ?? 0,
+  outQty: item.out_qty ?? 0,
+  qty: item.bal_qty ?? 0,
+  valuationRate: Number(item.valuation_rate ?? 0),
+  totalAmount: Number(item.bal_val ?? 0),
+}));
 
+    setItems(mapped);
 
- 
+    setTotalItems(res?.message?.pagination?.total_records ?? 0);
+    setTotalPages(res?.message?.pagination?.total_pages ?? 1);
 
-      setTotalItems(apiData?.totalItems ?? 0);
-      setTotalPages(apiData?.totalPages ?? 1);
-    } catch (err) {
-      console.error(err);
-      showApiError("Failed to load stock entries");
-    } finally {
-      setLoading(false);
-      setInitialLoad(false);
-    }
-  };
-
+  } catch (err) {
+    console.error(err);
+    showApiError("Failed to load stock entries");
+  } finally {
+    setLoading(false);
+    setInitialLoad(false);
+  }
+};
   useEffect(() => {
     fetchItems();
   }, [page, pageSize]);
@@ -98,32 +97,34 @@ setItems(mapped as any);
     setShowModal(true);
   };
 
-const handleEdit = async (stockId: string, e?: React.MouseEvent<Element>) => {
-  e?.stopPropagation();
+  const handleEdit = async (stockId: string, e?: React.MouseEvent<Element>) => {
+    e?.stopPropagation();
 
-  try {
-    const res = await getStockById(stockId);
-    console.log("FULL RESPONSE:", res);
+    try {
+      const res = await getStockById(stockId);
+      console.log("FULL RESPONSE:", res);
 
-    const stockData =
-      Array.isArray(res?.data?.data)
+      const stockData = Array.isArray(res?.data?.data)
         ? res.data.data[0]
         : null;
 
-    if (!stockData) {
-      showApiError("Invalid stock data");
-      return;
+      if (!stockData) {
+        showApiError("Invalid stock data");
+        return;
+      }
+
+      setViewStockData(stockData);
+      setShowViewModal(true);
+    } catch (err) {
+      console.error(err);
+      showApiError("Unable to fetch stock entry details");
     }
+  };
 
-    setViewStockData(stockData);
-    setShowViewModal(true);
-  } catch (err) {
-    console.error(err);
-    showApiError("Unable to fetch stock entry details");
-  }
-};
-
-  const handleDeleteClick = (item: ItemSummary, e?: React.MouseEvent<Element>) => {
+  const handleDeleteClick = (
+    item: ItemSummary,
+    e?: React.MouseEvent<Element>,
+  ) => {
     e?.stopPropagation();
     setItemToDelete(item);
     setDeleteModalOpen(true);
@@ -136,24 +137,22 @@ const handleEdit = async (stockId: string, e?: React.MouseEvent<Element>) => {
       setDeleting(true);
       showLoading("Deleting Stock Entry...");
 
-const res = await deleteStockEntry({
-  stock_entry_id: itemToDelete.id,
-});
+      const res = await deleteStockEntry({
+        stock_entry_id: itemToDelete.id,
+      });
 
-if (res?.status_code !== 200 || res?.status !== "success") {
-  closeSwal();
-  showApiError(res?.message || "Delete failed");
-  return;
-}
+      if (res?.status_code !== 200 || res?.status !== "success") {
+        closeSwal();
+        showApiError(res?.message || "Delete failed");
+        return;
+      }
 
-closeSwal();
-showSuccess("Stock entry deleted successfully");
+      closeSwal();
+      showSuccess("Stock entry deleted successfully");
 
-setItems((prev) =>
-  prev.filter((i) => i.id !== itemToDelete.id)
-);
+      setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
 
-setDeleteModalOpen(false);
+      setDeleteModalOpen(false);
 
       setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
       setDeleteModalOpen(false);
@@ -183,67 +182,83 @@ setDeleteModalOpen(false);
     }
   };
 
-
   /*      COLUMNS
    */
 
 const columns: Column<any>[] = [
-  {
-    key: "id",
-    header: "Stock ID",
-    align: "left",
-  },
-  {
-    key: "date",
-    header: "Posting Date",
-    align: "left",
-    render: (i) =>
-      i.date ? new Date(i.date).toLocaleDateString() : "—",
-  },
   {
     key: "itemCode",
     header: "Item Code",
     align: "left",
   },
   {
-    key: "qty",
-    header: "Qty",
+    key: "itemGroup",
+    header: "Item Group",
+    align: "left",
+  },
+  {
+    key: "warehouse",
+    header: "Warehouse",
+    align: "left",
+  },
+  {
+    key: "uom",
+    header: "UOM",
+    align: "center",
+  },
+  {
+    key: "inQty",
+    header: "In Qty",
     align: "right",
   },
-{
-  key: "totalAmount",
-  header: "Total Amount",
-  align: "right",
-  render: (i) => (
-    <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-      INR {i.totalAmount.toLocaleString()}
-    </code>
-  ),
-},
   {
-  key: "actions",
-  header: "Actions",
-  align: "center",
-  render: (i) => (
-    <ActionGroup>
-      {/* View Button Direct */}
-      <ActionButton
-        type="view"
-        onClick={(e) => handleEdit(i.id, e)}
-        iconOnly
-      />
+    key: "outQty",
+    header: "Out Qty",
+    align: "right",
+  },
+  {
+    key: "qty",
+    header: "Balance Qty",
+    align: "right",
+  },
+  {
+    key: "valuationRate",
+    header: "Valuation Rate",
+    align: "right",
+    render: (i) => `INR ${i.valuationRate.toLocaleString()}`,
+  },
+  {
+    key: "totalAmount",
+    header: "Balance Value",
+    align: "right",
+    render: (i) => (
+      <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        INR {i.totalAmount.toLocaleString()}
+      </code>
+    ),
+  },
+  {
+    key: "actions",
+    header: "Actions",
+    align: "center",
+    render: (i) => (
+      <ActionGroup>
+        <ActionButton
+          type="view"
+          onClick={(e) => handleEdit(i.id, e)}
+          iconOnly
+        />
 
-      {/* Dropdown Menu */}
-      <ActionMenu
-        onEdit={() => {
-          setEditItem(i);
-          setShowModal(true);
-        }}
-        onDelete={(e) => handleDeleteClick(i, e)}
-      />
-    </ActionGroup>
-  ),
-}
+        <ActionMenu
+          onEdit={() => {
+            setEditItem(i);
+            setShowModal(true);
+          }}
+          onDelete={(e) => handleDeleteClick(i, e)}
+        />
+      </ActionGroup>
+    ),
+  },
 ];
   /*      RENDER
    */
@@ -252,7 +267,6 @@ const columns: Column<any>[] = [
     <div className="p-8">
       <Table
         loading={loading || initialLoad}
-      
         columns={columns}
         data={items}
         enableColumnSelector

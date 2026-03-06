@@ -12,6 +12,7 @@ import { User, Mail, Phone } from "lucide-react";
 import AddressBlock from "../ui/modal/AddressBlock";
 import PaymentInfoBlock from "./PaymentInfoBlock";
 import { quotationStatusOptions } from "../../types/quotation";
+import { showApiError } from "../../utils/alert";
 import {
   currencySymbols,
   paymentMethodOptions,
@@ -58,20 +59,27 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
 
   const symbol = currencySymbols[formData.currencyCode] || "";
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleFormSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (ui.activeTab !== "terms") {
-      handleNext();
+  if (ui.activeTab === "details") {
+    const error = actions.validateDetails();
+    if (error) {
+      showApiError(error);
       return;
     }
+    handleNext();
+    return;
+  }
 
-    await actions.handleSubmit(e);
-  };
+  if (ui.activeTab !== "terms") {
+    handleNext();
+    return;
+  }
 
-  const handlePrint = () => {
-    showSuccess("Print functionality - Opens print dialog");
-  };
+  await actions.handleSubmit(e);
+};
+
 
   const footerContent = (
     <>
@@ -83,13 +91,14 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
           Reset
         </Button>
         <Button
-          variant="primary"
-          type={ui.activeTab !== "terms" ? "button" : "submit"}
-          form={ui.activeTab !== "terms" ? undefined : "quotationForm"}
-          onClick={ui.activeTab !== "terms" ? handleNext : undefined}
-        >
-          {ui.activeTab === "terms" ? "Submit" : "Next"}
-        </Button>
+  variant="primary"
+  type="button"
+  onClick={(e: React.MouseEvent) =>
+    handleFormSubmit(e as unknown as React.FormEvent)
+  }
+>
+  {ui.activeTab === "terms" ? "Submit" : "Next"}
+</Button>
       </div>
     </>
   );
@@ -153,6 +162,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     value={customerNameDisplay}
     onChange={actions.handleCustomerSelect}
     className="w-full"
+    required
   />
 </div>
 

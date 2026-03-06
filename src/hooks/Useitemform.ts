@@ -6,9 +6,11 @@ import { getItemGroupById } from "../api/itemCategoryApi";
 import { useCompanySelection } from "../hooks/useCompanySelection";
 import { getAllItemGroups } from "../api/itemCategoryApi";
 import { getItemFieldConfigs } from "../config/companyConfigResolver";
-import { getTaxConfigs, isTaxAutoPopulated } from "../taxconfig/taxConfigResolver";
+import {
+  getTaxConfigs,
+  isTaxAutoPopulated,
+} from "../taxconfig/taxConfigResolver";
 import { getSuppliers } from "../api/procurement/supplierApi";
-
 
 export const emptyForm: Record<string, any> = {
   id: "",
@@ -18,8 +20,8 @@ export const emptyForm: Record<string, any> = {
   itemTypeCode: "",
   originNationCode: "",
   packagingUnitCode: "",
-  pakingunit: 1,      
-  packingsize: 1,      
+  pakingunit: 1,
+  packingsize: 1,
   svcCharge: "",
   ins: "",
   sellingPrice: "",
@@ -60,8 +62,6 @@ export const emptyForm: Record<string, any> = {
   create_new_batch: false,
   has_expiry_date: false,
 };
-
-
 
 const buildPayload = (form: Record<string, any>) => ({
   id: form.id,
@@ -127,7 +127,6 @@ const buildPayload = (form: Record<string, any>) => ({
   }),
 });
 
-
 interface UseItemFormProps {
   isOpen: boolean;
   isEditMode: boolean;
@@ -135,7 +134,6 @@ interface UseItemFormProps {
   onSubmit?: (res: any) => void;
   onClose: () => void;
 }
-
 
 export const useItemForm = ({
   isOpen,
@@ -146,7 +144,9 @@ export const useItemForm = ({
 }: UseItemFormProps) => {
   const [form, setForm] = useState<Record<string, any>>(emptyForm);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"details" | "taxDetails" | "inventoryDetails">("details");
+  const [activeTab, setActiveTab] = useState<
+    "details" | "taxDetails" | "inventoryDetails"
+  >("details");
 
   // HSN / item-class hierarchical selector state
   const [itemClassOptions, setItemClassOptions] = useState<
@@ -166,7 +166,8 @@ export const useItemForm = ({
   const [loadingItemGroups, setLoadingItemGroups] = useState(false);
   // Derived UI flags
   const isServiceItem = Number(form.itemTypeCode) === 3;
-  const showBatchExpiry = Number(form.itemTypeCode) === 1 || Number(form.itemTypeCode) === 2;
+  const showBatchExpiry =
+    Number(form.itemTypeCode) === 1 || Number(form.itemTypeCode) === 2;
 
   const [suppliers, setSuppliers] = useState<
     Array<{ label: string; value: string }>
@@ -187,7 +188,6 @@ export const useItemForm = ({
       }
 
       setItemGroups(res?.data?.data || []);
-
     } catch (err) {
       showApiError("Error fetching item groups");
     } finally {
@@ -260,42 +260,89 @@ export const useItemForm = ({
         ...initialData,
 
         // Flatten taxInfo
-        taxCategory: initialData.taxInfo?.taxCategory ?? initialData.taxCategory ?? "",
-        taxPreference: initialData.taxInfo?.taxPreference ?? initialData.taxPreference ?? "",
+        taxCategory:
+          initialData.taxInfo?.taxCategory ?? initialData.taxCategory ?? "",
+        taxPreference:
+          initialData.taxInfo?.taxPreference ?? initialData.taxPreference ?? "",
         taxType: initialData.taxInfo?.taxType ?? initialData.taxType ?? "",
         taxCode: initialData.taxInfo?.taxCode ?? initialData.taxCode ?? "",
         taxName: initialData.taxInfo?.taxName ?? initialData.taxName ?? "",
-        taxDescription: initialData.taxInfo?.taxDescription ?? initialData.taxDescription ?? "",
+        taxDescription:
+          initialData.taxInfo?.taxDescription ??
+          initialData.taxDescription ??
+          "",
         taxPerct: initialData.taxInfo?.taxPerct ?? initialData.taxPerct ?? "",
-        countryCode: initialData.taxInfo?.countryCode ?? initialData.countryCode ?? "",
+        countryCode:
+          initialData.taxInfo?.countryCode ?? initialData.countryCode ?? "",
 
         // API returns pakingUnit / packingSize (capital U, capital S).
         // Form state uses pakingunit / packingsize (all lowercase).
         // Explicit remap so edit mode pre-fills these inputs correctly.
         pakingunit: initialData.pakingUnit ?? initialData.pakingunit ?? "",
-        packingsize: initialData.packingSize ?? initialData.packingsize ?? "",
+        packingsize: initialData.packingsize ?? initialData.packingsize ?? "",
 
         // Flatten vendorInfo
-        preferredVendor: initialData.vendorInfo?.preferredVendor ?? initialData.preferredVendor ?? "",
-        salesAccount: initialData.vendorInfo?.salesAccount ?? initialData.salesAccount ?? "",
-        purchaseAccount: initialData.vendorInfo?.purchaseAccount ?? initialData.purchaseAccount ?? "",
+        preferredVendor:
+          initialData.vendorInfo?.preferredVendor ??
+          initialData.preferredVendor ??
+          "",
+        salesAccount:
+          initialData.vendorInfo?.salesAccount ??
+          initialData.salesAccount ??
+          "",
+        purchaseAccount:
+          initialData.vendorInfo?.purchaseAccount ??
+          initialData.purchaseAccount ??
+          "",
 
         // Flatten inventoryInfo
-        valuationMethod: initialData.inventoryInfo?.valuationMethod ?? initialData.valuationMethod ?? "",
-        trackingMethod: initialData.inventoryInfo?.trackingMethod ?? initialData.trackingMethod ?? "",
-        reorderLevel: initialData.inventoryInfo?.reorderLevel ?? initialData.reorderLevel ?? "",
-        minStockLevel: initialData.inventoryInfo?.minStockLevel ?? initialData.minStockLevel ?? "",
-        maxStockLevel: initialData.inventoryInfo?.maxStockLevel ?? initialData.maxStockLevel ?? "",
+        valuationMethod:
+          initialData.inventoryInfo?.valuationMethod ??
+          initialData.valuationMethod ??
+          "",
+        trackingMethod:
+          initialData.inventoryInfo?.trackingMethod ??
+          initialData.trackingMethod ??
+          "",
+        reorderLevel:
+          initialData.inventoryInfo?.reorderLevel ??
+          initialData.reorderLevel ??
+          "",
+        minStockLevel:
+          initialData.inventoryInfo?.minStockLevel ??
+          initialData.minStockLevel ??
+          "",
+        maxStockLevel:
+          initialData.inventoryInfo?.maxStockLevel ??
+          initialData.maxStockLevel ??
+          "",
 
         // Flatten batchInfo
-        has_batch_no: initialData.batchInfo?.has_batch_no ?? initialData.has_batch_no ?? false,
-        create_new_batch: initialData.batchInfo?.create_new_batch ?? initialData.create_new_batch ?? false,
-        has_expiry_date: initialData.batchInfo?.has_expiry_date ?? initialData.has_expiry_date ?? false,
+        has_batch_no:
+          initialData.batchInfo?.has_batch_no ??
+          initialData.has_batch_no ??
+          false,
+        create_new_batch:
+          initialData.batchInfo?.create_new_batch ??
+          initialData.create_new_batch ??
+          false,
+        has_expiry_date:
+          initialData.batchInfo?.has_expiry_date ??
+          initialData.has_expiry_date ??
+          false,
 
-        expiryDate: initialData.batchInfo?.expiryDate ?? initialData.expiryDate ?? "",
-        manufacturingDate: initialData.batchInfo?.manufacturingDate ?? initialData.manufacturingDate ?? "",
-        shelfLifeInDays: initialData.batchInfo?.shelfLifeInDays ?? initialData.shelfLifeInDays ?? "",
-        endOfLife: initialData.batchInfo?.endOfLife ?? initialData.endOfLife ?? "",
+        expiryDate:
+          initialData.batchInfo?.expiryDate ?? initialData.expiryDate ?? "",
+        manufacturingDate:
+          initialData.batchInfo?.manufacturingDate ??
+          initialData.manufacturingDate ??
+          "",
+        shelfLifeInDays:
+          initialData.batchInfo?.shelfLifeInDays ??
+          initialData.shelfLifeInDays ??
+          "",
+        endOfLife:
+          initialData.batchInfo?.endOfLife ?? initialData.endOfLife ?? "",
       });
       if (initialData?.itemTypeCode) {
         void fetchItemGroups(String(initialData.itemTypeCode));
@@ -320,15 +367,24 @@ export const useItemForm = ({
   // Pre-populate HSN level selectors when editing an existing item.
   // Runs after itemClassOptions are loaded so the option values exist.
   useEffect(() => {
-    if (!isEditMode || !initialData?.itemClassCode || itemClassOptions.length === 0) return;
+    if (
+      !isEditMode ||
+      !initialData?.itemClassCode ||
+      itemClassOptions.length === 0
+    )
+      return;
 
     const code = String(initialData.itemClassCode);
     const exists = (c: string) => itemClassOptions.some((o) => o.cd === c);
 
-    if (code.length >= 2 && exists(code.slice(0, 2))) setSelectedLevel1(code.slice(0, 2));
-    if (code.length >= 4 && exists(code.slice(0, 4))) setSelectedLevel2(code.slice(0, 4));
-    if (code.length >= 6 && exists(code.slice(0, 6))) setSelectedLevel3(code.slice(0, 6));
-    if (code.length >= 8 && exists(code.slice(0, 8))) setSelectedLevel4(code.slice(0, 8));
+    if (code.length >= 2 && exists(code.slice(0, 2)))
+      setSelectedLevel1(code.slice(0, 2));
+    if (code.length >= 4 && exists(code.slice(0, 4)))
+      setSelectedLevel2(code.slice(0, 4));
+    if (code.length >= 6 && exists(code.slice(0, 6)))
+      setSelectedLevel3(code.slice(0, 6));
+    if (code.length >= 8 && exists(code.slice(0, 8)))
+      setSelectedLevel4(code.slice(0, 8));
   }, [isEditMode, initialData, itemClassOptions]);
 
   // ── HSN hierarchical helpers ───────────────────────────────────────────────
@@ -339,22 +395,38 @@ export const useItemForm = ({
       if (level === "1") return true;
       if (!parentCode) return false;
       const prefixLen = parseInt(level, 10) * 2;
-      return opt.cd.slice(0, prefixLen - 2) === parentCode.slice(0, prefixLen - 2);
+      return (
+        opt.cd.slice(0, prefixLen - 2) === parentCode.slice(0, prefixLen - 2)
+      );
     });
 
   const handleLevelChange = (level: number, value: string) => {
     // Reset all child levels when a parent changes.
-    if (level === 1) { setSelectedLevel1(value); setSelectedLevel2(""); setSelectedLevel3(""); setSelectedLevel4(""); }
-    else if (level === 2) { setSelectedLevel2(value); setSelectedLevel3(""); setSelectedLevel4(""); }
-    else if (level === 3) { setSelectedLevel3(value); setSelectedLevel4(""); }
-    else { setSelectedLevel4(value); }
+    if (level === 1) {
+      setSelectedLevel1(value);
+      setSelectedLevel2("");
+      setSelectedLevel3("");
+      setSelectedLevel4("");
+    } else if (level === 2) {
+      setSelectedLevel2(value);
+      setSelectedLevel3("");
+      setSelectedLevel4("");
+    } else if (level === 3) {
+      setSelectedLevel3(value);
+      setSelectedLevel4("");
+    } else {
+      setSelectedLevel4(value);
+    }
 
     // The deepest selected level becomes the committed itemClassCode.
     const finalCode =
-      level === 4 ? (value || selectedLevel3 || selectedLevel2 || selectedLevel1) :
-        level === 3 ? (value || selectedLevel2 || selectedLevel1) :
-          level === 2 ? (value || selectedLevel1) :
-            value;
+      level === 4
+        ? value || selectedLevel3 || selectedLevel2 || selectedLevel1
+        : level === 3
+          ? value || selectedLevel2 || selectedLevel1
+          : level === 2
+            ? value || selectedLevel1
+            : value;
 
     setForm((prev) => ({ ...prev, itemClassCode: finalCode }));
   };
@@ -367,7 +439,11 @@ export const useItemForm = ({
       return false;
     }
 
-    const requiredFields: Array<{ field: string; label: string; isNumeric?: boolean }> = [
+    const requiredFields: Array<{
+      field: string;
+      label: string;
+      isNumeric?: boolean;
+    }> = [
       { field: "itemTypeCode", label: "Item Type" },
       { field: "itemGroup", label: "Item Category" },
       { field: "itemName", label: "Item Name" },
@@ -412,7 +488,9 @@ export const useItemForm = ({
   // ── Event handlers ─────────────────────────────────────────────────────────
 
   const handleForm = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = e.target;
 
@@ -500,21 +578,23 @@ export const useItemForm = ({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    // 🔹 NEXT BUTTON FLOW ONLY (NO VALIDATION)
+  if (activeTab === "details") {
+    const isValid = validateItemDetails();
+    if (!isValid) return;
+    setActiveTab("taxDetails");
+    return;
+  }
 
-    if (activeTab === "details") {
-      setActiveTab("taxDetails");
-      return;
-    }
-
-    if (activeTab === "taxDetails" && !isServiceItem) {
+  if (activeTab === "taxDetails") {
+    const isValid = validateTaxDetails();
+    if (!isValid) return;
+    if (!isServiceItem) {
       setActiveTab("inventoryDetails");
       return;
     }
-
-    // 🔹 FINAL SUBMIT (ONLY ON LAST TAB)
+  }
 
     try {
       setLoading(true);
@@ -524,9 +604,10 @@ export const useItemForm = ({
 
       const itemCode = form.id;
 
-      const response = isEditMode && itemCode
-        ? await updateItemByItemCode(itemCode, payload)
-        : await createItem(payload);
+      const response =
+        isEditMode && itemCode
+          ? await updateItemByItemCode(itemCode, payload)
+          : await createItem(payload);
 
       closeSwal();
 
