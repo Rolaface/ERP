@@ -9,7 +9,6 @@ import {
   FaEdit,
   FaTrash,
   FaEye,
-  FaWarehouse,
   FaTools,
   FaChartLine,
   FaMapMarkerAlt,
@@ -168,10 +167,10 @@ const FixedAssets = () => {
             row.condition.toLowerCase() === "excellent"
               ? "bg-success text-success"
               : row.condition.toLowerCase() === "good"
-              ? "bg-info text-info"
-              : row.condition.toLowerCase() === "fair"
-              ? "bg-warning text-warning"
-              : "bg-danger text-danger"
+                ? "bg-info text-info"
+                : row.condition.toLowerCase() === "fair"
+                  ? "bg-warning text-warning"
+                  : "bg-danger text-danger"
           }`}
         >
           {row.condition}

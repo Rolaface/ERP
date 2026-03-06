@@ -8,7 +8,10 @@ import ActionButton, {
   ActionGroup,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
-import { deletePurchaseInvoice, getPurchaseInvoices } from "../../api/procurement/PurchaseInvoiceApi";
+import {
+  deletePurchaseInvoice,
+  getPurchaseInvoices,
+} from "../../api/procurement/PurchaseInvoiceApi";
 import {
   showApiError,
   showSuccess,
@@ -49,59 +52,55 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
 
-
   useEffect(() => {
-  const timer = setTimeout(() => {
-    setFilters((prev) => ({
-      ...prev,
-      search: searchTerm || undefined,
-    }));
-    setPage(1);
-  }, 600);
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({
+        ...prev,
+        search: searchTerm || undefined,
+      }));
+      setPage(1);
+    }, 600);
 
-  return () => clearTimeout(timer);
-}, [searchTerm]);
-
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   //  FETCH ORDERS
   const fetchInvoice = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const res = await getPurchaseInvoices(page, pageSize, filters);
+      const res = await getPurchaseInvoices(page, pageSize, filters);
 
-   
-    if (!res?.data || res.data.length === 0) {
-      setOrders([]);        
-      setTotalItems(0);
-      setTotalPages(1);
-      return;
+      if (!res?.data || res.data.length === 0) {
+        setOrders([]);
+        setTotalItems(0);
+        setTotalPages(1);
+        return;
+      }
+
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total || 0);
+
+      const mappedInvoice: Purchaseinvoice[] = res.data.map((pi: any) => ({
+        pId: pi.pId,
+        supplier: pi.supplierName,
+        podate: pi.poDate,
+        deliveryDate: pi.deliveryDate,
+        amount: pi.grandTotal,
+        registrationType: pi.registrationType,
+      }));
+
+      setOrders(mappedInvoice);
+    } catch (err) {
+      setOrders([]);
+    } finally {
+      setLoading(false);
     }
-
-    setTotalPages(res.pagination?.total_pages || 1);
-    setTotalItems(res.pagination?.total || 0);
-
-    const mappedInvoice: Purchaseinvoice[] = res.data.map((pi: any) => ({
-      pId: pi.pId,
-      supplier: pi.supplierName,
-      podate: pi.poDate,
-      deliveryDate: pi.deliveryDate,
-      amount: pi.grandTotal,
-      registrationType: pi.registrationType,
-    }));
-
-    setOrders(mappedInvoice);
-
-  } catch (err) {
-    setOrders([]);   
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchInvoice();
-  }, [page, pageSize,filters]);
+  }, [page, pageSize, filters]);
 
   const handleView = async (invoice: Purchaseinvoice) => {
     try {
@@ -139,7 +138,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       let totalPagesLocal = 1;
 
       do {
-        const res = await getPurchaseInvoices(currentPage, 100,filters);
+        const res = await getPurchaseInvoices(currentPage, 100, filters);
 
         if (res?.status_code === 200) {
           const mapped = res.data.map((pi: any) => ({
@@ -222,8 +221,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     toast(
       (t) => (
         <div className="bg-card border border-[var(--border)] rounded-xl shadow-xl p-4 w-[320px]">
-          <div className="text-sm font-semibold text-main">Delete Purchase Invoice</div>
-          <div className="text-xs text-muted mt-1">Are you sure you want to delete "{Invoice.pId}"?</div>
+          <div className="text-sm font-semibold text-main">
+            Delete Purchase Invoice
+          </div>
+          <div className="text-xs text-muted mt-1">
+            Are you sure you want to delete "{Invoice.pId}"?
+          </div>
           <div className="flex items-center justify-end gap-2 mt-4">
             <button
               type="button"
@@ -240,7 +243,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
                     toast.dismiss(t.id);
                     const res = await deletePurchaseInvoice(Invoice.pId);
 
-                    if (!res || res.status_code !== 200 || res.status !== "success") {
+                    if (
+                      !res ||
+                      res.status_code !== 200 ||
+                      res.status !== "success"
+                    ) {
                       toast.error(getUserFriendlyErrorMessage(res));
                       return;
                     }
@@ -339,21 +346,21 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         onPageChange={setPage}
         onPageSizeChange={(size) => setPageSize(size)}
         pageSizeOptions={[10, 25, 50, 100]}
-  extraFilters={
-  <>
-    <DateRangeFilter
-      from={filters.from_date}
-      to={filters.to_date}
-      onChange={(range) => {
-        setFilters((prev) => ({
-          ...prev,
-          ...range,
-        }));
-        setPage(1);
-      }}
-    />
-  </>
-}
+        extraFilters={
+          <>
+            <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  ...range,
+                }));
+                setPage(1);
+              }}
+            />
+          </>
+        }
       />
 
       {/* MODAL */}

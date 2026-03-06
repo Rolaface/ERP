@@ -73,7 +73,7 @@ export default function CompanyMappingTab() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                 SALARY STRUCTURE
+                SALARY STRUCTURE
               </h3>
               <p className="text-sm text-gray-600 mb-4">
                 Currently Linked:{" "}
@@ -116,7 +116,7 @@ export default function CompanyMappingTab() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                 LEAVE POLICY
+                LEAVE POLICY
               </h3>
               <p className="text-sm text-gray-600 mb-4">
                 Currently Linked:{" "}
@@ -158,7 +158,7 @@ export default function CompanyMappingTab() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                 WORK SCHEDULE
+                WORK SCHEDULE
               </h3>
               <p className="text-sm text-gray-600 mb-4">
                 Currently Linked:{" "}
@@ -270,7 +270,7 @@ export default function CompanyMappingTab() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                   Confirm Mapping Change
+                  Confirm Mapping Change
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                   Review impact before proceeding

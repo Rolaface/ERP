@@ -52,9 +52,7 @@ const LeaveSetupModal: React.FC<LeaveSetupModalProps> = ({
 }) => {
   const [currentView, setCurrentView] = useState<ViewType>(initialView);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
-  const [refreshHolidayList, setRefreshHolidayList] =
-    useState(false);
-
+  const [refreshHolidayList, setRefreshHolidayList] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -206,7 +204,6 @@ const LeaveSetupModal: React.FC<LeaveSetupModalProps> = ({
               />
             </div>
           )}
-
 
           {/* Leave Type */}
           {currentView === "leave-type" && (

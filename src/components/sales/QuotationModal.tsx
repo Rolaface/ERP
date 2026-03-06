@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable unused-imports/no-unused-vars */
+
 /* eslint-disable react/jsx-handler-names */
 import { Plus, Trash2, FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
@@ -49,7 +49,9 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   } = useQuotationForm(isOpen, onClose, onSubmit);
 
   const symbol = currencySymbols[formData.currencyCode] ?? "ZK";
-  const currencyCode = String(formData.currencyCode ?? "").trim().toUpperCase();
+  const currencyCode = String(formData.currencyCode ?? "")
+    .trim()
+    .toUpperCase();
   const showExchangeRate = !!currencyCode && currencyCode !== "ZMW";
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -64,7 +66,12 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
 
   const footerContent = (
     <>
-      <Button variant="secondary" onClick={onClose} type="button" disabled={isSubmitting}>
+      <Button
+        variant="secondary"
+        onClick={onClose}
+        type="button"
+        disabled={isSubmitting}
+      >
         Cancel
       </Button>
       <div className="flex gap-2">
@@ -114,8 +121,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                 onClick={() => ui.setActiveTab(tab.key as any)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${
                   ui.activeTab === tab.key
-                  ? "text-primary border-b-[3px] border-primary"
-                  : "text-muted border-b-[3px] border-transparent hover:text-main"
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
                 }`}
               >
                 {tab.label}

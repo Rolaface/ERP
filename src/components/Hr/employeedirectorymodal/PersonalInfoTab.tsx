@@ -3,11 +3,19 @@ import { useCompanySelection } from "../../../hooks/useCompanySelection";
 import { getEmployeeFeatures } from "../../../config/employeeFeatures";
 import HrDateInput from "../HrDateInput";
 
-
-
-
 type PersonalInfoTabProps = {
-  formData: any;
+  formData: {
+    nrcId?: string;
+    socialSecurityNapsa?: string;
+    nhimaHealthInsurance?: string;
+    tpinId?: string;
+    firstName?: string;
+    otherNames?: string;
+    lastName?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    maritalStatus?: string;
+  };
   handleInputChange: (field: string, value: string | boolean) => void;
   verifiedFields: Record<string, boolean>;
 };
@@ -27,7 +35,9 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
       .slice(0, maxLen);
 
   const formatNrc = (raw: string): string => {
-    const digits = String(raw ?? "").replace(/\D/g, "").slice(0, 9);
+    const digits = String(raw ?? "")
+      .replace(/\D/g, "")
+      .slice(0, 9);
     const part1 = digits.slice(0, 6);
     const part2 = digits.slice(6, 8);
     const part3 = digits.slice(8, 9);
@@ -38,8 +48,7 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
     return out;
   };
 
-  const verifiedInputStyle =
-    "bg-app text-main cursor-not-allowed border-theme";
+  const verifiedInputStyle = "bg-app text-main cursor-not-allowed border-theme";
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
@@ -53,7 +62,10 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             {/* NRC Field */}
             <div>
               <label className="block text-xs text-main mb-1 font-medium">
-                NRC Number {features.statutoryFieldsRequired && <span className="text-danger">*</span>}
+                NRC Number{" "}
+                {features.statutoryFieldsRequired && (
+                  <span className="text-danger">*</span>
+                )}
               </label>
               <input
                 type="text"
@@ -64,9 +76,10 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
                   handleInputChange("nrcId", formatNrc(e.target.value))
                 }
                 className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none
-                  ${verifiedFields.nrcId
-                    ? verifiedInputStyle
-                    : "border border-theme bg-card text-main focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  ${
+                    verifiedFields.nrcId
+                      ? verifiedInputStyle
+                      : "border border-theme bg-card text-main focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   }`}
               />
               {verifiedFields.nrcId && (
@@ -79,7 +92,10 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             {/* SSN Field */}
             <div>
               <label className="block text-xs text-main mb-1 font-medium">
-                SSN {features.statutoryFieldsRequired && <span className="text-danger">*</span>}
+                SSN{" "}
+                {features.statutoryFieldsRequired && (
+                  <span className="text-danger">*</span>
+                )}
               </label>
               <input
                 type="text"
@@ -95,9 +111,10 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
                 inputMode="numeric"
                 maxLength={9}
                 className={`w-full px-3 py-2 text-sm rounded-lg border
-                  ${verifiedFields.socialSecurityNapsa
-                    ? verifiedInputStyle
-                    : "border border-theme bg-card text-main focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  ${
+                    verifiedFields.socialSecurityNapsa
+                      ? verifiedInputStyle
+                      : "border border-theme bg-card text-main focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   }`}
               />
             </div>
@@ -105,7 +122,10 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             {/* NHIMA Field */}
             <div>
               <label className="block text-xs text-main mb-1 font-medium">
-                NHIMA Number {features.statutoryFieldsRequired && <span className="text-danger">*</span>}
+                NHIMA Number{" "}
+                {features.statutoryFieldsRequired && (
+                  <span className="text-danger">*</span>
+                )}
               </label>
               <input
                 type="text"
@@ -115,14 +135,17 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
                 }
                 placeholder="e.g., 91897177171"
                 required={features.statutoryFieldsRequired}
-               className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
 
             {/* TPIN Field */}
             <div>
               <label className="block text-xs text-main mb-1 font-medium">
-                TPIN {features.statutoryFieldsRequired && <span className="text-danger">*</span>}
+                TPIN{" "}
+                {features.statutoryFieldsRequired && (
+                  <span className="text-danger">*</span>
+                )}
               </label>
               <input
                 type="text"
@@ -247,6 +270,8 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             <select
               value={formData.gender}
               disabled={verifiedFields.gender}
+              aria-label="Gender"
+              title="Gender"
               onChange={(e) => handleInputChange("gender", e.target.value)}
               className={`w-full px-3 py-2 text-sm rounded-lg border
     ${
@@ -266,6 +291,8 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             </label>
             <select
               value={formData.maritalStatus}
+              aria-label="Marital Status"
+              title="Marital Status"
               onChange={(e) =>
                 handleInputChange("maritalStatus", e.target.value)
               }

@@ -4,7 +4,12 @@ import { getPendingLeaveRequests } from "../../../api/leaveApi";
 import { updateLeaveStatus } from "../../../api/leaveApi";
 import type { LeaveUI } from "../../../types/leave/uiLeave";
 import { mapLeaveFromApi } from "../../../types/leave/leaveMapper";
-import { closeSwal, showApiError, showLoading, showSuccess } from "../../../utils/alert";
+import {
+  closeSwal,
+  showApiError,
+  showLoading,
+  showSuccess,
+} from "../../../utils/alert";
 
 /*  Component  */
 const LeaveManagment: React.FC = () => {
@@ -30,56 +35,54 @@ const LeaveManagment: React.FC = () => {
     fetchLeaves();
   }, []);
 
- const approveLeave = async (id: string) => {
-  try {
-    setActionLoadingId(id);
+  const approveLeave = async (id: string) => {
+    try {
+      setActionLoadingId(id);
 
-    showLoading("Approving Leave...");
+      showLoading("Approving Leave...");
 
-    await updateLeaveStatus({
-      leaveId: id,
-      status: "Approved",
-    });
+      await updateLeaveStatus({
+        leaveId: id,
+        status: "Approved",
+      });
 
-    closeSwal();
+      closeSwal();
 
-    setRequests((prev) => prev.filter((r) => r.id !== id));
+      setRequests((prev) => prev.filter((r) => r.id !== id));
 
-    showSuccess("Leave approved successfully");
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  } finally {
-    setActionLoadingId(null);
-  }
-};
+      showSuccess("Leave approved successfully");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
+  const rejectLeave = async (id: string) => {
+    try {
+      setActionLoadingId(id);
 
- const rejectLeave = async (id: string) => {
-  try {
-    setActionLoadingId(id);
+      showLoading("Rejecting Leave...");
 
-    showLoading("Rejecting Leave...");
+      await updateLeaveStatus({
+        leaveId: id,
+        status: "Rejected",
+        rejectionReason,
+      });
 
-    await updateLeaveStatus({
-      leaveId: id,
-      status: "Rejected",
-      rejectionReason,
-    });
+      closeSwal();
 
-    closeSwal();
+      setRequests((prev) => prev.filter((r) => r.id !== id));
 
-    setRequests((prev) => prev.filter((r) => r.id !== id));
-
-    showSuccess("Leave rejected successfully");
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  } finally {
-    setActionLoadingId(null);
-  }
-};
-
+      showSuccess("Leave rejected successfully");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   return (
     <div className="bg-app">

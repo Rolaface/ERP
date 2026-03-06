@@ -29,8 +29,12 @@ const Card: React.FC<{
       <div className="flex items-center justify-between h-full">
         <div>
           <p className="text-sm font-semibold text-gray-600">{label}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1 tabular-nums">{value}</p>
-          {sub ? <p className="text-xs font-semibold text-gray-500 mt-1">{sub}</p> : null}
+          <p className="text-2xl font-bold text-gray-900 mt-1 tabular-nums">
+            {value}
+          </p>
+          {sub ? (
+            <p className="text-xs font-semibold text-gray-500 mt-1">{sub}</p>
+          ) : null}
           {trend ? (
             <span className="mt-2 inline-flex items-center gap-0.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
               <ArrowUpRight className="w-3 h-3" />
@@ -48,9 +52,15 @@ const Card: React.FC<{
 };
 
 export const KPICards: React.FC<KPICardsProps> = ({
-  totalEmployees, activeEmployees, inactiveEmployees, onLeaveEmployees,
+  totalEmployees,
+  activeEmployees,
+  inactiveEmployees,
+  onLeaveEmployees,
 }) => {
-  const activeRate = totalEmployees > 0 ? Math.round((activeEmployees / totalEmployees) * 100) : 0;
+  const activeRate =
+    totalEmployees > 0
+      ? Math.round((activeEmployees / totalEmployees) * 100)
+      : 0;
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card
@@ -77,7 +87,9 @@ export const KPICards: React.FC<KPICardsProps> = ({
       <Card
         label="Inactive"
         value={inactiveEmployees}
-        sub={inactiveEmployees > 0 ? "Requires follow-up" : "All employees active"}
+        sub={
+          inactiveEmployees > 0 ? "Requires follow-up" : "All employees active"
+        }
         icon={<Users className="w-5 h-5" />}
         accent={inactiveEmployees > 0 ? "warning" : "info"}
       />

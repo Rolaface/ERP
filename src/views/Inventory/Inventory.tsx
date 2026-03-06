@@ -18,7 +18,6 @@ const inventory = {
     { id: "itemsCategory", name: "Items Category", icon: <FaBoxOpen /> },
     { id: "stock", name: "Stock", icon: <FaBoxOpen /> },
     { id: "import", name: "Import", icon: <FaBoxOpen /> },
-
   ],
   products: [
     {
@@ -99,11 +98,11 @@ const Inventory: React.FC = () => {
               setActiveTab(tab.id);
               setSearchTerm("");
             }}
-            className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors ${activeTab === tab.id
-
+            className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors ${
+              activeTab === tab.id
                 ? "text-primary border-b-2 border-current"
                 : "text-muted hover:text-main"
-              }`}
+            }`}
           >
             <span>{tab.icon}</span> {tab.name}
           </button>
@@ -118,7 +117,7 @@ const Inventory: React.FC = () => {
             products={inventory.products}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            onAdd={() => { }}
+            onAdd={() => {}}
           />
         )}
         {activeTab === "itemsCategory" && (
@@ -126,7 +125,7 @@ const Inventory: React.FC = () => {
             products={inventory.products}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            onAdd={() => { }}
+            onAdd={() => {}}
           />
         )}
         {activeTab === "stock" && (
@@ -134,7 +133,7 @@ const Inventory: React.FC = () => {
             products={inventory.products}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            onAdd={() => { }}
+            onAdd={() => {}}
           />
         )}
         {activeTab === "import" && (
@@ -142,10 +141,10 @@ const Inventory: React.FC = () => {
             products={inventory.products}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            onAdd={() => { }}
+            onAdd={() => {}}
           />
         )}
-        {activeTab === "movements" && <Movements onAdd={() => { }} />}
+        {activeTab === "movements" && <Movements onAdd={() => {}} />}
       </div>
     </div>
   );

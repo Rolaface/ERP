@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Plus, ChevronLeft,
   FileText, Users, CheckCircle,
-  Layers, X, Download, CreditCard, ExternalLink
+  Layers, X, Download, CreditCard, ExternalLink, Eye
 } from "lucide-react";
 
 import type { PayrollEntry, Employee } from "../../../types/payrolltypes";
@@ -15,7 +15,7 @@ import { EmployeesTab } from "./EntryFormTabs";
 import SalaryStructureTab from "../tabs/SalaryStructureTab";
 import SalaryStructureAssignmentsDashboardTab from "./SalaryStructureAssignmentsDashboardTab";
 import PayrollReportsDashboard from "./PayrollReportsDashboard";
-import AdvanceLoanTab from "./AdditionalSalaryTab";
+import AdditionalSalaryTab from "./AdditionalSalaryTab";
 
 // ── Views ─────────────────────────────────────────────────────────────────────
 import EmployeeDetailView from "../EmployeeManagement/EmployeeDetailView";
@@ -23,7 +23,10 @@ import EmployeeDetailView from "../EmployeeManagement/EmployeeDetailView";
 // ─────────────────────────────────────────────────────────────────────────────
 // TOAST NOTIFICATION (inline, lightweight)
 // ─────────────────────────────────────────────────────────────────────────────
-interface ToastState { msg: string; type: "success" | "error" | "info" }
+interface ToastState {
+  msg: string;
+  type: "success" | "error" | "info";
+}
 
 const Toast: React.FC<{ toast: ToastState | null }> = ({ toast }) => {
   if (!toast) return null;
@@ -33,7 +36,9 @@ const Toast: React.FC<{ toast: ToastState | null }> = ({ toast }) => {
     info: "bg-primary text-white",
   };
   return (
-    <div className={`fixed bottom-5 right-5 z-[100] flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold ${colors[toast.type]} animate-[slideUp_0.2s_ease]`}>
+    <div
+      className={`fixed bottom-5 right-5 z-[100] flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold ${colors[toast.type]} animate-[slideUp_0.2s_ease]`}
+    >
       <CheckCircle className="w-4 h-4 shrink-0" />
       {toast.msg}
     </div>
@@ -51,7 +56,15 @@ const Btn: React.FC<{
   variant?: "primary" | "outline" | "success" | "ghost";
   size?: "sm" | "md";
   className?: string;
-}> = ({ onClick, disabled, children, icon, variant = "primary", size = "md", className = "" }) => {
+}> = ({
+  onClick,
+  disabled,
+  children,
+  icon,
+  variant = "primary",
+  size = "md",
+  className = "",
+}) => {
   const v: Record<string, string> = {
     primary: "bg-primary text-white hover:bg-primary/90",
     outline: "bg-card text-main border border-border hover:bg-muted/5",
@@ -66,7 +79,8 @@ const Btn: React.FC<{
       className={`inline-flex items-center gap-1.5 rounded-md font-medium transition-colors
         disabled:opacity-50 disabled:cursor-not-allowed ${v[variant]} ${s} ${className}`}
     >
-      {icon}{children}
+      {icon}
+      {children}
     </button>
   );
 };
@@ -74,7 +88,38 @@ const Btn: React.FC<{
 // ─────────────────────────────────────────────────────────────────────────────
 // TOP NAVIGATION BAR (shared across views)
 // ─────────────────────────────────────────────────────────────────────────────
-type View = "dashboard" | "newEntry" | "salaryStructure" | "assignments" | "reports" | "advanceLoan";
+type View =
+  | "dashboard"
+  | "newEntry"
+  | "salaryStructure"
+  | "assignments"
+  | "reports"
+  | "advanceLoan";
+
+type EmployeeApiRow = {
+  id?: string;
+  employeeId?: string;
+  employee_id?: string;
+  name?: string;
+  email?: string;
+  status?: string;
+  department?: string;
+  jobTitle?: string;
+  workLocation?: string;
+  grossSalary?: number | string;
+};
+
+type EmployeeSummaryApi = {
+  totalEmployees?: number | string;
+  active?: number | string;
+  onLeave?: number | string;
+  inactive?: number | string;
+};
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : {};
 
 const toCsv = (rows: Array<Record<string, any>>): string => {
   const colSet = new Set<string>();
@@ -83,16 +128,34 @@ const toCsv = (rows: Array<Record<string, any>>): string => {
   });
   const cols = Array.from(colSet);
 
-  const esc = (v: any) => {
-    const s = v === null || v === undefined ? "" : String(v);
-    const needs = /[\n\r,\"]/g.test(s);
-    const out = s.replace(/\"/g, '""');
+  const esc = (v: unknown) => {
+    let s = "";
+    if (v === null || v === undefined) {
+      s = "";
+    } else if (typeof v === "string") {
+      s = v;
+    } else if (typeof v === "number" || typeof v === "boolean") {
+      s = String(v);
+    } else {
+      try {
+        s = JSON.stringify(v) ?? "";
+      } catch {
+        s = "";
+      }
+    }
+    const needs = /[\n\r,"]/g.test(s);
+    const out = s.replace(/"/g, '""');
     return needs ? `"${out}"` : out;
   };
 
   const header = cols.map(esc).join(",");
-  const lines = rows.map((r) => cols.map((c) => esc((r as any)?.[c])).join(","));
+  const lines = rows.map((r) => cols.map((c) => esc(r[c])).join(","));
   return [header, ...lines].join("\n");
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
 };
 
 const downloadCsv = (filename: string, csvContent: string) => {
@@ -112,11 +175,26 @@ const TopBar: React.FC<{
   totalEmployees?: number;
 }> = ({ view, setView, onNewPayroll, totalEmployees }) => {
   const navItems: { id: View; label: string; icon: React.ReactNode }[] = [
-    { id: "salaryStructure", label: "Salary Structure", icon: <Users className="w-3.5 h-3.5" /> },
-    { id: "assignments", label: "Salary Assignments", icon: <Users className="w-3.5 h-3.5" /> },
-    { id: "advanceLoan", label: "Additional Salary", icon: <CreditCard className="w-3.5 h-3.5" /> },
-    { id: "reports", label: "Reports", icon: <FileText className="w-3.5 h-3.5" /> }
-
+    {
+      id: "salaryStructure",
+      label: "Salary Structure",
+      icon: <Users className="w-3.5 h-3.5" />,
+    },
+    {
+      id: "assignments",
+      label: "Salary Assignments",
+      icon: <Users className="w-3.5 h-3.5" />,
+    },
+    {
+      id: "advanceLoan",
+      label: "Additional Salary",
+      icon: <CreditCard className="w-3.5 h-3.5" />,
+    },
+    {
+      id: "reports",
+      label: "Reports",
+      icon: <FileText className="w-3.5 h-3.5" />,
+    },
   ];
 
   return (
@@ -126,8 +204,11 @@ const TopBar: React.FC<{
         <button
           type="button"
           onClick={() => setView("dashboard")}
-          className={`flex items-center gap-2 rounded px-1.5 py-1 transition-colors ${view === "dashboard" ? "text-primary" : "text-main hover:text-primary"
-            }`}
+          className={`flex items-center gap-2 rounded px-1.5 py-1 transition-colors ${
+            view === "dashboard"
+              ? "text-primary"
+              : "text-main hover:text-primary"
+          }`}
         >
           <div className="w-8 h-8 rounded bg-muted/10 text-primary flex items-center justify-center">
             <Layers className="w-4 h-4" />
@@ -138,16 +219,18 @@ const TopBar: React.FC<{
 
         {/* Nav */}
         <nav className="flex items-center gap-1">
-          {navItems.map(item => (
+          {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setView(item.id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === item.id
-                ? "bg-muted/10 text-primary"
-                : "text-muted hover:text-main hover:bg-muted/5"
-                }`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                view === item.id
+                  ? "bg-muted/10 text-primary"
+                  : "text-muted hover:text-main hover:bg-muted/5"
+              }`}
             >
-              {item.icon}{item.label}
+              {item.icon}
+              {item.label}
             </button>
           ))}
         </nav>
@@ -156,12 +239,20 @@ const TopBar: React.FC<{
       <div className="flex items-center gap-2">
         {view === "dashboard" && typeof totalEmployees === "number" && (
           <div className="hidden md:flex items-center gap-2 mr-2 px-3 py-1.5 rounded-lg bg-app border border-theme">
-            <span className="text-[10px] font-extrabold text-muted uppercase tracking-wider">Total Employees</span>
-            <span className="text-xs font-extrabold text-main tabular-nums">{totalEmployees}</span>
+            <span className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
+              Total Employees
+            </span>
+            <span className="text-xs font-extrabold text-main tabular-nums">
+              {totalEmployees}
+            </span>
           </div>
         )}
         {view === "dashboard" && (
-          <Btn size="sm" icon={<Plus className="w-3.5 h-3.5" />} onClick={onNewPayroll}>
+          <Btn
+            size="sm"
+            icon={<Plus className="w-3.5 h-3.5" />}
+            onClick={onNewPayroll}
+          >
             New Payroll
           </Btn>
         )}
@@ -180,21 +271,29 @@ const NewPayrollEntry: React.FC<{
   onCreatePayroll: (empIds: string[]) => void;
   onViewEmployee: (employeeId: string) => void;
 }> = ({ employees, loading, onBack, onCreatePayroll, onViewEmployee }) => {
-
   const [formData, setFormData] = useState<PayrollEntry>({
-    payrollName: "", postingDate: new Date().toISOString().slice(0, 10),
-    currency: "ZMW", company: "Izyane",
+    payrollName: "",
+    postingDate: new Date().toISOString().slice(0, 10),
+    currency: "ZMW",
+    company: "Izyane",
     payrollPayableAccount: "Payroll Payable - Izyane - I",
-    status: "Draft", salarySlipTimesheet: false, deductTaxForProof: false,
+    status: "Draft",
+    salarySlipTimesheet: false,
+    deductTaxForProof: false,
 
-    payrollFrequency: "Monthly", startDate: "", endDate: "",
-    paymentAccount: "", costCenter: "", project: "", letterHead: "",
+    payrollFrequency: "Monthly",
+    startDate: "",
+    endDate: "",
+    paymentAccount: "",
+    costCenter: "",
+    project: "",
+    letterHead: "",
     employeeSelectionMode: "multiple",
     selectedEmployees: [],
   });
 
   const handleFormChange = (field: string, value: any) => {
-    setFormData(p => ({ ...p, [field]: value }));
+    setFormData((p) => ({ ...p, [field]: value }));
   };
 
   return (
@@ -202,18 +301,27 @@ const NewPayrollEntry: React.FC<{
       {/* Header */}
       <header className="h-12 shrink-0 bg-card border-b border-theme px-5 flex items-center justify-between z-30">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-app text-muted hover:text-main transition">
+          <button
+            type="button"
+            title="Back"
+            aria-label="Go back"
+            onClick={onBack}
+            className="p-1.5 rounded-lg hover:bg-app text-muted hover:text-main transition"
+          >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <div className="h-4 w-px bg-theme opacity-40" />
-          <span className="text-sm font-extrabold text-main">New Payroll Entry</span>
-          <span className="text-xs text-muted opacity-60">· Fill all details to create a payroll run</span>
+          <span className="text-sm font-extrabold text-main">
+            New Payroll Entry
+          </span>
+          <span className="text-xs text-muted opacity-60">
+            · Fill all details to create a payroll run
+          </span>
         </div>
       </header>
 
       <div className="flex-1 min-h-0 px-6 py-4 flex flex-col">
         <div className="flex-1 min-h-0 bg-card border border-theme rounded-xl overflow-hidden shadow-sm flex flex-col">
-
           {/* Tab content */}
           <div className="flex-1 min-h-0 overflow-y-auto p-6">
             <EmployeesTab
@@ -222,7 +330,9 @@ const NewPayrollEntry: React.FC<{
               employees={employees}
               loading={loading}
               onViewEmployee={onViewEmployee}
-              onCreatePayroll={() => onCreatePayroll(formData.selectedEmployees)}
+              onCreatePayroll={() =>
+                onCreatePayroll(formData.selectedEmployees)
+              }
             />
           </div>
 
@@ -235,17 +345,17 @@ const NewPayrollEntry: React.FC<{
 
 const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
   const raw = String(status ?? "").trim();
-  const s = String(raw ?? "").toLowerCase();
+  const s = raw.toLowerCase();
   const cls =
-    s === "paid"
+    s === "paid" || s === "submitted"
       ? "bg-green-50 text-green-700 border-green-200"
-      : s === "submitted"
-        ? "bg-green-50 text-green-700 border-green-200"
       : s === "draft"
         ? "bg-yellow-50 text-yellow-700 border-yellow-200"
       : "bg-gray-50 text-gray-700 border-gray-200";
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${cls}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${cls}`}
+    >
       {raw || "—"}
     </span>
   );
@@ -255,7 +365,9 @@ const derivePayslipStatus = (
   napsaStatus?: string,
   payslipStatus?: string,
 ): string => {
-  const ns = String(napsaStatus ?? "").trim().toLowerCase();
+  const ns = String(napsaStatus ?? "")
+    .trim()
+    .toLowerCase();
 
   if (ns === "pending") return "Pending";
   if (ns === "failed") return "Failed";
@@ -264,11 +376,29 @@ const derivePayslipStatus = (
   return String(payslipStatus ?? "").trim();
 };
 
+const getSlipNapsaStatus = (s: unknown): string | undefined => {
+  if (!s || typeof s !== "object") return undefined;
+  const rec = s as Record<string, unknown>;
+  const v =
+    rec["custom_napsa_status"] ??
+    rec["customNapsaStatus"] ??
+    rec["napsaStatus"] ??
+    rec["napsa_status"];
+  const raw = typeof v === "string" ? v.trim() : "";
+  return raw || undefined;
+};
+
+type SlipStatusFallback = {
+  napsaStatus?: string;
+  payslipStatus?: string;
+};
+
 const SalarySlipDetailsModal: React.FC<{
   open: boolean;
   slipId: string | null;
   onClose: () => void;
-}> = ({ open, slipId, onClose }) => {
+  statusFallback?: SlipStatusFallback | null;
+}> = ({ open, slipId, onClose, statusFallback }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<SalarySlipDetail | null>(null);
@@ -284,15 +414,17 @@ const SalarySlipDetailsModal: React.FC<{
         const resp = await getSalarySlipById(slipId);
         if (!mounted) return;
         setData(resp);
-      } catch (e: any) {
-        if (!mounted) return;
-        setError(e?.message || "Failed to load salary slip");
+      } catch (error: unknown) {
+        if (mounted) {
+          setError(getErrorMessage(error, "Failed to load salary slip"));
+        }
       } finally {
-        if (!mounted) return;
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
-    run();
+    void run();
     return () => {
       mounted = false;
     };
@@ -300,10 +432,63 @@ const SalarySlipDetailsModal: React.FC<{
 
   if (!open) return null;
 
-  const earnings = Array.isArray(data?.earnings) ? data?.earnings : [];
-  const deductions = Array.isArray(data?.deductions) ? data?.deductions : [];
+  const earningsRaw = data?.earnings;
+  const deductionsRaw = data?.deductions;
+  const earnings: Array<{ component: string; amount: number }> = Array.isArray(earningsRaw)
+    ? earningsRaw
+    : [];
+  const deductions: Array<{ component: string; amount: number }> = Array.isArray(deductionsRaw)
+    ? deductionsRaw
+    : [];
   const paySlipUrl = String((data as any)?.custom_slip_url ?? (data as any)?.paySlipUrl ?? "").trim();
   const referenceNumber = String((data as any)?.custom_reference_number ?? (data as any)?.referenceNumber ?? "").trim();
+  const dataRec: Record<string, unknown> =
+    data && typeof data === "object"
+      ? (data as unknown as Record<string, unknown>)
+      : {};
+  const pickString = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
+  const modalNapsaStatus =
+    pickString(dataRec["napsaStatus"]) ?? pickString(dataRec["napsa_status"]);
+  const modalPayslipStatus =
+    pickString(dataRec["status"]) ?? pickString(dataRec["payslip_status"]);
+
+  const modalCustomNapsaStatus =
+    pickString(dataRec["custom_napsa_status"]) ??
+    pickString(dataRec["customNapsaStatus"]);
+  const napsaFailMessageRaw =
+    pickString(dataRec["napsaFailMessage"]) ??
+    pickString(dataRec["napsa_fail_message"]) ??
+    pickString(dataRec["custom_napsa_fail_message"]);
+
+  const modalPayslipStatusClean = String(modalPayslipStatus ?? "").trim();
+  const useFallbackPayslipStatus =
+    !modalPayslipStatusClean || modalPayslipStatusClean.toLowerCase() === "draft";
+  const payslipStatusForDerive = useFallbackPayslipStatus
+    ? String(statusFallback?.payslipStatus ?? modalPayslipStatusClean).trim()
+    : modalPayslipStatusClean;
+
+  const docstatusRaw = dataRec["docstatus"];
+  const docstatus = typeof docstatusRaw === "number" ? docstatusRaw : Number.NaN;
+  const docstatusStatus = Number.isFinite(docstatus)
+    ? docstatus === 0
+      ? "Draft"
+      : docstatus === 1
+        ? "Submitted"
+        : docstatus === 2
+          ? "Cancelled"
+          : undefined
+    : undefined;
+
+  const statusToShow = derivePayslipStatus(
+    modalCustomNapsaStatus ?? modalNapsaStatus ?? statusFallback?.napsaStatus,
+    payslipStatusForDerive || docstatusStatus,
+  );
+
+  const isNapsaFailed =
+    String(modalCustomNapsaStatus ?? modalNapsaStatus ?? statusFallback?.napsaStatus ?? "")
+      .trim()
+      .toLowerCase() === "failed";
+  const napsaFailMessage = String(napsaFailMessageRaw ?? "").trim();
 
   const roInputCls = "w-full h-10 px-3 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none";
   const sectionTitleCls = "text-[11px] font-extrabold text-muted uppercase tracking-wider";
@@ -336,6 +521,13 @@ const SalarySlipDetailsModal: React.FC<{
 
           {!loading && data && (
             <>
+              {isNapsaFailed && napsaFailMessage ? (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <div className="text-xs font-extrabold text-red-700 uppercase tracking-wider">NAPSA Submission Failed</div>
+                  <div className="mt-1 text-sm font-semibold text-red-800">{napsaFailMessage}</div>
+                </div>
+              ) : null}
+
               <div className="bg-app/30 border border-theme rounded-xl p-6">
                 <div className={sectionTitleCls}>Basic Information</div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -350,7 +542,9 @@ const SalarySlipDetailsModal: React.FC<{
                   <div>
                     <div className={sectionTitleCls}>Status</div>
                     <div className="mt-1">
-                      <StatusChip status={derivePayslipStatus((data as any)?.napsaStatus, (data as any)?.status)} />
+                      <StatusChip
+                        status={statusToShow}
+                      />
                     </div>
                   </div>
 
@@ -525,15 +719,6 @@ const SalarySlipDetailsModal: React.FC<{
             </>
           )}
         </div>
-
-        <div className="px-6 py-4 border-t border-border bg-muted/5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-background transition-colors"
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -606,6 +791,8 @@ export default function PayrollManagement() {
   const [slipsTotalPages, setSlipsTotalPages] = useState(1);
   const [slipDetailsOpen, setSlipDetailsOpen] = useState(false);
   const [slipDetailsId, setSlipDetailsId] = useState<string | null>(null);
+  const [slipDetailsStatusFallback, setSlipDetailsStatusFallback] =
+    useState<SlipStatusFallback | null>(null);
   const [slipsSearch, setSlipsSearch] = useState("");
   const [slipsMonth, setSlipsMonth] = useState("");
 
@@ -618,7 +805,9 @@ export default function PayrollManagement() {
   }, [slipsMonth]);
 
   const filteredSalarySlips = useMemo(() => {
-    const q = String(slipsSearch ?? "").trim().toLowerCase();
+    const q = String(slipsSearch ?? "")
+      .trim()
+      .toLowerCase();
     const month = String(slipsMonth ?? "").trim();
 
     let monthStart: Date | null = null;
@@ -638,10 +827,13 @@ export default function PayrollManagement() {
         if (!(sStart <= monthEnd && sEnd >= monthStart)) return false;
       }
 
+      const status = String(s.status ?? "").trim();
+      const normalizedStatus = status || "Unknown";
       const hay = [
         String(s.name ?? ""),
         String(s.employee ?? ""),
-        String(s.referenceNumber ?? ""),
+        String(s.salary_structure ?? ""),
+        normalizedStatus,
       ]
         .join(" ")
         .toLowerCase();
@@ -670,34 +862,34 @@ export default function PayrollManagement() {
 
         const month = String(slipsMonth ?? "").trim();
         const monthMode = /^\d{4}-\d{2}$/.test(month);
-        const resp = await getSalarySlips(
-          monthMode
-            ? {
-              page: 1,
-              page_size: 2000,
-            }
-            : {
-              page: slipsPage,
-              page_size: slipsPageSize,
-            },
-        );
+        const params: { page: number } & Record<string, number> = {
+          page: monthMode ? 1 : slipsPage,
+        };
+        params["page_size"] = monthMode ? 2000 : slipsPageSize;
+        const resp = await getSalarySlips(params);
         if (!mounted) return;
         const list = Array.isArray(resp?.salary_slips) ? resp.salary_slips : [];
         setSalarySlips(list);
-        setSlipsTotalPages(monthMode ? 1 : Number(resp?.pagination?.total_pages ?? 1) || 1);
+        setSlipsTotalPages(
+          monthMode ? 1 : Number(resp?.pagination?.total_pages ?? 1) || 1,
+        );
         if (monthMode) setSlipsPage(1);
-      } catch (e: any) {
-        if (!mounted) return;
-        setSalarySlips([]);
-        setSlipsTotalPages(1);
-        setSlipsError(e?.message || "Failed to load salary slips");
+      } catch (error: unknown) {
+        if (mounted) {
+          setSalarySlips([]);
+          setSlipsTotalPages(1);
+          setSlipsError(getErrorMessage(error, "Failed to load salary slips"));
+        }
       } finally {
-        if (!mounted) return;
-        setSlipsLoading(false);
+        if (mounted) {
+          setSlipsLoading(false);
+        }
       }
     };
 
-    if (view === "dashboard" || view === "reports") run();
+    if (view === "dashboard" || view === "reports") {
+      void run();
+    }
     return () => {
       mounted = false;
     };
@@ -710,22 +902,29 @@ export default function PayrollManagement() {
       setEmployeesLoading(true);
       setEmployeesError(null);
       try {
-        const resp = await getAllEmployees({ page: 1, page_size: 200 });
-        const list = Array.isArray(resp?.employees) ? resp.employees : [];
-        const summary = resp?.summary || null;
+        const resp = await getAllEmployees(1, 200);
+        const responseRecord = asRecord(resp);
+        const employeesRaw = responseRecord.employees;
+        const summaryRaw = responseRecord.summary;
+        const list: EmployeeApiRow[] = Array.isArray(employeesRaw)
+          ? employeesRaw.map((row) => asRecord(row) as EmployeeApiRow)
+          : [];
+        const summary: EmployeeSummaryApi | null = summaryRaw
+          ? (asRecord(summaryRaw) as EmployeeSummaryApi)
+          : null;
 
-        const mapped: Employee[] = list.map((e: any) => {
-          const status = String(e?.status ?? "");
+        const mapped: Employee[] = list.map((e) => {
+          const status = String(e.status ?? "");
           return {
-            id: String(e?.id ?? e?.employeeId ?? e?.employee_id ?? ""),
-            employeeId: String(e?.employeeId ?? ""),
-            name: String(e?.name ?? ""),
-            email: String(e?.email ?? ""),
+            id: String(e.id ?? e.employeeId ?? e.employee_id ?? ""),
+            employeeId: String(e.employeeId ?? ""),
+            name: String(e.name ?? ""),
+            email: String(e.email ?? ""),
             status: status || undefined,
-            department: String(e?.department ?? ""),
-            jobTitle: String(e?.jobTitle ?? ""),
-            workLocation: String(e?.workLocation ?? ""),
-            grossSalary: Number(e?.grossSalary ?? 0),
+            department: String(e.department ?? ""),
+            jobTitle: String(e.jobTitle ?? ""),
+            workLocation: String(e.workLocation ?? ""),
+            grossSalary: Number(e.grossSalary ?? 0),
             isActive: status.toLowerCase() === "active",
           };
         });
@@ -735,23 +934,25 @@ export default function PayrollManagement() {
         setEmployeesSummary(
           summary
             ? {
-              totalEmployees: Number(summary?.totalEmployees ?? 0),
-              active: Number(summary?.active ?? 0),
-              onLeave: Number(summary?.onLeave ?? 0),
-              inactive: Number(summary?.inactive ?? 0),
-            }
+                totalEmployees: Number(summary?.totalEmployees ?? 0),
+                active: Number(summary?.active ?? 0),
+                onLeave: Number(summary?.onLeave ?? 0),
+                inactive: Number(summary?.inactive ?? 0),
+              }
             : null,
         );
-      } catch (err: any) {
-        if (!mounted) return;
-        setEmployeesError(err?.message || "Failed to load employees");
+      } catch (error: unknown) {
+        if (mounted) {
+          setEmployeesError(getErrorMessage(error, "Failed to load employees"));
+        }
       } finally {
-        if (!mounted) return;
-        setEmployeesLoading(false);
+        if (mounted) {
+          setEmployeesLoading(false);
+        }
       }
     };
 
-    loadEmployees();
+    void loadEmployees();
     return () => {
       mounted = false;
     };
@@ -763,8 +964,8 @@ export default function PayrollManagement() {
     const createdEmployees = employees
       .filter((e) => empIds.includes(e.id))
       .map((e) => ({ id: e.id, name: e.name, employeeId: e.employeeId }))
-      .filter(e => empIds.includes(e.id))
-      .map(e => ({ id: e.id, name: e.name, employeeId: e.employeeId }))
+      .filter((e) => empIds.includes(e.id))
+      .map((e) => ({ id: e.id, name: e.name, employeeId: e.employeeId }))
       .slice(0, 30);
 
     setLastCreatedPayroll({
@@ -772,21 +973,9 @@ export default function PayrollManagement() {
       employees: createdEmployees,
     });
 
-    showToast(`Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`);
-  };
-
-  const handleOpenPayslipPdf = async (slipId: string) => {
-    try {
-      const resp = await getSalarySlipById(slipId);
-      const paySlipUrl = String(resp?.paySlipUrl ?? "").trim();
-      if (paySlipUrl) {
-        window.open(paySlipUrl, "_blank");
-      } else {
-        showToast("No PDF available for this salary slip", "error");
-      }
-    } catch (err: any) {
-      showToast(err?.message || "Failed to open salary slip PDF", "error");
-    }
+    showToast(
+      `Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`,
+    );
   };
 
   const topBarProps = {
@@ -909,7 +1098,7 @@ export default function PayrollManagement() {
       <div className="h-screen flex flex-col bg-app overflow-hidden">
         <TopBar {...topBarProps} />
         <div className="flex-1 min-h-0 overflow-y-auto w-full">
-          <AdvanceLoanTab />
+          <AdditionalSalaryTab />
         </div>
       </div>
     );
@@ -924,8 +1113,14 @@ export default function PayrollManagement() {
       <div className="shrink-0 px-5 pt-4 pb-3">
         <KPICards
           totalEmployees={employeesSummary?.totalEmployees ?? employees.length}
-          activeEmployees={employeesSummary?.active ?? employees.filter(e => e.isActive).length}
-          inactiveEmployees={employeesSummary?.inactive ?? employees.filter(e => !e.isActive).length}
+          activeEmployees={
+            employeesSummary?.active ??
+            employees.filter((e) => e.isActive).length
+          }
+          inactiveEmployees={
+            employeesSummary?.inactive ??
+            employees.filter((e) => !e.isActive).length
+          }
           onLeaveEmployees={employeesSummary?.onLeave ?? 0}
         />
       </div>
@@ -936,13 +1131,18 @@ export default function PayrollManagement() {
             <div className="shrink-0 border-b border-theme bg-app px-5 py-3 flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-xs font-extrabold text-main">
-                  Payroll created for {lastCreatedPayroll.employees.length} employee{lastCreatedPayroll.employees.length === 1 ? "" : "s"}
+                  Payroll created for {lastCreatedPayroll.employees.length}{" "}
+                  employee{lastCreatedPayroll.employees.length === 1 ? "" : "s"}
                 </div>
                 <div className="mt-1 text-[11px] text-muted leading-relaxed break-words">
                   {lastCreatedPayroll.employees.map((e, idx) => (
                     <React.Fragment key={e.id}>
-                      <span className="font-semibold text-main">{e.name || e.employeeId || e.id}</span>
-                      {idx < lastCreatedPayroll.employees.length - 1 ? ", " : ""}
+                      <span className="font-semibold text-main">
+                        {e.name || e.employeeId || e.id}
+                      </span>
+                      {idx < lastCreatedPayroll.employees.length - 1
+                        ? ", "
+                        : ""}
                     </React.Fragment>
                   ))}
                   {lastCreatedPayroll.employees.length >= 30 ? "…" : ""}
@@ -963,14 +1163,20 @@ export default function PayrollManagement() {
             <div className="mt-4 rounded-xl overflow-hidden bg-card shadow-sm">
               <div className="px-4 py-3 bg-app border-b border-theme flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-extrabold text-main uppercase tracking-wide">Salary Slips</div>
-                  <div className="text-[11px] text-muted mt-0.5">Latest payroll runs</div>
+                  <div className="text-xs font-extrabold text-main uppercase tracking-wide">
+                    Salary Slips
+                  </div>
+                  <div className="text-[11px] text-muted mt-0.5">
+                    Latest payroll runs
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <input
                     type="month"
                     value={slipsMonth}
                     onChange={(e) => setSlipsMonth(e.target.value)}
+                    aria-label="Filter salary slips by month"
+                    title="Filter salary slips by month"
                     className="w-40 px-2.5 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary transition"
                   />
                   <Btn
@@ -979,14 +1185,17 @@ export default function PayrollManagement() {
                     icon={<Download className="w-3.5 h-3.5" />}
                     onClick={() => {
                       const rows = filteredSalarySlips.map((s) => ({
-                        slip_id: s.name,
+                        napsa_status: getSlipNapsaStatus(s) ?? "",
+                        slipId: s.name,
                         employee: s.employee,
                         reference_number: s.referenceNumber ?? "",
                         salary_structure: s.salary_structure,
                         start_date: s.start_date,
                         end_date: s.end_date,
-                        payslip_status: derivePayslipStatus(s.napsaStatus, s.status),
-                        napsa_status: s.napsaStatus ?? "",
+                        payslip_status: derivePayslipStatus(
+                          getSlipNapsaStatus(s),
+                          s.status,
+                        ),
                         total_earnings: s.total_earnings,
                         total_deduction: s.total_deduction,
                         net_pay: s.net_pay,
@@ -1005,14 +1214,20 @@ export default function PayrollManagement() {
                     value={slipsSearch}
                     onChange={(e) => setSlipsSearch(e.target.value)}
                     placeholder="Search slips…"
+                    aria-label="Search salary slips"
+                    title="Search salary slips"
                     className="w-64 px-2.5 py-2 bg-card border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
                   />
-                  <div className="text-xs text-muted whitespace-nowrap">Page {slipsPage} of {slipsTotalPages}</div>
+                  <div className="text-xs text-muted whitespace-nowrap">
+                    Page {slipsPage} of {slipsTotalPages}
+                  </div>
                 </div>
               </div>
 
               {slipsError && (
-                <div className="px-4 py-3 bg-danger/10 text-danger text-sm border-b border-theme">{slipsError}</div>
+                <div className="px-4 py-3 bg-danger/10 text-danger text-sm border-b border-theme">
+                  {slipsError}
+                </div>
               )}
 
               <div className="overflow-auto">
@@ -1020,14 +1235,14 @@ export default function PayrollManagement() {
                   <thead className="bg-muted/5">
                     <tr>
                       {[
-                        "Slip No",
-                        "Employee No",
-                        "Reference No",
-                        "Salary Structure",
+                        "Slip ID",
+                        "Employee",
+                        "Reference #",
+                        "Structure",
                         "Start",
                         "End",
                         "Payslip Status",
-                        "Napsa Status",
+                        "NAPSA Status",
                         "Earnings",
                         "Deductions",
                         "Net",
@@ -1035,8 +1250,9 @@ export default function PayrollManagement() {
                       ].map((h, i) => (
                         <th
                           key={String(i)}
-                          className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${i >= 8 && i <= 10 ? "text-right" : "text-left"
-                            }`}
+                          className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${
+                            i >= 8 && i <= 10 ? "text-right" : "text-left"
+                          }`}
                         >
                           {h}
                         </th>
@@ -1046,25 +1262,57 @@ export default function PayrollManagement() {
                   <tbody>
                     {slipsLoading ? (
                       Array.from({ length: 6 }).map((_, skIdx) => (
-                        <tr key={`sk-${skIdx}`} className={skIdx % 2 === 1 ? "bg-app" : "bg-card"}>
-                          <td className="px-4 py-3"><div className="h-3 w-28 bg-theme/60 rounded animate-pulse" /></td>
-                          <td className="px-4 py-3"><div className="h-3 w-20 bg-theme/60 rounded animate-pulse" /></td>
-                          <td className="px-4 py-3"><div className="h-3 w-24 bg-theme/60 rounded animate-pulse" /></td>
-                          <td className="px-4 py-3"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse" /></td>
-                          <td className="px-4 py-3"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse" /></td>
-                          <td className="px-4 py-3"><div className="h-3 w-28 bg-theme/60 rounded animate-pulse" /></td>
-                          <td className="px-4 py-3"><div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" /></td>
-                          <td className="px-4 py-3"><div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" /></td>
-                          <td className="px-4 py-3 text-right"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" /></td>
-                          <td className="px-4 py-3 text-right"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" /></td>
-                          <td className="px-4 py-3 text-right"><div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" /></td>
-                          <td className="px-4 py-3 text-right"><div className="h-7 w-16 bg-theme/60 rounded-lg animate-pulse ml-auto" /></td>
+                        <tr
+                          key={`sk-${skIdx}`}
+                          className={skIdx % 2 === 1 ? "bg-app" : "bg-card"}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="h-3 w-28 bg-theme/60 rounded animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-3 w-20 bg-theme/60 rounded animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-3 w-24 bg-theme/60 rounded animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-3 w-16 bg-theme/60 rounded animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-3 w-16 bg-theme/60 rounded animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-3 w-28 bg-theme/60 rounded animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="h-7 w-16 bg-theme/60 rounded-lg animate-pulse ml-auto" />
+                          </td>
                         </tr>
                       ))
                     ) : filteredSalarySlips.length === 0 ? (
                       <tr>
-                        <td colSpan={12} className="px-4 py-10 text-center text-sm text-muted">
-                          {String(slipsSearch ?? "").trim() ? "No matching salary slips" : "No salary slips found"}
+                        <td
+                          colSpan={12}
+                          className="px-4 py-10 text-center text-sm text-muted"
+                        >
+                          {String(slipsSearch ?? "").trim()
+                            ? "No matching salary slips"
+                            : "No salary slips found"}
                         </td>
                       </tr>
                     ) : (
@@ -1079,20 +1327,26 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3 text-sm text-muted break-words">{s.salary_structure}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.end_date}</td>
-                          <td className="px-4 py-3"><StatusChip status={derivePayslipStatus(s.napsaStatus, s.status)} /></td>
-                          <td className="px-4 py-3"><StatusChip status={s.napsaStatus} /></td>
+                          <td className="px-4 py-3"><StatusChip status={derivePayslipStatus(getSlipNapsaStatus(s), s.status)} /></td>
+                          <td className="px-4 py-3"><StatusChip status={getSlipNapsaStatus(s)} /></td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_earnings ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">{Number(s.net_pay ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right">
                             <button
+                              type="button"
                               onClick={() => {
                                 setSlipDetailsId(s.name);
+                                setSlipDetailsStatusFallback({
+                                  napsaStatus: getSlipNapsaStatus(s),
+                                  payslipStatus: s.status,
+                                });
                                 setSlipDetailsOpen(true);
                               }}
-                              className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                              className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-theme bg-card text-muted hover:text-main hover:bg-muted/5 transition-colors"
+                              title="View"
                             >
-                              View
+                              <Eye className="w-4 h-4" />
                             </button>
                           </td>
                         </tr>
@@ -1103,7 +1357,9 @@ export default function PayrollManagement() {
               </div>
 
               <div className="px-4 py-3 bg-app border-t border-theme flex items-center justify-between">
-                <div className="text-xs text-muted">Showing {filteredSalarySlips.length} slips</div>
+                <div className="text-xs text-muted">
+                  Showing {filteredSalarySlips.length} slips
+                </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -1115,7 +1371,9 @@ export default function PayrollManagement() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSlipsPage((p) => Math.min(slipsTotalPages, p + 1))}
+                    onClick={() =>
+                      setSlipsPage((p) => Math.min(slipsTotalPages, p + 1))
+                    }
                     disabled={slipsPage >= slipsTotalPages}
                     className="px-3 py-2 text-xs font-bold rounded-lg border border-theme bg-card text-main disabled:opacity-40"
                   >
@@ -1131,9 +1389,11 @@ export default function PayrollManagement() {
       <SalarySlipDetailsModal
         open={slipDetailsOpen}
         slipId={slipDetailsId}
+        statusFallback={slipDetailsStatusFallback}
         onClose={() => {
           setSlipDetailsOpen(false);
           setSlipDetailsId(null);
+          setSlipDetailsStatusFallback(null);
         }}
       />
     </div>

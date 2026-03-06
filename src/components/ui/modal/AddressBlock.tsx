@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Card, Checkbox } from "./formComponent";
-import { ModalInput, ModalSelect } from "./modalComponent";
+import { ModalInput } from "./modalComponent";
 import { getCountry, getProvinces, getTowns } from "../../../api/PlacesApi";
 import SearchSelect from "./SearchSelect";
 
@@ -27,7 +27,9 @@ interface AddressBlockProps {
   title: string;
   subtitle?: string;
   data: Address;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => void;
   sameAsBilling?: boolean;
   onSameAsBillingChange?: (checked: boolean) => void;
   disableAll?: boolean;
@@ -47,9 +49,6 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
 }) => {
   const isShipping = type === "shipping";
 
-
-
-
   const fetchCountryOptions = async (q: string) => {
     const res = await getCountry(q);
 
@@ -58,7 +57,6 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
       value: c,
     }));
   };
-
 
   const fetchProvinceOptions = async (q: string) => {
     const res = await getProvinces(q);
@@ -69,7 +67,6 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
     }));
   };
 
-
   const fetchTownOptions = async (q: string) => {
     const res = await getTowns(q);
 
@@ -79,13 +76,8 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
     }));
   };
 
-
   return (
-    <Card
-      title={title}
-      subtitle={subtitle}
-      className="relative"
-    >
+    <Card title={title} subtitle={subtitle} className="relative">
       {/* Same as billing toggle */}
       {isShipping && onSameAsBillingChange && (
         <div className="absolute top-6 right-6">
@@ -94,7 +86,6 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
             checked={!!sameAsBilling}
             onChange={onSameAsBillingChange}
           />
-
         </div>
       )}
 
@@ -142,7 +133,6 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
             required
             error={errors?.city}
           />
-
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -160,7 +150,6 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
             error={errors?.state}
           />
 
-
           <SearchSelect
             label="Country"
             value={data.country}
@@ -174,7 +163,6 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
             required
             error={errors?.country}
           />
-
         </div>
       </div>
     </Card>

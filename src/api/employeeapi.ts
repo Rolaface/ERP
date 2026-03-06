@@ -73,6 +73,14 @@ export async function getEmployeeById(id: string): Promise<any> {
   return getEmployee(id);
 }
 
+export async function getNapsaEmployeeById(id: string | number): Promise<any> {
+  const url = "/api/method/hrms.napsa_client.employee.api.get_employee";
+  const resp: AxiosResponse = await api.get(url, {
+    params: { id: String(id) },
+  });
+  return (resp.data?.data ?? resp.data) || null;
+}
+
 export async function createEmployee(payload: any): Promise<any> {
   const resp: AxiosResponse = await api.post(EmployeeAPI.create, payload);
   return resp.data;
@@ -107,11 +115,10 @@ export async function verifyEmployeeIdentity(
   type: "NRC" | "SSN",
   value: string,
 ): Promise<any> {
-
   const paramKey = type === "NRC" ? "nrc" : "ssn";
 
   const resp: AxiosResponse = await api.get(EmployeeAPI.getByNrc, {
-    params: { [paramKey]: value }
+    params: { [paramKey]: value },
   });
 
   return resp.data;
@@ -139,12 +146,7 @@ export async function updateEmployeeProfilePhoto(
 }
 
 export async function getCurrentCeiling(): Promise<any> {
-  const resp: AxiosResponse = await api.get(
-    EmployeeAPI.getCurrentCeiling
-  );
+  const resp: AxiosResponse = await api.get(EmployeeAPI.getCurrentCeiling);
 
   return resp.data;
 }
-
-
-

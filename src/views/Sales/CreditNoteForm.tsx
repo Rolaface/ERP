@@ -10,7 +10,11 @@ import { createCreditNoteFromInvoice } from "../../api/salesApi";
 import { getCountryList } from "../../api/lookupApi";
 import PaymentInfoBlock from "../../components/sales/PaymentInfoBlock";
 import AddressBlock from "../../components/ui/modal/AddressBlock";
-import { ModalInput, ModalSelect, ModalTextarea } from "../../components/ui/modal/modalComponent";
+import {
+  ModalInput,
+  ModalSelect,
+  ModalTextarea,
+} from "../../components/ui/modal/modalComponent";
 import SearchSelect from "../../components/ui/modal/SearchSelect";
 import ItemSelect from "../../components/selects/ItemSelect";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
@@ -46,41 +50,33 @@ const TRANSACTION_PROGRESS = [
   { value: "06", label: "Transferred" },
 ];
 
-
-
 const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
   onSubmit,
   invoiceId: _invoiceId,
   saving,
   setSaving,
 }) => {
-
-  const {
-    formData,
-    customerDetails,
-    paginatedItems,
-    totals,
-    ui,
-    actions,
-  } = useInvoiceForm(true, () => { }, onSubmit);
+  const { formData, customerDetails, paginatedItems, totals, ui, actions } =
+    useInvoiceForm(true, () => {}, onSubmit);
   const [creditMeta, setCreditMeta] = useState({
     creditNoteReasonCode: "",
     invcAdjustReason: "",
     transactionProgress: "",
   });
 
-  const [countryNameMap, setCountryNameMap] = useState<Record<string, string>>({});
+  const [countryNameMap, setCountryNameMap] = useState<Record<string, string>>(
+    {},
+  );
 
   const fetchInvoiceOptions = async (q: string) => {
     try {
       const res = await getAllSalesInvoices(1, 100, "", "asc", q);
       const invoices = res?.data || [];
 
-      return invoices
-        .map((inv: any) => ({
-          value: inv.invoiceNumber,
-          label: inv.invoiceNumber,
-        }));
+      return invoices.map((inv: any) => ({
+        value: inv.invoiceNumber,
+        label: inv.invoiceNumber,
+      }));
     } catch (err) {
       console.error("Failed to load invoices", err);
       return [];
@@ -118,7 +114,9 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
   useEffect(() => {
     let mounted = true;
     const run = async () => {
-      const code = String(formData.destnCountryCd ?? "").trim().toUpperCase();
+      const code = String(formData.destnCountryCd ?? "")
+        .trim()
+        .toUpperCase();
       if (!code) return;
       if (countryNameMap[code]) return;
 
@@ -127,7 +125,9 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
         const list = Array.isArray(resp) ? resp : (resp?.data ?? []);
         const next: Record<string, string> = {};
         (list ?? []).forEach((c: any) => {
-          const cc = String(c?.code ?? "").trim().toUpperCase();
+          const cc = String(c?.code ?? "")
+            .trim()
+            .toUpperCase();
           const name = String(c?.name ?? "").trim();
           if (cc) next[cc] = name || cc;
         });
@@ -143,7 +143,6 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
       mounted = false;
     };
   }, [formData.destnCountryCd, countryNameMap]);
-
 
   const getInvoiceAdjustReason = () => {
     if (creditMeta.creditNoteReasonCode === "07") {
@@ -179,7 +178,8 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
       }
 
       const normalizeAddress = (addr: any) => {
-        if (addr && typeof addr === "object" && !Array.isArray(addr)) return addr;
+        if (addr && typeof addr === "object" && !Array.isArray(addr))
+          return addr;
         return {
           line1: "",
           line2: "",
@@ -220,13 +220,9 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
         return;
       }
 
-      showSuccess(
-        res.message || "Credit note created successfully"
-      );
+      showSuccess(res.message || "Credit note created successfully");
 
       onSubmit?.(res);
-
-
     } catch (err: any) {
       console.error("Credit Note failed", err);
       showApiError(err);
@@ -234,7 +230,6 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
       setSaving(false);
     }
   };
-
 
   const symbol = currencySymbols[formData.currencyCode] ?? "ZK";
 
@@ -246,8 +241,6 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
         handleCreateCreditNote();
       }}
     >
-
-
       {/* Tabs */}
       <div className="bg-app border-b border-theme px-8 shrink-0">
         <div className="flex gap-8">
@@ -256,10 +249,11 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
               key={tab}
               type="button"
               onClick={() => ui.setActiveTab(tab)}
-              className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${ui.activeTab === tab
-                ? "text-primary border-b-[3px] border-primary"
-                : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+              className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${
+                ui.activeTab === tab
+                  ? "text-primary border-b-[3px] border-primary"
+                  : "text-muted border-b-[3px] border-transparent hover:text-main"
+              }`}
             >
               {tab === "details" && "Details"}
               {tab === "terms" && "Terms & Conditions"}
@@ -276,9 +270,6 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
           <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
             <div className="">
               <div className="grid grid-cols-6 gap-3 items-end">
-
-
-
                 <SearchSelect
                   label="Invoice Number"
                   value={formData.invoiceNumber ?? ""}
@@ -294,8 +285,6 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                   placeholder="Search invoice..."
                   required
                 />
-
-
 
                 <ModalSelect
                   label="Credit Note Reason Code"
@@ -340,7 +329,7 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
                 )}
-                <div >
+                <div>
                   <ModalInput
                     label="Currency"
                     required
@@ -358,11 +347,11 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                   options={[...paymentMethodOptions]}
                   name="paymentMethod"
                   value={formData.paymentInformation?.paymentMethod || ""}
-                  onChange={(e) => actions.handleInputChange(e, "paymentInformation")}
+                  onChange={(e) =>
+                    actions.handleInputChange(e, "paymentInformation")
+                  }
                   className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                 />
-
-
 
                 {/* <div>
                     <ModalInput
@@ -426,28 +415,46 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-gray-600">
                     Showing {ui.page * 5 + 1}–
-                    {Math.min((ui.page + 1) * 5, ui.itemCount)} of {ui.itemCount}
+                    {Math.min((ui.page + 1) * 5, ui.itemCount)} of{" "}
+                    {ui.itemCount}
                   </span>
-
                 </div>
 
                 <div>
                   <table className="w-full border-collapse text-[10px]">
-                    <thead >
+                    <thead>
                       <tr className="border-b border-theme">
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[25px]">#</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[130px]">Item</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[140px]">Description</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px]">Quantity</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">Unit Price</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">Discount</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">Tax</th>
-                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">Tax Code</th>
-                        <th className="px-2 py-3 text-right text-muted font-medium text-[11px] w-[70px]">Amount</th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[25px]">
+                          #
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[130px]">
+                          Item
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[140px]">
+                          Description
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px]">
+                          Quantity
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">
+                          Unit Price
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">
+                          Discount
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">
+                          Tax
+                        </th>
+                        <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]">
+                          Tax Code
+                        </th>
+                        <th className="px-2 py-3 text-right text-muted font-medium text-[11px] w-[70px]">
+                          Amount
+                        </th>
                         <th></th>
                       </tr>
                     </thead>
-                    <tbody >
+                    <tbody>
                       {paginatedItems.map((it, idx) => {
                         const i = ui.page * 5 + idx;
                         const qty = Number(it.quantity) || 0;
@@ -566,10 +573,10 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                 <div className="flex justify-between mt-3">
                   {(ui.itemCount > 5 || ui.page > 0) && (
                     <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
-
                       <div className="text-[11px] text-muted whitespace-nowrap">
                         Showing {ui.page * 5 + 1} to{" "}
-                        {Math.min((ui.page + 1) * 5, ui.itemCount)} of {ui.itemCount} items
+                        {Math.min((ui.page + 1) * 5, ui.itemCount)} of{" "}
+                        {ui.itemCount} items
                       </div>
 
                       <div className="flex gap-1.5 items-center">
@@ -591,7 +598,6 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                           Next
                         </button>
                       </div>
-
                     </div>
                   )}
                 </div>
@@ -643,8 +649,11 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                               </span>
                               <span className="font-medium text-main">
                                 {formData.destnCountryCd
-                                  ? countryNameMap[String(formData.destnCountryCd).trim().toUpperCase()] ??
-                                    formData.destnCountryCd
+                                  ? (countryNameMap[
+                                      String(formData.destnCountryCd)
+                                        .trim()
+                                        .toUpperCase()
+                                    ] ?? formData.destnCountryCd)
                                   : "-"}
                               </span>
                             </div>
@@ -684,7 +693,9 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
 
                     <div className="mt-2 p-2 bg-primary rounded-lg">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-semibold text-white">Grand Total</span>
+                        <span className="text-sm font-semibold text-white">
+                          Grand Total
+                        </span>
                         <span className="text-sm font-bold text-white">
                           {symbol} {totals.grandTotal.toFixed(2)}
                         </span>
@@ -692,7 +703,6 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -709,15 +719,12 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
 
         {ui.activeTab === "address" && (
           <div className="space-y-6 overflow-hidden">
-
             {/*  PAYMENT INFO  */}
             <PaymentInfoBlock
               data={formData.paymentInformation}
               onChange={(
-                e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-              ) =>
-                actions.handleInputChange(e, "paymentInformation")
-              }
+                e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+              ) => actions.handleInputChange(e, "paymentInformation")}
               paymentMethodOptions={paymentMethodOptions}
               showPaymentMethod={false}
               showPaymentTerms={false}
@@ -725,7 +732,6 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
 
             {/*  BILLING + SHIPPING  */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
               {/* Billing */}
               <AddressBlock
                 type="billing"
@@ -733,10 +739,8 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                 subtitle="Invoice and payment details"
                 data={formData.billingAddress}
                 onChange={(
-                  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-                ) =>
-                  actions.handleInputChange(e, "billingAddress")
-                }
+                  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+                ) => actions.handleInputChange(e, "billingAddress")}
               />
 
               {/* Shipping */}
@@ -746,23 +750,16 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                 subtitle="Delivery location"
                 data={formData.shippingAddress}
                 sameAsBilling={ui.sameAsBilling}
-                onSameAsBillingChange={
-                  actions.handleSameAsBillingChange
-                }
+                onSameAsBillingChange={actions.handleSameAsBillingChange}
                 onChange={(
-                  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-                ) =>
-                  actions.handleInputChange(e, "shippingAddress")
-                }
+                  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+                ) => actions.handleInputChange(e, "shippingAddress")}
               />
-
             </div>
           </div>
         )}
-
       </div>
     </form>
-
   );
 };
 

@@ -430,33 +430,31 @@ const AccountingModule: React.FC = () => {
   return (
     <div className="p-6 bg-app ">
       {/* Header */}
-   
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
-            <FaBriefcase />
-            Accounting
-          </h2>
-        </div>
-      
+
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
+          <FaBriefcase />
+          Accounting
+        </h2>
+      </div>
 
       {/* Clean Single-Row Tabs */}
-       <div className="flex border-b border-gray-200 mb-4">
-          {allTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors  ${
-                activeTab === tab.id
-                       ? "text-primary border-b-2 border-current"
-                      : "text-muted hover:text-main"
-              }`}
-            >
-              <span className="text-lg">{tab.icon}</span>
-              {tab.name}
-            </button>
-          ))}
-        </div>
-      
+      <div className="flex border-b border-gray-200 mb-4">
+        {allTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors  ${
+              activeTab === tab.id
+                ? "text-primary border-b-2 border-current"
+                : "text-muted hover:text-main"
+            }`}
+          >
+            <span className="text-lg">{tab.icon}</span>
+            {tab.name}
+          </button>
+        ))}
+      </div>
 
       {/* Content */}
       <div>

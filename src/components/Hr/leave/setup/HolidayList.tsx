@@ -53,9 +53,7 @@ export const HolidayList: React.FC<HolidayListProps> = ({
               <ArrowLeft size={20} />
             </button>
           )}
-          <h2 className="text-xl font-bold text-main">
-            Holiday List
-          </h2>
+          <h2 className="text-xl font-bold text-main">Holiday List</h2>
         </div>
 
         <button
@@ -69,9 +67,7 @@ export const HolidayList: React.FC<HolidayListProps> = ({
 
       {/* STATS */}
       <div className="px-6 py-3 border-b border-theme flex items-center justify-between">
-        <span className="text-sm text-muted">
-          {holidays.length} Holidays
-        </span>
+        <span className="text-sm text-muted">{holidays.length} Holidays</span>
 
         <span className="text-xs text-muted">
           Last Updated: {new Date().toDateString()}
@@ -80,17 +76,12 @@ export const HolidayList: React.FC<HolidayListProps> = ({
 
       {/* EMPTY / LIST */}
       {loading ? (
-        <div className="p-10 text-center text-muted">
-          Loading holidays...
-        </div>
+        <div className="p-10 text-center text-muted">Loading holidays...</div>
       ) : holidays.length === 0 ? (
         <div className="p-16 flex items-center justify-center">
           <div className="text-center max-w-md">
             <div className="mb-6 w-20 h-20 mx-auto rounded-2xl bg-card border border-theme inline-flex items-center justify-center">
-              <Calendar
-                size={40}
-                className="text-muted"
-              />
+              <Calendar size={40} className="text-muted" />
             </div>
 
             <h3 className="text-lg font-semibold text-main mb-2">
@@ -119,9 +110,7 @@ export const HolidayList: React.FC<HolidayListProps> = ({
               className="p-4 border border-theme rounded-xl flex justify-between"
             >
               <div>
-                <p className="font-semibold text-main">
-                  {h.name}
-                </p>
+                <p className="font-semibold text-main">{h.name}</p>
                 <p className="text-sm text-muted">
                   {h.fromDate} → {h.toDate}
                 </p>

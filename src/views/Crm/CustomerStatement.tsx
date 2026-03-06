@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowUpRight,
-  ArrowDownLeft,
-  FileText,
-} from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, FileText } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import { getCustomerStatement } from "../../api/statementApi";
 
@@ -49,47 +45,42 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
 
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
   const [searchQuery, setSearchQuery] = useState("");
-   const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(4);
-    const [totalPages, setTotalPages] = useState(1);
-     const [totalItems, setTotalItems] = useState(0);
-
-
-    
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(4);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   /*  API  */
-useEffect(() => {
-  if (!customerId) return;
+  useEffect(() => {
+    if (!customerId) return;
 
-  const fetchStatement = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+    const fetchStatement = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const resp = await getCustomerStatement(customerId, page, pageSize);
+        const resp = await getCustomerStatement(customerId, page, pageSize);
 
-      if (resp?.status === "success") {
-        setData(resp.data);
-        setTotalPages(resp.data.pagination?.total_pages || 1);
-        setTotalItems(resp.data.pagination?.total || 0);
-      } else {
-        setError("Failed to load customer statement");
+        if (resp?.status === "success") {
+          setData(resp.data);
+          setTotalPages(resp.data.pagination?.total_pages || 1);
+          setTotalItems(resp.data.pagination?.total || 0);
+        } else {
+          setError("Failed to load customer statement");
+        }
+      } catch {
+        setError("Unable to fetch customer statement");
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setError("Unable to fetch customer statement");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchStatement();
-}, [customerId, page, pageSize]);
+    fetchStatement();
+  }, [customerId, page, pageSize]);
 
-
-useEffect(() => {
-  setPage(1);
-}, [customerId]);
-
+  useEffect(() => {
+    setPage(1);
+  }, [customerId]);
 
   /*  TABLE COLUMNS  */
 
@@ -117,8 +108,8 @@ useEffect(() => {
               row.debit > 0
                 ? "bg-warning text-warning"
                 : row.credit > 0
-                ? "bg-success text-success"
-                : "bg-row-hover text-muted"
+                  ? "bg-success text-success"
+                  : "bg-row-hover text-muted"
             }`}
           >
             {row.debit > 0 ? (
@@ -222,68 +213,64 @@ useEffect(() => {
   /*  UI  */
 
   return (
-   <div className="max-w-[1400px] mx-auto space-y-5 p-6">
+    <div className="max-w-[1400px] mx-auto space-y-5 p-6">
+      {/* TOP ROW: KPI (left) + Aging (right) */}
+      <div className="flex gap-4 items-stretch">
+        {/* KPI CARDS — LEFT */}
+        <div className="grid grid-cols-3 gap-4 flex-[3]">
+          <SummaryCard
+            label="Total Debit"
+            value={totalDebit}
+            className="text-primary"
+          />
+          <SummaryCard
+            label="Total Credit"
+            value={totalCredit}
+            className="text-primary"
+          />
+          <SummaryCard
+            label="Net Outstanding"
+            value={data.summary.netOutstanding}
+            className="text-primary"
+          />
+        </div>
 
-  {/* TOP ROW: KPI (left) + Aging (right) */}
-  <div className="flex gap-4 items-stretch">
+        {/* AGING — RIGHT (COMPACT) */}
+        <div className="flex-[2] bg-card border border-theme rounded-2xl px-3 py-2">
+          <div className="grid grid-cols-5 gap-2">
+            <AgingCell
+              compact
+              label="Current"
+              value={data.aging.current}
+              active
+            />
+            <AgingCell compact label="1–30" value={data.aging["1_30"]} />
+            <AgingCell compact label="31–60" value={data.aging["31_60"]} />
+            <AgingCell compact label="61–90" value={data.aging["61_90"]} />
+            <AgingCell compact label="90+" value={data.aging["90_plus"]} />
+          </div>
+        </div>
+      </div>
 
-    {/* KPI CARDS — LEFT */}
-    <div className="grid grid-cols-3 gap-4 flex-[3]">
-      <SummaryCard
-        label="Total Debit"
-        value={totalDebit}
-        className="text-primary"
-      />
-      <SummaryCard
-        label="Total Credit"
-        value={totalCredit}
-        className="text-primary"
-      />
-      <SummaryCard
-        label="Net Outstanding"
-        value={data.summary.netOutstanding}
-        className="text-primary"
-      />
-    </div>
-
-    {/* AGING — RIGHT (COMPACT) */}
-    <div className="flex-[2] bg-card border border-theme rounded-2xl px-3 py-2">
-      <div className="grid grid-cols-5 gap-2">
-        <AgingCell compact label="Current" value={data.aging.current} active />
-        <AgingCell compact label="1–30" value={data.aging["1_30"]} />
-        <AgingCell compact label="31–60" value={data.aging["31_60"]} />
-        <AgingCell compact label="61–90" value={data.aging["61_90"]} />
-        <AgingCell compact label="90+" value={data.aging["90_plus"]} />
+      {/* TABLE */}
+      <div className="bg-card border border-theme rounded-2xl overflow-hidden">
+        <Table
+          columns={statementColumns}
+          data={data.ledger}
+          showToolbar={false}
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          pageSizeOptions={[4, 10, 25]}
+        />
       </div>
     </div>
-
-  </div>
-
-
-
-  {/* TABLE */}
-  <div className="bg-card border border-theme rounded-2xl overflow-hidden">
-   <Table
-  columns={statementColumns}
-  data={data.ledger}
-  showToolbar={false}
-  currentPage={page}
-  totalPages={totalPages}
-  totalItems={totalItems}
-  pageSize={pageSize}
-  onPageChange={setPage}
-  onPageSizeChange={(size) => {
-    setPageSize(size);
-    setPage(1);
-  }}
- pageSizeOptions={[4, 10, 25]}
-
-/>
-
-  </div>
-
-</div>
-
   );
 };
 
@@ -321,7 +308,6 @@ const AgingCell = ({
   </div>
 );
 
-
 const SummaryCard = ({
   label,
   value,
@@ -332,7 +318,9 @@ const SummaryCard = ({
   className: string;
 }) => (
   <div className="bg-card border border-theme rounded-xl p-4">
-    <p className={`text-[9px] font-black uppercase tracking-widest ${className}`}>
+    <p
+      className={`text-[9px] font-black uppercase tracking-widest ${className}`}
+    >
       {label}
     </p>
     <p className={`text-lg font-black ${className}`}>

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
-import { Plus } from "lucide-react";
 
 type Account = {
   code: string;
@@ -60,7 +59,7 @@ const GeneralLedger: React.FC<Props> = ({
     .filter(
       (a) =>
         a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        a.code.includes(searchTerm)
+        a.code.includes(searchTerm),
     );
 
   const filteredJournalEntries = journalEntries.filter((entry) => {

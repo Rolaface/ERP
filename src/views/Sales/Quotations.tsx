@@ -23,13 +23,12 @@ import { generateQuotationPDF } from "../../components/template/quotation/Quotat
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
-
 const SORT_FIELD_MAP: Record<string, string> = {
   quotationNumber: "id",
-  customerName:    "customerName",
+  customerName: "customerName",
   transactionDate: "transactionDate",
-  validTill:       "validTill",
-  grandTotal:      "grandTotal",
+  validTill: "validTill",
+  grandTotal: "grandTotal",
 };
 
 interface QuotationTableProps {
@@ -38,16 +37,14 @@ interface QuotationTableProps {
 }
 
 const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
-
-
-  const [quotations, setQuotations]   = useState<QuotationSummary[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
+  const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [company, setCompany]         = useState<any>(null);
+  const [company, setCompany] = useState<any>(null);
 
   // ── Pagination state (server) ────────────────────────────────────────────
-  const [page, setPage]           = useState(1);
-  const [pageSize, setPageSize]   = useState(10);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -55,19 +52,21 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // ── Sort state (server) — always store column key, not backend field ─────
-  const [sortBy, setSortBy]       = useState("");
+  const [sortBy, setSortBy] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ── Filter state (server) ────────────────────────────────────────────────
   const [fromDate] = useState("");
-  const [toDate]   = useState("");
+  const [toDate] = useState("");
 
   // ── Modal state ──────────────────────────────────────────────────────────
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsId, setDetailsId]     = useState<string | null>(null);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   // ── Reset page when search changes ──────────────────────────────────────
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // ── Fetch company once ───────────────────────────────────────────────────
   useEffect(() => {
@@ -83,10 +82,10 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
       setLoading(true);
 
       const res = await getAllQuotations(page, pageSize, {
-        search:    searchTerm,
+        search: searchTerm,
         fromDate,
         toDate,
-        sortBy:    SORT_FIELD_MAP[sortBy] || sortBy,
+        sortBy: SORT_FIELD_MAP[sortBy] || sortBy,
         sortOrder,
       });
 
@@ -95,21 +94,24 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
         return;
       }
 
-      const raw = Array.isArray(res.data?.quotations) ? res.data.quotations : [];
+      const raw = Array.isArray(res.data?.quotations)
+        ? res.data.quotations
+        : [];
 
-      setQuotations(raw.map((q: any) => ({
-        quotationNumber: q.id            || "",
-        customerName:    q.customerName  || "N/A",
-        industryBases:   q.industryBases || "N/A",
-        transactionDate: q.transactionDate || "",
-        validTill:       q.validTill     || "",
-        grandTotal:      Number(q.grandTotal ?? 0),
-        currency:        q.currency      || "ZMW",
-      })));
+      setQuotations(
+        raw.map((q: any) => ({
+          quotationNumber: q.id || "",
+          customerName: q.customerName || "N/A",
+          industryBases: q.industryBases || "N/A",
+          transactionDate: q.transactionDate || "",
+          validTill: q.validTill || "",
+          grandTotal: Number(q.grandTotal ?? 0),
+          currency: q.currency || "ZMW",
+        })),
+      );
 
       setTotalPages(res.data?.pagination?.totalPages || 1);
-      setTotalItems(res.data?.pagination?.total      || raw.length);
-
+      setTotalItems(res.data?.pagination?.total || raw.length);
     } catch (err) {
       console.error("Error fetching quotations:", err);
       setQuotations([]);
@@ -131,7 +133,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
     sortBy: string;
     sortOrder: "asc" | "desc";
   }) => {
-    setSortBy(colKey);   // ← always the column key e.g. "quotationNumber"
+    setSortBy(colKey); // ← always the column key e.g. "quotationNumber"
     setSortOrder(order);
     setPage(1);
   };
@@ -147,7 +149,10 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
         u.port = "";
         return u.toString();
       } catch {
-        return normalizedUrl.replace(/^(https?:\/\/[^\/]+):\d+(\/.*)?$/i, "$1$2");
+        return normalizedUrl.replace(
+          /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
+          "$1$2",
+        );
       }
     })();
 
@@ -158,19 +163,19 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
     document.body.appendChild(a);
     a.click();
     a.remove();
-  }; 
+  };
 
   const fetchAllForExport = async (): Promise<QuotationSummary[]> => {
     let allData: QuotationSummary[] = [];
     let current = 1;
-    let total   = 1;
+    let total = 1;
 
     do {
       const res = await getAllQuotations(current, 100, {
-        search:    searchTerm,
+        search: searchTerm,
         fromDate,
         toDate,
-        sortBy:    SORT_FIELD_MAP[sortBy] || sortBy,  // ← same mapping
+        sortBy: SORT_FIELD_MAP[sortBy] || sortBy, // ← same mapping
         sortOrder,
       });
 
@@ -179,13 +184,13 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
         allData = [
           ...allData,
           ...raw.map((q: any) => ({
-            quotationNumber: q.id            || "",
-            customerName:    q.customerName  || "N/A",
-            industryBases:   q.industryBases || "N/A",
+            quotationNumber: q.id || "",
+            customerName: q.customerName || "N/A",
+            industryBases: q.industryBases || "N/A",
             transactionDate: q.transactionDate || "",
-            validTill:       q.validTill     || "",
-            grandTotal:      Number(q.grandTotal ?? 0),
-            currency:        q.currency      || "ZMW",
+            validTill: q.validTill || "",
+            grandTotal: Number(q.grandTotal ?? 0),
+            currency: q.currency || "ZMW",
           })),
         ];
         total = res.data?.pagination?.totalPages || 1;
@@ -217,21 +222,17 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
           "Valid Till": q.validTill,
           Amount: q.grandTotal,
           Currency: q.currency,
-        }))
+        })),
       );
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Quotations");
 
       saveAs(
-        new Blob(
-          [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-          {
-            type:
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          }
-        ),
-        "All_Quotations.xlsx"
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "All_Quotations.xlsx",
       );
 
       closeSwal();
@@ -248,7 +249,10 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
     setDetailsOpen(true);
   };
 
-  const handleDownload = async (quotationNumber: string, e?: React.MouseEvent) => {
+  const handleDownload = async (
+    quotationNumber: string,
+    e?: React.MouseEvent,
+  ) => {
     e?.stopPropagation();
     try {
       showLoading("Preparing quotation download...");

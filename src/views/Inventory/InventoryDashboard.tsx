@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Bar,
@@ -48,7 +47,14 @@ const InventoryDashboard: React.FC = () => {
   );
 
   const pieColors = useMemo(
-    () => [palette.blue, palette.emerald, palette.purple, palette.amber, palette.red, palette.slate],
+    () => [
+      palette.blue,
+      palette.emerald,
+      palette.purple,
+      palette.amber,
+      palette.red,
+      palette.slate,
+    ],
     [palette],
   );
 
@@ -64,7 +70,9 @@ const InventoryDashboard: React.FC = () => {
         setSummaryData(resp.data);
       } catch (e: any) {
         if (!mounted) return;
-        setSummaryError(e?.message ?? "Failed to load inventory dashboard summary");
+        setSummaryError(
+          e?.message ?? "Failed to load inventory dashboard summary",
+        );
       } finally {
         if (!mounted) return;
         setSummaryLoading(false);
@@ -80,8 +88,14 @@ const InventoryDashboard: React.FC = () => {
   const itemTypeBreakdownData = useMemo(
     () => [
       { name: "Service", value: Number(summaryData?.serviceItems ?? 0) },
-      { name: "Raw Material", value: Number(summaryData?.rawMaterialItems ?? 0) },
-      { name: "Finished Products", value: Number(summaryData?.finishedProductsItems ?? 0) },
+      {
+        name: "Raw Material",
+        value: Number(summaryData?.rawMaterialItems ?? 0),
+      },
+      {
+        name: "Finished Products",
+        value: Number(summaryData?.finishedProductsItems ?? 0),
+      },
       { name: "Imported", value: Number(summaryData?.totalImportedItems ?? 0) },
     ],
     [summaryData],
@@ -99,8 +113,14 @@ const InventoryDashboard: React.FC = () => {
 
   const rawVsFinishedTrendData = useMemo(
     () => [
-      { name: "Raw Materials", value: Number(summaryData?.rawMaterialItems ?? 0) },
-      { name: "Finished Products", value: Number(summaryData?.finishedProductsItems ?? 0) },
+      {
+        name: "Raw Materials",
+        value: Number(summaryData?.rawMaterialItems ?? 0),
+      },
+      {
+        name: "Finished Products",
+        value: Number(summaryData?.finishedProductsItems ?? 0),
+      },
     ],
     [summaryData],
   );
@@ -118,46 +138,52 @@ const InventoryDashboard: React.FC = () => {
   const renderDonutLabel = (props: any) => {
     const { x, y, name, value } = props;
     return (
-      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
+      <text
+        x={x}
+        y={y}
+        fill="#374151"
+        fontSize={11}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
         {String(name)}: {String(value)}
       </text>
     );
   };
 
   const kpiCards = useMemo(
-    () =>
-      [
-        {
-          label: "Total Items",
-          value: String(summaryData?.totalItems ?? 0),
-          icon: Package,
-          gradient: "from-blue-500 to-blue-600",
-        },
-        {
-          label: "Service Items",
-          value: String(summaryData?.serviceItems ?? 0),
-          icon: AlertTriangle,
-          gradient: "from-purple-500 to-purple-600",
-        },
-        {
-          label: "Raw Materials",
-          value: String(summaryData?.rawMaterialItems ?? 0),
-          icon: Boxes,
-          gradient: "from-emerald-500 to-emerald-600",
-        },
-        {
-          label: "Finished Products",
-          value: String(summaryData?.finishedProductsItems ?? 0),
-          icon: Package,
-          gradient: "from-amber-500 to-amber-600",
-        },
-        {
-          label: "Imported Items",
-          value: String(summaryData?.totalImportedItems ?? 0),
-          icon: Warehouse,
-          gradient: "from-red-500 to-red-600",
-        },
-      ],
+    () => [
+      {
+        label: "Total Items",
+        value: String(summaryData?.totalItems ?? 0),
+        icon: Package,
+        gradient: "from-blue-500 to-blue-600",
+      },
+      {
+        label: "Service Items",
+        value: String(summaryData?.serviceItems ?? 0),
+        icon: AlertTriangle,
+        gradient: "from-purple-500 to-purple-600",
+      },
+      {
+        label: "Raw Materials",
+        value: String(summaryData?.rawMaterialItems ?? 0),
+        icon: Boxes,
+        gradient: "from-emerald-500 to-emerald-600",
+      },
+      {
+        label: "Finished Products",
+        value: String(summaryData?.finishedProductsItems ?? 0),
+        icon: Package,
+        gradient: "from-amber-500 to-amber-600",
+      },
+      {
+        label: "Imported Items",
+        value: String(summaryData?.totalImportedItems ?? 0),
+        icon: Warehouse,
+        gradient: "from-red-500 to-red-600",
+      },
+    ],
     [summaryData],
   );
 
@@ -199,10 +225,16 @@ const InventoryDashboard: React.FC = () => {
                 >
                   <div className="flex items-center justify-between h-full">
                     <div>
-                      <p className="text-sm font-semibold text-gray-600">{stat.label}</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                      <p className="text-sm font-semibold text-gray-600">
+                        {stat.label}
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {stat.value}
+                      </p>
                     </div>
-                    <div className={`p-3 bg-gradient-to-br ${stat.gradient} rounded-xl shadow-sm`}>
+                    <div
+                      className={`p-3 bg-gradient-to-br ${stat.gradient} rounded-xl shadow-sm`}
+                    >
                       <stat.icon className="text-white" size={22} />
                     </div>
                   </div>
@@ -219,10 +251,15 @@ const InventoryDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Items Breakdown</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Items Breakdown
+              </h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="pie" />
               ) : (
@@ -237,7 +274,11 @@ const InventoryDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                     />
                     <Legend {...legendProps} />
                     <Pie
@@ -253,7 +294,10 @@ const InventoryDashboard: React.FC = () => {
                       labelLine={false}
                     >
                       {itemTypeBreakdownData.map((_, idx) => (
-                        <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
+                        <Cell
+                          key={idx}
+                          fill={pieColors[idx % pieColors.length]}
+                        />
                       ))}
                     </Pie>
                   </PieChart>
@@ -264,10 +308,15 @@ const InventoryDashboard: React.FC = () => {
 
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Items Breakdown (Bar)</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Items Breakdown (Bar)
+              </h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="bar" />
               ) : (
@@ -288,12 +337,26 @@ const InventoryDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                       cursor={{ fill: "var(--primary)", opacity: 0.1 }}
                     />
                     <Legend {...legendProps} />
-                    <Bar dataKey="value" fill={palette.emerald} radius={[6, 6, 0, 0]} name="Count">
-                      <LabelList dataKey="value" position="top" fill="#6b7280" fontSize={10} />
+                    <Bar
+                      dataKey="value"
+                      fill={palette.emerald}
+                      radius={[6, 6, 0, 0]}
+                      name="Count"
+                    >
+                      <LabelList
+                        dataKey="value"
+                        position="top"
+                        fill="#6b7280"
+                        fontSize={10}
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -303,10 +366,15 @@ const InventoryDashboard: React.FC = () => {
 
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Imported vs Local</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Imported vs Local
+              </h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {summaryLoading ? (
                 <ChartSkeleton variant="pie" />
               ) : (
@@ -321,7 +389,11 @@ const InventoryDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                     />
                     <Legend {...legendProps} />
                     <Pie
@@ -337,7 +409,10 @@ const InventoryDashboard: React.FC = () => {
                       labelLine={false}
                     >
                       {importedVsLocalData.map((_, idx) => (
-                        <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
+                        <Cell
+                          key={idx}
+                          fill={pieColors[idx % pieColors.length]}
+                        />
                       ))}
                     </Pie>
                   </PieChart>
@@ -348,15 +423,23 @@ const InventoryDashboard: React.FC = () => {
 
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Raw Materials vs Finished Products</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Raw Materials vs Finished Products
+              </h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="line" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={rawVsFinishedTrendData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                  <LineChart
+                    data={rawVsFinishedTrendData}
+                    margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} width={52} />
@@ -369,7 +452,11 @@ const InventoryDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                       cursor={{ fill: "var(--primary)", opacity: 0.1 }}
                     />
                     <Legend {...legendProps} />

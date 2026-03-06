@@ -21,7 +21,12 @@ const CreateCreditNoteModal: React.FC<Props> = ({
 
   const footerContent = (
     <>
-      <Button variant="secondary" onClick={onClose} type="button" disabled={saving}>
+      <Button
+        variant="secondary"
+        onClick={onClose}
+        type="button"
+        disabled={saving}
+      >
         Cancel
       </Button>
 

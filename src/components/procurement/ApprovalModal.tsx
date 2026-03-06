@@ -45,7 +45,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   const handleFormChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -54,7 +54,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >,
-    idx: number
+    idx: number,
   ) => {
     const rows = [...items];
     rows[idx] = { ...rows[idx], [e.target.name]: e.target.value };
@@ -126,7 +126,11 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
                 <div className="grid grid-cols-6 gap-4 mb-6">
                   {[
-                    { name: "approvalNumber", placeholder: "Approval Number", span: 1 },
+                    {
+                      name: "approvalNumber",
+                      placeholder: "Approval Number",
+                      span: 1,
+                    },
                     { name: "tag", placeholder: "Tag", span: 1 },
                   ].map((f) => (
                     <input

@@ -15,12 +15,7 @@ import {
   BarChart,
 } from "recharts";
 
-import {
-  DollarSign,
-  FileText,
-  FileSignature,
-  Receipt,
-} from "lucide-react";
+import { DollarSign, FileText, FileSignature, Receipt } from "lucide-react";
 
 import { getSalesDashboardSummary } from "../../api/salesDashboardApi";
 import { ChartSkeleton } from "../../components/ChartSkeleton";
@@ -88,45 +83,44 @@ const SalesDashboard: React.FC = () => {
       .slice(0, 10);
   }, [recentSalesRows]);
 
-  const recentSalesChartData = useMemo(
-    () => {
-      const invoiceNumber = (name?: string) => {
-        const match = String(name ?? "").match(/(\d+)/g);
-        if (!match?.length) return 0;
-        return Number.parseInt(match[match.length - 1] ?? "0", 10) || 0;
-      };
+  const recentSalesChartData = useMemo(() => {
+    const invoiceNumber = (name?: string) => {
+      const match = String(name ?? "").match(/(\d+)/g);
+      if (!match?.length) return 0;
+      return Number.parseInt(match[match.length - 1] ?? "0", 10) || 0;
+    };
 
-      return [...recentSalesRows]
-        .sort((a, b) => {
-          const na = invoiceNumber(a.name);
-          const nb = invoiceNumber(b.name);
-          if (nb !== na) return nb - na;
+    return [...recentSalesRows]
+      .sort((a, b) => {
+        const na = invoiceNumber(a.name);
+        const nb = invoiceNumber(b.name);
+        if (nb !== na) return nb - na;
 
-          const da = new Date(a.posting_date ?? "");
-          const db = new Date(b.posting_date ?? "");
-          const ta = Number.isNaN(da.getTime()) ? 0 : da.getTime();
-          const tb = Number.isNaN(db.getTime()) ? 0 : db.getTime();
-          if (tb !== ta) return tb - ta;
+        const da = new Date(a.posting_date ?? "");
+        const db = new Date(b.posting_date ?? "");
+        const ta = Number.isNaN(da.getTime()) ? 0 : da.getTime();
+        const tb = Number.isNaN(db.getTime()) ? 0 : db.getTime();
+        if (tb !== ta) return tb - ta;
 
-          return Number(b.grand_total ?? 0) - Number(a.grand_total ?? 0);
-        })
-        .slice(0, 10)
-        .map((r) => ({
-          name: r.name,
-          total: Number(r.grand_total ?? 0),
-          customer: r.customer,
-          posting_date: r.posting_date,
-        }));
-    },
-    [recentSalesRows],
-  );
+        return Number(b.grand_total ?? 0) - Number(a.grand_total ?? 0);
+      })
+      .slice(0, 10)
+      .map((r) => ({
+        name: r.name,
+        total: Number(r.grand_total ?? 0),
+        customer: r.customer,
+        posting_date: r.posting_date,
+      }));
+  }, [recentSalesRows]);
 
   const customerSharePieData = useMemo(() => {
     const base = topCustomersChartData;
     if (!base.length) return [];
 
     const top = base.slice(0, 5);
-    const restTotal = base.slice(5).reduce((sum, r) => sum + Number(r.total ?? 0), 0);
+    const restTotal = base
+      .slice(5)
+      .reduce((sum, r) => sum + Number(r.total ?? 0), 0);
     return restTotal > 0 ? [...top, { name: "Others", total: restTotal }] : top;
   }, [topCustomersChartData]);
 
@@ -156,7 +150,14 @@ const SalesDashboard: React.FC = () => {
     [summaryData],
   );
 
-  const pieColors = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ef4444", "#14b8a6"];
+  const pieColors = [
+    "#8b5cf6",
+    "#10b981",
+    "#f59e0b",
+    "#3b82f6",
+    "#ef4444",
+    "#14b8a6",
+  ];
 
   useEffect(() => {
     let mounted = true;
@@ -207,7 +208,14 @@ const SalesDashboard: React.FC = () => {
   const renderDonutLabel = (props: any) => {
     const { x, y, name, value } = props;
     return (
-      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
+      <text
+        x={x}
+        y={y}
+        fill="#374151"
+        fontSize={11}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
         {String(name)}: {String(value)}
       </text>
     );
@@ -216,7 +224,14 @@ const SalesDashboard: React.FC = () => {
   const renderCurrencyDonutLabel = (props: any) => {
     const { x, y, name, value } = props;
     return (
-      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
+      <text
+        x={x}
+        y={y}
+        fill="#374151"
+        fontSize={11}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
         {String(name)}: {currencyZMWCompact.format(Number(value ?? 0))}
       </text>
     );
@@ -228,66 +243,72 @@ const SalesDashboard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-4">
           {chartsLoading
             ? Array.from({ length: 5 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[124px] animate-pulse"
-              >
-                <div className="flex items-center justify-between h-full">
-                  <div>
-                    <div className="h-3 w-28 bg-gray-300 rounded" />
-                    <div className="h-7 w-20 bg-gray-300 rounded mt-2" />
+                <div
+                  key={idx}
+                  className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[124px] animate-pulse"
+                >
+                  <div className="flex items-center justify-between h-full">
+                    <div>
+                      <div className="h-3 w-28 bg-gray-300 rounded" />
+                      <div className="h-7 w-20 bg-gray-300 rounded mt-2" />
+                    </div>
+                    <div className="h-12 w-12 bg-gray-300 rounded-xl border border-gray-400" />
                   </div>
-                  <div className="h-12 w-12 bg-gray-300 rounded-xl border border-gray-400" />
                 </div>
-              </div>
-            ))
+              ))
             : [
-              {
-                label: "Proforma Invoices",
-                value: String(summaryData?.totalProformaInvoices ?? 0),
-                icon: FileSignature,
-                gradient: "from-blue-500 to-blue-600",
-              },
-              {
-                label: "Quotations",
-                value: String(summaryData?.totalQuotations ?? 0),
-                icon: Receipt,
-                gradient: "from-amber-500 to-amber-600",
-              },
-              {
-                label: "Sales Invoices",
-                value: String(summaryData?.totalSalesInvoices ?? 0),
-                icon: Receipt,
-                gradient: "from-emerald-500 to-emerald-600",
-              },
-              {
-                label: "Credit Notes",
-                value: String(summaryData?.totalSalesCreditNotes ?? 0),
-                icon: FileText,
-                gradient: "from-sky-500 to-sky-600",
-              },
-              {
-                label: "Debit Notes",
-                value: String(summaryData?.totalSalesDebitNotes ?? 0),
-                icon: DollarSign,
-                gradient: "from-purple-500 to-purple-600",
-              },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[124px]"
-              >
-                <div className="flex items-center justify-between h-full">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-600">{stat.label}</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                  </div>
-                  <div className={`p-3 bg-gradient-to-br ${stat.gradient} rounded-xl shadow-sm`}>
-                    <stat.icon className="text-white" size={22} />
+                {
+                  label: "Proforma Invoices",
+                  value: String(summaryData?.totalProformaInvoices ?? 0),
+                  icon: FileSignature,
+                  gradient: "from-blue-500 to-blue-600",
+                },
+                {
+                  label: "Quotations",
+                  value: String(summaryData?.totalQuotations ?? 0),
+                  icon: Receipt,
+                  gradient: "from-amber-500 to-amber-600",
+                },
+                {
+                  label: "Sales Invoices",
+                  value: String(summaryData?.totalSalesInvoices ?? 0),
+                  icon: Receipt,
+                  gradient: "from-emerald-500 to-emerald-600",
+                },
+                {
+                  label: "Credit Notes",
+                  value: String(summaryData?.totalSalesCreditNotes ?? 0),
+                  icon: FileText,
+                  gradient: "from-sky-500 to-sky-600",
+                },
+                {
+                  label: "Debit Notes",
+                  value: String(summaryData?.totalSalesDebitNotes ?? 0),
+                  icon: DollarSign,
+                  gradient: "from-purple-500 to-purple-600",
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[124px]"
+                >
+                  <div className="flex items-center justify-between h-full">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-600">
+                        {stat.label}
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {stat.value}
+                      </p>
+                    </div>
+                    <div
+                      className={`p-3 bg-gradient-to-br ${stat.gradient} rounded-xl shadow-sm`}
+                    >
+                      <stat.icon className="text-white" size={22} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
         </div>
 
         {summaryError && (
@@ -302,18 +323,26 @@ const SalesDashboard: React.FC = () => {
               <h3 className="text-sm font-bold text-gray-900">Monthly Sales</h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="line" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={monthlyTrendData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                  <LineChart
+                    data={monthlyTrendData}
+                    margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis
                       tick={{ fontSize: 12 }}
                       width={52}
-                      tickFormatter={(v) => currencyZMWCompact.format(Number(v))}
+                      tickFormatter={(v) =>
+                        currencyZMWCompact.format(Number(v))
+                      }
                     />
                     <Tooltip
                       formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
@@ -324,7 +353,11 @@ const SalesDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                       cursor={{ fill: "var(--primary)", opacity: 0.1 }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -345,9 +378,14 @@ const SalesDashboard: React.FC = () => {
 
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Top 10 Recent Sales</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Top 10 Recent Sales
+              </h3>
             </div>
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="bar" />
               ) : (
@@ -357,7 +395,14 @@ const SalesDashboard: React.FC = () => {
                     margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={56} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 11 }}
+                      interval={0}
+                      angle={-20}
+                      textAnchor="end"
+                      height={56}
+                    />
                     <Tooltip
                       formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
                       labelFormatter={(label: any) => String(label ?? "")}
@@ -365,10 +410,17 @@ const SalesDashboard: React.FC = () => {
                     <YAxis
                       tick={{ fontSize: 12 }}
                       width={52}
-                      tickFormatter={(v) => currencyZMWCompact.format(Number(v))}
+                      tickFormatter={(v) =>
+                        currencyZMWCompact.format(Number(v))
+                      }
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="total" name="Amount" fill="#10b981" radius={[2, 2, 0, 0]} />
+                    <Bar
+                      dataKey="total"
+                      name="Amount"
+                      fill="#10b981"
+                      radius={[2, 2, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -377,10 +429,15 @@ const SalesDashboard: React.FC = () => {
 
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">sales breakdown</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                sales breakdown
+              </h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="pie" />
               ) : (
@@ -395,7 +452,11 @@ const SalesDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                     />
                     <Legend
                       wrapperStyle={{ fontSize: 12 }}
@@ -418,7 +479,10 @@ const SalesDashboard: React.FC = () => {
                       labelLine={false}
                     >
                       {documentTotalsDonutData.map((_, idx) => (
-                        <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
+                        <Cell
+                          key={idx}
+                          fill={pieColors[idx % pieColors.length]}
+                        />
                       ))}
                     </Pie>
                   </PieChart>
@@ -429,7 +493,9 @@ const SalesDashboard: React.FC = () => {
 
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Invoice breakdown</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Invoice breakdown
+              </h3>
             </div>
 
             <div className="h-72 rounded-lg border border-gray-200 bg-white">
@@ -447,7 +513,11 @@ const SalesDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                     />
                     <Legend
                       wrapperStyle={{ fontSize: 12 }}
@@ -470,7 +540,10 @@ const SalesDashboard: React.FC = () => {
                       labelLine={false}
                     >
                       {customerSharePieData.map((_, idx) => (
-                        <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
+                        <Cell
+                          key={idx}
+                          fill={pieColors[idx % pieColors.length]}
+                        />
                       ))}
                     </Pie>
                   </PieChart>

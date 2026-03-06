@@ -31,11 +31,9 @@ export const mapSupplierApi = (d: any): Supplier => ({
   status: d.status?.toLowerCase(),
 });
 
-
-
 export const mapSupplierToApi = (
   f: SupplierFormData,
-  supplierId?: string | number
+  supplierId?: string | number,
 ) => ({
   ...(supplierId ? { supplierId } : {}),
 
@@ -43,7 +41,7 @@ export const mapSupplierToApi = (
   supplierCode: f.supplierCode,
   tpin: f.tpin,
   currency: f.currency,
-  taxCategory:f.taxCategory,
+  taxCategory: f.taxCategory,
   contactPerson: f.contactPerson,
   phoneNo: f.phoneNo,
   alternateNo: f.alternateNo,
@@ -68,9 +66,6 @@ export const mapSupplierToApi = (
   paymentTerms: f.paymentTerms || "",
   dateOfAddition: f.dateOfAddition,
 });
-
-
-
 
 export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
   if (!s) return emptySupplierForm;
@@ -110,7 +105,6 @@ export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
   };
 };
 
-
 export const supplierApiToDropdown = (s: any) => ({
   id: s.supplierId,
   code: s.supplierCode,
@@ -124,5 +118,5 @@ export const supplierApiToDropdown = (s: any) => ({
     state: s.province,
     country: s.billingCountry,
     postalCode: s.billingPostalCode,
-  }
+  },
 });

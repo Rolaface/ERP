@@ -1,13 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
-import {
-  FileText,
-  ClipboardList,
-  CheckCircle2,
-  Clock,
-} from "lucide-react";
+import { FileText, ClipboardList, CheckCircle2, Clock } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import { getPurchaseOrdersBySupplier } from "../../api/procurement/PurchaseOrderApi";
-
 
 /*  TYPES  */
 
@@ -23,7 +17,6 @@ export interface PurchaseOrder {
 interface Props {
   supplierName: string;
 }
-
 
 /*  COMPONENT  */
 
@@ -45,7 +38,7 @@ const SupplierPurchaseOrders = ({ supplierName }: Props) => {
         const resp = await getPurchaseOrdersBySupplier(
           supplierName,
           page,
-          pageSize
+          pageSize,
         );
 
         setPurchaseOrders(resp.data);
@@ -65,13 +58,14 @@ const SupplierPurchaseOrders = ({ supplierName }: Props) => {
     setPage(1);
   }, [supplierName]);
 
-
   /*  SUMMARY  */
 
   const summary = useMemo(() => {
     const total = purchaseOrders.length;
-    const draft = purchaseOrders.filter(p => p.status === "Draft").length;
-    const submitted = purchaseOrders.filter(p => p.status === "Submitted").length;
+    const draft = purchaseOrders.filter((p) => p.status === "Draft").length;
+    const submitted = purchaseOrders.filter(
+      (p) => p.status === "Submitted",
+    ).length;
     const totalValue = purchaseOrders.reduce((s, p) => s + p.grandTotal, 0);
 
     return { total, draft, submitted, totalValue };
@@ -113,12 +107,13 @@ const SupplierPurchaseOrders = ({ supplierName }: Props) => {
       header: "Status",
       render: (row: PurchaseOrder) => (
         <span
-          className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${row.status === "Submitted"
-            ? "bg-success/10 text-success"
-            : row.status === "Draft"
-              ? "bg-warning/10 text-warning"
-              : "bg-muted/10 text-muted"
-            }`}
+          className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${
+            row.status === "Submitted"
+              ? "bg-success/10 text-success"
+              : row.status === "Draft"
+                ? "bg-warning/10 text-warning"
+                : "bg-muted/10 text-muted"
+          }`}
         >
           {row.status}
         </span>
@@ -166,7 +161,6 @@ const SupplierPurchaseOrders = ({ supplierName }: Props) => {
 
       {/* TABLE */}
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
-
         <Table
           columns={columns}
           data={purchaseOrders}
@@ -184,9 +178,7 @@ const SupplierPurchaseOrders = ({ supplierName }: Props) => {
           pageSizeOptions={[5, 10, 25]}
           emptyMessage="No purchase orders found"
         />
-
       </div>
-
     </div>
   );
 };
@@ -203,16 +195,12 @@ const SummaryCard = ({
   value: string | number;
 }) => (
   <div className="bg-card border border-theme rounded-xl p-3 flex items-center gap-3">
-    <div className="p-2 rounded-lg bg-row-hover text-primary">
-      {icon}
-    </div>
+    <div className="p-2 rounded-lg bg-row-hover text-primary">{icon}</div>
     <div>
       <p className="text-[9px] font-black uppercase tracking-widest text-muted">
         {label}
       </p>
-      <p className="text-lg font-black text-primary">
-        {value}
-      </p>
+      <p className="text-lg font-black text-primary">{value}</p>
     </div>
   </div>
 );

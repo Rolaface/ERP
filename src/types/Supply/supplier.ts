@@ -3,7 +3,7 @@ export interface SupplierFormData {
   supplierName?: string;
   supplierCode?: string;
   taxCategory: string;
-  paymentTerms: string ;
+  paymentTerms: string;
   currency?: string;
   bankAccount?: string;
   contactPerson?: string;
@@ -26,12 +26,11 @@ export interface SupplierFormData {
   billingPostalCode?: string;
 }
 
-
 export const emptySupplierForm: SupplierFormData = {
   tpin: "",
   supplierName: "",
   supplierCode: "",
-   taxCategory: "",
+  taxCategory: "",
   paymentTerms: "",
   currency: "",
   bankAccount: "",
@@ -56,22 +55,16 @@ export const emptySupplierForm: SupplierFormData = {
 };
 
 export const currencyOptions = ["ZMW", "USD", "INR"] as const;
-export type Currency = typeof currencyOptions[number];
+export type Currency = (typeof currencyOptions)[number];
 
-export type SupplierTab =
-  | "supplier"
-  | "payment"
-  | "address";
-
+export type SupplierTab = "supplier" | "payment" | "address";
 
 export type SupplierStatus = "active" | "inactive";
-
 
 export type Supplier = SupplierFormData & {
   supplierId?: string;
   status?: SupplierStatus;
 };
-
 
 export interface Supplierr {
   id: string;
@@ -81,22 +74,15 @@ export interface Supplierr {
   phone?: string;
 }
 
-
-export const currencySelectOptions = currencyOptions.map(c => ({
+export const currencySelectOptions = currencyOptions.map((c) => ({
   value: c,
   label: c,
 }));
 
-
 export const taxCategoryOptions = ["Export", "Non-Export", "LPO"] as const;
-export type TaxCategory = typeof taxCategoryOptions[number];
+export type TaxCategory = (typeof taxCategoryOptions)[number];
 
-export const taxCategorySelectOptions = taxCategoryOptions.map(t => ({
+export const taxCategorySelectOptions = taxCategoryOptions.map((t) => ({
   value: t,
-  label:
-    t === "Non-Export"
-      ? "Non-Export"
-      : t === "Export"
-      ? "Export"
-      : "LPO",
+  label: t === "Non-Export" ? "Non-Export" : t === "Export" ? "Export" : "LPO",
 }));

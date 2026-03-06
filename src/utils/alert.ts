@@ -1,6 +1,5 @@
 import Swal from "sweetalert2";
 
-
 const extractErrorMessage = (error: any): string => {
   if (typeof error === "string") return error;
 
@@ -10,9 +9,7 @@ const extractErrorMessage = (error: any): string => {
 
   if (error?.response?.data?._server_messages) {
     try {
-      const serverMsgs = JSON.parse(
-        error.response.data._server_messages
-      );
+      const serverMsgs = JSON.parse(error.response.data._server_messages);
 
       const parsed = JSON.parse(serverMsgs[0]);
       return parsed.message;
@@ -63,13 +60,11 @@ const toUserFriendlyMessage = (message: string): string => {
   return currencyFixed;
 };
 
-
 export const getUserFriendlyErrorMessage = (error: any) => {
   const rawMessage = extractErrorMessage(error);
   const cleanMessage = String(rawMessage ?? "").replace(/<[^>]+>/g, "");
   return toUserFriendlyMessage(cleanMessage);
 };
-
 
 export const showApiError = (error: any) => {
   const userMessage = getUserFriendlyErrorMessage(error);

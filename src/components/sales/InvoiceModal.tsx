@@ -46,7 +46,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   } = useInvoiceForm(isOpen, onClose, onSubmit);
 
   const symbol = currencySymbols[formData.currencyCode] ?? "ZK";
-  const currencyCode = String(formData.currencyCode ?? "").trim().toUpperCase();
+  const currencyCode = String(formData.currencyCode ?? "")
+    .trim()
+    .toUpperCase();
   const showExchangeRate = !!currencyCode && currencyCode !== "ZMW";
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +72,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const footerContent = (
     <>
-      <Button variant="secondary" onClick={onClose} type="button" disabled={submitting}>
+      <Button
+        variant="secondary"
+        onClick={onClose}
+        type="button"
+        disabled={submitting}
+      >
         Cancel
       </Button>
       <div className="flex gap-2">
@@ -105,11 +112,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       maxWidth="wide"
       height="79vh"
     >
-      <form onSubmit={handleFormSubmit} className="h-full flex flex-col min-w-0">
+      <form
+        onSubmit={handleFormSubmit}
+        className="h-full flex flex-col min-w-0"
+      >
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
-            {(["details", "address","terms" ] as const).map((tab) => (
+            {(["details", "address", "terms"] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -123,7 +133,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               >
                 {tab === "details" && "Details"}
                 {tab === "address" && "Additional Details"}
-                  {tab === "terms" && "Terms & Conditions"}
+                {tab === "terms" && "Terms & Conditions"}
               </button>
             ))}
           </div>
@@ -275,8 +285,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                             Unit Price
                           </th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px] md:w-[80px] whitespace-nowrap">
- Discount (%) 
-</th>
+                            Discount (%)
+                          </th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
                             Tax
                           </th>
@@ -321,7 +331,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                   value={it.itemCode}
                                   excludeItemCodes={formData.items
                                     .map((x, j) => (j === i ? "" : x?.itemCode))
-                                    .filter(Boolean) as string[]}
+                                    .filter(Boolean)}
                                   onChange={(item) => {
                                     actions.handleItemSelect(i, item.id);
                                   }}
@@ -593,9 +603,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   title="Billing Address"
                   subtitle="Invoice and payment details"
                   data={formData.billingAddress}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-                    actions.handleInputChange(e, "billingAddress")
-                  }
+                  onChange={(
+                    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+                  ) => actions.handleInputChange(e, "billingAddress")}
                 />
 
                 {/* Shipping */}
@@ -606,9 +616,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   data={formData.shippingAddress}
                   sameAsBilling={ui.sameAsBilling}
                   onSameAsBillingChange={actions.handleSameAsBillingChange}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-                    actions.handleInputChange(e, "shippingAddress")
-                  }
+                  onChange={(
+                    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+                  ) => actions.handleInputChange(e, "shippingAddress")}
                 />
               </div>
             </div>

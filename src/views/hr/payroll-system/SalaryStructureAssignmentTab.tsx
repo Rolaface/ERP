@@ -7,7 +7,10 @@ import {
   replaceSalaryStructureAssignment,
   type SalaryStructureAssignmentListItem,
 } from "../../../api/salaryStructureAssignmentApi";
-import { getSalaryStructures, type SalaryStructureListItem } from "../../../api/salaryStructureApi";
+import {
+  getSalaryStructures,
+  type SalaryStructureListItem,
+} from "../../../api/salaryStructureApi";
 import { getAllEmployees } from "../../../api/employeeapi";
 
 type Props = {
@@ -48,7 +51,9 @@ export default function SalaryStructureAssignmentTab({
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [salaryStructuresLoading, setSalaryStructuresLoading] = useState(false);
-  const [salaryStructures, setSalaryStructures] = useState<SalaryStructureListItem[]>([]);
+  const [salaryStructures, setSalaryStructures] = useState<
+    SalaryStructureListItem[]
+  >([]);
 
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -96,7 +101,7 @@ export default function SalaryStructureAssignmentTab({
       }
     };
 
-    run();
+    void run();
 
     return () => {
       mounted = false;
@@ -170,7 +175,7 @@ export default function SalaryStructureAssignmentTab({
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [salaryStructures]);
 
-  const employeeOptions = useMemo(() => {
+  const employeeOptions = useMemo<EmployeeOption[]>(() => {
     const items = Array.isArray(employees) ? employees : [];
     const selectedEmployee = String(form.employee ?? employeeId ?? "").trim();
     const allowEmployee = (code: string) => {
@@ -181,11 +186,20 @@ export default function SalaryStructureAssignmentTab({
 
     return items
       .map((e: any) => {
-        const code = String(e?.employeeId ?? e?.employee_id ?? e?.id ?? "").trim();
+        const code = String(
+          e?.employeeId ?? e?.employee_id ?? e?.id ?? "",
+        ).trim();
         const fullName = String(e?.name ?? e?.employeeName ?? "").trim();
+        const joiningDate = String(
+          e?.joiningDate ??
+            e?.engagementDate ??
+            e?.employmentInfo?.joiningDate ??
+            "",
+        ).trim();
         return {
           value: code,
           label: fullName ? `${code} — ${fullName}` : code,
+          joiningDate,
         };
       })
       .filter((o) => allowEmployee(o.value))
@@ -207,6 +221,12 @@ export default function SalaryStructureAssignmentTab({
       return;
     }
 
+    const basicAmount = Number(form.basic);
+    if (!Number.isFinite(basicAmount)) {
+      toast.error("Please enter a valid basic salary");
+      return;
+    }
+
     setLoading(true);
     try {
       const basicNum = Number(form.basic) || 0;
@@ -218,6 +238,10 @@ export default function SalaryStructureAssignmentTab({
         });
         toast.success("Salary structure assignment updated");
       } else {
+        const fromDate =
+          toIsoDate(selectedEmployee?.joiningDate) ||
+          new Date().toISOString().slice(0, 10);
+
         await createSalaryStructureAssignment({
           employee: form.employee.trim(),
           salary_structure: form.salary_structure.trim(),
@@ -239,9 +263,11 @@ export default function SalaryStructureAssignmentTab({
   return (
     <div className="space-y-5">
       <div>
-        <div className="text-sm font-extrabold text-main">Salary Structure Assignment</div>
+        <div className="text-sm font-extrabold text-main">
+          Salary Structure Assignment
+        </div>
         <div className="text-xs text-muted mt-1">
-          Assign a salary structure to this employee effective from a start date
+          Assign a salary structure and basic salary to this employee
         </div>
       </div>
 
@@ -254,11 +280,17 @@ export default function SalaryStructureAssignmentTab({
           {editableEmployee ? (
             <select
               value={form.employee}
-              onChange={(e) => setForm((p) => ({ ...p, employee: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, employee: e.target.value }))
+              }
+              aria-label="Employee"
+              title="Employee"
               className={selectCls}
               disabled={employeesLoading || isEditing}
             >
-              <option value="">{employeesLoading ? "Loading..." : "Select employee"}</option>
+              <option value="">
+                {employeesLoading ? "Loading..." : "Select employee"}
+              </option>
               {employeeOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -266,7 +298,13 @@ export default function SalaryStructureAssignmentTab({
               ))}
             </select>
           ) : (
-            <input value={form.employee} readOnly className={`${inputCls} opacity-80`} />
+            <input
+              value={form.employee}
+              readOnly
+              aria-label="Employee"
+              title="Employee"
+              className={`${inputCls} opacity-80`}
+            />
           )}
         </div>
 
@@ -277,11 +315,19 @@ export default function SalaryStructureAssignmentTab({
           </label>
           <select
             value={form.salary_structure}
-            onChange={(e) => setForm((p) => ({ ...p, salary_structure: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, salary_structure: e.target.value }))
+            }
+            aria-label="Salary Structure"
+            title="Salary Structure"
             className={selectCls}
             disabled={salaryStructuresLoading}
           >
-            <option value="">{salaryStructuresLoading ? "Loading..." : "Select salary structure"}</option>
+            <option value="">
+              {salaryStructuresLoading
+                ? "Loading..."
+                : "Select salary structure"}
+            </option>
             {structureOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.company ? `${o.label} (${o.company})` : o.label}
@@ -315,7 +361,13 @@ export default function SalaryStructureAssignmentTab({
           className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-white text-sm font-extrabold shadow-sm hover:opacity-95 active:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-40 disabled:cursor-not-allowed min-w-40"
         >
           <Save className="w-4 h-4" />
-          {loading ? (isEditing ? "Updating..." : "Assigning...") : isEditing ? "Update" : "Assign"}
+          {loading
+            ? isEditing
+              ? "Updating..."
+              : "Assigning..."
+            : isEditing
+              ? "Update"
+              : "Assign"}
         </button>
       </div>
     </div>

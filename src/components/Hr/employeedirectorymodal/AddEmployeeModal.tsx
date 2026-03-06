@@ -6,14 +6,19 @@ import ContactInfoTab from "./ContactInfoTabs";
 import EmploymentTab from "./EmploymentTab";
 import CompensationTab from "./CompensationTab";
 import { LeaveSetupTab } from "./LeaveSetupTab";
-import { WorkScheduleTab } from "./WorkScheduletab";  
+import { WorkScheduleTab } from "./WorkScheduletab";
 import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
 
 import { EMPLOYEE_ROLE_CONFIG } from "../../../api/config/employeeRoleConfig";
 import { filterEmployeesByRole } from "../../../api/config/employeeRoleFilter";
 import { getAllEmployees } from "../../../api/employeeapi";
- 
-import { createEmployee, getEmployeeById, updateEmployeeById, updateEmployeeDocuments } from "../../../api/employeeapi";
+
+import {
+  createEmployee,
+  getEmployeeById,
+  updateEmployeeById,
+  updateEmployeeDocuments,
+} from "../../../api/employeeapi";
 import {
   createSalaryStructureAssignment,
   getSalaryStructureAssignments,
@@ -75,6 +80,12 @@ const DEFAULT_FORM_DATA = {
   otherAllowances: "",
   grossSalary: "",
 
+  employeeNapsa: "",
+  employeerNapsa: "",
+  employeeNhima: "",
+  employeerNhima: "",
+  payAsYouEarn: "",
+
   // Payroll
   currency: "ZMW",
   paymentFrequency: "Monthly",
@@ -125,7 +136,7 @@ type AddEmployeeModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
- 
+
   level?: string[];
   verifiedData?: any;
   editData?: any;
@@ -142,17 +153,17 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
- 
+
   editData,
 }) => {
   //   - Conditional based on company
-const { companyCode } = useCompanySelection();
-const features = getEmployeeFeatures(companyCode);
-const departments = features.departments;
+  const { companyCode } = useCompanySelection();
+  const features = getEmployeeFeatures(companyCode);
+  const departments = features.departments;
 
-const [step, setStep] = useState<"verification" | "form">(
-  features.requireIdentityVerification ? "verification" : "form"
-);
+  const [step, setStep] = useState<"verification" | "form">(
+    features.requireIdentityVerification ? "verification" : "form",
+  );
   const [verifiedData, setVerifiedData] = useState<any>(null);
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const activeTab = TAB_ORDER[currentTabIndex];
@@ -166,7 +177,6 @@ const [step, setStep] = useState<"verification" | "form">(
 
   const [reportingManagers, setReportingManagers] = useState<EmployeeLite[]>(
     [],
-    
   );
   const [hrManagers, setHrManagers] = useState<EmployeeLite[]>([]);
 
@@ -220,7 +230,6 @@ const [step, setStep] = useState<"verification" | "form">(
   const [profilePreviewUrl, setProfilePreviewUrl] = useState<string>("");
 
   const [loading] = useState(false);
- 
 
   const resolveEmployeeInternalId = async (candidate: any): Promise<string> => {
     const raw = String(candidate ?? "").trim();
@@ -249,7 +258,6 @@ const [step, setStep] = useState<"verification" | "form">(
 
     await updateEmployeeDocuments(formData);
   };
-
 
   // Auto-set salary structure when job title changes
 
@@ -349,6 +357,28 @@ const [step, setStep] = useState<"verification" | "form">(
       otherAllowances:
         editData.payrollInfo?.salaryBreakdown?.otherAllowances || "",
       grossSalary: editData.payrollInfo?.grossSalary || "",
+
+      employeeNapsa:
+        editData.payrollInfo?.statutoryDeductions?.Employeenapsa ||
+        editData.payrollInfo?.statutoryDeductions?.EmployeeNapsa ||
+        "",
+      employeerNapsa:
+        editData.payrollInfo?.statutoryDeductions?.Employeernapsa ||
+        editData.payrollInfo?.statutoryDeductions?.EmployeerNapsa ||
+        "",
+      employeeNhima:
+        editData.payrollInfo?.statutoryDeductions?.Employeenhima ||
+        editData.payrollInfo?.statutoryDeductions?.EmployeeNhima ||
+        "",
+      employeerNhima:
+        editData.payrollInfo?.statutoryDeductions?.Employeernhima ||
+        editData.payrollInfo?.statutoryDeductions?.EmployeerNhima ||
+        "",
+      payAsYouEarn:
+        editData.payrollInfo?.statutoryDeductions?.Payasyouearn ||
+        editData.payrollInfo?.statutoryDeductions?.PayAsYouEarn ||
+        editData.payrollInfo?.statutoryDeductions?.paye ||
+        "",
 
       // ===== PAYROLL CONFIG =====
       currency: editData.payrollInfo?.currency || "ZMW",
@@ -473,10 +503,8 @@ const [step, setStep] = useState<"verification" | "form">(
           if (!isValidDigitsLength(formData.socialSecurityNapsa, 9))
             return "SSN must be exactly 9 digits";
 
-          if (!formData.nhimaHealthInsurance)
-            return "NHIMA number is required";
-          if (!formData.tpinId)
-            return "TPIN is required";
+          if (!formData.nhimaHealthInsurance) return "NHIMA number is required";
+          if (!formData.tpinId) return "TPIN is required";
           if (!isValidDigitsLength(formData.tpinId, 10))
             return "TPIN must be exactly 10 digits";
         }
@@ -648,46 +676,52 @@ const [step, setStep] = useState<"verification" | "form">(
 
     return payload;
   };
- const handleSave = async () => {
-  const validationError = validateCurrentTab();
-  if (validationError) {
-    showApiError(validationError);
-    return;
-  }
+  const handleSave = async () => {
+    const validationError = validateCurrentTab();
+    if (validationError) {
+      showApiError(validationError);
+      return;
+    }
 
-  try {
-    showLoading(editData ? "Updating Employee..." : "Creating Employee...");
+    try {
+      showLoading(editData ? "Updating Employee..." : "Creating Employee...");
 
-    const selectedSalaryStructure = String(formData.salaryStructure ?? "").trim();
+      const selectedSalaryStructure = String(
+        formData.salaryStructure ?? "",
+      ).trim();
 
-    const resolveEmployeeCode = async (input: any): Promise<string> => {
-      const raw = String(input ?? "").trim();
-      if (!raw) return "";
-      if (/^HR-EMP-/i.test(raw)) return raw;
+      const resolveEmployeeCode = async (input: any): Promise<string> => {
+        const raw = String(input ?? "").trim();
+        if (!raw) return "";
+        if (/^HR-EMP-/i.test(raw)) return raw;
 
-      try {
-        const emp = await getEmployeeById(raw);
-        const code = String(emp?.employeeId ?? emp?.employee_id ?? "").trim();
-        return code;
-      } catch {
-        return "";
-      }
-    };
+        try {
+          const emp = await getEmployeeById(raw);
+          const code = String(emp?.employeeId ?? emp?.employee_id ?? "").trim();
+          return code;
+        } catch {
+          return "";
+        }
+      };
 
-    const createOrUpdateAssignment = async (employeeCode: string) => {
-      const emp = String(employeeCode ?? "").trim();
-      if (!emp || !selectedSalaryStructure) return;
+      const createOrUpdateAssignment = async (employeeCode: string) => {
+        const emp = String(employeeCode ?? "").trim();
+        if (!emp || !selectedSalaryStructure) return;
 
       // Ensure we have a valid basic salary number
       const basicNum = Number(formData.basicSalary) || 0;
       if (!Number.isFinite(basicNum) || basicNum <= 0) return;
 
-      try {
-        const list = await getSalaryStructureAssignments({ employee: emp });
-        const rows = Array.isArray(list) ? list : [];
-        const best = rows
-          .filter((r: any) => String(r?.name ?? "").trim())
-          .sort((a: any, b: any) => String(b?.from_date ?? "").localeCompare(String(a?.from_date ?? "")))[0];
+        try {
+          const list = await getSalaryStructureAssignments({ employee: emp });
+          const rows = Array.isArray(list) ? list : [];
+          const best = rows
+            .filter((r: any) => String(r?.name ?? "").trim())
+            .sort((a: any, b: any) =>
+              String(b?.from_date ?? "").localeCompare(
+                String(a?.from_date ?? ""),
+              ),
+            )[0];
 
         const assignmentName = String(best?.name ?? "").trim();
         if (assignmentName) {
@@ -708,73 +742,80 @@ const [step, setStep] = useState<"verification" | "form">(
       }
     };
 
-    if (editData?.id) {
-      const payload = {
-        id: String(editData.id),
-        ...buildPayload(),
-      };
+      if (editData?.id) {
+        const payload = {
+          id: String(editData.id),
+          ...buildPayload(),
+        };
 
-      await updateEmployeeById(payload);
+        await updateEmployeeById(payload);
 
-      const empCode = await resolveEmployeeCode(
-        formData.employeeId ?? editData?.employeeId ?? editData?.employmentInfo?.employeeId ?? editData?.id,
-      );
-      await createOrUpdateAssignment(empCode);
-
-      const internalId = await resolveEmployeeInternalId(editData?.id ?? empCode);
-      await uploadProfilePhoto(internalId);
-      closeSwal();
-      showSuccess("Employee updated successfully");
-    } else {
-      const resp: any = await createEmployee(buildPayload());
-
-      const data = resp?.data ?? resp;
-      const candidate = String(
-        data?.employeeId ??
-          data?.employee_id ??
-          data?.name ??
-          data?.id ??
+        const empCode = await resolveEmployeeCode(
           formData.employeeId ??
-          "",
-      ).trim();
-      const empCode = await resolveEmployeeCode(candidate);
-      await createOrUpdateAssignment(empCode);
+            editData?.employeeId ??
+            editData?.employmentInfo?.employeeId ??
+            editData?.id,
+        );
+        await createOrUpdateAssignment(empCode);
 
-      const internalId = await resolveEmployeeInternalId(candidate || empCode);
-      await uploadProfilePhoto(internalId);
+        const internalId = await resolveEmployeeInternalId(
+          editData?.id ?? empCode,
+        );
+        await uploadProfilePhoto(internalId);
+        closeSwal();
+        showSuccess("Employee updated successfully");
+      } else {
+        const resp: any = await createEmployee(buildPayload());
+
+        const data = resp?.data ?? resp;
+        const candidate = String(
+          data?.employeeId ??
+            data?.employee_id ??
+            data?.name ??
+            data?.id ??
+            formData.employeeId ??
+            "",
+        ).trim();
+        const empCode = await resolveEmployeeCode(candidate);
+        await createOrUpdateAssignment(empCode);
+
+        const internalId = await resolveEmployeeInternalId(
+          candidate || empCode,
+        );
+        await uploadProfilePhoto(internalId);
+        closeSwal();
+        showSuccess("Employee created successfully");
+      }
+
+      onSuccess?.();
+      onClose();
+    } catch (error) {
       closeSwal();
-      showSuccess("Employee created successfully");
+      showApiError(error);
     }
-
-    onSuccess?.();
-    onClose();
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+  };
 
   if (!isOpen) return null;
 
-// Add this condition check
-if (step === "verification" && features.requireIdentityVerification) {
-  return (
-    <IdentityVerificationModal
-      onVerified={(data) => {
-        setVerifiedData(data);
-        setIsPreFilled(true);
-        setStep("form");
-      }}
-      onManualEntry={() => {
-        setVerifiedData(null);
-        setIsPreFilled(false);
-        setVerifiedFields({});
-        setStep("form");
-      }}
-      onClose={onClose}
-    />
-  );
-}
+  // Add this condition check
+  if (step === "verification" && features.requireIdentityVerification) {
+    return (
+      <IdentityVerificationModal
+        onVerified={(data) => {
+          setVerifiedData(data);
+          setIsPreFilled(true);
+          setStep("form");
+        }}
+        onManualEntry={() => {
+          setVerifiedData(null);
+          setIsPreFilled(false);
+          setVerifiedFields({});
+          setStep("form");
+        }}
+        onClose={onClose}
+      />
+    );
+  }
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-start justify-center z-50 overflow-y-auto pt-4 pb-4">
       <div
@@ -811,7 +852,11 @@ if (step === "verification" && features.requireIdentityVerification) {
               <div className="relative">
                 <div className="w-16 h-16 rounded-lg overflow-hidden flex items-center justify-center border-2 border-theme bg-app">
                   {profilePreviewUrl ? (
-                    <img src={profilePreviewUrl} alt="Profile" className="w-full h-full object-cover" />
+                    <img
+                      src={profilePreviewUrl}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <User className="w-8 h-8 text-muted" />
                   )}
@@ -831,7 +876,8 @@ if (step === "verification" && features.requireIdentityVerification) {
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0] || null;
-                    if (profilePreviewUrl) URL.revokeObjectURL(profilePreviewUrl);
+                    if (profilePreviewUrl)
+                      URL.revokeObjectURL(profilePreviewUrl);
                     setProfileFile(f);
                     setProfilePreviewUrl(f ? URL.createObjectURL(f) : "");
                     e.target.value = "";
@@ -877,26 +923,24 @@ if (step === "verification" && features.requireIdentityVerification) {
           </div>
         </div>
 
-       
-       
-
         {/* Tabs */}
-     {/* Tabs - sticky & scroll-proof */}
-<div className="flex border-b border-theme bg-card px-2 overflow-x-auto flex-shrink-0 sticky top-0 z-10">
-  {TAB_ORDER.map((tab, index) => (
-    <button
-      key={tab}
-      onClick={() => setCurrentTabIndex(index)}
-      className={`px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition flex-shrink-0
-        ${index === currentTabIndex
-          ? "text-primary border-b-2 border-primary"
-          : "text-gray-500 hover:text-primary"
+        {/* Tabs - sticky & scroll-proof */}
+        <div className="flex border-b border-theme bg-card px-2 overflow-x-auto flex-shrink-0 sticky top-0 z-10">
+          {TAB_ORDER.map((tab, index) => (
+            <button
+              key={tab}
+              onClick={() => setCurrentTabIndex(index)}
+              className={`px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition flex-shrink-0
+        ${
+          index === currentTabIndex
+            ? "text-primary border-b-2 border-primary"
+            : "text-gray-500 hover:text-primary"
         }`}
-    >
-      {tab}
-    </button>
-  ))}
-</div>
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
 
         {/* Form Content - Scrollable */}
         <div className="flex-1 overflow-y-auto bg-app p-6">

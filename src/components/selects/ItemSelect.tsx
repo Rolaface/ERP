@@ -26,12 +26,14 @@ export default function ItemSelect({
   className = "",
   disabled = false,
 }: ItemSelectProps) {
-  const [items, setItems] = useState<Array<{
-    id: string;
-    itemCode: string;
-    itemName: string;
-    sellingPrice?: number;
-  }>>([]);
+  const [items, setItems] = useState<
+    Array<{
+      id: string;
+      itemCode: string;
+      itemName: string;
+      sellingPrice?: number;
+    }>
+  >([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");

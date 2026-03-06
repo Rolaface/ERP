@@ -5,7 +5,6 @@ import { Building2 } from "lucide-react";
 import type { BankAccount } from "../../types/company";
 import { showApiError } from "../../utils/alert";
 
-
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -101,18 +100,13 @@ const AddBankAccountModal: React.FC<Props> = ({
       maxWidth="4xl"
       height="90vh"
     >
-      <form
-        id="bankAccountForm"
-        onSubmit={handleSubmit}
-        className="space-y-6"
-      >
+      <form id="bankAccountForm" onSubmit={handleSubmit} className="space-y-6">
         <Card
           title="Bank Account Information"
           subtitle="Enter account and banking details"
           icon={<Building2 className="w-5 h-5 text-primary" />}
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
             <Input
               label="Account No"
               name="accountNo"
@@ -169,8 +163,8 @@ const AddBankAccountModal: React.FC<Props> = ({
                 { value: "EUR", label: "EUR - Euro" },
                 { value: "GBP", label: "GBP - British Pound" },
                 { value: "INR", label: "INR - Indian Rupee" },
-                {value: "ZAR", label: "ZAR - South African Rand"},
-                {value: "AUD", label: "AUD - Australian Dollar"},
+                { value: "ZAR", label: "ZAR - South African Rand" },
+                { value: "AUD", label: "AUD - Australian Dollar" },
               ]}
             />
 
@@ -189,7 +183,6 @@ const AddBankAccountModal: React.FC<Props> = ({
               value={form.openingBalance}
               onChange={handleChange}
             />
-
           </div>
         </Card>
       </form>

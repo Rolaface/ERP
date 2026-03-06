@@ -55,7 +55,7 @@ export async function getAllAttendance(params: {
     },
   );
 
-  const raw = (resp.data?.data ?? resp.data) as ApiEnvelope<AttendanceListResponse> | AttendanceListResponse | any;
+  const raw = resp.data?.data ?? resp.data;
   const data = (raw?.data ?? raw) as AttendanceListResponse;
 
   return {
@@ -71,13 +71,15 @@ export async function getAllAttendance(params: {
   };
 }
 
-export async function getAttendanceById(attendanceId: string): Promise<AttendanceRecord | null> {
+export async function getAttendanceById(
+  attendanceId: string,
+): Promise<AttendanceRecord | null> {
   const resp: AxiosResponse = await api.get(
     "/api/method/payroll_rola_izyane.api.attendance.api.get_attendance_by_id",
     { params: { attendanceId } },
   );
 
-  const raw = (resp.data?.data ?? resp.data) as ApiEnvelope<any> | any;
+  const raw = resp.data?.data ?? resp.data;
   const data = raw?.data ?? raw;
   return (data?.record ?? data ?? null) as AttendanceRecord | null;
 }
@@ -132,7 +134,7 @@ export async function getEmployeeAttendanceHistory(params: {
     },
   );
 
-  const raw = (resp.data?.data ?? resp.data) as ApiEnvelope<AttendanceHistoryResponse> | AttendanceHistoryResponse | any;
+  const raw = resp.data?.data ?? resp.data;
   const data = (raw?.data ?? raw) as AttendanceHistoryResponse;
 
   return {
@@ -148,7 +150,9 @@ export async function getEmployeeAttendanceHistory(params: {
       present_count: Number(data?.summary?.present_count ?? 0),
       absent_count: Number(data?.summary?.absent_count ?? 0),
       total_working_hours: Number(data?.summary?.total_working_hours ?? 0),
-      total_live_working_hours: Number(data?.summary?.total_live_working_hours ?? 0),
+      total_live_working_hours: Number(
+        data?.summary?.total_live_working_hours ?? 0,
+      ),
     },
     records: Array.isArray(data?.records) ? data.records : [],
   };

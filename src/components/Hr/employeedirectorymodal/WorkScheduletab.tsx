@@ -1,6 +1,11 @@
 import React from "react";
-import { Clock, Calendar, CalendarDays, RotateCw, BarChart3 } from "lucide-react";
-
+import {
+  Clock,
+  Calendar,
+  CalendarDays,
+  RotateCw,
+  BarChart3,
+} from "lucide-react";
 
 type WorkScheduleTabProps = {
   formData: any;
@@ -80,7 +85,6 @@ export const WorkScheduleTab: React.FC<WorkScheduleTabProps> = ({
             <RotateCw className="w-3.5 h-3.5 text-primary" />
             <span>Shift Work (9am-6pm)</span>
           </button>
-
         </div>
 
         {/* Day Schedule Inputs */}

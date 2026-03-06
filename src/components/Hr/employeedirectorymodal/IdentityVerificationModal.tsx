@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Search, UserPlus } from "lucide-react";
 import {
@@ -19,11 +18,12 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
   onManualEntry,
   onClose,
 }) => {
-
   const [identityValue, setIdentityValue] = useState("");
 
   const formatNrc = (raw: string): string => {
-    const digits = String(raw ?? "").replace(/\D/g, "").slice(0, 9);
+    const digits = String(raw ?? "")
+      .replace(/\D/g, "")
+      .slice(0, 9);
     const part1 = digits.slice(0, 6);
     const part2 = digits.slice(6, 8);
     const part3 = digits.slice(8, 9);
@@ -34,55 +34,49 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
     return out;
   };
 
-
-
- const handleVerify = async () => {
-  if (!identityValue.trim()) {
-    showApiError("Please enter an NRC Number");
-    return;
-  }
-
-  const nrcRegex = /^\d{6}\/\d{2}\/\d$/;
-  if (!nrcRegex.test(identityValue.trim())) {
-    showApiError("Invalid NRC format. Example: 123456/78/9");
-    return;
-  }
-
-  try {
-    showLoading("Verifying Identity...");
-
-    const result = await verifyEmployeeIdentity(
-      "NRC",
-      identityValue.trim()
-    );
-
-    if (result.status !== "success") {
-      throw new Error(result.message || "Verification failed");
+  const handleVerify = async () => {
+    if (!identityValue.trim()) {
+      showApiError("Please enter an NRC Number");
+      return;
     }
 
-    closeSwal();
+    const nrcRegex = /^\d{6}\/\d{2}\/\d$/;
+    if (!nrcRegex.test(identityValue.trim())) {
+      showApiError("Invalid NRC format. Example: 123456/78/9");
+      return;
+    }
 
-    const mappedData = {
-      identityInfo: {
-        nrc: identityValue.trim(),
-         ssn: result.data.ssn || result.data.socialSecurityNumber || "", 
-      },
-      personalInfo: {
-        firstName: result.data.firstName,
-        lastName: result.data.lastName,
-        gender: result.data.gender === "F" ? "Female" : "Male",
-      },
-    };
+    try {
+      showLoading("Verifying Identity...");
 
-    showSuccess("Identity verified successfully");
+      const result = await verifyEmployeeIdentity("NRC", identityValue.trim());
 
-    onVerified(mappedData);
+      if (result.status !== "success") {
+        throw new Error(result.message || "Verification failed");
+      }
 
-  } catch (err: any) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+      closeSwal();
+
+      const mappedData = {
+        identityInfo: {
+          nrc: identityValue.trim(),
+          ssn: result.data.ssn || result.data.socialSecurityNumber || "",
+        },
+        personalInfo: {
+          firstName: result.data.firstName,
+          lastName: result.data.lastName,
+          gender: result.data.gender === "F" ? "Female" : "Male",
+        },
+      };
+
+      showSuccess("Identity verified successfully");
+
+      onVerified(mappedData);
+    } catch (err: any) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -122,41 +116,36 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
           <h2 className="text-2xl font-bold text-main mb-2">
             Verify Employee Identity
           </h2>
-          <p className="text-sm text-muted">
-          🇿🇲 Search using NRC
-          </p>
+          <p className="text-sm text-muted">🇿🇲 Search using NRC</p>
         </div>
 
         {/* Form */}
         <div className="px-6 pb-6">
           {/* Identity Type Toggle */}
-          
 
           {/* Input Field */}
           <div className="mb-4">
-         <label className="block text-xs font-medium text-main mb-2">
-  National Registration Card (NRC)
-</label>
+            <label className="block text-xs font-medium text-main mb-2">
+              National Registration Card (NRC)
+            </label>
             <input
               type="text"
               value={identityValue}
               onChange={(e) => setIdentityValue(formatNrc(e.target.value))}
-            onKeyDown={handleKeyPress}
-           placeholder="123456/78/9"
+              onKeyDown={handleKeyPress}
+              placeholder="123456/78/9"
               className="w-full px-4 py-3 border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
             />
           </div>
 
-          
-
           {/* Verify Button */}
-         <button
-  onClick={handleVerify}
-  className="w-full bg-primary text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 mb-4"
->
-  <Search className="w-4 h-4" />
-  Verify Identity
-</button>
+          <button
+            onClick={handleVerify}
+            className="w-full bg-primary text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 mb-4"
+          >
+            <Search className="w-4 h-4" />
+            Verify Identity
+          </button>
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-4">

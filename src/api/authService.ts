@@ -5,8 +5,7 @@ const fakeUser = {
 
 const AUTH_KEY = "auth_user";
 
-const delay = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const loginApi = async (email: string, password: string) => {
   await delay(500);

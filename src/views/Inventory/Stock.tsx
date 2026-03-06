@@ -152,7 +152,10 @@ const Items: React.FC = () => {
     }
   };
 
-  const handleDeleteClick = (item: ItemSummary, e?: React.MouseEvent<Element>) => {
+  const handleDeleteClick = (
+    item: ItemSummary,
+    e?: React.MouseEvent<Element>,
+  ) => {
     e?.stopPropagation();
     setItemToDelete(item);
     setDeleteModalOpen(true);
@@ -198,7 +201,6 @@ const Items: React.FC = () => {
     }
   };
 
-
   /*      COLUMNS
    */
 
@@ -229,13 +231,15 @@ const Items: React.FC = () => {
       header: "Registration Type",
       align: "left",
       render: (i) =>
-        registrationTypeLabel[String(i.registrationType ?? "")] || i.registrationType,
+        registrationTypeLabel[String(i.registrationType ?? "")] ||
+        i.registrationType,
     },
     {
       key: "stockEntryType",
       header: "Stock Entry Type",
       align: "left",
-      render: (i) => stockEntryTypeLabel[String(i.stockEntryType ?? "")] || i.stockEntryType,
+      render: (i) =>
+        stockEntryTypeLabel[String(i.stockEntryType ?? "")] || i.stockEntryType,
     },
     {
       key: "totalTaxableAmount",
@@ -255,7 +259,11 @@ const Items: React.FC = () => {
       align: "center",
       render: (i) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={(e) => handleEdit(i.id, e)} iconOnly />
+          <ActionButton
+            type="view"
+            onClick={(e) => handleEdit(i.id, e)}
+            iconOnly
+          />
           <ActionMenu
             onEdit={(e) => handleEdit(i.id, e)}
             onDelete={(e) => handleDeleteClick(i, e)}

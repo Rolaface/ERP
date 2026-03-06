@@ -24,7 +24,11 @@ interface AddressTabProps {
   };
 }
 
-export const AddressTab: React.FC<AddressTabProps> = ({ form, onChange, errors = {} }) => {
+export const AddressTab: React.FC<AddressTabProps> = ({
+  form,
+  onChange,
+  errors = {},
+}) => {
   const fetchCountryOptions = async (q: string) => {
     const res = await getCountry(q);
     return (res.data || []).map((c: string) => ({

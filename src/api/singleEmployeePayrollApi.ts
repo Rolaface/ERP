@@ -17,7 +17,9 @@ export type SingleEmployeePayrollPayload = {
   payroll_payable_account: string;
 };
 
-export async function runSingleEmployeePayroll(payload: SingleEmployeePayrollPayload): Promise<any> {
+export async function runSingleEmployeePayroll(
+  payload: SingleEmployeePayrollPayload,
+): Promise<any> {
   const url = API.payrolls.singleEmployeePayroll;
   const resp: AxiosResponse = await api.post(url, payload);
   return resp.data?.data ?? resp.data;

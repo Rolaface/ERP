@@ -22,9 +22,7 @@ const EmployeeManagement: React.FC = () => {
           </button>
         </div>
 
-        <div>
-          {mainTab === "directory" && <EmployeeDirectory />}
-        </div>
+        <div>{mainTab === "directory" && <EmployeeDirectory />}</div>
       </div>
     </div>
   );

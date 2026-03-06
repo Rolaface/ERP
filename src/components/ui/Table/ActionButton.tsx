@@ -59,12 +59,11 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
     }
   };
 
-const variantStyles = {
-  primary: "text-primary hover:bg-row-hover hover:text-primary",
-  secondary: "text-muted hover:bg-row-hover hover:text-main",
-  danger: "text-red-500 hover:bg-row-hover hover:text-red-600",
-};
-
+  const variantStyles = {
+    primary: "text-primary hover:bg-row-hover hover:text-primary",
+    secondary: "text-muted hover:bg-row-hover hover:text-main",
+    danger: "text-red-500 hover:bg-row-hover hover:text-red-600",
+  };
 
   const base = iconOnly
     ? `inline-flex items-center justify-center w-8 h-8 rounded-md ${variantStyles[variant]}`
@@ -160,7 +159,8 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
       <button
         type="button"
         aria-haspopup="menu"
-        aria-expanded={open}
+        aria-label="Open actions menu"
+        title="Open actions menu"
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
@@ -223,8 +223,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                 setOpen(false);
                 onDelete(e);
               }}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 transition-colors"
-
+              className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 transition-colors"
               role="menuitem"
             >
               <Trash2 className="w-4 h-4 text-red-500" />

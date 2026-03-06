@@ -81,7 +81,6 @@ const EmployeeHistory: React.FC = () => {
         render: (l) => l.totalDays,
       },
 
-      
       {
         key: "appliedOn",
         header: "Applied",

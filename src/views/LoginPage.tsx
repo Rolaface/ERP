@@ -52,10 +52,7 @@ const Login = () => {
             {/* Logo */}
             <div className="mb-8 flex items-center gap-3 animate-fade-in delay-100 fill-both opacity-0-start">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(210 , 70%, 55%)] shadow-primary-lg hover-scale cursor-pointer">
-                <img
-                    src={logo}
-                    alt="ERP Dashboard Preview"
-                  />
+                <img src={logo} alt="ERP Dashboard Preview" />
               </div>
               <div>
                 <span className="text-xl font-bold text-[hsl(240,10%,20%)] tracking-tight">
@@ -88,10 +85,11 @@ const Login = () => {
               {/* Username */}
               <div className="relative mb-4 animate-fade-in delay-350 fill-both opacity-0-start">
                 <User
-                  className={`absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors duration-300 ${focusedField === "user"
+                  className={`absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors duration-300 ${
+                    focusedField === "user"
                       ? "text-[hsl(200,70%,55%)]"
                       : "text-[hsl(240,5%,50%)]"
-                    }`}
+                  }`}
                 />
                 <input
                   type="text"
@@ -108,10 +106,11 @@ const Login = () => {
               {/* Password */}
               <div className="relative mb-5 animate-fade-in delay-450 fill-both opacity-0-start">
                 <Lock
-                  className={`absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors duration-300 ${focusedField === "pass"
+                  className={`absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors duration-300 ${
+                    focusedField === "pass"
                       ? "text-[hsl(220,70%,55%)]"
                       : "text-[hsl(240,5%,50%)]"
-                    }`}
+                  }`}
                 />
                 <input
                   type={showPassword ? "text" : "password"}
@@ -125,7 +124,7 @@ const Login = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)} 
+                  onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-[hsl(240,5%,50%)] hover:text-[hsl(240,10%,20%)] transition-colors"
                 >
                   {showPassword ? (
@@ -140,10 +139,11 @@ const Login = () => {
               <div className="mb-6 flex items-center justify-between animate-fade-in delay-550 fill-both opacity-0-start">
                 <label className="flex cursor-pointer items-center gap-2 text-sm text-[hsl(240,5%,50%)] group">
                   <div
-                    className={`flex h-4 w-4 items-center justify-center rounded border transition-all duration-200 ${rememberMe
+                    className={`flex h-4 w-4 items-center justify-center rounded border transition-all duration-200 ${
+                      rememberMe
                         ? "border-[hsl(210,70%,55%)] bg-[hsl(210,70%,55%)]"
                         : "border-[hsl(270,20%,88%)] group-hover:border-[hsl(210,70%,55%)]/50"
-                      }`}
+                    }`}
                     onClick={() => setRememberMe(!rememberMe)}
                   >
                     {rememberMe && (
@@ -191,8 +191,6 @@ const Login = () => {
 
           {/* Right - Illustration */}
           <div className="relative hidden md:block overflow-hidden bg-white">
-
-
             {/* Animated gradient background */}
             <div className="absolute inset-0">
               <div className="absolute -left-16 -top-16 h-[130%] w-[130%] rounded-blob-1 bg-[hsl(205,80%,58%)] opacity-90 animate-spin-slow origin-55-50" />
@@ -206,20 +204,20 @@ const Login = () => {
             <div className="relative flex h-full flex-col items-center justify-center p-10">
               {/* Laptop */}
               <div className="flex w-full justify-center animate-float">
-                <div className="w-full max-w-[380px] 
+                <div
+                  className="w-full max-w-[380px] 
       rounded-2xl 
       bg-white/10 
       backdrop-blur-md 
       border border-white/20 
       p-3 
-      shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
-
+      shadow-[0_20px_60px_rgba(0,0,0,0.25)]"
+                >
                   <img
                     src={erp2}
                     alt="ERP Dashboard Preview"
                     className="w-full rounded-xl animate-fade-in delay-500 fill-both duration-800"
                   />
-
                 </div>
               </div>
               {/* Feature pills */}

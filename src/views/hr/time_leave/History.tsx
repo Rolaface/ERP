@@ -11,7 +11,12 @@ import LeaveDetailModal from "../../../components/Hr/leave/LeaveDetailModal";
 import { cancelLeave } from "../../../api/leaveApi";
 import type { LeaveUI } from "../../../types/leave/uiLeave";
 import { mapLeaveFromApi } from "../../../types/leave/leaveMapper";
-import { closeSwal, showApiError, showLoading, showSuccess } from "../../../utils/alert";
+import {
+  closeSwal,
+  showApiError,
+  showLoading,
+  showSuccess,
+} from "../../../utils/alert";
 
 interface HistoryProps {
   onNewRequest: () => void;
@@ -49,31 +54,27 @@ const History: React.FC<HistoryProps> = ({ onNewRequest, onEditLeave }) => {
     fetchHistory();
   }, [page, pageSize]);
 
- const handleCancelLeave = async (leaveId: string) => {
-  try {
-    setLoading(true);
+  const handleCancelLeave = async (leaveId: string) => {
+    try {
+      setLoading(true);
 
-    showLoading("Cancelling Leave...");
+      showLoading("Cancelling Leave...");
 
-    await cancelLeave(leaveId);
+      await cancelLeave(leaveId);
 
-    closeSwal();
-    showSuccess("Leave cancelled successfully");
+      closeSwal();
+      showSuccess("Leave cancelled successfully");
 
-    
-    setLeaves((prev) =>
-      prev.map((l) =>
-        l.id === leaveId ? { ...l, status: "Cancelled" } : l,
-      ),
-    );
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  } finally {
-    setLoading(false);
-  }
-};
-
+      setLeaves((prev) =>
+        prev.map((l) => (l.id === leaveId ? { ...l, status: "Cancelled" } : l)),
+      );
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /*  Columns */
   const columns: Column<LeaveUI>[] = [

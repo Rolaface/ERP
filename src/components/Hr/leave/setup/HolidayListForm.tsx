@@ -41,9 +41,7 @@ export const HolidayListForm: React.FC<{
     <div className="bg-card border border-theme rounded-2xl overflow-hidden">
       {/* HEADER */}
       <div className="p-6 flex items-center justify-between border-b border-theme">
-        <h2 className="text-xl font-bold text-main">
-          New Holiday
-        </h2>
+        <h2 className="text-xl font-bold text-main">New Holiday</h2>
 
         <button
           onClick={handleSave}
@@ -60,9 +58,7 @@ export const HolidayListForm: React.FC<{
           type="text"
           placeholder="Holiday Name"
           value={name}
-          onChange={(e) =>
-            setName(e.target.value)
-          }
+          onChange={(e) => setName(e.target.value)}
           className="w-full px-4 py-3 border rounded-xl"
         />
 
@@ -81,10 +77,7 @@ export const HolidayListForm: React.FC<{
         />
 
         <div className="flex gap-3 pt-4">
-          <button
-            onClick={onClose}
-            className="px-6 py-3 border rounded-xl"
-          >
+          <button onClick={onClose} className="px-6 py-3 border rounded-xl">
             Cancel
           </button>
 

@@ -7,12 +7,16 @@ import { getItemByItemCode } from "../api/itemApi";
 import { getExchangeRate } from "../api/exchangeRateApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
-
 import {
   DEFAULT_INVOICE_FORM,
   EMPTY_ITEM,
 } from "../constants/invoice.constants";
-import { showApiError, showLoading, showSuccess, closeSwal } from "../utils/alert";
+import {
+  showApiError,
+  showLoading,
+  showSuccess,
+  closeSwal,
+} from "../utils/alert";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -43,7 +47,9 @@ export const useQuotationForm = (
   const [isShippingOpen, setIsShippingOpen] = useState(false);
   const [sameAsBilling, setSameAsBilling] = useState(true);
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
-  const [exchangeRateError, setExchangeRateError] = useState<string | null>(null);
+  const [exchangeRateError, setExchangeRateError] = useState<string | null>(
+    null,
+  );
 
   const shippingEditedRef = useRef(false);
   const lastCurrencyRef = useRef<string>("ZMW");
@@ -71,7 +77,7 @@ export const useQuotationForm = (
 
     getCompanyById(COMPANY_ID).then((res) => {
       const company = res?.data;
-      setCompanyData(company);   // store it
+      setCompanyData(company); // store it
 
       setFormData((prev) => ({
         ...prev,
@@ -86,7 +92,6 @@ export const useQuotationForm = (
     });
   }, [isOpen]);
 
-
   useEffect(() => {
     if (!isOpen) {
       companyLoadedRef.current = false;
@@ -96,7 +101,9 @@ export const useQuotationForm = (
   useEffect(() => {
     if (!isOpen) return;
 
-    const code = String(formData.currencyCode ?? "").trim().toUpperCase();
+    const code = String(formData.currencyCode ?? "")
+      .trim()
+      .toUpperCase();
     if (!code) {
       setExchangeRateLoading(false);
       setExchangeRateError(null);
@@ -145,15 +152,21 @@ export const useQuotationForm = (
   useEffect(() => {
     if (!isOpen) return;
 
-    const newCurrency = String(formData.currencyCode ?? "").trim().toUpperCase();
-    const prevCurrency = String(lastCurrencyRef.current ?? "").trim().toUpperCase();
+    const newCurrency = String(formData.currencyCode ?? "")
+      .trim()
+      .toUpperCase();
+    const prevCurrency = String(lastCurrencyRef.current ?? "")
+      .trim()
+      .toUpperCase();
 
     if (!newCurrency || newCurrency === prevCurrency) return;
     if (exchangeRateLoading) return;
     if (exchangeRateError) return;
 
     const newRate =
-      newCurrency === "ZMW" ? 1 : Number(String(formData.exchangeRt ?? "").trim());
+      newCurrency === "ZMW"
+        ? 1
+        : Number(String(formData.exchangeRt ?? "").trim());
     const prevRate = prevCurrency === "ZMW" ? 1 : Number(lastRateRef.current);
 
     if (!Number.isFinite(prevRate) || prevRate <= 0) return;
@@ -166,10 +179,11 @@ export const useQuotationForm = (
         const price = Number(it.price);
         if (!Number.isFinite(price)) return it;
 
-        const baseZmw =
-          Number.isFinite(Number((it as any)._priceZmw))
-            ? Number((it as any)._priceZmw)
-            : (prevCurrency === "ZMW" ? price : price * prevRate);
+        const baseZmw = Number.isFinite(Number((it as any)._priceZmw))
+          ? Number((it as any)._priceZmw)
+          : prevCurrency === "ZMW"
+            ? price
+            : price * prevRate;
 
         const nextPrice = newCurrency === "ZMW" ? baseZmw : baseZmw / newRate;
 
@@ -185,7 +199,13 @@ export const useQuotationForm = (
 
     lastCurrencyRef.current = newCurrency;
     lastRateRef.current = newRate;
-  }, [isOpen, formData.currencyCode, formData.exchangeRt, exchangeRateLoading, exchangeRateError]);
+  }, [
+    isOpen,
+    formData.currencyCode,
+    formData.exchangeRt,
+    exchangeRateLoading,
+    exchangeRateError,
+  ]);
   useEffect(() => {
     const maxPage = Math.max(
       0,
@@ -264,7 +284,9 @@ export const useQuotationForm = (
       }
 
       if (name === "currencyCode") {
-        const next = String(value ?? "").trim().toUpperCase();
+        const next = String(value ?? "")
+          .trim()
+          .toUpperCase();
         setExchangeRateError(null);
         setExchangeRateLoading(!!next && next !== "ZMW");
         setFormData((prev) => ({
@@ -297,11 +319,9 @@ export const useQuotationForm = (
       const company = companyData;
       if (!company) return;
 
-
       if (!customerRes || customerRes.status_code !== 200) return;
 
       const data = customerRes.data;
-
 
       const invoiceType = data.customerTaxCategory as
         | "Export"
@@ -350,8 +370,7 @@ export const useQuotationForm = (
 
         return {
           ...prev,
-          destnCountryCd:
-            invoiceType === "Export" ? "" : prev.destnCountryCd,
+          destnCountryCd: invoiceType === "Export" ? "" : prev.destnCountryCd,
           invoiceType,
           billingAddress: billing,
           shippingAddress: shipping,
@@ -382,19 +401,26 @@ export const useQuotationForm = (
           return prev;
         }
 
-        const currency = String(prev.currencyCode ?? "").trim().toUpperCase();
+        const currency = String(prev.currencyCode ?? "")
+          .trim()
+          .toUpperCase();
         const rate = Number(String(prev.exchangeRt ?? "1").trim());
         const apiSellingPrice = Number(data.sellingPrice);
-        const hasApiPrice = Number.isFinite(apiSellingPrice) && apiSellingPrice > 0;
-        const baseZmw = hasApiPrice ? apiSellingPrice : Number(items[index].price);
+        const hasApiPrice =
+          Number.isFinite(apiSellingPrice) && apiSellingPrice > 0;
+        const baseZmw = hasApiPrice
+          ? apiSellingPrice
+          : Number(items[index].price);
         const convertedPrice = (() => {
           if (!Number.isFinite(baseZmw)) return Number(items[index].price);
-          if (currency !== "ZMW" && Number.isFinite(rate) && rate > 0) return baseZmw / rate;
+          if (currency !== "ZMW" && Number.isFinite(rate) && rate > 0)
+            return baseZmw / rate;
           return baseZmw;
         })();
 
         const existingIdx = items.findIndex(
-          (it, i) => i !== index && String(it?.itemCode ?? "").trim() === resolvedId,
+          (it, i) =>
+            i !== index && String(it?.itemCode ?? "").trim() === resolvedId,
         );
 
         if (existingIdx !== -1) {
@@ -415,8 +441,7 @@ export const useQuotationForm = (
           price: Number(Number(convertedPrice).toFixed(2)),
           _priceZmw: Number.isFinite(baseZmw) ? baseZmw : undefined,
           vatRate: Number(data.taxPerct ?? 0),
-          vatCode:
-            prev.invoiceType === "Export" ? "C1" : (data.taxCode ?? ""),
+          vatCode: prev.invoiceType === "Export" ? "C1" : (data.taxCode ?? ""),
         };
 
         return { ...prev, items };
@@ -449,7 +474,9 @@ export const useQuotationForm = (
       const nextVal = isNum ? clampItemNumber(name, value) : value;
 
       if (name === "price") {
-        const currency = String(prev.currencyCode ?? "").trim().toUpperCase();
+        const currency = String(prev.currencyCode ?? "")
+          .trim()
+          .toUpperCase();
         const rate = Number(String(prev.exchangeRt ?? "1").trim());
         const baseZmw =
           currency === "ZMW" || !Number.isFinite(rate) || rate <= 0
@@ -521,8 +548,7 @@ export const useQuotationForm = (
       invoiceType: "Non-Export",
       shippingAddress: { ...DEFAULT_INVOICE_FORM.billingAddress },
       paymentInformation: {
-        paymentTerms:
-          company?.terms?.selling?.payment?.dueDates ?? "",
+        paymentTerms: company?.terms?.selling?.payment?.dueDates ?? "",
         paymentMethod: "",
         bankName: company?.bankAccounts?.[0]?.bankName ?? "",
         accountNumber: company?.bankAccounts?.[0]?.accountNo ?? "",
@@ -539,8 +565,6 @@ export const useQuotationForm = (
     lastCurrencyRef.current = "ZMW";
     lastRateRef.current = 1;
   };
-
-
 
   const { subTotal, totalTax, grandTotal } = useMemo(() => {
     let sub = 0;
@@ -572,9 +596,10 @@ export const useQuotationForm = (
         (it) => String(it?.vatCode ?? "").toUpperCase() === "C1",
       );
 
-      const quotationDate = formData.dateOfInvoice || new Date().toISOString().slice(0, 10);
+      const quotationDate =
+        formData.dateOfInvoice || new Date().toISOString().slice(0, 10);
 
-      //  VALIDATION 
+      //  VALIDATION
       if (!formData.customerId) {
         throw new Error("Please select a customer");
       }
@@ -591,12 +616,13 @@ export const useQuotationForm = (
         throw new Error("Please select payment method");
       }
 
-
       if (formData.items.length === 0 || !formData.items[0].itemCode) {
         throw new Error("Please add at least one item");
       }
 
-      const invoiceType = String(formData.invoiceType ?? "").trim().toLowerCase();
+      const invoiceType = String(formData.invoiceType ?? "")
+        .trim()
+        .toLowerCase();
 
       if (invoiceType === "lpo") {
         const lpoNumber = String(formData.lpoNumber ?? "").trim();
@@ -611,10 +637,10 @@ export const useQuotationForm = (
         );
       }
 
-      //  LOADING 
+      //  LOADING
       showLoading("Saving quotation...");
 
-      //  PAYLOAD 
+      //  PAYLOAD
       const payload = {
         customerId: formData.customerId,
         currencyCode: formData.currencyCode,
@@ -655,7 +681,7 @@ export const useQuotationForm = (
         documentType: "quotation",
       };
 
-      //  API CALL 
+      //  API CALL
       if (onSubmit) {
         await onSubmit(payload);
       } else {
@@ -664,20 +690,17 @@ export const useQuotationForm = (
         );
       }
 
-      //  SUCCESS 
+      //  SUCCESS
       closeSwal();
 
       showSuccess("Quotation saved successfully");
 
       onClose?.();
-
     } catch (error: any) {
       closeSwal();
       showApiError(error);
     }
-
   };
-
 
   const paginatedItems = formData.items.slice(
     page * ITEMS_PER_PAGE,

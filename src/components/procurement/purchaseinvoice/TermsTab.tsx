@@ -1,7 +1,10 @@
 import React from "react";
-import { FileText, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { Textarea, Checkbox } from "../../ui/modal/formComponent";
-import type { PaymentRow, PurchaseOrderFormData } from "../../../types/Supply/purchaseOrder";
+import type {
+  PaymentRow,
+  PurchaseOrderFormData,
+} from "../../../types/Supply/purchaseOrder";
 
 interface TermsTabProps {
   form: PurchaseOrderFormData;
@@ -10,7 +13,7 @@ interface TermsTabProps {
   onItemTermsToggle?: (
     termName: string,
     itemCode: string,
-    isAccepted: boolean
+    isAccepted: boolean,
   ) => void;
 }
 
@@ -21,7 +24,6 @@ export const TermsTab: React.FC<TermsTabProps> = ({
 }) => {
   return (
     <div className="space-y-6 bg-app text-main p-6">
-
       {/* ===== ITEM TERMS (PURE DATA RENDER) ===== */}
       {form.itemTerms?.length > 0 && (
         <div className="bg-card rounded-xl border border-theme overflow-hidden">
@@ -47,7 +49,7 @@ export const TermsTab: React.FC<TermsTabProps> = ({
                         onItemTermsToggle?.(
                           term.termName,
                           term.itemCode || "",
-                          e.target.checked
+                          e.target.checked,
                         )
                       }
                     />
@@ -69,9 +71,7 @@ export const TermsTab: React.FC<TermsTabProps> = ({
                         )}
                       </div>
 
-                      <p className="text-sm text-muted">
-                        {term.description}
-                      </p>
+                      <p className="text-sm text-muted">{term.description}</p>
                     </div>
                   </div>
                 </div>
@@ -93,7 +93,6 @@ export const TermsTab: React.FC<TermsTabProps> = ({
           />
         </div>
       </div>
-
     </div>
   );
 };

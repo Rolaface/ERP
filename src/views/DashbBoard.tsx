@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { getDashboardSummary } from '../api/dashboardApi';
-import { ChartSkeleton } from '../components/ChartSkeleton';
+import { useEffect, useMemo, useState } from "react";
+import { getDashboardSummary } from "../api/dashboardApi";
+import { ChartSkeleton } from "../components/ChartSkeleton";
 import {
   Bar,
   BarChart,
@@ -12,9 +12,9 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts';
+} from "recharts";
 
-import { DollarSign, FileText, TrendingUp, Users } from 'lucide-react';
+import { DollarSign, FileText, TrendingUp, Users } from "lucide-react";
 
 const Dashboard = () => {
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -74,7 +74,7 @@ const Dashboard = () => {
         }
       } catch (e: any) {
         if (!mounted) return;
-        setSummaryError(e?.message ?? 'Failed to load dashboard summary');
+        setSummaryError(e?.message ?? "Failed to load dashboard summary");
       } finally {
         if (!mounted) return;
         setSummaryLoading(false);
@@ -89,9 +89,9 @@ const Dashboard = () => {
 
   const currencyZMW = useMemo(
     () =>
-      new Intl.NumberFormat('en-ZM', {
-        style: 'currency',
-        currency: 'ZMW',
+      new Intl.NumberFormat("en-ZM", {
+        style: "currency",
+        currency: "ZMW",
         maximumFractionDigits: 2,
       }),
     [],
@@ -99,45 +99,45 @@ const Dashboard = () => {
 
   const dateWithDay = useMemo(
     () =>
-      new Intl.DateTimeFormat('en-US', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
+      new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
       }),
     [],
   );
 
   const kpiCards = [
     {
-      label: 'Total Customers',
+      label: "Total Customers",
       value: String(summaryData?.totalCustomers ?? 0),
       icon: Users,
-      gradient: 'from-blue-500 to-blue-600',
+      gradient: "from-blue-500 to-blue-600",
     },
     {
-      label: 'Total Suppliers',
+      label: "Total Suppliers",
       value: String(summaryData?.totalSuppliers ?? 0),
       icon: FileText,
-      gradient: 'from-amber-500 to-amber-600',
+      gradient: "from-amber-500 to-amber-600",
     },
     {
-      label: 'Sales Invoices',
+      label: "Sales Invoices",
       value: String(summaryData?.totalSalesInvoices ?? 0),
       icon: TrendingUp,
-      gradient: 'from-emerald-500 to-emerald-600',
+      gradient: "from-emerald-500 to-emerald-600",
     },
     {
-      label: 'Purchase Invoices',
+      label: "Purchase Invoices",
       value: String(summaryData?.totalPurchaseInvoices ?? 0),
       icon: FileText,
-      gradient: 'from-sky-500 to-sky-600',
+      gradient: "from-sky-500 to-sky-600",
     },
     {
-      label: 'Total Sales Amount',
+      label: "Total Sales Amount",
       value: currencyZMW.format(summaryData?.totalSalesAmount ?? 0),
       icon: DollarSign,
-      gradient: 'from-purple-500 to-purple-600',
+      gradient: "from-purple-500 to-purple-600",
     },
   ];
 
@@ -160,7 +160,7 @@ const Dashboard = () => {
   const salesByCustomerChartData = useMemo(() => {
     const map = new Map<string, number>();
     for (const r of recentSalesRows) {
-      const key = r.customer ?? 'Unknown';
+      const key = r.customer ?? "Unknown";
       map.set(key, (map.get(key) ?? 0) + Number(r.grand_total ?? 0));
     }
     return Array.from(map.entries())
@@ -171,10 +171,16 @@ const Dashboard = () => {
 
   const totalsOverviewChartData = useMemo(
     () => [
-      { name: 'Customers', value: Number(summaryData?.totalCustomers ?? 0) },
-      { name: 'Suppliers', value: Number(summaryData?.totalSuppliers ?? 0) },
-      { name: 'Sales Invoices', value: Number(summaryData?.totalSalesInvoices ?? 0) },
-      { name: 'Purchase Invoices', value: Number(summaryData?.totalPurchaseInvoices ?? 0) },
+      { name: "Customers", value: Number(summaryData?.totalCustomers ?? 0) },
+      { name: "Suppliers", value: Number(summaryData?.totalSuppliers ?? 0) },
+      {
+        name: "Sales Invoices",
+        value: Number(summaryData?.totalSalesInvoices ?? 0),
+      },
+      {
+        name: "Purchase Invoices",
+        value: Number(summaryData?.totalPurchaseInvoices ?? 0),
+      },
     ],
     [summaryData],
   );
@@ -207,35 +213,41 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-5">
         {chartsLoading
           ? Array.from({ length: 5 }).map((_, idx) => (
-            <div
-              key={idx}
-              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[124px] animate-pulse"
-            >
-              <div className="flex items-center justify-between h-full">
-                <div>
-                  <div className="h-3 w-28 bg-gray-300 rounded" />
-                  <div className="h-7 w-20 bg-gray-300 rounded mt-2" />
+              <div
+                key={idx}
+                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[124px] animate-pulse"
+              >
+                <div className="flex items-center justify-between h-full">
+                  <div>
+                    <div className="h-3 w-28 bg-gray-300 rounded" />
+                    <div className="h-7 w-20 bg-gray-300 rounded mt-2" />
+                  </div>
+                  <div className="h-12 w-12 bg-gray-300 rounded-xl border border-gray-400" />
                 </div>
-                <div className="h-12 w-12 bg-gray-300 rounded-xl border border-gray-400" />
               </div>
-            </div>
-          ))
+            ))
           : kpiCards.map((card, idx) => (
-            <div
-              key={idx}
-              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[124px]"
-            >
-              <div className="flex items-center justify-between h-full">
-                <div>
-                  <p className="text-sm font-semibold text-gray-600">{card.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
-                </div>
-                <div className={`p-3 bg-gradient-to-br ${card.gradient} rounded-xl shadow-sm`}>
-                  <card.icon className="text-white" size={22} />
+              <div
+                key={idx}
+                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[124px]"
+              >
+                <div className="flex items-center justify-between h-full">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600">
+                      {card.label}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {card.value}
+                    </p>
+                  </div>
+                  <div
+                    className={`p-3 bg-gradient-to-br ${card.gradient} rounded-xl shadow-sm`}
+                  >
+                    <card.icon className="text-white" size={22} />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -248,13 +260,25 @@ const Dashboard = () => {
               <ChartSkeleton variant="line" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyTrendData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                <LineChart
+                  data={monthlyTrendData}
+                  margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} width={52} />
-                  <Tooltip formatter={(v: any) => currencyZMW.format(Number(v ?? 0))} />
+                  <Tooltip
+                    formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
+                  />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="revenue" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Sales" />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    dot={false}
+                    name="Sales"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -270,15 +294,31 @@ const Dashboard = () => {
               <ChartSkeleton variant="bar" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={recentSalesChartData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                <BarChart
+                  data={recentSalesChartData}
+                  margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={48} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11 }}
+                    interval={0}
+                    angle={-20}
+                    textAnchor="end"
+                    height={48}
+                  />
                   <YAxis tick={{ fontSize: 12 }} width={52} />
                   <Tooltip
                     formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
                     labelFormatter={(
                       _label: any,
-                      payload: readonly { payload?: { name?: string; customer?: string; posting_date?: string } }[],
+                      payload: readonly {
+                        payload?: {
+                          name?: string;
+                          customer?: string;
+                          posting_date?: string;
+                        };
+                      }[],
                     ) => {
                       const p = payload?.[0]?.payload;
                       const labelParts: string[] = [];
@@ -290,11 +330,16 @@ const Dashboard = () => {
                           labelParts.push(dateWithDay.format(d));
                         }
                       }
-                      return labelParts.join(' • ');
+                      return labelParts.join(" • ");
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="total" fill="#10b981" radius={[6, 6, 0, 0]} name="Total" />
+                  <Bar
+                    dataKey="total"
+                    fill="#10b981"
+                    radius={[6, 6, 0, 0]}
+                    name="Total"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -303,20 +348,39 @@ const Dashboard = () => {
 
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-gray-900">Top 10 Customers</h3>
+            <h3 className="text-sm font-bold text-gray-900">
+              Top 10 Customers
+            </h3>
           </div>
           <div className="h-72 rounded-lg border border-gray-200 bg-white">
             {chartsLoading ? (
               <ChartSkeleton variant="bar" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salesByCustomerChartData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                <BarChart
+                  data={salesByCustomerChartData}
+                  margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={52} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11 }}
+                    interval={0}
+                    angle={-15}
+                    textAnchor="end"
+                    height={52}
+                  />
                   <YAxis tick={{ fontSize: 12 }} width={52} />
-                  <Tooltip formatter={(v: any) => currencyZMW.format(Number(v ?? 0))} />
+                  <Tooltip
+                    formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
+                  />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="total" fill="#f59e0b" radius={[6, 6, 0, 0]} name="Total" />
+                  <Bar
+                    dataKey="total"
+                    fill="#f59e0b"
+                    radius={[6, 6, 0, 0]}
+                    name="Total"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -332,13 +396,28 @@ const Dashboard = () => {
               <ChartSkeleton variant="bar" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={totalsOverviewChartData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                <BarChart
+                  data={totalsOverviewChartData}
+                  margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-10} textAnchor="end" height={44} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11 }}
+                    interval={0}
+                    angle={-10}
+                    textAnchor="end"
+                    height={44}
+                  />
                   <YAxis tick={{ fontSize: 12 }} width={52} />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="value" fill="#3b82f6" radius={[6, 6, 0, 0]} name="Count" />
+                  <Bar
+                    dataKey="value"
+                    fill="#3b82f6"
+                    radius={[6, 6, 0, 0]}
+                    name="Count"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}

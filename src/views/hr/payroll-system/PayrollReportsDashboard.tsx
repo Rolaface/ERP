@@ -17,16 +17,33 @@ import {
 } from "recharts";
 
 import type { SalarySlipListItem } from "../../../api/salarySlipApi";
-import { getAdditionalSalariesPaged, type AdditionalSalaryRecord } from "../../../api/additionalSalaryApi";
+import {
+  getEmployeeAdvancesPaged,
+  type EmployeeAdvanceRecord,
+} from "../../../api/advanceLoanApi";
 
 const fmtZMW = (n: number) => Number(n || 0).toLocaleString("en-ZM");
 
-const COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+const COLORS = [
+  "#2563eb",
+  "#16a34a",
+  "#f59e0b",
+  "#ef4444",
+  "#06b6d4",
+  "#8b5cf6",
+];
 
-const KPI_CARD_BASE = "bg-card rounded-xl p-6 w-full min-w-0 flex flex-col items-stretch shadow-sm";
+const KPI_CARD_BASE =
+  "bg-card rounded-xl p-6 w-full min-w-0 flex flex-col items-stretch shadow-sm";
 const CHART_CARD_BASE = KPI_CARD_BASE;
 
-type PeriodPreset = "all" | "this_month" | "last_3" | "last_6" | "last_12" | "custom_month";
+type PeriodPreset =
+  | "all"
+  | "this_month"
+  | "last_3"
+  | "last_6"
+  | "last_12"
+  | "custom_month";
 
 const getMonthKey = (d: string) => {
   const s = String(d || "").trim();
@@ -42,7 +59,8 @@ const addMonths = (date: Date, deltaMonths: number) => {
   return d;
 };
 
-const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
+const startOfMonth = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), 1);
 
 const toIsoDate = (d: Date) => {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -55,7 +73,11 @@ export type PayrollReportsDashboardProps = {
   error?: string | null;
 };
 
-export default function PayrollReportsDashboard({ slips, loading, error }: PayrollReportsDashboardProps) {
+export default function PayrollReportsDashboard({
+  slips,
+  loading,
+  error,
+}: PayrollReportsDashboardProps) {
   const safeSlips = Array.isArray(slips) ? slips : [];
 
   const [period, setPeriod] = useState<PeriodPreset>("last_12");
@@ -83,7 +105,13 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
     }
 
     const monthsBack =
-      period === "last_3" ? 3 : period === "last_6" ? 6 : period === "last_12" ? 12 : 12;
+      period === "last_3"
+        ? 3
+        : period === "last_6"
+          ? 6
+          : period === "last_12"
+            ? 12
+            : 12;
 
     const start = startOfMonth(addMonths(today, -(monthsBack - 1)));
     const startIso = toIsoDate(start);
@@ -96,9 +124,18 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   }, [customMonth, period, safeSlips]);
 
   const kpis = useMemo(() => {
-    const totalGross = filteredSlips.reduce((s, r) => s + Number(r.total_earnings ?? 0), 0);
-    const totalDed = filteredSlips.reduce((s, r) => s + Number(r.total_deduction ?? 0), 0);
-    const totalNet = filteredSlips.reduce((s, r) => s + Number(r.net_pay ?? 0), 0);
+    const totalGross = filteredSlips.reduce(
+      (s, r) => s + Number(r.total_earnings ?? 0),
+      0,
+    );
+    const totalDed = filteredSlips.reduce(
+      (s, r) => s + Number(r.total_deduction ?? 0),
+      0,
+    );
+    const totalNet = filteredSlips.reduce(
+      (s, r) => s + Number(r.net_pay ?? 0),
+      0,
+    );
 
     return {
       slipCount: filteredSlips.length,
@@ -121,8 +158,9 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   const statusData = useMemo(() => {
     const map = filteredSlips.reduce((acc: Record<string, number>, r) => {
       const raw = String(r.status ?? "").trim();
-      const label = raw || "Unknown";
-      acc[label] = (acc[label] || 0) + 1;
+      const normalized =
+        raw.toLowerCase() === "submitted" ? "Paid" : raw || "Unknown";
+      acc[normalized] = (acc[normalized] || 0) + 1;
       return acc;
     }, {});
 
@@ -132,11 +170,14 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   }, [filteredSlips]);
 
   const topEmployees = useMemo(() => {
-    const netByEmployee = filteredSlips.reduce((acc: Record<string, number>, r) => {
-      const emp = String(r.employee ?? "").trim() || "Unknown";
-      acc[emp] = (acc[emp] || 0) + Number(r.net_pay ?? 0);
-      return acc;
-    }, {});
+    const netByEmployee = filteredSlips.reduce(
+      (acc: Record<string, number>, r) => {
+        const emp = String(r.employee ?? "").trim() || "Unknown";
+        acc[emp] = (acc[emp] || 0) + Number(r.net_pay ?? 0);
+        return acc;
+      },
+      {},
+    );
 
     return Object.entries(netByEmployee)
       .map(([employee, net]) => ({ employee, net: Math.round(net) }))
@@ -145,20 +186,26 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   }, [filteredSlips]);
 
   const [advancesLoading, setAdvancesLoading] = useState(false);
-  const [advances, setAdvances] = useState<AdditionalSalaryRecord[]>([]);
+  const [advancesError, setAdvancesError] = useState<string | null>(null);
+  const [advances, setAdvances] = useState<EmployeeAdvanceRecord[]>([]);
 
   useEffect(() => {
     let mounted = true;
 
     const run = async () => {
       setAdvancesLoading(true);
+      setAdvancesError(null);
       try {
-        const res = await getAdditionalSalariesPaged({ page: 1, page_size: 1000 });
+        const res = await getEmployeeAdvancesPaged({
+          page: 1,
+          page_size: 1000,
+        });
         if (!mounted) return;
         setAdvances(Array.isArray(res?.records) ? res.records : []);
       } catch (e: any) {
         if (!mounted) return;
         setAdvances([]);
+        setAdvancesError(e?.message || "Failed to load advances");
       } finally {
         if (!mounted) return;
         setAdvancesLoading(false);
@@ -172,7 +219,10 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   }, []);
 
   const advancesKpis = useMemo(() => {
-    const totalAdvance = advances.reduce((s, r) => s + Number(r.amount ?? 0), 0);
+    const totalAdvance = advances.reduce(
+      (s, r) => s + Number(r.advance_amount ?? 0),
+      0,
+    );
     return {
       count: advances.length,
       totalAdvance,
@@ -182,12 +232,28 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
   const monthlyTrend = useMemo(() => {
     const map: Record<
       string,
-      { month: string; gross: number; deductions: number; net: number; advances: number; slips: number }
+      {
+        month: string;
+        gross: number;
+        deductions: number;
+        net: number;
+        advances: number;
+        slips: number;
+      }
     > = {};
 
     filteredSlips.forEach((r) => {
-      const key = getMonthKey(r.end_date) || getMonthKey(r.start_date) || "Unknown";
-      if (!map[key]) map[key] = { month: key, gross: 0, deductions: 0, net: 0, advances: 0, slips: 0 };
+      const key =
+        getMonthKey(r.end_date) || getMonthKey(r.start_date) || "Unknown";
+      if (!map[key])
+        map[key] = {
+          month: key,
+          gross: 0,
+          deductions: 0,
+          net: 0,
+          advances: 0,
+          slips: 0,
+        };
       map[key].gross += Number(r.total_earnings ?? 0);
       map[key].deductions += Number(r.total_deduction ?? 0);
       map[key].net += Number(r.net_pay ?? 0);
@@ -195,9 +261,17 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
     });
 
     advances.forEach((r) => {
-      const key = getMonthKey(String(r.from_date ?? "").trim()) || "Unknown";
-      if (!map[key]) map[key] = { month: key, gross: 0, deductions: 0, net: 0, advances: 0, slips: 0 };
-      map[key].advances += Number(r.amount ?? 0);
+      const key = getMonthKey(String(r.posting_date ?? "").trim()) || "Unknown";
+      if (!map[key])
+        map[key] = {
+          month: key,
+          gross: 0,
+          deductions: 0,
+          net: 0,
+          advances: 0,
+          slips: 0,
+        };
+      map[key].advances += Number(r.advance_amount ?? 0);
     });
 
     return Object.values(map)
@@ -234,7 +308,9 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
       },
       {
         label: "Total Advances",
-        value: advancesLoading ? "—" : currencyZMW.format(advancesKpis.totalAdvance),
+        value: advancesLoading
+          ? "—"
+          : currencyZMW.format(advancesKpis.totalAdvance),
         icon: TrendingUp,
         color: "text-emerald-600 bg-emerald-50",
       },
@@ -300,8 +376,12 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
             <div key={c.label} className={KPI_CARD_BASE}>
               <div className="flex items-start justify-between w-full">
                 <div>
-                  <div className="text-xs font-semibold text-muted tracking-wide uppercase">{c.label}</div>
-                  <div className="text-xl font-bold text-main mt-1.5 tabular-nums">{c.value}</div>
+                  <div className="text-xs font-semibold text-muted tracking-wide uppercase">
+                    {c.label}
+                  </div>
+                  <div className="text-xl font-bold text-main mt-1.5 tabular-nums">
+                    {c.value}
+                  </div>
                 </div>
                 <div
                   className={`h-10 w-10 rounded-md flex items-center justify-center ${c.color}`}
@@ -317,7 +397,9 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={CHART_CARD_BASE}>
           <div>
-            <div className="text-sm font-semibold text-gray-600">Status Distribution</div>
+            <div className="text-sm font-semibold text-gray-600">
+              Status Distribution
+            </div>
           </div>
           <div className="h-[280px] mt-4 w-full min-w-0">
             {loading ? (
@@ -327,8 +409,14 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Tooltip contentStyle={{ borderRadius: 12, borderColor: "#e5e7eb" }} />
-                  <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, borderColor: "#e5e7eb" }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    wrapperStyle={{ fontSize: 12 }}
+                  />
                   <Pie
                     data={statusData}
                     dataKey="count"
@@ -338,7 +426,10 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
                     paddingAngle={2}
                   >
                     {statusData.map((_, idx) => (
-                      <Cell key={String(idx)} fill={COLORS[idx % COLORS.length]} />
+                      <Cell
+                        key={String(idx)}
+                        fill={COLORS[idx % COLORS.length]}
+                      />
                     ))}
                   </Pie>
                 </PieChart>
@@ -349,7 +440,9 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
 
         <div className={CHART_CARD_BASE}>
           <div>
-            <div className="text-sm font-semibold text-gray-600">Top Employees by Net Pay</div>
+            <div className="text-sm font-semibold text-gray-600">
+              Top Employees by Net Pay
+            </div>
           </div>
           <div className="h-[280px] mt-4 w-full min-w-0">
             {loading ? (
@@ -358,7 +451,10 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
               <div className="text-sm text-muted mt-6">No data available</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topEmployees} margin={{ top: 8, right: 12, left: 0, bottom: 40 }}>
+                <BarChart
+                  data={topEmployees}
+                  margin={{ top: 8, right: 12, left: 0, bottom: 40 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis
                     dataKey="employee"
@@ -371,7 +467,10 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip
                     contentStyle={{ borderRadius: 12, borderColor: "#e5e7eb" }}
-                    formatter={(v: any) => [`ZMW ${fmtZMW(Number(v || 0))}`, "Net Pay"]}
+                    formatter={(v: any) => [
+                      `ZMW ${fmtZMW(Number(v || 0))}`,
+                      "Net Pay",
+                    ]}
                   />
                   <Bar dataKey="net" fill="#16a34a" radius={[6, 6, 0, 0]} />
                 </BarChart>
@@ -383,7 +482,9 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
 
       <div className={`${CHART_CARD_BASE} lg:col-span-2`}>
         <div>
-          <div className="text-sm font-semibold text-gray-600">Unified Monthly Trend (Net Pay, Deductions, Advances)</div>
+          <div className="text-sm font-semibold text-gray-600">
+            Unified Monthly Trend (Net Pay, Deductions, Advances)
+          </div>
         </div>
         <div className="h-[320px] mt-4 w-full min-w-0">
           {loading || advancesLoading ? (
@@ -392,7 +493,10 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
             <div className="text-sm text-muted mt-6">No data available</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <AreaChart
+                data={monthlyTrend}
+                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -407,7 +511,11 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
                     <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#f3f4f6"
+                  vertical={false}
+                />
                 <XAxis
                   dataKey="month"
                   tick={{ fontSize: 11, fill: "#6b7280" }}
@@ -423,25 +531,34 @@ export default function PayrollReportsDashboard({ slips, loading, error }: Payro
                   tickLine={false}
                   tickMargin={10}
                   tickFormatter={(value) => {
-                    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                    if (value >= 1000000)
+                      return `${(value / 1000000).toFixed(1)}M`;
                     if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
                     return value;
                   }}
                 />
                 <Tooltip
                   contentStyle={{
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderRadius: "12px",
+                    border: "1px solid #e5e7eb",
+                    boxShadow:
+                      "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+                    backgroundColor: "rgba(255, 255, 255, 0.95)",
                   }}
                   itemStyle={{ fontSize: 13, fontWeight: 500 }}
-                  labelStyle={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}
+                  labelStyle={{
+                    fontSize: 12,
+                    color: "#6b7280",
+                    marginBottom: 4,
+                  }}
                   formatter={(v: any, name: string) => {
                     return [`ZMW ${fmtZMW(Number(v || 0))}`, name];
                   }}
                 />
-                <Legend wrapperStyle={{ fontSize: 12, paddingTop: '15px' }} iconType="circle" />
+                <Legend
+                  wrapperStyle={{ fontSize: 12, paddingTop: "15px" }}
+                  iconType="circle"
+                />
                 <Area
                   type="monotone"
                   dataKey="net"

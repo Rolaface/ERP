@@ -1,8 +1,6 @@
 /* eslint-disable camelcase */
 /* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable no-empty */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable unused-imports/no-unused-vars */
+
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-floating-promises */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
@@ -17,7 +15,7 @@ import {
 } from "../../utils/alert";
 
 import { createItemStock } from "../../api/stockApi";
-import { getStockById, getAllStockItems } from "../../api/stockItemApi";
+import { getStockById } from "../../api/stockItemApi";
 import Modal from "../ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
 import SearchSelect from "../ui/modal/SearchSelect";
@@ -277,7 +275,7 @@ const ItemModal: React.FC<{
                           const query = (q || "").toLowerCase();
                           return itemOptions
                             .filter((item) =>
-                              item.label.toLowerCase().includes(query)
+                              item.label.toLowerCase().includes(query),
                             )
                             .slice(0, 50)
                             .map((item) => ({
@@ -296,7 +294,7 @@ const ItemModal: React.FC<{
                           }
 
                           const selectedItem = itemOptions.find(
-                            (item) => item.id === selectedId
+                            (item) => item.id === selectedId,
                           );
 
                           setForm((prev) => ({

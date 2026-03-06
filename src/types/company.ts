@@ -30,7 +30,7 @@ export interface Address {
   timeZone?: string;
 }
 export interface BankAccount {
-    id?: string; 
+  id?: string;
   accountNo: string;
   accountHolderName?: string;
   bankName: string;

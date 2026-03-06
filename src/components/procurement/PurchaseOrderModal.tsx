@@ -22,7 +22,7 @@ const tabs: { key: POTab; icon: typeof Building2; label: string }[] = [
   // { key: "email", icon: Mail, label: "Email" },
   // { key: "tax", icon: Calculator, label: "Tax" },
   { key: "address", icon: MapPin, label: "Address" },
-    { key: "terms", icon: FileText, label: "Terms" },
+  { key: "terms", icon: FileText, label: "Terms" },
 ];
 
 const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({

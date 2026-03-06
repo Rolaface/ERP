@@ -51,7 +51,6 @@ const Items: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-
   const fetchItems = async () => {
     try {
       setLoading(true);
@@ -122,7 +121,6 @@ const Items: React.FC = () => {
     }
   };
 
-
   const handleSaved = async (res: any) => {
     const wasEdit = !!editItem;
 
@@ -133,10 +131,9 @@ const Items: React.FC = () => {
 
     showSuccess(
       res?.message ||
-      (wasEdit ? "Item updated successfully" : "Item created successfully")
+        (wasEdit ? "Item updated successfully" : "Item created successfully"),
     );
   };
-
 
   /*      FILTER
    */
@@ -190,7 +187,11 @@ const Items: React.FC = () => {
       align: "center",
       render: (i) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={(e) => handleEdit(i.id, e)} iconOnly />
+          <ActionButton
+            type="view"
+            onClick={(e) => handleEdit(i.id, e)}
+            iconOnly
+          />
           <ActionMenu
             onEdit={(e) => handleEdit(i.id, e as any)}
             onDelete={(e) => handleDeleteClick(i, e as any)}
@@ -239,7 +240,6 @@ const Items: React.FC = () => {
                 setPage(1);
               }}
               options={[
-
                 { label: "Export", value: "Export" },
                 { label: "Non-Export", value: "Non-Export" },
                 { label: "LPO", value: "LPO" },

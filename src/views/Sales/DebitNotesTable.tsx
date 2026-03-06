@@ -6,23 +6,30 @@ import { getAllDebitNotes } from "../../api/salesApi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-import { showLoading, closeSwal, showSuccess, showApiError } from "../../utils/alert";
+import {
+  showLoading,
+  closeSwal,
+  showSuccess,
+  showApiError,
+} from "../../utils/alert";
 import InvoiceDetailsModal from "./InvoiceDetailsModal";
-import ActionButton, { ActionGroup } from "../../components/ui/Table/ActionButton";
+import ActionButton, {
+  ActionGroup,
+} from "../../components/ui/Table/ActionButton";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 type DebitNoteRow = {
-  noteNo:    string;
+  noteNo: string;
   invoiceNo: string;
-  customer:  string;
-  date:      string;
+  customer: string;
+  date: string;
   timeOfInvoice?: string;
   dateTime?: Date;
-  amount:    number;
-  currency:  string;
+  amount: number;
+  currency: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -30,13 +37,13 @@ type DebitNoteRow = {
 // ---------------------------------------------------------------------------
 
 const mapRow = (item: any): DebitNoteRow => ({
-  noteNo:    item.invoiceNumber,
+  noteNo: item.invoiceNumber,
   invoiceNo: item.receiptNumber,
-  customer:  item.customerName,
-  date:      item.dateOfInvoice,
+  customer: item.customerName,
+  date: item.dateOfInvoice,
   timeOfInvoice: item.timeOfInvoice,
-  amount:    item.totalAmount,
-  currency:  item.currency || item.currencyCode || item.currCd || "",
+  amount: item.totalAmount,
+  currency: item.currency || item.currencyCode || item.currCd || "",
 });
 
 // ---------------------------------------------------------------------------
@@ -44,7 +51,6 @@ const mapRow = (item: any): DebitNoteRow => ({
 // ---------------------------------------------------------------------------
 
 const DebitNotesTable: React.FC = () => {
-
   const buildDateTime = (dateIso?: string, timeOfInvoice?: string) => {
     const d = String(dateIso ?? "").trim();
     const t = String(timeOfInvoice ?? "").trim();
@@ -56,18 +62,19 @@ const DebitNotesTable: React.FC = () => {
   const formatDateTime = (dateIso?: string, timeOfInvoice?: string) => {
     const dt = buildDateTime(dateIso, timeOfInvoice);
     if (!dt) return "-";
-    const timePart = String(timeOfInvoice ?? "").trim() ||
+    const timePart =
+      String(timeOfInvoice ?? "").trim() ||
       dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     return `${dt.toLocaleDateString()} ${timePart}`;
   };
 
-  const [data, setData]               = useState<DebitNoteRow[]>([]);
-  const [loading, setLoading]         = useState(false);
+  const [data, setData] = useState<DebitNoteRow[]>([]);
+  const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
 
   // ── Pagination (server) ───────────────────────────────────────────────────
-  const [page, setPage]             = useState(1);
-  const [pageSize, setPageSize]     = useState(10);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -75,23 +82,31 @@ const DebitNotesTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // ── Sort (server) ─────────────────────────────────────────────────────────
-  const [sortBy, setSortBy]       = useState("");
+  const [sortBy, setSortBy] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ── Modals ────────────────────────────────────────────────────────────────
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [detailsOpen, setDetailsOpen]         = useState(false);
-  const [detailsId, setDetailsId]             = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   // ── Reset page when search changes ───────────────────────────────────────
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // ── Fetch debit notes ─────────────────────────────────────────────────────
   const fetchDebitNotes = async () => {
     try {
       setLoading(true);
 
-      const resp = await getAllDebitNotes(page, pageSize, sortBy, sortOrder, searchTerm);
+      const resp = await getAllDebitNotes(
+        page,
+        pageSize,
+        sortBy,
+        sortOrder,
+        searchTerm,
+      );
 
       const mapped = resp.data.map((raw: any) => {
         const r = mapRow(raw);
@@ -100,7 +115,7 @@ const DebitNotesTable: React.FC = () => {
 
       mapped.sort(
         (a: DebitNoteRow, b: DebitNoteRow) =>
-          (b.dateTime?.getTime() ?? 0) - (a.dateTime?.getTime() ?? 0)
+          (b.dateTime?.getTime() ?? 0) - (a.dateTime?.getTime() ?? 0),
       );
 
       setData(mapped);
@@ -142,7 +157,10 @@ const DebitNotesTable: React.FC = () => {
         u.port = "";
         return u.toString();
       } catch {
-        return normalizedUrl.replace(/^(https?:\/\/[^\/]+):\d+(\/.*)?$/i, "$1$2");
+        return normalizedUrl.replace(
+          /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
+          "$1$2",
+        );
       }
     })();
 
@@ -159,10 +177,16 @@ const DebitNotesTable: React.FC = () => {
     try {
       let allData: DebitNoteRow[] = [];
       let current = 1;
-      let total   = 1;
+      let total = 1;
 
       do {
-        const resp = await getAllDebitNotes(current, 100, sortBy, sortOrder, searchTerm);
+        const resp = await getAllDebitNotes(
+          current,
+          100,
+          sortBy,
+          sortOrder,
+          searchTerm,
+        );
 
         const mapped = resp.data.map((raw: any) => {
           const r = mapRow(raw);
@@ -170,13 +194,13 @@ const DebitNotesTable: React.FC = () => {
         });
 
         allData = [...allData, ...mapped];
-        total   = resp.pagination.total_pages;
+        total = resp.pagination.total_pages;
         current++;
       } while (current <= total);
 
       allData.sort(
         (a: DebitNoteRow, b: DebitNoteRow) =>
-          (b.dateTime?.getTime() ?? 0) - (a.dateTime?.getTime() ?? 0)
+          (b.dateTime?.getTime() ?? 0) - (a.dateTime?.getTime() ?? 0),
       );
 
       return allData;
@@ -201,23 +225,22 @@ const DebitNotesTable: React.FC = () => {
       const worksheet = XLSX.utils.json_to_sheet(
         dataToExport.map((r) => ({
           "Debit Note No": r.noteNo,
-          "Receipt No":    r.invoiceNo,
-          Customer:        r.customer,
-          "Date/Time":     formatDateTime(r.date, r.timeOfInvoice),
-          Amount:          r.amount,
-          Currency:        r.currency,
-        }))
+          "Receipt No": r.invoiceNo,
+          Customer: r.customer,
+          "Date/Time": formatDateTime(r.date, r.timeOfInvoice),
+          Amount: r.amount,
+          Currency: r.currency,
+        })),
       );
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Debit Notes");
 
       saveAs(
-        new Blob(
-          [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-          { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-        ),
-        "Debit_Notes.xlsx"
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "Debit_Notes.xlsx",
       );
 
       closeSwal();
@@ -229,9 +252,9 @@ const DebitNotesTable: React.FC = () => {
   };
 
   const columns: Column<DebitNoteRow>[] = [
-    { key: "noteNo",    header: "Debit Invoice No", sortable: true },
+    { key: "noteNo", header: "Debit Invoice No", sortable: true },
     { key: "invoiceNo", header: "Receipt No" },
-    { key: "customer",  header: "Customer", sortable: true },
+    { key: "customer", header: "Customer", sortable: true },
     {
       key: "amount",
       header: "Amount",
@@ -278,7 +301,10 @@ const DebitNotesTable: React.FC = () => {
         loading={loading || initialLoad}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         enableAdd
         addLabel="Add Debit Note"
         onAdd={() => setOpenCreateModal(true)}
@@ -291,7 +317,10 @@ const DebitNotesTable: React.FC = () => {
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
@@ -301,7 +330,10 @@ const DebitNotesTable: React.FC = () => {
       <InvoiceDetailsModal
         open={detailsOpen}
         invoiceId={detailsId}
-        onClose={() => { setDetailsOpen(false); setDetailsId(null); }}
+        onClose={() => {
+          setDetailsOpen(false);
+          setDetailsId(null);
+        }}
         onOpenReceiptPdf={handleOpenReceipt}
         mapDetails={(raw: any) => {
           const selling =
@@ -315,10 +347,14 @@ const DebitNotesTable: React.FC = () => {
             ...raw,
             invoiceNumber: raw?.invoiceNumber ?? raw?.id,
             invoiceType: raw?.invoiceType ?? raw?.invoiceTypeParent,
-            dateOfInvoice: raw?.dateOfInvoice ?? raw?.transactionDate ?? raw?.date,
+            dateOfInvoice:
+              raw?.dateOfInvoice ?? raw?.transactionDate ?? raw?.date,
             dueDate: raw?.dueDate ?? raw?.validUntil ?? raw?.validTill,
             TotalAmount:
-              raw?.TotalAmount ?? raw?.totalAmount ?? raw?.grandTotal ?? raw?.total,
+              raw?.TotalAmount ??
+              raw?.totalAmount ??
+              raw?.grandTotal ??
+              raw?.total,
             terms: selling ? { selling } : raw?.terms,
           };
         }}

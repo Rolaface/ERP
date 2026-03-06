@@ -36,7 +36,7 @@ export default function ItemCategorySelect({
         const res = await getAllItemGroups(
           1,
           130,
-          filterByItemType ? { itemType: filterByItemType } : undefined
+          filterByItemType ? { itemType: filterByItemType } : undefined,
         );
 
         if (!res || res?.status_code !== 200 || !Array.isArray(res.data)) {
@@ -86,7 +86,6 @@ export default function ItemCategorySelect({
         {required && <span className="text-red-500 ml-1">*</span>}
       </span>
 
-
       <div ref={ref} className="relative w-full">
         {/* Search Input */}
         <input
@@ -104,13 +103,13 @@ export default function ItemCategorySelect({
 
         {/* Dropdown */}
         {open && !loading && (
-      <div className="absolute left-0 top-full mt-1 w-full bg-card border border-theme shadow-lg rounded z-30">
-             <ul className="max-h-56 overflow-y-auto text-sm">
+          <div className="absolute left-0 top-full mt-1 w-full bg-card border border-theme shadow-lg rounded z-30">
+            <ul className="max-h-56 overflow-y-auto text-sm">
               {filtered.length > 0 ? (
                 filtered.map((category) => (
-                   <li
-                     key={category.id}
-                      className="px-4 py-2 cursor-pointer hover:bg-row-hover text-main"
+                  <li
+                    key={category.id}
+                    className="px-4 py-2 cursor-pointer hover:bg-row-hover text-main"
                     onClick={() => {
                       setSearch(category.name);
                       setOpen(false);

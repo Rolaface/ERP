@@ -85,7 +85,9 @@ export type SalaryComponentUpdatePayload = {
   tax_applicable?: 0 | 1 | boolean;
 };
 
-export async function getSalaryStructures(): Promise<SalaryStructureListItem[]> {
+export async function getSalaryStructures(): Promise<
+  SalaryStructureListItem[]
+> {
   const url = API.payrollSetup.salaryStructure.getAll;
   const resp: AxiosResponse = await api.get(url);
   return resp.data?.data ?? resp.data;
@@ -122,7 +124,9 @@ export async function deleteSalaryStructure(name: string): Promise<any> {
   return resp.data;
 }
 
-export async function getSalaryComponents(): Promise<SalaryComponentListItem[]> {
+export async function getSalaryComponents(): Promise<
+  SalaryComponentListItem[]
+> {
   const url = API.payrollSetup.salaryComponent.getAll;
   const resp: AxiosResponse = await api.get(url);
   return resp.data?.data ?? resp.data;

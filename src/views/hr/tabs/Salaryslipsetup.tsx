@@ -349,6 +349,8 @@ const SalarySlipSetup = () => {
                         <input
                           type="text"
                           value={companySettings.name}
+                          aria-label="Company Name"
+                          title="Company Name"
                           onChange={(e) =>
                             setCompanySettings({
                               ...companySettings,
@@ -365,6 +367,8 @@ const SalarySlipSetup = () => {
                         <input
                           type="text"
                           value={companySettings.address}
+                          aria-label="Address"
+                          title="Address"
                           onChange={(e) =>
                             setCompanySettings({
                               ...companySettings,
@@ -382,6 +386,8 @@ const SalarySlipSetup = () => {
                           <input
                             type="text"
                             value={companySettings.phone}
+                            aria-label="Phone"
+                            title="Phone"
                             onChange={(e) =>
                               setCompanySettings({
                                 ...companySettings,
@@ -398,6 +404,8 @@ const SalarySlipSetup = () => {
                           <input
                             type="email"
                             value={companySettings.email}
+                            aria-label="Email"
+                            title="Email"
                             onChange={(e) =>
                               setCompanySettings({
                                 ...companySettings,
@@ -416,6 +424,8 @@ const SalarySlipSetup = () => {
                           <input
                             type="text"
                             value={companySettings.tpin}
+                            aria-label="TPIN"
+                            title="TPIN"
                             onChange={(e) =>
                               setCompanySettings({
                                 ...companySettings,
@@ -432,6 +442,8 @@ const SalarySlipSetup = () => {
                           <input
                             type="text"
                             value={companySettings.napsa}
+                            aria-label="NAPSA Number"
+                            title="NAPSA Number"
                             onChange={(e) =>
                               setCompanySettings({
                                 ...companySettings,
@@ -475,6 +487,9 @@ const SalarySlipSetup = () => {
                           </span>
                         </div>
                         <button
+                          type="button"
+                          aria-label={`${value ? "Hide" : "Show"} ${key.replace(/([A-Z])/g, " $1").trim()} section`}
+                          title={`${value ? "Hide" : "Show"} ${key.replace(/([A-Z])/g, " $1").trim()} section`}
                           onClick={() =>
                             toggleSection(key as keyof typeof visibleSections)
                           }
@@ -541,6 +556,8 @@ const SalarySlipSetup = () => {
                             <input
                               type="checkbox"
                               checked={earning.showFormula}
+                              aria-label={`Show calculation formula for ${earning.name}`}
+                              title={`Show calculation formula for ${earning.name}`}
                               onChange={() =>
                                 toggleEarning(earning.id, "showFormula")
                               }
@@ -610,6 +627,8 @@ const SalarySlipSetup = () => {
                             <input
                               type="checkbox"
                               checked={deduction.showFormula}
+                              aria-label={`Show calculation formula for ${deduction.name}`}
+                              title={`Show calculation formula for ${deduction.name}`}
                               onChange={() =>
                                 toggleDeduction(deduction.id, "showFormula")
                               }
@@ -648,6 +667,8 @@ const SalarySlipSetup = () => {
                       </label>
                       <select
                         value={layoutSettings.fontSize}
+                        aria-label="Font Size"
+                        title="Font Size"
                         onChange={(e) =>
                           setLayoutSettings({
                             ...layoutSettings,
@@ -668,6 +689,8 @@ const SalarySlipSetup = () => {
                       </label>
                       <select
                         value={layoutSettings.spacing}
+                        aria-label="Spacing"
+                        title="Spacing"
                         onChange={(e) =>
                           setLayoutSettings({
                             ...layoutSettings,
@@ -688,6 +711,8 @@ const SalarySlipSetup = () => {
                       </label>
                       <select
                         value={layoutSettings.orientation}
+                        aria-label="Page Orientation"
+                        title="Page Orientation"
                         onChange={(e) =>
                           setLayoutSettings({
                             ...layoutSettings,
@@ -707,6 +732,8 @@ const SalarySlipSetup = () => {
                       </label>
                       <select
                         value={layoutSettings.colorScheme}
+                        aria-label="Color Scheme"
+                        title="Color Scheme"
                         onChange={(e) =>
                           setLayoutSettings({
                             ...layoutSettings,
@@ -727,6 +754,9 @@ const SalarySlipSetup = () => {
                           Show Grid Lines
                         </label>
                         <button
+                          type="button"
+                          aria-label={`${layoutSettings.showGridLines ? "Hide" : "Show"} grid lines`}
+                          title={`${layoutSettings.showGridLines ? "Hide" : "Show"} grid lines`}
                           onClick={() =>
                             setLayoutSettings({
                               ...layoutSettings,

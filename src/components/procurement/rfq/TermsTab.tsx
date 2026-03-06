@@ -6,7 +6,11 @@ import type { PaymentRow } from "../../../types/Supply/rfq";
 interface TermsTabProps {
   paymentRows: PaymentRow[];
   termsAndConditions: string;
-  onPaymentRowChange: (idx: number, field: keyof PaymentRow, value: any) => void;
+  onPaymentRowChange: (
+    idx: number,
+    field: keyof PaymentRow,
+    value: any,
+  ) => void;
   onAddPaymentRow: () => void;
   onRemovePaymentRow: (idx: number) => void;
   onTermsChange: (value: string) => void;
@@ -20,7 +24,6 @@ export const TermsTab: React.FC<TermsTabProps> = ({
   onRemovePaymentRow,
   onTermsChange,
 }) => {
-
   // ✅ Pagination Logic
   const ITEMS_PER_PAGE = 5;
   const [page, setPage] = useState(0);
@@ -32,16 +35,17 @@ export const TermsTab: React.FC<TermsTabProps> = ({
 
   const paginatedRows = paymentRows.slice(
     page * ITEMS_PER_PAGE,
-    (page + 1) * ITEMS_PER_PAGE
+    (page + 1) * ITEMS_PER_PAGE,
   );
 
   return (
     <Card title="Terms & Conditions">
       <div className="space-y-8 mx-auto bg-card text-main rounded-lg p-6 border border-theme">
-
         {/* ================= PAYMENT TERMS ================= */}
         <div>
-          <h3 className="mb-2 text-lg font-semibold text-main">Payment Terms</h3>
+          <h3 className="mb-2 text-lg font-semibold text-main">
+            Payment Terms
+          </h3>
           <div className="mt-4">
             <span className="font-medium text-muted">Payment Schedule</span>
 
@@ -49,7 +53,8 @@ export const TermsTab: React.FC<TermsTabProps> = ({
             <div className="flex justify-between text-sm text-muted mt-2">
               <span>
                 Showing {page * ITEMS_PER_PAGE + 1}–
-                {Math.min((page + 1) * ITEMS_PER_PAGE, paymentRows.length)} of {paymentRows.length}
+                {Math.min((page + 1) * ITEMS_PER_PAGE, paymentRows.length)} of{" "}
+                {paymentRows.length}
               </span>
 
               <div className="flex gap-2">
@@ -107,7 +112,11 @@ export const TermsTab: React.FC<TermsTabProps> = ({
                               className="w-full rounded border border-theme bg-app p-1 text-sm"
                               value={row.paymentTerm}
                               onChange={(e) =>
-                                onPaymentRowChange(i, "paymentTerm", e.target.value)
+                                onPaymentRowChange(
+                                  i,
+                                  "paymentTerm",
+                                  e.target.value,
+                                )
                               }
                             />
                           </td>
@@ -117,7 +126,11 @@ export const TermsTab: React.FC<TermsTabProps> = ({
                               className="w-full rounded border border-theme bg-app p-1 text-sm"
                               value={row.description}
                               onChange={(e) =>
-                                onPaymentRowChange(i, "description", e.target.value)
+                                onPaymentRowChange(
+                                  i,
+                                  "description",
+                                  e.target.value,
+                                )
                               }
                             />
                           </td>
@@ -139,7 +152,11 @@ export const TermsTab: React.FC<TermsTabProps> = ({
                               className="w-full rounded border border-theme bg-app p-1 text-sm"
                               value={row.invoicePortion}
                               onChange={(e) =>
-                                onPaymentRowChange(i, "invoicePortion", Number(e.target.value))
+                                onPaymentRowChange(
+                                  i,
+                                  "invoicePortion",
+                                  Number(e.target.value),
+                                )
                               }
                             />
                           </td>
@@ -150,7 +167,11 @@ export const TermsTab: React.FC<TermsTabProps> = ({
                               className="w-full rounded border border-theme bg-app p-1 text-sm"
                               value={row.paymentAmount}
                               onChange={(e) =>
-                                onPaymentRowChange(i, "paymentAmount", Number(e.target.value))
+                                onPaymentRowChange(
+                                  i,
+                                  "paymentAmount",
+                                  Number(e.target.value),
+                                )
                               }
                             />
                           </td>

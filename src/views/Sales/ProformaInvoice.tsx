@@ -16,19 +16,26 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
 import Swal from "sweetalert2";
-import InvoiceDetailsModal, { type InvoiceDetails } from "./InvoiceDetailsModal";
+import InvoiceDetailsModal, {
+  type InvoiceDetails,
+} from "./InvoiceDetailsModal";
 
 // Column key → backend field mapping
 // All keys are identical here so the map is 1:1,
 // but keeping it explicit makes future changes safe
 const SORT_FIELD_MAP: Record<string, string> = {
-  proformaId:   "proformaId",
+  proformaId: "proformaId",
   customerName: "customerName",
-  createdAt:    "createdAt",
-  dueDate:      "dueDate",
-  totalAmount:  "totalAmount",
+  createdAt: "createdAt",
+  dueDate: "dueDate",
+  totalAmount: "totalAmount",
 };
 
 // ---------------------------------------------------------------------------
@@ -49,16 +56,15 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   onAddProformaInvoice,
   refreshKey,
 }) => {
-
   // ── Data ──────────────────────────────────────────────────────────────────
-  const [invoices, setInvoices]       = useState<ProformaInvoiceSummary[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [invoices, setInvoices] = useState<ProformaInvoiceSummary[]>([]);
+  const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [company, setCompany]         = useState<any>(null);
+  const [company, setCompany] = useState<any>(null);
 
   // ── Pagination (server) ───────────────────────────────────────────────────
-  const [page, setPage]             = useState(1);
-  const [pageSize, setPageSize]     = useState(10);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -66,15 +72,17 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
 
   // ── Sort (server) — always store column key, map to backend at call site ──
-  const [sortBy, setSortBy]       = useState("");
+  const [sortBy, setSortBy] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ── Modal ─────────────────────────────────────────────────────────────────
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsId, setDetailsId]     = useState<string | null>(null);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   // ── Reset page when search changes ───────────────────────────────────────
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // ── Fetch company once ────────────────────────────────────────────────────
   useEffect(() => {
@@ -95,26 +103,26 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
       const res = await getAllProformaInvoices(
         page,
         pageSize,
-        SORT_FIELD_MAP[sortBy] || sortBy,  // ← map column key → backend field here
+        SORT_FIELD_MAP[sortBy] || sortBy, // ← map column key → backend field here
         sortOrder,
-        searchTerm,                         // ← search sent to backend
+        searchTerm, // ← search sent to backend
       );
 
       if (!res || res.status_code !== 200) return;
 
       const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
-        proformaId:   inv.proformaId,
+        proformaId: inv.proformaId,
         customerName: inv.customerName,
-        currency:     inv.currency,
+        currency: inv.currency,
         exchangeRate: inv.exchangeRate,
-        dueDate:      inv.dueDate,
-        totalAmount:  Number(inv.totalAmount),
-        createdAt:    new Date(inv.createdAt.replace(" ", "T")),
+        dueDate: inv.dueDate,
+        totalAmount: Number(inv.totalAmount),
+        createdAt: new Date(inv.createdAt.replace(" ", "T")),
       }));
 
       setInvoices(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
-      setTotalItems(res.pagination?.total       || mapped.length);
+      setTotalItems(res.pagination?.total || mapped.length);
     } finally {
       setLoading(false);
       setInitialLoad(false);
@@ -133,7 +141,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
     sortBy: string;
     sortOrder: "asc" | "desc";
   }) => {
-    setSortBy(colKey);   // ← store "proformaId", not "proformaId" (same here, but correct pattern)
+    setSortBy(colKey); // ← store "proformaId", not "proformaId" (same here, but correct pattern)
     setSortOrder(order);
     setPage(1);
   };
@@ -150,7 +158,10 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
         u.port = "";
         return u.toString();
       } catch {
-        return normalizedUrl.replace(/^(https?:\/\/[^\/]+):\d+(\/.*)?$/i, "$1$2");
+        return normalizedUrl.replace(
+          /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
+          "$1$2",
+        );
       }
     })();
 
@@ -164,34 +175,36 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   };
 
   // ── Export all pages ──────────────────────────────────────────────────────
-  const fetchAllInvoicesForExport = async (): Promise<ProformaInvoiceSummary[]> => {
+  const fetchAllInvoicesForExport = async (): Promise<
+    ProformaInvoiceSummary[]
+  > => {
     try {
       let allData: ProformaInvoiceSummary[] = [];
       let current = 1;
-      let total   = 1;
+      let total = 1;
 
       do {
         const res = await getAllProformaInvoices(
           current,
           100,
-          SORT_FIELD_MAP[sortBy] || sortBy,  // ← same mapping for export
+          SORT_FIELD_MAP[sortBy] || sortBy, // ← same mapping for export
           sortOrder,
           searchTerm,
         );
 
         if (res?.status_code === 200) {
           const mapped = res.data.map((inv: any) => ({
-            proformaId:   inv.proformaId,
+            proformaId: inv.proformaId,
             customerName: inv.customerName,
-            currency:     inv.currency,
+            currency: inv.currency,
             exchangeRate: inv.exchangeRate,
-            dueDate:      inv.dueDate,
-            totalAmount:  Number(inv.totalAmount),
-            createdAt:    new Date(inv.createdAt.replace(" ", "T")),
+            dueDate: inv.dueDate,
+            totalAmount: Number(inv.totalAmount),
+            createdAt: new Date(inv.createdAt.replace(" ", "T")),
           }));
 
           allData = [...allData, ...mapped];
-          total   = res.pagination?.total_pages || 1;
+          total = res.pagination?.total_pages || 1;
         }
 
         current++;
@@ -219,23 +232,24 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
       const worksheet = XLSX.utils.json_to_sheet(
         dataToExport.map((inv) => ({
           "Proforma No": inv.proformaId,
-          Customer:      inv.customerName,
-          Date:          inv.createdAt.toLocaleDateString(),
-          "Due Date":    inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "",
-          Amount:        inv.totalAmount,
-          Currency:      inv.currency,
-        }))
+          Customer: inv.customerName,
+          Date: inv.createdAt.toLocaleDateString(),
+          "Due Date": inv.dueDate
+            ? new Date(inv.dueDate).toLocaleDateString()
+            : "",
+          Amount: inv.totalAmount,
+          Currency: inv.currency,
+        })),
       );
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Proforma Invoices");
 
       saveAs(
-        new Blob(
-          [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-          { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-        ),
-        "Proforma_Invoices.xlsx"
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "Proforma_Invoices.xlsx",
       );
 
       closeSwal();
@@ -314,7 +328,9 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
         return;
       }
 
-      setInvoices((prev) => prev.filter((inv) => inv.proformaId !== proformaId));
+      setInvoices((prev) =>
+        prev.filter((inv) => inv.proformaId !== proformaId),
+      );
       showSuccess("Proforma invoice deleted successfully");
     } catch (err) {
       Swal.close();
@@ -346,7 +362,8 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
       dateOfInvoice: raw?.dateOfInvoice ?? raw?.dateofinvoice,
       dueDate: raw?.dueDate,
       discountPercentage:
-        raw?.discountPercentage !== undefined && raw?.discountPercentage !== null
+        raw?.discountPercentage !== undefined &&
+        raw?.discountPercentage !== null
           ? Number(raw.discountPercentage)
           : undefined,
       discountAmount:
@@ -389,7 +406,9 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
       align: "left",
       sortable: true,
       render: (inv) => (
-        <span className="text-xs text-muted">{inv.createdAt.toLocaleDateString()}</span>
+        <span className="text-xs text-muted">
+          {inv.createdAt.toLocaleDateString()}
+        </span>
       ),
     },
     {

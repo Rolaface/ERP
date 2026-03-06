@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  getAllSalesInvoices,
-  getSalesInvoiceById,
-} from "../../api/salesApi";
+import { getAllSalesInvoices, getSalesInvoiceById } from "../../api/salesApi";
 
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
@@ -17,7 +14,12 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import { getCompanyById } from "../../api/companySetupApi";
 import type { Company } from "../../types/company";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
@@ -30,7 +32,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
   onAddInvoice,
   onExportInvoice,
 }) => {
-
   // ── Data ─────────────────────────────────────────────────────────────────
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +61,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
   // ── Reset page when search changes ───────────────────────────────────────
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // ── Fetch company once ────────────────────────────────────────────────────
   useEffect(() => {
@@ -78,13 +81,21 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
 
       // NOTE: add `search` param to getAllSalesInvoices in salesApi.ts
       // signature: getAllSalesInvoices(page, page_size, sortBy, sortOrder, search)
-      const res = await getAllSalesInvoices(page, pageSize, sortBy, sortOrder, searchTerm);
+      const res = await getAllSalesInvoices(
+        page,
+        pageSize,
+        sortBy,
+        sortOrder,
+        searchTerm,
+      );
       if (!res || res.status_code !== 200) return;
 
       const mapped: InvoiceSummary[] = (res?.data ?? []).map((inv: any) => {
         const dateIso = String(inv.dateOfInvoice ?? "").trim();
         const timeIso = String(inv.timeOfInvoice ?? "").trim();
-        const dt = timeIso ? new Date(`${dateIso}T${timeIso}`) : new Date(dateIso);
+        const dt = timeIso
+          ? new Date(`${dateIso}T${timeIso}`)
+          : new Date(dateIso);
 
         return {
           invoiceNumber: inv.invoiceNumber,
@@ -105,7 +116,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
 
       mapped.sort(
         (a, b) =>
-          (b.invoiceDateTime?.getTime() ?? 0) - (a.invoiceDateTime?.getTime() ?? 0)
+          (b.invoiceDateTime?.getTime() ?? 0) -
+          (a.invoiceDateTime?.getTime() ?? 0),
       );
 
       setInvoices(mapped);
@@ -140,13 +152,21 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
       let total = 1;
 
       do {
-        const res = await getAllSalesInvoices(current, 100, sortBy, sortOrder, searchTerm);
+        const res = await getAllSalesInvoices(
+          current,
+          100,
+          sortBy,
+          sortOrder,
+          searchTerm,
+        );
 
         if (res?.status_code === 200) {
           const mapped: InvoiceSummary[] = (res?.data ?? []).map((inv: any) => {
             const dateIso = String(inv.dateOfInvoice ?? "").trim();
             const timeIso = String(inv.timeOfInvoice ?? "").trim();
-            const dt = timeIso ? new Date(`${dateIso}T${timeIso}`) : new Date(dateIso);
+            const dt = timeIso
+              ? new Date(`${dateIso}T${timeIso}`)
+              : new Date(dateIso);
 
             return {
               invoiceNumber: inv.invoiceNumber,
@@ -174,7 +194,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
 
       allData.sort(
         (a, b) =>
-          (b.invoiceDateTime?.getTime() ?? 0) - (a.invoiceDateTime?.getTime() ?? 0)
+          (b.invoiceDateTime?.getTime() ?? 0) -
+          (a.invoiceDateTime?.getTime() ?? 0),
       );
 
       return allData;
@@ -189,7 +210,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
     if (!dt) return "-";
 
     const datePart = dt.toLocaleDateString();
-    const timePart = String(timeOfInvoice ?? "").trim() ||
+    const timePart =
+      String(timeOfInvoice ?? "").trim() ||
       dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
     return `${datePart} ${timePart}`;
@@ -212,22 +234,26 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
           "Invoice No": inv.invoiceNumber,
           Type: inv.invoiceType,
           Customer: inv.customerName,
-          "Date/Time": formatDateTime(inv.invoiceDateTime ?? inv.dateOfInvoice, inv.timeOfInvoice),
-          "Due Date": inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "",
+          "Date/Time": formatDateTime(
+            inv.invoiceDateTime ?? inv.dateOfInvoice,
+            inv.timeOfInvoice,
+          ),
+          "Due Date": inv.dueDate
+            ? new Date(inv.dueDate).toLocaleDateString()
+            : "",
           Amount: inv.total,
           Currency: inv.currency,
-        }))
+        })),
       );
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Sales Invoices");
 
       saveAs(
-        new Blob(
-          [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-          { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-        ),
-        "Sales_Invoices.xlsx"
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "Sales_Invoices.xlsx",
       );
 
       closeSwal();
@@ -256,7 +282,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
           u.port = "";
           return u.toString();
         } catch {
-          return normalizedUrl.replace(/^(https?:\/\/[^\/]+):\d+(\/.*)?$/i, "$1$2");
+          return normalizedUrl.replace(
+            /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
+            "$1$2",
+          );
         }
       })();
 
@@ -337,7 +366,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
       header: "Date/Time",
       align: "left",
       sortable: false,
-      render: (inv) => formatDateTime(inv.invoiceDateTime ?? inv.dateOfInvoice, inv.timeOfInvoice),
+      render: (inv) =>
+        formatDateTime(
+          inv.invoiceDateTime ?? inv.dateOfInvoice,
+          inv.timeOfInvoice,
+        ),
     },
     {
       key: "invoiceType",
@@ -401,8 +434,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
     },
   ];
 
-
-
   return (
     <div className="p-8">
       <Table
@@ -412,7 +443,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
         loading={loading || initialLoad}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         enableAdd
         addLabel="Add Invoice"
         onAdd={onAddInvoice}
@@ -423,9 +457,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
@@ -439,7 +475,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
         pdfUrl={pdfUrl}
         onClose={handleClosePdf}
         onDownload={() =>
-          selectedInvoice && company &&
+          selectedInvoice &&
+          company &&
           generateInvoicePDF(selectedInvoice, company, "save")
         }
       />

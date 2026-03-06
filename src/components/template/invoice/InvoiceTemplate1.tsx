@@ -47,7 +47,6 @@ export const generateInvoicePDF = async (
   const doc = new jsPDF("p", "mm", "a4");
   const currency = invoice.currencyCode || "ZMW";
 
-  
   doc.setTextColor(0, 0, 0);
 
   /* ================= HEADER ================= */
@@ -62,7 +61,7 @@ export const generateInvoicePDF = async (
   doc.text(`Email: ${company.contactInfo.companyEmail}`, 15, 28);
 
   /* ================= LOGO ================= */
-  
+
   if (company.documents?.companyLogoUrl) {
     try {
       const fullLogoUrl = getFullImageUrl(company.documents.companyLogoUrl);
@@ -91,8 +90,6 @@ export const generateInvoicePDF = async (
     }
   }
 
- 
-  
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
@@ -127,19 +124,19 @@ export const generateInvoicePDF = async (
       ["#", "Name", "Qty", "Unit Price", `Total (${currency})`, "Tax Cat"],
     ],
     body: invoice.items.map((i: any, idx: number) => {
-  const qty = Number(i.quantity);
-  const price = Number(i.price);
-  const discountAmount = qty * price * (Number(i.discount || 0) / 100);
-  const totalInclusive = qty * price - discountAmount;
-  return [
-    idx + 1,
-    i.description,
-    qty.toFixed(1),
-    price.toFixed(2),
-    totalInclusive.toFixed(2),
-    i.vatCode || "",
-  ];
-}),
+      const qty = Number(i.quantity);
+      const price = Number(i.price);
+      const discountAmount = qty * price * (Number(i.discount || 0) / 100);
+      const totalInclusive = qty * price - discountAmount;
+      return [
+        idx + 1,
+        i.description,
+        qty.toFixed(1),
+        price.toFixed(2),
+        totalInclusive.toFixed(2),
+        i.vatCode || "",
+      ];
+    }),
     styles: {
       fontSize: 8,
       halign: "center",
@@ -160,115 +157,129 @@ export const generateInvoicePDF = async (
 
   const y = (doc as any).lastAutoTable.finalY + 6;
 
-  
   doc.setTextColor(0, 0, 0);
 
   /* ================= TAX SUMMARY ================= */
-const parentDiscount = Number(invoice.discountPercentage || 0);
-const vatRate = 16; // change if dynamic later
+  const parentDiscount = Number(invoice.discountPercentage || 0);
+  const vatRate = 16; // change if dynamic later
 
-let grossTotal = 0;
-let itemDiscountTotal = 0;
+  let grossTotal = 0;
+  let itemDiscountTotal = 0;
 
-invoice.items.forEach((i: any) => {
-  const qty = Number(i.quantity || 0);
-  const price = Number(i.price || 0);
-  const itemDiscount = Number(i.discount || 0);
+  invoice.items.forEach((i: any) => {
+    const qty = Number(i.quantity || 0);
+    const price = Number(i.price || 0);
+    const itemDiscount = Number(i.discount || 0);
 
-  const lineGross = qty * price;
-  const itemDiscountAmount = lineGross * (itemDiscount / 100);
+    const lineGross = qty * price;
+    const itemDiscountAmount = lineGross * (itemDiscount / 100);
 
-  grossTotal += lineGross;
-  itemDiscountTotal += itemDiscountAmount;
-});
+    grossTotal += lineGross;
+    itemDiscountTotal += itemDiscountAmount;
+  });
 
-const afterItemDiscount = grossTotal - itemDiscountTotal;
+  const afterItemDiscount = grossTotal - itemDiscountTotal;
 
-const parentDiscountAmount =
-  parentDiscount > 0
-    ? afterItemDiscount * (parentDiscount / 100)
-    : 0;
+  const parentDiscountAmount =
+    parentDiscount > 0 ? afterItemDiscount * (parentDiscount / 100) : 0;
 
-const finalNet = afterItemDiscount - parentDiscountAmount;
+  const finalNet = afterItemDiscount - parentDiscountAmount;
 
-const taxable = finalNet / (1 + vatRate / 100);
-const vat = finalNet - taxable;
+  const taxable = finalNet / (1 + vatRate / 100);
+  const vat = finalNet - taxable;
 
-const summary = {
-  grossTotal,
-  itemDiscountTotal,
-  parentDiscountAmount,
-  totalDiscount: itemDiscountTotal + parentDiscountAmount,
-  taxable,
-  vat,
-  total: finalNet,
-};
+  const summary = {
+    grossTotal,
+    itemDiscountTotal,
+    parentDiscountAmount,
+    totalDiscount: itemDiscountTotal + parentDiscountAmount,
+    taxable,
+    vat,
+    total: finalNet,
+  };
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
 
- doc.text("Gross Total", 110, y);
-doc.text(`${summary.grossTotal.toFixed(2)} ${currency}`, 195, y, { align: "right" });
+  doc.text("Gross Total", 110, y);
+  doc.text(`${summary.grossTotal.toFixed(2)} ${currency}`, 195, y, {
+    align: "right",
+  });
 
-doc.text("Item Discount", 110, y + 6);
-doc.text(`${summary.itemDiscountTotal.toFixed(2)} ${currency}`, 195, y + 6, { align: "right" });
+  doc.text("Item Discount", 110, y + 6);
+  doc.text(`${summary.itemDiscountTotal.toFixed(2)} ${currency}`, 195, y + 6, {
+    align: "right",
+  });
 
-doc.text("Parent Discount", 110, y + 12);
-doc.text(`${summary.parentDiscountAmount.toFixed(2)} ${currency}`, 195, y + 12, { align: "right" });
+  doc.text("Parent Discount", 110, y + 12);
+  doc.text(
+    `${summary.parentDiscountAmount.toFixed(2)} ${currency}`,
+    195,
+    y + 12,
+    { align: "right" },
+  );
 
-doc.text("Total Discount", 110, y + 18);
-doc.text(`${summary.totalDiscount.toFixed(2)} ${currency}`, 195, y + 18, { align: "right" });
+  doc.text("Total Discount", 110, y + 18);
+  doc.text(`${summary.totalDiscount.toFixed(2)} ${currency}`, 195, y + 18, {
+    align: "right",
+  });
 
-doc.text("Taxable", 110, y + 24);
-doc.text(`${summary.taxable.toFixed(2)} ${currency}`, 195, y + 24, { align: "right" });
+  doc.text("Taxable", 110, y + 24);
+  doc.text(`${summary.taxable.toFixed(2)} ${currency}`, 195, y + 24, {
+    align: "right",
+  });
 
-doc.text("VAT Total", 110, y + 30);
-doc.text(`${summary.vat.toFixed(2)} ${currency}`, 195, y + 30, { align: "right" });
+  doc.text("VAT Total", 110, y + 30);
+  doc.text(`${summary.vat.toFixed(2)} ${currency}`, 195, y + 30, {
+    align: "right",
+  });
 
-doc.setFontSize(10);
-doc.text("Total Amount", 110, y + 38);
-const summaryBottomY = y + 45;
-doc.text(`${summary.total.toFixed(2)} ${currency}`, 195, y + 38, { align: "right" });
+  doc.setFontSize(10);
+  doc.text("Total Amount", 110, y + 38);
+  const summaryBottomY = y + 45;
+  doc.text(`${summary.total.toFixed(2)} ${currency}`, 195, y + 38, {
+    align: "right",
+  });
 
   /* ================= SDC INFO ================= */
 
   /* ================= SDC INFO ================= */
 
-doc.setFontSize(9);
-doc.setFont("helvetica", "bold");
-doc.text("SDC Information", 15, summaryBottomY);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text("SDC Information", 15, summaryBottomY);
 
-doc.setFont("helvetica", "normal");
-doc.text(
-  [
-    `Invoice Date: ${invoice.dateOfInvoice}`,
-    `SDC ID: SDC0010002709`,
-    `Invoice Number: ${invoice.invoiceNumber}`,
-    `Invoice Type: ${invoice.invoiceType}`,
-    `Payment Type: ${getPaymentMethodLabel(
-      invoice.paymentInformation.paymentMethod,
-    )}`,
-  ],
-  15,
-  summaryBottomY + 6,
-);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    [
+      `Invoice Date: ${invoice.dateOfInvoice}`,
+      `SDC ID: SDC0010002709`,
+      `Invoice Number: ${invoice.invoiceNumber}`,
+      `Invoice Type: ${invoice.invoiceType}`,
+      `Payment Type: ${getPaymentMethodLabel(
+        invoice.paymentInformation.paymentMethod,
+      )}`,
+    ],
+    15,
+    summaryBottomY + 6,
+  );
 
-/* ================= BANK DETAILS ================= */
+  /* ================= BANK DETAILS ================= */
 
-doc.setFont("helvetica", "bold");
-doc.text("Banking Details", 110, summaryBottomY);
+  doc.setFont("helvetica", "bold");
+  doc.text("Banking Details", 110, summaryBottomY);
 
-doc.setFont("helvetica", "normal");
-doc.text(
-  [
-    `${company.financialConfig.baseCurrency}`,
-    `ACC NO ${invoice.paymentInformation.accountNumber}`,
-    `BANK ${invoice.paymentInformation.bankName}`,
-    `BRANCH CROSSROADS`,
-    `SWIFTCODE ${invoice.paymentInformation.swiftCode}`,
-  ],
-  110,
-  summaryBottomY + 6,
-);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    [
+      `${company.financialConfig.baseCurrency}`,
+      `ACC NO ${invoice.paymentInformation.accountNumber}`,
+      `BANK ${invoice.paymentInformation.bankName}`,
+      `BRANCH CROSSROADS`,
+      `SWIFTCODE ${invoice.paymentInformation.swiftCode}`,
+    ],
+    110,
+    summaryBottomY + 6,
+  );
 
   /* ================= FOOTER ================= */
   doc.setFontSize(7);
@@ -278,7 +289,6 @@ doc.text(
     align: "center",
   });
   doc.text("Created By: Lorem Ipsum", 105, 292, { align: "center" });
-
 
   doc.setTextColor(0, 0, 0);
 

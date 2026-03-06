@@ -19,7 +19,7 @@ export async function getAllSalesInvoices(
   search?: string,
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(InvoiceAPI.getAll, {
-    params: { page, page_size, sortBy, sortOrder, search},
+    params: { page, page_size, sortBy, sortOrder, search },
   });
   return resp.data;
 }

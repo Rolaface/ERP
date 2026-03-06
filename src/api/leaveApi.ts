@@ -38,10 +38,7 @@ export async function getAllEmployeeLeaveHistory(
 export async function updateLeaveStatus(
   payload: UpdateLeaveStatusPayload,
 ): Promise<UpdateLeaveStatusResponse> {
-  const resp = await api.patch(
-    LeaveAPI.updateStatus,  
-    payload
-  );
+  const resp = await api.patch(LeaveAPI.updateStatus, payload);
 
   return resp.data;
 }

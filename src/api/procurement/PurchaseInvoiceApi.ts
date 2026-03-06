@@ -1,12 +1,9 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "../axiosInstance";
 
-
-
 import { API, ERP_BASE } from "../../config/api";
 const api = createAxiosInstance(ERP_BASE);
 export const purchaseinvoiceapi = API.purchaseIvoice;
-
 
 export interface PurchaseInvoiceFilters {
   search?: string;
@@ -19,7 +16,7 @@ export interface PurchaseInvoiceFilters {
 export async function getPurchaseInvoices(
   page = 1,
   pageSize = 10,
-  filters?: PurchaseInvoiceFilters
+  filters?: PurchaseInvoiceFilters,
 ) {
   const resp = await api.get(purchaseinvoiceapi.getAll, {
     params: {
@@ -33,21 +30,18 @@ export async function getPurchaseInvoices(
 }
 
 export async function createPurchaseInvoice(payload: any): Promise<any> {
-  const resp: AxiosResponse = await api.post(purchaseinvoiceapi.create, payload);
-  return resp.data;
-}
-
-
-export async function getPurchaseInvoiceById(
-  pId: string | number
-) {
-  const resp = await api.get(
-    `${purchaseinvoiceapi.getById}?id=${pId}`
+  const resp: AxiosResponse = await api.post(
+    purchaseinvoiceapi.create,
+    payload,
   );
-
   return resp.data;
 }
 
+export async function getPurchaseInvoiceById(pId: string | number) {
+  const resp = await api.get(`${purchaseinvoiceapi.getById}?id=${pId}`);
+
+  return resp.data;
+}
 
 export async function deletePurchaseInvoice(id: string | number): Promise<any> {
   try {
@@ -64,19 +58,20 @@ export async function deletePurchaseInvoice(id: string | number): Promise<any> {
       }
     );
   } catch (error: any) {
-    return error?.response?.data ?? {
-      status: "error",
-      status_code: error?.response?.status,
-      message: error?.message || "Operation failed",
-    };
+    return (
+      error?.response?.data ?? {
+        status: "error",
+        status_code: error?.response?.status,
+        message: error?.message || "Operation failed",
+      }
+    );
   }
 }
-
 
 // UPDATE STATUS
 export async function updatePurchaseinvoiceStatus(
   id: string | number,
-  status: string
+  status: string,
 ): Promise<any> {
   const payload = {
     id,
@@ -85,8 +80,8 @@ export async function updatePurchaseinvoiceStatus(
 
   const resp: AxiosResponse = await api.patch(
     purchaseinvoiceapi.updateStatus,
-    
-    payload
+
+    payload,
   );
 
   return resp.data;

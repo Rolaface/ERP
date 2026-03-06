@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { useEffect } from "react";
 import type { Column } from "../../components/ui/Table/type";
 import Table from "../../components/ui/Table/Table";
-import StatusBadge from "../../components/ui/Table/StatusBadge";  
+import StatusBadge from "../../components/ui/Table/StatusBadge";
 import ActionButton, {
   ActionGroup,
 } from "../../components/ui/Table/ActionButton";
@@ -118,8 +118,17 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
       render: (r) => (
         <ActionGroup>
           <ActionButton type="view" onClick={() => handleView(r)} iconOnly />
-          <ActionButton type="edit" onClick={(e) => handleEdit(r, e as any)} iconOnly />
-          <ActionButton type="delete" onClick={(e) => handleDelete(r, e as any)} iconOnly variant="danger" />
+          <ActionButton
+            type="edit"
+            onClick={(e) => handleEdit(r, e as any)}
+            iconOnly
+          />
+          <ActionButton
+            type="delete"
+            onClick={(e) => handleDelete(r, e as any)}
+            iconOnly
+            variant="danger"
+          />
         </ActionGroup>
       ),
     },
@@ -141,10 +150,7 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
       />
 
       {/* Modal */}
-      <RfqTabsModal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-      />
+      <RfqTabsModal isOpen={modalOpen} onClose={handleCloseModal} />
     </div>
   );
 };

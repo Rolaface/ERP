@@ -10,45 +10,47 @@ interface StatusBadgeProps {
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant }) => {
   const safeStatus = (status ?? "unknown").toLowerCase();
 
-const getVariant = (): BadgeVariant => {
-  if (variant) return variant;
+  const getVariant = (): BadgeVariant => {
+    if (variant) return variant;
 
-  if (["active", "paid", "completed", "approved"].includes(safeStatus))
-    return "success";
+    if (["active", "paid", "completed", "approved"].includes(safeStatus))
+      return "success";
 
-  if (["pending", "processing"].includes(safeStatus))
-    return "warning";
+    if (["pending", "processing"].includes(safeStatus)) return "warning";
 
-  if (
-    ["inactive", "unactive", "overdue", "cancelled", "failed", "rejected"].includes(safeStatus)
-  )
-    return "danger";
+    if (
+      [
+        "inactive",
+        "unactive",
+        "overdue",
+        "cancelled",
+        "failed",
+        "rejected",
+      ].includes(safeStatus)
+    )
+      return "danger";
 
-  if (["draft", "new"].includes(safeStatus))
-    return "info";
+    if (["draft", "new"].includes(safeStatus)) return "info";
 
-  return "default";
-};
+    return "default";
+  };
 
-
-const variantStyles: Record<BadgeVariant, string> = {
-  success: "bg-success border-theme",
-  danger: "bg-danger border-theme",
-  warning: "bg-warning border-theme",
-  info: "bg-info border-theme",
-  default: "bg-row-hover text-muted border-theme",
-};
-
+  const variantStyles: Record<BadgeVariant, string> = {
+    success: "bg-success border-theme",
+    danger: "bg-danger border-theme",
+    warning: "bg-warning border-theme",
+    info: "bg-info border-theme",
+    default: "bg-row-hover text-muted border-theme",
+  };
 
   const currentVariant = getVariant();
 
- const displayStatus = status
-  ? status
-      .split(" ")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-      .join(" ")
-  : "Unknown";
-
+  const displayStatus = status
+    ? status
+        .split(" ")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(" ")
+    : "Unknown";
 
   return (
     <span

@@ -148,7 +148,6 @@ export default function ItemGenericSelect({
         {required && <span className="text-red-500 ml-1">*</span>}
       </span>
 
-
       <div ref={ref} className="relative w-full">
         <input
           className={inputClassName}
@@ -163,13 +162,16 @@ export default function ItemGenericSelect({
         />
 
         {open && !loading && (
-      <div className="absolute left-0 top-full mt-1 w-full bg-card border border-theme shadow-lg rounded z-30 max-h-60 overflow-y-auto">
+          <div className="absolute left-0 top-full mt-1 w-full bg-card border border-theme shadow-lg rounded z-30 max-h-60 overflow-y-auto">
             <ul className="text-sm">
               {filtered.length > 0 ? (
                 filtered.map((item) => (
                   <li
-                    className={`px-4 py-2 cursor-pointer hover:bg-row-hover ${getId(item) === value ? "bg-primary/10 text-primary font-medium" : "text-main"
-                      }`}
+                    className={`px-4 py-2 cursor-pointer hover:bg-row-hover ${
+                      getId(item) === value
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main"
+                    }`}
                     onClick={() => {
                       setSearch("");
                       setOpen(false);

@@ -10,7 +10,9 @@ interface PayrollConfirmationModalProps {
   records: PayrollRecord[];
 }
 
-export const PayrollConfirmationModal: React.FC<PayrollConfirmationModalProps> = ({ show, onClose, onConfirm, records }) => {
+export const PayrollConfirmationModal: React.FC<
+  PayrollConfirmationModalProps
+> = ({ show, onClose, onConfirm, records }) => {
   if (!show) return null;
 
   const totalGross = records.reduce((sum, r) => sum + r.grossPay, 0);
@@ -127,7 +129,9 @@ export const PayrollConfirmationModal: React.FC<PayrollConfirmationModalProps> =
                         <p className="font-semibold text-main text-sm">
                           {record.employeeName}
                         </p>
-                        <p className="text-xs text-muted">{record.employeeId}</p>
+                        <p className="text-xs text-muted">
+                          {record.employeeId}
+                        </p>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-main">
@@ -163,9 +167,9 @@ export const PayrollConfirmationModal: React.FC<PayrollConfirmationModalProps> =
                 </p>
                 <p className="text-xs opacity-90">
                   This action will process payroll for {records.length}{" "}
-                  employees with a total payout of ₹
-                  {totalNet.toLocaleString()}. Once confirmed, payments will be
-                  initiated and salary slips will be generated.
+                  employees with a total payout of ₹{totalNet.toLocaleString()}.
+                  Once confirmed, payments will be initiated and salary slips
+                  will be generated.
                 </p>
               </div>
             </div>

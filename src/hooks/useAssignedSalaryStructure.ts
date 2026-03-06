@@ -11,12 +11,18 @@ type AssignedSalaryStructureResult = {
   error: string | null;
 };
 
-export function useAssignedSalaryStructure(employeeCode: string): AssignedSalaryStructureResult {
+export function useAssignedSalaryStructure(
+  employeeCode: string,
+): AssignedSalaryStructureResult {
   const code = useMemo(() => String(employeeCode ?? "").trim(), [employeeCode]);
 
-  const [assignedSalaryStructureName, setAssignedSalaryStructureName] = useState<string>("");
-  const [assignedSalaryStructureFromDate, setAssignedSalaryStructureFromDate] = useState<string>("");
-  const [salaryStructureDetail, setSalaryStructureDetail] = useState<any | null>(null);
+  const [assignedSalaryStructureName, setAssignedSalaryStructureName] =
+    useState<string>("");
+  const [assignedSalaryStructureFromDate, setAssignedSalaryStructureFromDate] =
+    useState<string>("");
+  const [salaryStructureDetail, setSalaryStructureDetail] = useState<
+    any | null
+  >(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,13 +41,15 @@ export function useAssignedSalaryStructure(employeeCode: string): AssignedSalary
         setLoading(true);
         setError(null);
 
-        let list = await getSalaryStructureAssignments({ employee: code });
+        const list = await getSalaryStructureAssignments({ employee: code });
         let rows = Array.isArray(list) ? list : [];
 
         if (rows.length === 0) {
           const all = await getSalaryStructureAssignments();
           const allRows = Array.isArray(all) ? all : [];
-          rows = allRows.filter((r: any) => String(r?.employee ?? "").trim() === code);
+          rows = allRows.filter(
+            (r: any) => String(r?.employee ?? "").trim() === code,
+          );
         }
 
         const best = rows

@@ -1,8 +1,11 @@
-export const mapSalaryStructureComponentLabel = (input: { component?: any; abbr?: any } | any): string => {
+export const mapSalaryStructureComponentLabel = (
+  input: { component?: any; abbr?: any } | any,
+): string => {
   const component = String(input?.component ?? "").trim();
   const abbr = String(input?.abbr ?? "").trim();
   if (!component && !abbr) return "";
-  if (component.toLowerCase() === "income tax" || abbr.toUpperCase() === "IT") return "PAYE";
+  if (component.toLowerCase() === "income tax" || abbr.toUpperCase() === "IT")
+    return "PAYE";
   return component || abbr;
 };
 

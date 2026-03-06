@@ -118,7 +118,14 @@ export interface PayrollRecord {
   netPay: number;
 
   // Status
-  status: "Draft" | "Pending" | "Approved" | "Rejected" | "Processing" | "Paid" | "Failed";
+  status:
+    | "Draft"
+    | "Pending"
+    | "Approved"
+    | "Rejected"
+    | "Processing"
+    | "Paid"
+    | "Failed";
   paymentDate?: string;
   createdDate: string;
   approvedBy?: string;
@@ -169,12 +176,12 @@ export interface ValidationIssue {
   description: string;
   field?: string;
   suggestedAction?: string;
-  canProceed: boolean; 
+  canProceed: boolean;
 }
 
 export interface ValidationResult {
   isValid: boolean;
-  canProceed: boolean; 
+  canProceed: boolean;
   errors: ValidationIssue[];
   warnings: ValidationIssue[];
   infos: ValidationIssue[];

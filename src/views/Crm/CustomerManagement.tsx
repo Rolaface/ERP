@@ -1,6 +1,11 @@
 import React, { useMemo, useState, useEffect } from "react";
 import CustomerDetailView from "./CustomerDetailView";
-import { showLoading,showApiError,showSuccess,closeSwal } from "../../utils/alert";
+import {
+  showLoading,
+  showApiError,
+  showSuccess,
+  closeSwal,
+} from "../../utils/alert";
 import {
   getAllCustomers,
   deleteCustomerById,
@@ -62,30 +67,27 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [taxCategory, setTaxCategory] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<string>("");
 
+  const fetchCustomers = async () => {
+    try {
+      setCustLoading(true);
 
-const fetchCustomers = async () => {
-  try {
-    setCustLoading(true);
+      const response = await getAllCustomers(
+        page,
+        pageSize,
+        taxCategory || undefined,
+      );
 
-    const response = await getAllCustomers(
-      page,
-      pageSize,
-      taxCategory || undefined
-    );
-
-    setCustomers(response.data);
-    setTotalPages(response.pagination?.total_pages || 1);
-    setTotalItems(response.pagination?.total || 1);
-
-  } catch (error) {
-    console.error("Error loading customers:", error);
-    showApiError(error);
-  } finally {
-    setCustLoading(false);
-    setInitialLoad(false);
-  }
-};
-
+      setCustomers(response.data);
+      setTotalPages(response.pagination?.total_pages || 1);
+      setTotalItems(response.pagination?.total || 1);
+    } catch (error) {
+      console.error("Error loading customers:", error);
+      showApiError(error);
+    } finally {
+      setCustLoading(false);
+      setInitialLoad(false);
+    }
+  };
 
   useEffect(() => {
     fetchCustomers();
@@ -141,7 +143,9 @@ const fetchCustomers = async () => {
     try {
       showLoading("Preparing CSV...");
       const resp = await getAllCustomers(1, 5000, taxCategory || undefined);
-      const rows: CustomerSummary[] = Array.isArray(resp?.data) ? resp.data : [];
+      const rows: CustomerSummary[] = Array.isArray(resp?.data)
+        ? resp.data
+        : [];
       const q = (searchTerm ?? "").trim().toLowerCase();
       const tf = (typeFilter ?? "").trim().toLowerCase();
 
@@ -197,44 +201,36 @@ const fetchCustomers = async () => {
     }
   };
 
+  const handleDelete = async (customerId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
 
- const handleDelete = async (
-  customerId: string,
-  e: React.MouseEvent
-) => {
-  e.stopPropagation();
+    const confirm = await Swal.fire({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete customer ${customerId}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+    });
 
-  const confirm = await Swal.fire({
-    icon: "warning",
-    title: "Are you sure?",
-    text: `Delete customer ${customerId}?`,
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, delete",
-  });
+    if (!confirm.isConfirmed) return;
 
-  if (!confirm.isConfirmed) return;
+    try {
+      showLoading("Deleting Customer...");
 
-  try {
-    showLoading("Deleting Customer...");
+      await deleteCustomerById(customerId);
 
-    await deleteCustomerById(customerId);
+      closeSwal();
 
-    closeSwal();
+      setCustomers((prev) => prev.filter((c) => c.id !== customerId));
 
-    setCustomers((prev) =>
-      prev.filter((c) => c.id !== customerId)
-    );
-
-    showSuccess("Customer deleted successfully.");
-
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
-
+      showSuccess("Customer deleted successfully.");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
   const handleAddCustomer = () => {
     setEditCustomer(null);
@@ -248,9 +244,9 @@ const fetchCustomers = async () => {
       setEditCustomer(customer.data ?? customer);
       setShowModal(true);
     } catch (error) {
-  console.error("Failed to fetch customer:", error);
-  showApiError(error);
-}
+      console.error("Failed to fetch customer:", error);
+      showApiError(error);
+    }
   };
 
   const handleCustomerSaved = async () => {
@@ -280,7 +276,6 @@ const fetchCustomers = async () => {
       setCustLoading(false);
     }
   };
-
 
   const handleBack = () => {
     setViewMode("table");

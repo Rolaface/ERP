@@ -20,8 +20,6 @@ import { useAuth } from "../context/AuthContext";
 import { FaSignOutAlt } from "react-icons/fa";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 
-
-
 const menuItems = [
   { name: "Dashboard", to: "/dashboard", icon: <FaChartBar /> },
   { name: "Sales", to: "/sales", icon: <FaMoneyBillWave /> },
@@ -48,7 +46,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
 
   const { logout } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
-
 
   useEffect(() => {
     const loadCompany = async () => {
@@ -88,8 +85,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   return (
     <>
       <div
-        className={`flex flex-col h-screen bg-sidebar fixed z-50 shadow-2xl transition-all duration-300 border-r border-[var(--border)] overflow-hidden ${open ? "w-64" : "w-20"
-          }`}
+        className={`flex flex-col h-screen bg-sidebar fixed z-50 shadow-2xl transition-all duration-300 border-r border-[var(--border)] overflow-hidden ${
+          open ? "w-64" : "w-20"
+        }`}
       >
         {/* 1. HEADER */}
         <div className="flex items-center justify-between p-4 h-16 shrink-0 border-b border-[var(--border)]">
@@ -110,8 +108,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         {company && (
           <div className="px-4 py-3 border-b border-[var(--border)]">
             <div
-              className={`flex items-center gap-3 ${open ? "justify-start" : "justify-center"
-                }`}
+              className={`flex items-center gap-3 ${
+                open ? "justify-start" : "justify-center"
+              }`}
             >
               {/* Logo */}
               <div className="w-15 h-15 rounded-full border border-[var(--border)] flex items-center justify-center overflow-hidden">
@@ -151,7 +150,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               key={item.name}
               to={item.to}
               className={({ isActive }) =>
-                `nav-link group relative flex items-center h-11 rounded-xl transition-all duration-200 shrink-0 ${isActive ? "active shadow-sm" : "hover:bg-row-hover"
+                `nav-link group relative flex items-center h-11 rounded-xl transition-all duration-200 shrink-0 ${
+                  isActive ? "active shadow-sm" : "hover:bg-row-hover"
                 }`
               }
             >
@@ -181,8 +181,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             <button
               type="button"
               onClick={() => setSettingsOpen(!settingsOpen)}
-              className={`nav-link group relative flex items-center h-11 w-full rounded-xl transition-all shrink-0 ${settingsOpen || isSettingsRoute ? "active" : "hover:bg-row-hover"
-                }`}
+              className={`nav-link group relative flex items-center h-11 w-full rounded-xl transition-all shrink-0 ${
+                settingsOpen || isSettingsRoute
+                  ? "active"
+                  : "hover:bg-row-hover"
+              }`}
             >
               <div className="flex items-center justify-center min-w-[48px] shrink-0">
                 <FaCog className="text-xl nav-icon" />
@@ -218,15 +221,20 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                     label: "User Management",
                     icon: <FaUsers />,
                   },
-                  { to: "/settings", label: "General Settings", icon: <FaCog /> },
+                  {
+                    to: "/settings",
+                    label: "General Settings",
+                    icon: <FaCog />,
+                  },
                 ].map((sub) => (
                   <NavLink
                     key={sub.to}
                     to={sub.to}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 py-2 px-3 rounded-lg text-xs font-bold transition-all ${isActive
-                        ? "bg-primary text-white shadow-sm"
-                        : "text-muted hover:bg-row-hover hover:text-primary"
+                      `flex items-center gap-3 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                        isActive
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-muted hover:bg-row-hover hover:text-primary"
                       }`
                     }
                   >
@@ -242,8 +250,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         {/* 3. BOTTOM USER SECTION  */}
         <div className="p-4 border-t border-[var(--border)] shrink-0 bg-sidebar">
           <div
-            className={`flex items-center ${open ? "justify-between" : "flex-col gap-4"
-              }`}
+            className={`flex items-center ${
+              open ? "justify-between" : "flex-col gap-4"
+            }`}
           >
             {/* LEFT SIDE: Avatar + Name */}
             <div className="flex items-center gap-3 relative group">
@@ -297,7 +306,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           await logout();
         }}
       />
-
     </>
   );
 };

@@ -14,13 +14,7 @@ import {
   YAxis,
 } from "recharts";
 
-import {
-  FileText,
-  ShoppingCart,
-  Truck,
-  Users,
-  UsersRound,
-} from "lucide-react";
+import { FileText, ShoppingCart, Truck, Users, UsersRound } from "lucide-react";
 
 import { getProcurementDashboardSummary } from "../../api/procurementDashboardApi";
 import { ChartSkeleton } from "../../components/ChartSkeleton";
@@ -62,7 +56,9 @@ const ProcurementDashboard: React.FC = () => {
         setSummaryData(resp.data);
       } catch (e: any) {
         if (!mounted) return;
-        setSummaryError(e?.message ?? "Failed to load procurement dashboard summary");
+        setSummaryError(
+          e?.message ?? "Failed to load procurement dashboard summary",
+        );
       } finally {
         if (!mounted) return;
         setSummaryLoading(false);
@@ -88,7 +84,14 @@ const ProcurementDashboard: React.FC = () => {
   const renderDonutLabel = (props: any) => {
     const { x, y, name, value } = props;
     return (
-      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
+      <text
+        x={x}
+        y={y}
+        fill="#374151"
+        fontSize={11}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
         {String(name)}: {String(value)}
       </text>
     );
@@ -104,39 +107,38 @@ const ProcurementDashboard: React.FC = () => {
   );
 
   const kpiCards = useMemo(
-    () =>
-      [
-        {
-          label: "Total Suppliers",
-          value: String(summaryData?.totalSuppliers ?? 0),
-          icon: Users,
-          gradient: "from-blue-500 to-blue-600",
-        },
-        {
-          label: "Active Suppliers",
-          value: String(summaryData?.activeSuppliers ?? 0),
-          icon: UsersRound,
-          gradient: "from-emerald-500 to-emerald-600",
-        },
-        {
-          label: "Inactive Suppliers",
-          value: String(summaryData?.inactiveSuppliers ?? 0),
-          icon: UsersRound,
-          gradient: "from-slate-500 to-slate-600",
-        },
-        {
-          label: "Purchase Orders",
-          value: String(summaryData?.totalPurchaseOrder ?? 0),
-          icon: ShoppingCart,
-          gradient: "from-purple-500 to-purple-600",
-        },
-        {
-          label: "Purchase Invoices",
-          value: String(summaryData?.totalPurchaseInvoice ?? 0),
-          icon: FileText,
-          gradient: "from-amber-500 to-amber-600",
-        },
-      ],
+    () => [
+      {
+        label: "Total Suppliers",
+        value: String(summaryData?.totalSuppliers ?? 0),
+        icon: Users,
+        gradient: "from-blue-500 to-blue-600",
+      },
+      {
+        label: "Active Suppliers",
+        value: String(summaryData?.activeSuppliers ?? 0),
+        icon: UsersRound,
+        gradient: "from-emerald-500 to-emerald-600",
+      },
+      {
+        label: "Inactive Suppliers",
+        value: String(summaryData?.inactiveSuppliers ?? 0),
+        icon: UsersRound,
+        gradient: "from-slate-500 to-slate-600",
+      },
+      {
+        label: "Purchase Orders",
+        value: String(summaryData?.totalPurchaseOrder ?? 0),
+        icon: ShoppingCart,
+        gradient: "from-purple-500 to-purple-600",
+      },
+      {
+        label: "Purchase Invoices",
+        value: String(summaryData?.totalPurchaseInvoice ?? 0),
+        icon: FileText,
+        gradient: "from-amber-500 to-amber-600",
+      },
+    ],
     [summaryData],
   );
 
@@ -150,25 +152,47 @@ const ProcurementDashboard: React.FC = () => {
 
   const documentsPieData = useMemo(
     () => [
-      { name: "Purchase Orders", value: Number(summaryData?.totalPurchaseOrder ?? 0) },
-      { name: "Purchase Invoices", value: Number(summaryData?.totalPurchaseInvoice ?? 0) },
+      {
+        name: "Purchase Orders",
+        value: Number(summaryData?.totalPurchaseOrder ?? 0),
+      },
+      {
+        name: "Purchase Invoices",
+        value: Number(summaryData?.totalPurchaseInvoice ?? 0),
+      },
     ],
     [summaryData],
   );
 
   const procurementBarData = useMemo(
     () => [
-      { name: "Total Suppliers", value: Number(summaryData?.totalSuppliers ?? 0) },
+      {
+        name: "Total Suppliers",
+        value: Number(summaryData?.totalSuppliers ?? 0),
+      },
       { name: "Active", value: Number(summaryData?.activeSuppliers ?? 0) },
       { name: "Inactive", value: Number(summaryData?.inactiveSuppliers ?? 0) },
-      { name: "Purchase Orders", value: Number(summaryData?.totalPurchaseOrder ?? 0) },
-      { name: "Purchase Invoices", value: Number(summaryData?.totalPurchaseInvoice ?? 0) },
+      {
+        name: "Purchase Orders",
+        value: Number(summaryData?.totalPurchaseOrder ?? 0),
+      },
+      {
+        name: "Purchase Invoices",
+        value: Number(summaryData?.totalPurchaseInvoice ?? 0),
+      },
     ],
     [summaryData],
   );
 
   const pieColors = useMemo(
-    () => [palette.purple, palette.emerald, palette.amber, palette.blue, palette.red, palette.slate],
+    () => [
+      palette.purple,
+      palette.emerald,
+      palette.amber,
+      palette.blue,
+      palette.red,
+      palette.slate,
+    ],
     [palette],
   );
 
@@ -198,10 +222,16 @@ const ProcurementDashboard: React.FC = () => {
                 >
                   <div className="flex items-center justify-between h-full">
                     <div>
-                      <p className="text-sm font-semibold text-gray-600">{stat.label}</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                      <p className="text-sm font-semibold text-gray-600">
+                        {stat.label}
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {stat.value}
+                      </p>
                     </div>
-                    <div className={`p-3 bg-gradient-to-br ${stat.gradient} rounded-xl shadow-sm`}>
+                    <div
+                      className={`p-3 bg-gradient-to-br ${stat.gradient} rounded-xl shadow-sm`}
+                    >
                       <stat.icon className="text-white" size={22} />
                     </div>
                   </div>
@@ -218,16 +248,24 @@ const ProcurementDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Procurement Overview</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Procurement Overview
+              </h3>
               <Truck className="text-gray-400" size={18} />
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="bar" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={procurementBarData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                  <BarChart
+                    data={procurementBarData}
+                    margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis
                       dataKey="name"
@@ -237,10 +275,7 @@ const ProcurementDashboard: React.FC = () => {
                       textAnchor="end"
                       height={48}
                     />
-                    <YAxis
-                      tick={{ fontSize: 12 }}
-                      width={52}
-                    />
+                    <YAxis tick={{ fontSize: 12 }} width={52} />
                     <Tooltip
                       formatter={(v: any) => Number(v ?? 0)}
                       contentStyle={{
@@ -250,12 +285,26 @@ const ProcurementDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                       cursor={{ fill: "var(--primary)", opacity: 0.1 }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="value" fill={palette.blue} radius={[6, 6, 0, 0]} name="Count">
-                      <LabelList dataKey="value" position="top" fill="#6b7280" fontSize={10} />
+                    <Bar
+                      dataKey="value"
+                      fill={palette.blue}
+                      radius={[6, 6, 0, 0]}
+                      name="Count"
+                    >
+                      <LabelList
+                        dataKey="value"
+                        position="top"
+                        fill="#6b7280"
+                        fontSize={10}
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -265,10 +314,15 @@ const ProcurementDashboard: React.FC = () => {
 
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Supplier Status</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Supplier Status
+              </h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="pie" />
               ) : (
@@ -283,7 +337,11 @@ const ProcurementDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                     />
                     <Legend
                       wrapperStyle={{ fontSize: 12 }}
@@ -305,7 +363,10 @@ const ProcurementDashboard: React.FC = () => {
                       labelLine={false}
                     >
                       {supplierStatusDonutData.map((_, idx) => (
-                        <Cell key={idx} fill={idx === 0 ? palette.emerald : palette.slate} />
+                        <Cell
+                          key={idx}
+                          fill={idx === 0 ? palette.emerald : palette.slate}
+                        />
                       ))}
                     </Pie>
                   </PieChart>
@@ -319,7 +380,10 @@ const ProcurementDashboard: React.FC = () => {
               <h3 className="text-sm font-bold text-gray-900">Documents</h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <ChartSkeleton variant="pie" />
               ) : (
@@ -334,7 +398,11 @@ const ProcurementDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                       }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      itemStyle={{
+                        color: "var(--text)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
                     />
                     <Legend
                       wrapperStyle={{ fontSize: 12 }}
@@ -357,7 +425,10 @@ const ProcurementDashboard: React.FC = () => {
                       labelLine={false}
                     >
                       {documentsPieData.map((_, idx) => (
-                        <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
+                        <Cell
+                          key={idx}
+                          fill={pieColors[idx % pieColors.length]}
+                        />
                       ))}
                     </Pie>
                   </PieChart>
@@ -368,10 +439,15 @@ const ProcurementDashboard: React.FC = () => {
 
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Documents Summary</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Documents Summary
+              </h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white overflow-auto" style={chartPlaneStyle}>
+            <div
+              className="h-72 rounded-lg border border-gray-200 bg-white overflow-auto"
+              style={chartPlaneStyle}
+            >
               {chartsLoading ? (
                 <div className="p-4">
                   <TableSkeleton />
@@ -393,7 +469,9 @@ const ProcurementDashboard: React.FC = () => {
                         </td>
                       </tr>
                       <tr className="border-t">
-                        <td className="py-2 text-gray-700">Purchase Invoices</td>
+                        <td className="py-2 text-gray-700">
+                          Purchase Invoices
+                        </td>
                         <td className="py-2 text-right font-semibold text-gray-900">
                           {Number(summaryData?.totalPurchaseInvoice ?? 0)}
                         </td>

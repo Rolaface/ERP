@@ -6,8 +6,8 @@ import type { Column } from "./type";
 
 export type UseTableLogicProps<T> = {
   columns: Column<T>[];
- data?: T[];
- 
+  data?: T[];
+
   searchValue?: string;
 };
 
@@ -48,7 +48,10 @@ export const useTableLogic = <T extends Record<string, any>>({
   );
 
   const numericKey = React.useMemo(() => detectNumericKey(columns), [columns]);
-  const customerIdKey = React.useMemo(() => detectCustomerIdKey(columns), [columns]);
+  const customerIdKey = React.useMemo(
+    () => detectCustomerIdKey(columns),
+    [columns],
+  );
 
   const defaultSortKey = React.useMemo(() => {
     const keys = columns
@@ -68,18 +71,14 @@ export const useTableLogic = <T extends Record<string, any>>({
   }, [columns]);
 
   const sortKey = numericKey ?? customerIdKey ?? defaultSortKey;
-  
-  const [yearFilter, setYearFilter] = React.useState("");
-const [leaveTypeFilter, setLeaveTypeFilter] = React.useState("");
 
-  
+  const [yearFilter, setYearFilter] = React.useState("");
+  const [leaveTypeFilter, setLeaveTypeFilter] = React.useState("");
 
   const processedData = React.useMemo(() => {
     const q = (effectiveSearch ?? "").trim().toLowerCase();
 
-   let rows = safeData.filter((row) => {
-
-
+    let rows = safeData.filter((row) => {
       // toolbar search
       if (q) {
         const any = columns.some((col) => {
@@ -120,27 +119,23 @@ const [leaveTypeFilter, setLeaveTypeFilter] = React.useState("");
         if (!foundName && !foundEmail) return false;
       }
 
-if (yearFilter) {
-  const dateValue = row["appliedOn"];
-  if (!dateValue) return false;
+      if (yearFilter) {
+        const dateValue = row["appliedOn"];
+        if (!dateValue) return false;
 
-  const year = String(dateValue).split("-")[0];
-  if (year !== yearFilter) return false;
-}
+        const year = String(dateValue).split("-")[0];
+        if (year !== yearFilter) return false;
+      }
 
-
-
-if (leaveTypeFilter) {
-  const leaveType = row["leaveType"];
-  if (
-    !leaveType ||
-    String(leaveType).toLowerCase() !== leaveTypeFilter.toLowerCase()
-  ) {
-    return false;
-  }
-}
-
-
+      if (leaveTypeFilter) {
+        const leaveType = row["leaveType"];
+        if (
+          !leaveType ||
+          String(leaveType).toLowerCase() !== leaveTypeFilter.toLowerCase()
+        ) {
+          return false;
+        }
+      }
 
       if (typeFilter) {
         const typeKeys = [
@@ -195,8 +190,8 @@ if (leaveTypeFilter) {
     minFilter,
     maxFilter,
     columns,
-     yearFilter,         
-  leaveTypeFilter,  
+    yearFilter,
+    leaveTypeFilter,
     numericKey,
     customerIdKey,
     sortKey,
@@ -229,10 +224,9 @@ if (leaveTypeFilter) {
     sortOrder,
     setSortOrder,
     yearFilter,
-setYearFilter,
-leaveTypeFilter,
-setLeaveTypeFilter,
-
+    setYearFilter,
+    leaveTypeFilter,
+    setLeaveTypeFilter,
 
     numericKey,
     customerIdKey,

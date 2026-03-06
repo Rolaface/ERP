@@ -27,7 +27,9 @@ const isoToDisplay = (iso: string): string => {
 };
 
 const formatDisplayDate = (raw: string): string => {
-  const digits = String(raw ?? "").replace(/\D/g, "").slice(0, 8);
+  const digits = String(raw ?? "")
+    .replace(/\D/g, "")
+    .slice(0, 8);
   const dd = digits.slice(0, 2);
   const mm = digits.slice(2, 4);
   const yyyy = digits.slice(4, 8);
@@ -82,9 +84,11 @@ const HrDateInput: React.FC<Props> = ({
   const datePickerRef = useRef<HTMLInputElement | null>(null);
 
   const [internalIso, setInternalIso] = useState(defaultValue ?? "");
-  const isoValue = isControlled ? (value as string) : internalIso;
+  const isoValue = isControlled ? value : internalIso;
 
-  const [displayValue, setDisplayValue] = useState(() => isoToDisplay(isoValue));
+  const [displayValue, setDisplayValue] = useState(() =>
+    isoToDisplay(isoValue),
+  );
 
   useEffect(() => {
     setDisplayValue(isoToDisplay(isoValue));
@@ -153,7 +157,11 @@ const HrDateInput: React.FC<Props> = ({
           ref={datePickerRef}
           type="date"
           tabIndex={-1}
-          value={ISO_RE.test(String(isoValue ?? "").trim()) ? String(isoValue).trim() : ""}
+          value={
+            ISO_RE.test(String(isoValue ?? "").trim())
+              ? String(isoValue).trim()
+              : ""
+          }
           disabled={disabled}
           className="absolute inset-0 opacity-0 pointer-events-none"
           onChange={(e) => {

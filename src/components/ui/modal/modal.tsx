@@ -12,16 +12,16 @@ export interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   maxWidth?:
-  | "sm"
-  | "md"
-  | "lg"
-  | "xl"
-  | "2xl"
-  | "4xl"
-  | "5xl"
-  | "6xl"
-  | "wide"
-  | "full";
+    | "sm"
+    | "md"
+    | "lg"
+    | "xl"
+    | "2xl"
+    | "4xl"
+    | "5xl"
+    | "6xl"
+    | "wide"
+    | "full";
   height?: string;
 }
 

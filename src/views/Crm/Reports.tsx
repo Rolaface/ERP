@@ -87,12 +87,18 @@ const CRMReports: React.FC = () => {
     const total = Number(inv?.totalAmount ?? inv?.total ?? 0);
     if (!Number.isFinite(total)) return 0;
 
-    const currency = String(inv?.currency ?? "").trim().toUpperCase();
+    const currency = String(inv?.currency ?? "")
+      .trim()
+      .toUpperCase();
     const exchangeRate = Number(inv?.exchangeRate ?? inv?.exchangeRt ?? 1);
 
-    const amountZmw = currency && currency !== "ZMW" && Number.isFinite(exchangeRate) && exchangeRate > 0
-      ? total * exchangeRate
-      : total;
+    const amountZmw =
+      currency &&
+      currency !== "ZMW" &&
+      Number.isFinite(exchangeRate) &&
+      exchangeRate > 0
+        ? total * exchangeRate
+        : total;
 
     if (filters.currency === "ZMW") return amountZmw;
 
@@ -110,14 +116,18 @@ const CRMReports: React.FC = () => {
         const start = startDateForRange(filters.dateRange);
 
         const currencyRate =
-          filters.currency === "ZMW" ? 1 : Number((await getExchangeRate(filters.currency)).exchange_rate);
+          filters.currency === "ZMW"
+            ? 1
+            : Number((await getExchangeRate(filters.currency)).exchange_rate);
 
         if (!Number.isFinite(currencyRate) || currencyRate <= 0) {
           throw new Error("Invalid exchange rate");
         }
 
         const customersRes = await getAllCustomers(1, 5000);
-        const customerRows: CustomerSummary[] = Array.isArray(customersRes?.data)
+        const customerRows: CustomerSummary[] = Array.isArray(
+          customersRes?.data,
+        )
           ? customersRes.data
           : [];
 
@@ -136,7 +146,9 @@ const CRMReports: React.FC = () => {
           current++;
         } while (current <= totalPages && current <= 50);
 
-        const invoicesInRange = allInvoices.filter((inv) => isWithinRange(inv?.dateOfInvoice, start));
+        const invoicesInRange = allInvoices.filter((inv) =>
+          isWithinRange(inv?.dateOfInvoice, start),
+        );
 
         if (cancelled) return;
         setSelectedCurrencyRate(currencyRate);
@@ -156,7 +168,10 @@ const CRMReports: React.FC = () => {
   }, [filters.dateRange, filters.currency]);
 
   const currencyFormatter = (n: number) =>
-    n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    n.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   const tooltipLight = {
     background: "rgba(255,255,255,0.98)",
@@ -166,8 +181,12 @@ const CRMReports: React.FC = () => {
     fontSize: 12,
   } as const;
 
-  const normalizeCustomerType = (raw: unknown): "Company" | "Individual" | "" => {
-    const t = String(raw ?? "").trim().toLowerCase();
+  const normalizeCustomerType = (
+    raw: unknown,
+  ): "Company" | "Individual" | "" => {
+    const t = String(raw ?? "")
+      .trim()
+      .toLowerCase();
     if (t === "company") return "Company";
     if (t === "individual") return "Individual";
     return "";
@@ -175,12 +194,18 @@ const CRMReports: React.FC = () => {
 
   const customersFilteredByType = useMemo(() => {
     if (filters.type === "all") return customers;
-    return customers.filter((c) => normalizeCustomerType(c.type) === filters.type);
+    return customers.filter(
+      (c) => normalizeCustomerType(c.type) === filters.type,
+    );
   }, [customers, filters.type]);
 
   const typeDistribution = useMemo(() => {
-    const company = customers.filter((c) => normalizeCustomerType(c.type) === "Company").length;
-    const individual = customers.filter((c) => normalizeCustomerType(c.type) === "Individual").length;
+    const company = customers.filter(
+      (c) => normalizeCustomerType(c.type) === "Company",
+    ).length;
+    const individual = customers.filter(
+      (c) => normalizeCustomerType(c.type) === "Individual",
+    ).length;
     return [
       { label: "Company", value: company, color: "#2563eb" },
       { label: "Individual", value: individual, color: "#10b981" },
@@ -190,18 +215,36 @@ const CRMReports: React.FC = () => {
   const currencyDistribution = useMemo(() => {
     const map = new Map<string, number>();
     for (const c of customersFilteredByType) {
-      const cur = String(c.currency ?? "").trim().toUpperCase() || "UNKNOWN";
+      const cur =
+        String(c.currency ?? "")
+          .trim()
+          .toUpperCase() || "UNKNOWN";
       map.set(cur, (map.get(cur) ?? 0) + 1);
     }
-    const palette = ["#2563eb", "#10b981", "#f59e0b", "#a855f7", "#ef4444", "#06b6d4"]; 
+    const palette = [
+      "#2563eb",
+      "#10b981",
+      "#f59e0b",
+      "#a855f7",
+      "#ef4444",
+      "#06b6d4",
+    ];
     return Array.from(map.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 6)
-      .map(([label, count], idx) => ({ label, value: count, color: palette[idx] }));
+      .map(([label, count], idx) => ({
+        label,
+        value: count,
+        color: palette[idx],
+      }));
   }, [customersFilteredByType]);
 
   const totalRevenue = useMemo(
-    () => invoices.reduce((sum, inv) => sum + normalizeInvoiceTotalToSelected(inv), 0),
+    () =>
+      invoices.reduce(
+        (sum, inv) => sum + normalizeInvoiceTotalToSelected(inv),
+        0,
+      ),
     [invoices, selectedCurrencyRate, filters.currency],
   );
 
@@ -215,7 +258,13 @@ const CRMReports: React.FC = () => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    const buckets: Array<{ key: string; label: string; tooltipLabel: string; start: Date; end: Date }> = [];
+    const buckets: Array<{
+      key: string;
+      label: string;
+      tooltipLabel: string;
+      start: Date;
+      end: Date;
+    }> = [];
 
     const fmtDay = (d: Date) =>
       d.toLocaleDateString(undefined, {
@@ -254,7 +303,10 @@ const CRMReports: React.FC = () => {
         buckets.push({
           key: `${year}-${String(m + 1).padStart(2, "0")}`,
           label: d.toLocaleDateString(undefined, { month: "short" }),
-          tooltipLabel: d.toLocaleDateString(undefined, { year: "numeric", month: "long" }),
+          tooltipLabel: d.toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "long",
+          }),
           start: d,
           end: e,
         });
@@ -305,21 +357,28 @@ const CRMReports: React.FC = () => {
   );
 
   const customerReportRows = useMemo(() => {
-    const q = String(filters.search ?? "").trim().toLowerCase();
-    const map = new Map<string, {
-      id: string;
-      name: string;
-      type: string;
-      currency: string;
-      invoices: number;
-      revenue: number;
-      lastInvoice: string;
-    }>();
+    const q = String(filters.search ?? "")
+      .trim()
+      .toLowerCase();
+    const map = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        type: string;
+        currency: string;
+        invoices: number;
+        revenue: number;
+        lastInvoice: string;
+      }
+    >();
 
     const customersIndex = new Map<string, CustomerSummary>();
 
     const addCustomerKey = (k: unknown, c: CustomerSummary) => {
-      const key = String(k ?? "").trim().toLowerCase();
+      const key = String(k ?? "")
+        .trim()
+        .toLowerCase();
       if (!key) return;
       if (!customersIndex.has(key)) customersIndex.set(key, c);
     };
@@ -332,11 +391,18 @@ const CRMReports: React.FC = () => {
 
     for (const inv of invoices) {
       const invCustomerId =
-        inv?.customerId ?? inv?.customerCode ?? inv?.customer_id ?? inv?.customer;
+        inv?.customerId ??
+        inv?.customerCode ??
+        inv?.customer_id ??
+        inv?.customer;
       const invCustomerName = String(inv?.customerName ?? "").trim();
 
       const customer =
-        customersIndex.get(String(invCustomerId ?? "").trim().toLowerCase()) ??
+        customersIndex.get(
+          String(invCustomerId ?? "")
+            .trim()
+            .toLowerCase(),
+        ) ??
         customersIndex.get(invCustomerName.toLowerCase()) ??
         null;
 
@@ -344,12 +410,18 @@ const CRMReports: React.FC = () => {
       if (filters.type !== "all" && type !== filters.type) continue;
 
       const displayName = String((customer as any)?.displayName ?? "").trim();
-      const name = invCustomerName || displayName || String(customer?.name ?? "").trim() || "Unknown";
+      const name =
+        invCustomerName ||
+        displayName ||
+        String(customer?.name ?? "").trim() ||
+        "Unknown";
       const key = name.toLowerCase();
 
       const existing = map.get(key);
       const dt = new Date(inv?.dateOfInvoice);
-      const dtStr = Number.isNaN(dt.getTime()) ? "" : dt.toISOString().slice(0, 10);
+      const dtStr = Number.isNaN(dt.getTime())
+        ? ""
+        : dt.toISOString().slice(0, 10);
       const rev = normalizeInvoiceTotalToSelected(inv);
 
       if (!existing) {
@@ -380,7 +452,14 @@ const CRMReports: React.FC = () => {
       .sort((a, b) => b.revenue - a.revenue);
 
     return rows;
-  }, [filters.search, filters.type, customersFilteredByType, invoices, selectedCurrencyRate, filters.currency]);
+  }, [
+    filters.search,
+    filters.type,
+    customersFilteredByType,
+    invoices,
+    selectedCurrencyRate,
+    filters.currency,
+  ]);
 
   const top10ByRevenue = useMemo(
     () => customerReportRows.slice(0, 10),
@@ -538,44 +617,64 @@ const CRMReports: React.FC = () => {
               <div className="h-full w-full bg-gray-300/70 rounded-xl animate-pulse" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={activityTrendChartData} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="activityFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0.04} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.35)" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: "rgba(100,116,139,1)", fontSize: 12 }}
-                  axisLine={{ stroke: "rgba(148,163,184,0.5)" }}
-                  tickLine={{ stroke: "rgba(148,163,184,0.5)" }}
-                />
-                <YAxis
-                  tick={{ fill: "rgba(100,116,139,1)", fontSize: 12 }}
-                  axisLine={{ stroke: "rgba(148,163,184,0.5)" }}
-                  tickLine={{ stroke: "rgba(148,163,184,0.5)" }}
-                  width={32}
-                />
-                <Tooltip
-                  cursor={{ stroke: "rgba(37,99,235,0.2)", strokeWidth: 1 }}
-                  contentStyle={tooltipLight}
-                  labelStyle={{ color: "rgba(15,23,42,1)", fontWeight: 600 }}
-                  labelFormatter={(_: any, payload: any) =>
-                    payload?.[0]?.payload?.tooltipLabel || ""
-                  }
-                  formatter={(v: any) => [String(v), "Invoices"]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#2563eb"
-                  strokeWidth={2}
-                  fill="url(#activityFill)"
-                  dot={{ r: 3, strokeWidth: 2, fill: "#2563eb" }}
-                  activeDot={{ r: 5 }}
-                />
+                <AreaChart
+                  data={activityTrendChartData}
+                  margin={{ left: 0, right: 12, top: 8, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient
+                      id="activityFill"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="#2563eb"
+                        stopOpacity={0.35}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="#2563eb"
+                        stopOpacity={0.04}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(148,163,184,0.35)"
+                  />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: "rgba(100,116,139,1)", fontSize: 12 }}
+                    axisLine={{ stroke: "rgba(148,163,184,0.5)" }}
+                    tickLine={{ stroke: "rgba(148,163,184,0.5)" }}
+                  />
+                  <YAxis
+                    tick={{ fill: "rgba(100,116,139,1)", fontSize: 12 }}
+                    axisLine={{ stroke: "rgba(148,163,184,0.5)" }}
+                    tickLine={{ stroke: "rgba(148,163,184,0.5)" }}
+                    width={32}
+                  />
+                  <Tooltip
+                    cursor={{ stroke: "rgba(37,99,235,0.2)", strokeWidth: 1 }}
+                    contentStyle={tooltipLight}
+                    labelStyle={{ color: "rgba(15,23,42,1)", fontWeight: 600 }}
+                    labelFormatter={(_: any, payload: any) =>
+                      payload?.[0]?.payload?.tooltipLabel || ""
+                    }
+                    formatter={(v: any) => [String(v), "Invoices"]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#2563eb"
+                    strokeWidth={2}
+                    fill="url(#activityFill)"
+                    dot={{ r: 3, strokeWidth: 2, fill: "#2563eb" }}
+                    activeDot={{ r: 5 }}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -584,8 +683,12 @@ const CRMReports: React.FC = () => {
           <div className="mt-6 pt-4 border-t border-theme">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-semibold text-main">Top 10 Customers</div>
-                <div className="text-xs text-muted mt-1">By revenue in selected currency</div>
+                <div className="text-sm font-semibold text-main">
+                  Top 10 Customers
+                </div>
+                <div className="text-xs text-muted mt-1">
+                  By revenue in selected currency
+                </div>
               </div>
               <div className="text-xs text-muted">{filters.currency}</div>
             </div>
@@ -595,30 +698,43 @@ const CRMReports: React.FC = () => {
                 <div className="h-full w-full bg-gray-300/70 rounded-xl animate-pulse" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={top10CustomersChartData} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.35)" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fill: "rgba(100,116,139,1)", fontSize: 11 }}
-                    axisLine={{ stroke: "rgba(148,163,184,0.5)" }}
-                    tickLine={{ stroke: "rgba(148,163,184,0.5)" }}
-                    interval={0}
-                    angle={-25}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis
-                    tick={{ fill: "rgba(100,116,139,1)", fontSize: 12 }}
-                    axisLine={{ stroke: "rgba(148,163,184,0.5)" }}
-                    tickLine={{ stroke: "rgba(148,163,184,0.5)" }}
-                    width={44}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "rgba(37,99,235,0.08)" }}
-                    contentStyle={tooltipLight}
-                    formatter={(v: any) => [`${filters.currency} ${currencyFormatter(Number(v) || 0)}`, "Revenue"]}
-                  />
-                  <Bar dataKey="revenue" fill="#2563eb" radius={[8, 8, 0, 0]} />
+                  <BarChart
+                    data={top10CustomersChartData}
+                    margin={{ left: 0, right: 12, top: 8, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="rgba(148,163,184,0.35)"
+                    />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: "rgba(100,116,139,1)", fontSize: 11 }}
+                      axisLine={{ stroke: "rgba(148,163,184,0.5)" }}
+                      tickLine={{ stroke: "rgba(148,163,184,0.5)" }}
+                      interval={0}
+                      angle={-25}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis
+                      tick={{ fill: "rgba(100,116,139,1)", fontSize: 12 }}
+                      axisLine={{ stroke: "rgba(148,163,184,0.5)" }}
+                      tickLine={{ stroke: "rgba(148,163,184,0.5)" }}
+                      width={44}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "rgba(37,99,235,0.08)" }}
+                      contentStyle={tooltipLight}
+                      formatter={(v: any) => [
+                        `${filters.currency} ${currencyFormatter(Number(v) || 0)}`,
+                        "Revenue",
+                      ]}
+                    />
+                    <Bar
+                      dataKey="revenue"
+                      fill="#2563eb"
+                      radius={[8, 8, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -631,9 +747,7 @@ const CRMReports: React.FC = () => {
             <div className="text-sm font-semibold text-main">
               Type Distribution
             </div>
-            <div className="text-xs text-muted mt-1">
-              Company vs Individual
-            </div>
+            <div className="text-xs text-muted mt-1">Company vs Individual</div>
 
             <div className="mt-4 h-[220px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -647,7 +761,9 @@ const CRMReports: React.FC = () => {
                     height={32}
                     iconType="circle"
                     formatter={(value: any) => (
-                      <span className="text-xs text-muted">{String(value)}</span>
+                      <span className="text-xs text-muted">
+                        {String(value)}
+                      </span>
                     )}
                   />
                   <Pie
@@ -672,9 +788,7 @@ const CRMReports: React.FC = () => {
             <div className="text-sm font-semibold text-main">
               Currency Distribution
             </div>
-            <div className="text-xs text-muted mt-1">
-              Customers by currency
-            </div>
+            <div className="text-xs text-muted mt-1">Customers by currency</div>
 
             <div className="mt-4 h-[220px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -688,7 +802,9 @@ const CRMReports: React.FC = () => {
                     height={32}
                     iconType="circle"
                     formatter={(value: any) => (
-                      <span className="text-xs text-muted">{String(value)}</span>
+                      <span className="text-xs text-muted">
+                        {String(value)}
+                      </span>
                     )}
                   />
                   <Pie
@@ -779,20 +895,28 @@ const CRMReports: React.FC = () => {
                     </tr>
                   ))
                 : topCustomersPageRows.map((r) => (
-                <tr key={r.id} className="border-b border-theme row-hover">
-                  <td className="px-4 py-3">
-                    <div className="text-main font-medium">{r.name}</div>
-                    <div className="text-[11px] text-muted">{r.id}</div>
-                  </td>
-                  <td className="px-4 py-3 text-main">{String(r.type || "—")}</td>
-                  <td className="px-4 py-3 text-right text-main">{r.invoices}</td>
-                  <td className="px-4 py-3 text-right text-main font-medium">
-                    {filters.currency} {currencyFormatter(r.revenue)}
-                  </td>
-                  <td className="px-4 py-3 text-main">{r.lastInvoice || "—"}</td>
-                  <td className="px-4 py-3 text-main">{String(r.currency || "—")}</td>
-                </tr>
-              ))}
+                    <tr key={r.id} className="border-b border-theme row-hover">
+                      <td className="px-4 py-3">
+                        <div className="text-main font-medium">{r.name}</div>
+                        <div className="text-[11px] text-muted">{r.id}</div>
+                      </td>
+                      <td className="px-4 py-3 text-main">
+                        {String(r.type || "—")}
+                      </td>
+                      <td className="px-4 py-3 text-right text-main">
+                        {r.invoices}
+                      </td>
+                      <td className="px-4 py-3 text-right text-main font-medium">
+                        {filters.currency} {currencyFormatter(r.revenue)}
+                      </td>
+                      <td className="px-4 py-3 text-main">
+                        {r.lastInvoice || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-main">
+                        {String(r.currency || "—")}
+                      </td>
+                    </tr>
+                  ))}
 
               {!loading && topCustomersPageRows.length === 0 && (
                 <tr>
@@ -818,13 +942,16 @@ const CRMReports: React.FC = () => {
             Prev
           </button>
           <div className="text-xs text-muted">
-            Page {Math.min(topCustomersPage, topCustomersTotalPages)} of {topCustomersTotalPages}
+            Page {Math.min(topCustomersPage, topCustomersTotalPages)} of{" "}
+            {topCustomersTotalPages}
           </div>
           <button
             type="button"
             className="px-3 py-2 rounded-lg border border-theme bg-card text-xs text-main disabled:opacity-50"
             onClick={() =>
-              setTopCustomersPage((p) => Math.min(topCustomersTotalPages, p + 1))
+              setTopCustomersPage((p) =>
+                Math.min(topCustomersTotalPages, p + 1),
+              )
             }
             disabled={topCustomersPage >= topCustomersTotalPages}
           >

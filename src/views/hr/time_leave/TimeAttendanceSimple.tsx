@@ -6,14 +6,23 @@ import {
   type AttendanceRecord,
 } from "../../../api/attendanceApi";
 import { getAllEmployees } from "../../../api/employeeapi";
-import { closeSwal, showApiError, showLoading, showSuccess } from "../../../utils/alert";
+import {
+  closeSwal,
+  showApiError,
+  showLoading,
+  showSuccess,
+} from "../../../utils/alert";
 
-const KPI_CARD_BASE = "bg-card rounded-2xl p-6 w-full min-w-0 flex flex-col items-stretch shadow-sm";
+const KPI_CARD_BASE =
+  "bg-card rounded-2xl p-6 w-full min-w-0 flex flex-col items-stretch shadow-sm";
 
-const fmt = (n: number) => Number(n || 0).toLocaleString("en-ZM", { maximumFractionDigits: 2 });
+const fmt = (n: number) =>
+  Number(n || 0).toLocaleString("en-ZM", { maximumFractionDigits: 2 });
 
 export default function TimeAttendanceSimple() {
-  const [employees, setEmployees] = useState<{ employeeId: string; name: string }[]>([]);
+  const [employees, setEmployees] = useState<
+    { employeeId: string; name: string }[]
+  >([]);
   const [employeesLoading, setEmployeesLoading] = useState(false);
 
   const [employee, setEmployee] = useState("");
@@ -74,7 +83,9 @@ export default function TimeAttendanceSimple() {
         const rows = Array.isArray(res?.employees) ? res.employees : [];
         const mapped = rows
           .map((e: any) => ({
-            employeeId: String(e?.employeeId ?? e?.employee_id ?? e?.name ?? "").trim(),
+            employeeId: String(
+              e?.employeeId ?? e?.employee_id ?? e?.name ?? "",
+            ).trim(),
             name: String(e?.name ?? e?.employee_name ?? "").trim(),
           }))
           .filter((e: any) => e.employeeId);
@@ -121,9 +132,16 @@ export default function TimeAttendanceSimple() {
 
   const stats = useMemo(() => {
     const rows = Array.isArray(records) ? records : [];
-    const presentCount = rows.filter((r) => String(r.status || "").toLowerCase() === "present").length;
-    const absentCount = rows.filter((r) => String(r.status || "").toLowerCase() === "absent").length;
-    const totalHours = rows.reduce((s, r) => s + Number(r.working_hours ?? 0), 0);
+    const presentCount = rows.filter(
+      (r) => String(r.status || "").toLowerCase() === "present",
+    ).length;
+    const absentCount = rows.filter(
+      (r) => String(r.status || "").toLowerCase() === "absent",
+    ).length;
+    const totalHours = rows.reduce(
+      (s, r) => s + Number(r.working_hours ?? 0),
+      0,
+    );
     const avgHours = rows.length > 0 ? totalHours / rows.length : 0;
 
     return {
@@ -138,13 +156,17 @@ export default function TimeAttendanceSimple() {
     () => [
       {
         label: "Present",
-        value: loading ? "—" : String(stats.presentCount.toLocaleString("en-ZM")),
+        value: loading
+          ? "—"
+          : String(stats.presentCount.toLocaleString("en-ZM")),
         icon: CheckCircle,
         color: "text-emerald-600 bg-emerald-50",
       },
       {
         label: "Absent",
-        value: loading ? "—" : String(stats.absentCount.toLocaleString("en-ZM")),
+        value: loading
+          ? "—"
+          : String(stats.absentCount.toLocaleString("en-ZM")),
         icon: Users,
         color: "text-red-600 bg-red-50",
       },
@@ -161,7 +183,13 @@ export default function TimeAttendanceSimple() {
         color: "text-purple-600 bg-purple-50",
       },
     ],
-    [loading, stats.absentCount, stats.avgHours, stats.presentCount, stats.totalHours],
+    [
+      loading,
+      stats.absentCount,
+      stats.avgHours,
+      stats.presentCount,
+      stats.totalHours,
+    ],
   );
 
   return (
@@ -180,10 +208,16 @@ export default function TimeAttendanceSimple() {
               <div key={c.label} className={KPI_CARD_BASE}>
                 <div className="flex items-start justify-between w-full">
                   <div>
-                    <div className="text-xs font-semibold text-muted tracking-wide uppercase">{c.label}</div>
-                    <div className="text-2xl font-bold text-main mt-1.5 tabular-nums">{c.value}</div>
+                    <div className="text-xs font-semibold text-muted tracking-wide uppercase">
+                      {c.label}
+                    </div>
+                    <div className="text-2xl font-bold text-main mt-1.5 tabular-nums">
+                      {c.value}
+                    </div>
                   </div>
-                  <div className={`h-10 w-10 rounded-md flex items-center justify-center ${c.color}`}>
+                  <div
+                    className={`h-10 w-10 rounded-md flex items-center justify-center ${c.color}`}
+                  >
                     <Icon className="w-5 h-5" />
                   </div>
                 </div>
@@ -196,14 +230,20 @@ export default function TimeAttendanceSimple() {
           <div className="px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="flex flex-col sm:flex-row sm:items-end gap-3 min-w-0">
               <div className="min-w-0">
-                <div className="text-sm font-bold text-main">Attendance Records</div>
+                <div className="text-sm font-bold text-main">
+                  Attendance Records
+                </div>
                 <div className="text-xs text-muted mt-1">
-                  {loading ? "Loading..." : `${totalItems.toLocaleString("en-ZM")} total`}
+                  {loading
+                    ? "Loading..."
+                    : `${totalItems.toLocaleString("en-ZM")} total`}
                 </div>
               </div>
 
               <div className="min-w-0">
-                <div className="text-[11px] font-semibold text-muted uppercase mb-1">Employee</div>
+                <div className="text-[11px] font-semibold text-muted uppercase mb-1">
+                  Employee
+                </div>
                 <input
                   value={employee}
                   onChange={(e) => {
@@ -231,21 +271,44 @@ export default function TimeAttendanceSimple() {
             <table className="w-full text-left text-sm">
               <thead className="bg-muted/5">
                 <tr>
-                  <th className="px-6 py-3 text-xs font-semibold text-muted whitespace-nowrap">Employee ID</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-muted whitespace-nowrap">Employee Name</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-muted whitespace-nowrap">Date</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-muted whitespace-nowrap">Status</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-muted text-right whitespace-nowrap">Working Hours</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-muted text-right whitespace-nowrap">Action</th>
+                  <th className="px-6 py-3 text-xs font-semibold text-muted whitespace-nowrap">
+                    Employee ID
+                  </th>
+                  <th className="px-6 py-3 text-xs font-semibold text-muted whitespace-nowrap">
+                    Employee Name
+                  </th>
+                  <th className="px-6 py-3 text-xs font-semibold text-muted whitespace-nowrap">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-xs font-semibold text-muted whitespace-nowrap">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-xs font-semibold text-muted text-right whitespace-nowrap">
+                    Working Hours
+                  </th>
+                  <th className="px-6 py-3 text-xs font-semibold text-muted text-right whitespace-nowrap">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {records.map((r, idx) => (
-                  <tr key={r.name || String(idx)} className={idx % 2 === 1 ? "bg-muted/5" : ""}>
-                    <td className="px-6 py-3 text-sm text-main whitespace-nowrap">{r.employee}</td>
-                    <td className="px-6 py-3 text-sm text-main break-words">{r.employee_name || "—"}</td>
-                    <td className="px-6 py-3 text-sm text-muted whitespace-nowrap">{r.attendance_date}</td>
-                    <td className="px-6 py-3 text-sm text-muted whitespace-nowrap">{r.status}</td>
+                  <tr
+                    key={r.name || String(idx)}
+                    className={idx % 2 === 1 ? "bg-muted/5" : ""}
+                  >
+                    <td className="px-6 py-3 text-sm text-main whitespace-nowrap">
+                      {r.employee}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-main break-words">
+                      {r.employee_name || "—"}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-muted whitespace-nowrap">
+                      {r.attendance_date}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-muted whitespace-nowrap">
+                      {r.status}
+                    </td>
                     <td className="px-6 py-3 text-sm font-semibold text-main tabular-nums text-right whitespace-nowrap">
                       {fmt(Number(r.working_hours ?? 0))}
                     </td>
@@ -267,7 +330,9 @@ export default function TimeAttendanceSimple() {
                             disabled={clockLoading !== null}
                             className="h-9 px-3 text-sm font-medium bg-primary text-white rounded-xl disabled:opacity-50"
                           >
-                            {clockLoading === "OUT" ? "Clocking Out..." : "Clock Out"}
+                            {clockLoading === "OUT"
+                              ? "Clocking Out..."
+                              : "Clock Out"}
                           </button>
                         ) : null}
                       </div>
@@ -277,7 +342,10 @@ export default function TimeAttendanceSimple() {
 
                 {!loading && records.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-sm text-muted">
+                    <td
+                      colSpan={6}
+                      className="px-6 py-10 text-center text-sm text-muted"
+                    >
                       No attendance records found
                     </td>
                   </tr>
@@ -327,21 +395,25 @@ export default function TimeAttendanceSimple() {
 
               <div className="p-6 space-y-4">
                 <div>
-                  <div className="text-[11px] font-semibold text-muted uppercase mb-1">Employee</div>
+                  <div className="text-[11px] font-semibold text-muted uppercase mb-1">
+                    Employee
+                  </div>
                   <select
                     value={clockEmployee}
                     onChange={(e) => setClockEmployee(e.target.value)}
                     className="h-10 w-full px-3 bg-card border border-border/30 rounded-xl text-sm text-main shadow-sm focus:outline-none"
                   >
-                    <option value="">{employeesLoading ? "Loading..." : "Select employee"}</option>
+                    <option value="">
+                      {employeesLoading ? "Loading..." : "Select employee"}
+                    </option>
                     {employees.map((e) => (
                       <option key={e.employeeId} value={e.employeeId}>
-                        {e.employeeId}{e.name ? ` — ${e.name}` : ""}
+                        {e.employeeId}
+                        {e.name ? ` — ${e.name}` : ""}
                       </option>
                     ))}
                   </select>
                 </div>
-
               </div>
 
               <div className="px-6 py-4 bg-muted/5 flex justify-end gap-2">
@@ -369,7 +441,9 @@ export default function TimeAttendanceSimple() {
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
               <div className="px-6 py-4 bg-app flex items-center justify-between">
-                <div className="text-sm font-bold text-main">Attendance Details</div>
+                <div className="text-sm font-bold text-main">
+                  Attendance Details
+                </div>
                 <button
                   type="button"
                   onClick={() => setViewRecord(null)}
@@ -381,32 +455,60 @@ export default function TimeAttendanceSimple() {
 
               <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <div className="text-xs font-semibold text-muted uppercase">ID</div>
-                  <div className="font-semibold text-main mt-1 break-words">{viewRecord.name}</div>
+                  <div className="text-xs font-semibold text-muted uppercase">
+                    ID
+                  </div>
+                  <div className="font-semibold text-main mt-1 break-words">
+                    {viewRecord.name}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-muted uppercase">Employee</div>
-                  <div className="font-semibold text-main mt-1 break-words">{viewRecord.employee}</div>
+                  <div className="text-xs font-semibold text-muted uppercase">
+                    Employee
+                  </div>
+                  <div className="font-semibold text-main mt-1 break-words">
+                    {viewRecord.employee}
+                  </div>
                 </div>
                 <div className="sm:col-span-2">
-                  <div className="text-xs font-semibold text-muted uppercase">Employee Name</div>
-                  <div className="font-semibold text-main mt-1 break-words">{viewRecord.employee_name || "—"}</div>
+                  <div className="text-xs font-semibold text-muted uppercase">
+                    Employee Name
+                  </div>
+                  <div className="font-semibold text-main mt-1 break-words">
+                    {viewRecord.employee_name || "—"}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-muted uppercase">Date</div>
-                  <div className="font-semibold text-main mt-1">{viewRecord.attendance_date}</div>
+                  <div className="text-xs font-semibold text-muted uppercase">
+                    Date
+                  </div>
+                  <div className="font-semibold text-main mt-1">
+                    {viewRecord.attendance_date}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-muted uppercase">Status</div>
-                  <div className="font-semibold text-main mt-1">{viewRecord.status}</div>
+                  <div className="text-xs font-semibold text-muted uppercase">
+                    Status
+                  </div>
+                  <div className="font-semibold text-main mt-1">
+                    {viewRecord.status}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-muted uppercase">Working Hours</div>
-                  <div className="font-semibold text-main mt-1">{fmt(Number(viewRecord.working_hours ?? 0))}</div>
+                  <div className="text-xs font-semibold text-muted uppercase">
+                    Working Hours
+                  </div>
+                  <div className="font-semibold text-main mt-1">
+                    {fmt(Number(viewRecord.working_hours ?? 0))}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-muted uppercase">Is Working</div>
-                  <div className="font-semibold text-main mt-1">{viewRecord.isWorking ? "Yes" : "No"}</div>
+                  <div className="text-xs font-semibold text-muted uppercase">
+                    Is Working
+                  </div>
+                  <div className="font-semibold text-main mt-1">
+                    {viewRecord.isWorking ? "Yes" : "No"}
+                  </div>
                 </div>
               </div>
 
@@ -422,7 +524,6 @@ export default function TimeAttendanceSimple() {
             </div>
           </div>
         ) : null}
-
       </div>
     </div>
   );

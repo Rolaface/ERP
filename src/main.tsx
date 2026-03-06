@@ -7,7 +7,6 @@ import App from "./App.tsx";
 import { initTheme } from "../src/themes.ts";
 initTheme();
 
-
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>

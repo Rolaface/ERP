@@ -28,7 +28,7 @@ export interface ProformaInvoiceSummary {
   exchangeRate: string;
   dueDate: string | null;
   totalAmount: number;
-  createdAt: Date;    
+  createdAt: Date;
 }
 
 export interface Address {
@@ -45,7 +45,7 @@ export interface InvoiceItem {
   quantity: number;
   description: string;
   discount: number;
-  vatRate: string|number;
+  vatRate: string | number;
   price: number;
   vatCode: string;
 }

@@ -275,7 +275,6 @@ export const deleteSalaryStructure = (id: string): void => {
   salaryStructures = salaryStructures.filter((s) => s.id !== id);
 };
 
-
 export const calculateSalaryBreakdown = (
   structureId: string,
   grossSalary: number,
@@ -321,7 +320,6 @@ export const getLevelsFromHrSettings = () => {
   const active = getActiveSalaryStructures();
   return Array.from(new Set(active.map((s) => s.level)));
 };
-
 
 export const getDefaultGrossSalary = (structureId: string): number => {
   const structure = getSalaryStructureById(structureId);

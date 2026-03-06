@@ -28,7 +28,6 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
   onChange,
   errors = {},
 }) => {
-
   return (
     <section className="flex-1 overflow-y-auto p-4 space-y-6 bg-app">
       <div className="space-y-6">
