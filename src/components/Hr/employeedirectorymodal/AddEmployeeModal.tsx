@@ -27,6 +27,7 @@ import {
 
 import { useCompanySelection } from "../../../hooks/useCompanySelection";
 import { getEmployeeFeatures } from "../../../config/employeeFeatures";
+import { ERP_BASE } from "../../../config/api";
 
 const DEFAULT_FORM_DATA = {
   // Personal
@@ -215,6 +216,14 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       "dateOfBirth",
       "engagementDate",
       "contractEndDate",
+      "weeklySchedulePreset",
+      "weeklyScheduleMonday",
+      "weeklyScheduleTuesday",
+      "weeklyScheduleWednesday",
+      "weeklyScheduleThursday",
+      "weeklyScheduleFriday",
+      "weeklyScheduleSaturday",
+      "weeklyScheduleSunday",
     ]);
 
     const normalized =
@@ -280,12 +289,100 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
 
   useEffect(() => {
     return () => {
-      if (profilePreviewUrl) URL.revokeObjectURL(profilePreviewUrl);
+      if (profilePreviewUrl && profilePreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(profilePreviewUrl);
+      }
     };
   }, [profilePreviewUrl]);
 
   useEffect(() => {
     if (!editData) return;
+
+    const pick = (obj: any, keys: string[]) => {
+      for (const k of keys) {
+        const v = obj?.[k];
+        if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+      }
+      return "";
+    };
+
+    const personal =
+      (editData as any).personalInfo ??
+      (editData as any).personal_info ??
+      (editData as any).personal ??
+      editData;
+    const contact =
+      (editData as any).contactInfo ??
+      (editData as any).contact_info ??
+      (editData as any).contact ??
+      editData;
+    const address = contact?.address ?? contact?.Address ?? contact?.address_info;
+    const emergency =
+      contact?.emergencyContact ??
+      contact?.EmergencyContact ??
+      contact?.emergency_contact;
+
+    const employment =
+      (editData as any).employmentInfo ??
+      (editData as any).employment_info ??
+      (editData as any).employment ??
+      editData;
+    const weeklySchedule =
+      employment?.weeklySchedule ??
+      employment?.weekly_schedule ??
+      employment?.WeeklySchedule;
+
+    const identity =
+      (editData as any).identityInfo ??
+      (editData as any).identity_info ??
+      (editData as any).identity ??
+      editData;
+
+    const payroll =
+      (editData as any).payrollInfo ??
+      (editData as any).payroll_info ??
+      (editData as any).payroll ??
+      editData;
+    const salaryBreakdown =
+      payroll?.salaryBreakdown ??
+      payroll?.salary_breakdown ??
+      payroll?.SalaryBreakdown ??
+      payroll;
+    const deductions =
+      payroll?.statutoryDeductions ??
+      payroll?.statutory_deductions ??
+      payroll?.StatutoryDeductions ??
+      payroll;
+    const bank =
+      payroll?.bankAccount ?? payroll?.bank_account ?? payroll?.BankAccount ?? payroll;
+
+    const leave =
+      (editData as any).leaveInfo ??
+      (editData as any).leave_info ??
+      (editData as any).leave ??
+      editData;
+
+    const getFileUrl = (file?: string | null) => {
+      if (!file) return "";
+      const f = String(file).trim();
+      if (!f) return "";
+      if (/^https?:\/\//i.test(f)) return f;
+      return `${ERP_BASE}${f}`;
+    };
+
+    const docs = Array.isArray((editData as any).documents)
+      ? (editData as any).documents
+      : [];
+    const profileDoc = docs.find((d: any) => {
+      const desc = String(d?.description ?? d?.name ?? "")
+        .trim()
+        .toLowerCase();
+      return desc === "profile photo";
+    });
+    const existingPhotoUrl = getFileUrl(profileDoc?.file) || "";
+    if (!profileFile && existingPhotoUrl) {
+      setProfilePreviewUrl(existingPhotoUrl);
+    }
 
     setStep("form");
     setIsPreFilled(true);
@@ -294,135 +391,142 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       ...prev,
 
       // ===== PERSONAL INFO =====
-      firstName: String(editData.personalInfo?.FirstName || "").toUpperCase(),
-      otherNames: String(editData.personalInfo?.OtherNames || "").toUpperCase(),
-      lastName: String(editData.personalInfo?.LastName || "").toUpperCase(),
-      dateOfBirth: editData.personalInfo?.Dob || "",
-      gender: editData.personalInfo?.Gender || "",
-      nationality: editData.personalInfo?.Nationality || "Zambian",
-      maritalStatus: editData.personalInfo?.maritalStatus || "",
+      firstName: String(
+        pick(personal, ["FirstName", "firstName", "first_name", "first_name_en"]) ||
+          "",
+      ).toUpperCase(),
+      otherNames: String(
+        pick(personal, ["OtherNames", "otherNames", "other_names", "middleName"]) ||
+          "",
+      ).toUpperCase(),
+      lastName: String(
+        pick(personal, ["LastName", "lastName", "last_name", "surname"]) || "",
+      ).toUpperCase(),
+      dateOfBirth: String(pick(personal, ["Dob", "dateOfBirth", "date_of_birth"]) || ""),
+      gender: String(pick(personal, ["Gender", "gender"]) || ""),
+      nationality: String(pick(personal, ["Nationality", "nationality"]) || "Zambian"),
+      maritalStatus: String(
+        pick(personal, ["maritalStatus", "MaritalStatus", "marital_status"]) || "",
+      ),
 
       // ===== CONTACT INFO =====
-      email: editData.contactInfo?.Email || "",
-      CompanyEmail: editData.contactInfo?.workEmail || "",
-      phoneNumber: editData.contactInfo?.phoneNumber || "",
-      alternatePhone: editData.contactInfo?.alternatePhone || "",
+      email: String(pick(contact, ["Email", "email"]) || ""),
+      CompanyEmail: String(pick(contact, ["workEmail", "CompanyEmail", "companyEmail", "work_email"]) || ""),
+      phoneNumber: String(pick(contact, ["phoneNumber", "PhoneNumber", "phone_number"]) || ""),
+      alternatePhone: String(pick(contact, ["alternatePhone", "AlternatePhone", "alternate_phone"]) || ""),
 
       // Address
-      street: String(editData.contactInfo?.address?.street || "").toUpperCase(),
-      city: String(editData.contactInfo?.address?.city || "").toUpperCase(),
-      province: editData.contactInfo?.address?.province || "",
+      street: String(pick(address, ["street", "Street", "addressStreet"]) || "").toUpperCase(),
+      city: String(pick(address, ["city", "City", "addressCity"]) || "").toUpperCase(),
+      province: String(pick(address, ["province", "Province", "addressProvince"]) || ""),
       postalCode: String(
-        editData.contactInfo?.address?.postalCode || "",
+        pick(address, ["postalCode", "PostalCode", "addressPostalCode"]) || "",
       ).toUpperCase(),
-      country: editData.contactInfo?.address?.country || "Zambia",
+      country: String(pick(address, ["country", "Country", "addressCountry"]) || "Zambia"),
 
       // Emergency Contact
-      emergencyContactName: String(
-        editData.contactInfo?.emergencyContact?.name || "",
-      ).toUpperCase(),
-      emergencyContactPhone:
-        editData.contactInfo?.emergencyContact?.phone || "",
-      emergencyContactRelationship:
-        editData.contactInfo?.emergencyContact?.relationship || "",
+      emergencyContactName: String(pick(emergency, ["name", "Name"]) || "").toUpperCase(),
+      emergencyContactPhone: String(pick(emergency, ["phone", "Phone"]) || ""),
+      emergencyContactRelationship: String(
+        pick(emergency, ["relationship", "Relationship"]) || "",
+      ),
 
       // ===== EMPLOYMENT INFO =====
-      employeeId: editData.employmentInfo?.employeeId || "",
-      department: editData.employmentInfo?.Department || "",
-      jobTitle: String(editData.employmentInfo?.JobTitle || "").toUpperCase(),
-      employeeType: editData.employmentInfo?.EmployeeType || "Permanent",
-      employmentStatus: editData.status || "Active",
-      engagementDate: editData.employmentInfo?.joiningDate || "",
-      probationPeriod: editData.employmentInfo?.probationPeriod || "",
-      contractEndDate: editData.employmentInfo?.contractEndDate || "",
-      workLocation: String(editData.employmentInfo?.workLocation || "").toUpperCase(),
-      workAddress: String(editData.employmentInfo?.workAddress || "").toUpperCase(),
-      shift: editData.employmentInfo?.shift || "Day",
-      reportingManager: editData.employmentInfo?.reportingManager || "",
-      hrManager: editData.employmentInfo?.hrManager || "",
+      employeeId: String(pick(employment, ["employeeId", "employee_id", "EmployeeId"]) || ""),
+      department: String(pick(employment, ["Department", "department"]) || ""),
+      jobTitle: String(pick(employment, ["JobTitle", "jobTitle", "job_title"]) || "").toUpperCase(),
+      employeeType: String(pick(employment, ["EmployeeType", "employeeType", "employee_type"]) || "Permanent"),
+      employmentStatus: String(pick(editData as any, ["status", "Status"]) || "Active"),
+      engagementDate: String(pick(employment, ["joiningDate", "EngagementDate", "engagementDate", "joining_date"]) || ""),
+      probationPeriod: String(pick(employment, ["probationPeriod", "probation_period"]) || ""),
+      contractEndDate: String(pick(employment, ["contractEndDate", "contract_end_date"]) || ""),
+      workLocation: String(pick(employment, ["workLocation", "work_location"]) || "").toUpperCase(),
+      workAddress: String(pick(employment, ["workAddress", "work_address"]) || "").toUpperCase(),
+      shift: String(pick(employment, ["shift", "Shift"]) || "Day"),
+      reportingManager: String(pick(employment, ["reportingManager", "ReportingManager", "reporting_manager"]) || ""),
+      hrManager: String(pick(employment, ["hrManager", "HrManager", "hr_manager"]) || ""),
 
       // ===== IDs =====
-      nrcId: editData.identityInfo?.nrc || "",
-      socialSecurityNapsa: editData.identityInfo?.napsa || "",
-      nhimaHealthInsurance: editData.identityInfo?.nhima || "",
-      tpinId: editData.identityInfo?.tpin || "",
+      nrcId: String(pick(identity, ["nrc", "NrcId", "nrcId", "nrc_id"]) || ""),
+      socialSecurityNapsa: String(
+        pick(identity, ["napsa", "SocialSecurityNapsa", "socialSecurityNapsa", "ssn", "social_security_napsa"]) ||
+          "",
+      ),
+      nhimaHealthInsurance: String(
+        pick(identity, ["nhima", "NhimaHealthInsurance", "nhimaHealthInsurance", "nhima_health_insurance"]) ||
+          "",
+      ),
+      tpinId: String(pick(identity, ["tpin", "TpinId", "tpinId", "tpin_id"]) || ""),
 
       // ===== SALARY COMPONENTS =====
-      basicSalary: editData.payrollInfo?.salaryBreakdown?.BasicSalary || editData.payrollInfo?.salaryBreakdown?.basic || editData.basic || "",
+      basicSalary:
+        pick(salaryBreakdown, ["BasicSalary", "basic", "basicSalary", "BasicAmount", "BasicAmount" as any]) ||
+        pick(payroll, ["basic", "BasicAmount", "BasicSalary", "basicSalary"]) ||
+        pick(editData as any, ["basic", "BasicAmount", "basicSalary"]) ||
+        "",
       housingAllowance:
-        editData.payrollInfo?.salaryBreakdown?.HousingAllowance || "",
-      mealAllowance: editData.payrollInfo?.salaryBreakdown?.MealAllowance || "",
+        String(pick(salaryBreakdown, ["HousingAllowance", "housingAllowance", "housing_allowance"]) || ""),
+      mealAllowance: String(pick(salaryBreakdown, ["MealAllowance", "mealAllowance", "meal_allowance"]) || ""),
       transportAllowance:
-        editData.payrollInfo?.salaryBreakdown?.TransportAllowance || "",
+        String(pick(salaryBreakdown, ["TransportAllowance", "transportAllowance", "transport_allowance"]) || ""),
       otherAllowances:
-        editData.payrollInfo?.salaryBreakdown?.otherAllowances || "",
-      grossSalary: editData.payrollInfo?.grossSalary || "",
+        String(pick(salaryBreakdown, ["otherAllowances", "OtherAllowances", "other_allowances"]) || ""),
+      grossSalary: String(pick(payroll, ["grossSalary", "GrossSalary", "gross_salary"]) || ""),
 
       employeeNapsa:
-        editData.payrollInfo?.statutoryDeductions?.Employeenapsa ||
-        editData.payrollInfo?.statutoryDeductions?.EmployeeNapsa ||
-        "",
+        String(pick(deductions, ["Employeenapsa", "EmployeeNapsa", "employeeNapsa", "employee_napsa"]) || ""),
       employeerNapsa:
-        editData.payrollInfo?.statutoryDeductions?.Employeernapsa ||
-        editData.payrollInfo?.statutoryDeductions?.EmployeerNapsa ||
-        "",
+        String(pick(deductions, ["Employeernapsa", "EmployeerNapsa", "employeerNapsa", "employer_napsa"]) || ""),
       employeeNhima:
-        editData.payrollInfo?.statutoryDeductions?.Employeenhima ||
-        editData.payrollInfo?.statutoryDeductions?.EmployeeNhima ||
-        "",
+        String(pick(deductions, ["Employeenhima", "EmployeeNhima", "employeeNhima", "employee_nhima"]) || ""),
       employeerNhima:
-        editData.payrollInfo?.statutoryDeductions?.Employeernhima ||
-        editData.payrollInfo?.statutoryDeductions?.EmployeerNhima ||
-        "",
+        String(pick(deductions, ["Employeernhima", "EmployeerNhima", "employeerNhima", "employer_nhima"]) || ""),
       payAsYouEarn:
-        editData.payrollInfo?.statutoryDeductions?.Payasyouearn ||
-        editData.payrollInfo?.statutoryDeductions?.PayAsYouEarn ||
-        editData.payrollInfo?.statutoryDeductions?.paye ||
-        "",
+        String(pick(deductions, ["Payasyouearn", "PayAsYouEarn", "paye", "payAsYouEarn"]) || ""),
 
       // ===== PAYROLL CONFIG =====
-      currency: editData.payrollInfo?.currency || "ZMW",
-      paymentFrequency: editData.payrollInfo?.paymentFrequency || "Monthly",
-      paymentMethod: editData.payrollInfo?.paymentMethod || "Bank Transfer",
+      currency: String(pick(payroll, ["currency", "Currency"]) || "ZMW"),
+      paymentFrequency: String(pick(payroll, ["paymentFrequency", "PaymentFrequency", "payment_frequency"]) || "Monthly"),
+      paymentMethod: String(pick(payroll, ["paymentMethod", "PaymentMethod", "payment_method"]) || "Bank Transfer"),
 
       // ===== BANK DETAILS =====
-      accountNumber: editData.payrollInfo?.bankAccount?.AccountNumber || "",
+      accountNumber: String(pick(bank, ["AccountNumber", "accountNumber", "account_number"]) || ""),
       accountName: String(
-        editData.payrollInfo?.bankAccount?.AccountName || "",
+        pick(bank, ["AccountName", "accountName", "account_name"]) || "",
       ).toUpperCase(),
       bankName: String(
-        editData.payrollInfo?.bankAccount?.BankName || "",
+        pick(bank, ["BankName", "bankName", "bank_name"]) || "",
       ).toUpperCase(),
       branchCode: String(
-        editData.payrollInfo?.bankAccount?.branchCode || "",
+        pick(bank, ["branchCode", "BranchCode", "branch_code"]) || "",
       ).toUpperCase(),
-      accountType: editData.payrollInfo?.bankAccount?.AccountType || "Savings",
+      accountType: String(pick(bank, ["AccountType", "accountType", "account_type"]) || "Savings"),
 
       // ===== LEAVE SETUP =====
       openingLeaveBalance:
-        editData.leaveInfo?.openingLeaveBalance ||
+        pick(leave, ["openingLeaveBalance", "OpeningLeaveBalance", "opening_leave_balance"]) ||
         "Incremental two (2) days per month of service",
       initialLeaveRateMonthly:
-        editData.leaveInfo?.initialLeaveRateMonthly?.toString() || "2",
-      ceilingYear: editData.leaveInfo?.ceilingYear?.toString() || "2025",
-      ceilingAmount: editData.leaveInfo?.ceilingAmount?.toString() || "",
+        String(pick(leave, ["initialLeaveRateMonthly", "InitialLeaveRateMonthly", "initial_leave_rate_monthly"]) || "2"),
+      ceilingYear: String(pick(leave, ["ceilingYear", "CeilingYear", "ceiling_year"]) || "2025"),
+      ceilingAmount: String(pick(leave, ["ceilingAmount", "CeilingAmount", "ceiling_amount"]) || ""),
 
       // ===== WORK SCHEDULE =====
 
       weeklyScheduleMonday:
-        editData.employmentInfo?.weeklySchedule?.monday || "",
+        String(pick(weeklySchedule, ["monday", "Monday"]) || ""),
       weeklyScheduleTuesday:
-        editData.employmentInfo?.weeklySchedule?.tuesday || "",
+        String(pick(weeklySchedule, ["tuesday", "Tuesday"]) || ""),
       weeklyScheduleWednesday:
-        editData.employmentInfo?.weeklySchedule?.wednesday || "",
+        String(pick(weeklySchedule, ["wednesday", "Wednesday"]) || ""),
       weeklyScheduleThursday:
-        editData.employmentInfo?.weeklySchedule?.thursday || "",
+        String(pick(weeklySchedule, ["thursday", "Thursday"]) || ""),
       weeklyScheduleFriday:
-        editData.employmentInfo?.weeklySchedule?.friday || "",
+        String(pick(weeklySchedule, ["friday", "Friday"]) || ""),
       weeklyScheduleSaturday:
-        editData.employmentInfo?.weeklySchedule?.saturday || "",
+        String(pick(weeklySchedule, ["saturday", "Saturday"]) || ""),
       weeklyScheduleSunday:
-        editData.employmentInfo?.weeklySchedule?.sunday || "",
+        String(pick(weeklySchedule, ["sunday", "Sunday"]) || ""),
 
       // ===== NOTES =====
       notes: String(editData.notes || "").toUpperCase(),
@@ -667,12 +771,12 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       verifiedFromSource: !!verifiedData,
     };
 
-    if (!editData) {
-      payload.NrcId = formData.nrcId;
+    if (String(formData.nrcId ?? "").trim()) payload.NrcId = formData.nrcId;
+    if (String(formData.socialSecurityNapsa ?? "").trim())
       payload.SocialSecurityNapsa = formData.socialSecurityNapsa;
-      payload.TpinId = formData.tpinId;
+    if (String(formData.tpinId ?? "").trim()) payload.TpinId = formData.tpinId;
+    if (String(formData.nhimaHealthInsurance ?? "").trim())
       payload.NhimaHealthInsurance = formData.nhimaHealthInsurance;
-    }
 
     return payload;
   };
@@ -933,8 +1037,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               className={`px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition flex-shrink-0
         ${
           index === currentTabIndex
-            ? "text-primary border-b-2 border-primary"
-            : "text-gray-500 hover:text-primary"
+            ? "text-primary border-b-2 border-[var(--primary)]"
+            : "text-muted hover:text-[var(--primary)]"
         }`}
             >
               {tab}
@@ -1000,7 +1104,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               onChange={(e) => handleInputChange("notes", e.target.value)}
               placeholder="Enter notes"
               rows={3}
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(204,0,0,0.2)] focus:border-[var(--primary)]"
             />
           </div>
         </div>
@@ -1035,7 +1139,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               <button
                 onClick={handleSave}
                 disabled={loading}
-                className="px-6 py-2 text-sm bg-success text-white rounded-lg  disabled:opacity-50"
+                className="px-6 py-2 text-sm bg-primary text-white rounded-lg disabled:opacity-50"
               >
                 {loading ? "Saving..." : "Save Employee"}
               </button>

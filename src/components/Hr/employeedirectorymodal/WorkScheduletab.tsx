@@ -3,7 +3,6 @@ import {
   Clock,
   Calendar,
   CalendarDays,
-  RotateCw,
   BarChart3,
 } from "lucide-react";
 
@@ -36,25 +35,55 @@ export const WorkScheduleTab: React.FC<WorkScheduleTabProps> = ({
   formData,
   handleInputChange,
 }) => {
-  const handleQuickFill = (template: string) => {
+  const DEFAULT_SATURDAY = "Half Day";
+  const DEFAULT_SUNDAY = "Off";
+
+  const applyPreset = (preset: string) => {
+    if (!preset) return;
+
+    const monToFri = DAYS.slice(0, 5);
     const schedules: Record<string, string> = {};
 
-    if (template === "standard") {
-      DAYS.slice(0, 5).forEach((day) => {
+    if (preset === "standard") {
+      monToFri.forEach((day) => {
         schedules[day.field] = "08:00-17:00";
       });
-      schedules["weeklyScheduleSaturday"] = "Off";
-      schedules["weeklyScheduleSunday"] = "Off";
-    } else if (template === "shift") {
-      DAYS.forEach((day) => {
+
+      // Standard: weekend off by default
+      schedules.weeklyScheduleSaturday = "Off";
+      schedules.weeklyScheduleSunday = "Off";
+    }
+
+    if (preset === "shift") {
+      monToFri.forEach((day) => {
         schedules[day.field] = "09:00-18:00";
       });
+    }
+
+    // For non-standard presets, set weekend defaults only if blank so we don't overwrite edits.
+    if (preset !== "standard") {
+      if (!String(formData.weeklyScheduleSaturday ?? "").trim()) {
+        schedules.weeklyScheduleSaturday = DEFAULT_SATURDAY;
+      }
+      if (!String(formData.weeklyScheduleSunday ?? "").trim()) {
+        schedules.weeklyScheduleSunday = DEFAULT_SUNDAY;
+      }
     }
 
     Object.entries(schedules).forEach(([field, value]) => {
       handleInputChange(field, value);
     });
   };
+
+  React.useEffect(() => {
+    if (!String(formData.weeklyScheduleSaturday ?? "").trim()) {
+      handleInputChange("weeklyScheduleSaturday", DEFAULT_SATURDAY);
+    }
+    if (!String(formData.weeklyScheduleSunday ?? "").trim()) {
+      handleInputChange("weeklyScheduleSunday", DEFAULT_SUNDAY);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
@@ -66,25 +95,25 @@ export const WorkScheduleTab: React.FC<WorkScheduleTabProps> = ({
           <Clock className="w-4 h-4 text-muted" />
         </div>
 
-        {/* Quick Fill Templates */}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleQuickFill("standard")}
-            className="px-3 py-1.5 text-xs bg-primary/10 text-primary rounded border border-primary/30 hover:bg-primary/20 transition flex items-center gap-1.5"
+        {/* Preset Select */}
+        <div className="grid grid-cols-3 gap-3 items-center">
+          <div className="text-sm font-medium text-main flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-muted" />
+            Preset
+          </div>
+          <select
+            value={String(formData.weeklySchedulePreset ?? "")}
+            onChange={(e) => {
+              const preset = e.target.value;
+              handleInputChange("weeklySchedulePreset", preset);
+              applyPreset(preset);
+            }}
+            className="col-span-2 px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(204,0,0,0.2)] focus:border-[var(--primary)]"
           >
-            <CalendarDays className="w-3.5 h-3.5" />
-            <span>Standard (Mon-Fri: 8am-5pm)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleQuickFill("shift")}
-            className="px-3 py-1.5 text-xs bg-app text-main rounded border border-theme hover:bg-primary/10 transition flex items-center gap-1.5"
-          >
-            <RotateCw className="w-3.5 h-3.5 text-primary" />
-            <span>Shift Work (9am-6pm)</span>
-          </button>
+            <option value="">Select preset</option>
+            <option value="standard">Standard (Mon-Fri: 08:00-17:00)</option>
+            <option value="shift">Shift Work (Mon-Fri: 09:00-18:00)</option>
+          </select>
         </div>
 
         {/* Day Schedule Inputs */}
@@ -98,7 +127,7 @@ export const WorkScheduleTab: React.FC<WorkScheduleTabProps> = ({
               <select
                 value={formData[day.field] || ""}
                 onChange={(e) => handleInputChange(day.field, e.target.value)}
-                className="col-span-2 px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="col-span-2 px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(204,0,0,0.2)] focus:border-[var(--primary)]"
               >
                 <option value="">Select schedule</option>
                 {TIME_SLOTS.map((slot) => (
@@ -120,7 +149,7 @@ export const WorkScheduleTab: React.FC<WorkScheduleTabProps> = ({
                       String(e.target.value ?? "").toUpperCase(),
                     )
                   }
-                  className="col-span-2 px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="col-span-2 px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(204,0,0,0.2)] focus:border-[var(--primary)]"
                 />
               )}
             </div>

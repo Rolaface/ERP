@@ -20,7 +20,6 @@ import Table from "../../../components/ui/Table/Table";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import ActionButton, {
   ActionGroup,
-  ActionMenu,
 } from "../../../components/ui/Table/ActionButton";
 
 import type { Column } from "../../../components/ui/Table/type";
@@ -200,10 +199,16 @@ const handleEdit = async (id: string, e: React.MouseEvent) => {
             onClick={() => handleViewEmployee(e.id)}
             iconOnly
           />
-
-          <ActionMenu
-            onEdit={(ev) => handleEdit(e.id, ev as any)}
-            onDelete={(ev) => handleDelete(e.id, ev as any)}
+          <ActionButton
+            type="edit"
+            onClick={(ev) => handleEdit(e.id, ev as any)}
+            iconOnly
+          />
+          <ActionButton
+            type="delete"
+            variant="danger"
+            onClick={(ev) => handleDelete(e.id, ev as any)}
+            iconOnly
           />
         </ActionGroup>
       ),
