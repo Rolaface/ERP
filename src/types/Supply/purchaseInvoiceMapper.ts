@@ -4,9 +4,7 @@ import type { AddressBlock } from "./purchaseInvoice";
 
 export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
   console.log("MAPPING PI TO BACKEND - Form items:", form.items);
-  
 
-  // Filter and map items - CRITICAL: Filter empty items FIRST
   const validItems = form.items.filter((it) => {
     const hasCode = it.itemCode && it.itemCode.trim() !== "";
     const hasQty = it.quantity && Number(it.quantity) > 0;
@@ -14,7 +12,7 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
     
     console.log(`Item ${it.itemCode}: hasCode=${hasCode}, hasQty=${hasQty}, hasRate=${hasRate}`);
     
-    return hasCode && hasQty && hasRate; // Only include complete items
+    return hasCode && hasQty && hasRate; 
   });
 
 
@@ -136,7 +134,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
       quantity: qty,
       rate: rate,
       uom: item.uom || "",
-      vatCd: item.vatCd || item.VatCd || "A",
+      vatCd: item.vatCd || item.VatCd ,
       vatRate: vatRate,
       requiredBy: item.requiredBy || "",
     };
@@ -246,7 +244,6 @@ else if (api.tax) {
 
     poNumber: api.lpoNumber || "",
     date: api.poDate || "",
-    requiredBy: api.requiredBy || api.deliveryDate || "",
     taxCategory: api.taxCategory || "",
 
     supplier: api.supplierName || "",

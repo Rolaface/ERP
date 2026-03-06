@@ -4,7 +4,6 @@ import type {
   ItemRow,
   PurchaseInvoiceFormData,
 } from "../../../types/Supply/purchaseInvoice";
-import { currencyOptions } from "../../../types/Supply/supplier";
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
@@ -74,40 +73,40 @@ export const DetailsTab = ({
 
           {/* PO Number Logic: Checkbox + Conditional Field */}
           <div className="w-[160px] flex items-end gap-2">
-  <input
-    type="checkbox"
-    className="w-3.5 h-3.5 accent-primary mb-[6px]"
-    checked={usePO}
-    onChange={(e) => onTogglePO(e.target.checked)}
-  />
+            <input
+              type="checkbox"
+              className="w-3.5 h-3.5 accent-primary mb-[6px]"
+              checked={usePO}
+              onChange={(e) => onTogglePO(e.target.checked)}
+            />
 
-  <div className="flex-1">
-    {usePO ? (
-      <ModalSelect
-        label=""
-        name="poNumber"
-        value={form.poNumber}
-        placeholder="Select PO"
-        options={(poList || []).map((po) => ({
-          label: po.poId,
-          value: po.poId,
-        }))}
-        onChange={(e) => {
-          const selected = poList.find((p) => p.poId === e.target.value);
-          if (selected) onPOSelect(selected);
-        }}
-      />
-    ) : (
-      <ModalInput
-        label=""
-        name="poNumber"
-        placeholder="PO No."
-        value={form.poNumber}
-        onChange={onFormChange}
-      />
-    )}
-  </div>
-</div>
+            <div className="flex-1">
+              {usePO ? (
+                <ModalSelect
+                  label=""
+                  name="poNumber"
+                  value={form.poNumber}
+                  placeholder="Select PO"
+                  options={(poList || []).map((po) => ({
+                    label: po.poId,
+                    value: po.poId,
+                  }))}
+                  onChange={(e) => {
+                    const selected = poList.find((p) => p.poId === e.target.value);
+                    if (selected) onPOSelect(selected);
+                  }}
+                />
+              ) : (
+                <ModalInput
+                  label=""
+                  name="poNumber"
+                  placeholder="PO No."
+                  value={form.poNumber}
+                  onChange={onFormChange}
+                />
+              )}
+            </div>
+          </div>
 
           <div className="w-[135px] ml-2">
             <span className="block h-5"></span> {/* Spacer for alignment */}
@@ -208,10 +207,14 @@ export const DetailsTab = ({
                   Packing
                   <span className="ml-1 text-[9px] font-normal text-muted/60">(unit × size)</span>
                 </th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px]">Batch No</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
+  Batch No {items.some((it) => it.requiresBatch) && (
+    <span className="text-danger">*</span>
+  )}
+</th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">Qty</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">Mfg Date</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">Expiry Date</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">Mfg Date</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">Expiry Date</th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">Unit Price</th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Dis (%)</th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Tax</th>
@@ -234,12 +237,12 @@ export const DetailsTab = ({
 
                     {/* ITEM */}
                     <td className="px-2 py-1">
-                       <div className="w-[125px]">
-                      <POItemSelect
-                        value={it.itemName}
-                        selectedId={it.itemCode}
-                        onChange={(item: any) => onItemSelect(item.id, i)}
-                      />
+                      <div className="w-[125px]">
+                        <POItemSelect
+                          value={it.itemName}
+                          selectedId={it.itemCode}
+                          onChange={(item: any) => onItemSelect(item.id, i)}
+                        />
                       </div>
                     </td>
 
@@ -261,7 +264,7 @@ export const DetailsTab = ({
                           name="packingUnit"
                           value={it.packingUnit || ""}
                           onChange={(e) => onItemChange(e, i)}
-                          className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center"
+                          className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
                         />
 
 
@@ -272,7 +275,7 @@ export const DetailsTab = ({
                           name="packingSize"
                           value={it.packingSize || ""}
                           onChange={(e) => onItemChange(e, i)}
-                          className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center"
+                          className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
                         />
                       </div>
                     </td>
@@ -283,7 +286,8 @@ export const DetailsTab = ({
                         name="batchNo"
                         value={it.batchNo || ""}
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-[50px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        required={it.requiresBatch}
+                        className="w-[55px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </td>
 
@@ -300,24 +304,32 @@ export const DetailsTab = ({
 
                     {/* MFG DATE */}
                     <td className="px-2 py-1">
-                      <input
-                        type="date"
-                        name="mfgDate"
-                        value={it.mfgDate || ""}
-                        onChange={(e) => onItemChange(e, i)}
-                        className="w-[90px] py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
+                      <div style={{ width: "103px" }}>
+                        <ModalInput
+                          label=""
+                          type="date"
+                          name="mfgDate"
+                          id={`mfgDate-${i}`}
+                          value={it.mfgDate || ""}
+                          onChange={(e) => onItemChange(e, i)}
+                          className="w-full"
+                        />
+                      </div>
                     </td>
 
                     {/* EXPIRY DATE */}
                     <td className="px-2 py-1">
-                      <input
-                        type="date"
-                        name="expDate"
-                        value={it.expDate || ""}
-                        onChange={(e) => onItemChange(e, i)}
-                        className="w-[90px] py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
+                      <div style={{ width: "103px" }}>
+                        <ModalInput
+                          label=""
+                          type="date"
+                          name="expDate"
+                          id={`expDate-${i}`}
+                          value={it.expDate || ""}
+                          onChange={(e) => onItemChange(e, i)}
+                          className="w-full"
+                        />
+                      </div>
                     </td>
 
                     {/* RATE */}
@@ -338,8 +350,7 @@ export const DetailsTab = ({
                         name="discount"
                         value={it.discount || 0}
                         onChange={(e) => onItemChange(e, i)}
-                        min="0"
-                        className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                       />
                     </td>
 
@@ -349,9 +360,8 @@ export const DetailsTab = ({
                         type="number"
                         name="vatRate"
                         value={it.vatRate}
-                        min="0"
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                       />
                     </td>
 

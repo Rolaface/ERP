@@ -7,7 +7,6 @@ import { useCompanySelection } from "../hooks/useCompanySelection";
 import { getAllItemGroups } from "../api/itemCategoryApi";
 import { getItemFieldConfigs } from "../config/companyConfigResolver";
 import { getTaxConfigs, isTaxAutoPopulated } from "../taxconfig/taxConfigResolver";
-import { API } from "../config/api";
 import { getSuppliers } from "../api/procurement/supplierApi";
 
 
@@ -19,8 +18,8 @@ export const emptyForm: Record<string, any> = {
   itemTypeCode: "",
   originNationCode: "",
   packagingUnitCode: "",
-  pakingunit: "",       // pack quantity — must match buildPayload key
-  packingsize: "",      // pack size     — must match buildPayload key
+  pakingunit: 1,      
+  packingsize: 1,      
   svcCharge: "",
   ins: "",
   sellingPrice: "",
@@ -114,8 +113,6 @@ const buildPayload = (form: Record<string, any>) => ({
     maxStockLevel: form.maxStockLevel,
   },
 
-  // batchInfo is only relevant for physical items (type 1 & 2).
-  // Spread conditionally so the key is absent for service items (type 3).
   ...(Number(form.itemTypeCode) !== 3 && {
     batchInfo: {
       has_batch_no: form.has_batch_no,
@@ -130,9 +127,6 @@ const buildPayload = (form: Record<string, any>) => ({
   }),
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Hook interface
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface UseItemFormProps {
   isOpen: boolean;
@@ -142,9 +136,6 @@ interface UseItemFormProps {
   onClose: () => void;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// useItemForm
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const useItemForm = ({
   isOpen,

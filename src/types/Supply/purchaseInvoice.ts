@@ -16,6 +16,7 @@ export interface ItemRow {
   discount?: number;
   packingUnit?: number;
 packingSize?: number;
+requiresBatch?: boolean; 
   
 }
 

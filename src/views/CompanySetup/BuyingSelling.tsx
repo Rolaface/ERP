@@ -59,9 +59,9 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
     if (!terms) return false;
 
     const original = JSON.stringify({
-  buying: normalizeSection(terms.buying),
-  selling: normalizeSection(terms.selling),
-});
+      buying: normalizeSection(terms.buying),
+      selling: normalizeSection(terms.selling),
+    });
     const current = JSON.stringify(formData);
 
     return original !== current;
@@ -69,11 +69,10 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
   useEffect(() => {
     if (!terms) return;
 
-  setFormData({
-  buying: normalizeSection(terms.buying),
-  selling: normalizeSection(terms.selling),
-});
-  
+    setFormData({
+      buying: normalizeSection(terms.buying),
+      selling: normalizeSection(terms.selling),
+    });
   }, [terms]);
 
   const handleReset = () => {

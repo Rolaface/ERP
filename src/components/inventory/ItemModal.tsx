@@ -371,28 +371,26 @@ const ItemModal: React.FC<{
                           {/* Packing */}
                           <DynamicFieldWrapper className="w-[120px]">
                             <div className="flex flex-col gap-0.5">
-                              <FieldLabel label="Packing Unit" />
+                              <FieldLabel label="Packing Unit" required />
                               <div className="flex items-center gap-1 h-8">
                                 <input
                                   type="number"
                                   name="pakingunit"
                                   value={form.pakingunit || ""}
-                                  onChange={handleForm}
-                                  placeholder="1"
-                                  min={1}
+                                  required
+                                  onChange={handleForm}          
                                   className="w-15 h-8 rounded-md border border-theme bg-card text-main  text-sm px-1
-                                focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                                focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner"
                                 />
                                 <span className="text-muted text-sm font-bold">×</span>
                                 <input
                                   type="number"
                                   name="packingsize"
                                   value={form.packingsize || ""}
+                                  required
                                   onChange={handleForm}
-                                  placeholder="1"
-                                  min={1}
                                   className="w-15 h-8 rounded-md border border-theme bg-card text-main text-sm px-1
-                                  focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                                  focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner"
                                 />
                               </div>
                             </div>
@@ -420,7 +418,7 @@ const ItemModal: React.FC<{
 
 
                           {/* Country of Origin */}
-                         <DynamicFieldWrapper className="w-[180px] shrink-0">
+                          <DynamicFieldWrapper className="w-[180px] shrink-0">
                             <DynamicField
                               config={fieldConfigs.find(f => f.fieldName === "originNationCode")!}
                               value={form.originNationCode}
@@ -654,15 +652,12 @@ const ItemModal: React.FC<{
                     <div className="relative">
                       <input
                         type="number"
-                        step="0.01"
                         name="taxPerct"
                         value={form.taxPerct || ""}
                         onChange={handleForm}
-                        placeholder="12"
-                         min="0"
                         className={[
                           "h-8 w-full rounded-md border border-theme text-sm px-2.5 pr-7",
-                          "focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary",
+                          "focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner",
                           autoPopulateTax
                             ? "bg-app text-muted cursor-not-allowed opacity-60"
                             : "bg-card text-main",
@@ -732,9 +727,9 @@ const ItemModal: React.FC<{
                             value={form[dim] || ""}
                             onChange={handleForm}
                             placeholder={["L", "W", "H"][i]}
-                             min="0"
+                            min="0"
                             className="w-10 h-8 rounded-md border border-theme bg-card text-main text-center text-sm px-1
-                              focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                              focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner"
                           />
                         </React.Fragment>
                       ))}
@@ -743,7 +738,7 @@ const ItemModal: React.FC<{
                         value={form.dimensionUnit || "cm"}
                         onChange={handleForm}
                         className="h-8 w-12 rounded-md border border-theme bg-card text-main text-sm px-1
-                          focus:outline-none focus:ring-1 focus:ring-primary"
+                          focus:outline-none focus:ring-1 focus:ring-primary "
                       >
                         <option value="cm">cm</option>
                         <option value="in">in</option>
@@ -753,19 +748,17 @@ const ItemModal: React.FC<{
 
                   {/* Weight */}
                   <div className="flex flex-col gap-0.5 min-w-[170px]">
-                      <span className="ml-9">
-    <FieldLabel label="Weight" />
-  </span>
+                    <span className="ml-9">
+                      <FieldLabel label="Weight" />
+                    </span>
                     <div className="flex items-center gap-1 h-8 w-full">
                       <input
                         type="number"
                         name="weight"
-                         min="0"
                         value={form.weight || ""}
                         onChange={handleForm}
-                        placeholder="0"
                         className="w-16 ml-9 h-8 rounded-md border border-theme bg-card text-main text-sm px-2.5
-                          focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                          focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner"
                       />
                       <select
                         name="weightUnit"

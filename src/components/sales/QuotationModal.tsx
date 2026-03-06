@@ -345,8 +345,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                     name="packingUnit"
                                     value={it.packingUnit || ""}
                                     onChange={(e) => actions.handleItemChange(i, e)}
-                                    className="w-[40px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
-                                    placeholder="0"
+                                    className="w-[40px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
+
                                   />
 
                                   <span className="text-[10px] text-muted font-semibold">×</span>
@@ -357,8 +357,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                     name="packingSize"
                                     value={it.packingSize || ""}
                                     onChange={(e) => actions.handleItemChange(i, e)}
-                                    className="w-[40px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
-                                    placeholder="0"
+                                    className="w-[40px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
                                   />
 
                                 </div>
@@ -394,9 +393,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
-                                  min="0"
-                                  placeholder="0"
-                                  className="w-[53px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[53px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                 />
                               </td>
                               <td className="px-0.5 py-1">
@@ -407,9 +404,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
-                                  min="0"
-                                  placeholder="0"
-                                  className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                 />
                               </td>
                               <td className="px-0.5 py-1">

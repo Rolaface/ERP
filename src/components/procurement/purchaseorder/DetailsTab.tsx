@@ -163,12 +163,12 @@ export const DetailsTab = ({
                       <td className="px-2 py-1 text-[10px]">{i + 1}</td>
 
                       <td className="px-2 py-1">
-                         <div className="w-[153px]">
-                        <POItemSelect
-                          value={it.itemName}
-                          selectedId={it.itemCode}
-                          onChange={(item: any) => onItemSelect(item.id, i)}
-                        />
+                        <div className="w-[153px]">
+                          <POItemSelect
+                            value={it.itemName}
+                            selectedId={it.itemCode}
+                            onChange={(item: any) => onItemSelect(item.id, i)}
+                          />
                         </div>
                       </td>
 
@@ -180,7 +180,7 @@ export const DetailsTab = ({
                             name="packingUnit"
                             value={it.packingUnit || ""}
                             onChange={(e) => onItemChange(e, i)}
-                            className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center"
+                            className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
                           />
 
                           <span className="text-muted text-[10px] font-bold">×</span>
@@ -190,19 +190,23 @@ export const DetailsTab = ({
                             name="packingSize"
                             value={it.packingSize || ""}
                             onChange={(e) => onItemChange(e, i)}
-                            className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center"
+                            className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
                           />
                         </div>
                       </td>
 
                       <td className="px-2 py-1">
-                        <input
-                          type="date"
-                          className="w-[94px] py-1 px-2 border border-theme rounded bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary text-[10px]"
-                          name="requiredBy"
-                          value={it.requiredBy}
-                          onChange={(e) => onItemChange(e, i)}
-                        />
+                        <div style={{ width: "105px" }}>
+                          <ModalInput
+                            label=""
+                            type="date"
+                            name="requiredBy"
+                            id={`requiredBy-${i}`}
+                            value={it.requiredBy || ""}
+                            onChange={(e) => onItemChange(e, i)}
+
+                          />
+                        </div>
                       </td>
 
                       <td className="px-2 py-1">
@@ -238,10 +242,9 @@ export const DetailsTab = ({
                       <td className="px-2 py-1">
                         <input
                           type="number"
-                          className="w-[54px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary "
+                          className="w-[54px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                           name="vatRate"
                           value={it.vatRate}
-                           min="0"
                           onChange={(e) => onItemChange(e, i)}
                         />
                       </td>

@@ -13,6 +13,7 @@ import {
   FaExclamationTriangle,
   FaSpinner,
 } from "react-icons/fa";
+import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
 
 import { updateCompanyFiles, getCompanyById } from "../../api/companySetupApi";
 import { ERP_BASE } from "../../config/api";
@@ -90,9 +91,7 @@ const Upload: React.FC<UploadProps> = ({ COMPANY_ID, onUploadSuccess }) => {
     type: "logo" | "signature";
     url: string;
   } | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showError, setShowError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(
     null,
   );
@@ -150,7 +149,7 @@ const Upload: React.FC<UploadProps> = ({ COMPANY_ID, onUploadSuccess }) => {
       }
     } catch (error) {
       console.error("Error loading company files:", error);
-      showErrorMessage("Failed to load existing files");
+      showApiError("Failed to load existing files");
     } finally {
       setIsLoadingExisting(false);
     }
@@ -163,30 +162,9 @@ const Upload: React.FC<UploadProps> = ({ COMPANY_ID, onUploadSuccess }) => {
   }, [loadExistingFiles]);
 
   // Auto-hide success/error messages
-  useEffect(() => {
-    if (showSuccess) {
-      const timer = setTimeout(() => setShowSuccess(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showSuccess]);
+ 
 
-  useEffect(() => {
-    if (showError) {
-      const timer = setTimeout(() => setShowError(false), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showError]);
 
-  // HELPER FUNCTIONS
-
-  const showErrorMessage = useCallback((message: string) => {
-    setErrorMessage(message);
-    setShowError(true);
-  }, []);
-
-  const showSuccessMessage = useCallback(() => {
-    setShowSuccess(true);
-  }, []);
 
   const validateFile = (file: File): string | null => {
     if (!file.type.startsWith("image/")) {
@@ -248,7 +226,7 @@ const Upload: React.FC<UploadProps> = ({ COMPANY_ID, onUploadSuccess }) => {
       // Validate file
       const validationError = validateFile(file);
       if (validationError) {
-        showErrorMessage(validationError);
+        showApiError(validationError);
         return;
       }
 
@@ -271,10 +249,10 @@ const Upload: React.FC<UploadProps> = ({ COMPANY_ID, onUploadSuccess }) => {
         }
       } catch (error) {
         console.error("Error processing file:", error);
-        showErrorMessage("Failed to process file. Please try again.");
+        showApiError("Failed to process file. Please try again.");
       }
     },
-    [simulateUpload, showErrorMessage],
+    [simulateUpload, showApiError],
   );
 
   // EVENT HANDLERS
@@ -337,10 +315,10 @@ const Upload: React.FC<UploadProps> = ({ COMPANY_ID, onUploadSuccess }) => {
         document.body.removeChild(link);
       } catch (error) {
         console.error("Error downloading file:", error);
-        showErrorMessage("Failed to download file");
+        showApiError("Failed to download file");
       }
     },
-    [showErrorMessage],
+    [showApiError],
   );
 
   const openPreview = useCallback((type: "logo" | "signature", url: string) => {
@@ -360,54 +338,40 @@ const Upload: React.FC<UploadProps> = ({ COMPANY_ID, onUploadSuccess }) => {
 
   // SAVE HANDLER
 
-  const handleSave = useCallback(async () => {
-    // Check if there are files to upload (only new files, not existing ones)
-    const hasNewLogo = logo && !logo.isExisting;
-    const hasNewSignature = signature && !signature.isExisting;
+const handleSave = useCallback(async () => {
+  const hasNewLogo = logo && !logo.isExisting;
+  const hasNewSignature = signature && !signature.isExisting;
 
-    if (!hasNewLogo && !hasNewSignature) {
-      showErrorMessage("Please upload at least one new file before saving.");
-      return;
-    }
+  if (!hasNewLogo && !hasNewSignature) {
+    showApiError("Please upload at least one new file before saving.");
+    return;
+  }
 
-    setIsSaving(true);
+  try {
+    showLoading("Uploading Documents...");
 
-    try {
-      const response = await updateCompanyFiles(
-        COMPANY_ID,
-        hasNewLogo ? logo.file : null,
-        hasNewSignature ? signature.file : null,
-      );
+    await updateCompanyFiles(
+      COMPANY_ID,
+      hasNewLogo ? logo.file : null,
+      hasNewSignature ? signature.file : null
+    );
 
-      console.log("Upload successful:", response);
-      showSuccessMessage();
+    closeSwal();
+    showSuccess("Documents uploaded successfully!");
 
-      // Reload existing files to get updated URLs
-      await loadExistingFiles();
-
-      // Call parent success callback
-      onUploadSuccess?.();
-    } catch (error: any) {
-      console.error("Error uploading files:", error);
-
-      const errorMsg =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to upload files. Please try again.";
-
-      showErrorMessage(errorMsg);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [
-    logo,
-    signature,
-    COMPANY_ID,
-    loadExistingFiles,
-    onUploadSuccess,
-    showErrorMessage,
-    showSuccessMessage,
-  ]);
+    await loadExistingFiles();
+    onUploadSuccess?.();
+  } catch (error: any) {
+    closeSwal();
+    showApiError(error);
+  }
+}, [
+  logo,
+  signature,
+  COMPANY_ID,
+  loadExistingFiles,
+  onUploadSuccess,
+]);
 
   // DERIVED STATE
 
@@ -435,31 +399,8 @@ const Upload: React.FC<UploadProps> = ({ COMPANY_ID, onUploadSuccess }) => {
   return (
     <div className="w-full">
       <div className="max-w-full">
-        {/* Success Alert */}
-        {showSuccess && (
-          <div
-            className="mb-6 rounded-lg p-4 flex items-center gap-3 shadow-sm badge-success"
-            role="alert"
-            aria-live="polite"
-          >
-            <FaCheckCircle className="w-5 h-5 text-success flex-shrink-0" />
-            <p className="text-success font-medium text-sm">
-              Documents uploaded successfully!
-            </p>
-          </div>
-        )}
-
-        {/* Error Alert */}
-        {showError && (
-          <div
-            className="mb-6 rounded-lg p-4 flex items-center gap-3 shadow-sm bg-danger/10 border border-danger/20"
-            role="alert"
-            aria-live="assertive"
-          >
-            <FaExclamationTriangle className="w-5 h-5 text-danger flex-shrink-0" />
-            <p className="text-danger font-medium text-sm">{errorMessage}</p>
-          </div>
-        )}
+    
+       
 
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
