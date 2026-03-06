@@ -268,6 +268,7 @@ export const usePurchaseInvoiceForm = ({
         taxCategory: data.taxCategory || "",
         project: data.project || "",
         costCenter: data.costCenter || "",
+        // shippingRule: data.shippingRule || "",
         incoterm:
           typeof data.incoterm === "string"
             ? data.incoterm.trim().toUpperCase()
