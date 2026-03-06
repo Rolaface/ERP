@@ -285,8 +285,6 @@ export default function SalaryStructureTab() {
                     "Structure",
                     "Company",
                     "Status",
-                    "Earnings",
-                    "Deductions",
                   ].map((h) => (
                     <th
                       key={h}
@@ -315,18 +313,12 @@ export default function SalaryStructureTab() {
                       <td className="px-4 py-3">
                         <div className="h-5 w-16 bg-gray-200 rounded-full animate-pulse" />
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
-                      </td>
                     </tr>
                   ))
                 ) : pagedStructures.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={3}
                       className="px-4 py-10 text-center text-sm text-gray-600"
                     >
                       No salary structures found
@@ -363,14 +355,6 @@ export default function SalaryStructureTab() {
                           >
                             {structure.is_active ? "Active" : "Inactive"}
                           </span>
-                        </td>
-
-                        <td className="px-4 py-3 align-top">
-                          <div className="text-xs text-gray-500">—</div>
-                        </td>
-
-                        <td className="px-4 py-3 align-top">
-                          <div className="text-xs text-gray-500">—</div>
                         </td>
                       </tr>
                     );
