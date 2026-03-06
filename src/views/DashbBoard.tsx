@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { getDashboardSummary } from "../api/dashboardApi";
+import { getHrDashboardSummary } from "../api/hrDashboardApi";
+import { getInventoryDashboardSummary } from "../api/inventoryDashboardApi";
 import { ChartSkeleton } from "../components/ChartSkeleton";
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -44,11 +49,28 @@ const Dashboard = () => {
     }>;
   } | null>(null);
 
+  const [hrSummaryData, setHrSummaryData] = useState<{
+    total: number;
+    active: number;
+    inactive: number;
+    onLeave: number;
+    totalLeaveTypes: number;
+  } | null>(null);
+
+  const [inventorySummaryData, setInventorySummaryData] = useState<{
+    totalItems: number;
+    serviceItems: number;
+    rawMaterialItems: number;
+    finishedProductsItems: number;
+    totalImportedItems: number;
+  } | null>(null);
+
   const [monthlyTrendData, setMonthlyTrendData] = useState<
     Array<{ name: string; revenue: number }>
   >([]);
 
-  const chartsLoading = summaryLoading || !summaryData;
+  const chartsLoading =
+    summaryLoading || !summaryData || !hrSummaryData || !inventorySummaryData;
 
   useEffect(() => {
     let mounted = true;
@@ -57,11 +79,19 @@ const Dashboard = () => {
         setSummaryLoading(true);
         setSummaryError(null);
         setSummaryData(null);
+        setHrSummaryData(null);
+        setInventorySummaryData(null);
         setMonthlyTrendData([]);
 
-        const resp = await getDashboardSummary();
+        const [resp, hrResp, invResp] = await Promise.all([
+          getDashboardSummary(),
+          getHrDashboardSummary(),
+          getInventoryDashboardSummary(),
+        ]);
         if (!mounted) return;
         const d = resp.data;
+        const hr = hrResp.data;
+        const inv = invResp.data;
         setSummaryData({
           totalCustomers: d.totalCustomers,
           totalSuppliers: d.totalSuppliers,
@@ -70,6 +100,22 @@ const Dashboard = () => {
           totalSalesAmount: d.totalSalesAmount,
           monthlySalesGraph: d.monthlySalesGraph,
           recentSales: d.recentSales,
+        });
+
+        setHrSummaryData({
+          total: Number(hr.total ?? 0),
+          active: Number(hr.active ?? 0),
+          inactive: Number(hr.inactive ?? 0),
+          onLeave: Number(hr.onLeave ?? 0),
+          totalLeaveTypes: Number(hr.totalLeaveTypes ?? 0),
+        });
+
+        setInventorySummaryData({
+          totalItems: Number(inv.totalItems ?? 0),
+          serviceItems: Number(inv.serviceItems ?? 0),
+          rawMaterialItems: Number(inv.rawMaterialItems ?? 0),
+          finishedProductsItems: Number(inv.finishedProductsItems ?? 0),
+          totalImportedItems: Number(inv.totalImportedItems ?? 0),
         });
 
         const labels = d.monthlySalesGraph?.labels ?? [];
@@ -193,6 +239,76 @@ const Dashboard = () => {
       },
     ],
     [summaryData],
+  );
+
+  const employeeStatusChartData = useMemo(
+    () => [
+      { name: "Active", value: Number(hrSummaryData?.active ?? 0) },
+      { name: "On Leave", value: Number(hrSummaryData?.onLeave ?? 0) },
+      { name: "Inactive", value: Number(hrSummaryData?.inactive ?? 0) },
+    ],
+    [hrSummaryData],
+  );
+
+  const employeeStatusColors = useMemo(
+    () => [chartColors.primary, chartColors.blueSoft, chartColors.blue],
+    [chartColors],
+  );
+
+  const inventoryPieColors = useMemo(
+    () => [chartColors.blue, chartColors.primary, chartColors.blueSoft, "var(--primary-700)"],
+    [chartColors],
+  );
+
+  const itemsBreakdownChartData = useMemo(
+    () => [
+      { name: "Raw Material", value: Number(inventorySummaryData?.rawMaterialItems ?? 0) },
+      { name: "Service", value: Number(inventorySummaryData?.serviceItems ?? 0) },
+      { name: "Imported", value: Number(inventorySummaryData?.totalImportedItems ?? 0) },
+      {
+        name: "Finished Products",
+        value: Number(inventorySummaryData?.finishedProductsItems ?? 0),
+      },
+    ],
+    [inventorySummaryData],
+  );
+
+  const chartPlaneStyle = useMemo(
+    () => ({
+      backgroundImage:
+        "linear-gradient(rgba(229,231,235,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(229,231,235,0.7) 1px, transparent 1px)",
+      backgroundSize: "24px 24px",
+      backgroundPosition: "-1px -1px",
+    }),
+    [],
+  );
+
+  const renderDonutLabel = (props: any) => {
+    const { x, y, name, value } = props;
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="#374151"
+        fontSize={11}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
+        {String(name)}: {String(value)}
+      </text>
+    );
+  };
+
+  const legendProps = useMemo(
+    () => ({
+      wrapperStyle: { fontSize: 12 },
+      layout: "horizontal" as const,
+      verticalAlign: "bottom" as const,
+      align: "center" as const,
+      iconType: "square" as const,
+      height: 36,
+    }),
+    [],
   );
 
   return (
@@ -429,6 +545,88 @@ const Dashboard = () => {
                     name="Count"
                   />
                 </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-900">Items Breakdown</h3>
+          </div>
+          <div
+            className="h-72 rounded-lg border border-gray-200 bg-white"
+            style={chartPlaneStyle}
+          >
+            {chartsLoading ? (
+              <ChartSkeleton variant="pie" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                  <Tooltip
+                    formatter={(v: any) => Number(v ?? 0)}
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: "1px solid var(--border)",
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend {...legendProps} />
+                  <Pie
+                    data={itemsBreakdownChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="44%"
+                    innerRadius={55}
+                    outerRadius={82}
+                    paddingAngle={2}
+                    label={renderDonutLabel}
+                    labelLine={false}
+                  >
+                    {itemsBreakdownChartData.map((_, idx) => (
+                      <Cell
+                        key={`items-${idx}`}
+                        fill={inventoryPieColors[idx % inventoryPieColors.length]}
+                      />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-900">Employee Status</h3>
+          </div>
+          <div className="h-72 rounded-lg border border-gray-200 bg-white">
+            {chartsLoading ? (
+              <ChartSkeleton variant="bar" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Pie
+                    data={employeeStatusChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={3}
+                  >
+                    {employeeStatusChartData.map((entry, idx) => (
+                      <Cell
+                        key={`${entry.name}-${idx}`}
+                        fill={employeeStatusColors[idx % employeeStatusColors.length]}
+                      />
+                    ))}
+                  </Pie>
+                </PieChart>
               </ResponsiveContainer>
             )}
           </div>
