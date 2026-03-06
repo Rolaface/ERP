@@ -17,6 +17,16 @@ import {
 import { DollarSign, FileText, TrendingUp, Users } from "lucide-react";
 
 const Dashboard = () => {
+  const chartColors = useMemo(
+    () => ({
+      primary: "var(--primary)",
+      blue: "var(--brand-blue-bottom)",
+      blueSoft: "var(--brand-blue-top)",
+      grid: "var(--border)",
+    }),
+    [],
+  );
+
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryData, setSummaryData] = useState<{
@@ -113,31 +123,31 @@ const Dashboard = () => {
       label: "Total Customers",
       value: String(summaryData?.totalCustomers ?? 0),
       icon: Users,
-      gradient: "from-blue-500 to-blue-600",
+      gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
     },
     {
       label: "Total Suppliers",
       value: String(summaryData?.totalSuppliers ?? 0),
       icon: FileText,
-      gradient: "from-amber-500 to-amber-600",
+      gradient: "from-[var(--brand-blue-bottom)] to-[var(--primary)]",
     },
     {
       label: "Sales Invoices",
       value: String(summaryData?.totalSalesInvoices ?? 0),
       icon: TrendingUp,
-      gradient: "from-emerald-500 to-emerald-600",
+      gradient: "from-[var(--primary)] to-[var(--primary-700)]",
     },
     {
       label: "Purchase Invoices",
       value: String(summaryData?.totalPurchaseInvoices ?? 0),
       icon: FileText,
-      gradient: "from-sky-500 to-sky-600",
+      gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
     },
     {
       label: "Total Sales Amount",
       value: currencyZMW.format(summaryData?.totalSalesAmount ?? 0),
       icon: DollarSign,
-      gradient: "from-purple-500 to-purple-600",
+      gradient: "from-[var(--primary)] to-[var(--primary-700)]",
     },
   ];
 
@@ -264,9 +274,9 @@ const Dashboard = () => {
                   data={monthlyTrendData}
                   margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} width={52} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--muted)" }} />
+                  <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
                   <Tooltip
                     formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
                   />
@@ -274,7 +284,7 @@ const Dashboard = () => {
                   <Line
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#8b5cf6"
+                    stroke={chartColors.blue}
                     strokeWidth={2}
                     dot={false}
                     name="Sales"
@@ -298,16 +308,16 @@ const Dashboard = () => {
                   data={recentSalesChartData}
                   margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 11, fill: "var(--muted)" }}
                     interval={0}
                     angle={-20}
                     textAnchor="end"
                     height={48}
                   />
-                  <YAxis tick={{ fontSize: 12 }} width={52} />
+                  <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
                   <Tooltip
                     formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
                     labelFormatter={(
@@ -336,7 +346,7 @@ const Dashboard = () => {
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar
                     dataKey="total"
-                    fill="#10b981"
+                    fill={chartColors.primary}
                     radius={[6, 6, 0, 0]}
                     name="Total"
                   />
@@ -361,23 +371,23 @@ const Dashboard = () => {
                   data={salesByCustomerChartData}
                   margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 11, fill: "var(--muted)" }}
                     interval={0}
                     angle={-15}
                     textAnchor="end"
                     height={52}
                   />
-                  <YAxis tick={{ fontSize: 12 }} width={52} />
+                  <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
                   <Tooltip
                     formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar
                     dataKey="total"
-                    fill="#f59e0b"
+                    fill={chartColors.blueSoft}
                     radius={[6, 6, 0, 0]}
                     name="Total"
                   />
@@ -400,21 +410,21 @@ const Dashboard = () => {
                   data={totalsOverviewChartData}
                   margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 11, fill: "var(--muted)" }}
                     interval={0}
                     angle={-10}
                     textAnchor="end"
                     height={44}
                   />
-                  <YAxis tick={{ fontSize: 12 }} width={52} />
+                  <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar
                     dataKey="value"
-                    fill="#3b82f6"
+                    fill={chartColors.blue}
                     radius={[6, 6, 0, 0]}
                     name="Count"
                   />

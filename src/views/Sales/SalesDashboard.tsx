@@ -151,12 +151,12 @@ const SalesDashboard: React.FC = () => {
   );
 
   const pieColors = [
-    "#8b5cf6",
-    "#10b981",
-    "#f59e0b",
-    "#3b82f6",
-    "#ef4444",
-    "#14b8a6",
+    "var(--primary)",
+    "var(--brand-blue-bottom)",
+    "var(--brand-blue-top)",
+    "var(--primary-700)",
+    "var(--primary-600)",
+    "var(--brand-blue-bottom)",
   ];
 
   useEffect(() => {
@@ -261,31 +261,31 @@ const SalesDashboard: React.FC = () => {
                   label: "Proforma Invoices",
                   value: String(summaryData?.totalProformaInvoices ?? 0),
                   icon: FileSignature,
-                  gradient: "from-blue-500 to-blue-600",
+                  gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
                 },
                 {
                   label: "Quotations",
                   value: String(summaryData?.totalQuotations ?? 0),
                   icon: Receipt,
-                  gradient: "from-amber-500 to-amber-600",
+                  gradient: "from-[var(--brand-blue-bottom)] to-[var(--primary)]",
                 },
                 {
                   label: "Sales Invoices",
                   value: String(summaryData?.totalSalesInvoices ?? 0),
                   icon: Receipt,
-                  gradient: "from-emerald-500 to-emerald-600",
+                  gradient: "from-[var(--primary)] to-[var(--primary-700)]",
                 },
                 {
                   label: "Credit Notes",
                   value: String(summaryData?.totalSalesCreditNotes ?? 0),
                   icon: FileText,
-                  gradient: "from-sky-500 to-sky-600",
+                  gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
                 },
                 {
                   label: "Debit Notes",
                   value: String(summaryData?.totalSalesDebitNotes ?? 0),
                   icon: DollarSign,
-                  gradient: "from-purple-500 to-purple-600",
+                  gradient: "from-[var(--primary)] to-[var(--primary-700)]",
                 },
               ].map((stat) => (
                 <div
@@ -335,7 +335,7 @@ const SalesDashboard: React.FC = () => {
                     data={monthlyTrendData}
                     margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis
                       tick={{ fontSize: 12 }}
@@ -364,11 +364,11 @@ const SalesDashboard: React.FC = () => {
                     <Line
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#8b5cf6"
+                      stroke="var(--brand-blue-bottom)"
                       strokeWidth={3}
                       dot={false}
                       name="Sales"
-                      label={{ position: "top", fontSize: 10, fill: "#6b7280" }}
+                      label={{ position: "top", fontSize: 10, fill: "var(--muted)" }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -394,7 +394,7 @@ const SalesDashboard: React.FC = () => {
                     data={recentSalesChartData}
                     margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis
                       dataKey="name"
                       tick={{ fontSize: 11 }}
@@ -418,7 +418,7 @@ const SalesDashboard: React.FC = () => {
                     <Bar
                       dataKey="total"
                       name="Amount"
-                      fill="#10b981"
+                      fill="var(--primary)"
                       radius={[2, 2, 0, 0]}
                     />
                   </BarChart>

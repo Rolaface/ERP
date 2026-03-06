@@ -207,8 +207,8 @@ const CRMReports: React.FC = () => {
       (c) => normalizeCustomerType(c.type) === "Individual",
     ).length;
     return [
-      { label: "Company", value: company, color: "#2563eb" },
-      { label: "Individual", value: individual, color: "#10b981" },
+      { label: "Company", value: company, color: "var(--brand-blue-bottom)" },
+      { label: "Individual", value: individual, color: "var(--primary)" },
     ];
   }, [customers]);
 

@@ -1,33 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  FaChartBar,
-  FaMoneyBillWave,
-  FaUsers,
-  FaShoppingBag,
-  FaBoxes,
-  FaBriefcase,
-  FaUserTie,
-  FaBuilding,
-  FaCog,
-  FaBars,
-  FaChevronDown,
-  FaChevronUp,
-} from "react-icons/fa";
+  LayoutDashboard,
+  BadgeDollarSign,
+  Users,
+  ShoppingCart,
+  Boxes,
+  Briefcase,
+  UserRound,
+  Building2,
+  Settings,
+  Menu,
+  ChevronDown,
+  ChevronUp,
+  LogOut,
+} from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
 import { useAuth } from "../context/AuthContext";
-import { FaSignOutAlt } from "react-icons/fa";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 
 const menuItems = [
-  { name: "Dashboard", to: "/dashboard", icon: <FaChartBar /> },
-  { name: "Sales", to: "/sales", icon: <FaMoneyBillWave /> },
-  { name: "Customer", to: "/crm", icon: <FaUsers /> },
-  { name: "Procurement", to: "/procurement", icon: <FaShoppingBag /> },
-  { name: "Inventory", to: "/inventory", icon: <FaBoxes /> },
-  { name: "Accounting", to: "/accounting", icon: <FaBriefcase /> },
-  { name: "Human Resource", to: "/hr", icon: <FaUserTie /> },
+  {
+    name: "Dashboard",
+    to: "/dashboard",
+    icon: <LayoutDashboard className="w-5 h-5" />,
+  },
+  { name: "Sales", to: "/sales", icon: <BadgeDollarSign className="w-5 h-5" /> },
+  { name: "Customer", to: "/crm", icon: <Users className="w-5 h-5" /> },
+  {
+    name: "Procurement",
+    to: "/procurement",
+    icon: <ShoppingCart className="w-5 h-5" />,
+  },
+  { name: "Inventory", to: "/inventory", icon: <Boxes className="w-5 h-5" /> },
+  { name: "Accounting", to: "/accounting",
+    icon: <Briefcase className="w-5 h-5" />,
+  },
+  { name: "Human Resource", to: "/hr", icon: <UserRound className="w-5 h-5" /> },
   // { name: "Fixed Assets", to: "/fasset", icon: <FaWarehouse /> },
 ];
 
@@ -85,12 +95,16 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   return (
     <>
       <div
-        className={`flex flex-col h-screen bg-sidebar fixed z-50 shadow-2xl transition-all duration-300 border-r border-[var(--border)] overflow-hidden ${
+        style={{ backgroundColor: "#ffffff", backgroundImage: "none" }}
+        className={`flex flex-col h-screen fixed z-50 shadow-2xl transition-all duration-300 border-r border-[var(--border)] overflow-hidden ${
           open ? "w-64" : "w-20"
         }`}
       >
         {/* 1. HEADER */}
-        <div className="flex items-center justify-between p-4 h-16 shrink-0 border-b border-[var(--border)]">
+        <div
+          style={{ backgroundColor: "#ffffff", backgroundImage: "none" }}
+          className="flex items-center justify-between p-4 h-16 shrink-0 border-b border-[var(--border)]"
+        >
           <div className="flex items-center overflow-hidden">
             {open && (
               <h2 className="text-2xl font-bold text-primary truncate">ERP</h2>
@@ -101,12 +115,15 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             onClick={() => setOpen(!open)}
             className="p-2 rounded-lg text-2xl text-muted hover:text-primary transition shrink-0"
           >
-            <FaBars />
+            <Menu className="w-6 h-6" />
           </button>
         </div>
 
         {company && (
-          <div className="px-4 py-3 border-b border-[var(--border)]">
+          <div
+            style={{ backgroundColor: "#ffffff", backgroundImage: "none" }}
+            className="px-4 py-3 border-b border-[var(--border)]"
+          >
             <div
               className={`flex items-center gap-3 ${
                 open ? "justify-start" : "justify-center"
@@ -134,7 +151,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               {/* Name */}
               {open && (
                 <div className="flex flex-col min-w-0">
-                  <span className="text-lg font-bold text-primary truncate">
+                  <span className="text-lg font-bold text-primary whitespace-normal break-words">
                     {company.name}
                   </span>
                 </div>
@@ -144,7 +161,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         )}
 
         {/* 2. MIDDLE - SCROLLABLE AREA */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1 custom-scrollbar">
+        <nav
+          style={{ backgroundColor: "#ffffff", backgroundImage: "none" }}
+          className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1 custom-scrollbar"
+        >
           {menuItems.map((item) => (
             <NavLink
               key={item.name}
@@ -188,7 +208,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               }`}
             >
               <div className="flex items-center justify-center min-w-[48px] shrink-0">
-                <FaCog className="text-xl nav-icon" />
+                <Settings className="w-5 h-5" />
               </div>
 
               <span
@@ -200,9 +220,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               {open && (
                 <span className="mr-2 opacity-50 shrink-0">
                   {settingsOpen ? (
-                    <FaChevronUp className="text-xs" />
+                    <ChevronUp className="w-4 h-4" />
                   ) : (
-                    <FaChevronDown className="text-xs" />
+                    <ChevronDown className="w-4 h-4" />
                   )}
                 </span>
               )}
@@ -214,17 +234,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                   {
                     to: "/companySetup",
                     label: "Company Setup",
-                    icon: <FaBuilding />,
+                    icon: <Building2 className="w-4 h-4" />,
                   },
                   {
                     to: "/userManagement",
                     label: "User Management",
-                    icon: <FaUsers />,
+                    icon: <Users className="w-4 h-4" />,
                   },
                   {
                     to: "/settings",
                     label: "General Settings",
-                    icon: <FaCog />,
+                    icon: <Settings className="w-4 h-4" />,
                   },
                 ].map((sub) => (
                   <NavLink
@@ -238,7 +258,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                       }`
                     }
                   >
-                    <span className="text-base shrink-0">{sub.icon}</span>
+                    <span className="shrink-0">{sub.icon}</span>
                     <span className="whitespace-nowrap">{sub.label}</span>
                   </NavLink>
                 ))}
@@ -248,7 +268,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         </nav>
 
         {/* 3. BOTTOM USER SECTION  */}
-        <div className="p-4 border-t border-[var(--border)] shrink-0 bg-sidebar">
+        <div
+          style={{ backgroundColor: "#ffffff", backgroundImage: "none" }}
+          className="p-4 border-t border-[var(--border)] shrink-0"
+        >
           <div
             className={`flex items-center ${
               open ? "justify-between" : "flex-col gap-4"
@@ -292,7 +315,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               className="p-2 rounded-lg text-danger hover:bg-row-hover transition"
               title="Logout"
             >
-              <FaSignOutAlt />
+              <LogOut className="w-5 h-5" />
             </button>
           </div>
         </div>

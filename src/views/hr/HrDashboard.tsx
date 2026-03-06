@@ -34,24 +34,21 @@ const HrDashboard: React.FC = () => {
 
   const palette = useMemo(
     () => ({
-      purple: "#8b5cf6",
-      blue: "#3b82f6",
-      emerald: "#10b981",
-      amber: "#f59e0b",
-      red: "#ef4444",
-      slate: "#64748b",
+      primary: "var(--primary)",
+      blue: "var(--brand-blue-bottom)",
+      blueSoft: "var(--brand-blue-top)",
+      muted: "var(--muted)",
     }),
     [],
   );
 
   const pieColors = useMemo(
     () => [
-      palette.emerald,
-      palette.slate,
-      palette.amber,
-      palette.purple,
+      palette.primary,
       palette.blue,
-      palette.red,
+      palette.blueSoft,
+      "var(--primary-700)",
+      "var(--primary-600)",
     ],
     [palette],
   );
@@ -152,31 +149,31 @@ const HrDashboard: React.FC = () => {
         label: "Total Employees",
         value: String(summaryData?.total ?? 0),
         icon: Users,
-        gradient: "from-blue-500 to-blue-600",
+        gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
       },
       {
         label: "Active",
         value: String(summaryData?.active ?? 0),
         icon: UserCheck,
-        gradient: "from-emerald-500 to-emerald-600",
+        gradient: "from-[var(--primary)] to-[var(--primary-700)]",
       },
       {
         label: "Inactive",
         value: String(summaryData?.inactive ?? 0),
         icon: BadgeCheck,
-        gradient: "from-slate-500 to-slate-600",
+        gradient: "from-[var(--brand-blue-bottom)] to-[var(--primary)]",
       },
       {
         label: "On Leave",
         value: String(summaryData?.onLeave ?? 0),
         icon: ClipboardList,
-        gradient: "from-amber-500 to-amber-600",
+        gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
       },
       {
         label: "Leave Types",
         value: String(summaryData?.totalLeaveTypes ?? 0),
         icon: ClipboardList,
-        gradient: "from-purple-500 to-purple-600",
+        gradient: "from-[var(--primary)] to-[var(--primary-700)]",
       },
     ],
     [summaryData],
@@ -258,7 +255,7 @@ const HrDashboard: React.FC = () => {
                     data={employeeStatusData}
                     margin={{ top: 28, right: 18, left: 6, bottom: 4 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} width={52} />
                     <Tooltip
@@ -288,7 +285,7 @@ const HrDashboard: React.FC = () => {
                         dataKey="value"
                         position="top"
                         offset={8}
-                        fill="#6b7280"
+                        fill="var(--muted)"
                         fontSize={10}
                       />
                     </Bar>
@@ -402,7 +399,7 @@ const HrDashboard: React.FC = () => {
                       {activeRateDonutData.map((_, idx) => (
                         <Cell
                           key={idx}
-                          fill={idx === 0 ? palette.emerald : palette.slate}
+                          fill={idx === 0 ? palette.primary : palette.blueSoft}
                         />
                       ))}
                     </Pie>
@@ -455,14 +452,14 @@ const HrDashboard: React.FC = () => {
                       {totalsVsLeaveTypesData.map((_, idx) => (
                         <Cell
                           key={idx}
-                          fill={idx === 0 ? palette.blue : palette.purple}
+                          fill={idx === 0 ? palette.blue : palette.primary}
                         />
                       ))}
                       <LabelList
                         dataKey="value"
                         position="top"
                         offset={8}
-                        fill="#6b7280"
+                        fill="var(--muted)"
                         fontSize={10}
                       />
                     </Bar>

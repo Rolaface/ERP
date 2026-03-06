@@ -440,7 +440,7 @@ export default function ReportTable() {
             <button
               type="button"
               onClick={() => setExportOpen((v) => !v)}
-              className="px-4 py-2 rounded-xl text-sm font-semibold border border-theme bg-success text-white hover:opacity-95 transition inline-flex items-center gap-2 disabled:opacity-60"
+              className="px-4 py-2 rounded-xl text-sm font-semibold border border-theme bg-primary text-white hover:opacity-95 transition inline-flex items-center gap-2 disabled:opacity-60"
               disabled={!filteredData.length}
             >
               Export

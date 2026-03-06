@@ -36,24 +36,21 @@ const InventoryDashboard: React.FC = () => {
 
   const palette = useMemo(
     () => ({
-      purple: "#8b5cf6",
-      blue: "#3b82f6",
-      emerald: "#10b981",
-      amber: "#f59e0b",
-      red: "#ef4444",
-      slate: "#64748b",
+      primary: "var(--primary)",
+      blue: "var(--brand-blue-bottom)",
+      blueSoft: "var(--brand-blue-top)",
+      muted: "var(--muted)",
     }),
     [],
   );
 
   const pieColors = useMemo(
     () => [
+      palette.primary,
       palette.blue,
-      palette.emerald,
-      palette.purple,
-      palette.amber,
-      palette.red,
-      palette.slate,
+      palette.blueSoft,
+      "var(--primary-700)",
+      "var(--primary-600)",
     ],
     [palette],
   );
@@ -157,31 +154,31 @@ const InventoryDashboard: React.FC = () => {
         label: "Total Items",
         value: String(summaryData?.totalItems ?? 0),
         icon: Package,
-        gradient: "from-blue-500 to-blue-600",
+        gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
       },
       {
         label: "Service Items",
         value: String(summaryData?.serviceItems ?? 0),
         icon: AlertTriangle,
-        gradient: "from-purple-500 to-purple-600",
+        gradient: "from-[var(--primary)] to-[var(--primary-700)]",
       },
       {
         label: "Raw Materials",
         value: String(summaryData?.rawMaterialItems ?? 0),
         icon: Boxes,
-        gradient: "from-emerald-500 to-emerald-600",
+        gradient: "from-[var(--brand-blue-bottom)] to-[var(--primary)]",
       },
       {
         label: "Finished Products",
         value: String(summaryData?.finishedProductsItems ?? 0),
         icon: Package,
-        gradient: "from-amber-500 to-amber-600",
+        gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
       },
       {
         label: "Imported Items",
         value: String(summaryData?.totalImportedItems ?? 0),
         icon: Warehouse,
-        gradient: "from-red-500 to-red-600",
+        gradient: "from-[var(--primary)] to-[var(--primary-700)]",
       },
     ],
     [summaryData],
@@ -325,7 +322,7 @@ const InventoryDashboard: React.FC = () => {
                     data={itemTypeBreakdownData}
                     margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} width={52} />
                     <Tooltip
@@ -347,14 +344,14 @@ const InventoryDashboard: React.FC = () => {
                     <Legend {...legendProps} />
                     <Bar
                       dataKey="value"
-                      fill={palette.emerald}
+                      fill={palette.blue}
                       radius={[6, 6, 0, 0]}
                       name="Count"
                     >
                       <LabelList
                         dataKey="value"
                         position="top"
-                        fill="#6b7280"
+                        fill="var(--muted)"
                         fontSize={10}
                       />
                     </Bar>
@@ -463,11 +460,11 @@ const InventoryDashboard: React.FC = () => {
                     <Line
                       type="monotone"
                       dataKey="value"
-                      stroke={palette.purple}
+                      stroke={palette.primary}
                       strokeWidth={3}
                       dot={false}
                       name="Count"
-                      label={{ position: "top", fontSize: 10, fill: "#6b7280" }}
+                      label={{ position: "top", fontSize: 10, fill: "var(--muted)" }}
                     />
                   </LineChart>
                 </ResponsiveContainer>

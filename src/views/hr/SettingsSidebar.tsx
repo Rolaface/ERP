@@ -6,10 +6,10 @@ type Props = {
 
 export default function SettingsSidebar({ tabs, activeTab, onChange }: Props) {
   return (
-    <div className="w-64 bg-white border-r border-gray-200">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">HR Settings</h2>
-        <p className="text-xs text-gray-500 mt-1">Company Configuration</p>
+    <div className="w-64 bg-card border-r border-[var(--border)]">
+      <div className="p-4 border-b border-[var(--border)]">
+        <h2 className="text-lg font-bold text-main">HR Settings</h2>
+        <p className="text-xs text-muted mt-1">Company Configuration</p>
       </div>
 
       <nav className="p-2">
@@ -19,8 +19,8 @@ export default function SettingsSidebar({ tabs, activeTab, onChange }: Props) {
             onClick={() => onChange(tab)}
             className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors mb-1 ${
               activeTab === tab
-                ? "bg-purple-50 text-purple-700 font-medium"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-row-hover text-primary font-semibold"
+                : "text-muted hover:bg-row-hover hover:text-main"
             }`}
           >
             {tab}

@@ -436,8 +436,8 @@ const TimeAttendance: React.FC = () => {
                   paddingAngle={3}
                   dataKey="value"
                 >
-                  <Cell fill="#10b981" />
-                  <Cell fill="#f59e0b" />
+                  <Cell fill="var(--brand-blue-bottom)" />
+                  <Cell fill="var(--primary)" />
                 </Pie>
                 <Tooltip formatter={(value) => `${value}%`} />
               </PieChart>
@@ -445,19 +445,19 @@ const TimeAttendance: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700">
+            <div className="flex items-center justify-between p-3 bg-row-hover rounded-lg">
+              <span className="text-sm font-medium text-main">
                 On-Time Arrivals
               </span>
-              <span className="text-lg font-bold text-green-700">
+              <span className="text-lg font-bold text-primary">
                 {onTimePercentage}%
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700">
+            <div className="flex items-center justify-between p-3 bg-row-hover rounded-lg">
+              <span className="text-sm font-medium text-main">
                 Late Arrivals
               </span>
-              <span className="text-lg font-bold text-yellow-700">
+              <span className="text-lg font-bold text-primary">
                 {lateCount}
               </span>
             </div>
@@ -485,10 +485,10 @@ const TimeAttendance: React.FC = () => {
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
                       record.status === "Present"
-                        ? "bg-green-100 text-green-800"
+                        ? "bg-row-hover text-primary"
                         : record.status === "Late"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-orange-100 text-orange-800"
+                          ? "bg-row-hover text-primary"
+                          : "bg-row-hover text-primary"
                     }`}
                   >
                     {record.status}
@@ -501,13 +501,13 @@ const TimeAttendance: React.FC = () => {
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <FileText className="w-6 h-6 text-purple-600" />
+            <h3 className="text-xl font-bold text-main flex items-center gap-2">
+              <FileText className="w-6 h-6 text-primary" />
               Timesheet Status
             </h3>
             <button
               onClick={() => setCurrentView("timesheet")}
-              className="text-purple-600 hover:text-purple-800 font-semibold text-sm flex items-center gap-1"
+              className="text-primary font-semibold text-sm flex items-center gap-1"
             >
               View All <ChevronRight className="w-4 h-4" />
             </button>
@@ -525,9 +525,9 @@ const TimeAttendance: React.FC = () => {
                   paddingAngle={3}
                   dataKey="value"
                 >
-                  <Cell fill="#10b981" />
-                  <Cell fill="#f59e0b" />
-                  <Cell fill="#ef4444" />
+                  <Cell fill="var(--brand-blue-bottom)" />
+                  <Cell fill="var(--brand-blue-top)" />
+                  <Cell fill="var(--primary)" />
                 </Pie>
                 <Tooltip />
               </PieChart>
@@ -535,21 +535,21 @@ const TimeAttendance: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-700">
+            <div className="text-center p-3 bg-row-hover rounded-lg">
+              <p className="text-2xl font-bold text-primary">
                 {approvedTimesheets}
               </p>
-              <p className="text-xs text-gray-600 mt-1">Approved</p>
+              <p className="text-xs text-muted mt-1">Approved</p>
             </div>
-            <div className="text-center p-3 bg-yellow-50 rounded-lg">
-              <p className="text-2xl font-bold text-yellow-700">
+            <div className="text-center p-3 bg-row-hover rounded-lg">
+              <p className="text-2xl font-bold text-primary">
                 {pendingTimesheets}
               </p>
-              <p className="text-xs text-gray-600 mt-1">Pending</p>
+              <p className="text-xs text-muted mt-1">Pending</p>
             </div>
-            <div className="text-center p-3 bg-red-50 rounded-lg">
-              <p className="text-2xl font-bold text-red-700">0</p>
-              <p className="text-xs text-gray-600 mt-1">Rejected</p>
+            <div className="text-center p-3 bg-row-hover rounded-lg">
+              <p className="text-2xl font-bold text-primary">0</p>
+              <p className="text-xs text-muted mt-1">Rejected</p>
             </div>
           </div>
 
@@ -575,10 +575,10 @@ const TimeAttendance: React.FC = () => {
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
                       entry.status === "Approved"
-                        ? "bg-green-100 text-green-800"
+                        ? "bg-row-hover text-primary"
                         : entry.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
+                          ? "bg-row-hover text-primary"
+                          : "bg-row-hover text-primary"
                     }`}
                   >
                     {entry.status}
@@ -593,28 +593,28 @@ const TimeAttendance: React.FC = () => {
       {/* Weekly Trend Chart */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-indigo-600" />
+          <h3 className="text-xl font-bold text-main flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-primary" />
             Weekly Hours Comparison
           </h3>
         </div>
 
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={weeklyData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="day" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip />
             <Legend />
             <Bar
               dataKey="attendance"
-              fill="#6366f1"
+              fill="var(--brand-blue-bottom)"
               name="Attendance Hours"
               radius={[8, 8, 0, 0]}
             />
             <Bar
               dataKey="timesheet"
-              fill="#8b5cf6"
+              fill="var(--primary)"
               name="Logged Hours"
               radius={[8, 8, 0, 0]}
             />
@@ -625,24 +625,24 @@ const TimeAttendance: React.FC = () => {
       {/* Monthly Trend */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <Activity className="w-6 h-6 text-green-600" />
+          <h3 className="text-xl font-bold text-main flex items-center gap-2">
+            <Activity className="w-6 h-6 text-primary" />
             Monthly Productivity Trend
           </h3>
         </div>
 
         <ResponsiveContainer width="100%" height={250}>
           <LineChart data={monthlyTrendData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="month" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip />
             <Line
               type="monotone"
               dataKey="hours"
-              stroke="#10b981"
+              stroke="var(--brand-blue-bottom)"
               strokeWidth={3}
-              dot={{ fill: "#10b981", r: 6 }}
+              dot={{ fill: "var(--brand-blue-bottom)", r: 6 }}
             />
           </LineChart>
         </ResponsiveContainer>

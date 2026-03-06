@@ -36,7 +36,11 @@ const locationData = [
   { location: "Bangalore", value: 150 },
 ];
 
-const COLORS = ["#2563EB", "#16A34A", "#F59E0B"];
+const COLORS = [
+  "var(--brand-blue-bottom)",
+  "var(--brand-blue-top)",
+  "var(--primary)",
+];
 
 /* ------------------ UI COMPONENTS ------------------ */
 
@@ -49,8 +53,8 @@ const StatCard = ({
   value: string;
   icon: React.ReactNode;
 }) => (
-  <div className="bg-white border border-black rounded-xl p-5 relative">
-    <button className="absolute top-4 right-4 text-gray-500 hover:text-black">
+  <div className="bg-white border border-[var(--border)] rounded-xl p-5 relative">
+    <button className="absolute top-4 right-4 text-gray-500">
       <FaEllipsisH />
     </button>
 
@@ -120,7 +124,7 @@ const FixedAssetDashboard: React.FC = () => {
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#2563EB"
+              stroke="var(--brand-blue-bottom)"
               strokeWidth={3}
               dot={{ r: 4 }}
             />
@@ -155,7 +159,7 @@ const FixedAssetDashboard: React.FC = () => {
               <XAxis dataKey="location" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="value" fill="#16A34A" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="value" fill="var(--primary)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Panel>

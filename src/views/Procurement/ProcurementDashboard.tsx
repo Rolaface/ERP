@@ -34,12 +34,10 @@ const ProcurementDashboard: React.FC = () => {
 
   const palette = useMemo(
     () => ({
-      purple: "#8b5cf6",
-      blue: "#3b82f6",
-      emerald: "#10b981",
-      amber: "#f59e0b",
-      red: "#ef4444",
-      slate: "#64748b",
+      primary: "var(--primary)",
+      blue: "var(--brand-blue-bottom)",
+      blueSoft: "var(--brand-blue-top)",
+      muted: "var(--muted)",
     }),
     [],
   );
@@ -112,31 +110,31 @@ const ProcurementDashboard: React.FC = () => {
         label: "Total Suppliers",
         value: String(summaryData?.totalSuppliers ?? 0),
         icon: Users,
-        gradient: "from-blue-500 to-blue-600",
+        gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
       },
       {
         label: "Active Suppliers",
         value: String(summaryData?.activeSuppliers ?? 0),
         icon: UsersRound,
-        gradient: "from-emerald-500 to-emerald-600",
+        gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
       },
       {
         label: "Inactive Suppliers",
         value: String(summaryData?.inactiveSuppliers ?? 0),
         icon: UsersRound,
-        gradient: "from-slate-500 to-slate-600",
+        gradient: "from-[var(--brand-blue-bottom)] to-[var(--primary)]",
       },
       {
         label: "Purchase Orders",
         value: String(summaryData?.totalPurchaseOrder ?? 0),
         icon: ShoppingCart,
-        gradient: "from-purple-500 to-purple-600",
+        gradient: "from-[var(--primary)] to-[var(--primary-700)]",
       },
       {
         label: "Purchase Invoices",
         value: String(summaryData?.totalPurchaseInvoice ?? 0),
         icon: FileText,
-        gradient: "from-amber-500 to-amber-600",
+        gradient: "from-[var(--primary)] to-[var(--primary-700)]",
       },
     ],
     [summaryData],
@@ -186,12 +184,11 @@ const ProcurementDashboard: React.FC = () => {
 
   const pieColors = useMemo(
     () => [
-      palette.purple,
-      palette.emerald,
-      palette.amber,
+      palette.primary,
       palette.blue,
-      palette.red,
-      palette.slate,
+      palette.blueSoft,
+      "var(--primary-700)",
+      "var(--primary-600)",
     ],
     [palette],
   );
@@ -266,16 +263,16 @@ const ProcurementDashboard: React.FC = () => {
                     data={procurementBarData}
                     margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis
                       dataKey="name"
-                      tick={{ fontSize: 11 }}
+                      tick={{ fontSize: 11, fill: "var(--muted)" }}
                       interval={0}
                       angle={-12}
                       textAnchor="end"
                       height={48}
                     />
-                    <YAxis tick={{ fontSize: 12 }} width={52} />
+                    <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
                     <Tooltip
                       formatter={(v: any) => Number(v ?? 0)}
                       contentStyle={{
@@ -365,7 +362,11 @@ const ProcurementDashboard: React.FC = () => {
                       {supplierStatusDonutData.map((_, idx) => (
                         <Cell
                           key={idx}
-                          fill={idx === 0 ? palette.emerald : palette.slate}
+                          fill={
+                            idx === 0
+                              ? "var(--brand-blue-bottom)"
+                              : "var(--primary)"
+                          }
                         />
                       ))}
                     </Pie>

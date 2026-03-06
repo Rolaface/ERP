@@ -69,12 +69,10 @@ const CRMDashboard: React.FC = () => {
 
   const palette = useMemo(
     () => ({
-      purple: "#8b5cf6",
-      blue: "#3b82f6",
-      emerald: "#10b981",
-      amber: "#f59e0b",
-      red: "#ef4444",
-      slate: "#64748b",
+      primary: "var(--primary)",
+      blue: "var(--brand-blue-bottom)",
+      blueSoft: "var(--brand-blue-top)",
+      muted: "var(--muted)",
     }),
     [],
   );
@@ -111,37 +109,37 @@ const CRMDashboard: React.FC = () => {
         label: "Total Customers",
         value: cards?.totalCustomers ?? 0,
         icon: Users,
-        gradient: "from-blue-500 to-blue-600",
+        gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
       },
       {
         label: "Individual Customers",
         value: cards?.totalIndividualCustomers ?? 0,
         icon: User,
-        gradient: "from-purple-500 to-purple-600",
+        gradient: "from-[var(--primary)] to-[var(--primary-700)]",
       },
       {
         label: "Company Customers",
         value: cards?.totalCompanyCustomers ?? 0,
         icon: Building2,
-        gradient: "from-emerald-500 to-emerald-600",
+        gradient: "from-[var(--brand-blue-bottom)] to-[var(--primary)]",
       },
       {
         label: "Export Customers",
         value: cards?.exportCustomers ?? 0,
         icon: Globe,
-        gradient: "from-amber-500 to-amber-600",
+        gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
       },
       {
         label: "Non-Export Customers",
         value: cards?.nonExportCustomers ?? 0,
         icon: BadgeX,
-        gradient: "from-sky-500 to-sky-600",
+        gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
       },
       {
         label: "LOP Customers",
         value: cards?.lopCustomers ?? 0,
         icon: BadgeCheck,
-        gradient: "from-indigo-500 to-indigo-600",
+        gradient: "from-[var(--primary)] to-[var(--primary-700)]",
       },
     ],
     [cards],
@@ -257,9 +255,9 @@ const CRMDashboard: React.FC = () => {
                     data={customerTypeBarData}
                     margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} width={52} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--muted)" }} />
+                    <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
                     <Tooltip
                       formatter={(v: any) => Number(v ?? 0)}
                       contentStyle={{
@@ -279,14 +277,14 @@ const CRMDashboard: React.FC = () => {
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Bar
                       dataKey="value"
-                      fill={palette.purple}
+                      fill={palette.blue}
                       radius={[6, 6, 0, 0]}
                       name="Customers"
                     >
                       <LabelList
                         dataKey="value"
                         position="top"
-                        fill="#6b7280"
+                        fill="var(--muted)"
                         fontSize={10}
                       />
                     </Bar>
@@ -350,7 +348,11 @@ const CRMDashboard: React.FC = () => {
                       {exportDonutData.map((_, idx) => (
                         <Cell
                           key={idx}
-                          fill={idx === 0 ? palette.emerald : palette.slate}
+                          fill={
+                            idx === 0
+                              ? "var(--brand-blue-bottom)"
+                              : "var(--primary)"
+                          }
                         />
                       ))}
                     </Pie>
@@ -410,7 +412,11 @@ const CRMDashboard: React.FC = () => {
                       {lopPieData.map((_, idx) => (
                         <Cell
                           key={idx}
-                          fill={idx === 0 ? palette.amber : palette.blue}
+                          fill={
+                            idx === 0
+                              ? "var(--primary)"
+                              : "var(--brand-blue-bottom)"
+                          }
                         />
                       ))}
                     </Pie>
@@ -439,9 +445,9 @@ const CRMDashboard: React.FC = () => {
                     data={totalsOverviewBarData}
                     margin={{ top: 28, right: 10, left: -20, bottom: 0 }}
                   >
-                    <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} width={52} />
+                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--muted)" }} />
+                    <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
                     <Tooltip
                       formatter={(v: any) => Number(v ?? 0)}
                       contentStyle={{

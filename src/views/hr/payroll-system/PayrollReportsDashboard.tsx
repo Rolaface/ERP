@@ -25,12 +25,12 @@ import {
 const fmtZMW = (n: number) => Number(n || 0).toLocaleString("en-ZM");
 
 const COLORS = [
-  "#2563eb",
-  "#16a34a",
-  "#f59e0b",
-  "#ef4444",
-  "#06b6d4",
-  "#8b5cf6",
+  "var(--primary)",
+  "var(--primary-700)",
+  "var(--primary-600)",
+  "var(--brand-blue-bottom)",
+  "var(--brand-blue-top)",
+  "var(--brand-blue-bottom)",
 ];
 
 const KPI_CARD_BASE =
@@ -410,7 +410,7 @@ export default function PayrollReportsDashboard({
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Tooltip
-                    contentStyle={{ borderRadius: 12, borderColor: "#e5e7eb" }}
+                    contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
                   />
                   <Legend
                     verticalAlign="bottom"
@@ -455,7 +455,7 @@ export default function PayrollReportsDashboard({
                   data={topEmployees}
                   margin={{ top: 8, right: 12, left: 0, bottom: 40 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis
                     dataKey="employee"
                     angle={-25}
@@ -466,13 +466,13 @@ export default function PayrollReportsDashboard({
                   />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip
-                    contentStyle={{ borderRadius: 12, borderColor: "#e5e7eb" }}
+                    contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
                     formatter={(v: any) => [
                       `ZMW ${fmtZMW(Number(v || 0))}`,
                       "Net Pay",
                     ]}
                   />
-                  <Bar dataKey="net" fill="#16a34a" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="net" fill="var(--primary)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -499,34 +499,42 @@ export default function PayrollReportsDashboard({
               >
                 <defs>
                   <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorDed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--primary-700)" stopOpacity={0.28} />
+                    <stop offset="95%" stopColor="var(--primary-700)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorAdv" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                    <stop
+                      offset="5%"
+                      stopColor="var(--brand-blue-top)"
+                      stopOpacity={0.28}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--brand-blue-top)"
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#f3f4f6"
+                  stroke="var(--border)"
                   vertical={false}
                 />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 11, fill: "#6b7280" }}
-                  axisLine={{ stroke: "#e5e7eb" }}
+                  tick={{ fontSize: 11, fill: "var(--muted)" }}
+                  axisLine={{ stroke: "var(--border)" }}
                   tickLine={false}
                   tickMargin={10}
                   minTickGap={20}
                 />
                 <YAxis
                   yAxisId="left"
-                  tick={{ fontSize: 11, fill: "#6b7280" }}
+                  tick={{ fontSize: 11, fill: "var(--muted)" }}
                   axisLine={false}
                   tickLine={false}
                   tickMargin={10}
@@ -540,7 +548,7 @@ export default function PayrollReportsDashboard({
                 <Tooltip
                   contentStyle={{
                     borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid var(--border)",
                     boxShadow:
                       "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
                     backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -548,7 +556,7 @@ export default function PayrollReportsDashboard({
                   itemStyle={{ fontSize: 13, fontWeight: 500 }}
                   labelStyle={{
                     fontSize: 12,
-                    color: "#6b7280",
+                    color: "var(--muted)",
                     marginBottom: 4,
                   }}
                   formatter={(v: any, name: string) => {
@@ -563,33 +571,37 @@ export default function PayrollReportsDashboard({
                   type="monotone"
                   dataKey="net"
                   name="Net Pay"
-                  stroke="#10b981"
+                  stroke="var(--primary)"
                   strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#colorNet)"
-                  activeDot={{ r: 6, strokeWidth: 0, fill: "#10b981" }}
+                  activeDot={{ r: 6, strokeWidth: 0, fill: "var(--primary)" }}
                   yAxisId="left"
                 />
                 <Area
                   type="monotone"
                   dataKey="deductions"
                   name="Deductions"
-                  stroke="#ef4444"
+                  stroke="var(--primary-700)"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorDed)"
-                  activeDot={{ r: 5, strokeWidth: 0, fill: "#ef4444" }}
+                  activeDot={{ r: 5, strokeWidth: 0, fill: "var(--primary-700)" }}
                   yAxisId="left"
                 />
                 <Area
                   type="monotone"
                   dataKey="advances"
                   name="Advances"
-                  stroke="#f59e0b"
+                  stroke="var(--brand-blue-top)"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorAdv)"
-                  activeDot={{ r: 5, strokeWidth: 0, fill: "#f59e0b" }}
+                  activeDot={{
+                    r: 5,
+                    strokeWidth: 0,
+                    fill: "var(--brand-blue-top)",
+                  }}
                   yAxisId="left"
                 />
               </AreaChart>
