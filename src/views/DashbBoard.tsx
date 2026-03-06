@@ -601,13 +601,23 @@ const Dashboard = () => {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-gray-900">Employee Status</h3>
           </div>
-          <div className="h-72 rounded-lg border border-gray-200 bg-white">
+          <div
+            className="h-72 rounded-lg border border-gray-200 bg-white"
+            style={chartPlaneStyle}
+          >
             {chartsLoading ? (
               <ChartSkeleton variant="bar" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Tooltip />
+                  <Tooltip
+                    formatter={(v: any) => Number(v ?? 0)}
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: "1px solid var(--border)",
+                      fontSize: 12,
+                    }}
+                  />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Pie
                     data={employeeStatusChartData}
