@@ -1258,7 +1258,7 @@ export default function PayrollManagement() {
                         "End",
                         "Payslip Status",
                         "NAPSA Status",
-                        "Net",
+                        "Net Pay",
                         "",
                       ].map((h, i) => (
                         <th
