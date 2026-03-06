@@ -12,26 +12,22 @@ import {
   Mail,
   Phone,
   MapPin,
-  Calendar,
   Briefcase,
   DollarSign,
   FileText,
   X,
   User,
-  Award,
-  Shield,
-  CreditCard,
   Building2,
   ChevronLeft,
-  Clock,
-  TrendingUp,
-  CreditCard as BankIcon,
   Edit2,
 } from "lucide-react";
 import { updateEmployeeDocuments, updateEmployeeProfilePhoto } from "../../../api/employeeapi";
 import { ERP_BASE } from "../../../config/api";
 import { useAssignedSalaryStructure } from "../../../hooks/useAssignedSalaryStructure";
-import { toSalaryStructureMoneyRows } from "../../../utils/salaryStructureDisplay";
+import {
+  mapSalaryStructureComponentLabel,
+  toSalaryStructureMoneyRows,
+} from "../../../utils/salaryStructureDisplay";
 
 type Props = {
   employee: any;
@@ -300,20 +296,71 @@ const EmployeeDetailView: React.FC<Props> = ({
     salaryStructureDetail,
   } = useAssignedSalaryStructure(employeeCode);
 
+  const toMoneyRowsFromMap = useMemo(() => {
+    return (input: any): Array<{ label: string; amount: number }> => {
+      if (!input || typeof input !== "object" || Array.isArray(input)) return [];
+      return Object.entries(input)
+        .map(([key, value]) => ({
+          label: String(key ?? "").trim(),
+          amount: Number(value ?? 0),
+        }))
+        .filter((r) => Boolean(r.label));
+    };
+  }, []);
+
   const hasStructureEarnings = useMemo(() => {
-    const earnings = Array.isArray(salaryStructureDetail?.earnings) ? salaryStructureDetail.earnings : [];
+    const payrollArr = Array.isArray(payrollInfo?.salaryBreakdown)
+      ? payrollInfo.salaryBreakdown
+      : [];
+    if (payrollArr.length > 0) return true;
+
+    const payrollMapRows = toMoneyRowsFromMap(payrollInfo?.salaryBreakdown);
+    if (payrollMapRows.length > 0) return true;
+
+    const earnings = Array.isArray(salaryStructureDetail?.earnings)
+      ? salaryStructureDetail.earnings
+      : [];
     return earnings.length > 0;
-  }, [salaryStructureDetail]);
+  }, [payrollInfo?.salaryBreakdown, salaryStructureDetail, toMoneyRowsFromMap]);
 
   const hasStructureDeductions = useMemo(() => {
+    const payrollArr = Array.isArray(payrollInfo?.statutoryDeductions)
+      ? payrollInfo.statutoryDeductions
+      : [];
+    if (payrollArr.length > 0) return true;
+
+    const payrollMapRows = toMoneyRowsFromMap(payrollInfo?.statutoryDeductions);
+    if (payrollMapRows.length > 0) return true;
+
     const deductions = Array.isArray((salaryStructureDetail as any)?.deductions)
       ? (salaryStructureDetail as any).deductions
       : [];
     return deductions.length > 0;
-  }, [salaryStructureDetail]);
+  }, [payrollInfo?.statutoryDeductions, salaryStructureDetail, toMoneyRowsFromMap]);
 
   const salaryBreakdownRows = useMemo(() => {
     const currency = String(payrollInfo?.currency ?? "ZMW").trim() || "ZMW";
+
+    const payrollArr = Array.isArray(payrollInfo?.salaryBreakdown)
+      ? payrollInfo.salaryBreakdown
+      : [];
+    if (payrollArr.length > 0) {
+      return payrollArr
+        .map((r: any) => ({
+          label: mapSalaryStructureComponentLabel(r),
+          amount: Number(r?.amount ?? 0),
+          currency,
+        }))
+        .filter((r: any) => Boolean(r.label));
+    }
+
+    const payrollMapRows = toMoneyRowsFromMap(payrollInfo?.salaryBreakdown);
+    if (payrollMapRows.length > 0) {
+      return payrollMapRows.map((r: any) => ({
+        ...r,
+        currency,
+      }));
+    }
 
     const earnings = Array.isArray(salaryStructureDetail?.earnings) ? salaryStructureDetail.earnings : [];
     if (earnings.length > 0) {
@@ -327,21 +374,60 @@ const EmployeeDetailView: React.FC<Props> = ({
     }
 
     return [];
-  }, [payrollInfo?.currency, payrollInfo?.salaryBreakdown, salaryStructureDetail]);
+  }, [payrollInfo?.currency, payrollInfo?.salaryBreakdown, salaryStructureDetail, toMoneyRowsFromMap]);
+
+  const statutoryDeductionsRows = useMemo(() => {
+    const currency = String(payrollInfo?.currency ?? "ZMW").trim() || "ZMW";
+
+    const payrollArr = Array.isArray(payrollInfo?.statutoryDeductions)
+      ? payrollInfo.statutoryDeductions
+      : [];
+    if (payrollArr.length > 0) {
+      return payrollArr
+        .map((r: any) => ({
+          label: mapSalaryStructureComponentLabel(r),
+          amount: Number(r?.amount ?? 0),
+          currency,
+        }))
+        .filter((r: any) => Boolean(r.label));
+    }
+
+    const payrollMapRows = toMoneyRowsFromMap(payrollInfo?.statutoryDeductions);
+    if (payrollMapRows.length > 0) {
+      return payrollMapRows.map((r: any) => ({
+        ...r,
+        currency,
+      }));
+    }
+
+    const fallback = Array.isArray((salaryStructureDetail as any)?.deductions)
+      ? (salaryStructureDetail as any).deductions
+      : [];
+    return toSalaryStructureMoneyRows(fallback).map((d: any) => ({
+      ...d,
+      currency,
+    }));
+  }, [
+    payrollInfo?.currency,
+    payrollInfo?.statutoryDeductions,
+    salaryStructureDetail,
+    toMoneyRowsFromMap,
+  ]);
 
   const compensationHeader = useMemo(() => {
     const currency = String(payrollInfo?.currency ?? "ZMW").trim() || "ZMW";
     const structureName = String(assignedSalaryStructureName ?? "").trim();
     const fromDate = String(assignedSalaryStructureFromDate ?? "").trim();
 
-    const earnings = Array.isArray((salaryStructureDetail as any)?.earnings)
-      ? (salaryStructureDetail as any).earnings
-      : [];
-    const deductions = Array.isArray((salaryStructureDetail as any)?.deductions)
-      ? (salaryStructureDetail as any).deductions
-      : [];
-    const totalEarnings = earnings.reduce((s: number, r: any) => s + Number(r?.amount ?? 0), 0);
-    const totalDeductions = deductions.reduce((s: number, r: any) => s + Number(r?.amount ?? 0), 0);
+    const earningsRows = salaryBreakdownRows;
+    const deductionsRows = statutoryDeductionsRows;
+
+    const totalEarnings = earningsRows.reduce((s: number, r: any) => {
+      return s + Number(r?.amount ?? 0);
+    }, 0);
+    const totalDeductions = deductionsRows.reduce((s: number, r: any) => {
+      return s + Number(r?.amount ?? 0);
+    }, 0);
     const net = totalEarnings - totalDeductions;
 
     return {
@@ -352,7 +438,13 @@ const EmployeeDetailView: React.FC<Props> = ({
       totalDeductions,
       net,
     };
-  }, [assignedSalaryStructureFromDate, assignedSalaryStructureName, payrollInfo?.currency, salaryStructureDetail]);
+  }, [
+    assignedSalaryStructureFromDate,
+    assignedSalaryStructureName,
+    payrollInfo?.currency,
+    salaryBreakdownRows,
+    statutoryDeductionsRows,
+  ]);
 
   const getStatusBadge = () => {
     const statusLower = status?.toLowerCase() || "";
@@ -702,11 +794,11 @@ const EmployeeDetailView: React.FC<Props> = ({
                         {!hasStructureDeductions ? (
                           <div className="text-muted font-medium py-2">—</div>
                         ) : (
-                          toSalaryStructureMoneyRows((salaryStructureDetail as any).deductions).map((d: any) => (
+                          statutoryDeductionsRows.map((d: any) => (
                             <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
                               <span className="text-main">{d.label}</span>
                               <span className="font-medium text-main">
-                                - {payrollInfo?.currency || "ZMW"} {Number(d.amount ?? 0).toLocaleString()}
+                                - {d.currency || payrollInfo?.currency || "ZMW"} {Number(d.amount ?? 0).toLocaleString()}
                               </span>
                             </div>
                           ))

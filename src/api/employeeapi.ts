@@ -5,6 +5,21 @@ import { API, ERP_BASE } from "../config/api";
 const api = createAxiosInstance(ERP_BASE);
 export const EmployeeAPI = API.employee;
 
+type ApiEnvelope<T> = {
+  status_code?: number;
+  status?: string;
+  message?: string;
+  data?: T;
+};
+
+const unwrap = <T,>(payload: any): T => {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    const env = payload as ApiEnvelope<T>;
+    if (env.data !== undefined) return env.data as T;
+  }
+  return payload as T;
+};
+
 type GetAllEmployeesParams = {
   page?: number;
   page_size?: number;
@@ -30,13 +45,32 @@ export async function getAllEmployees(
         };
 
   const resp: AxiosResponse = await api.get(EmployeeAPI.getAll, { params });
-  return resp.data?.data ?? resp.data;
+  return unwrap<any>(resp.data);
 }
 
-export async function getEmployeeById(id: string): Promise<any> {
-  const url = `${EmployeeAPI.getById}?id=${id}`;
+export async function getEmployee(id: string): Promise<any> {
+  const raw = String(id ?? "").trim();
+  if (!raw) return null;
+
+  let internalId = raw;
+
+  // Some screens pass employee code (e.g. HR-EMP-00056). Backend expects internal numeric id.
+  if (/^HR-EMP-/i.test(raw)) {
+    const list = await getAllEmployees({ page: 1, page_size: 1, id: raw });
+    const row = Array.isArray(list?.employees) ? list.employees[0] : null;
+    const resolved = String(row?.id ?? row?.name ?? "").trim();
+    if (!resolved) return null;
+    internalId = resolved;
+  }
+
+  const url = `${EmployeeAPI.getById}?id=${encodeURIComponent(internalId)}`;
   const resp: AxiosResponse = await api.get(url);
-  return (resp.data?.data ?? resp.data) || null;
+  return unwrap<any>(resp.data) || null;
+}
+
+// Backwards-compatible alias
+export async function getEmployeeById(id: string): Promise<any> {
+  return getEmployee(id);
 }
 
 export async function createEmployee(payload: any): Promise<any> {

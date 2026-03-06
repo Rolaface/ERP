@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Plus, ChevronLeft,
   FileText, Users, CheckCircle,
@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 
 import type { PayrollEntry, Employee } from "../../../types/payrolltypes";
-import { getAllEmployees } from "../../../api/employeeapi";
+import { getAllEmployees, getEmployee } from "../../../api/employeeapi";
 import { getSalarySlipById, getSalarySlips, type SalarySlipDetail, type SalarySlipListItem } from "../../../api/salarySlipApi";
 
 // ── Components ────────────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ import PayrollReportsDashboard from "./PayrollReportsDashboard";
 import AdvanceLoanTab from "./AdditionalSalaryTab";
 
 // ── Views ─────────────────────────────────────────────────────────────────────
-import EmployeeDetailsPage from "./EmployeeDetailsPage";
+import EmployeeDetailView from "../EmployeeManagement/EmployeeDetailView";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TOAST NOTIFICATION (inline, lightweight)
@@ -555,6 +555,38 @@ export default function PayrollManagement() {
 
   const [detailEmployeeId, setDetailEmployeeId] = useState<string | null>(null);
 
+  const [detailEmployee, setDetailEmployee] = useState<any>(null);
+  const [detailEmployeeLoading, setDetailEmployeeLoading] = useState(false);
+  const [detailEmployeeError, setDetailEmployeeError] = useState<string | null>(null);
+
+  const refetchDetailEmployee = useCallback(async () => {
+    const id = String(detailEmployeeId ?? "").trim();
+    if (!id) return;
+
+    setDetailEmployeeLoading(true);
+    setDetailEmployeeError(null);
+    try {
+      const resp = await getEmployee(id);
+      setDetailEmployee(resp);
+    } catch (e: any) {
+      setDetailEmployee(null);
+      setDetailEmployeeError(e?.message || "Failed to load employee details");
+    } finally {
+      setDetailEmployeeLoading(false);
+    }
+  }, [detailEmployeeId]);
+
+  useEffect(() => {
+    if (!detailEmployeeId) {
+      setDetailEmployee(null);
+      setDetailEmployeeError(null);
+      setDetailEmployeeLoading(false);
+      return;
+    }
+
+    refetchDetailEmployee();
+  }, [detailEmployeeId, refetchDetailEmployee]);
+
   const [toast, setToast] = useState<ToastState | null>(null);
   const showToast = (msg: string, type: ToastState["type"] = "success") => {
     setToast({ msg, type });
@@ -765,10 +797,57 @@ export default function PayrollManagement() {
   };
 
   if (detailEmployeeId) {
+    if (detailEmployeeLoading) {
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
+            <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted">
+              Loading employee details…
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (detailEmployeeError) {
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
+            <div className="rounded-lg border border-danger/30 bg-danger/5 p-6 text-sm font-semibold text-danger">
+              {detailEmployeeError}
+            </div>
+            <div className="mt-4">
+              <Btn variant="outline" size="sm" onClick={() => setDetailEmployeeId(null)}>
+                Back
+              </Btn>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!detailEmployee) {
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
+            <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted">
+              No employee data.
+            </div>
+            <div className="mt-4">
+              <Btn variant="outline" size="sm" onClick={() => setDetailEmployeeId(null)}>
+                Back
+              </Btn>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <EmployeeDetailsPage
-        employeeId={detailEmployeeId}
+      <EmployeeDetailView
+        employee={detailEmployee}
         onBack={() => setDetailEmployeeId(null)}
+        onDocumentUploaded={refetchDetailEmployee}
       />
     );
   }
