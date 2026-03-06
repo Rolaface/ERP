@@ -1006,7 +1006,10 @@ const EmployeeDetailView: React.FC<Props> = ({
                         ) : (
                           statutoryDeductionsRows
                             .filter((d: any) => {
-                              const label = String(d?.label ?? "").toLowerCase();
+                              const labelRaw = String(d?.label ?? "");
+                              const label = labelRaw
+                                .toLowerCase()
+                                .replace(/[^a-z]/g, "");
                               if (!label) return false;
                               if (label.includes("employernapsa")) return false;
                               if (label.includes("employernhima")) return false;
