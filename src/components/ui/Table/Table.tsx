@@ -21,6 +21,9 @@ interface TableProps<T> {
   loading?: boolean;
   emptyMessage?: string;
 
+  // Compatibility flag (some screens pass this to indicate backend-driven mode)
+  serverSide?: boolean;
+
   // Row interaction
   onRowClick?: (item: T) => void;
 
