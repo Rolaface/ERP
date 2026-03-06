@@ -143,7 +143,7 @@ const ItemsCategoryModal: React.FC<{
       onClose={handleClose}
       title={isEditMode ? "Edit Item Category" : "Add Item Category"}
       subtitle="Manage category configuration"
-      customWidth="50vw"
+      customWidth="55vw"
       height="45vh"
     >
       <form onSubmit={handleSubmit} className="h-full flex flex-col">
@@ -237,6 +237,7 @@ const ItemsCategoryModal: React.FC<{
                 type="number"
                 value={form.sellingPrice}
                 onChange={handleChange}
+                className="no-spinner"
               />
 
               <ModalInput
