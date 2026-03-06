@@ -272,8 +272,8 @@ export const useItemForm = ({
         // API returns pakingUnit / packingSize (capital U, capital S).
         // Form state uses pakingunit / packingsize (all lowercase).
         // Explicit remap so edit mode pre-fills these inputs correctly.
-        pakingunit: initialData.pakingunit ?? initialData.pakingunit ?? "",
-        packingsize: initialData.packingsize ?? initialData.packingsize ?? "",
+        pakingunit: initialData.pakingUnit ?? initialData.pakingunit ?? "",
+        packingsize: initialData.packingSize ?? initialData.packingsize ?? "",
 
         // Flatten vendorInfo
         preferredVendor: initialData.vendorInfo?.preferredVendor ?? initialData.preferredVendor ?? "",
