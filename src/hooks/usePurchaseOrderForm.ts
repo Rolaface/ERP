@@ -398,9 +398,9 @@ setForm((prev) => ({
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
           requiredBy: items[idx].requiredBy || prev.date,
-            packingUnit: Number(data.pakingUnit || 0),
+            packingUnit: Number(data.packingUnit || 0),
   packingSize: Number(data.packingSize || 0),
-  packing: `(${data.pakingUnit || 0}) x (${data.packingSize || 0})`,
+  packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
         };
 
         return { ...prev, items };

@@ -245,9 +245,9 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   });
   const [stockTo, setStockTo] = useState(() => new Date().toISOString().split("T")[0]);
 const packingDisplay =
-  item?.pakingUnit && item?.packingSize
-    ? `${item.pakingUnit} × ${item.packingSize}`
-    : item?.pakingUnit || item?.packingSize || "";
+  item?.packingUnit && item?.packingSize
+    ? `${item.packingUnit} × ${item.packingSize}`
+    : item?.packingUnit || item?.packingSize || "";
   /* Reset tab + search whenever selected item changes */
   useEffect(() => {
     setActiveTab("overview");

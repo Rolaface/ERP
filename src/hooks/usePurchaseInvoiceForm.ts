@@ -537,9 +537,9 @@ export const usePurchaseInvoiceForm = ({
           expDate: items[idx].expDate || "",
           requiresBatch: Boolean(data.batchInfo?.has_batch_no),
           discount: items[idx].discount || 0,
-          packingUnit: Number(data.pakingUnit || 0),
+          packingUnit: Number(data.packingUnit || 0),
           packingSize: Number(data.packingSize || 0),
-          packing: `${data.pakingUnit || 0} x ${data.packingSize || 0}`,
+          packing: `${data.packingUnit || 0} x ${data.packingSize || 0}`,
         };
 
         return { ...prev, items };

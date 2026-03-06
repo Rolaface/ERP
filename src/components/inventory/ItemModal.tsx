@@ -375,8 +375,8 @@ const ItemModal: React.FC<{
                               <div className="flex items-center gap-1 h-8">
                                 <input
                                   type="number"
-                                  name="pakingunit"
-                                  value={form.pakingunit || ""}
+                                  name="packingunit"
+                                  value={form.packingunit || ""}
                                   required
                                   onChange={handleForm}          
                                   className="w-15 h-8 rounded-md border border-theme bg-card text-main  text-sm px-1

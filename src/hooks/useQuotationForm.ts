@@ -153,7 +153,7 @@ useEffect(() => {
   vatRate: Number(it.vatRate ?? 0),
   vatCode: it.vatCode ?? "",
   batchNo: it.batchNo ?? "",
-  packingUnit: it.pakingUnit ?? "",
+  packingUnit: it.packingUnit ?? "",
   packingSize: it.packingSize ?? "",
 })),
     });
@@ -340,7 +340,7 @@ useEffect(() => {
         batchNo: data.batchInfo?.has_batch_no
           ? data.batchInfo?.batchNo || ""
           : "",
-        packingUnit: data.pakingUnit ?? "",
+        packingUnit: data.packingUnit ?? "",
         packingSize: data.packingSize ?? "",
       };
 

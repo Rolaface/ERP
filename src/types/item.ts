@@ -36,7 +36,7 @@ export interface Item {
   dimensionHeight: string;
   taxCategory: string;
   packingSize: string;
-  pakingUnit: string;
+  packingUnit: string;
 }
 
 export interface ItemSummary {

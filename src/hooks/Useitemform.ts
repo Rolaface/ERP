@@ -18,7 +18,7 @@ export const emptyForm: Record<string, any> = {
   itemTypeCode: "",
   originNationCode: "",
   packagingUnitCode: "",
-  pakingunit: 1,      
+  packingunit: 1,      
   packingsize: 1,      
   svcCharge: "",
   ins: "",
@@ -71,7 +71,7 @@ const buildPayload = (form: Record<string, any>) => ({
   itemTypeCode: Number(form.itemTypeCode),
   originNationCode: form.originNationCode,
   packagingUnitCode: form.packagingUnitCode,
-  pakingunit: form.pakingunit || "",
+  packingunit: form.packingunit || "",
   packingsize: form.packingsize || "",
   svcCharge: form.svcCharge,
   ins: form.ins,
@@ -269,10 +269,10 @@ export const useItemForm = ({
         taxPerct: initialData.taxInfo?.taxPerct ?? initialData.taxPerct ?? "",
         countryCode: initialData.taxInfo?.countryCode ?? initialData.countryCode ?? "",
 
-        // API returns pakingUnit / packingSize (capital U, capital S).
-        // Form state uses pakingunit / packingsize (all lowercase).
+        // API returns packingUnit / packingSize (capital U, capital S).
+        // Form state uses packingunit / packingsize (all lowercase).
         // Explicit remap so edit mode pre-fills these inputs correctly.
-        pakingunit: initialData.pakingUnit ?? initialData.pakingunit ?? "",
+        packingunit: initialData.packingUnit ?? initialData.packingunit ?? "",
         packingsize: initialData.packingSize ?? initialData.packingsize ?? "",
 
         // Flatten vendorInfo

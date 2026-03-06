@@ -519,7 +519,7 @@ if (enableExchange && exchangeRateLoading) {
           batchNo: data.batchInfo?.has_batch_no
             ? data.batchInfo?.batchNo ?? ""
             : "",
-          packingUnit: data.pakingUnit ?? "",
+          packingUnit: data.packingUnit ?? "",
           packingSize: data.packingSize ?? "",
           mfgDate: data.batchInfo?.manufacturingDate ?? "",
   expDate: data.batchInfo?.expiryDate ?? "",
