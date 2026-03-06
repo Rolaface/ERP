@@ -932,6 +932,34 @@ const EmployeeDetailView: React.FC<Props> = ({
                     </div>
                   </div>
 
+                  <section>
+                    <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
+                      Bank Details
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
+                      <CleanField
+                        label="Account Name"
+                        value={payrollInfo?.bankAccount?.AccountName}
+                      />
+                      <CleanField
+                        label="Account Number"
+                        value={payrollInfo?.bankAccount?.AccountNumber}
+                      />
+                      <CleanField
+                        label="Bank Name"
+                        value={payrollInfo?.bankAccount?.BankName}
+                      />
+                      <CleanField
+                        label="Branch Code"
+                        value={payrollInfo?.bankAccount?.branchCode}
+                      />
+                      <CleanField
+                        label="Account Type"
+                        value={payrollInfo?.bankAccount?.AccountType}
+                      />
+                    </div>
+                  </section>
+
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Earnings */}
                     <section>
@@ -976,19 +1004,27 @@ const EmployeeDetailView: React.FC<Props> = ({
                         {!hasStructureDeductions ? (
                           <div className="text-muted font-medium py-2">—</div>
                         ) : (
-                          statutoryDeductionsRows.map((d: any) => (
-                            <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
-                              <span className="text-main">{d.label}</span>
-                              <span className="font-medium text-main">
-                                - {d.currency || payrollInfo?.currency || "ZMW"} {Number(d.amount ?? 0).toLocaleString()}
-                              </span>
-                            </div>
-                          ))
+                          statutoryDeductionsRows
+                            .filter((d: any) => {
+                              const label = String(d?.label ?? "").toLowerCase();
+                              if (!label) return false;
+                              if (label.includes("employernapsa")) return false;
+                              if (label.includes("employernhima")) return false;
+                              return true;
+                            })
+                            .map((d: any) => (
+                              <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
+                                <span className="text-main">{d.label}</span>
+                                <span className="font-medium text-main">
+                                  {d.currency || payrollInfo?.currency || "ZMW"} {Number(d.amount ?? 0).toLocaleString()}
+                                </span>
+                              </div>
+                            ))
                         )}
                         <div className="flex justify-between py-3 font-bold mt-2">
                           <span className="text-main">Total Deductions</span>
                           <span className="text-main">
-                            - {compensationHeader.currency}{" "}
+                            {compensationHeader.currency}{" "}
                             {Number(
                               compensationHeader.totalDeductions || 0,
                             ).toLocaleString()}
@@ -997,34 +1033,6 @@ const EmployeeDetailView: React.FC<Props> = ({
                       </div>
                     </section>
                   </div>
-
-                  <section>
-                    <h2 className="text-sm font-bold text-main uppercase tracking-wider mb-4 text-muted border-b border-border pb-2">
-                      Bank Details
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
-                      <CleanField
-                        label="Account Name"
-                        value={payrollInfo?.bankAccount?.AccountName}
-                      />
-                      <CleanField
-                        label="Account Number"
-                        value={payrollInfo?.bankAccount?.AccountNumber}
-                      />
-                      <CleanField
-                        label="Bank Name"
-                        value={payrollInfo?.bankAccount?.BankName}
-                      />
-                      <CleanField
-                        label="Branch Code"
-                        value={payrollInfo?.bankAccount?.branchCode}
-                      />
-                      <CleanField
-                        label="Account Type"
-                        value={payrollInfo?.bankAccount?.AccountType}
-                      />
-                    </div>
-                  </section>
                 </div>
               )}
 
