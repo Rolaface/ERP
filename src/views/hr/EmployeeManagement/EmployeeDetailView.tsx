@@ -399,6 +399,18 @@ const EmployeeDetailView: React.FC<Props> = ({
   const statutoryDeductionsRows = useMemo(() => {
     const currency = String(payrollInfo?.currency ?? "ZMW").trim() || "ZMW";
 
+    const shouldKeepDeductionRow = (labelInput: any) => {
+      const label = String(labelInput ?? "")
+        .toLowerCase()
+        .replace(/[^a-z]/g, "");
+      if (!label) return false;
+      if (label.includes("employernapsa")) return false;
+      if (label.includes("employernhima")) return false;
+      if (label.includes("employer") && label.includes("napsa")) return false;
+      if (label.includes("employer") && label.includes("nhima")) return false;
+      return true;
+    };
+
     const payrollArr = Array.isArray(payrollInfo?.statutoryDeductions)
       ? payrollInfo.statutoryDeductions
       : [];
@@ -406,27 +418,33 @@ const EmployeeDetailView: React.FC<Props> = ({
       return payrollArr
         .map((r: any) => ({
           label: mapSalaryStructureComponentLabel(r),
-          amount: Number(r?.amount ?? 0),
+          amount: Math.abs(Number(r?.amount ?? 0)),
           currency,
         }))
-        .filter((r: any) => Boolean(r.label));
+        .filter((r: any) => shouldKeepDeductionRow(r.label));
     }
 
     const payrollMapRows = toMoneyRowsFromMap(payrollInfo?.statutoryDeductions);
     if (payrollMapRows.length > 0) {
-      return payrollMapRows.map((r: any) => ({
-        ...r,
-        currency,
-      }));
+      return payrollMapRows
+        .map((r: any) => ({
+          ...r,
+          amount: Math.abs(Number(r?.amount ?? 0)),
+          currency,
+        }))
+        .filter((r: any) => shouldKeepDeductionRow(r.label));
     }
 
     const fallback = Array.isArray((salaryStructureDetail as any)?.deductions)
       ? (salaryStructureDetail as any).deductions
       : [];
-    return toSalaryStructureMoneyRows(fallback).map((d: any) => ({
-      ...d,
-      currency,
-    }));
+    return toSalaryStructureMoneyRows(fallback)
+      .map((d: any) => ({
+        ...d,
+        amount: Math.abs(Number(d?.amount ?? 0)),
+        currency,
+      }))
+      .filter((r: any) => shouldKeepDeductionRow(r.label));
   }, [
     payrollInfo?.currency,
     payrollInfo?.statutoryDeductions,
@@ -446,7 +464,7 @@ const EmployeeDetailView: React.FC<Props> = ({
       return s + Number(r?.amount ?? 0);
     }, 0);
     const totalDeductions = deductionsRows.reduce((s: number, r: any) => {
-      return s + Number(r?.amount ?? 0);
+      return s + Math.abs(Number(r?.amount ?? 0));
     }, 0);
     const net = totalEarnings - totalDeductions;
 
@@ -1004,25 +1022,14 @@ const EmployeeDetailView: React.FC<Props> = ({
                         {!hasStructureDeductions ? (
                           <div className="text-muted font-medium py-2">—</div>
                         ) : (
-                          statutoryDeductionsRows
-                            .filter((d: any) => {
-                              const labelRaw = String(d?.label ?? "");
-                              const label = labelRaw
-                                .toLowerCase()
-                                .replace(/[^a-z]/g, "");
-                              if (!label) return false;
-                              if (label.includes("employernapsa")) return false;
-                              if (label.includes("employernhima")) return false;
-                              return true;
-                            })
-                            .map((d: any) => (
-                              <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
-                                <span className="text-main">{d.label}</span>
-                                <span className="font-medium text-main">
-                                  {d.currency || payrollInfo?.currency || "ZMW"} {Number(d.amount ?? 0).toLocaleString()}
-                                </span>
-                              </div>
-                            ))
+                          statutoryDeductionsRows.map((d: any) => (
+                            <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
+                              <span className="text-main">{d.label}</span>
+                              <span className="font-medium text-main">
+                                {d.currency || payrollInfo?.currency || "ZMW"} {Number(d.amount ?? 0).toLocaleString()}
+                              </span>
+                            </div>
+                          ))
                         )}
                         <div className="flex justify-between py-3 font-bold mt-2">
                           <span className="text-main">Total Deductions</span>

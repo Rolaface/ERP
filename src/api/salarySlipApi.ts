@@ -7,6 +7,9 @@ const api = createAxiosInstance(ERP_BASE);
 export type SalarySlipListItem = {
   name: string;
   employee: string;
+  full_name?: string;
+  nrc?: string;
+  ssn?: string;
   salary_structure: string;
   start_date: string;
   end_date: string;
@@ -15,6 +18,7 @@ export type SalarySlipListItem = {
   total_deduction: number;
   net_pay: number;
   referenceNumber?: string;
+  napsaStatus?: string;
 };
 
 export type SalarySlipListResponse = {
@@ -44,6 +48,8 @@ type PaginatedRecords<T> = {
 
 export type SalarySlipDetail = SalarySlipListItem & {
   employee_name?: string;
+  nrc?: string;
+  ssn?: string;
   company?: string;
   department?: string;
   posting_date?: string;
@@ -57,10 +63,57 @@ export type SalarySlipDetail = SalarySlipListItem & {
   bank_account_no?: string;
   custom_reference_number?: string | null;
   custom_slip_url?: string | null;
+  custom_napsa_status?: string | null;
+  napsaStatus?: string | null;
+  napsaFailMessage?: string | null;
   earnings?: { component: string; amount: number }[];
   deductions?: { component: string; amount: number }[];
+  docstatus?: number;
+  modified?: string;
+  modified_by?: string;
+  owner?: string;
   paySlipUrl?: string;
 };
+
+function unwrapApiEnvelope<T>(input: any): T | null {
+  // Some endpoints return:
+  // 1) slip
+  // 2) { data: slip }
+  // 3) { status_code, status, message, data: slip }
+  // 4) nested envelope: { status_code, ..., data: { status_code, ..., data: slip } }
+  let cur: any = input;
+  for (let i = 0; i < 3; i += 1) {
+    if (!cur) return null;
+
+    const looksLikeEnvelope =
+      typeof cur === "object" &&
+      cur !== null &&
+      ("status_code" in cur || "status" in cur || "message" in cur) &&
+      "data" in cur;
+
+    if (looksLikeEnvelope) {
+      cur = cur.data;
+      continue;
+    }
+
+    // Common axios shape: resp.data = { data: slip }
+    if (
+      typeof cur === "object" &&
+      cur !== null &&
+      "data" in cur &&
+      cur.data &&
+      typeof cur.data === "object" &&
+      ("name" in cur.data || "employee" in cur.data)
+    ) {
+      cur = cur.data;
+      continue;
+    }
+
+    break;
+  }
+
+  return (cur ?? null) as T | null;
+}
 
 export async function getSalarySlips(params?: {
   employee?: string;
@@ -121,5 +174,5 @@ export async function getSalarySlipById(
   const base = API.payrollSetup.salarySlip.getById;
   const url = `${base}?salarySlipId=${encodeURIComponent(salarySlipId)}`;
   const resp: AxiosResponse = await api.get(url);
-  return (resp.data?.data ?? resp.data) || null;
+  return unwrapApiEnvelope<SalarySlipDetail>(resp.data);
 }

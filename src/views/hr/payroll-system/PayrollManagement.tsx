@@ -560,6 +560,19 @@ const SalarySlipDetailsModal: React.FC<{
                     <div className={sectionTitleCls}>Department</div>
                     <input readOnly value={String((data as any)?.department ?? "")} className={roInputCls} />
                   </div>
+
+                  <div>
+                    <div className={sectionTitleCls}>NRC</div>
+                    <input readOnly value={String((data as any)?.nrc ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>SSN</div>
+                    <input readOnly value={String((data as any)?.ssn ?? "")} className={roInputCls} />
+                  </div>
+                  <div>
+                    <div className={sectionTitleCls}>Company</div>
+                    <input readOnly value={String((data as any)?.company ?? "")} className={roInputCls} />
+                  </div>
                 </div>
               </div>
 
@@ -1237,6 +1250,9 @@ export default function PayrollManagement() {
                       {[
                         "Slip ID",
                         "Employee",
+                        "Full Name",
+                        "NRC",
+                        "SSN",
                         "Reference #",
                         "Structure",
                         "Start",
@@ -1251,7 +1267,7 @@ export default function PayrollManagement() {
                         <th
                           key={String(i)}
                           className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${
-                            i >= 8 && i <= 10 ? "text-right" : "text-left"
+                            i >= 11 && i <= 13 ? "text-right" : "text-left"
                           }`}
                         >
                           {h}
@@ -1268,6 +1284,15 @@ export default function PayrollManagement() {
                         >
                           <td className="px-4 py-3">
                             <div className="h-3 w-28 bg-theme/60 rounded animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-3 w-20 bg-theme/60 rounded animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-3 w-32 bg-theme/60 rounded animate-pulse" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="h-3 w-24 bg-theme/60 rounded animate-pulse" />
                           </td>
                           <td className="px-4 py-3">
                             <div className="h-3 w-20 bg-theme/60 rounded animate-pulse" />
@@ -1307,7 +1332,7 @@ export default function PayrollManagement() {
                     ) : filteredSalarySlips.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={12}
+                          colSpan={15}
                           className="px-4 py-10 text-center text-sm text-muted"
                         >
                           {String(slipsSearch ?? "").trim()
@@ -1323,6 +1348,9 @@ export default function PayrollManagement() {
                         >
                           <td className="px-4 py-3 text-sm font-medium text-main break-words">{s.name}</td>
                           <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{s.employee}</td>
+                          <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{s.full_name || "—"}</td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.nrc || "—"}</td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.ssn || "—"}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.referenceNumber || "—"}</td>
                           <td className="px-4 py-3 text-sm text-muted break-words">{s.salary_structure}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
