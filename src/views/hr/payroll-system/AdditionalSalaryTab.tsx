@@ -67,7 +67,7 @@ const Btn: React.FC<{
   );
 };
 
-export default function AdvanceLoanTab() {
+export default function AdditionalSalaryTab() {
   const [searchEmpId, setSearchEmpId] = useState("");
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [selectedDetail, setSelectedDetail] =
@@ -75,7 +75,7 @@ export default function AdvanceLoanTab() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [advances, setAdvances] = useState<AdditionalSalaryRecord[]>([]);
   const [advancesPage, setAdvancesPage] = useState<AdditionalSalaryPage | null>(
-    null,
+    null
   );
   const [searchRecords, setSearchRecords] = useState<AdditionalSalaryRecord[]>(
     [],
@@ -294,7 +294,7 @@ export default function AdvanceLoanTab() {
         setSelectedDetail(detail);
       } catch (e: any) {
         setSelectedDetail(null);
-        setError(e?.message || "Failed to load advance details.");
+        setError(e?.message || "Failed to load additional salary details.");
         showApiError(e);
       } finally {
         setDetailLoading(false);
@@ -346,10 +346,10 @@ export default function AdvanceLoanTab() {
         <div className="px-6 py-4 border-b border-theme flex items-center justify-between">
           <div>
             <div className="text-xs font-extrabold text-main uppercase tracking-wider">
-              Aditional Salary
+              Additional Salary
             </div>
             <div className="text-[11px] text-muted mt-1">
-              Search, view and create advances
+              Search, view and create additional salary
             </div>
           </div>
 
@@ -390,7 +390,7 @@ export default function AdvanceLoanTab() {
           <div className="border border-theme rounded-xl overflow-hidden">
             <div className="px-4 py-3 bg-app border-b border-theme flex items-center justify-between gap-4">
               <div className="text-xs font-extrabold text-main uppercase tracking-wide">
-                Advances
+                Additional Salary
               </div>
               <div className="flex items-center gap-3">
                 <div className="relative w-72 max-w-full">
@@ -414,11 +414,11 @@ export default function AdvanceLoanTab() {
             <div className="overflow-auto">
               {listLoading ? (
                 <div className="px-4 py-10 text-center text-sm text-muted">
-                  Loading advances...
+                  Loading additional salary...
                 </div>
               ) : displayRows.length === 0 ? (
                 <div className="px-4 py-10 text-center text-sm text-muted">
-                  No advances found
+                  No additional salary found
                 </div>
               ) : (
                 <table className="w-full">
@@ -654,7 +654,7 @@ export default function AdvanceLoanTab() {
                   New Additional Salary
                 </h3>
                 <p className="text-xs text-muted">
-                  Create a new advance payment or loan deduction
+                  Create a new additional salary entry
                 </p>
               </div>
               <button
@@ -667,7 +667,7 @@ export default function AdvanceLoanTab() {
             </div>
 
             <form
-              id="advance-create-form"
+              id="additional-salary-create-form"
               onSubmit={handleCreate}
               className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4"
             >

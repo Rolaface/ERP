@@ -20,7 +20,7 @@ import { EmployeesTab } from "./EntryFormTabs";
 import SalaryStructureTab from "../tabs/SalaryStructureTab";
 import SalaryStructureAssignmentsDashboardTab from "./SalaryStructureAssignmentsDashboardTab";
 import PayrollReportsDashboard from "./PayrollReportsDashboard";
-import AdvanceLoanTab from "./AdvanceLoanTab";
+import AdditionalSalaryTab from "./AdditionalSalaryTab";
 
 // ── Views ─────────────────────────────────────────────────────────────────────
 import EmployeeDetailsPage from "./EmployeeDetailsPage";
@@ -195,7 +195,7 @@ const TopBar: React.FC<{
     },
     {
       id: "advanceLoan",
-      label: "Advance  & Loans  ",
+      label: "Additional Salary",
       icon: <CreditCard className="w-3.5 h-3.5" />,
     },
     {
@@ -1002,7 +1002,7 @@ export default function PayrollManagement() {
       <div className="h-screen flex flex-col bg-app overflow-hidden">
         <TopBar {...topBarProps} />
         <div className="flex-1 min-h-0 overflow-y-auto w-full">
-          <AdvanceLoanTab />
+          <AdditionalSalaryTab />
         </div>
       </div>
     );
