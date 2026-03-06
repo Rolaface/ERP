@@ -410,8 +410,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     name="packingUnit"
                                     value={it.packingUnit || ""}
                                     onChange={(e) => actions.handleItemChange(i, e)}
-                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
-                                    placeholder="0"
+                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
                                   />
 
                                   <span className="text-[10px] text-muted font-semibold">×</span>
@@ -422,8 +421,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     name="packingSize"
                                     value={it.packingSize || ""}
                                     onChange={(e) => actions.handleItemChange(i, e)}
-                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center"
-                                    placeholder="0"
+                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
                                   />
 
                                 </div>
@@ -473,25 +471,32 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                 />
                               </td>
                               <td className="px-0.5 py-1">
-                                <input
-                                  type="date"
-                                  name="mfgDate"
-                                  value={it.mfgDate || ""}
-                                  onChange={(e) => actions.handleItemChange(i, e)}
-                                  className="w-[93px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                />
+                                <div style={{ width: "103px" }}>
+                                  <ModalInput
+                                    label=""
+                                    type="date"
+                                    name="mfgDate"
+                                    id={`mfgDate-${i}`}
+                                    value={it.mfgDate || ""}
+                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    className="w-full"
+                                  />
+                                </div>
                               </td>
 
                               <td className="px-0.5 py-1">
-                                <input
-                                  type="date"
-                                  name="expDate"
-                                  value={it.expDate || ""}
-                                  onChange={(e) => actions.handleItemChange(i, e)}
-                                  className="w-[93px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                />
+                                <div style={{ width: "103px" }}>
+                                  <ModalInput
+                                    label=""
+                                    type="date"
+                                    name="expDate"
+                                    id={`expDate-${i}`}
+                                    value={it.expDate || ""}
+                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    className="w-full"
+                                  />
+                                </div>
                               </td>
-
 
                               <td className="px-0.5 py-1">
                                 <input
@@ -507,10 +512,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                               <td className="px-0.5 py-1">
                                 <input
                                   type="number"
-                                  className="w-[55px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[55px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                   name="discount"
                                   value={it.discount ?? ""}
-                                  min="0"
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }
@@ -519,10 +523,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                               <td className="px-0.5 py-1">
                                 <input
                                   type="number" // Assuming input is number for entry, stored as string in Type
-                                  className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                   name="vatRate"
                                   value={it.vatRate ?? ""}
-                                  min="0"
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }

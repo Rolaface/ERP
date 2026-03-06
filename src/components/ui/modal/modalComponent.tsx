@@ -150,41 +150,47 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
         </span>
 
         {/* DATE PICKER */}
-        {props.type === "date" ? (
-          <DatePicker
-            // ── display ──────────────────────────────────────────────────
-            selected={parseDate(props.value as string)}
-            dateFormat="dd-MMM-yyyy"
-            placeholderText="05-Mar-2026"
-             portalId="root"  
-
-            // ── on calendar select ────────────────────────────────────────
-            onChange={(date: Date | null) => {
-              if (!date) return;
-              props.onChange?.({
-                target: { name: props.name, value: formatISO(date) },
-              } as React.ChangeEvent<HTMLInputElement>);
-            }}
-
-            // ── when user finishes typing, parse dd-MMM-yyyy manually ─────
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-              const typed = e.currentTarget.value;
-              const parsed = parseDate(typed);
-              if (parsed) {
-                props.onChange?.({
-                  target: { name: props.name, value: formatISO(parsed) },
-                } as React.ChangeEvent<HTMLInputElement>);
-              }
-              props.onBlur?.(e as any);
-            }}
-
-            disabled={props.disabled}
-            className={inputClass}
-            // Keep the hidden input name so form libs (react-hook-form, etc.)
-            // can still read the value by field name.
-            name={props.name}
-          />
-        ) : (
+{/* DATE PICKER */}
+{props.type === "date" ? (
+  <div className="relative flex items-center">
+    {/* visible text display */}
+    <input
+      type="text"
+      readOnly
+      value={props.value ? formatDisplay(parseDate(props.value as string)!) : ""}
+      placeholder="dd-MMM-yyyy"
+      disabled={props.disabled}
+      className={inputClass + " cursor-pointer pr-7"}
+      onClick={() => {
+        if (!props.disabled) {
+          (document.getElementById(`date-hidden-${props.name}-${props.id ?? props.name}`) as HTMLInputElement)?.showPicker?.();
+        }
+      }}
+    />
+    {/* calendar icon */}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="absolute right-2 w-3.5 h-3.5 text-muted pointer-events-none"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+    {/* hidden native date input that drives the value */}
+    <input
+      id={`date-hidden-${props.name}-${props.id ?? props.name}`}
+      type="date"
+      name={props.name}
+      value={props.value as string ?? ""}
+      disabled={props.disabled}
+      onChange={(e) => props.onChange?.(e)}
+      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+      tabIndex={-1}
+    />
+  </div>
+) : (
           /* REGULAR INPUT */
           <input
             ref={ref}

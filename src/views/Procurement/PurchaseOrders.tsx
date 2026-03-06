@@ -349,7 +349,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       align: "right",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          INR {Number(o.amount || 0).toFixed(2)}
+           {Number(o.amount || 0).toFixed(2)}
         </code>
       ),
     },

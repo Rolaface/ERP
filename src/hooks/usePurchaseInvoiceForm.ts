@@ -527,12 +527,14 @@ export const usePurchaseInvoiceForm = ({
           rate: Number(data.buyingPrice ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
+          
 
           description: data.description || "",
 
           batchNo: items[idx].batchNo || "",
           mfgDate: items[idx].mfgDate || "",
           expDate: items[idx].expDate || "",
+          requiresBatch: Boolean(data.batchInfo?.has_batch_no),
           discount: items[idx].discount || 0,
           packingUnit: Number(data.pakingUnit || 0),
           packingSize: Number(data.packingSize || 0),
@@ -559,6 +561,15 @@ export const usePurchaseInvoiceForm = ({
       return;
     }
 
+
+    for (const item of form.items) {
+  if (item.requiresBatch && !item.batchNo?.trim()) {
+    showApiError({
+      message: `Batch number required for item ${item.itemName || item.itemCode}`,
+    });
+    return;
+  }
+}
     const errors = validatePI(form);
 
     if (errors.length) {
