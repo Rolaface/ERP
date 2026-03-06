@@ -244,7 +244,10 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().split("T")[0];
   });
   const [stockTo, setStockTo] = useState(() => new Date().toISOString().split("T")[0]);
-
+const packingDisplay =
+  item?.pakingUnit && item?.packingSize
+    ? `${item.pakingUnit} × ${item.packingSize}`
+    : item?.pakingUnit || item?.packingSize || "";
   /* Reset tab + search whenever selected item changes */
   useEffect(() => {
     setActiveTab("overview");
@@ -262,6 +265,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   const filteredPurchase = purchaseInvoices.filter((r) =>
     [r.invoiceNo, r.supplierName, r.date].join(" ").toLowerCase().includes(invoiceSearch.toLowerCase())
   );
+
+  
 
   return (
     /* ── Inline container — fills its parent, no overlay ── */
@@ -484,7 +489,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                       <DetailField label="Class Code"     value={item.itemClassCode} />
                       <DetailField label="Type Code"      value={item.itemTypeCode} />
                       <DetailField label="Origin Nation"  value={item.originNationCode} />
-                      <DetailField label="Packaging Unit" value={item.packagingUnitCode} />
+
+                      <DetailField label="Packing" value={packingDisplay} />
                       <DetailField label="UOM"            value={item.unitOfMeasureCd} />
                       <DetailField label="Service Charge" value={item.svcCharge} />
                     </div>

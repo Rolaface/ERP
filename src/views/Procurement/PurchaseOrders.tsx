@@ -12,8 +12,16 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import type { Column } from "../../components/ui/Table/type";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
-import { getPurchaseOrders, updatePurchaseOrderStatus } from "../../api/procurement/PurchaseOrderApi";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
+import {
+  getPurchaseOrders,
+  updatePurchaseOrderStatus,
+} from "../../api/procurement/PurchaseOrderApi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { getPurchaseOrderById } from "../../api/procurement/PurchaseOrderApi";
@@ -23,7 +31,10 @@ import { generatePurchaseOrderPDF } from "../../components/template/purchasetOrd
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
-import PurchaseOrderDetailsModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
+import PurchaseOrderDetailModal, {
+  type PurchaseOrderDetail,
+} from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
+
 interface PurchaseOrder {
   id: string;
   supplier: string;
@@ -37,13 +48,7 @@ interface PurchaseOrdersTableProps {
   onAdd?: () => void;
 }
 
-type POStatus =
-  | "Draft"
-  | "Approved"
-  | "Rejected"
-  | "Cancelled"
-  | "Completed";
-
+type POStatus = "Draft" | "Approved" | "Rejected" | "Cancelled" | "Completed";
 
 const STATUS_TRANSITIONS: Record<POStatus, POStatus[]> = {
   Draft: ["Approved", "Rejected"],
@@ -75,11 +80,21 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
+  const [company, setCompany] = useState<any | null>(null);
+
+  // ── PDF preview modal (kept — do not remove)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
-  const [company, setCompany] = useState<any | null>(null);
-  const [poDetailsOpen, setPoDetailsOpen] = useState(false);
-  const [poDetailsId, setPoDetailsId] = useState<string | null>(null);
+
+  // ── Drawer (same pattern as ProformaInvoicesTable)
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(
+    null,
+  );
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+  const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters((prev) => ({
@@ -95,19 +110,17 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
-        if (res?.status_code === 200) {
-          setCompany(res.data);
-        }
+        if (res?.status_code === 200) setCompany(res.data);
       })
       .catch(() => console.error("Failed to load company"));
   }, []);
-  //  FETCH ORDERS 
+
+  // ── Fetch orders
   const fetchOrders = async () => {
     try {
       setLoading(true);
 
       const res = await getPurchaseOrders(page, pageSize, filters);
-
 
       if (!res?.data || res.data.length === 0) {
         setOrders([]);
@@ -123,16 +136,12 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
         id: po.poId,
         supplier: po.supplierName,
         date: po.poDate,
-        deliveryDate:
-          po.deliveryDate ||
-          po.items?.[0]?.requiredBy ||
-          "",
+        deliveryDate: po.deliveryDate || po.items?.[0]?.requiredBy || "",
         amount: po.grandTotal,
         status: po.status,
       }));
 
       setOrders(mappedOrders);
-
     } catch (err) {
       setOrders([]);
     } finally {
@@ -140,50 +149,84 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     }
   };
 
-
   useEffect(() => {
     fetchOrders();
   }, [page, pageSize, filters]);
 
+  // ── Drawer: open + fetch (same as proforma/invoice handleView)
+  const handleView = async (poId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDrawerOpen(true);
+    setDrawerLoading(true);
+    setDrawerData(null);
+    try {
+      const res = await getPurchaseOrderById(poId);
+      if (res?.status === "success")
+        setDrawerData(res.data as PurchaseOrderDetail);
+    } finally {
+      setDrawerLoading(false);
+    }
+  };
 
-  const handleView = async (order: PurchaseOrder) => {
+  // ── Drawer: generate PDF inside drawer (same as proforma handleDrawerPdf)
+  const handleDrawerPdf = async (poId: string) => {
+    setDrawerPdfLoading(true);
+    setDrawerPdfUrl(null);
+    try {
+      if (!company) return;
+      const res = await getPurchaseOrderById(poId);
+      if (!res || res.status !== "success") return;
+      const blobUrl = await generatePurchaseOrderPDF(
+        res.data,
+        company,
+        "bloburl",
+      );
+      setDrawerPdfUrl(blobUrl);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setDrawerPdfLoading(false);
+    }
+  };
+
+  // ── PDF preview modal (table row "View PDF" action — kept, do not remove)
+  const handlePreviewPDF = async (
+    order: PurchaseOrder,
+    e?: React.MouseEvent,
+  ) => {
+    e?.stopPropagation();
     try {
       showLoading("Generating PDF...");
 
-      const res = await getPurchaseOrderById(order.id);
-
-      if (!res || res.status !== "success") {
-        throw new Error(res?.message || "Failed to load invoice");
+      if (!company) {
+        closeSwal();
+        showApiError("Company data not loaded");
+        return;
       }
 
-      const purchaseInvoice = res.data;
+      const res = await getPurchaseOrderById(order.id);
+      if (!res || res.status !== "success") {
+        closeSwal();
+        showApiError(res?.message || "Failed to load purchase order");
+        return;
+      }
 
       const blobUrl = await generatePurchaseOrderPDF(
-        purchaseInvoice,
+        res.data,
         company,
-        "bloburl"
+        "bloburl",
       );
-
       closeSwal();
-
-      setSelectedOrder(purchaseInvoice);
+      setSelectedOrder(res.data);
       setPdfUrl(blobUrl);
       setPdfOpen(true);
-
     } catch (error) {
       closeSwal();
       showApiError(error);
     }
   };
 
-
-  const handleViewClick = (poId: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setPoDetailsId(poId);
-    setPoDetailsOpen(true);
-  };
-
-  //  MODAL HANDLERS 
+  // ── Modal handlers
   const handleAddClick = () => {
     setSelectedOrder(null);
     setModalOpen(true);
@@ -205,10 +248,10 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
   const handleCloseModal = () => setModalOpen(false);
   const handlePOSaved = async () => {
-    await fetchOrders();   //  Refresh table
+    await fetchOrders();
   };
 
-
+  // ── Export all pages
   const fetchAllPOsForExport = async () => {
     try {
       let allData: PurchaseOrder[] = [];
@@ -255,7 +298,6 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       }
 
       const doc = new jsPDF("p", "mm", "a4");
-
       doc.setFontSize(14);
       doc.text("Purchase Orders Report", 14, 15);
 
@@ -271,98 +313,74 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
       autoTable(doc, {
         startY: 22,
-        head: [[
-          "SN",
-          "PO ID",
-          "Supplier",
-          "Date",
-          "Delivery Date",
-          "Amount",
-          "Status",
-        ]],
+        head: [
+          [
+            "SN",
+            "PO ID",
+            "Supplier",
+            "Date",
+            "Delivery Date",
+            "Amount",
+            "Status",
+          ],
+        ],
         body: tableData,
         styles: { fontSize: 8 },
         headStyles: { fillColor: [41, 128, 185] },
       });
 
       doc.save("Purchase_Orders_Report.pdf");
-
       closeSwal();
       showSuccess("PDF exported successfully");
-
     } catch (error) {
       closeSwal();
       showApiError(error);
     }
   };
 
-
-
-  const handleStatusChange = async (
-    poId: string,
-    newStatus: POStatus,
-  ) => {
+  const handleStatusChange = async (poId: string, newStatus: POStatus) => {
     try {
-      const res = await updatePurchaseOrderStatus(
-        poId,
-        newStatus
-      );
-
+      const res = await updatePurchaseOrderStatus(poId, newStatus);
 
       if (!res || res.status_code !== 200) {
         showApiError(res);
         return;
       }
 
-
       setOrders((prev) =>
         prev.map((o) =>
-          o.id === poId
-            ? { ...o, status: res.data?.status || newStatus }
-            : o,
+          o.id === poId ? { ...o, status: res.data?.status || newStatus } : o,
         ),
       );
 
-
-      showSuccess(
-        res.message ||
-        `Purchase Order marked as ${newStatus}`,
-      );
-
+      showSuccess(res.message || `Purchase Order marked as ${newStatus}`);
     } catch (error: any) {
       showApiError(error);
     }
   };
 
-
-
-
-  //  TABLE COLUMNS 
+  // ── Columns
   const columns: Column<PurchaseOrder>[] = [
     { key: "id", header: "PO ID", align: "left" },
     { key: "supplier", header: "Supplier", align: "left" },
     { key: "date", header: "Date", align: "left" },
-
     {
       key: "amount",
       header: "Amount",
       align: "right",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-           {Number(o.amount || 0).toFixed(2)}
+          {Number(o.amount || 0).toFixed(2)}
         </code>
       ),
     },
-
     {
       key: "status",
       header: "Status",
       align: "left",
       render: (o) => <StatusBadge status={o.status} />,
     },
-
     { key: "deliveryDate", header: "Delivery Date", align: "left" },
-
     {
       key: "actions",
       header: "Actions",
@@ -371,39 +389,35 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
         <ActionGroup>
           <ActionButton
             type="view"
-            onClick={(e) => handleViewClick(o.id, e)}
+            onClick={(e) => handleView(o.id, e)}
             iconOnly
           />
-
           <ActionMenu
             onDelete={(e) => handleDelete(o, e as any)}
             customActions={[
               {
                 label: "View PDF",
-                onClick: () => handleView(o),
+                onClick: () => handlePreviewPDF(o),
               },
-
-              ...(STATUS_TRANSITIONS[o.status as POStatus] ?? []).map((status) => ({
-                label: `Mark as ${status}`,
-                danger: status === "Completed",
-                onClick: () => handleStatusChange(o.id, status),
-              })),
+              ...(STATUS_TRANSITIONS[o.status as POStatus] ?? []).map(
+                (status) => ({
+                  label: `Mark as ${status}`,
+                  danger: status === "Completed",
+                  onClick: () => handleStatusChange(o.id, status),
+                }),
+              ),
             ]}
           />
-
         </ActionGroup>
       ),
     },
-
   ];
 
   return (
     <div className="p-6">
-
       <Table
         columns={columns}
         data={orders}
-
         showToolbar
         loading={loading}
         searchValue={searchTerm}
@@ -434,15 +448,11 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
                 setPage(1);
               }}
             />
-
             <DateRangeFilter
               from={filters.from_date}
               to={filters.to_date}
               onChange={(range) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  ...range,
-                }));
+                setFilters((prev) => ({ ...prev, ...range }));
                 setPage(1);
               }}
             />
@@ -450,13 +460,40 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
         }
       />
 
-      {/* MODAL */}
+      {/* ── Add / Edit modal ── */}
       <PurchaseOrderModal
         isOpen={modalOpen}
         onClose={handleCloseModal}
         poId={selectedOrder?.poId}
         onSubmit={handlePOSaved}
       />
+
+      {/* ── Drawer modal (same as ProformaDetailModal usage) ── */}
+      <PurchaseOrderDetailModal
+        open={drawerOpen}
+        data={drawerData}
+        loading={drawerLoading}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDrawerData(null);
+          setDrawerPdfUrl(null);
+        }}
+        pdfUrl={drawerPdfUrl}
+        pdfLoading={drawerPdfLoading}
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.poId)}
+        onDownload={() =>
+          drawerData &&
+          company &&
+          generatePurchaseOrderPDF(drawerData, company, "save")
+        }
+        onClosePdf={() => {
+          if (drawerPdfUrl?.startsWith("blob:"))
+            URL.revokeObjectURL(drawerPdfUrl);
+          setDrawerPdfUrl(null);
+        }}
+      />
+
+      {/* ── PDF Preview modal — kept, used by handlePreviewPDF ── */}
       <PdfPreviewModal
         open={pdfOpen}
         title="Purchase Order Preview"
@@ -472,7 +509,8 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
           }
         }}
       />
-      {/* VIEW MODAL */}
+
+      {/* ── View modal — kept, do not remove ── */}
       {viewModalOpen && selectedOrder && (
         <PurchaseOrderView
           poData={selectedOrder}
@@ -482,24 +520,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
             setModalOpen(true);
           }}
         />
-
       )}
-
-      <PurchaseOrderDetailsModal
-        open={poDetailsOpen}
-        poId={poDetailsId}
-        onClose={() => {
-          setPoDetailsOpen(false);
-          setPoDetailsId(null);
-        }}
-        onViewPdf={(poId) => {
-          const po = orders.find((o) => o.id === poId);
-          if (po) {
-            setPoDetailsOpen(false);
-            handleView(po);
-          }
-        }}
-      />
     </div>
   );
 };

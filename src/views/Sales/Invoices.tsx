@@ -8,7 +8,7 @@ import {
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
 import PdfPreviewModal from "./PdfPreviewModal";
-import InvoiceDetailsModal from "./InvoiceDetailsModal";
+import InvoiceDetailModal, { type InvoiceDetail } from "./InvoiceDetailsModal";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
@@ -27,15 +27,14 @@ import Swal from "sweetalert2";
 
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
-  Draft:    ["Rejected", "Approved"],
-  Rejected: ["Draft", "Approved"],
-  Paid:     [],
-  Cancelled:["Draft"],
-  Approved: ["Paid", "Cancelled"],
+  Draft:     ["Rejected", "Approved"],
+  Rejected:  ["Draft", "Approved"],
+  Paid:      [],
+  Cancelled: ["Draft"],
+  Approved:  ["Paid", "Cancelled"],
 };
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
-
 
 
 interface InvoiceTableProps {
@@ -44,41 +43,42 @@ interface InvoiceTableProps {
 }
 
 
-
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
-  // ── Data 
+  // ── Data
   const [invoices, setInvoices]       = useState<InvoiceSummary[]>([]);
   const [loading, setLoading]         = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [company, setCompany]         = useState<Company | null>(null);
 
-  // ── PDF preview (kept — do not remove) 
+  // ── PDF preview (kept — do not remove)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [pdfUrl, setPdfUrl]                   = useState<string | null>(null);
   const [pdfOpen, setPdfOpen]                 = useState(false);
 
-  // ── Invoice details modal 
-  const [invoiceDetailsOpen, setInvoiceDetailsOpen] = useState(false);
-  const [invoiceDetailsId, setInvoiceDetailsId]     = useState<string | null>(null);
+  // ── Drawer (same pattern as ProformaInvoicesTable)
+  const [drawerOpen, setDrawerOpen]         = useState(false);
+  const [drawerData, setDrawerData]         = useState<InvoiceDetail | null>(null);
+  const [drawerLoading, setDrawerLoading]   = useState(false);
+  const [drawerPdfUrl, setDrawerPdfUrl]     = useState<string | null>(null);
+  const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
-  // ── Pagination (server) 
-  const [page, setPage]           = useState(1);
-  const [pageSize, setPageSize]   = useState(10);
+  // ── Pagination (server)
+  const [page, setPage]             = useState(1);
+  const [pageSize, setPageSize]     = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Search (server) 
+  // ── Search (server)
   const [searchTerm, setSearchTerm] = useState("");
-
 
   const [sortBy, setSortBy]       = useState("invoiceNumber");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // ── Reset page when search changes 
+  // ── Reset page when search changes
   useEffect(() => { setPage(1); }, [searchTerm]);
 
-  // ── Fetch company once 
+  // ── Fetch company once
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
@@ -87,29 +87,25 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       .catch(() => console.error("Failed to load company data"));
   }, []);
 
-  // ── Fetch invoices 
+  // ── Fetch invoices
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-
-      // NOTE: add `search` param to getAllSalesInvoices in salesApi.ts
-      // signature: getAllSalesInvoices(page, page_size, sortBy, sortOrder, search)
       const res = await getAllSalesInvoices(page, pageSize, sortBy, sortOrder, searchTerm);
       if (!res || res.status_code !== 200) return;
 
       const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
-        invoiceNumber:    inv.invoiceNumber,
-        customerName:     inv.customerName,
-        
-        currency:         inv.currency,
-        exchangeRate:     inv.exchangeRate,
-        dueDate:          inv.dueDate,
-        dateOfInvoice:    new Date(inv.dateOfInvoice),
-        total:            Number(inv.totalAmount),
-        totalTax:         inv.totalTax,
-        invoiceStatus:    inv.invoiceStatus,
-        invoiceTypeParent:inv.invoiceTypeParent,
-        invoiceType:      inv.invoiceType,
+        invoiceNumber:     inv.invoiceNumber,
+        customerName:      inv.customerName,
+        currency:          inv.currency,
+        exchangeRate:      inv.exchangeRate,
+        dueDate:           inv.dueDate,
+        dateOfInvoice:     new Date(inv.dateOfInvoice),
+        total:             Number(inv.totalAmount),
+        totalTax:          inv.totalTax,
+        invoiceStatus:     inv.invoiceStatus,
+        invoiceTypeParent: inv.invoiceTypeParent,
+        invoiceType:       inv.invoiceType,
       }));
 
       setInvoices(mapped);
@@ -123,7 +119,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
   useEffect(() => {
     fetchInvoices();
-  }, [page, pageSize, sortBy, sortOrder, searchTerm]); // ← searchTerm included
+  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
 
   const handleSortChange = ({
@@ -133,7 +129,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     sortBy: string;
     sortOrder: "asc" | "desc";
   }) => {
-    setSortBy(colKey); 
+    setSortBy(colKey);
     setSortOrder(order);
     setPage(1);
   };
@@ -150,18 +146,18 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
         if (res?.status_code === 200) {
           const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
-            invoiceNumber:    inv.invoiceNumber,
-            customerName:     inv.customerName,
-            receiptNumber:    inv.receiptNumber,
-            currency:         inv.currency,
-            exchangeRate:     inv.exchangeRate,
-            dueDate:          inv.dueDate,
-            dateOfInvoice:    new Date(inv.dateOfInvoice),
-            total:            Number(inv.totalAmount),
-            totalTax:         inv.totalTax,
-            invoiceStatus:    inv.invoiceStatus,
-            invoiceTypeParent:inv.invoiceTypeParent,
-            invoiceType:      inv.invoiceType,
+            invoiceNumber:     inv.invoiceNumber,
+            customerName:      inv.customerName,
+            receiptNumber:     inv.receiptNumber,
+            currency:          inv.currency,
+            exchangeRate:      inv.exchangeRate,
+            dueDate:           inv.dueDate,
+            dateOfInvoice:     new Date(inv.dateOfInvoice),
+            total:             Number(inv.totalAmount),
+            totalTax:          inv.totalTax,
+            invoiceStatus:     inv.invoiceStatus,
+            invoiceTypeParent: inv.invoiceTypeParent,
+            invoiceType:       inv.invoiceType,
           }));
 
           allData = [...allData, ...mapped];
@@ -223,81 +219,67 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   };
 
 
-
-  const handleViewClick = (invoiceNumber: string, e?: React.MouseEvent) => {
+  // ── Drawer: open + fetch (same as proforma handleView)
+  const handleView = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setInvoiceDetailsId(invoiceNumber);
-    setInvoiceDetailsOpen(true);
+    setDrawerOpen(true);
+    setDrawerLoading(true);
+    setDrawerData(null);
+    try {
+      const res = await getSalesInvoiceById(invoiceNumber);
+      if (res?.status_code === 200) setDrawerData(res.data as InvoiceDetail);
+    } finally {
+      setDrawerLoading(false);
+    }
   };
 
-  // const handleOpenReceiptPdf = (receiptUrl: string) => {
-  //   try {
-  //     const normalizedUrl = receiptUrl.startsWith("http://")
-  //       ? receiptUrl.replace(/^http:\/\//i, "https://")
-  //       : receiptUrl;
-
-  //     const urlWithoutPort = (() => {
-  //       try {
-  //         const u = new URL(normalizedUrl);
-  //         u.port = "";
-  //         return u.toString();
-  //       } catch {
-  //         return normalizedUrl.replace(/^(https?:\/\/[^\/]+):\d+(\/.*)?$/i, "$1$2");
-  //       }
-  //     })();
-
-  //     const a = document.createElement("a");
-  //     a.href = urlWithoutPort;
-  //     a.target = "_blank";
-  //     a.rel = "noopener noreferrer";
-  //     document.body.appendChild(a);
-  //     a.click();
-  //     a.remove();
-
-  //     setInvoiceDetailsOpen(false);
-  //   } catch (err: any) {
-  //     showApiError(err);
-  //   }
-  // };
-
-
-const handlePreviewPDF = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
-  e?.stopPropagation();
-
-  try {
-    showLoading("Preparing invoice preview...");
-
-    if (!company) {
-      closeSwal();
-      showApiError("Company data not loaded");
-      return;
+  // ── Drawer: generate PDF inside drawer (same as proforma handleDrawerPdf)
+  const handleDrawerPdf = async (invoiceNumber: string) => {
+    setDrawerPdfLoading(true);
+    setDrawerPdfUrl(null);
+    try {
+      if (!company) return;
+      const res = await getSalesInvoiceById(invoiceNumber);
+      if (!res || res.status_code !== 200) return;
+      const blobUrl = await generateInvoicePDF(res.data as Invoice, company, "bloburl");
+      setDrawerPdfUrl(blobUrl);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setDrawerPdfLoading(false);
     }
+  };
 
-    const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
+  // ── PDF preview modal (table row action — kept, do not remove)
+  const handlePreviewPDF = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    try {
+      showLoading("Preparing invoice preview...");
 
-    if (!invoiceRes || invoiceRes.status_code !== 200) {
+      if (!company) {
+        closeSwal();
+        showApiError("Company data not loaded");
+        return;
+      }
+
+      const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
+      if (!invoiceRes || invoiceRes.status_code !== 200) {
+        closeSwal();
+        showApiError("Failed to load invoice");
+        return;
+      }
+
+      const blobUrl = await generateInvoicePDF(invoiceRes.data, company, "bloburl");
       closeSwal();
-      showApiError("Failed to load invoice");
-      return;
+      setPdfUrl(blobUrl);
+      setSelectedInvoice(invoiceRes.data);
+      setPdfOpen(true);
+    } catch (err: any) {
+      closeSwal();
+      showApiError(err);
     }
+  };
 
-    const blobUrl = await generateInvoicePDF(
-      invoiceRes.data,
-      company,
-      "bloburl"
-    );
-
-    closeSwal();
-
-    setPdfUrl(blobUrl);
-    setSelectedInvoice(invoiceRes.data);
-    setPdfOpen(true);
-
-  } catch (err: any) {
-    closeSwal();
-    showApiError(err);
-  }
-};
   const handleDownload = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
@@ -325,17 +307,12 @@ const handlePreviewPDF = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
     }
   };
 
-  // PDF preview modal close (kept — do not remove)
+  // ── PDF preview modal close (kept — do not remove)
   const handleClosePdf = () => {
     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
     setPdfUrl(null);
     setSelectedInvoice(null);
     setPdfOpen(false);
-  };
-
-  const handleCloseInvoiceDetails = () => {
-    setInvoiceDetailsOpen(false);
-    setInvoiceDetailsId(null);
   };
 
   const handleRowStatusChange = async (
@@ -364,47 +341,43 @@ const handlePreviewPDF = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
     showSuccess(`Invoice marked as ${status}`);
   };
 
-const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
-  e?.stopPropagation();
+  const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
 
-  const result = await Swal.fire({
-    icon: "warning",
-    title: "Are you sure?",
-    text: `Delete invoice ${invoiceNumber}?`,
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, delete",
-    reverseButtons: true,
-  });
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete invoice ${invoiceNumber}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+      reverseButtons: true,
+    });
 
-  if (!result.isConfirmed) return;
+    if (!result.isConfirmed) return;
 
-  try {
-    showLoading("Deleting invoice...");
+    try {
+      showLoading("Deleting invoice...");
 
-    const res = await deleteSalesInvoiceById(invoiceNumber);
+      const res = await deleteSalesInvoiceById(invoiceNumber);
 
-    if (!res || res.status_code !== 200) {
+      if (!res || res.status_code !== 200) {
+        closeSwal();
+        showApiError(res?.message || "Failed to delete invoice");
+        return;
+      }
+
       closeSwal();
-      showApiError(res?.message || "Failed to delete invoice");
-      return;
+      setInvoices((prev) =>
+        prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
+      );
+      showSuccess("Invoice deleted successfully");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
     }
-
-    closeSwal();
-
-    // Remove from UI
-    setInvoices((prev) =>
-      prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
-    );
-
-    showSuccess("Invoice deleted successfully");
-
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+  };
 
   const columns: Column<InvoiceSummary>[] = [
     {
@@ -481,37 +454,36 @@ const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
         <ActionGroup>
           <ActionButton
             type="view"
-            onClick={(e) => handleViewClick(inv.invoiceNumber, e)}
+            onClick={(e) => handleView(inv.invoiceNumber, e)}
             iconOnly
           />
-       <ActionMenu
-  showDownload
-  onDownload={(e) => handleDownload(inv, e)}
-  onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
-  customActions={[
-    {
-      label: "View PDF",
-      onClick: () => handlePreviewPDF(inv),
-    },
-    ...((STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
-      label: `Mark as ${status}`,
-      danger: status === "Paid",
-      onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
-    })))
-  ]}
-/>
+          <ActionMenu
+            showDownload
+            onDownload={(e) => handleDownload(inv, e)}
+            onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
+            customActions={[
+              {
+                label: "View PDF",
+                onClick: () => handlePreviewPDF(inv),
+              },
+              ...((STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
+                label: `Mark as ${status}`,
+                danger: status === "Paid",
+                onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
+              }))),
+            ]}
+          />
         </ActionGroup>
       ),
     },
   ];
 
 
-
   return (
     <div className="p-8">
       <Table
         columns={columns}
-        data={invoices}                        // ← raw server data, no local filter
+        data={invoices}
         rowKey={(row) => row.invoiceNumber}
         loading={loading || initialLoad}
         showToolbar
@@ -535,7 +507,30 @@ const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
         onSortChange={handleSortChange}
       />
 
-      {/* PDF Preview modal — kept, used by handleClosePdf */}
+      {/* ── Drawer modal (same as ProformaDetailModal usage) ── */}
+      <InvoiceDetailModal
+        open={drawerOpen}
+        data={drawerData}
+        loading={drawerLoading}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDrawerData(null);
+          setDrawerPdfUrl(null);
+        }}
+        pdfUrl={drawerPdfUrl}
+        pdfLoading={drawerPdfLoading}
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.invoiceNumber)}
+        onDownload={() =>
+          drawerData && company &&
+          generateInvoicePDF(drawerData as unknown as Invoice, company, "save")
+        }
+        onClosePdf={() => {
+          if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl);
+          setDrawerPdfUrl(null);
+        }}
+      />
+
+      {/* ── PDF Preview modal — kept, used by handleClosePdf ── */}
       <PdfPreviewModal
         open={pdfOpen}
         title="Invoice Preview"
@@ -546,19 +541,6 @@ const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
           generateInvoicePDF(selectedInvoice, company, "save")
         }
       />
-
-<InvoiceDetailsModal
-  open={invoiceDetailsOpen}
-  invoiceId={invoiceDetailsId}
-  onClose={handleCloseInvoiceDetails}
-  onViewPdf={(invoiceNumber) => {
-    const invoice = invoices.find(i => i.invoiceNumber === invoiceNumber);
-    if (invoice) {
-      handleCloseInvoiceDetails();
-      handlePreviewPDF(invoice);
-    }
-  }}
-/>
     </div>
   );
 };
