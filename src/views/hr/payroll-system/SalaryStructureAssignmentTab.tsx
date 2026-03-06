@@ -20,6 +20,12 @@ type Props = {
   onAssigned?: () => void;
 };
 
+ type EmployeeOption = {
+   value: string;
+   label: string;
+   joiningDate?: string;
+ };
+
 const inputCls =
   "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition";
 const selectCls =
@@ -177,10 +183,10 @@ export default function SalaryStructureAssignmentTab({
 
   const employeeOptions = useMemo<EmployeeOption[]>(() => {
     const items = Array.isArray(employees) ? employees : [];
-    const selectedEmployee = String(form.employee ?? employeeId ?? "").trim();
+    const selectedEmployeeCode = String(form.employee ?? employeeId ?? "").trim();
     const allowEmployee = (code: string) => {
       if (!code) return false;
-      if (code === selectedEmployee) return true;
+      if (code === selectedEmployeeCode) return true;
       return !assignedEmployees.has(code);
     };
 
@@ -238,10 +244,6 @@ export default function SalaryStructureAssignmentTab({
         });
         toast.success("Salary structure assignment updated");
       } else {
-        const fromDate =
-          toIsoDate(selectedEmployee?.joiningDate) ||
-          new Date().toISOString().slice(0, 10);
-
         await createSalaryStructureAssignment({
           employee: form.employee.trim(),
           salary_structure: form.salary_structure.trim(),
