@@ -37,11 +37,13 @@ const calculateDueDate = (invoiceDate: string, terms: string) => {
   return date.toISOString().split("T")[0];
 };
 
+
+
 export const useInvoiceForm = (
   isOpen: boolean,
   _onClose: () => void,
   _onSubmit?: (data: any) => void,
-  mode?: "invoice" | "proforma",
+  mode?: "invoice" | "proforma" | "edit",
   initialData?: any,
 ) => {
   const [formData, setFormData] = useState<Invoice>({
@@ -90,9 +92,16 @@ setFormData(prev => ({
   const lastCurrencyRef = useRef<string>("INR");
   const lastRateRef = useRef<number>(1);
   const enableExchange = mode === "invoice";
+
+      useEffect(() => {
+  if (!isOpen || !initialData) return;
+
+  setFormDataFromInvoice(initialData);
+
+}, [isOpen, initialData]);
+
   useEffect(() => {
     if (!isOpen || initialData) return;
-
 
 const loadCompanyData = async () => {
   try {
@@ -582,7 +591,7 @@ const removeItem = (idx: number) => {
     return { ...prev, items };
   });
 };
-  const setFormDataFromInvoice = async (invoice: any) => {
+  const setFormDataFromInvoice = (invoice: any) => {
     setFormData((prev: any) => ({
       ...prev,
       invoiceNumber: invoice.invoiceNumber,

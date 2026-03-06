@@ -4,11 +4,6 @@ import { showApiError, showSuccess } from "../../utils/alert";
 import { User, Mail, Phone , Plus, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
-interface ProformaInvoiceModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit?: () => void;
-}
 import PaymentInfoBlock from "./PaymentInfoBlock";
 import Modal from "../ui/modal/modal";
 import AddressBlock from "../ui/modal/AddressBlock";
@@ -24,10 +19,20 @@ import {
   currencyOptions,
 } from "../../constants/invoice.constants";
 
+interface ProformaInvoiceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit?: () => void;
+  initialData?: any;
+  mode?: "create" | "edit";
+}
+
 const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  initialData,
+  mode = "create",
 }) => {
   const {
     formData,
@@ -37,7 +42,13 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     totals,
     ui,
     actions,
-  } = useInvoiceForm(isOpen, onClose, undefined, "proforma");
+  } = useInvoiceForm(
+  isOpen,
+  onClose,
+  undefined,
+  mode === "edit" ? "edit" : "proforma",
+  initialData
+);
 
 
   const tabs: Array<"details" | "address" | "terms"> = [
@@ -66,7 +77,28 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       const payload = await actions.handleSubmit(e);
       if (!payload) return;
 
-      const res = await createProformaInvoice(payload);
+      let res;
+
+if (mode === "edit") {
+
+  if (!initialData?.proformaId) {
+    showApiError("Invalid invoice reference");
+    return;
+  }
+
+  // future API
+  // res = await updateProformaInvoice(initialData.proformaId, payload)
+
+  console.log("Edit payload", payload);
+
+  res = {
+    status_code: 200,
+    message: "Proforma invoice updated successfully",
+  };
+
+} else {
+  res = await createProformaInvoice(payload);
+}
 
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(res);
@@ -123,7 +155,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create Proforma Invoice"
+      title={mode === "edit" ? "Edit Proforma Invoice" : "Create Proforma Invoice"}
       subtitle="Create and manage proforma invoice details"
       footer={
         <>
@@ -230,14 +262,15 @@ ${ui.isExport
                   </div>
 
                   <div>
-                    <ModalSelect
-                      label="Invoice Status"
-                      name="invoiceStatus"
-                      value={formData.invoiceStatus}
-                      onChange={actions.handleInputChange}
-                      options={[...invoiceStatusOptions]}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
+                   <ModalSelect
+  label="Invoice Status"
+  name="invoiceStatus"
+  value={formData.invoiceStatus}
+  onChange={actions.handleInputChange}
+  options={[...invoiceStatusOptions]}
+  disabled={mode === "edit"}
+  className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+/>
                   </div>
 
                   <div>

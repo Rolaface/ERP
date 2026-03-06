@@ -21,12 +21,16 @@ import {
 interface QuotationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (data: any) => void;
+  onSubmit?: () => void;
+  initialData?: any;
+  mode?: "create" | "edit";
 }
 const QuotationModal: React.FC<QuotationModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  initialData,
+  mode = "create",
 }) => {
   if (!isOpen) return null;
 
@@ -193,14 +197,15 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
 
                   {/* Status */}
                   <div>
-                    <ModalSelect
-                      label="Status"
-                      name="invoiceStatus"
-                      value={formData.invoiceStatus}
-                      options={[...quotationStatusOptions]}
-                      onChange={actions.handleInputChange}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    ></ModalSelect>
+                   <ModalSelect
+  label="Status"
+  name="invoiceStatus"
+  value={formData.invoiceStatus}
+  options={[...quotationStatusOptions]}
+  onChange={actions.handleInputChange}
+  disabled={mode === "edit"}
+  className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+/>
                   </div>
 
                   <div className="max-w-[140px]">

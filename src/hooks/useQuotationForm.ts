@@ -144,17 +144,18 @@ useEffect(() => {
       ...initialData,
       dateOfInvoice: initialData.dateOfQuotation,
       dueDate: initialData.validUntil,
-      items: (initialData.items || []).map((it: any) => ({
-        itemCode: it.itemCode,
-       
-        description: it.description ?? "",
-        quantity: Number(it.quantity),
-        price: Number(it.price),
-        discount: Number(it.discount),
-        vatRate: Number(it.vatRate || 0),
-        vatCode: it.vatCode ?? "",
-        
-      })),
+  items: (initialData.items || []).map((it: any) => ({
+  itemCode: it.itemCode,
+  description: it.description ?? "",
+  quantity: Number(it.quantity ?? 0),
+  price: Number(it.price ?? 0),
+  discount: Number(it.discount ?? 0),
+  vatRate: Number(it.vatRate ?? 0),
+  vatCode: it.vatCode ?? "",
+  batchNo: it.batchNo ?? "",
+  packingUnit: it.pakingUnit ?? "",
+  packingSize: it.packingSize ?? "",
+})),
     });
 
     setCustomerDetails(initialData.customer);
@@ -359,11 +360,15 @@ const handleItemChange = (
   setFormData((prev) => {
     const items = [...prev.items];
 
-    items[idx] = {
-      ...items[idx],
-      [name]: value === "" ? "" : parseFloat(value)
-    };
-
+   items[idx] = {
+  ...items[idx],
+  [name]:
+    name === "description" || name === "vatCode"
+      ? value
+      : value === ""
+      ? ""
+      : parseFloat(value),
+};
     return { ...prev, items };
   });
 };

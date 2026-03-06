@@ -30,6 +30,8 @@ interface InvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (data: any) => void;
+  initialData?: any;
+  mode?: "create" | "edit";
 }
 const ITEMS_PER_PAGE = 5;
 
@@ -37,6 +39,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  initialData,
+  mode = "create",
 }) => {
   if (!isOpen) return null;
   const [submitting, setSubmitting] = useState(false);
@@ -124,7 +128,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create Invoice"
+      title={mode === "edit" ? "Edit Invoice" : "Create Invoice"}
       subtitle="Create and manage invoice details"
       icon={FileText}
       footer={footerContent}

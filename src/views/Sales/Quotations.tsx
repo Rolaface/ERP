@@ -25,6 +25,7 @@ import { deleteQuotationById } from "../../api/quotationApi";
 import Swal from "sweetalert2";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import QuotationDetailModal, { QuotationDetail } from "./Quotationdetailmodal";
+import QuotationModal from "../../components/sales/QuotationModal";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
@@ -89,6 +90,8 @@ const [detailData, setDetailData] = useState<QuotationDetail | null>(null);
 const [detailLoading, setDetailLoading] = useState(false);
 const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
 const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+const [editOpen, setEditOpen] = useState(false);
+const [editQuotation, setEditQuotation] = useState<any>(null);
 
   // ── Fetch company once 
   useEffect(() => {
@@ -189,6 +192,32 @@ const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
     showApiError(err);
   }
 };
+
+const handleEdit = async (quotationNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+
+  try {
+    showLoading("Loading quotation...");
+
+    const res = await getQuotationById(quotationNumber);
+
+    if (!res || res.status_code !== 200) {
+      closeSwal();
+      showApiError("Failed to load quotation");
+      return;
+    }
+
+    closeSwal();
+
+    setEditQuotation(res.data);
+    setEditOpen(true);
+
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+
 const handleDrawerPdf = async (quotationNumber: string) => {
   setDrawerPdfLoading(true);
   setDrawerPdfUrl(null);
@@ -473,6 +502,12 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
             onClick={(e) => handleView(q.quotationNumber, e)}
             iconOnly
           />
+          <ActionButton
+  type="edit"
+  disabled={q.status !== "Draft"}
+  onClick={(e) => handleEdit(q.quotationNumber, e)}
+  iconOnly
+/>
 <ActionMenu
   customActions={[
     {
@@ -551,6 +586,19 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
   onViewPdf={() => detailData && handleDrawerPdf(detailData.id)}
   onDownload={() => detailData && company && generateQuotationPDF(detailData, company, "save")}
   onClosePdf={() => { if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl); setDrawerPdfUrl(null); }}
+/>
+
+<QuotationModal
+  isOpen={editOpen}
+  onClose={() => {
+    setEditOpen(false);
+    setEditQuotation(null);
+  }}
+  initialData={editQuotation}
+  mode="edit"
+  onSubmit={() => {
+    fetchQuotations();
+  }}
 />
     </div>
   );

@@ -32,6 +32,7 @@ import PdfPreviewModal from "./PdfPreviewModal";
 import ProformaDetailModal, {
   type ProformaDetail,
 } from "./Proformadetailmodal";
+import ProformaInvoiceModal from "../../components/sales/ProformaInvoiceModal";
 
 // Constants
 
@@ -105,6 +106,9 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [selectedProforma, setSelectedProforma] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
+  // Edit modal state
+const [editOpen, setEditOpen] = useState(false);
+const [editInvoice, setEditInvoice] = useState<any>(null);
   // ── Fetch company once
   useEffect(() => {
     getCompanyById(COMPANY_ID)
@@ -154,6 +158,31 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   useEffect(() => {
     fetchInvoices();
   }, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm]); // ← searchTerm included
+
+  const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+
+  try {
+    showLoading("Loading proforma invoice...");
+
+    const res = await getProformaInvoiceById(proformaId);
+
+    if (!res || res.status_code !== 200) {
+      closeSwal();
+      showApiError("Failed to load proforma invoice");
+      return;
+    }
+
+    closeSwal();
+
+    setEditInvoice(res.data);
+    setEditOpen(true);
+
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   // ── Sort handler — store column key, translate at API call site ───────────
   const handleSortChange = ({
@@ -534,8 +563,19 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
             onClick={(e) => handleView(inv.proformaId, e)}
             iconOnly
           />
+           <ActionButton
+    type="edit"
+    onClick={(e) => handleEdit(inv.proformaId, e)}
+    iconOnly
+    disabled={inv.status !== "Draft"}
+    title={
+      inv.status !== "Draft"
+        ? "Only Draft proforma invoices can be edited"
+        : "Edit Proforma Invoice"
+    }
+  />
           <ActionMenu
-            customActions={[
+            customActions={[    
               {
                 label: "View PDF",
                 onClick: () => handlePreviewProformaPDF(inv.proformaId),
@@ -630,6 +670,19 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
           generateProformaInvoicePDF(selectedProforma, company, "save")
         }
       />
+      <ProformaInvoiceModal
+  isOpen={editOpen}
+  onClose={() => {
+    setEditOpen(false);
+    setEditInvoice(null);
+  }}
+  initialData={editInvoice}
+  mode="edit"
+  onSubmit={() => {
+    setEditOpen(false);
+    fetchInvoices();
+  }}
+/>
     </div>
   );
 };

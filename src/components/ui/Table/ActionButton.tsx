@@ -16,6 +16,7 @@ interface ActionButtonProps {
   variant?: "primary" | "secondary" | "danger";
   disabled?: boolean;
   iconOnly?: boolean;
+    title?: string;
 }
 
 export const ActionButton: React.FC<ActionButtonProps> = ({
@@ -26,6 +27,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   variant = "primary",
   disabled = false,
   iconOnly = false,
+  title,
 }) => {
   const getIcon = () => {
     if (icon) return icon;
@@ -61,13 +63,14 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
     : `inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm transition-all ${variantStyles[variant]}`;
 
   return (
-    <button
-      type="button"
-      onClick={(e) => { e.stopPropagation(); onClick?.(e); }}
-      disabled={disabled}
-      aria-label={getLabel() ?? undefined}
-      className={`${base} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-    >
+   <button
+  type="button"
+  onClick={(e) => { e.stopPropagation(); onClick?.(e); }}
+  disabled={disabled}
+  aria-label={getLabel() ?? undefined}
+  title={title ?? getLabel() ?? undefined}
+  className={`${base} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+>
       {getIcon()}
       {getLabel() && !iconOnly ? <span>{getLabel()}</span> : null}
     </button>

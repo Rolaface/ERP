@@ -24,6 +24,7 @@ import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import Swal from "sweetalert2";
+import InvoiceModal from "../../components/sales/InvoiceModal";
 
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
@@ -53,6 +54,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
   // ── PDF preview (kept — do not remove)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  // Edit state
+const [editOpen, setEditOpen] = useState(false);
+const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [pdfUrl, setPdfUrl]                   = useState<string | null>(null);
   const [pdfOpen, setPdfOpen]                 = useState(false);
 
@@ -173,6 +177,31 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       return [];
     }
   };
+
+  const handleEdit = async (invoiceNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+
+  try {
+    showLoading("Loading invoice...");
+
+    const res = await getSalesInvoiceById(invoiceNumber);
+
+    if (!res || res.status_code !== 200) {
+      closeSwal();
+      showApiError("Failed to load invoice");
+      return;
+    }
+
+    closeSwal();
+
+    setEditInvoice(res.data);
+    setEditOpen(true);
+
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   const handleExportExcel = async () => {
     try {
@@ -457,6 +486,17 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             onClick={(e) => handleView(inv.invoiceNumber, e)}
             iconOnly
           />
+          <ActionButton
+  type="edit"
+  onClick={(e) => handleEdit(inv.invoiceNumber, e)}
+  iconOnly
+  disabled={inv.invoiceStatus !== "Draft"}
+  title={
+    inv.invoiceStatus !== "Draft"
+      ? "Only Draft invoices can be edited"
+      : "Edit Invoice"
+  }
+/>
           <ActionMenu
             showDownload
             onDownload={(e) => handleDownload(inv, e)}
@@ -541,6 +581,23 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           generateInvoicePDF(selectedInvoice, company, "save")
         }
       />
+      <InvoiceModal
+  isOpen={editOpen}
+  onClose={() => {
+    setEditOpen(false);
+    setEditInvoice(null);
+  }}
+  mode="edit"
+  initialData={editInvoice}
+  onSubmit={async (data) => {
+    console.log("Edited invoice payload:", data);
+
+    // future edit API yaha lagegi
+
+    setEditOpen(false);
+    fetchInvoices();
+  }}
+/>
     </div>
   );
 };
