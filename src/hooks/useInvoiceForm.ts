@@ -512,6 +512,8 @@ if (enableExchange && exchangeRateLoading) {
             : "",
           packingUnit: data.pakingUnit ?? "",
           packingSize: data.packingSize ?? "",
+          mfgDate: data.batchInfo?.manufacturingDate ?? "",
+  expDate: data.batchInfo?.expiryDate ?? "",
         };
 
         return { ...prev, items };

@@ -87,10 +87,12 @@ export const DetailsTab = ({
                   name="poNumber"
                   value={form.poNumber}
                   placeholder="Select PO"
-                  options={(poList || []).map((po) => ({
-                    label: po.poId,
-                    value: po.poId,
-                  }))}
+                  options={(poList || [])
+                    .filter((po) => po.status === "Approved")
+                    .map((po) => ({
+                      label: po.poId,
+                      value: po.poId,
+                    }))}
                   onChange={(e) => {
                     const selected = poList.find((p) => p.poId === e.target.value);
                     if (selected) onPOSelect(selected);
@@ -208,10 +210,10 @@ export const DetailsTab = ({
                   <span className="ml-1 text-[9px] font-normal text-muted/60">(unit × size)</span>
                 </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
-  Batch No {items.some((it) => it.requiresBatch) && (
-    <span className="text-danger">*</span>
-  )}
-</th>
+                  Batch No {items.some((it) => it.requiresBatch) && (
+                    <span className="text-danger">*</span>
+                  )}
+                </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">Qty</th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">Mfg Date</th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">Expiry Date</th>
