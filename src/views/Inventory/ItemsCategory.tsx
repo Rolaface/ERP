@@ -44,51 +44,49 @@ const ItemsCategory: React.FC = () => {
   );
   const [deleting, setDeleting] = useState(false);
 
-
   useEffect(() => {
-  const timer = setTimeout(() => {
-    setFilters((prev) => ({
-      ...prev,
-      search: searchTerm || undefined,
-    }));
-    setPage(1);
-  }, 600);
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({
+        ...prev,
+        search: searchTerm || undefined,
+      }));
+      setPage(1);
+    }, 600);
 
-  return () => clearTimeout(timer);
-}, [searchTerm]);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   /* 
      FETCH
    */
-const fetchGroups = async () => {
-  try {
-    setLoading(true);
+  const fetchGroups = async () => {
+    try {
+      setLoading(true);
 
-    const res = await getAllItemGroups(page, pageSize, filters);
+      const res = await getAllItemGroups(page, pageSize, filters);
 
-    if (res?.status_code !== 200) {
-      showApiError(res?.message || "Failed to fetch item groups");
-      return;
+      if (res?.status_code !== 200) {
+        showApiError(res?.message || "Failed to fetch item groups");
+        return;
+      }
+
+      const list = res?.data?.data || [];
+      const pagination = res?.data?.pagination || {};
+
+      setGroups(list);
+      setTotalPages(pagination.total_pages || 1);
+      setTotalItems(pagination.total || 0);
+    } catch (err) {
+      console.error(err);
+      showApiError("Something went wrong");
+    } finally {
+      setLoading(false);
+      setInitialLoad(false);
     }
-
-    const list = res?.data?.data || [];
-    const pagination = res?.data?.pagination || {};
-
-    setGroups(list);
-    setTotalPages(pagination.total_pages || 1);
-    setTotalItems(pagination.total || 0);
-
-  } catch (err) {
-    console.error(err);
-    showApiError("Something went wrong");
-  } finally {
-    setLoading(false);
-    setInitialLoad(false);
-  }
-};
+  };
   useEffect(() => {
     fetchGroups();
-  }, [page, pageSize,filters]);
+  }, [page, pageSize, filters]);
 
   /* 
      HANDLERS
@@ -99,15 +97,16 @@ const fetchGroups = async () => {
     setShowModal(true);
   };
 
-  const handleEdit = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleEdit = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+
     try {
       const res = await getItemGroupById(id);
 
-setEditGroup({
-  ...res.data,
-itemType: res.data.itemType,
-});
+      setEditGroup({
+        ...res.data,
+        itemType: res.data.itemType,
+      });
       setShowModal(true);
     } catch {
       console.error("Unable to fetch item category");
@@ -120,31 +119,30 @@ itemType: res.data.itemType,
     setDeleteModalOpen(true);
   };
 
-const confirmDelete = async () => {
-  if (!groupToDelete) return;
+  const confirmDelete = async () => {
+    if (!groupToDelete) return;
 
-  try {
-    setDeleting(true);
+    try {
+      setDeleting(true);
 
-    const res = await deleteItemGroupById(groupToDelete.id);
+      const res = await deleteItemGroupById(groupToDelete.id);
 
-    if (!res || ![200, 201].includes(res.status_code)) {
-      showApiError(res);
-      return;
+      if (!res || ![200, 201].includes(res.status_code)) {
+        showApiError(res);
+        return;
+      }
+
+      setGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id));
+      showSuccess(res.message || "Item category deleted");
+
+      setDeleteModalOpen(false);
+    } catch (err: any) {
+      showApiError(err);
+    } finally {
+      setDeleting(false);
+      setGroupToDelete(null);
     }
-
-    setGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id));
-    showSuccess(res.message || "Item category deleted");
-
-    setDeleteModalOpen(false);
-  } catch (err: any) {
-    showApiError(err);
-  } finally {
-    setDeleting(false);
-    setGroupToDelete(null);
-  }
-};
-
+  };
 
   const handleSaved = async () => {
     const wasEdit = !!editGroup;
@@ -184,7 +182,11 @@ const confirmDelete = async () => {
       align: "center",
       render: (g) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={(e) => handleEdit(g.id, e)} iconOnly/>
+          <ActionButton
+            type="view"
+            onClick={(e) => handleEdit(g.id, e)}
+            iconOnly
+          />
           <ActionMenu
             onEdit={(e) => handleEdit(g.id, e as any)}
             onDelete={(e) => handleDeleteClick(g, e as any)}
@@ -200,49 +202,49 @@ const confirmDelete = async () => {
 
   return (
     <div className="p-8">
-        <Table
-          loading={loading || initialLoad}
-          serverSide
-          columns={columns}
-          data={groups}
-          showToolbar
-          enableColumnSelector
-          searchValue={searchTerm}
-          onSearch={setSearchTerm}
-          enableAdd
-          addLabel="Add Category"
-          onAdd={handleAdd}
-          currentPage={page}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          totalItems={totalItems}
-          pageSizeOptions={[10, 25, 50, 100]}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1); // reset page
-          }}
-          onPageChange={setPage}
-          extraFilters={
-            <div className="w-48">
-              <FilterSelect
-                value={filters.itemType || ""}
-                onChange={(e) => {
-                  setFilters((prev) => ({
-                    ...prev,
-                    itemType: e.target.value || undefined,
-                  }));
-                  setPage(1);
-                }}
-                options={[
-                  { value: "1", label: "Raw Material" },
-                  { value: "2", label: "Finished Product" },
-                  { value: "3", label: "Service" },       
-                ]}
-              />
-            </div>
-}
-        />
-      
+      <Table
+        loading={loading || initialLoad}
+        
+        columns={columns}
+        data={groups}
+        showToolbar
+        enableColumnSelector
+        searchValue={searchTerm}
+        onSearch={setSearchTerm}
+        enableAdd
+        addLabel="Add Category"
+        onAdd={handleAdd}
+        currentPage={page}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        pageSizeOptions={[10, 25, 50, 100]}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1); // reset page
+        }}
+        onPageChange={setPage}
+        extraFilters={
+          <div className="w-48">
+            <FilterSelect
+              value={filters.itemType || ""}
+              onChange={(e) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  itemType: e.target.value || undefined,
+                }));
+                setPage(1);
+              }}
+              options={[
+                { value: "1", label: "Raw Material" },
+                { value: "2", label: "Finished Product" },
+                { value: "3", label: "Service" },
+              ]}
+            />
+          </div>
+        }
+      />
+
       {/* CATEGORY MODAL */}
       <ItemsCategoryModal
         isOpen={showModal}

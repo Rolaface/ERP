@@ -7,10 +7,16 @@ import {
   getItemByItemCode,
   deleteItemByItemCode,
 } from "../../api/itemApi";
-
-import ItemModal from "../../components/inventory/ItemModal";
-import DeleteModal from "../../components/actionModal/DeleteModal";
 import { ItemFilters } from "../../api/itemApi";
+
+import ItemModal      from "../../components/inventory/ItemModal";
+import DeleteModal    from "../../components/actionModal/DeleteModal";
+import ItemDetailView, {
+  type SalesInvoice,
+  type PurchaseInvoice,
+  type StockRow,
+} from "../../views/Inventory/Itemdetailmodal";
+
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -18,132 +24,212 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 
 import type { Column } from "../../components/ui/Table/type";
-
 import type { ItemSummary, Item } from "../../types/item";
 
+// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+
 const Items: React.FC = () => {
-  const [items, setItems] = useState<ItemSummary[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-
-  const [showModal, setShowModal] = useState(false);
-  const [editItem, setEditItem] = useState<Item | null>(null);
+  /* ── Table / list state ── */
+  const [items,       setItems]       = useState<ItemSummary[]>([]);
+  const [searchTerm,  setSearchTerm]  = useState("");
+  const [loading,     setLoading]     = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<ItemSummary | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [filters, setFilters] = useState<ItemFilters>({});
+  const [page,        setPage]        = useState(1);
+  const [pageSize,    setPageSize]    = useState(10);
+  const [totalPages,  setTotalPages]  = useState(1);
+  const [totalItems,  setTotalItems]  = useState(0);
+  const [filters,     setFilters]     = useState<ItemFilters>({});
 
+  /* ── View mode — "table" or "detail" (inline, like CustomerManagement) ── */
+  const [viewMode,      setViewMode]      = useState<"table" | "detail">("table");
+  const [selectedItem,  setSelectedItem]  = useState<Item | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [activeSummary, setActiveSummary] = useState<ItemSummary | null>(null);
+
+  /* ── All items for sidebar (unpaginated) ── */
+  const [allItems, setAllItems] = useState<ItemSummary[]>([]);
+
+  /* ── Invoice / stock data — wire up your APIs here ── */
+  const [salesInvoices,    setSalesInvoices]    = useState<SalesInvoice[]>([]);
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([]);
+  const [stockRows,        setStockRows]        = useState<StockRow[]>([]);
+  const [loadingSales,     setLoadingSales]     = useState(false);
+  const [loadingPurchase,  setLoadingPurchase]  = useState(false);
+  const [loadingStock,     setLoadingStock]     = useState(false);
+
+  /* ── Add / Edit modal state ── */
+  const [showModal,  setShowModal]  = useState(false);
+  const [editItem,   setEditItem]   = useState<Item | null>(null);
+
+  /* ── Delete modal state ── */
+  const [deleteOpen,   setDeleteOpen]   = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ItemSummary | null>(null);
+  const [deleting,     setDeleting]     = useState(false);
+
+  /* ── Search debounce ── */
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setFilters((prev) => ({
-        ...prev,
-        search: searchTerm || undefined,
-      }));
+    const t = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));
       setPage(1);
     }, 600);
-
-    return () => clearTimeout(timer);
+    return () => clearTimeout(t);
   }, [searchTerm]);
 
+  /* ── Fetch item list ── */
+  const fetchItems = async () => {
+    try {
+      setLoading(true);
+      const res        = await getAllItems(page, pageSize, filters);
+      const rawList    = Array.isArray(res?.data?.data) ? res.data.data : [];
+      const pagination = res?.data?.pagination;
 
-const fetchItems = async () => {
-  try {
-    setLoading(true);
-    const res = await getAllItems(page, pageSize, filters);
+      const flat = rawList.map((it: any) => ({
+        ...it,
+        taxCategory:     it.taxInfo?.taxCategory    ?? "",
+        taxPreference:   it.taxInfo?.taxPreference  ?? "",
+        taxType:         it.taxInfo?.taxType        ?? "",
+        taxCode:         it.taxInfo?.taxCode        ?? "",
+        taxPerct:        it.taxInfo?.taxPerct       ?? "",
+        preferredVendor: it.vendorInfo?.preferredVendor  ?? "",
+        salesAccount:    it.vendorInfo?.salesAccount     ?? "",
+        purchaseAccount: it.vendorInfo?.purchaseAccount  ?? "",
+        minStockLevel:   it.inventoryInfo?.minStockLevel  ?? "",
+        maxStockLevel:   it.inventoryInfo?.maxStockLevel  ?? "",
+        reorderLevel:    it.inventoryInfo?.reorderLevel   ?? "",
+        valuationMethod: it.inventoryInfo?.valuationMethod ?? "",
+        trackingMethod:  it.inventoryInfo?.trackingMethod  ?? "",
+      }));
 
-    const rawList    = Array.isArray(res?.data?.data) ? res.data.data : [];
-    const pagination = res?.data?.pagination;
-
-    // ── Flatten nested fields so table columns work directly ──
-    const flatList = rawList.map((item: any) => ({
-      ...item,
-      // taxInfo → flat
-      taxCategory:    item.taxInfo?.taxCategory    ?? "",
-      taxPreference:  item.taxInfo?.taxPreference  ?? "",
-      taxType:        item.taxInfo?.taxType        ?? "",
-      taxCode:        item.taxInfo?.taxCode        ?? "",
-      taxPerct:       item.taxInfo?.taxPerct       ?? "",
-
-      // vendorInfo → flat
-      preferredVendor: item.vendorInfo?.preferredVendor ?? "",
-      salesAccount:    item.vendorInfo?.salesAccount    ?? "",
-      purchaseAccount: item.vendorInfo?.purchaseAccount ?? "",
-
-      // inventoryInfo → flat
-      minStockLevel:   item.inventoryInfo?.minStockLevel  ?? "",
-      maxStockLevel:   item.inventoryInfo?.maxStockLevel  ?? "",
-      reorderLevel:    item.inventoryInfo?.reorderLevel   ?? "",
-      valuationMethod: item.inventoryInfo?.valuationMethod ?? "",
-      trackingMethod:  item.inventoryInfo?.trackingMethod  ?? "",
-    }));
-
-    setItems(flatList);
-    setTotalPages(pagination?.total_pages ?? 1);
-    setTotalItems(pagination?.total       ?? 0);
-
-  } catch (err) {
-    console.error(err);
-    setItems([]);
-    setTotalPages(1);
-    setTotalItems(0);
-  } finally {
-    setLoading(false);
-    setInitialLoad(false);
-  }
-};
-  useEffect(() => {
-    fetchItems();
-  }, [page, pageSize, filters]);
-
-  /*      HANDLERS
-   */
-
-  const handleAdd = () => {
-    setEditItem(null);
-    setShowModal(true);
+      setItems(flat);
+      setTotalPages(pagination?.total_pages ?? 1);
+      setTotalItems(pagination?.total       ?? 0);
+    } catch (err) {
+      console.error(err);
+      setItems([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+      setInitialLoad(false);
+    }
   };
 
+  useEffect(() => { fetchItems(); }, [page, pageSize, filters]);
+
+  /* ── Fetch ALL items (no pagination) for the detail sidebar ── */
+  const fetchAllItems = async () => {
+    try {
+      const res     = await getAllItems(1, 1000, {});
+      const rawList = Array.isArray(res?.data?.data) ? res.data.data : [];
+      const flat    = rawList.map((it: any) => ({
+        ...it,
+        taxCategory:     it.taxInfo?.taxCategory    ?? "",
+        taxPreference:   it.taxInfo?.taxPreference  ?? "",
+        taxType:         it.taxInfo?.taxType        ?? "",
+        taxCode:         it.taxInfo?.taxCode        ?? "",
+        taxPerct:        it.taxInfo?.taxPerct       ?? "",
+        preferredVendor: it.vendorInfo?.preferredVendor  ?? "",
+        salesAccount:    it.vendorInfo?.salesAccount     ?? "",
+        purchaseAccount: it.vendorInfo?.purchaseAccount  ?? "",
+        minStockLevel:   it.inventoryInfo?.minStockLevel  ?? "",
+        maxStockLevel:   it.inventoryInfo?.maxStockLevel  ?? "",
+        reorderLevel:    it.inventoryInfo?.reorderLevel   ?? "",
+        valuationMethod: it.inventoryInfo?.valuationMethod ?? "",
+        trackingMethod:  it.inventoryInfo?.trackingMethod  ?? "",
+      }));
+      setAllItems(flat);
+    } catch (err) {
+      console.error("Failed to fetch all items for sidebar", err);
+    }
+  };
+
+  /* ── Row click → fetch full item + switch to detail view (inline) ── */
+  const handleRowClick = async (summary: ItemSummary) => {
+    setActiveSummary(summary);
+    setViewMode("detail");
+    setSelectedItem(null);
+
+    /* Ensure sidebar has all items loaded */
+    if (allItems.length === 0) fetchAllItems();
+
+    try {
+      setDetailLoading(true);
+      const res      = await getItemByItemCode(summary.id);
+      const fullItem = res.data;
+
+      /* Flatten nested fields */
+      const flat: Item = {
+        ...fullItem,
+        taxCategory:     fullItem.taxInfo?.taxCategory    ?? fullItem.taxCategory    ?? "",
+        taxPreference:   fullItem.taxInfo?.taxPreference  ?? fullItem.taxPreference  ?? "",
+        taxType:         fullItem.taxInfo?.taxType        ?? fullItem.taxType        ?? "",
+        taxCode:         fullItem.taxInfo?.taxCode        ?? fullItem.taxCode        ?? "",
+        taxPerct:        fullItem.taxInfo?.taxPerct       ?? fullItem.taxPerct       ?? "",
+        preferredVendor: fullItem.vendorInfo?.preferredVendor  ?? fullItem.preferredVendor  ?? "",
+        salesAccount:    fullItem.vendorInfo?.salesAccount     ?? fullItem.salesAccount     ?? "",
+        purchaseAccount: fullItem.vendorInfo?.purchaseAccount  ?? fullItem.purchaseAccount  ?? "",
+        minStockLevel:   fullItem.inventoryInfo?.minStockLevel  ?? fullItem.minStockLevel  ?? "",
+        maxStockLevel:   fullItem.inventoryInfo?.maxStockLevel  ?? fullItem.maxStockLevel  ?? "",
+        reorderLevel:    fullItem.inventoryInfo?.reorderLevel   ?? fullItem.reorderLevel   ?? "",
+        valuationMethod: fullItem.inventoryInfo?.valuationMethod ?? fullItem.valuationMethod ?? "",
+        trackingMethod:  fullItem.inventoryInfo?.trackingMethod  ?? fullItem.trackingMethod  ?? "",
+      };
+
+      setSelectedItem(flat);
+
+      // TODO: fetch invoice + stock data once APIs are ready
+      // const [salesRes, purchaseRes] = await Promise.all([
+      //   getSalesInvoicesByItem(summary.id),
+      //   getPurchaseInvoicesByItem(summary.id),
+      // ]);
+      // setSalesInvoices(salesRes.data);
+      // setPurchaseInvoices(purchaseRes.data);
+    } catch (err) {
+      console.error("Failed to load item detail", err);
+      showApiError(err);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  /* ── Back to table ── */
+  const handleBack = () => {
+    setViewMode("table");
+    setSelectedItem(null);
+    setActiveSummary(null);
+  };
+
+  /* ── Edit ── */
   const handleEdit = async (itemCode: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       const res = await getItemByItemCode(itemCode);
       setEditItem(res.data);
       setShowModal(true);
-    } catch {
-      console.error("Unable to fetch item details");
-    }
+    } catch { console.error("Unable to fetch item"); }
   };
 
+  /* ── Delete ── */
   const handleDeleteClick = (item: ItemSummary, e: React.MouseEvent) => {
     e.stopPropagation();
     setItemToDelete(item);
-    setDeleteModalOpen(true);
+    setDeleteOpen(true);
   };
 
   const confirmDelete = async () => {
     if (!itemToDelete) return;
-
     try {
       setDeleting(true);
-
       const res = await deleteItemByItemCode(itemToDelete.id);
-
-      if (!res || ![200, 201].includes(res.status_code)) {
-        showApiError(res);
-        return;
-      }
-
+      if (!res || ![200, 201].includes(res.status_code)) { showApiError(res); return; }
       setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
-
       showSuccess(res.message || "Item deleted successfully");
-
-      setDeleteModalOpen(false);
+      setDeleteOpen(false);
+      /* If the deleted item was open in detail view, go back to table */
+      if (activeSummary?.id === itemToDelete.id) {
+        handleBack();
+      }
     } catch (err: any) {
       showApiError(err);
     } finally {
@@ -152,65 +238,46 @@ const fetchItems = async () => {
     }
   };
 
-
   const handleSaved = async (res: any) => {
     const wasEdit = !!editItem;
-
     setShowModal(false);
     setEditItem(null);
-
     await fetchItems();
-
-    showSuccess(
-      res?.message ||
-      (wasEdit ? "Item updated successfully" : "Item created successfully")
-    );
+    showSuccess(res?.message || (wasEdit ? "Item updated successfully" : "Item created successfully"));
   };
 
+  /* ── Detail view action handlers ── */
+  const handleDetailEdit = async () => {
+    if (!activeSummary) return;
+    try {
+      const res = await getItemByItemCode(activeSummary.id);
+      setEditItem(res.data);
+      setShowModal(true);
+    } catch { showApiError("Unable to fetch item"); }
+  };
 
-  /*      FILTER
-   */
+  const handleDetailDelete = () => {
+    if (!activeSummary) return;
+    setItemToDelete(activeSummary);
+    setDeleteOpen(true);
+  };
 
-  // const filteredItems = items.filter((i) =>
-  //   [
-  //     i.id,
-  //     i.itemName,
-  //     i.itemGroup,
-  //     i.taxCategory,
-  //     i.preferredVendor,
-  //     i.sellingPrice,
-  //   ]
-  //     .join(" ")
-  //     .toLowerCase()
-  //     .includes(searchTerm.toLowerCase()),
-  // );
-
-  /*      COLUMNS
-   */
-
+  /* ── Table columns ── */
   const columns: Column<ItemSummary>[] = [
-    { key: "id", header: "Item Code", align: "left" },
-    { key: "itemName", header: "Name", align: "left" },
-    { key: "itemGroup", header: "Category", align: "left" },
-    { key: "taxCategory", header: "Tax Category", align: "left" },
-    {
-      key: "minStockLevel",
-      header: "Min Stock",
-      align: "right",
-    },
-    {
-      key: "maxStockLevel",
-      header: "Max Stock",
-      align: "right",
-    },
-    { key: "preferredVendor", header: "Supplier", align: "left" },
+    { key: "id",           header: "Item Code",    align: "left" },
+    { key: "itemName",     header: "Name",         align: "left" },
+    { key: "itemGroup",    header: "Category",     align: "left" },
+    { key: "taxCategory",  header: "Tax Category", align: "left" },
+    { key: "minStockLevel",header: "Min Stock",    align: "right" },
+    { key: "maxStockLevel",header: "Max Stock",    align: "right" },
+    { key: "preferredVendor", header: "Supplier",  align: "left" },
     {
       key: "sellingPrice",
       header: "Price",
       align: "right",
       render: (i) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          INR {i.sellingPrice}
+          ₹{i.sellingPrice}
         </code>
       ),
     },
@@ -230,82 +297,98 @@ const fetchItems = async () => {
     },
   ];
 
-  /*      RENDER
-   */
+  // ── RENDER ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-8">
-      <Table
-        loading={loading || initialLoad}
-    
-        columns={columns}
-        data={items}
-        enableColumnSelector
-        showToolbar
-        searchValue={searchTerm}
-        onSearch={setSearchTerm}
-        enableAdd
-        addLabel="Add Item"
-        onAdd={handleAdd}
-        currentPage={page}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1); // reset page
-        }}
-        onPageChange={setPage}
-        extraFilters={
-          <div className="w-48">
-            <FilterSelect
-              value={filters.taxCategory || ""}
-              onChange={(e) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  taxCategory: e.target.value || undefined,
-                }));
-                setPage(1);
-              }}
-              options={[
+    <>
+      {viewMode === "table" ? (
+        /* ── Normal table view ── */
+        <div className="p-4 sm:p-8">
+          <Table
+            loading={loading || initialLoad}
+            columns={columns}
+            data={items}
+            enableColumnSelector
+            showToolbar
+            searchValue={searchTerm}
+            onSearch={setSearchTerm}
+            enableAdd
+            addLabel="Add Item"
+            onAdd={() => { setEditItem(null); setShowModal(true); }}
+            currentPage={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            pageSizeOptions={[10, 25, 50, 100]}
+            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+            onPageChange={setPage}
+            onRowClick={handleRowClick}
+            extraFilters={
+              <div className="w-44">
+                <FilterSelect
+                  value={filters.taxCategory || ""}
+                  onChange={(e) => {
+                    setFilters((prev) => ({ ...prev, taxCategory: e.target.value || undefined }));
+                    setPage(1);
+                  }}
+                  options={[
+                    { label: "Export",     value: "Export" },
+                    { label: "Non-Export", value: "Non-Export" },
+                    { label: "LPO",        value: "LPO" },
+                  ]}
+                />
+              </div>
+            }
+          />
+        </div>
+      ) : (
+        /* ── Inline detail view (no overlay, just like CustomerDetailView) ── */
+        <div className="p-4 sm:p-8">
+          <ItemDetailView
+            isOpen={true}
+            onClose={handleBack}
+            allItems={allItems.length > 0 ? allItems : items}
+            item={selectedItem}
+            loadingDetail={detailLoading}
+            onSelectItem={(summary) => handleRowClick(summary)}
+            onEditItem={handleDetailEdit}
+            onDeleteItem={handleDetailDelete}
+            onAddItem={() => { setEditItem(null); setShowModal(true); }}
+            salesInvoices={salesInvoices}
+            purchaseInvoices={purchaseInvoices}
+            stockRows={stockRows}
+            loadingSales={loadingSales}
+            loadingPurchase={loadingPurchase}
+            loadingStock={loadingStock}
+            onStockSearch={(from, to) => {
+              // TODO: fetchStockSummary(activeSummary?.id, from, to)
+              console.log("Stock search:", from, "→", to);
+            }}
+          />
+        </div>
+      )}
 
-                { label: "Export", value: "Export" },
-                { label: "Non-Export", value: "Non-Export" },
-                { label: "LPO", value: "LPO" },
-              ]}
-            />
-          </div>
-        }
-      />
-
-      {/* ITEM MODAL */}
+      {/* ── Add / Edit modal ── */}
       <ItemModal
         isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditItem(null);
-        }}
+        onClose={() => { setShowModal(false); setEditItem(null); }}
         onSubmit={handleSaved}
         initialData={editItem}
         isEditMode={!!editItem}
       />
 
-      {/* DELETE MODAL */}
-      {deleteModalOpen && itemToDelete && (
+      {/* ── Delete modal ── */}
+      {deleteOpen && itemToDelete && (
         <DeleteModal
           entityName="Item"
           entityId={itemToDelete.id}
           entityDisplayName={itemToDelete.itemName}
           isLoading={deleting}
-          onClose={() => {
-            setDeleteModalOpen(false);
-            setItemToDelete(null);
-          }}
+          onClose={() => { setDeleteOpen(false); setItemToDelete(null); }}
           onDelete={confirmDelete}
         />
       )}
-    </div>
+    </>
   );
 };
 

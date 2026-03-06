@@ -18,7 +18,7 @@ import {
   deleteStockEntry,
 } from "../../api/stockApi";
 
-import StockModal from "../../components/inventory/StockModal";
+import StockModal from "../../components/inventory/stock/Stockcorrectionmodal";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
 import DeleteModal from "../../components/actionModal/DeleteModal";
 
@@ -260,7 +260,7 @@ const columns: Column<any>[] = [
         searchValue={searchTerm}
         onSearch={setSearchTerm}
         enableAdd
-        addLabel="Add Stock Entry"
+        addLabel="Stock Correction"
         onAdd={handleAdd}
         currentPage={page}
         totalPages={totalPages}

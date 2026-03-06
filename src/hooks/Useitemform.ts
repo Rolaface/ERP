@@ -72,8 +72,8 @@ const buildPayload = (form: Record<string, any>) => ({
   itemTypeCode: Number(form.itemTypeCode),
   originNationCode: form.originNationCode,
   packagingUnitCode: form.packagingUnitCode,
-  pakingUnit: form.pakingunit || "",
-  packingSize: form.packingsize || "",
+  pakingunit: form.pakingunit || "",
+  packingsize: form.packingsize || "",
   svcCharge: form.svcCharge,
   ins: form.ins,
   sellingPrice: Number(form.sellingPrice),
@@ -281,8 +281,8 @@ export const useItemForm = ({
         // API returns pakingUnit / packingSize (capital U, capital S).
         // Form state uses pakingunit / packingsize (all lowercase).
         // Explicit remap so edit mode pre-fills these inputs correctly.
-        pakingunit: initialData.pakingUnit ?? initialData.pakingunit ?? "",
-        packingsize: initialData.packingSize ?? initialData.packingsize ?? "",
+        pakingunit: initialData.pakingunit ?? initialData.pakingunit ?? "",
+        packingsize: initialData.packingsize ?? initialData.packingsize ?? "",
 
         // Flatten vendorInfo
         preferredVendor: initialData.vendorInfo?.preferredVendor ?? initialData.preferredVendor ?? "",

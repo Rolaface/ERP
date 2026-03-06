@@ -24,6 +24,7 @@ import PdfPreviewModal from "./PdfPreviewModal";
 import { deleteQuotationById } from "../../api/quotationApi";
 import Swal from "sweetalert2";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
+import QuotationDetailModal, { QuotationDetail } from "./Quotationdetailmodal";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
@@ -74,9 +75,6 @@ const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [fromDate] = useState("");
   const [toDate]   = useState("");
 
-  // ── Modal state 
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsId, setDetailsId]     = useState<string | null>(null);
 
   // ── Reset page when search changes 
   useEffect(() => { setPage(1); }, [searchTerm]);
@@ -85,6 +83,12 @@ const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 const [pdfOpen, setPdfOpen] = useState(false);
 
+// _____quotation details drawer state _____
+const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+const [detailData, setDetailData] = useState<QuotationDetail | null>(null);
+const [detailLoading, setDetailLoading] = useState(false);
+const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
   // ── Fetch company once 
   useEffect(() => {
@@ -185,7 +189,18 @@ const [pdfOpen, setPdfOpen] = useState(false);
     showApiError(err);
   }
 };
-
+const handleDrawerPdf = async (quotationNumber: string) => {
+  setDrawerPdfLoading(true);
+  setDrawerPdfUrl(null);
+  try {
+    const res = await getQuotationById(quotationNumber);
+    if (!res || res.status_code !== 200 || !company) return;
+    const blobUrl = await generateQuotationPDF(res.data, company, "bloburl");
+    setDrawerPdfUrl(blobUrl);
+  } finally {
+    setDrawerPdfLoading(false);
+  }
+};
 const handlePreviewQuotationPDF = async (
   quotationNumber: string,
 
@@ -344,12 +359,18 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
     }
   };
 
-  const handleView = (quotationNumber: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setDetailsId(quotationNumber);
-    setDetailsOpen(true);
-  };
-
+ const handleView = async (quotationNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  setDetailDrawerOpen(true);
+  setDetailLoading(true);
+  setDetailData(null);
+  try {
+    const res = await getQuotationById(quotationNumber);
+    if (res?.status_code === 200) setDetailData(res.data);
+  } finally {
+    setDetailLoading(false);
+  }
+};
   const handleDownload = async (quotationNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
@@ -504,15 +525,7 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
         onSortChange={handleSortChange}
       />
 
-      <InvoiceDetailsModal
-        open={detailsOpen}
-        invoiceId={detailsId}
-        onClose={() => { setDetailsOpen(false); setDetailsId(null); }}
-        fetchDetails={getQuotationById}
-     onViewPdf={handlePreviewQuotationPDF}
-
-        mapDetails={mapQuotationToInvoiceDetails}
-      />
+      
       <PdfPreviewModal
   open={pdfOpen}
   title="Quotation Preview"
@@ -527,6 +540,17 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
     selectedQuotation && company &&
     generateQuotationPDF(selectedQuotation, company, "save")
   }
+/>
+<QuotationDetailModal
+  open={detailDrawerOpen}
+  data={detailData}
+  loading={detailLoading}
+  onClose={() => { setDetailDrawerOpen(false); setDetailData(null); setDrawerPdfUrl(null); }}
+  pdfUrl={drawerPdfUrl}
+  pdfLoading={drawerPdfLoading}
+  onViewPdf={() => detailData && handleDrawerPdf(detailData.id)}
+  onDownload={() => detailData && company && generateQuotationPDF(detailData, company, "save")}
+  onClosePdf={() => { if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl); setDrawerPdfUrl(null); }}
 />
     </div>
   );

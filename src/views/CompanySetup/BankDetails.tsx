@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FaUniversity,
   FaPlus,
@@ -9,6 +9,7 @@ import {
   FaEyeSlash,
   FaTimes,
 } from "react-icons/fa";
+import { CalendarDays } from "lucide-react";
 import type { BankAccount } from "../../types/company";
 import type { Terms } from "../../types/termsAndCondition";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
@@ -19,6 +20,113 @@ import { deleteCompanyBankAccount } from "../../api/companySetupApi";
 
 const VITE_COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
+
+
+/** ISO "2022-03-03" → "03-Mar-2022" */
+const isoToDisplay = (iso: string): string => {
+  if (!iso) return "";
+  const date = new Date(iso + "T00:00:00"); // force local time, avoid UTC shift
+  if (isNaN(date.getTime())) return iso;
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mmm = date.toLocaleString("en-GB", { month: "short" }); // "Mar"
+  const yyyy = date.getFullYear();
+  return `${dd}-${mmm}-${yyyy}`;
+};
+
+
+const displayToIso = (display: string): string => {
+  if (!display) return "";
+  const trimmed = display.trim();
+
+  // Already ISO: YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+
+
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length === 8) {
+    const d = `${digits.slice(4)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`;
+    const test = new Date(d + "T00:00:00");
+    if (!isNaN(test.getTime())) return d;
+  }
+  const date = new Date(trimmed);
+  if (!isNaN(date.getTime())) return date.toISOString().split("T")[0];
+
+  return "";
+};
+
+/** Auto-format whatever user typed → "DD-MMM-YYYY" on blur */
+const parseAndFormat = (raw: string): string => {
+  const iso = displayToIso(raw);
+  return iso ? isoToDisplay(iso) : raw;
+};
+
+
+interface DateInputInlineProps {
+  value: string; // ISO or display
+  onChange: (iso: string) => void;
+}
+
+const DateInputInline: React.FC<DateInputInlineProps> = ({ value, onChange }) => {
+  const hiddenRef = useRef<HTMLInputElement>(null);
+
+
+  const [display, setDisplay] = useState(() => isoToDisplay(value) || value);
+
+  useEffect(() => {
+    setDisplay(isoToDisplay(value) || value);
+  }, [value]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDisplay(e.target.value);
+  };
+
+  const handleBlur = () => {
+    const formatted = parseAndFormat(display);
+    setDisplay(formatted);
+    const iso = displayToIso(formatted);
+    if (iso) onChange(iso);
+  };
+
+  const handleCalendarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const iso = e.target.value;
+    if (!iso) return;
+    setDisplay(isoToDisplay(iso));
+    onChange(iso);
+  };
+
+  const isoValue = displayToIso(display) || "";
+
+  return (
+    <div className="relative flex items-center w-full">
+      <input
+        type="text"
+        value={display}
+        onChange={handleTextChange}
+        onBlur={handleBlur}
+        placeholder="DD-MMM-YYYY"
+        className="w-full bg-transparent border-none p-0 pr-6 text-main focus:outline-none font-medium text-sm"
+      />
+      <button
+        type="button"
+        onClick={() => hiddenRef.current?.showPicker?.()}
+        className="absolute right-0 text-muted hover:text-primary transition-colors"
+        tabIndex={-1}
+        title="Pick from calendar"
+      >
+        <CalendarDays className="w-4 h-4" />
+      </button>
+      <input
+        ref={hiddenRef}
+        type="date"
+        value={isoValue}
+        onChange={handleCalendarChange}
+        className="absolute right-0 bottom-0 w-6 h-6 opacity-0 pointer-events-none"
+        tabIndex={-1}
+      />
+    </div>
+  );
+};
+
 // ─── Masking helper ───────────────────────────────────────────────────────────
 const maskValue = (val: string | number | undefined): string => {
   const str = val !== null && val !== undefined ? String(val) : "";
@@ -27,21 +135,29 @@ const maskValue = (val: string | number | undefined): string => {
   return "•".repeat(str.length - 4) + str.slice(-4);
 };
 
-// ─── Detail Field ─────────────────────────────────────────────────────────────
 interface DetailProps {
   label: string;
   name: keyof BankAccount;
   value: string | number | undefined;
   isEditing: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDateChange?: (iso: string) => void; // only for dateAdded
   masked?: boolean;
 }
 
-const Detail: React.FC<DetailProps> = ({ label, name, value, isEditing, onChange, masked }) => {
+const Detail: React.FC<DetailProps> = ({ label, name, value, isEditing, onChange, onDateChange, masked }) => {
   const [revealed, setRevealed] = useState(false);
   const safe = value !== null && value !== undefined ? value : "";
   const isEmpty = String(safe).trim() === "";
-  const displayValue = !isEditing && masked && !revealed && !isEmpty ? maskValue(safe) : safe;
+
+  // ✅ For view mode: convert ISO → "DD-MMM-YYYY"
+  const viewValue = name === "dateAdded" && !isEditing
+    ? isoToDisplay(String(safe)) || String(safe)
+    : String(safe);
+
+  const displayValue = !isEditing && masked && !revealed && !isEmpty
+    ? maskValue(safe)
+    : viewValue;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -54,18 +170,26 @@ const Detail: React.FC<DetailProps> = ({ label, name, value, isEditing, onChange
         }`}
       >
         {isEditing ? (
-          <input
-            name={name}
-            value={safe}
-            onChange={onChange}
-            autoFocus={name === "bankName"}
-            className="w-full bg-transparent border-none p-0 text-main focus:outline-none font-medium text-sm"
-          />
+
+          name === "dateAdded" ? (
+            <DateInputInline
+              value={String(safe)}
+              onChange={(iso) => onDateChange?.(iso)}
+            />
+          ) : (
+            <input
+              name={name}
+              value={safe}
+              onChange={onChange}
+              autoFocus={name === "bankName"}
+              className="w-full bg-transparent border-none p-0 text-main focus:outline-none font-medium text-sm"
+            />
+          )
         ) : isEmpty ? (
           <span className="text-sm text-muted/40 font-medium">—</span>
         ) : (
           <p className="text-sm font-medium flex-1 truncate font-mono tracking-wider text-main">
-            {String(displayValue)}
+            {displayValue}
           </p>
         )}
 
@@ -98,8 +222,6 @@ const normalizeBankAccounts = (accounts: any[]): BankAccount[] =>
 interface Props {
   bankAccounts: BankAccount[];
   setBankAccounts: React.Dispatch<React.SetStateAction<BankAccount[]>>;
-  // FIX: terms must be passed in and included in every update payload
-  // so the backend never wipes it when only bankAccounts is sent
   terms?: Terms | null;
 }
 
@@ -115,10 +237,7 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) 
   });
 
   useEffect(() => {
-    if (
-      selectedAccount === null ||
-      !bankAccounts[selectedAccount]?.bankName?.trim()
-    ) {
+    if (selectedAccount === null || !bankAccounts[selectedAccount]?.bankName?.trim()) {
       const idx = bankAccounts.findIndex((a) => a.bankName?.trim());
       setSelectedAccount(idx !== -1 ? idx : null);
     }
@@ -133,7 +252,6 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) 
     }
   }, [selectedAccount, bankAccounts]);
 
-  // ── Helper: base payload always includes terms so backend never wipes it ──
   const basePayload = () => ({
     id: VITE_COMPANY_ID,
     ...(terms !== undefined && terms !== null ? { terms } : {}),
@@ -154,15 +272,11 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) 
       default: acc.isdefault ? "1" : 0,
     }));
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleAddSubmit = async (newAccount: BankAccount) => {
     try {
       showLoading("Adding Bank Account...");
       const updatedAccounts = [...bankAccounts, newAccount];
-      await updateCompanyById({
-        ...basePayload(),
-        bankAccounts: mapAccounts(updatedAccounts),
-      });
+      await updateCompanyById({ ...basePayload(), bankAccounts: mapAccounts(updatedAccounts) });
       closeSwal();
       showSuccess("Bank account added successfully.");
       setBankAccounts(updatedAccounts);
@@ -206,6 +320,11 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) 
     if (editForm) setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
+
+  const handleDateChange = (iso: string) => {
+    if (editForm) setEditForm({ ...editForm, dateAdded: iso });
+  };
+
   const handleDelete = async () => {
     if (selectedAccount === null) return;
     const selected = bankAccounts[selectedAccount];
@@ -239,10 +358,8 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) 
   const handleSetDefault = async () => {
     if (selectedAccount === null) return;
     const selected = bankAccounts[selectedAccount];
-
     try {
       showLoading("Setting Default Account...");
-
       const updatedAccounts = bankAccounts.map((acc) => ({
         id: acc.id,
         accountNo: acc.accountNo ?? "",
@@ -256,15 +373,9 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) 
         openingBalance: acc.openingBalance ?? 0,
         default: acc.id === selected.id ? 1 : 0,
       }));
-
-      await updateCompanyById({
-        ...basePayload(),
-        bankAccounts: updatedAccounts,
-      });
-
+      await updateCompanyById({ ...basePayload(), bankAccounts: updatedAccounts });
       closeSwal();
       showSuccess("Default account updated successfully.");
-
       setBankAccounts((prev) =>
         prev.map((acc) => ({
           ...acc,
@@ -272,14 +383,10 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) 
           default: acc.id === selected.id ? 1 : 0,
         }))
       );
-    } catch (error) {
-      closeSwal();
-      showApiError(error);
-    }
+    } catch (error) { closeSwal(); showApiError(error); }
   };
 
   const normalizedAccounts = normalizeBankAccounts(bankAccounts);
-
   const filteredAccounts = normalizedAccounts.filter((acc) => {
     if (!acc.bankName?.trim()) return false;
     return (
@@ -296,7 +403,6 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) 
 
   const isDefaultSelected = normalizedAccounts[selectedAccount ?? -1]?.isdefault;
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="bg-card">
       {showBankModal && (
@@ -415,7 +521,6 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) 
               )}
             </div>
 
-            {/* Body */}
             {selectedAccount === null || !bankAccounts[selectedAccount]?.bankName?.trim() ? (
               <div className="flex flex-col items-center justify-center p-16 text-center">
                 <div className="w-20 h-20 rounded-2xl bg-app flex items-center justify-center mb-4 border-2 border-dashed border-theme">
@@ -438,7 +543,10 @@ const BankDetails: React.FC<Props> = ({ bankAccounts, setBankAccounts, terms }) 
                       <Detail label="Sort Code"       name="sortCode"          value={data.sortCode}          isEditing={isEditing} onChange={handleInputChange} masked />
                       <Detail label="Currency"        name="currency"          value={data.currency}          isEditing={isEditing} onChange={handleInputChange} />
                       <Detail label="Opening Balance" name="openingBalance"    value={data.openingBalance}    isEditing={isEditing} onChange={handleInputChange} />
-                      <Detail label="Date Added"      name="dateAdded"         value={data.dateAdded}         isEditing={isEditing} onChange={handleInputChange} />
+
+                      {/* ✅ Date field — view: DD-MMM-YYYY | edit: calendar + manual */}
+                      <Detail label="Date Added"      name="dateAdded"         value={data.dateAdded}         isEditing={isEditing} onChange={handleInputChange} onDateChange={handleDateChange} />
+
                       <div className="col-span-2">
                         <Detail label="Branch Address" name="branchAddress"   value={data.branchAddress}     isEditing={isEditing} onChange={handleInputChange} />
                       </div>

@@ -29,10 +29,11 @@ import InvoiceDetailsModal, {
   type InvoiceDetails,
 } from "./InvoiceDetailsModal";
 import PdfPreviewModal from "./PdfPreviewModal";
-
+import ProformaDetailModal, {
+  type ProformaDetail,
+} from "./Proformadetailmodal";
 
 // Constants
-
 
 type InvoiceStatus = "Draft" | "Rejected" | "Paid" | "Cancelled" | "Approved";
 
@@ -58,9 +59,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
   status: "status",
 };
 
-
 // Types
-
 
 interface ProformaInvoiceTableProps {
   onAddProformaInvoice?: () => void;
@@ -68,45 +67,45 @@ interface ProformaInvoiceTableProps {
   refreshKey: number;
 }
 
-
 // Component
-
 
 const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   onAddProformaInvoice,
   refreshKey,
 }) => {
-  // ── Data 
+  // ── Data
   const [invoices, setInvoices] = useState<ProformaInvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [company, setCompany] = useState<any>(null);
 
-  // ── Pagination (server) 
+  // ── Pagination (server)
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Search (server) 
+  // ── Search (server)
   const [searchTerm, setSearchTerm] = useState("");
 
-
   const [sortBy, setSortBy] = useState("proformaId");
-const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // ── Modal 
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsId, setDetailsId] = useState<string | null>(null);
+  // ── Modal
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerData, setDrawerData] = useState<ProformaDetail | null>(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+  const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
-  // ── Reset page when search changes 
+  // ── Reset page when search changes
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
   const [selectedProforma, setSelectedProforma] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
-  // ── Fetch company once 
+  // ── Fetch company once
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
@@ -295,10 +294,17 @@ const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  const handleView = (proformaId: string, e?: React.MouseEvent) => {
+  const handleView = async (proformaId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setDetailsId(proformaId);
-    setDetailsOpen(true);
+    setDrawerOpen(true);
+    setDrawerLoading(true);
+    setDrawerData(null);
+    try {
+      const res = await getProformaInvoiceById(proformaId);
+      if (res?.status_code === 200) setDrawerData(res.data);
+    } finally {
+      setDrawerLoading(false);
+    }
   };
 
   const handleDownload = async (proformaId: string, e?: React.MouseEvent) => {
@@ -325,6 +331,25 @@ const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     } catch (err: any) {
       closeSwal();
       showApiError(err);
+    }
+  };
+  const handleDrawerPdf = async (proformaId: string) => {
+    setDrawerPdfLoading(true);
+    setDrawerPdfUrl(null);
+    try {
+      if (!company) return;
+      const res = await getProformaInvoiceById(proformaId);
+      if (!res || res.status_code !== 200) return;
+      const blobUrl = await generateProformaInvoicePDF(
+        res.data,
+        company,
+        "bloburl",
+      );
+      setDrawerPdfUrl(blobUrl);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setDrawerPdfLoading(false);
     }
   };
 
@@ -566,16 +591,28 @@ const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
         onSortChange={handleSortChange}
       />
 
-      <InvoiceDetailsModal
-        open={detailsOpen}
-        invoiceId={detailsId}
+      <ProformaDetailModal
+        open={drawerOpen}
+        data={drawerData}
+        loading={drawerLoading}
         onClose={() => {
-          setDetailsOpen(false);
-          setDetailsId(null);
+          setDrawerOpen(false);
+          setDrawerData(null);
+          setDrawerPdfUrl(null);
         }}
-        onViewPdf={handlePreviewProformaPDF}
-        fetchDetails={getProformaInvoiceById}
-        mapDetails={mapProformaToInvoiceDetails}
+        pdfUrl={drawerPdfUrl}
+        pdfLoading={drawerPdfLoading}
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.proformaId)}
+        onDownload={() =>
+          drawerData &&
+          company &&
+          generateProformaInvoicePDF(drawerData, company, "save")
+        }
+        onClosePdf={() => {
+          if (drawerPdfUrl?.startsWith("blob:"))
+            URL.revokeObjectURL(drawerPdfUrl);
+          setDrawerPdfUrl(null);
+        }}
       />
       <PdfPreviewModal
         open={pdfOpen}
