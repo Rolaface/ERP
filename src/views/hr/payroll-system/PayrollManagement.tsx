@@ -1254,20 +1254,17 @@ export default function PayrollManagement() {
                         "NRC",
                         "SSN",
                         "Reference #",
-                        "Structure",
                         "Start",
                         "End",
                         "Payslip Status",
                         "NAPSA Status",
-                        "Earnings",
-                        "Deductions",
                         "Net",
                         "",
                       ].map((h, i) => (
                         <th
                           key={String(i)}
                           className={`px-4 py-3 text-xs font-semibold text-muted whitespace-nowrap ${
-                            i >= 11 && i <= 13 ? "text-right" : "text-left"
+                            i === 10 ? "text-right" : "text-left"
                           }`}
                         >
                           {h}
@@ -1309,30 +1306,15 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3">
                             <div className="h-3 w-28 bg-theme/60 rounded animate-pulse" />
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" />
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="h-5 w-16 bg-theme/60 rounded-full animate-pulse" />
-                          </td>
                           <td className="px-4 py-3 text-right">
                             <div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" />
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" />
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="h-3 w-16 bg-theme/60 rounded animate-pulse ml-auto" />
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="h-7 w-16 bg-theme/60 rounded-lg animate-pulse ml-auto" />
                           </td>
                         </tr>
                       ))
                     ) : filteredSalarySlips.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={15}
+                          colSpan={12}
                           className="px-4 py-10 text-center text-sm text-muted"
                         >
                           {String(slipsSearch ?? "").trim()
@@ -1352,13 +1334,10 @@ export default function PayrollManagement() {
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.nrc || "—"}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.ssn || "—"}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.referenceNumber || "—"}</td>
-                          <td className="px-4 py-3 text-sm text-muted break-words">{s.salary_structure}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
                           <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.end_date}</td>
                           <td className="px-4 py-3"><StatusChip status={derivePayslipStatus(getSlipNapsaStatus(s), s.status)} /></td>
                           <td className="px-4 py-3"><StatusChip status={getSlipNapsaStatus(s)} /></td>
-                          <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_earnings ?? 0).toLocaleString("en-ZM")}</td>
-                          <td className="px-4 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(s.total_deduction ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">{Number(s.net_pay ?? 0).toLocaleString("en-ZM")}</td>
                           <td className="px-4 py-3 text-right">
                             <button
