@@ -7,6 +7,7 @@ import {
   Plus,
   Building2,
   MapPin,
+  CreditCard,
   Mail,
 } from "lucide-react";
 import type { Supplier } from "../../types/Supply/supplier";
@@ -14,7 +15,7 @@ import SupplierStatement from "./SupplierStatement";
 import PurchaseInvoiceModal from "../../components/procurement/PurchaseInvoiceModal";
 import PurchaseOrderModal from "../../components/procurement/PurchaseOrderModal";
 import SupplierPurchaseOrders from "./SupplierPurchaseOrders";
-
+import SupplierPaymentModal from "../../components/procurement/supply/SupplierPaymentModal";
 /*  PROPS  */
 
 interface Props {
@@ -35,11 +36,13 @@ const SupplierDetailView: React.FC<Props> = ({
   onEdit,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  
   const [activeTab, setActiveTab] = useState<
-    "overview" | "purchase-orders" | "bills" | "statement"
-  >("overview");
+  "overview" | "purchase-orders" | "bills" | "payments" | "statement"
+>("overview");
   const [showPOModal, setShowPOModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const supplierDetail = suppliers.find((s) =>
     supplier.supplierId
@@ -65,29 +68,41 @@ const SupplierDetailView: React.FC<Props> = ({
   );
 
   const renderActionButton = () => {
-    switch (activeTab) {
-      case "purchase-orders":
-        return (
-          <button
-            onClick={() => setShowPOModal(true)}
-            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-          >
-            <Plus size={14} /> New Purchase Order
-          </button>
-        );
-      case "bills":
-        return (
-          <button
-            onClick={() => setShowInvoiceModal(true)}
-            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-          >
-            <Plus size={14} /> New Purchase Invoice
-          </button>
-        );
-      default:
-        return null;
-    }
-  };
+  switch (activeTab) {
+    case "purchase-orders":
+      return (
+        <button
+          onClick={() => setShowPOModal(true)}
+          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+        >
+          <Plus size={14} /> New Purchase Order
+        </button>
+      );
+
+    case "bills":
+      return (
+        <button
+          onClick={() => setShowInvoiceModal(true)}
+          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+        >
+          <Plus size={14} /> New Purchase Invoice
+        </button>
+      );
+
+    case "payments":
+      return (
+        <button
+          onClick={() => setShowPaymentModal(true)}
+          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+        >
+          <Plus size={14} /> Make Payment
+        </button>
+      );
+
+    default:
+      return null;
+  }
+};
 
   const getStatusColor = (status?: string) => {
     switch (status) {
@@ -243,6 +258,7 @@ const SupplierDetailView: React.FC<Props> = ({
                 { id: "overview", label: "Overview" },
                 { id: "purchase-orders", label: "Purchase Orders" },
                 { id: "bills", label: "Bills" },
+                { id: "payments", label: "Payments" },
                 { id: "statement", label: "Statement" },
               ].map((t) => (
                 <button
@@ -382,6 +398,22 @@ const SupplierDetailView: React.FC<Props> = ({
             {activeTab === "statement" && supplierDetail && (
               <SupplierStatement supplier={supplierDetail} />
             )}
+
+            {activeTab === "payments" && (
+  <div className="flex flex-col items-center justify-center py-20 text-center">
+    <div className="p-5 rounded-2xl bg-row-hover text-muted mb-4">
+      <CreditCard size={32} />
+    </div>
+
+    <h3 className="text-sm font-bold text-main">
+      No payments recorded
+    </h3>
+
+    <p className="text-[10px] text-muted font-bold uppercase mt-1">
+      Supplier payment history will appear here
+    </p>
+  </div>
+)}
           </div>
         </main>
       </div>
@@ -395,6 +427,13 @@ const SupplierDetailView: React.FC<Props> = ({
         isOpen={showInvoiceModal}
         onClose={() => setShowInvoiceModal(false)}
       />
+
+      <SupplierPaymentModal
+  isOpen={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  supplierName={supplierName}
+  supplierCode={supplierCode}
+/>
     </div>
   );
 };

@@ -40,7 +40,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-gray-700">Payment Details</h3>
 
-        <div className="grid grid-cols-4 gap-x-2 gap-y-2 items-end max-w-2xl">
+        <div className="grid grid-cols-4 gap-x-2 gap-y-2 items-start max-w-2xl">
           <ModalSelect
             label="Currency"
             name="currency"
@@ -88,7 +88,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-gray-700">Bank Details</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-x-2 gap-y-2 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-x-2 gap-y-2 items-start">
           <ModalInput
             label="Bank"
             name="bankAccount"
@@ -122,6 +122,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
             value={form.sortCode}
             required
             onChange={onChange}
+            error={errors.sortCode}
           />
 
           <ModalInput

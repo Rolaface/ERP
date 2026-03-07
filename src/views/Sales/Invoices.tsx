@@ -25,14 +25,15 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import Swal from "sweetalert2";
 import InvoiceModal from "../../components/sales/InvoiceModal";
+import CustomerPaymentModal from "../../components/sales/CustomerPaymentModal";
 
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
-  Draft:     ["Rejected", "Approved"],
-  Rejected:  ["Draft", "Approved"],
-  Paid:      [],
+  Draft: ["Rejected", "Approved"],
+  Rejected: ["Draft", "Approved"],
+  Paid: [],
   Cancelled: ["Draft"],
-  Approved:  ["Paid", "Cancelled"],
+  Approved: ["Paid", "Cancelled"],
 };
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
@@ -47,36 +48,39 @@ interface InvoiceTableProps {
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
   // ── Data
-  const [invoices, setInvoices]       = useState<InvoiceSummary[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
+  const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [company, setCompany]         = useState<Company | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
 
   // ── PDF preview (kept — do not remove)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   // Edit state
-const [editOpen, setEditOpen] = useState(false);
-const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
-  const [pdfUrl, setPdfUrl]                   = useState<string | null>(null);
-  const [pdfOpen, setPdfOpen]                 = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
 
   // ── Drawer (same pattern as ProformaInvoicesTable)
-  const [drawerOpen, setDrawerOpen]         = useState(false);
-  const [drawerData, setDrawerData]         = useState<InvoiceDetail | null>(null);
-  const [drawerLoading, setDrawerLoading]   = useState(false);
-  const [drawerPdfUrl, setDrawerPdfUrl]     = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerData, setDrawerData] = useState<InvoiceDetail | null>(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
   // ── Pagination (server)
-  const [page, setPage]             = useState(1);
-  const [pageSize, setPageSize]     = useState(10);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentInvoice, setPaymentInvoice] = useState<InvoiceSummary | null>(null);
 
   // ── Search (server)
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [sortBy, setSortBy]       = useState("invoiceNumber");
+  const [sortBy, setSortBy] = useState("invoiceNumber");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ── Reset page when search changes
@@ -99,22 +103,22 @@ const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
       if (!res || res.status_code !== 200) return;
 
       const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
-        invoiceNumber:     inv.invoiceNumber,
-        customerName:      inv.customerName,
-        currency:          inv.currency,
-        exchangeRate:      inv.exchangeRate,
-        dueDate:           inv.dueDate,
-        dateOfInvoice:     new Date(inv.dateOfInvoice),
-        total:             Number(inv.totalAmount),
-        totalTax:          inv.totalTax,
-        invoiceStatus:     inv.invoiceStatus,
+        invoiceNumber: inv.invoiceNumber,
+        customerName: inv.customerName,
+        currency: inv.currency,
+        exchangeRate: inv.exchangeRate,
+        dueDate: inv.dueDate,
+        dateOfInvoice: new Date(inv.dateOfInvoice),
+        total: Number(inv.totalAmount),
+        totalTax: inv.totalTax,
+        invoiceStatus: inv.invoiceStatus,
         invoiceTypeParent: inv.invoiceTypeParent,
-        invoiceType:       inv.invoiceType,
+        invoiceType: inv.invoiceType,
       }));
 
       setInvoices(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
-      setTotalItems(res.pagination?.total       || mapped.length);
+      setTotalItems(res.pagination?.total || mapped.length);
     } finally {
       setLoading(false);
       setInitialLoad(false);
@@ -153,33 +157,38 @@ const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
 };
 
 
+  const handleReceivePayment = (inv: InvoiceSummary) => {
+    setPaymentInvoice(inv);
+    setPaymentOpen(true);
+  };
+
   const fetchAllInvoicesForExport = async (): Promise<InvoiceSummary[]> => {
     try {
       let allData: InvoiceSummary[] = [];
       let current = 1;
-      let total   = 1;
+      let total = 1;
 
       do {
         const res = await getAllSalesInvoices(current, 100, sortBy, sortOrder, searchTerm);
 
         if (res?.status_code === 200) {
           const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
-            invoiceNumber:     inv.invoiceNumber,
-            customerName:      inv.customerName,
-            receiptNumber:     inv.receiptNumber,
-            currency:          inv.currency,
-            exchangeRate:      inv.exchangeRate,
-            dueDate:           inv.dueDate,
-            dateOfInvoice:     new Date(inv.dateOfInvoice),
-            total:             Number(inv.totalAmount),
-            totalTax:          inv.totalTax,
-            invoiceStatus:     inv.invoiceStatus,
+            invoiceNumber: inv.invoiceNumber,
+            customerName: inv.customerName,
+            receiptNumber: inv.receiptNumber,
+            currency: inv.currency,
+            exchangeRate: inv.exchangeRate,
+            dueDate: inv.dueDate,
+            dateOfInvoice: new Date(inv.dateOfInvoice),
+            total: Number(inv.totalAmount),
+            totalTax: inv.totalTax,
+            invoiceStatus: inv.invoiceStatus,
             invoiceTypeParent: inv.invoiceTypeParent,
-            invoiceType:       inv.invoiceType,
+            invoiceType: inv.invoiceType,
           }));
 
           allData = [...allData, ...mapped];
-          total   = res.pagination?.total_pages || 1;
+          total = res.pagination?.total_pages || 1;
         }
 
         current++;
@@ -193,29 +202,29 @@ const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   };
 
   const handleEdit = async (invoiceNumber: string, e?: React.MouseEvent) => {
-  e?.stopPropagation();
+    e?.stopPropagation();
 
-  try {
-    showLoading("Loading invoice...");
+    try {
+      showLoading("Loading invoice...");
 
-    const res = await getSalesInvoiceById(invoiceNumber);
+      const res = await getSalesInvoiceById(invoiceNumber);
 
-    if (!res || res.status_code !== 200) {
+      if (!res || res.status_code !== 200) {
+        closeSwal();
+        showApiError("Failed to load invoice");
+        return;
+      }
+
       closeSwal();
-      showApiError("Failed to load invoice");
-      return;
+
+      setEditInvoice(res.data);
+      setEditOpen(true);
+
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
     }
-
-    closeSwal();
-
-    setEditInvoice(res.data);
-    setEditOpen(true);
-
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+  };
 
   const handleExportExcel = async () => {
     try {
@@ -232,13 +241,13 @@ const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
       const worksheet = XLSX.utils.json_to_sheet(
         dataToExport.map((inv) => ({
           "Invoice No": inv.invoiceNumber,
-          Type:         inv.invoiceType,
-          Customer:     inv.customerName,
-          Date:         inv.dateOfInvoice.toLocaleDateString(),
-          "Due Date":   inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "",
-          Amount:       inv.total,
-          Currency:     inv.currency,
-          Status:       inv.invoiceStatus,
+          Type: inv.invoiceType,
+          Customer: inv.customerName,
+          Date: inv.dateOfInvoice.toLocaleDateString(),
+          "Due Date": inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "",
+          Amount: inv.total,
+          Currency: inv.currency,
+          Status: inv.invoiceStatus,
         }))
       );
 
@@ -501,33 +510,34 @@ const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
             iconOnly
           />
           <ActionButton
-  type="edit"
-  onClick={(e) => handleEdit(inv.invoiceNumber, e)}
-  iconOnly
-  disabled={inv.invoiceStatus !== "Draft"}
-  title={
-    inv.invoiceStatus !== "Draft"
-      ? "Only Draft invoices can be edited"
-      : "Edit Invoice"
-  }
-/>
+            type="edit"
+            onClick={(e) => handleEdit(inv.invoiceNumber, e)}
+            iconOnly
+            disabled={inv.invoiceStatus !== "Draft"}
+            title={
+              inv.invoiceStatus !== "Draft"
+                ? "Only Draft invoices can be edited"
+                : "Edit Invoice"
+            }
+          />
           <ActionMenu
             showDownload
             onDownload={(e) => handleDownload(inv, e)}
             onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
             customActions={[
+              ...(inv.invoiceStatus === "Approved"
+                ? [
+                  {
+                    label: "Receive Payment",
+                    onClick: () => handleReceivePayment(inv),
+                  },
+                ]
+                : []),
+               { divider: true },  
               {
                 label: "View PDF",
                 onClick: () => handlePreviewPDF(inv),
               },
-              ...(inv.invoiceStatus === "Approved"
-    ? [
-        {
-          label: "Take Payment",
-          onClick: () => handleTakePayment(inv.invoiceNumber),
-        },
-      ]
-    : []),
               ...((STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
                 label: `Mark as ${status}`,
                 danger: status === "Paid",
@@ -604,22 +614,33 @@ const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
         }
       />
       <InvoiceModal
-  isOpen={editOpen}
-  onClose={() => {
-    setEditOpen(false);
-    setEditInvoice(null);
-  }}
-  mode="edit"
-  initialData={editInvoice}
-  onSubmit={async (data) => {
-    console.log("Edited invoice payload:", data);
+        isOpen={editOpen}
+        onClose={() => {
+          setEditOpen(false);
+          setEditInvoice(null);
+        }}
+        mode="edit"
+        initialData={editInvoice}
+        onSubmit={async (data) => {
+          console.log("Edited invoice payload:", data);
 
-    // future edit API yaha lagegi
+          // future edit API yaha lagegi
 
-    setEditOpen(false);
-    fetchInvoices();
-  }}
-/>
+          setEditOpen(false);
+          fetchInvoices();
+        }}
+      />
+      <CustomerPaymentModal
+        isOpen={paymentOpen}
+        onClose={() => {
+          setPaymentOpen(false);
+          setPaymentInvoice(null);
+        }}
+        invoiceNumber={paymentInvoice?.invoiceNumber}
+        customerName={paymentInvoice?.customerName}
+        totalAmount={paymentInvoice?.total}
+        amountPaid={0}
+      />
     </div>
   );
 };
