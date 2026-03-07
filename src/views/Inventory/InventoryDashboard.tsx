@@ -322,7 +322,10 @@ const InventoryDashboard: React.FC = () => {
                     data={itemTypeBreakdownData}
                     margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--border)"
+                    />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} width={52} />
                     <Tooltip
@@ -464,7 +467,11 @@ const InventoryDashboard: React.FC = () => {
                       strokeWidth={3}
                       dot={false}
                       name="Count"
-                      label={{ position: "top", fontSize: 10, fill: "var(--muted)" }}
+                      label={{
+                        position: "top",
+                        fontSize: 10,
+                        fill: "var(--muted)",
+                      }}
                     />
                   </LineChart>
                 </ResponsiveContainer>

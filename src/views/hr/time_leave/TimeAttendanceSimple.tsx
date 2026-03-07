@@ -160,7 +160,7 @@ export default function TimeAttendanceSimple() {
           ? "—"
           : String(stats.presentCount.toLocaleString("en-ZM")),
         icon: CheckCircle,
-        color: "text-emerald-600 bg-emerald-50",
+        gradient: "from-[var(--primary)] to-[var(--primary-700)]",
       },
       {
         label: "Absent",
@@ -168,19 +168,19 @@ export default function TimeAttendanceSimple() {
           ? "—"
           : String(stats.absentCount.toLocaleString("en-ZM")),
         icon: Users,
-        color: "text-red-600 bg-red-50",
+        gradient: "from-[var(--brand-blue-bottom)] to-[var(--primary)]",
       },
       {
         label: "Avg Hours/Day",
         value: loading ? "—" : fmt(stats.avgHours),
         icon: Clock,
-        color: "text-blue-600 bg-blue-50",
+        gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
       },
       {
         label: "Total Working Hours",
         value: loading ? "—" : fmt(stats.totalHours),
         icon: FileText,
-        color: "text-purple-600 bg-purple-50",
+        gradient: "from-[var(--primary)] to-[var(--primary-700)]",
       },
     ],
     [
@@ -216,9 +216,9 @@ export default function TimeAttendanceSimple() {
                     </div>
                   </div>
                   <div
-                    className={`h-10 w-10 rounded-md flex items-center justify-center ${c.color}`}
+                    className={`p-3 bg-gradient-to-br ${c.gradient} rounded-xl shadow-sm`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
                 </div>
               </div>

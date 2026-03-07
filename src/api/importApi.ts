@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API } from "../config/api";

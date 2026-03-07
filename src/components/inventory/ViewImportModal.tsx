@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import React, { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { getImportItemById, updateStockAutomatic } from "../../api/importApi";
@@ -309,8 +308,8 @@ const ViewImportModal: React.FC<ViewImportModalProps> = ({
                           <div
                             className={`inline-block text-sm px-3 py-2 rounded border font-medium ${
                               importData.syncStatus === "1"
-                                ? "bg-green-50 text-green-700 border-green-200"
-                                : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                ? "bg-red-50 text-red-700 border-red-200"
+                                : "bg-blue-50 text-blue-700 border-blue-200"
                             }`}
                           >
                             {importData.syncStatus === "1"

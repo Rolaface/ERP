@@ -16,7 +16,7 @@ const Btn: React.FC<{
 }> = ({ onClick, disabled, children, icon, variant = "outline" }) => {
   const cls =
     variant === "primary"
-      ? "bg-primary text-white border border-primary"
+      ? "bg-primary text-white border border-[var(--primary)]"
       : "bg-card text-main border border-theme hover:bg-app";
 
   return (

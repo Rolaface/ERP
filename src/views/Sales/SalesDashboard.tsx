@@ -261,13 +261,15 @@ const SalesDashboard: React.FC = () => {
                   label: "Proforma Invoices",
                   value: String(summaryData?.totalProformaInvoices ?? 0),
                   icon: FileSignature,
-                  gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
+                  gradient:
+                    "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
                 },
                 {
                   label: "Quotations",
                   value: String(summaryData?.totalQuotations ?? 0),
                   icon: Receipt,
-                  gradient: "from-[var(--brand-blue-bottom)] to-[var(--primary)]",
+                  gradient:
+                    "from-[var(--brand-blue-bottom)] to-[var(--primary)]",
                 },
                 {
                   label: "Sales Invoices",
@@ -279,7 +281,8 @@ const SalesDashboard: React.FC = () => {
                   label: "Credit Notes",
                   value: String(summaryData?.totalSalesCreditNotes ?? 0),
                   icon: FileText,
-                  gradient: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
+                  gradient:
+                    "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
                 },
                 {
                   label: "Debit Notes",
@@ -335,7 +338,10 @@ const SalesDashboard: React.FC = () => {
                     data={monthlyTrendData}
                     margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--border)"
+                    />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis
                       tick={{ fontSize: 12 }}
@@ -368,7 +374,11 @@ const SalesDashboard: React.FC = () => {
                       strokeWidth={3}
                       dot={false}
                       name="Sales"
-                      label={{ position: "top", fontSize: 10, fill: "var(--muted)" }}
+                      label={{
+                        position: "top",
+                        fontSize: 10,
+                        fill: "var(--muted)",
+                      }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -394,7 +404,10 @@ const SalesDashboard: React.FC = () => {
                     data={recentSalesChartData}
                     margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--border)"
+                    />
                     <XAxis
                       dataKey="name"
                       tick={{ fontSize: 11 }}

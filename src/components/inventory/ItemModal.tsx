@@ -1,9 +1,6 @@
 /* eslint-disable unused-imports/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import React, { useState, useEffect, useCallback } from "react";
 import { showApiError, showLoading, closeSwal } from "../../utils/alert";
 import { toast } from "sonner";
@@ -192,7 +189,7 @@ const ItemModal: React.FC<{
       const response = await fetch(API.lookup.getItemClasses);
 
       const data = await response.json();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+
       const mapped = data.map((item: any) => ({
         cd: item.itemClsCd || item.cd || "",
         cdNm: item.itemClsNm || item.cdNm || "",

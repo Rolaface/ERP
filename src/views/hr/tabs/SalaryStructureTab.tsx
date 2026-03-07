@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Plus,
-  Save,
-  X,
-} from "lucide-react";
+import { Plus, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   createSalaryComponent,
@@ -119,11 +115,7 @@ export default function SalaryStructureTab() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  {[
-                    "Structure",
-                    "Company",
-                    "Status",
-                  ].map((h) => (
+                  {["Structure", "Company", "Status"].map((h) => (
                     <th
                       key={h}
                       className={`px-4 py-3 text-[10px] font-extrabold text-gray-500 uppercase tracking-wider whitespace-nowrap ${
@@ -187,8 +179,8 @@ export default function SalaryStructureTab() {
                           <span
                             className={`inline-flex items-center px-2 py-0.5 text-[11px] font-bold rounded-full border ${
                               structure.is_active
-                                ? "bg-green-50 text-green-700 border-green-200"
-                                : "bg-gray-50 text-gray-600 border-gray-200"
+                                ? "bg-red-50 text-red-700 border-red-200"
+                                : "bg-muted/20 text-muted border-theme"
                             }`}
                           >
                             {structure.is_active ? "Active" : "Inactive"}
@@ -328,8 +320,6 @@ function SalaryComponentsModal({
     });
   };
 
-  
-
   const save = async () => {
     if (!editing) return;
     if (!editing.name.trim() || !editing.abbr.trim()) {
@@ -378,7 +368,6 @@ function SalaryComponentsModal({
     } finally {
       setLoading(false);
     }
-
   };
 
   return (
@@ -416,9 +405,7 @@ function SalaryComponentsModal({
           </div>
         </div>
 
-        {error && (
-          <div className="px-4 pb-2 text-sm text-red-600">{error}</div>
-        )}
+        {error && <div className="px-4 pb-2 text-sm text-red-600">{error}</div>}
 
         <div className="px-4 pb-4">
           <div className="overflow-auto border border-gray-200 rounded-xl">

@@ -34,17 +34,17 @@ interface PayrollTableProps {
 
 const StatusPill: React.FC<{ status: string }> = ({ status }) => {
   const map: Record<string, string> = {
-    Paid: "bg-green-50 text-green-700 border-green-200",
-    Pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
-    Processing: "bg-blue-50 text-blue-700 border-blue-200",
-    Approved: "bg-green-50 text-green-700 border-green-200",
-    Rejected: "bg-red-50 text-red-700 border-red-200",
-    Draft: "bg-gray-50 text-gray-700 border-gray-200",
-    Failed: "bg-red-50 text-red-700 border-red-200",
+    Paid: "bg-success/10 text-success border-success/20",
+    Pending: "bg-warning/10 text-warning border-warning/20",
+    Processing: "bg-primary/10 text-primary border-[var(--primary)]/20",
+    Approved: "bg-success/10 text-success border-success/20",
+    Rejected: "bg-danger/10 text-danger border-danger/20",
+    Draft: "bg-row-hover/40 text-main border-theme",
+    Failed: "bg-danger/10 text-danger border-danger/20",
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border ${map[status] ?? "bg-gray-50 text-gray-700 border-gray-200"}`}
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${map[status] ?? "bg-row-hover/40 text-main border-theme"}`}
     >
       {status === "Paid" && <CheckCircle className="w-3.5 h-3.5" />}
       {status === "Pending" && <Clock className="w-3.5 h-3.5" />}

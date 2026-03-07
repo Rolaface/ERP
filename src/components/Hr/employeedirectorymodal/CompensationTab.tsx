@@ -62,7 +62,7 @@ const ZAMBIAN_BANKS = [
   "NEDBANK ZAMBIA",
   "ABSA BANK ZAMBIA",
   "CITIBANK ZAMBIA",
-  "INDO ZAMBIA BANK"
+  "INDO ZAMBIA BANK",
 ];
 
 // ─────────────────────────────────────────────────────────
@@ -213,9 +213,7 @@ const BankNameField: React.FC<BankNameFieldProps> = ({ value, onChange }) => {
         <input
           type="text"
           value={value}
-          onChange={(e) =>
-            onChange(String(e.target.value ?? "").toUpperCase())
-          }
+          onChange={(e) => onChange(String(e.target.value ?? "").toUpperCase())}
           onBlur={handleInputBlur}
           placeholder="Type bank name here..."
           autoFocus
@@ -461,7 +459,9 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
                   handleInputChange("salaryStructure", v);
                   void applySalaryStructure(v);
                 }}
-                disabled={salaryStructureLoading || salaryStructureDetailLoading}
+                disabled={
+                  salaryStructureLoading || salaryStructureDetailLoading
+                }
                 className="w-full px-3 py-2 text-sm border border-theme bg-card rounded-lg focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
               >
                 <option value="">Select a salary structure</option>
@@ -654,7 +654,7 @@ const CompensationTab: React.FC<CompensationTabProps> = ({
 
             {ceilingError && (
               <div className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
-                 Could not fetch from NAPSA. Enter manually.
+                Could not fetch from NAPSA. Enter manually.
               </div>
             )}
 

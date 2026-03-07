@@ -213,36 +213,40 @@ export default function MultiPayrollPreviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
+      <div className="bg-card border border-theme rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+        <div className="px-6 py-4 bg-app border-b border-theme flex items-center justify-between">
           <div className="min-w-0">
-            <div className="text-lg font-semibold">Preview</div>
-            <div className="text-xs text-white/80 mt-0.5">
-              Multiple Employees
+            <div className="text-sm font-extrabold text-main">
+              Payroll Preview
             </div>
+            <div className="text-xs text-muted mt-0.5">Multiple Employees</div>
           </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white">
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-muted/5 text-muted hover:text-main transition"
+            aria-label="Close multiple payroll preview"
+            title="Close"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <div className="bg-card border border-theme rounded-2xl p-6 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-gray-600">
+                <div className="text-sm font-extrabold text-main">
                   Salary Structure Components
                 </div>
-                <div className="text-xs text-gray-600 mt-1 font-semibold break-words">
-                  Employee: {activeEmployeeCode || "—" }
+                <div className="text-xs text-muted mt-1 font-semibold break-words">
+                  Employee: {activeEmployeeCode || "—"}
                 </div>
-                <div className="text-xs text-gray-600 mt-0.5 font-semibold break-words">
-                  Structure: {activeStructureName || "—" }
-                  {assignmentLoading ? " (loading...)" : "" }
+                <div className="text-xs text-muted mt-0.5 font-semibold break-words">
+                  Structure: {activeStructureName || "—"}
+                  {assignmentLoading ? " (loading...)" : ""}
                 </div>
                 {assignmentError && (
-                  <div className="text-xs text-red-600 mt-0.5 break-words">
-                    {assignmentError }
+                  <div className="text-xs text-danger mt-0.5 break-words">
                     {assignmentError}
                   </div>
                 )}
@@ -252,7 +256,7 @@ export default function MultiPayrollPreviewModal({
                   type="button"
                   onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
                   disabled={activeIndex <= 0}
-                  className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                  className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-theme bg-card text-muted hover:text-main hover:bg-muted/5 disabled:opacity-40"
                   title="Previous"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -263,7 +267,7 @@ export default function MultiPayrollPreviewModal({
                     setActiveIndex((i) => Math.min(selected.length - 1, i + 1))
                   }
                   disabled={activeIndex >= selected.length - 1}
-                  className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                  className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-theme bg-card text-muted hover:text-main hover:bg-muted/5 disabled:opacity-40"
                   title="Next"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -273,19 +277,19 @@ export default function MultiPayrollPreviewModal({
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
-                <div className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">
+                <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
                   Month
                 </div>
                 <input
                   type="month"
                   value={month}
                   onChange={(e) => setMonth(e.target.value)}
-                  className="mt-1 h-10 w-full px-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 shadow-sm focus:outline-none"
+                  className="mt-1 h-10 w-full px-3 bg-app border border-theme rounded-xl text-sm text-main shadow-sm focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.18)]"
                 />
               </div>
 
               <div>
-                <div className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">
+                <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
                   Start
                 </div>
                 <input
@@ -293,11 +297,11 @@ export default function MultiPayrollPreviewModal({
                   value={payPeriodStart}
                   onChange={(e) => onPayPeriodStartChange(e.target.value)}
                   disabled={Boolean(month)}
-                  className="mt-1 h-10 w-full px-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 shadow-sm focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                  className="mt-1 h-10 w-full px-3 bg-app border border-theme rounded-xl text-sm text-main shadow-sm focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.18)] disabled:opacity-60"
                 />
               </div>
               <div>
-                <div className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">
+                <div className="text-[10px] font-extrabold text-muted uppercase tracking-wider">
                   End
                 </div>
                 <input
@@ -305,41 +309,41 @@ export default function MultiPayrollPreviewModal({
                   value={payPeriodEnd}
                   onChange={(e) => onPayPeriodEndChange(e.target.value)}
                   disabled={Boolean(month)}
-                  className="mt-1 h-10 w-full px-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 shadow-sm focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                  className="mt-1 h-10 w-full px-3 bg-app border border-theme rounded-xl text-sm text-main shadow-sm focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.18)] disabled:opacity-60"
                 />
               </div>
             </div>
 
             {Boolean(month) && (
-              <div className="mt-2 text-[11px] text-gray-500">
+              <div className="mt-2 text-[11px] text-muted">
                 Start/End are auto-filled from the selected month. Clear the
                 month to edit dates manually.
               </div>
             )}
 
-            <div className="mt-3 text-xs text-gray-600">
+            <div className="mt-3 text-xs text-muted">
               {selected.length === 0
                 ? ""
                 : `Employee ${activeIndex + 1} of ${selected.length}`}
             </div>
 
             {loading ? (
-              <div className="text-sm text-gray-500 mt-4">
+              <div className="text-sm text-muted mt-4">
                 Loading salary structure…
               </div>
             ) : error ? (
-              <div className="text-sm text-red-600 mt-4">{error}</div>
+              <div className="text-sm text-danger mt-4">{error}</div>
             ) : !detail ? (
-              <div className="text-sm text-gray-500 mt-4">—</div>
+              <div className="text-sm text-muted mt-4">—</div>
             ) : null}
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 border-t border-theme bg-app flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            className="px-4 py-2 text-sm font-bold border border-theme bg-card text-main rounded-lg hover:bg-muted/5"
           >
             Cancel
           </button>
@@ -349,7 +353,7 @@ export default function MultiPayrollPreviewModal({
               setActiveIndex((i) => Math.min(selected.length - 1, i + 1))
             }
             disabled={selected.length === 0 || isLastEmployee}
-            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-bold border border-theme bg-card text-main rounded-lg hover:bg-muted/5 disabled:opacity-50"
           >
             Preview Payroll
           </button>
@@ -362,9 +366,11 @@ export default function MultiPayrollPreviewModal({
               Boolean(runPayrollLoading) ||
               selected.length === 0
             }
-            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-extrabold bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50"
           >
-            {runPayrollLoading ? "Running…" : `Run Payroll (${selected.length})`}
+            {runPayrollLoading
+              ? "Running…"
+              : `Run Payroll (${selected.length})`}
           </button>
         </div>
       </div>

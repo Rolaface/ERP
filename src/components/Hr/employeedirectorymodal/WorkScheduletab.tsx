@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Clock,
-  Calendar,
-  CalendarDays,
-  BarChart3,
-} from "lucide-react";
+import { Clock, Calendar, CalendarDays, BarChart3 } from "lucide-react";
 
 type WorkScheduleTabProps = {
   formData: any;

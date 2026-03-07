@@ -21,7 +21,10 @@ import {
   ChevronLeft,
   Edit2,
 } from "lucide-react";
-import { updateEmployeeDocuments, updateEmployeeProfilePhoto } from "../../../api/employeeapi";
+import {
+  updateEmployeeDocuments,
+  updateEmployeeProfilePhoto,
+} from "../../../api/employeeapi";
 import { ERP_BASE } from "../../../config/api";
 import { useAssignedSalaryStructure } from "../../../hooks/useAssignedSalaryStructure";
 import {
@@ -198,7 +201,10 @@ const ProfilePhotoUploadModal: React.FC<{
             <Upload className="w-4 h-4 text-muted" />
             Update Profile Photo
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-muted/10 transition-colors">
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-muted/10 transition-colors"
+          >
             <X className="w-4 h-4 text-muted hover:text-main" />
           </button>
         </div>
@@ -207,7 +213,11 @@ const ProfilePhotoUploadModal: React.FC<{
           {preview && (
             <div className="flex justify-center mb-4">
               <div className="w-24 h-24 bg-app border border-theme rounded-full flex items-center justify-center overflow-hidden">
-                <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                <img
+                  src={preview}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           )}
@@ -218,9 +228,7 @@ const ProfilePhotoUploadModal: React.FC<{
               <p className="text-sm font-medium text-main mb-1">
                 Click to upload or drag & drop
               </p>
-              <p className="text-xs text-muted">
-                JPG, PNG (max 5MB)
-              </p>
+              <p className="text-xs text-muted">JPG, PNG (max 5MB)</p>
             </div>
             <input
               type="file"
@@ -234,12 +242,20 @@ const ProfilePhotoUploadModal: React.FC<{
             <div className="flex items-center gap-3 bg-app border border-theme rounded-xl px-3 py-2">
               <FileText className="w-4 h-4 text-muted" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-main truncate">{file.name}</p>
+                <p className="text-sm font-medium text-main truncate">
+                  {file.name}
+                </p>
                 <p className="text-xs text-muted">
                   {(file.size / 1024).toFixed(1)} KB
                 </p>
               </div>
-              <button onClick={(e) => { e.preventDefault(); handleFileChange(null); }} className="p-1 hover:bg-app rounded">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleFileChange(null);
+                }}
+                className="p-1 hover:bg-app rounded"
+              >
                 <X className="w-3.5 h-3.5 text-muted hover:text-red-500" />
               </button>
             </div>
@@ -317,7 +333,8 @@ const EmployeeDetailView: React.FC<Props> = ({
 
   const toMoneyRowsFromMap = useMemo(() => {
     return (input: any): Array<{ label: string; amount: number }> => {
-      if (!input || typeof input !== "object" || Array.isArray(input)) return [];
+      if (!input || typeof input !== "object" || Array.isArray(input))
+        return [];
       return Object.entries(input)
         .map(([key, value]) => ({
           label: String(key ?? "").trim(),
@@ -351,11 +368,15 @@ const EmployeeDetailView: React.FC<Props> = ({
     const payrollMapRows = toMoneyRowsFromMap(payrollInfo?.statutoryDeductions);
     if (payrollMapRows.length > 0) return true;
 
-    const deductions = Array.isArray((salaryStructureDetail as any)?.deductions)
-      ? (salaryStructureDetail as any).deductions
+    const deductions = Array.isArray(salaryStructureDetail?.deductions)
+      ? salaryStructureDetail.deductions
       : [];
     return deductions.length > 0;
-  }, [payrollInfo?.statutoryDeductions, salaryStructureDetail, toMoneyRowsFromMap]);
+  }, [
+    payrollInfo?.statutoryDeductions,
+    salaryStructureDetail,
+    toMoneyRowsFromMap,
+  ]);
 
   const salaryBreakdownRows = useMemo(() => {
     const currency = String(payrollInfo?.currency ?? "ZMW").trim() || "ZMW";
@@ -381,7 +402,9 @@ const EmployeeDetailView: React.FC<Props> = ({
       }));
     }
 
-    const earnings = Array.isArray(salaryStructureDetail?.earnings) ? salaryStructureDetail.earnings : [];
+    const earnings = Array.isArray(salaryStructureDetail?.earnings)
+      ? salaryStructureDetail.earnings
+      : [];
     if (earnings.length > 0) {
       return earnings
         .map((e: any) => ({
@@ -394,7 +417,12 @@ const EmployeeDetailView: React.FC<Props> = ({
         );
     }
     return [];
-  }, [payrollInfo?.currency, payrollInfo?.salaryBreakdown, salaryStructureDetail, toMoneyRowsFromMap]);
+  }, [
+    payrollInfo?.currency,
+    payrollInfo?.salaryBreakdown,
+    salaryStructureDetail,
+    toMoneyRowsFromMap,
+  ]);
 
   const statutoryDeductionsRows = useMemo(() => {
     const currency = String(payrollInfo?.currency ?? "ZMW").trim() || "ZMW";
@@ -435,8 +463,8 @@ const EmployeeDetailView: React.FC<Props> = ({
         .filter((r: any) => shouldKeepDeductionRow(r.label));
     }
 
-    const fallback = Array.isArray((salaryStructureDetail as any)?.deductions)
-      ? (salaryStructureDetail as any).deductions
+    const fallback = Array.isArray(salaryStructureDetail?.deductions)
+      ? salaryStructureDetail.deductions
       : [];
     return toSalaryStructureMoneyRows(fallback)
       .map((d: any) => ({
@@ -581,7 +609,11 @@ const EmployeeDetailView: React.FC<Props> = ({
             <div className="relative group w-14 h-14">
               <div className="w-14 h-14 bg-app border border-theme rounded-full flex items-center justify-center overflow-hidden">
                 {profilePhotoUrl ? (
-                  <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                  <img
+                    src={profilePhotoUrl}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="text-primary text-xl font-bold">
                     {personalInfo?.FirstName?.[0]}
@@ -630,21 +662,34 @@ const EmployeeDetailView: React.FC<Props> = ({
       <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-card rounded-2xl border border-theme p-4 shadow-sm">
-            <p className="text-[11px] font-black tracking-widest uppercase text-muted">Department</p>
-            <p className="text-sm font-bold text-main mt-1 truncate">{employmentInfo?.Department || "—"}</p>
-          </div>
-          <div className="bg-card rounded-2xl border border-theme p-4 shadow-sm">
-            <p className="text-[11px] font-black tracking-widest uppercase text-muted">Location</p>
-            <p className="text-sm font-bold text-main mt-1 truncate">{employmentInfo?.workLocation || "—"}</p>
-          </div>
-          <div className="bg-card rounded-2xl border border-theme p-4 shadow-sm">
-            <p className="text-[11px] font-black tracking-widest uppercase text-muted">Gross Salary</p>
-            <p className="text-sm font-bold text-main mt-1 tabular-nums">
-              {payrollInfo?.currency || "ZMW"} {Number(payrollInfo?.grossSalary || 0).toLocaleString()}
+            <p className="text-[11px] font-black tracking-widest uppercase text-muted">
+              Department
+            </p>
+            <p className="text-sm font-bold text-main mt-1 truncate">
+              {employmentInfo?.Department || "—"}
             </p>
           </div>
           <div className="bg-card rounded-2xl border border-theme p-4 shadow-sm">
-            <p className="text-[11px] font-black tracking-widest uppercase text-muted">Leave Balance</p>
+            <p className="text-[11px] font-black tracking-widest uppercase text-muted">
+              Location
+            </p>
+            <p className="text-sm font-bold text-main mt-1 truncate">
+              {employmentInfo?.workLocation || "—"}
+            </p>
+          </div>
+          <div className="bg-card rounded-2xl border border-theme p-4 shadow-sm">
+            <p className="text-[11px] font-black tracking-widest uppercase text-muted">
+              Gross Salary
+            </p>
+            <p className="text-sm font-bold text-main mt-1 tabular-nums">
+              {payrollInfo?.currency || "ZMW"}{" "}
+              {Number(payrollInfo?.grossSalary || 0).toLocaleString()}
+            </p>
+          </div>
+          <div className="bg-card rounded-2xl border border-theme p-4 shadow-sm">
+            <p className="text-[11px] font-black tracking-widest uppercase text-muted">
+              Leave Balance
+            </p>
             <p className="text-sm font-bold text-main mt-1">
               {leaveInfo?.openingLeaveBalance || "0"} Days
             </p>
@@ -1046,10 +1091,14 @@ const EmployeeDetailView: React.FC<Props> = ({
                           <div className="text-muted font-medium py-2">—</div>
                         ) : (
                           statutoryDeductionsRows.map((d: any) => (
-                            <div key={d.label} className="flex justify-between py-2.5 border-b border-border/50">
+                            <div
+                              key={d.label}
+                              className="flex justify-between py-2.5 border-b border-border/50"
+                            >
                               <span className="text-main">{d.label}</span>
                               <span className="font-medium text-main">
-                                {d.currency || payrollInfo?.currency || "ZMW"} {Number(d.amount ?? 0).toLocaleString()}
+                                {d.currency || payrollInfo?.currency || "ZMW"}{" "}
+                                {Number(d.amount ?? 0).toLocaleString()}
                               </span>
                             </div>
                           ))

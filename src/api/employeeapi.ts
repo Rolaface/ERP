@@ -12,7 +12,7 @@ type ApiEnvelope<T> = {
   data?: T;
 };
 
-const unwrap = <T,>(payload: any): T => {
+const unwrap = <T>(payload: any): T => {
   if (payload && typeof payload === "object" && "data" in payload) {
     const env = payload as ApiEnvelope<T>;
     if (env.data !== undefined) return env.data as T;

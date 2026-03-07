@@ -26,7 +26,11 @@ const menuItems = [
     to: "/dashboard",
     icon: <LayoutDashboard className="w-5 h-5" />,
   },
-  { name: "Sales", to: "/sales", icon: <BadgeDollarSign className="w-5 h-5" /> },
+  {
+    name: "Sales",
+    to: "/sales",
+    icon: <BadgeDollarSign className="w-5 h-5" />,
+  },
   { name: "Customer", to: "/crm", icon: <Users className="w-5 h-5" /> },
   {
     name: "Procurement",
@@ -34,10 +38,16 @@ const menuItems = [
     icon: <ShoppingCart className="w-5 h-5" />,
   },
   { name: "Inventory", to: "/inventory", icon: <Boxes className="w-5 h-5" /> },
-  { name: "Accounting", to: "/accounting",
+  {
+    name: "Accounting",
+    to: "/accounting",
     icon: <Briefcase className="w-5 h-5" />,
   },
-  { name: "Human Resource", to: "/hr", icon: <UserRound className="w-5 h-5" /> },
+  {
+    name: "Human Resource",
+    to: "/hr",
+    icon: <UserRound className="w-5 h-5" />,
+  },
   // { name: "Fixed Assets", to: "/fasset", icon: <FaWarehouse /> },
 ];
 

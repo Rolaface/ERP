@@ -35,7 +35,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Search name or ID…"
-        className="w-full pl-9 pr-3 py-2 bg-card border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
+        className="w-full pl-9 pr-3 py-2 bg-card border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition"
       />
     </div>
 
@@ -44,7 +44,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       <select
         value={selectedDept}
         onChange={(e) => onDeptChange(e.target.value)}
-        className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary cursor-pointer"
+        className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] cursor-pointer"
       >
         {departments.map((d) => (
           <option key={d}>{d}</option>
@@ -58,7 +58,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       <select
         value={filterStatus}
         onChange={(e) => onStatusChange(e.target.value)}
-        className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary cursor-pointer"
+        className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] cursor-pointer"
       >
         {["All", "Paid", "Pending", "Processing", "Draft", "Rejected"].map(
           (s) => (
@@ -79,7 +79,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     {pendingCount > 0 && (
       <button
         onClick={onRunPayroll}
-        className="flex items-center gap-2 px-4 py-2 bg-success text-white rounded-lg text-xs font-bold hover:opacity-90 transition shadow-md shadow-success/30"
+        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-extrabold hover:opacity-90 transition shadow-md shadow-primary/20"
       >
         <Play className="w-3.5 h-3.5" />
         Run Payroll

@@ -59,19 +59,18 @@ const EmployeeDirectory: React.FC = () => {
   };
 
   //function to handle view employee details
- const handleViewEmployee = async (id: string) => {
-  try {
-    showLoading("Loading Employee...");
-    const res = await fetchEmployee(id);
-    setSelectedEmployee(res);
-    setViewMode("detail");
-    closeSwal();
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
-
+  const handleViewEmployee = async (id: string) => {
+    try {
+      showLoading("Loading Employee...");
+      const res = await fetchEmployee(id);
+      setSelectedEmployee(res);
+      setViewMode("detail");
+      closeSwal();
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
   const refreshSelectedEmployee = async () => {
     if (!selectedEmployee?.id) return;
@@ -107,20 +106,19 @@ const EmployeeDirectory: React.FC = () => {
     setShowModal(true);
   };
 
-const handleEdit = async (id: string, e: React.MouseEvent) => {
-  e.stopPropagation();
-  try {
-    showLoading("Fetching Employee...");
-    const res = await fetchEmployee(id);
-    setEditEmployee(res);
-    setShowModal(true);
-    closeSwal();
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
-
+  const handleEdit = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      showLoading("Fetching Employee...");
+      const res = await fetchEmployee(id);
+      setEditEmployee(res);
+      setShowModal(true);
+      closeSwal();
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

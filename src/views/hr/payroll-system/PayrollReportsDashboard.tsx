@@ -28,9 +28,9 @@ const COLORS = [
   "var(--primary)",
   "var(--primary-700)",
   "var(--primary-600)",
-  "var(--brand-blue-bottom)",
-  "var(--brand-blue-top)",
-  "var(--brand-blue-bottom)",
+  "var(--primary-500)",
+  "var(--primary-400)",
+  "var(--primary-300)",
 ];
 
 const KPI_CARD_BASE =
@@ -286,25 +286,25 @@ export default function PayrollReportsDashboard({
         label: "Salary Slips",
         value: loading ? "—" : String(kpis.slipCount.toLocaleString("en-ZM")),
         icon: FileText,
-        color: "text-blue-600 bg-blue-50",
+        color: "text-primary bg-primary/10 border-[var(--primary)]/20",
       },
       {
         label: "Total Earnings",
         value: loading ? "—" : currencyZMW.format(kpis.totalGross),
         icon: TrendingUp,
-        color: "text-emerald-600 bg-emerald-50",
+        color: "text-success bg-success/10 border-success/20",
       },
       {
         label: "Total Deductions",
         value: loading ? "—" : currencyZMW.format(kpis.totalDed),
         icon: Users,
-        color: "text-amber-600 bg-amber-50",
+        color: "text-warning bg-warning/10 border-warning/20",
       },
       {
         label: "Total Net Pay",
         value: loading ? "—" : currencyZMW.format(kpis.totalNet),
         icon: DollarSign,
-        color: "text-purple-600 bg-purple-50",
+        color: "text-primary bg-primary/10 border-[var(--primary)]/20",
       },
       {
         label: "Total Advances",
@@ -312,7 +312,7 @@ export default function PayrollReportsDashboard({
           ? "—"
           : currencyZMW.format(advancesKpis.totalAdvance),
         icon: TrendingUp,
-        color: "text-emerald-600 bg-emerald-50",
+        color: "text-success bg-success/10 border-success/20",
       },
     ],
     [
@@ -333,7 +333,7 @@ export default function PayrollReportsDashboard({
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value as PeriodPreset)}
-          className="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 shadow-sm focus:outline-none"
+          className="h-10 px-3 bg-card border border-theme rounded-xl text-sm text-main shadow-sm focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)]"
         >
           <option value="last_12">Last 12 months</option>
           <option value="last_6">Last 6 months</option>
@@ -348,7 +348,7 @@ export default function PayrollReportsDashboard({
             type="month"
             value={customMonth}
             onChange={(e) => setCustomMonth(e.target.value)}
-            className="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 shadow-sm focus:outline-none"
+            className="h-10 px-3 bg-card border border-theme rounded-xl text-sm text-main shadow-sm focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)]"
           />
         )}
 
@@ -356,7 +356,7 @@ export default function PayrollReportsDashboard({
           <button
             type="button"
             onClick={() => setCustomMonth("")}
-            className="h-10 px-3 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            className="h-10 px-3 rounded-xl border border-theme bg-card text-sm font-semibold text-main hover:bg-muted/5"
           >
             Clear
           </button>
@@ -364,8 +364,14 @@ export default function PayrollReportsDashboard({
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm font-semibold">
+        <div className="bg-danger/5 border border-danger/20 text-danger rounded-lg px-4 py-3 text-sm font-semibold">
           {error}
+        </div>
+      )}
+
+      {advancesError && (
+        <div className="bg-danger/5 border border-danger/20 text-danger rounded-lg px-4 py-3 text-sm font-semibold">
+          {advancesError}
         </div>
       )}
 
@@ -397,7 +403,7 @@ export default function PayrollReportsDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={CHART_CARD_BASE}>
           <div>
-            <div className="text-sm font-semibold text-gray-600">
+            <div className="text-sm font-extrabold text-main">
               Status Distribution
             </div>
           </div>
@@ -410,7 +416,10 @@ export default function PayrollReportsDashboard({
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Tooltip
-                    contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
+                    contentStyle={{
+                      borderRadius: 12,
+                      borderColor: "var(--border)",
+                    }}
                   />
                   <Legend
                     verticalAlign="bottom"
@@ -440,8 +449,8 @@ export default function PayrollReportsDashboard({
 
         <div className={CHART_CARD_BASE}>
           <div>
-            <div className="text-sm font-semibold text-gray-600">
-              Top Employees by Net Pay
+            <div className="text-sm font-extrabold text-main">
+              Top Employees (Net Pay)
             </div>
           </div>
           <div className="h-[280px] mt-4 w-full min-w-0">
@@ -466,13 +475,20 @@ export default function PayrollReportsDashboard({
                   />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip
-                    contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
+                    contentStyle={{
+                      borderRadius: 12,
+                      borderColor: "var(--border)",
+                    }}
                     formatter={(v: any) => [
                       `ZMW ${fmtZMW(Number(v || 0))}`,
                       "Net Pay",
                     ]}
                   />
-                  <Bar dataKey="net" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                  <Bar
+                    dataKey="net"
+                    fill="var(--primary)"
+                    radius={[6, 6, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -482,7 +498,7 @@ export default function PayrollReportsDashboard({
 
       <div className={`${CHART_CARD_BASE} lg:col-span-2`}>
         <div>
-          <div className="text-sm font-semibold text-gray-600">
+          <div className="text-sm font-extrabold text-main">
             Unified Monthly Trend (Net Pay, Deductions, Advances)
           </div>
         </div>
@@ -499,22 +515,38 @@ export default function PayrollReportsDashboard({
               >
                 <defs>
                   <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorDed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--primary-700)" stopOpacity={0.28} />
-                    <stop offset="95%" stopColor="var(--primary-700)" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorAdv" x1="0" y1="0" x2="0" y2="1">
                     <stop
                       offset="5%"
-                      stopColor="var(--brand-blue-top)"
+                      stopColor="var(--primary)"
+                      stopOpacity={0.35}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--primary)"
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                  <linearGradient id="colorDed" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor="var(--primary-700)"
                       stopOpacity={0.28}
                     />
                     <stop
                       offset="95%"
-                      stopColor="var(--brand-blue-top)"
+                      stopColor="var(--primary-700)"
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                  <linearGradient id="colorAdv" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor="var(--primary-500)"
+                      stopOpacity={0.28}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--primary-500)"
                       stopOpacity={0}
                     />
                   </linearGradient>
@@ -586,21 +618,25 @@ export default function PayrollReportsDashboard({
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorDed)"
-                  activeDot={{ r: 5, strokeWidth: 0, fill: "var(--primary-700)" }}
+                  activeDot={{
+                    r: 5,
+                    strokeWidth: 0,
+                    fill: "var(--primary-700)",
+                  }}
                   yAxisId="left"
                 />
                 <Area
                   type="monotone"
                   dataKey="advances"
                   name="Advances"
-                  stroke="var(--brand-blue-top)"
+                  stroke="var(--primary-500)"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorAdv)"
                   activeDot={{
                     r: 5,
                     strokeWidth: 0,
-                    fill: "var(--brand-blue-top)",
+                    fill: "var(--primary-500)",
                   }}
                   yAxisId="left"
                 />

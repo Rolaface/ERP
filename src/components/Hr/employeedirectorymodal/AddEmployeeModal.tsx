@@ -307,25 +307,26 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
     };
 
     const personal =
-      (editData as any).personalInfo ??
-      (editData as any).personal_info ??
-      (editData as any).personal ??
+      editData.personalInfo ??
+      editData.personal_info ??
+      editData.personal ??
       editData;
     const contact =
-      (editData as any).contactInfo ??
-      (editData as any).contact_info ??
-      (editData as any).contact ??
+      editData.contactInfo ??
+      editData.contact_info ??
+      editData.contact ??
       editData;
-    const address = contact?.address ?? contact?.Address ?? contact?.address_info;
+    const address =
+      contact?.address ?? contact?.Address ?? contact?.address_info;
     const emergency =
       contact?.emergencyContact ??
       contact?.EmergencyContact ??
       contact?.emergency_contact;
 
     const employment =
-      (editData as any).employmentInfo ??
-      (editData as any).employment_info ??
-      (editData as any).employment ??
+      editData.employmentInfo ??
+      editData.employment_info ??
+      editData.employment ??
       editData;
     const weeklySchedule =
       employment?.weeklySchedule ??
@@ -333,15 +334,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       employment?.WeeklySchedule;
 
     const identity =
-      (editData as any).identityInfo ??
-      (editData as any).identity_info ??
-      (editData as any).identity ??
+      editData.identityInfo ??
+      editData.identity_info ??
+      editData.identity ??
       editData;
 
     const payroll =
-      (editData as any).payrollInfo ??
-      (editData as any).payroll_info ??
-      (editData as any).payroll ??
+      editData.payrollInfo ??
+      editData.payroll_info ??
+      editData.payroll ??
       editData;
     const salaryBreakdown =
       payroll?.salaryBreakdown ??
@@ -354,13 +355,13 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       payroll?.StatutoryDeductions ??
       payroll;
     const bank =
-      payroll?.bankAccount ?? payroll?.bank_account ?? payroll?.BankAccount ?? payroll;
+      payroll?.bankAccount ??
+      payroll?.bank_account ??
+      payroll?.BankAccount ??
+      payroll;
 
     const leave =
-      (editData as any).leaveInfo ??
-      (editData as any).leave_info ??
-      (editData as any).leave ??
-      editData;
+      editData.leaveInfo ?? editData.leave_info ?? editData.leave ?? editData;
 
     const getFileUrl = (file?: string | null) => {
       if (!file) return "";
@@ -370,9 +371,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       return `${ERP_BASE}${f}`;
     };
 
-    const docs = Array.isArray((editData as any).documents)
-      ? (editData as any).documents
-      : [];
+    const docs = Array.isArray(editData.documents) ? editData.documents : [];
     const profileDoc = docs.find((d: any) => {
       const desc = String(d?.description ?? d?.name ?? "")
         .trim()
@@ -392,105 +391,256 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
 
       // ===== PERSONAL INFO =====
       firstName: String(
-        pick(personal, ["FirstName", "firstName", "first_name", "first_name_en"]) ||
-          "",
+        pick(personal, [
+          "FirstName",
+          "firstName",
+          "first_name",
+          "first_name_en",
+        ]) || "",
       ).toUpperCase(),
       otherNames: String(
-        pick(personal, ["OtherNames", "otherNames", "other_names", "middleName"]) ||
-          "",
+        pick(personal, [
+          "OtherNames",
+          "otherNames",
+          "other_names",
+          "middleName",
+        ]) || "",
       ).toUpperCase(),
       lastName: String(
         pick(personal, ["LastName", "lastName", "last_name", "surname"]) || "",
       ).toUpperCase(),
-      dateOfBirth: String(pick(personal, ["Dob", "dateOfBirth", "date_of_birth"]) || ""),
+      dateOfBirth: String(
+        pick(personal, ["Dob", "dateOfBirth", "date_of_birth"]) || "",
+      ),
       gender: String(pick(personal, ["Gender", "gender"]) || ""),
-      nationality: String(pick(personal, ["Nationality", "nationality"]) || "Zambian"),
+      nationality: String(
+        pick(personal, ["Nationality", "nationality"]) || "Zambian",
+      ),
       maritalStatus: String(
-        pick(personal, ["maritalStatus", "MaritalStatus", "marital_status"]) || "",
+        pick(personal, ["maritalStatus", "MaritalStatus", "marital_status"]) ||
+          "",
       ),
 
       // ===== CONTACT INFO =====
       email: String(pick(contact, ["Email", "email"]) || ""),
-      CompanyEmail: String(pick(contact, ["workEmail", "CompanyEmail", "companyEmail", "work_email"]) || ""),
-      phoneNumber: String(pick(contact, ["phoneNumber", "PhoneNumber", "phone_number"]) || ""),
-      alternatePhone: String(pick(contact, ["alternatePhone", "AlternatePhone", "alternate_phone"]) || ""),
+      CompanyEmail: String(
+        pick(contact, [
+          "workEmail",
+          "CompanyEmail",
+          "companyEmail",
+          "work_email",
+        ]) || "",
+      ),
+      phoneNumber: String(
+        pick(contact, ["phoneNumber", "PhoneNumber", "phone_number"]) || "",
+      ),
+      alternatePhone: String(
+        pick(contact, [
+          "alternatePhone",
+          "AlternatePhone",
+          "alternate_phone",
+        ]) || "",
+      ),
 
       // Address
-      street: String(pick(address, ["street", "Street", "addressStreet"]) || "").toUpperCase(),
-      city: String(pick(address, ["city", "City", "addressCity"]) || "").toUpperCase(),
-      province: String(pick(address, ["province", "Province", "addressProvince"]) || ""),
+      street: String(
+        pick(address, ["street", "Street", "addressStreet"]) || "",
+      ).toUpperCase(),
+      city: String(
+        pick(address, ["city", "City", "addressCity"]) || "",
+      ).toUpperCase(),
+      province: String(
+        pick(address, ["province", "Province", "addressProvince"]) || "",
+      ),
       postalCode: String(
         pick(address, ["postalCode", "PostalCode", "addressPostalCode"]) || "",
       ).toUpperCase(),
-      country: String(pick(address, ["country", "Country", "addressCountry"]) || "Zambia"),
+      country: String(
+        pick(address, ["country", "Country", "addressCountry"]) || "Zambia",
+      ),
 
       // Emergency Contact
-      emergencyContactName: String(pick(emergency, ["name", "Name"]) || "").toUpperCase(),
+      emergencyContactName: String(
+        pick(emergency, ["name", "Name"]) || "",
+      ).toUpperCase(),
       emergencyContactPhone: String(pick(emergency, ["phone", "Phone"]) || ""),
       emergencyContactRelationship: String(
         pick(emergency, ["relationship", "Relationship"]) || "",
       ),
 
       // ===== EMPLOYMENT INFO =====
-      employeeId: String(pick(employment, ["employeeId", "employee_id", "EmployeeId"]) || ""),
+      employeeId: String(
+        pick(employment, ["employeeId", "employee_id", "EmployeeId"]) || "",
+      ),
       department: String(pick(employment, ["Department", "department"]) || ""),
-      jobTitle: String(pick(employment, ["JobTitle", "jobTitle", "job_title"]) || "").toUpperCase(),
-      employeeType: String(pick(employment, ["EmployeeType", "employeeType", "employee_type"]) || "Permanent"),
-      employmentStatus: String(pick(editData as any, ["status", "Status"]) || "Active"),
-      engagementDate: String(pick(employment, ["joiningDate", "EngagementDate", "engagementDate", "joining_date"]) || ""),
-      probationPeriod: String(pick(employment, ["probationPeriod", "probation_period"]) || ""),
-      contractEndDate: String(pick(employment, ["contractEndDate", "contract_end_date"]) || ""),
-      workLocation: String(pick(employment, ["workLocation", "work_location"]) || "").toUpperCase(),
-      workAddress: String(pick(employment, ["workAddress", "work_address"]) || "").toUpperCase(),
+      jobTitle: String(
+        pick(employment, ["JobTitle", "jobTitle", "job_title"]) || "",
+      ).toUpperCase(),
+      employeeType: String(
+        pick(employment, ["EmployeeType", "employeeType", "employee_type"]) ||
+          "Permanent",
+      ),
+      employmentStatus: String(
+        pick(editData, ["status", "Status"]) || "Active",
+      ),
+      engagementDate: String(
+        pick(employment, [
+          "joiningDate",
+          "EngagementDate",
+          "engagementDate",
+          "joining_date",
+        ]) || "",
+      ),
+      probationPeriod: String(
+        pick(employment, ["probationPeriod", "probation_period"]) || "",
+      ),
+      contractEndDate: String(
+        pick(employment, ["contractEndDate", "contract_end_date"]) || "",
+      ),
+      workLocation: String(
+        pick(employment, ["workLocation", "work_location"]) || "",
+      ).toUpperCase(),
+      workAddress: String(
+        pick(employment, ["workAddress", "work_address"]) || "",
+      ).toUpperCase(),
       shift: String(pick(employment, ["shift", "Shift"]) || "Day"),
-      reportingManager: String(pick(employment, ["reportingManager", "ReportingManager", "reporting_manager"]) || ""),
-      hrManager: String(pick(employment, ["hrManager", "HrManager", "hr_manager"]) || ""),
+      reportingManager: String(
+        pick(employment, [
+          "reportingManager",
+          "ReportingManager",
+          "reporting_manager",
+        ]) || "",
+      ),
+      hrManager: String(
+        pick(employment, ["hrManager", "HrManager", "hr_manager"]) || "",
+      ),
 
       // ===== IDs =====
       nrcId: String(pick(identity, ["nrc", "NrcId", "nrcId", "nrc_id"]) || ""),
       socialSecurityNapsa: String(
-        pick(identity, ["napsa", "SocialSecurityNapsa", "socialSecurityNapsa", "ssn", "social_security_napsa"]) ||
-          "",
+        pick(identity, [
+          "napsa",
+          "SocialSecurityNapsa",
+          "socialSecurityNapsa",
+          "ssn",
+          "social_security_napsa",
+        ]) || "",
       ),
       nhimaHealthInsurance: String(
-        pick(identity, ["nhima", "NhimaHealthInsurance", "nhimaHealthInsurance", "nhima_health_insurance"]) ||
-          "",
+        pick(identity, [
+          "nhima",
+          "NhimaHealthInsurance",
+          "nhimaHealthInsurance",
+          "nhima_health_insurance",
+        ]) || "",
       ),
-      tpinId: String(pick(identity, ["tpin", "TpinId", "tpinId", "tpin_id"]) || ""),
+      tpinId: String(
+        pick(identity, ["tpin", "TpinId", "tpinId", "tpin_id"]) || "",
+      ),
 
       // ===== SALARY COMPONENTS =====
       basicSalary:
-        pick(salaryBreakdown, ["BasicSalary", "basic", "basicSalary", "BasicAmount", "BasicAmount" as any]) ||
+        pick(salaryBreakdown, [
+          "BasicSalary",
+          "basic",
+          "basicSalary",
+          "BasicAmount",
+          "BasicAmount" as any,
+        ]) ||
         pick(payroll, ["basic", "BasicAmount", "BasicSalary", "basicSalary"]) ||
-        pick(editData as any, ["basic", "BasicAmount", "basicSalary"]) ||
+        pick(editData, ["basic", "BasicAmount", "basicSalary"]) ||
         "",
-      housingAllowance:
-        String(pick(salaryBreakdown, ["HousingAllowance", "housingAllowance", "housing_allowance"]) || ""),
-      mealAllowance: String(pick(salaryBreakdown, ["MealAllowance", "mealAllowance", "meal_allowance"]) || ""),
-      transportAllowance:
-        String(pick(salaryBreakdown, ["TransportAllowance", "transportAllowance", "transport_allowance"]) || ""),
-      otherAllowances:
-        String(pick(salaryBreakdown, ["otherAllowances", "OtherAllowances", "other_allowances"]) || ""),
-      grossSalary: String(pick(payroll, ["grossSalary", "GrossSalary", "gross_salary"]) || ""),
+      housingAllowance: String(
+        pick(salaryBreakdown, [
+          "HousingAllowance",
+          "housingAllowance",
+          "housing_allowance",
+        ]) || "",
+      ),
+      mealAllowance: String(
+        pick(salaryBreakdown, [
+          "MealAllowance",
+          "mealAllowance",
+          "meal_allowance",
+        ]) || "",
+      ),
+      transportAllowance: String(
+        pick(salaryBreakdown, [
+          "TransportAllowance",
+          "transportAllowance",
+          "transport_allowance",
+        ]) || "",
+      ),
+      otherAllowances: String(
+        pick(salaryBreakdown, [
+          "otherAllowances",
+          "OtherAllowances",
+          "other_allowances",
+        ]) || "",
+      ),
+      grossSalary: String(
+        pick(payroll, ["grossSalary", "GrossSalary", "gross_salary"]) || "",
+      ),
 
-      employeeNapsa:
-        String(pick(deductions, ["Employeenapsa", "EmployeeNapsa", "employeeNapsa", "employee_napsa"]) || ""),
-      employeerNapsa:
-        String(pick(deductions, ["Employeernapsa", "EmployeerNapsa", "employeerNapsa", "employer_napsa"]) || ""),
-      employeeNhima:
-        String(pick(deductions, ["Employeenhima", "EmployeeNhima", "employeeNhima", "employee_nhima"]) || ""),
-      employeerNhima:
-        String(pick(deductions, ["Employeernhima", "EmployeerNhima", "employeerNhima", "employer_nhima"]) || ""),
-      payAsYouEarn:
-        String(pick(deductions, ["Payasyouearn", "PayAsYouEarn", "paye", "payAsYouEarn"]) || ""),
+      employeeNapsa: String(
+        pick(deductions, [
+          "Employeenapsa",
+          "EmployeeNapsa",
+          "employeeNapsa",
+          "employee_napsa",
+        ]) || "",
+      ),
+      employeerNapsa: String(
+        pick(deductions, [
+          "Employeernapsa",
+          "EmployeerNapsa",
+          "employeerNapsa",
+          "employer_napsa",
+        ]) || "",
+      ),
+      employeeNhima: String(
+        pick(deductions, [
+          "Employeenhima",
+          "EmployeeNhima",
+          "employeeNhima",
+          "employee_nhima",
+        ]) || "",
+      ),
+      employeerNhima: String(
+        pick(deductions, [
+          "Employeernhima",
+          "EmployeerNhima",
+          "employeerNhima",
+          "employer_nhima",
+        ]) || "",
+      ),
+      payAsYouEarn: String(
+        pick(deductions, [
+          "Payasyouearn",
+          "PayAsYouEarn",
+          "paye",
+          "payAsYouEarn",
+        ]) || "",
+      ),
 
       // ===== PAYROLL CONFIG =====
       currency: String(pick(payroll, ["currency", "Currency"]) || "ZMW"),
-      paymentFrequency: String(pick(payroll, ["paymentFrequency", "PaymentFrequency", "payment_frequency"]) || "Monthly"),
-      paymentMethod: String(pick(payroll, ["paymentMethod", "PaymentMethod", "payment_method"]) || "Bank Transfer"),
+      paymentFrequency: String(
+        pick(payroll, [
+          "paymentFrequency",
+          "PaymentFrequency",
+          "payment_frequency",
+        ]) || "Monthly",
+      ),
+      paymentMethod: String(
+        pick(payroll, ["paymentMethod", "PaymentMethod", "payment_method"]) ||
+          "Bank Transfer",
+      ),
 
       // ===== BANK DETAILS =====
-      accountNumber: String(pick(bank, ["AccountNumber", "accountNumber", "account_number"]) || ""),
+      accountNumber: String(
+        pick(bank, ["AccountNumber", "accountNumber", "account_number"]) || "",
+      ),
       accountName: String(
         pick(bank, ["AccountName", "accountName", "account_name"]) || "",
       ).toUpperCase(),
@@ -500,33 +650,54 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       branchCode: String(
         pick(bank, ["branchCode", "BranchCode", "branch_code"]) || "",
       ).toUpperCase(),
-      accountType: String(pick(bank, ["AccountType", "accountType", "account_type"]) || "Savings"),
+      accountType: String(
+        pick(bank, ["AccountType", "accountType", "account_type"]) || "Savings",
+      ),
 
       // ===== LEAVE SETUP =====
       openingLeaveBalance:
-        pick(leave, ["openingLeaveBalance", "OpeningLeaveBalance", "opening_leave_balance"]) ||
-        "Incremental two (2) days per month of service",
-      initialLeaveRateMonthly:
-        String(pick(leave, ["initialLeaveRateMonthly", "InitialLeaveRateMonthly", "initial_leave_rate_monthly"]) || "2"),
-      ceilingYear: String(pick(leave, ["ceilingYear", "CeilingYear", "ceiling_year"]) || "2025"),
-      ceilingAmount: String(pick(leave, ["ceilingAmount", "CeilingAmount", "ceiling_amount"]) || ""),
+        pick(leave, [
+          "openingLeaveBalance",
+          "OpeningLeaveBalance",
+          "opening_leave_balance",
+        ]) || "Incremental two (2) days per month of service",
+      initialLeaveRateMonthly: String(
+        pick(leave, [
+          "initialLeaveRateMonthly",
+          "InitialLeaveRateMonthly",
+          "initial_leave_rate_monthly",
+        ]) || "2",
+      ),
+      ceilingYear: String(
+        pick(leave, ["ceilingYear", "CeilingYear", "ceiling_year"]) || "2025",
+      ),
+      ceilingAmount: String(
+        pick(leave, ["ceilingAmount", "CeilingAmount", "ceiling_amount"]) || "",
+      ),
 
       // ===== WORK SCHEDULE =====
 
-      weeklyScheduleMonday:
-        String(pick(weeklySchedule, ["monday", "Monday"]) || ""),
-      weeklyScheduleTuesday:
-        String(pick(weeklySchedule, ["tuesday", "Tuesday"]) || ""),
-      weeklyScheduleWednesday:
-        String(pick(weeklySchedule, ["wednesday", "Wednesday"]) || ""),
-      weeklyScheduleThursday:
-        String(pick(weeklySchedule, ["thursday", "Thursday"]) || ""),
-      weeklyScheduleFriday:
-        String(pick(weeklySchedule, ["friday", "Friday"]) || ""),
-      weeklyScheduleSaturday:
-        String(pick(weeklySchedule, ["saturday", "Saturday"]) || ""),
-      weeklyScheduleSunday:
-        String(pick(weeklySchedule, ["sunday", "Sunday"]) || ""),
+      weeklyScheduleMonday: String(
+        pick(weeklySchedule, ["monday", "Monday"]) || "",
+      ),
+      weeklyScheduleTuesday: String(
+        pick(weeklySchedule, ["tuesday", "Tuesday"]) || "",
+      ),
+      weeklyScheduleWednesday: String(
+        pick(weeklySchedule, ["wednesday", "Wednesday"]) || "",
+      ),
+      weeklyScheduleThursday: String(
+        pick(weeklySchedule, ["thursday", "Thursday"]) || "",
+      ),
+      weeklyScheduleFriday: String(
+        pick(weeklySchedule, ["friday", "Friday"]) || "",
+      ),
+      weeklyScheduleSaturday: String(
+        pick(weeklySchedule, ["saturday", "Saturday"]) || "",
+      ),
+      weeklyScheduleSunday: String(
+        pick(weeklySchedule, ["sunday", "Sunday"]) || "",
+      ),
 
       // ===== NOTES =====
       notes: String(editData.notes || "").toUpperCase(),
@@ -543,9 +714,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       firstName: String(
         verifiedData.personalInfo?.firstName || "",
       ).toUpperCase(),
-      lastName: String(
-        verifiedData.personalInfo?.lastName || "",
-      ).toUpperCase(),
+      lastName: String(verifiedData.personalInfo?.lastName || "").toUpperCase(),
       gender: verifiedData.personalInfo?.gender || "",
     }));
 
@@ -812,9 +981,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
         const emp = String(employeeCode ?? "").trim();
         if (!emp || !selectedSalaryStructure) return;
 
-      // Ensure we have a valid basic salary number
-      const basicNum = Number(formData.basicSalary) || 0;
-      if (!Number.isFinite(basicNum) || basicNum <= 0) return;
+        // Ensure we have a valid basic salary number
+        const basicNum = Number(formData.basicSalary) || 0;
+        if (!Number.isFinite(basicNum) || basicNum <= 0) return;
 
         try {
           const list = await getSalaryStructureAssignments({ employee: emp });
@@ -827,24 +996,24 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
               ),
             )[0];
 
-        const assignmentName = String(best?.name ?? "").trim();
-        if (assignmentName) {
-          await replaceSalaryStructureAssignment({
-            name: assignmentName,
-            salary_structure: selectedSalaryStructure,
-            basic: basicNum,
-          });
-        } else {
-          await createSalaryStructureAssignment({
-            employee: emp,
-            salary_structure: selectedSalaryStructure,
-            basic: basicNum,
-          });
+          const assignmentName = String(best?.name ?? "").trim();
+          if (assignmentName) {
+            await replaceSalaryStructureAssignment({
+              name: assignmentName,
+              salary_structure: selectedSalaryStructure,
+              basic: basicNum,
+            });
+          } else {
+            await createSalaryStructureAssignment({
+              employee: emp,
+              salary_structure: selectedSalaryStructure,
+              basic: basicNum,
+            });
+          }
+        } catch {
+          // Do not block employee create/update if assignment fails
         }
-      } catch {
-        // Do not block employee create/update if assignment fails
-      }
-    };
+      };
 
       if (editData?.id) {
         const payload = {

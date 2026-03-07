@@ -255,7 +255,10 @@ const HrDashboard: React.FC = () => {
                     data={employeeStatusData}
                     margin={{ top: 28, right: 18, left: 6, bottom: 4 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--border)"
+                    />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} width={52} />
                     <Tooltip

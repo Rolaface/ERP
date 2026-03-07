@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable react-hooks/rules-of-hooks */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
+
 /* eslint-disable @typescript-eslint/no-misused-promises */
 
 /* eslint-disable react/jsx-handler-names */

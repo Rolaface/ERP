@@ -94,7 +94,7 @@ export default function PayrollPreviewModal({
           title: "Salary Structure Not Found",
           text: "Please select a salary structure before running payroll.",
           confirmButtonText: "OK",
-          confirmButtonColor: "#2563eb",
+          confirmButtonColor: "var(--primary)",
         }).then(() => onClose());
       }
       return;
@@ -120,7 +120,7 @@ export default function PayrollPreviewModal({
               title: "Salary Structure Not Found",
               text: "The selected salary structure could not be loaded. Please select another one.",
               confirmButtonText: "OK",
-              confirmButtonColor: "#2563eb",
+              confirmButtonColor: "var(--primary)",
             }).then(() => onClose());
           }
           return;
@@ -168,7 +168,7 @@ export default function PayrollPreviewModal({
                   void onRunPayroll();
                 }}
                 disabled={!!runPayrollDisabled}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-success text-white text-xs font-extrabold disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-xs font-extrabold disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
               >
                 {runPayrollLoading ? "Running..." : "Run Payroll"}
               </button>
@@ -178,7 +178,7 @@ export default function PayrollPreviewModal({
               aria-label="Close salary structure preview"
               title="Close"
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-card text-muted hover:text-main transition"
+              className="p-2 rounded-lg hover:bg-muted/5 text-muted hover:text-main transition"
             >
               <X className="w-4 h-4" />
             </button>
@@ -199,7 +199,7 @@ export default function PayrollPreviewModal({
                   onChange={(e) => fillDatesForMonth(e.target.value)}
                   aria-label="Month"
                   title="Month"
-                  className="w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
+                  className="w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.18)] transition"
                 />
               </div>
               <div>
@@ -212,7 +212,7 @@ export default function PayrollPreviewModal({
                   onChange={(e) => onPayPeriodStartChange?.(e.target.value)}
                   aria-label="Pay Period Start"
                   title="Pay Period Start"
-                  className="w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
+                  className="w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.18)] transition"
                 />
               </div>
               <div>
@@ -225,7 +225,7 @@ export default function PayrollPreviewModal({
                   onChange={(e) => onPayPeriodEndChange?.(e.target.value)}
                   aria-label="Pay Period End"
                   title="Pay Period End"
-                  className="w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
+                  className="w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.18)] transition"
                 />
               </div>
             </div>

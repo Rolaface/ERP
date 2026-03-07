@@ -1,13 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Plus, ChevronLeft,
-  FileText, Users, CheckCircle,
-  Layers, X, Download, CreditCard, ExternalLink, Eye
+  Plus,
+  ChevronLeft,
+  FileText,
+  Users,
+  CheckCircle,
+  Layers,
+  X,
+  Download,
+  CreditCard,
+  ExternalLink,
+  Eye,
 } from "lucide-react";
 
 import type { PayrollEntry, Employee } from "../../../types/payrolltypes";
 import { getAllEmployees, getEmployee } from "../../../api/employeeapi";
-import { getSalarySlipById, getSalarySlips, type SalarySlipDetail, type SalarySlipListItem } from "../../../api/salarySlipApi";
+import {
+  getSalarySlipById,
+  getSalarySlips,
+  type SalarySlipDetail,
+  type SalarySlipListItem,
+} from "../../../api/salarySlipApi";
 
 // ── Components ────────────────────────────────────────────────────────────────
 import { KPICards } from "./KPICards";
@@ -67,8 +80,8 @@ const Btn: React.FC<{
 }) => {
   const v: Record<string, string> = {
     primary: "bg-primary text-white hover:bg-primary/90",
-    outline: "bg-card text-main border border-border hover:bg-muted/5",
-    success: "bg-green-600 text-white hover:bg-green-700",
+    outline: "bg-card text-main border border-theme hover:bg-muted/5",
+    success: "bg-success text-white hover:opacity-90",
     ghost: "text-muted hover:text-main hover:bg-muted/5",
   };
   const s = size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm";
@@ -198,7 +211,7 @@ const TopBar: React.FC<{
   ];
 
   return (
-    <header className="h-14 shrink-0 bg-card border-b border-border px-6 flex items-center justify-between z-30 sticky top-0">
+    <header className="h-14 shrink-0 bg-card border-b border-theme px-6 flex items-center justify-between z-30 sticky top-0">
       <div className="flex items-center gap-6">
         {/* Brand */}
         <button
@@ -348,13 +361,13 @@ const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
   const s = raw.toLowerCase();
   const cls =
     s === "paid" || s === "submitted"
-      ? "bg-green-50 text-green-700 border-green-200"
+      ? "bg-success/10 text-success border-success/20"
       : s === "draft"
-        ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-      : "bg-gray-50 text-gray-700 border-gray-200";
+        ? "bg-warning/10 text-warning border-warning/20"
+        : "bg-row-hover/40 text-main border-theme";
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${cls}`}
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${cls}`}
     >
       {raw || "—"}
     </span>
@@ -434,19 +447,27 @@ const SalarySlipDetailsModal: React.FC<{
 
   const earningsRaw = data?.earnings;
   const deductionsRaw = data?.deductions;
-  const earnings: Array<{ component: string; amount: number }> = Array.isArray(earningsRaw)
+  const earnings: Array<{ component: string; amount: number }> = Array.isArray(
+    earningsRaw,
+  )
     ? earningsRaw
     : [];
-  const deductions: Array<{ component: string; amount: number }> = Array.isArray(deductionsRaw)
-    ? deductionsRaw
-    : [];
-  const paySlipUrl = String((data as any)?.custom_slip_url ?? (data as any)?.paySlipUrl ?? "").trim();
-  const referenceNumber = String((data as any)?.custom_reference_number ?? (data as any)?.referenceNumber ?? "").trim();
+  const deductions: Array<{ component: string; amount: number }> =
+    Array.isArray(deductionsRaw) ? deductionsRaw : [];
+  const paySlipUrl = String(
+    (data as any)?.custom_slip_url ?? (data as any)?.paySlipUrl ?? "",
+  ).trim();
+  const referenceNumber = String(
+    (data as any)?.custom_reference_number ??
+      (data as any)?.referenceNumber ??
+      "",
+  ).trim();
   const dataRec: Record<string, unknown> =
     data && typeof data === "object"
       ? (data as unknown as Record<string, unknown>)
       : {};
-  const pickString = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
+  const pickString = (v: unknown): string | undefined =>
+    typeof v === "string" ? v : undefined;
   const modalNapsaStatus =
     pickString(dataRec["napsaStatus"]) ?? pickString(dataRec["napsa_status"]);
   const modalPayslipStatus =
@@ -462,13 +483,15 @@ const SalarySlipDetailsModal: React.FC<{
 
   const modalPayslipStatusClean = String(modalPayslipStatus ?? "").trim();
   const useFallbackPayslipStatus =
-    !modalPayslipStatusClean || modalPayslipStatusClean.toLowerCase() === "draft";
+    !modalPayslipStatusClean ||
+    modalPayslipStatusClean.toLowerCase() === "draft";
   const payslipStatusForDerive = useFallbackPayslipStatus
     ? String(statusFallback?.payslipStatus ?? modalPayslipStatusClean).trim()
     : modalPayslipStatusClean;
 
   const docstatusRaw = dataRec["docstatus"];
-  const docstatus = typeof docstatusRaw === "number" ? docstatusRaw : Number.NaN;
+  const docstatus =
+    typeof docstatusRaw === "number" ? docstatusRaw : Number.NaN;
   const docstatusStatus = Number.isFinite(docstatus)
     ? docstatus === 0
       ? "Draft"
@@ -485,35 +508,47 @@ const SalarySlipDetailsModal: React.FC<{
   );
 
   const isNapsaFailed =
-    String(modalCustomNapsaStatus ?? modalNapsaStatus ?? statusFallback?.napsaStatus ?? "")
+    String(
+      modalCustomNapsaStatus ??
+        modalNapsaStatus ??
+        statusFallback?.napsaStatus ??
+        "",
+    )
       .trim()
       .toLowerCase() === "failed";
   const napsaFailMessage = String(napsaFailMessageRaw ?? "").trim();
 
-  const roInputCls = "w-full h-10 px-3 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none";
-  const sectionTitleCls = "text-[11px] font-extrabold text-muted uppercase tracking-wider";
+  const roInputCls =
+    "w-full h-10 px-3 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none";
+  const sectionTitleCls =
+    "text-[11px] font-extrabold text-muted uppercase tracking-wider";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-card rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-theme">
-        <div className="px-6 py-4 flex items-center justify-between border-b border-theme bg-blue-600 text-white">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-theme bg-primary text-white">
           <div className="min-w-0">
             <h3 className="text-sm font-extrabold flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Salary Slip {String((data as any)?.name ?? slipId ?? "")}
             </h3>
             <div className="text-xs text-white/80 mt-1 break-words">
-              {String((data as any)?.employee_name ?? "")} ({String((data as any)?.employee ?? "")})
+              {String((data as any)?.employee_name ?? "")} (
+              {String((data as any)?.employee ?? "")})
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-white/10 transition-colors" title="Close">
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-white/15 transition-colors"
+            title="Close"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div className="p-3 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger font-semibold">
               {error}
             </div>
           )}
@@ -522,9 +557,13 @@ const SalarySlipDetailsModal: React.FC<{
           {!loading && data && (
             <>
               {isNapsaFailed && napsaFailMessage ? (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-                  <div className="text-xs font-extrabold text-red-700 uppercase tracking-wider">NAPSA Submission Failed</div>
-                  <div className="mt-1 text-sm font-semibold text-red-800">{napsaFailMessage}</div>
+                <div className="p-4 bg-danger/10 border border-danger/20 rounded-xl">
+                  <div className="text-xs font-extrabold text-danger uppercase tracking-wider">
+                    NAPSA Submission Failed
+                  </div>
+                  <div className="mt-1 text-sm font-semibold text-danger">
+                    {napsaFailMessage}
+                  </div>
                 </div>
               ) : null}
 
@@ -533,45 +572,75 @@ const SalarySlipDetailsModal: React.FC<{
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div>
                     <div className={sectionTitleCls}>Slip No</div>
-                    <input readOnly value={String((data as any)?.name ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.name ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Posting Date</div>
-                    <input readOnly value={String((data as any)?.posting_date ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.posting_date ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Status</div>
                     <div className="mt-1">
-                      <StatusChip
-                        status={statusToShow}
-                      />
+                      <StatusChip status={statusToShow} />
                     </div>
                   </div>
 
                   <div>
                     <div className={sectionTitleCls}>Employee</div>
-                    <input readOnly value={String((data as any)?.employee ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.employee ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Employee Name</div>
-                    <input readOnly value={String((data as any)?.employee_name ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.employee_name ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Department</div>
-                    <input readOnly value={String((data as any)?.department ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.department ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
 
                   <div>
                     <div className={sectionTitleCls}>NRC</div>
-                    <input readOnly value={String((data as any)?.nrc ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.nrc ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>SSN</div>
-                    <input readOnly value={String((data as any)?.ssn ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.ssn ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Company</div>
-                    <input readOnly value={String((data as any)?.company ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.company ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                 </div>
               </div>
@@ -581,28 +650,52 @@ const SalarySlipDetailsModal: React.FC<{
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div>
                     <div className={sectionTitleCls}>Salary Structure</div>
-                    <input readOnly value={String((data as any)?.salary_structure ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.salary_structure ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Start Date</div>
-                    <input readOnly value={String((data as any)?.start_date ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.start_date ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>End Date</div>
-                    <input readOnly value={String((data as any)?.end_date ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.end_date ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
 
                   <div>
                     <div className={sectionTitleCls}>Payroll Entry</div>
-                    <input readOnly value={String((data as any)?.payroll_entry ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.payroll_entry ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Currency</div>
-                    <input readOnly value={String((data as any)?.currency ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.currency ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Exchange Rate</div>
-                    <input readOnly value={String((data as any)?.exchange_rate ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.exchange_rate ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                 </div>
               </div>
@@ -612,15 +705,27 @@ const SalarySlipDetailsModal: React.FC<{
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div>
                     <div className={sectionTitleCls}>Bank Name</div>
-                    <input readOnly value={String((data as any)?.bank_name ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.bank_name ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Bank Account No</div>
-                    <input readOnly value={String((data as any)?.bank_account_no ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.bank_account_no ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Reference No</div>
-                    <input readOnly value={referenceNumber || ""} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={referenceNumber || ""}
+                      className={roInputCls}
+                    />
                   </div>
 
                   <div className="md:col-span-3">
@@ -637,7 +742,9 @@ const SalarySlipDetailsModal: React.FC<{
                           <ExternalLink className="w-4 h-4" />
                         </a>
                       ) : (
-                        <div className="text-sm text-muted">No payslip PDF available</div>
+                        <div className="text-sm text-muted">
+                          No payslip PDF available
+                        </div>
                       )}
                     </div>
                   </div>
@@ -649,23 +756,43 @@ const SalarySlipDetailsModal: React.FC<{
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-5">
                   <div>
                     <div className={sectionTitleCls}>Gross Pay</div>
-                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.gross_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.gross_pay ?? 0).toLocaleString("en-ZM")}`}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Total Deduction</div>
-                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.total_deduction ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.total_deduction ?? 0).toLocaleString("en-ZM")}`}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Net Pay</div>
-                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.net_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.net_pay ?? 0).toLocaleString("en-ZM")}`}
+                      className={roInputCls}
+                    />
                   </div>
                   <div>
                     <div className={sectionTitleCls}>Rounded Total</div>
-                    <input readOnly value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.rounded_total ?? (data as any)?.net_pay ?? 0).toLocaleString("en-ZM")}`} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={`${String((data as any)?.currency ?? "ZMW")} ${Number((data as any)?.rounded_total ?? (data as any)?.net_pay ?? 0).toLocaleString("en-ZM")}`}
+                      className={roInputCls}
+                    />
                   </div>
                   <div className="md:col-span-4">
                     <div className={sectionTitleCls}>Total in Words</div>
-                    <input readOnly value={String((data as any)?.total_in_words ?? "")} className={roInputCls} />
+                    <input
+                      readOnly
+                      value={String((data as any)?.total_in_words ?? "")}
+                      className={roInputCls}
+                    />
                   </div>
                 </div>
               </div>
@@ -673,28 +800,53 @@ const SalarySlipDetailsModal: React.FC<{
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="rounded-xl overflow-hidden bg-card shadow-sm border border-theme">
                   <div className="px-5 py-4 bg-app border-b border-theme flex items-center justify-between">
-                    <div className="text-sm font-extrabold text-main">Earnings</div>
                     <div className="text-sm font-extrabold text-main">
-                      {String((data as any)?.currency ?? "ZMW")} {Number((data as any)?.gross_pay ?? 0).toLocaleString("en-ZM")}
+                      Earnings
+                    </div>
+                    <div className="text-sm font-extrabold text-main">
+                      {String((data as any)?.currency ?? "ZMW")}{" "}
+                      {Number((data as any)?.gross_pay ?? 0).toLocaleString(
+                        "en-ZM",
+                      )}
                     </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-card">
                         <tr>
-                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-left">Component</th>
-                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-right">Amount</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-left">
+                            Component
+                          </th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-right">
+                            Amount
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {earnings.length === 0 ? (
-                          <tr><td colSpan={2} className="px-5 py-8 text-center text-sm text-muted">No earnings</td></tr>
-                        ) : earnings.map((r: any, idx: number) => (
-                          <tr key={`${r?.component}-${idx}`} className="border-t border-theme/60">
-                            <td className="px-5 py-3 text-sm font-medium text-main">{String(r?.component ?? "")}</td>
-                            <td className="px-5 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
+                          <tr>
+                            <td
+                              colSpan={2}
+                              className="px-5 py-8 text-center text-sm text-muted"
+                            >
+                              No earnings
+                            </td>
                           </tr>
-                        ))}
+                        ) : (
+                          earnings.map((r: any, idx: number) => (
+                            <tr
+                              key={`${r?.component}-${idx}`}
+                              className="border-t border-theme/60"
+                            >
+                              <td className="px-5 py-3 text-sm font-medium text-main">
+                                {String(r?.component ?? "")}
+                              </td>
+                              <td className="px-5 py-3 text-right text-sm font-semibold text-main tabular-nums">
+                                {Number(r?.amount ?? 0).toLocaleString("en-ZM")}
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -702,28 +854,53 @@ const SalarySlipDetailsModal: React.FC<{
 
                 <div className="rounded-xl overflow-hidden bg-card shadow-sm border border-theme">
                   <div className="px-5 py-4 bg-app border-b border-theme flex items-center justify-between">
-                    <div className="text-sm font-extrabold text-main">Deductions</div>
                     <div className="text-sm font-extrabold text-main">
-                      {String((data as any)?.currency ?? "ZMW")} {Number((data as any)?.total_deduction ?? 0).toLocaleString("en-ZM")}
+                      Deductions
+                    </div>
+                    <div className="text-sm font-extrabold text-main">
+                      {String((data as any)?.currency ?? "ZMW")}{" "}
+                      {Number(
+                        (data as any)?.total_deduction ?? 0,
+                      ).toLocaleString("en-ZM")}
                     </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-card">
                         <tr>
-                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-left">Component</th>
-                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-right">Amount</th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-left">
+                            Component
+                          </th>
+                          <th className="px-5 py-3 text-[11px] font-extrabold text-muted uppercase tracking-wider text-right">
+                            Amount
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {deductions.length === 0 ? (
-                          <tr><td colSpan={2} className="px-5 py-8 text-center text-sm text-muted">No deductions</td></tr>
-                        ) : deductions.map((r: any, idx: number) => (
-                          <tr key={`${r?.component}-${idx}`} className="border-t border-theme/60">
-                            <td className="px-5 py-3 text-sm font-medium text-main">{String(r?.component ?? "")}</td>
-                            <td className="px-5 py-3 text-right text-sm font-semibold text-main tabular-nums">{Number(r?.amount ?? 0).toLocaleString("en-ZM")}</td>
+                          <tr>
+                            <td
+                              colSpan={2}
+                              className="px-5 py-8 text-center text-sm text-muted"
+                            >
+                              No deductions
+                            </td>
                           </tr>
-                        ))}
+                        ) : (
+                          deductions.map((r: any, idx: number) => (
+                            <tr
+                              key={`${r?.component}-${idx}`}
+                              className="border-t border-theme/60"
+                            >
+                              <td className="px-5 py-3 text-sm font-medium text-main">
+                                {String(r?.component ?? "")}
+                              </td>
+                              <td className="px-5 py-3 text-right text-sm font-semibold text-main tabular-nums">
+                                {Number(r?.amount ?? 0).toLocaleString("en-ZM")}
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -755,7 +932,9 @@ export default function PayrollManagement() {
 
   const [detailEmployee, setDetailEmployee] = useState<any>(null);
   const [detailEmployeeLoading, setDetailEmployeeLoading] = useState(false);
-  const [detailEmployeeError, setDetailEmployeeError] = useState<string | null>(null);
+  const [detailEmployeeError, setDetailEmployeeError] = useState<string | null>(
+    null,
+  );
 
   const refetchDetailEmployee = useCallback(async () => {
     const id = String(detailEmployeeId ?? "").trim();
@@ -1001,9 +1180,9 @@ export default function PayrollManagement() {
   if (detailEmployeeId) {
     if (detailEmployeeLoading) {
       return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-app">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
-            <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted">
+            <div className="rounded-2xl border border-theme bg-card p-6 text-sm text-muted shadow-sm">
               Loading employee details…
             </div>
           </div>
@@ -1013,13 +1192,17 @@ export default function PayrollManagement() {
 
     if (detailEmployeeError) {
       return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-app">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
             <div className="rounded-lg border border-danger/30 bg-danger/5 p-6 text-sm font-semibold text-danger">
               {detailEmployeeError}
             </div>
             <div className="mt-4">
-              <Btn variant="outline" size="sm" onClick={() => setDetailEmployeeId(null)}>
+              <Btn
+                variant="outline"
+                size="sm"
+                onClick={() => setDetailEmployeeId(null)}
+              >
                 Back
               </Btn>
             </div>
@@ -1030,13 +1213,17 @@ export default function PayrollManagement() {
 
     if (!detailEmployee) {
       return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-app">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
-            <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted">
+            <div className="rounded-2xl border border-theme bg-card p-6 text-sm text-muted shadow-sm">
               No employee data.
             </div>
             <div className="mt-4">
-              <Btn variant="outline" size="sm" onClick={() => setDetailEmployeeId(null)}>
+              <Btn
+                variant="outline"
+                size="sm"
+                onClick={() => setDetailEmployeeId(null)}
+              >
                 Back
               </Btn>
             </div>
@@ -1190,7 +1377,7 @@ export default function PayrollManagement() {
                     onChange={(e) => setSlipsMonth(e.target.value)}
                     aria-label="Filter salary slips by month"
                     title="Filter salary slips by month"
-                    className="w-40 px-2.5 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary transition"
+                    className="w-40 px-2.5 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition"
                   />
                   <Btn
                     variant="outline"
@@ -1229,7 +1416,7 @@ export default function PayrollManagement() {
                     placeholder="Search slips…"
                     aria-label="Search salary slips"
                     title="Search salary slips"
-                    className="w-64 px-2.5 py-2 bg-card border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
+                    className="w-64 px-2.5 py-2 bg-card border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition"
                   />
                   <div className="text-xs text-muted whitespace-nowrap">
                     Page {slipsPage} of {slipsTotalPages}
@@ -1328,17 +1515,44 @@ export default function PayrollManagement() {
                           key={s.name}
                           className={`hover:bg-muted/5 transition-colors`}
                         >
-                          <td className="px-4 py-3 text-sm font-medium text-main break-words">{s.name}</td>
-                          <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{s.employee}</td>
-                          <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{s.full_name || "—"}</td>
-                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.nrc || "—"}</td>
-                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.ssn || "—"}</td>
-                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.referenceNumber || "—"}</td>
-                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.start_date}</td>
-                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">{s.end_date}</td>
-                          <td className="px-4 py-3"><StatusChip status={derivePayslipStatus(getSlipNapsaStatus(s), s.status)} /></td>
-                          <td className="px-4 py-3"><StatusChip status={getSlipNapsaStatus(s)} /></td>
-                          <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">{Number(s.net_pay ?? 0).toLocaleString("en-ZM")}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-main break-words">
+                            {s.name}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">
+                            {s.employee}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">
+                            {s.full_name || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                            {s.nrc || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                            {s.ssn || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                            {s.referenceNumber || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                            {s.start_date}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
+                            {s.end_date}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusChip
+                              status={derivePayslipStatus(
+                                getSlipNapsaStatus(s),
+                                s.status,
+                              )}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusChip status={getSlipNapsaStatus(s)} />
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-bold text-main tabular-nums">
+                            {Number(s.net_pay ?? 0).toLocaleString("en-ZM")}
+                          </td>
                           <td className="px-4 py-3 text-right">
                             <button
                               type="button"

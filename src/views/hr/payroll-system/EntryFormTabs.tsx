@@ -65,10 +65,10 @@ const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
 );
 
 const inputCls =
-  "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition";
+  "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition";
 
 const selectCls =
-  "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none focus:border-primary transition cursor-pointer";
+  "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition cursor-pointer";
 
 interface OverviewTabProps {
   data: PayrollEntry;
@@ -191,7 +191,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => (
       ].map(({ field, label, desc }) => (
         <label
           key={field}
-          className="flex items-start gap-3 p-4 bg-app border border-theme rounded-xl cursor-pointer hover:border-primary/40 transition"
+          className="flex items-start gap-3 p-4 bg-app border border-theme rounded-xl cursor-pointer hover:border-[var(--primary)]/40 transition"
         >
           <input
             type="checkbox"
@@ -261,10 +261,10 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   const lastAutoSelectedStructureRef = useRef<string>("");
 
   const miniInputCls =
-    "w-56 px-2.5 py-2 bg-app border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-primary transition";
+    "w-56 px-2.5 py-2 bg-app border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition";
 
   const miniSelectCls =
-    "w-56 px-2.5 py-2 bg-app border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary transition cursor-pointer";
+    "w-56 px-2.5 py-2 bg-app border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition cursor-pointer";
 
   const selectionMode: "single" | "multiple" =
     data.employeeSelectionMode || "multiple";
@@ -1034,7 +1034,11 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                           if (singleSubmitting) return;
                           void runSinglePayroll();
                         }}
-                        disabled={!canRunSinglePayroll || singleSubmitting || singleAssignmentLoading}
+                        disabled={
+                          !canRunSinglePayroll ||
+                          singleSubmitting ||
+                          singleAssignmentLoading
+                        }
                         className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-primary text-white hover:opacity-90 disabled:opacity-40"
                       >
                         Run Payroll
@@ -1087,10 +1091,7 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                               "startDate",
                               start.toISOString().slice(0, 10),
                             );
-                            onChange(
-                              "endDate",
-                              end.toISOString().slice(0, 10),
-                            );
+                            onChange("endDate", end.toISOString().slice(0, 10));
                           }
 
                           void runMultiplePayroll();
@@ -1135,10 +1136,7 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                               "startDate",
                               start.toISOString().slice(0, 10),
                             );
-                            onChange(
-                              "endDate",
-                              end.toISOString().slice(0, 10),
-                            );
+                            onChange("endDate", end.toISOString().slice(0, 10));
                           }
 
                           setMultiModalOpen(true);

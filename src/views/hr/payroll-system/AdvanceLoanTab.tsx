@@ -43,7 +43,7 @@ const Btn: React.FC<{
 }) => {
   const v: Record<string, string> = {
     primary: "bg-primary text-white hover:bg-primary/90",
-    outline: "bg-card text-main border border-border hover:bg-muted/5",
+    outline: "bg-card text-main border border-theme hover:bg-muted/5",
     danger: "bg-danger text-white hover:bg-danger/90",
     ghost: "text-muted hover:text-main hover:bg-muted/5",
   };
@@ -381,7 +381,7 @@ export default function AdvanceLoanTab() {
                     placeholder="Search by ID / Employee / Name..."
                     value={searchEmpId}
                     onChange={(e) => setSearchEmpId(e.target.value)}
-                    className="w-full pl-9 pr-4 py-1.5 bg-card border border-theme focus:border-primary rounded-lg text-xs text-main transition-all outline-none"
+                    className="w-full pl-9 pr-4 py-1.5 bg-card border border-theme rounded-lg text-xs text-main transition-all outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)]"
                   />
                 </div>
                 <div className="text-xs text-muted whitespace-nowrap">
@@ -478,7 +478,7 @@ export default function AdvanceLoanTab() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${adv.status?.toLowerCase() === "unpaid" ? "bg-red-50 text-red-700 border-red-200" : adv.status?.toLowerCase() === "draft" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-green-50 text-green-700 border-green-200"}`}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${adv.status?.toLowerCase() === "unpaid" ? "bg-danger/10 text-danger border-danger/20" : adv.status?.toLowerCase() === "draft" ? "bg-warning/10 text-warning border-warning/20" : "bg-success/10 text-success border-success/20"}`}
                           >
                             {adv.status || "—"}
                           </span>
@@ -552,7 +552,7 @@ export default function AdvanceLoanTab() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-bold">
+                <span className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-full text-xs font-extrabold">
                   {selectedDetail?.status || "—"}
                 </span>
                 <button
@@ -694,11 +694,11 @@ export default function AdvanceLoanTab() {
                         ? "Loading employees..."
                         : "Search employee by ID or name"
                     }
-                    className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
+                    className="w-full px-3 py-2 bg-card border border-theme rounded-md text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition-colors"
                   />
 
                   {employeeDropdownOpen && (
-                    <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-auto">
+                    <div className="absolute z-20 mt-1 w-full bg-card border border-theme rounded-lg shadow-lg max-h-60 overflow-auto">
                       {employeeListLoading ? (
                         <div className="p-3 text-sm text-muted flex items-center gap-2">
                           <RefreshCw className="w-4 h-4 animate-spin" />
@@ -772,7 +772,7 @@ export default function AdvanceLoanTab() {
                     setCreateData({ ...createData, department: e.target.value })
                   }
                   disabled={departmentLocked}
-                  className={`w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors ${departmentLocked ? "opacity-80 cursor-not-allowed" : ""}`}
+                  className={`w-full px-3 py-2 bg-card border border-theme rounded-md text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition-colors ${departmentLocked ? "opacity-80 cursor-not-allowed" : ""}`}
                 >
                   <option value="" disabled>
                     Select Department
@@ -805,7 +805,7 @@ export default function AdvanceLoanTab() {
                       advance_amount: Number(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
+                  className="w-full px-3 py-2 bg-card border border-theme rounded-md text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition-colors"
                 />
               </div>
 
@@ -820,7 +820,7 @@ export default function AdvanceLoanTab() {
                     setCreateData({ ...createData, purpose: e.target.value })
                   }
                   placeholder="e.g. Medical emergency"
-                  className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
+                  className="w-full px-3 py-2 bg-card border border-theme rounded-md text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition-colors"
                 />
               </div>
 
@@ -828,7 +828,7 @@ export default function AdvanceLoanTab() {
                 <label className="flex items-center gap-2 text-sm font-medium text-main select-none">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                    className="w-4 h-4 rounded border-theme text-primary focus:ring-2 focus:ring-[rgba(204,0,0,0.12)]"
                     checked={
                       createData.repay_unclaimed_amount_from_salary === 1
                     }
@@ -879,7 +879,7 @@ const Field = ({ label, value }: { label: string; value: any }) => (
     <p className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
       {label}
     </p>
-    <div className="bg-muted/5 p-3 rounded-lg border border-border">
+    <div className="bg-muted/5 p-3 rounded-lg border border-theme">
       <p className="text-sm font-semibold text-main break-words">
         {value || "—"}
       </p>

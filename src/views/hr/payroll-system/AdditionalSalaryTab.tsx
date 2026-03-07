@@ -47,7 +47,7 @@ const Btn: React.FC<{
 }) => {
   const v: Record<string, string> = {
     primary: "bg-primary text-white hover:bg-primary/90",
-    outline: "bg-card text-main border border-border hover:bg-muted/5",
+    outline: "bg-card text-main border border-theme hover:bg-muted/5",
     danger: "bg-danger text-white hover:bg-danger/90",
     ghost: "text-muted hover:text-main hover:bg-muted/5",
   };
@@ -75,7 +75,7 @@ export default function AdditionalSalaryTab() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [advances, setAdvances] = useState<AdditionalSalaryRecord[]>([]);
   const [advancesPage, setAdvancesPage] = useState<AdditionalSalaryPage | null>(
-    null
+    null,
   );
   const [searchRecords, setSearchRecords] = useState<AdditionalSalaryRecord[]>(
     [],
@@ -400,7 +400,7 @@ export default function AdditionalSalaryTab() {
                     placeholder="Search by ID / Employee / Name..."
                     value={searchEmpId}
                     onChange={(e) => setSearchEmpId(e.target.value)}
-                    className="w-full pl-9 pr-4 py-1.5 bg-card border border-theme focus:border-primary rounded-lg text-xs text-main transition-all outline-none"
+                    className="w-full pl-9 pr-4 py-1.5 bg-card border border-theme rounded-lg text-xs text-main transition-all outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)]"
                   />
                 </div>
                 <div className="text-xs text-muted whitespace-nowrap">
@@ -482,7 +482,7 @@ export default function AdditionalSalaryTab() {
                         </td>
                         <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${adv.type?.toLowerCase() === "deduction" ? "bg-red-50 text-red-700 border-red-200" : "bg-green-50 text-green-700 border-green-200"}`}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${adv.type?.toLowerCase() === "deduction" ? "bg-danger/10 text-danger border-danger/20" : "bg-success/10 text-success border-success/20"}`}
                           >
                             {adv.type || "—"}
                           </span>
@@ -501,7 +501,7 @@ export default function AdditionalSalaryTab() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${adv.is_recurring ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-gray-50 text-gray-600 border-gray-200"}`}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${adv.is_recurring ? "bg-primary/10 text-primary border-[var(--primary)]/20" : "bg-row-hover/40 text-main border-theme"}`}
                           >
                             {adv.is_recurring ? "Yes" : "No"}
                           </span>
@@ -576,7 +576,7 @@ export default function AdditionalSalaryTab() {
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`px-3 py-1 rounded text-xs font-bold border ${selectedDetail?.type?.toLowerCase() === "deduction" ? "bg-red-50 text-red-700 border-red-200" : "bg-green-50 text-green-700 border-green-200"}`}
+                  className={`px-3 py-1 rounded-full text-xs font-extrabold border ${selectedDetail?.type?.toLowerCase() === "deduction" ? "bg-danger/10 text-danger border-danger/20" : "bg-success/10 text-success border-success/20"}`}
                 >
                   {selectedDetail?.type || "—"}
                 </span>
@@ -689,11 +689,11 @@ export default function AdditionalSalaryTab() {
                         ? "Loading employees..."
                         : "Search employee by ID or name"
                     }
-                    className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
+                    className="w-full px-3 py-2 bg-card border border-theme rounded-md text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition-colors"
                   />
 
                   {employeeDropdownOpen && (
-                    <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-auto">
+                    <div className="absolute z-20 mt-1 w-full bg-card border border-theme rounded-lg shadow-lg max-h-60 overflow-auto">
                       {employeeListLoading ? (
                         <div className="p-3 text-sm text-muted flex items-center gap-2">
                           <RefreshCw className="w-4 h-4 animate-spin" />
@@ -754,7 +754,7 @@ export default function AdditionalSalaryTab() {
                   onChange={(e) =>
                     setCreateData({ ...createData, from_date: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
+                  className="w-full px-3 py-2 bg-card border border-theme rounded-md text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition-colors"
                 />
               </div>
 
@@ -769,7 +769,7 @@ export default function AdditionalSalaryTab() {
                   onChange={(e) =>
                     setCreateData({ ...createData, to_date: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
+                  className="w-full px-3 py-2 bg-card border border-theme rounded-md text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition-colors"
                 />
               </div>
 
@@ -790,7 +790,7 @@ export default function AdditionalSalaryTab() {
                       type: selected?.type || createData.type,
                     });
                   }}
-                  className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
+                  className="w-full px-3 py-2 bg-card border border-theme rounded-md text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition-colors"
                 >
                   <option value="" disabled>
                     Select salary component
@@ -817,7 +817,7 @@ export default function AdditionalSalaryTab() {
                   type="text"
                   readOnly
                   value={createData.type}
-                  className="w-full px-3 py-2 bg-muted/10 border border-border/50 rounded-md text-sm text-main cursor-not-allowed opacity-80"
+                  className="w-full px-3 py-2 bg-muted/10 border border-theme rounded-md text-sm text-main cursor-not-allowed opacity-80"
                 />
                 <div className="mt-1 text-[11px] text-muted">
                   Auto-filled from salary component
@@ -839,7 +839,7 @@ export default function AdditionalSalaryTab() {
                       amount: Number(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2 bg-card border border-border/50 rounded-md text-sm text-main focus:outline-none focus:border-primary transition-colors"
+                  className="w-full px-3 py-2 bg-card border border-theme rounded-md text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition-colors"
                 />
               </div>
 
@@ -847,7 +847,7 @@ export default function AdditionalSalaryTab() {
                 <label className="flex items-center gap-2 text-sm font-medium text-main select-none">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                    className="w-4 h-4 rounded border-theme text-primary focus:ring-2 focus:ring-[rgba(204,0,0,0.12)]"
                     checked={createData.is_recurring === 1}
                     onChange={(e) =>
                       setCreateData({
@@ -894,7 +894,7 @@ const Field = ({ label, value }: { label: string; value: any }) => (
     <p className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
       {label}
     </p>
-    <div className="bg-muted/5 p-3 rounded-lg border border-border">
+    <div className="bg-muted/5 p-3 rounded-lg border border-theme">
       <p className="text-sm font-semibold text-main break-words">
         {value || "—"}
       </p>

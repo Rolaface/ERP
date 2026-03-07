@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 import { Settings, Users } from "lucide-react";
-import LeaveSetupModal from "../../../components/Hr/leave/setup/leavesetupmodal";
 import LeaveAllocation from "../../../components/Hr/leave/setup/LeaveAllocation";
 import { LeavePolicyAssignment } from "../../../components/Hr/leave/setup/LeavePolicyAssignment";
 import { LeaveEncashment } from "../../../components/Hr/leave/setup/LeaveEncashment";
-import LeaveAllocationForm from "../../../components/Hr/leave/setup/LeaveAllocationForm";
 import { LeaveType } from "../../../components/Hr/leave/setup/LeaveType";
 import { LeavePeriod } from "../../../components/Hr/leave/setup/LeavePeriod";
 import { LeavePolicy } from "../../../components/Hr/leave/setup/LeavePolicy";
 import { HolidayList } from "../../../components/Hr/leave/setup/HolidayList";
-import { LeaveBlockList, LeaveBlockListForm } from "../../../components/Hr/leave/setup/LeaveBlockList";
+import { LeaveBlockList } from "../../../components/Hr/leave/setup/LeaveBlockList";
 
 type ModalType = "setup" | "allocation" | null;
 
@@ -20,7 +18,8 @@ const Setup: React.FC = () => {
   const [showLeavePolicy, setShowLeavePolicy] = useState(false);
   const [showHolidayList, setShowHolidayList] = useState(false);
   const [showLeaveBlockList, setShowLeaveBlockList] = useState(false);
-  const [showLeavePolicyAssignment, setShowLeavePolicyAssignment] = useState(false);
+  const [showLeavePolicyAssignment, setShowLeavePolicyAssignment] =
+    useState(false);
   const [showLeaveEncashment, setShowLeaveEncashment] = useState(false);
   const [showLeaveAllocation, setShowLeaveAllocation] = useState(false);
 
@@ -114,8 +113,7 @@ const Setup: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
             <LeaveType
-              onAdd={() => {
-              }}
+              onAdd={() => {}}
               onClose={() => setShowLeaveType(false)}
             />
           </div>
@@ -126,8 +124,7 @@ const Setup: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
             <LeavePeriod
-              onAdd={() => {
-              }}
+              onAdd={() => {}}
               onClose={() => setShowLeavePeriod(false)}
             />
           </div>
@@ -138,8 +135,7 @@ const Setup: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
             <LeavePolicy
-              onAdd={() => {
-              }}
+              onAdd={() => {}}
               onClose={() => setShowLeavePolicy(false)}
             />
           </div>
@@ -150,8 +146,7 @@ const Setup: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
             <HolidayList
-              onAdd={() => {
-              }}
+              onAdd={() => {}}
               onClose={() => setShowHolidayList(false)}
             />
           </div>
@@ -162,8 +157,7 @@ const Setup: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
             <LeaveBlockList
-              onAdd={() => {
-              }}
+              onAdd={() => {}}
               onClose={() => setShowLeaveBlockList(false)}
             />
           </div>
@@ -175,8 +169,7 @@ const Setup: React.FC = () => {
           <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
             <LeaveAllocation
               employeeId=""
-              onAdd={() => {
-              }}
+              onAdd={() => {}}
               onClose={() => setShowLeaveAllocation(false)}
             />
           </div>
@@ -187,8 +180,7 @@ const Setup: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
             <LeavePolicyAssignment
-              onAdd={() => {
-              }}
+              onAdd={() => {}}
               onClose={() => setShowLeavePolicyAssignment(false)}
             />
           </div>
@@ -199,8 +191,7 @@ const Setup: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
             <LeaveEncashment
-              onAdd={() => {
-              }}
+              onAdd={() => {}}
               onClose={() => setShowLeaveEncashment(false)}
             />
           </div>

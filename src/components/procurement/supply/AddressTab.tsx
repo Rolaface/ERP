@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import React from "react";
 import type { SupplierFormData } from "../../../types/Supply/supplier";
 import { ModalInput } from "../../ui/modal/modalComponent";

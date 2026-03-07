@@ -255,9 +255,18 @@ const CRMDashboard: React.FC = () => {
                     data={customerTypeBarData}
                     margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--muted)" }} />
-                    <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--border)"
+                    />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 12, fill: "var(--muted)" }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: "var(--muted)" }}
+                      width={52}
+                    />
                     <Tooltip
                       formatter={(v: any) => Number(v ?? 0)}
                       contentStyle={{
@@ -445,9 +454,18 @@ const CRMDashboard: React.FC = () => {
                     data={totalsOverviewBarData}
                     margin={{ top: 28, right: 10, left: -20, bottom: 0 }}
                   >
-                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--muted)" }} />
-                    <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
+                    <CartesianGrid
+                      stroke="var(--border)"
+                      strokeDasharray="3 3"
+                    />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 12, fill: "var(--muted)" }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: "var(--muted)" }}
+                      width={52}
+                    />
                     <Tooltip
                       formatter={(v: any) => Number(v ?? 0)}
                       contentStyle={{

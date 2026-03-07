@@ -63,9 +63,9 @@ const AdvancedCalendar: React.FC<AdvancedCalendarProps> = ({
         modifiers={modifiers}
         disabled={{ before: today }}
         modifiersClassNames={{
-          approved: "bg-green-500/10 text-green-700",
-          pending: "bg-yellow-500/10 text-yellow-700",
-          rejected: "bg-red-500/10 text-red-700",
+          approved: "bg-red-500/10 text-red-700",
+          pending: "bg-blue-500/10 text-blue-700",
+          rejected: "bg-muted/20 text-muted",
         }}
         classNames={{
           months: "flex justify-center",

@@ -36,7 +36,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant }) => {
   };
 
   const variantStyles: Record<BadgeVariant, string> = {
-    success: "bg-success border-theme",
+    success: "bg-primary/10 text-primary border-[var(--primary)]/20",
     danger: "bg-danger border-theme",
     warning: "bg-warning border-theme",
     info: "bg-info border-theme",

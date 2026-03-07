@@ -146,9 +146,7 @@ const DepartmentField: React.FC<DepartmentFieldProps> = ({
         <input
           type="text"
           value={value}
-          onChange={(e) =>
-            onChange(String(e.target.value ?? "").toUpperCase())
-          }
+          onChange={(e) => onChange(String(e.target.value ?? "").toUpperCase())}
           onBlur={handleInputBlur}
           placeholder="Type department name here..."
           autoFocus

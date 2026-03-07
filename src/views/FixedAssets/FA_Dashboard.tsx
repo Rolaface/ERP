@@ -159,7 +159,11 @@ const FixedAssetDashboard: React.FC = () => {
               <XAxis dataKey="location" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="value" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+              <Bar
+                dataKey="value"
+                fill="var(--primary)"
+                radius={[6, 6, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         </Panel>

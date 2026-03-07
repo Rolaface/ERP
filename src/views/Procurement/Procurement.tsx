@@ -1,15 +1,10 @@
 import React, { useState } from "react";
-import RFQsTable from "./Rfqs";
 import PurchaseOrdersTable from "./PurchaseOrders";
-import ApprovalsSection from "./Approvals";
 import Dashboard from "./ProcurementDashboard";
-import ApprovalModal from "../../components/procurement/ApprovalModal";
 import {
   FaClipboardList,
-  FaCheckCircle,
   FaShoppingBag,
   FaTachometerAlt,
-  FaFileSignature,
   FaTruckLoading,
   FaLandmark,
 } from "react-icons/fa";
@@ -28,14 +23,7 @@ const procurement = {
       icon: <FaTachometerAlt />,
     },
     { id: "supplier", name: "Supplier Management", icon: <FaLandmark /> },
-    { id: "rfqs", name: "RFQs", icon: <FaFileSignature /> },
     { id: "orders", name: "Purchase Orders", icon: <FaClipboardList /> },
-    { id: "approvals", name: "Approvals", icon: <FaCheckCircle /> },
-    // {
-    //   id: "invoicematching",
-    //   name: "Invoice Matching",
-    //   icon: <FaFileInvoiceDollar />,
-    // },
     { id: "purchase", name: "Purchase Invoice", icon: <FaTruckLoading /> },
   ],
 };
@@ -43,13 +31,11 @@ const procurement = {
 const Procurement: React.FC = () => {
   const [activeTab, setActiveTab] = useState(procurement.defaultTab);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showGRModal, setShowGRModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   const handleAdd = () => {
     if (activeTab === "supplier") setShowSupplierModal(true);
-    else if (activeTab === "approvals") setShowApprovalModal(true);
     else if (activeTab === "goodsreceipt") setShowGRModal(true);
     else if (activeTab === "invoicematching") setShowInvoiceModal(true);
   };
@@ -83,9 +69,7 @@ const Procurement: React.FC = () => {
       {/* Content */}
       <div>
         {activeTab === "supplier" && <SupplierManagement onAdd={handleAdd} />}
-        {activeTab === "rfqs" && <RFQsTable onAdd={handleAdd} />}
         {activeTab === "orders" && <PurchaseOrdersTable onAdd={handleAdd} />}
-        {activeTab === "approvals" && <ApprovalsSection onAdd={handleAdd} />}
         {activeTab === "purchase" && <PurchaseInvoiceTable onAdd={handleAdd} />}
         {activeTab === "procurementdashboard" && <Dashboard />}
       </div>
@@ -95,11 +79,6 @@ const Procurement: React.FC = () => {
         isOpen={showSupplierModal}
         onClose={() => setShowSupplierModal(false)}
         onSubmit={(data) => console.log("New RFQ:", data)}
-      />
-      <ApprovalModal
-        isOpen={showApprovalModal}
-        onClose={() => setShowApprovalModal(false)}
-        onSubmit={(data) => console.log("New Approval:", data)}
       />
     </div>
   );

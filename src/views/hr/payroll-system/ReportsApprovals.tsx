@@ -102,7 +102,7 @@ export const PayrollReports: React.FC<PayrollReportsProps> = ({ records }) => {
             onClick={() => setTab(t)}
             className={`px-5 py-2.5 text-xs font-bold capitalize border-b-2 -mb-0.5 transition-all ${
               tab === t
-                ? "text-primary border-primary"
+                ? "text-primary border-[var(--primary)]"
                 : "text-muted border-transparent hover:text-main"
             }`}
           >
@@ -434,7 +434,7 @@ export const ApprovalWorkflowManager: React.FC<
                   {r.employeeId} • {r.department} • {r.designation}
                 </p>
               </div>
-              <span className="text-xs font-medium border border-yellow-200 bg-yellow-50 text-yellow-700 px-2.5 py-1 rounded">
+              <span className="text-xs font-extrabold border border-warning/20 bg-warning/10 text-warning px-2.5 py-1 rounded-full">
                 Pending
               </span>
             </div>
@@ -445,9 +445,9 @@ export const ApprovalWorkflowManager: React.FC<
                 {
                   label: "Deductions",
                   val: r.totalDeductions,
-                  color: "text-red-700",
+                  color: "text-danger",
                 },
-                { label: "Net Pay", val: r.netPay, color: "text-green-700" },
+                { label: "Net Pay", val: r.netPay, color: "text-success" },
               ].map(({ label, val, color }) => (
                 <div key={label} className="bg-muted/5 rounded-lg p-4">
                   <p className="text-xs text-muted mb-1 font-medium">{label}</p>

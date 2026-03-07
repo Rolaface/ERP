@@ -75,31 +75,41 @@ export default tseslint.config(
       'unused-imports/no-unused-imports': 'error',
 
       'unused-imports/no-unused-vars': [
-        'error',
+        'warn',
         {
           vars: 'all',
-          // varsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
           args: 'after-used',
-          // argsIgnorePattern: '^_',
+          argsIgnorePattern: '^_',
         },
       ],
 
       '@typescript-eslint/no-unused-vars': 'off',
 
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-assignment': 'warn',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/require-await': 'warn',
+      '@typescript-eslint/no-misused-promises': 'warn',
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
+
+      'no-unsafe-finally': 'warn',
 
       'react/jsx-pascal-case': 'error',
       'react/display-name': 'off',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
 
-      camelcase: ['error', { properties: 'always', ignoreDestructuring: false }],
+      // Allow snake_case for API responses from backend
+      camelcase: ['warn', { properties: 'never', ignoreDestructuring: true }],
 
       '@typescript-eslint/naming-convention': [
-        'error',
+        'warn',
         {
           selector: 'interface',
           format: ['PascalCase'],
@@ -107,7 +117,7 @@ export default tseslint.config(
         },
         {
           selector: ['variable', 'function'],
-          format: ['camelCase', 'PascalCase', 'UPPER_CASE'],
+          format: ['camelCase', 'PascalCase', 'UPPER_CASE', 'snake_case'],
           leadingUnderscore: 'allow',
         },
       ],

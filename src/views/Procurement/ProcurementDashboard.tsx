@@ -263,7 +263,10 @@ const ProcurementDashboard: React.FC = () => {
                     data={procurementBarData}
                     margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--border)"
+                    />
                     <XAxis
                       dataKey="name"
                       tick={{ fontSize: 11, fill: "var(--muted)" }}
@@ -272,7 +275,10 @@ const ProcurementDashboard: React.FC = () => {
                       textAnchor="end"
                       height={48}
                     />
-                    <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: "var(--muted)" }}
+                      width={52}
+                    />
                     <Tooltip
                       formatter={(v: any) => Number(v ?? 0)}
                       contentStyle={{

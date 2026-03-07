@@ -256,15 +256,29 @@ const Dashboard = () => {
   );
 
   const inventoryPieColors = useMemo(
-    () => [chartColors.blue, chartColors.primary, chartColors.blueSoft, "var(--primary-700)"],
+    () => [
+      chartColors.blue,
+      chartColors.primary,
+      chartColors.blueSoft,
+      "var(--primary-700)",
+    ],
     [chartColors],
   );
 
   const itemsBreakdownChartData = useMemo(
     () => [
-      { name: "Raw Material", value: Number(inventorySummaryData?.rawMaterialItems ?? 0) },
-      { name: "Service", value: Number(inventorySummaryData?.serviceItems ?? 0) },
-      { name: "Imported", value: Number(inventorySummaryData?.totalImportedItems ?? 0) },
+      {
+        name: "Raw Material",
+        value: Number(inventorySummaryData?.rawMaterialItems ?? 0),
+      },
+      {
+        name: "Service",
+        value: Number(inventorySummaryData?.serviceItems ?? 0),
+      },
+      {
+        name: "Imported",
+        value: Number(inventorySummaryData?.totalImportedItems ?? 0),
+      },
       {
         name: "Finished Products",
         value: Number(inventorySummaryData?.finishedProductsItems ?? 0),
@@ -390,9 +404,18 @@ const Dashboard = () => {
                   data={monthlyTrendData}
                   margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
-                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--muted)" }} />
-                  <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={chartColors.grid}
+                  />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12, fill: "var(--muted)" }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: "var(--muted)" }}
+                    width={52}
+                  />
                   <Tooltip
                     formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
                   />
@@ -424,7 +447,10 @@ const Dashboard = () => {
                   data={recentSalesChartData}
                   margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={chartColors.grid}
+                  />
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 11, fill: "var(--muted)" }}
@@ -433,7 +459,10 @@ const Dashboard = () => {
                     textAnchor="end"
                     height={48}
                   />
-                  <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: "var(--muted)" }}
+                    width={52}
+                  />
                   <Tooltip
                     formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
                     labelFormatter={(
@@ -487,7 +516,10 @@ const Dashboard = () => {
                   data={salesByCustomerChartData}
                   margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={chartColors.grid}
+                  />
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 11, fill: "var(--muted)" }}
@@ -496,7 +528,10 @@ const Dashboard = () => {
                     textAnchor="end"
                     height={52}
                   />
-                  <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: "var(--muted)" }}
+                    width={52}
+                  />
                   <Tooltip
                     formatter={(v: any) => currencyZMW.format(Number(v ?? 0))}
                   />
@@ -526,7 +561,10 @@ const Dashboard = () => {
                   data={totalsOverviewChartData}
                   margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={chartColors.grid}
+                  />
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 11, fill: "var(--muted)" }}
@@ -535,7 +573,10 @@ const Dashboard = () => {
                     textAnchor="end"
                     height={44}
                   />
-                  <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} width={52} />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: "var(--muted)" }}
+                    width={52}
+                  />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar
@@ -587,7 +628,9 @@ const Dashboard = () => {
                     {itemsBreakdownChartData.map((_, idx) => (
                       <Cell
                         key={`items-${idx}`}
-                        fill={inventoryPieColors[idx % inventoryPieColors.length]}
+                        fill={
+                          inventoryPieColors[idx % inventoryPieColors.length]
+                        }
                       />
                     ))}
                   </Pie>
@@ -632,7 +675,11 @@ const Dashboard = () => {
                     {employeeStatusChartData.map((entry, idx) => (
                       <Cell
                         key={`${entry.name}-${idx}`}
-                        fill={employeeStatusColors[idx % employeeStatusColors.length]}
+                        fill={
+                          employeeStatusColors[
+                            idx % employeeStatusColors.length
+                          ]
+                        }
                       />
                     ))}
                   </Pie>

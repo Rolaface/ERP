@@ -20,16 +20,16 @@ type Props = {
   onAssigned?: () => void;
 };
 
- type EmployeeOption = {
-   value: string;
-   label: string;
-   joiningDate?: string;
- };
+type EmployeeOption = {
+  value: string;
+  label: string;
+  joiningDate?: string;
+};
 
 const inputCls =
-  "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition";
+  "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main placeholder:text-muted focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition";
 const selectCls =
-  "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none focus:border-primary transition cursor-pointer";
+  "w-full px-3 py-2.5 bg-app border border-theme rounded-lg text-sm text-main focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition cursor-pointer";
 
 const getFriendlyErrorMessage = (e: any) => {
   const data = e?.response?.data;
@@ -64,7 +64,9 @@ export default function SalaryStructureAssignmentTab({
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
 
-  const [assignedEmployees, setAssignedEmployees] = useState<Set<string>>(new Set());
+  const [assignedEmployees, setAssignedEmployees] = useState<Set<string>>(
+    new Set(),
+  );
 
   const [form, setForm] = useState({
     employee: employeeId || "",
@@ -79,7 +81,9 @@ export default function SalaryStructureAssignmentTab({
     setForm((p) => ({
       ...p,
       employee: String(editingAssignment.employee ?? p.employee ?? ""),
-      salary_structure: String(editingAssignment.salary_structure ?? p.salary_structure ?? ""),
+      salary_structure: String(
+        editingAssignment.salary_structure ?? p.salary_structure ?? "",
+      ),
       basic: String((editingAssignment as any)?.basic ?? p.basic ?? ""),
     }));
   }, [editingAssignment]);
@@ -183,7 +187,9 @@ export default function SalaryStructureAssignmentTab({
 
   const employeeOptions = useMemo<EmployeeOption[]>(() => {
     const items = Array.isArray(employees) ? employees : [];
-    const selectedEmployeeCode = String(form.employee ?? employeeId ?? "").trim();
+    const selectedEmployeeCode = String(
+      form.employee ?? employeeId ?? "",
+    ).trim();
     const allowEmployee = (code: string) => {
       if (!code) return false;
       if (code === selectedEmployeeCode) return true;
@@ -216,9 +222,13 @@ export default function SalaryStructureAssignmentTab({
     const basicNum = Number(form.basic);
     const basicOk = Number.isFinite(basicNum) && basicNum > 0;
     if (isEditing) {
-      return Boolean(form.employee?.trim() && form.salary_structure?.trim() && basicOk);
+      return Boolean(
+        form.employee?.trim() && form.salary_structure?.trim() && basicOk,
+      );
     }
-    return Boolean(form.employee?.trim() && form.salary_structure?.trim() && basicOk);
+    return Boolean(
+      form.employee?.trim() && form.salary_structure?.trim() && basicOk,
+    );
   }, [form]);
 
   const handleAssign = async () => {
@@ -255,7 +265,10 @@ export default function SalaryStructureAssignmentTab({
     } catch (e: any) {
       const friendly = getFriendlyErrorMessage(e);
       toast.error(
-        friendly || (isEditing ? "Failed to update assignment" : "Failed to assign salary structure"),
+        friendly ||
+          (isEditing
+            ? "Failed to update assignment"
+            : "Failed to assign salary structure"),
       );
     } finally {
       setLoading(false);
@@ -360,7 +373,7 @@ export default function SalaryStructureAssignmentTab({
           type="button"
           onClick={handleAssign}
           disabled={!canSubmit || loading}
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-white text-sm font-extrabold shadow-sm hover:opacity-95 active:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-40 disabled:cursor-not-allowed min-w-40"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-white text-sm font-extrabold shadow-sm hover:opacity-95 active:opacity-90 focus:outline-none focus:ring-2 focus:ring-[rgba(204,0,0,0.18)] disabled:opacity-40 disabled:cursor-not-allowed min-w-40"
         >
           <Save className="w-4 h-4" />
           {loading
