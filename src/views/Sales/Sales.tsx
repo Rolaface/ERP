@@ -17,8 +17,8 @@ import { createQuotation } from "../../api/quotationApi";
 import CreditNotesTable from "./CreditNotesTable";
 import DebitNotesTable from "./DebitNotesTable";
 
+import { Receipt } from "lucide-react";
 import {
-  FaMoneyBillWave,
   FaCalendarAlt,
   FaFileInvoice,
   FaChartBar,
@@ -147,7 +147,7 @@ const SalesModule: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
-          <FaMoneyBillWave /> Sales
+          <Receipt className="w-5 h-5 text-primary" /> Sales
         </h2>
       </div>
 
