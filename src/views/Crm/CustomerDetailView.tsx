@@ -17,7 +17,8 @@ import CustomerModal from "../../components/crm/CustomerModal";
 import QuotationModal from "../../components/sales/QuotationModal";
 import InvoiceModal from "../../components/sales/InvoiceModal";
 import CustomerStatement from "../Crm/CustomerStatement";
-
+import CustomerPaymentModal from "../../components/sales/CustomerPaymentModal";
+import { CreditCard } from "lucide-react";
 interface Props {
   customer: CustomerDetail;
   customers: CustomerDetail[];
@@ -39,9 +40,10 @@ const CustomerDetailView: React.FC<Props> = ({
   const [isCustomerModalOpen, setCustomerModalOpen] = useState(false);
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "quotations" | "invoices" | "statement"
-  >("overview");
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+const [activeTab, setActiveTab] = useState<
+  "overview" | "quotations" | "invoices" | "payments" | "statement"
+>("overview");
 
   const q = searchTerm.trim().toLowerCase();
   const filteredCustomers = (customers || []).filter(
@@ -103,42 +105,52 @@ LIABILITY:
 ${sellingTerms?.liability || ""}
 `.trim();
 
-  const renderActionButton = () => {
-    switch (activeTab) {
-      case "overview":
-        return (
-          <button
-            onClick={() => setCustomerModalOpen(true)}
-            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-          >
-            <Plus size={14} /> New Customer
-          </button>
-        );
+ const renderActionButton = () => {
+  switch (activeTab) {
+    case "overview":
+      return (
+        <button
+          onClick={() => setCustomerModalOpen(true)}
+          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+        >
+          <Plus size={14} /> New Customer
+        </button>
+      );
 
-      case "quotations":
-        return (
-          <button
-            onClick={() => setShowQuotationModal(true)}
-            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-          >
-            <Plus size={14} /> New Quotation
-          </button>
-        );
+    case "quotations":
+      return (
+        <button
+          onClick={() => setShowQuotationModal(true)}
+          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+        >
+          <Plus size={14} /> New Quotation
+        </button>
+      );
 
-      case "invoices":
-        return (
-          <button
-            onClick={() => setShowInvoiceModal(true)}
-            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-          >
-            <Plus size={14} /> New Invoice
-          </button>
-        );
+    case "invoices":
+      return (
+        <button
+          onClick={() => setShowInvoiceModal(true)}
+          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+        >
+          <Plus size={14} /> New Invoice
+        </button>
+      );
 
-      default:
-        return null;
-    }
-  };
+    case "payments":
+      return (
+        <button
+          onClick={() => setShowPaymentModal(true)}
+          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+        >
+          <Plus size={14} /> Record Payment
+        </button>
+      );
+
+    default:
+      return null;
+  }
+};
 
   return (
     <div className="flex flex-col  bg-app text-main overflow-hidden">
@@ -224,6 +236,7 @@ ${sellingTerms?.liability || ""}
                 { id: "overview", label: "Overview", icon: <Globe /> },
                 { id: "quotations", label: "Quotations", icon: <FileText /> },
                 { id: "invoices", label: "Invoices", icon: <Receipt /> },
+                { id: "payments", label: "Payments", icon: <CreditCard /> },
                 { id: "statement", label: "Statement", icon: <FileBarChart /> },
               ].map((t) => (
                 <button
@@ -374,6 +387,22 @@ ${sellingTerms?.liability || ""}
                 </p>
               </div>
             )}
+
+            {activeTab === "payments" && (
+  <div className="flex flex-col items-center justify-center py-20 text-center">
+    <div className="p-5 rounded-2xl bg-row-hover text-muted mb-4">
+      <CreditCard size={32} />
+    </div>
+
+    <h3 className="text-sm font-bold text-main">
+      No payments recorded
+    </h3>
+
+    <p className="text-[10px] text-muted font-bold uppercase mt-1">
+      Customer payment history will appear here
+    </p>
+  </div>
+)}
           </div>
         </main>
       </div>
@@ -391,6 +420,11 @@ ${sellingTerms?.liability || ""}
         onClose={() => setCustomerModalOpen(false)}
         onSubmit={(created: any) => onCustomerSelect(created)}
       />
+      <CustomerPaymentModal
+  isOpen={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  customerId={customer.id}
+/>
     </div>
   );
 };

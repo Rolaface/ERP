@@ -4,7 +4,8 @@ import CRMDashboard from "./CRMDashboard";
 import CRMReports from "./Reports";
 import Leads from "./Leads";
 import SupportTickets from "./Support-tickets";
-
+import Payments from "./CustomerPayments";
+import { FaCreditCard } from "react-icons/fa";
 import {
   FaUsers,
   // FaUser,
@@ -27,6 +28,7 @@ const crmModule = {
     },
     // { id: "leads", name: "Leads", icon: <FaUser /> },
     // { id: "tickets", name: "Support Tickets", icon: <FaTicketAlt /> },
+    { id: "payments", name: "Payments", icon: <FaCreditCard /> },
     { id: "reports", name: "Reports", icon: <FaChartBar /> },
   ],
   leads: [
@@ -171,6 +173,8 @@ const CRM: React.FC = () => {
               onAdd={handleAddTicket}
             />
           )}
+
+          {activeTab === "payments" && <Payments />}
 
           {activeTab === "reports" && <CRMReports />}
         </div>

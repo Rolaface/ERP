@@ -3,7 +3,7 @@ import SupplierDetailView from "./SupplierDetailView";
 import SupplierModal from "../../components/procurement/supply/SupplierModal";
 import { deleteSupplier, getSupplierById, getSuppliers } from "../../api/procurement/supplierApi";
 import { mapSupplierApi } from "../../types/Supply/supplierMapper";
-
+import SupplierPaymentModal from "../../components/procurement/supply/SupplierPaymentModal";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import ActionButton, {
@@ -32,6 +32,8 @@ const SupplierManagement: React.FC<Props> = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
   const supplierCodes = suppliers.map(s => s.supplierCode || "");
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+const [paymentSupplier, setPaymentSupplier] = useState<Supplier | null>(null);
 
 
 
@@ -184,6 +186,10 @@ const SupplierManagement: React.FC<Props> = () => {
     handleEditSupplier(supplier);
   };
 
+  const handleMakePayment = (supplier: Supplier) => {
+  setPaymentSupplier(supplier);
+  setShowPaymentModal(true);
+};
 
 const handleDeleteSupplier = async (supplier: Supplier) => {
   if (!supplier.supplierId) return;
@@ -264,9 +270,15 @@ const handleDeleteSupplier = async (supplier: Supplier) => {
           />
 
           <ActionMenu
-            onEdit={(e) => handleEditSupplier(s)}
-            onDelete={(e) => handleDeleteSupplier(s)}
-          />
+  onEdit={(e) => handleEditSupplier(s)}
+  onDelete={(e) => handleDeleteSupplier(s)}
+  customActions={[
+    {
+      label: "Make Payment",
+      onClick: () => handleMakePayment(s),
+    },
+  ]}
+/>
         </ActionGroup>
       ),
     },
@@ -318,6 +330,16 @@ const handleDeleteSupplier = async (supplier: Supplier) => {
   initialData={editSupplier}
   isEditMode={!!editSupplier}
   existingSupplierCodes={supplierCodes}
+/>
+
+<SupplierPaymentModal
+  isOpen={showPaymentModal}
+  onClose={() => {
+    setShowPaymentModal(false);
+    setPaymentSupplier(null);
+  }}
+  supplierName={paymentSupplier?.supplierName}
+  supplierCode={paymentSupplier?.supplierCode}
 />
     </div>
   );

@@ -12,10 +12,12 @@ import {
   FaFileSignature,
   FaTruckLoading,
   FaLandmark,
+  FaCreditCard
 } from "react-icons/fa";
 import SupplierManagement from "./SupplierManagement";
 import SupplierModal from "../../components/procurement/supply/SupplierModal";
 import PurchaseInvoiceTable from "./PurchaseInvoice";
+import Payments from "./SupplierPayment";
 
 const procurement = {
   name: "Procurement",
@@ -28,6 +30,7 @@ const procurement = {
       icon: <FaTachometerAlt />,
     },
     { id: "supplier", name: "Supplier Management", icon: <FaLandmark /> },
+    { id: "payments", name: "Payments", icon: <FaCreditCard /> },
     { id: "rfqs", name: "RFQs", icon: <FaFileSignature /> },
     { id: "orders", name: "Purchase Orders", icon: <FaClipboardList /> },
     { id: "approvals", name: "Approvals", icon: <FaCheckCircle /> },
@@ -88,6 +91,7 @@ const Procurement: React.FC = () => {
         {activeTab === "approvals" && <ApprovalsSection onAdd={handleAdd} />}
         {activeTab === "purchase" && <PurchaseInvoiceTable onAdd={handleAdd} />}
         {activeTab === "procurementdashboard" && <Dashboard />}
+        {activeTab === "payments" && <Payments />}
       </div>
 
       {/* Modals */}
