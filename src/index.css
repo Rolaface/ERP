@@ -133,6 +133,16 @@
 }
 }
 
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--primary);
+}
+
+.MuiCheckbox-root.Mui-checked,
+.MuiRadio-root.Mui-checked {
+  color: var(--primary) !important;
+}
+
 /* TEXT COLORS (Keep as is — already solid) */
 .text-success {
   color: var(--success) !important;
