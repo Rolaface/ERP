@@ -4,11 +4,12 @@ import {
   ChevronDown,
   CheckCircle,
   Clock,
-  FileText,
-  Edit2,
   Users,
   RefreshCw,
 } from "lucide-react";
+import ActionButton, {
+  ActionGroup,
+} from "../../../components/ui/Table/ActionButton";
 import type { PayrollRecord } from "../../../types/payrolltypes";
 import { ExpandedRowDetail } from "./ExpandedRowDetail";
 
@@ -195,24 +196,23 @@ export const PayrollTable: React.FC<PayrollTableProps> = ({
 
                 {/* Actions */}
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center justify-center gap-1">
-                    <button
+                  <ActionGroup>
+                    <ActionButton
+                      type="view"
+                      label={null}
+                      iconOnly
                       onClick={() => onViewPayslip(record)}
-                      title="View Payslip"
-                      className="p-1.5 rounded-md text-muted hover:text-main hover:bg-muted/10 transition-colors"
-                    >
-                      <FileText className="w-4 h-4" />
-                    </button>
-                    {record.status !== "Paid" && (
-                      <button
+                    />
+                    {record.status !== "Paid" ? (
+                      <ActionButton
+                        type="edit"
+                        label={null}
+                        iconOnly
                         onClick={() => onEditRecord(record)}
-                        title="Edit"
-                        className="p-1.5 rounded-md text-muted hover:text-main hover:bg-muted/10 transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                        variant="secondary"
+                      />
+                    ) : null}
+                  </ActionGroup>
                 </td>
               </tr>
 

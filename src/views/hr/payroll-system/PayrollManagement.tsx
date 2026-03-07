@@ -1564,7 +1564,7 @@ export default function PayrollManagement() {
                                 });
                                 setSlipDetailsOpen(true);
                               }}
-                              className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-theme bg-card text-muted hover:text-main hover:bg-muted/5 transition-colors"
+                              className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-theme bg-card text-primary hover:bg-row-hover hover:text-primary transition-colors"
                               title="View"
                             >
                               <Eye className="w-4 h-4" />

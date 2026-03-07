@@ -1,6 +1,9 @@
 // ExpandedRowDetail.tsx
 import React from "react";
-import { ChevronUp, ArrowRight } from "lucide-react";
+import { ChevronUp } from "lucide-react";
+import ActionButton, {
+  ActionGroup,
+} from "../../../components/ui/Table/ActionButton";
 import type { PayrollRecord } from "../../../types/payrolltypes";
 
 const fmtZMW = (n: number) => Number(n || 0).toLocaleString("en-ZM");
@@ -103,12 +106,14 @@ export const ExpandedRowDetail: React.FC<ExpandedRowDetailProps> = ({
               />
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={() => onViewDetails(record)}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-primary text-white rounded-lg hover:opacity-90 transition"
-              >
-                View Details <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <ActionGroup>
+                <ActionButton
+                  type="view"
+                  label={null}
+                  iconOnly
+                  onClick={() => onViewDetails(record)}
+                />
+              </ActionGroup>
               <button
                 onClick={onCollapse}
                 className="flex items-center gap-1 px-3 py-2 text-xs border border-theme rounded-lg text-muted hover:text-main hover:bg-card transition"

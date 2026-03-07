@@ -1004,25 +1004,33 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                 <div className="h-9 w-44 bg-theme/60 rounded-lg animate-pulse" />
               ) : (
                 <div className="flex items-center gap-3 px-3 py-2 bg-app border border-theme rounded-lg">
-                  <label className="inline-flex items-center gap-2 text-xs font-bold text-main cursor-pointer">
+                  <label
+                    className={`inline-flex items-center gap-2 text-xs font-bold cursor-pointer ${
+                      selectionMode === "single" ? "text-primary" : "text-main"
+                    }`}
+                  >
                     <input
                       type="radio"
                       name="payroll-selection-mode"
                       value="single"
                       checked={selectionMode === "single"}
                       onChange={() => setSelectionMode("single")}
-                      className="w-4 h-4 accent-primary"
+                      className="w-4 h-4 accent-[var(--primary)]"
                     />
                     Single
                   </label>
-                  <label className="inline-flex items-center gap-2 text-xs font-bold text-main cursor-pointer">
+                  <label
+                    className={`inline-flex items-center gap-2 text-xs font-bold cursor-pointer ${
+                      selectionMode === "multiple" ? "text-primary" : "text-main"
+                    }`}
+                  >
                     <input
                       type="radio"
                       name="payroll-selection-mode"
                       value="multiple"
                       checked={selectionMode === "multiple"}
                       onChange={() => setSelectionMode("multiple")}
-                      className="w-4 h-4 accent-primary"
+                      className="w-4 h-4 accent-[var(--primary)]"
                     />
                     Multiple
                   </label>

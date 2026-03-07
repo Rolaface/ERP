@@ -26,6 +26,9 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   disabled = false,
   iconOnly = false,
 }) => {
+  const effectiveIconOnly = type === "view" ? true : iconOnly;
+  const effectiveVariant = type === "view" ? "primary" : variant;
+
   const getIcon = () => {
     if (icon) return icon;
     switch (type) {
@@ -65,9 +68,9 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
     danger: "text-red-500 hover:bg-row-hover hover:text-red-600",
   };
 
-  const base = iconOnly
-    ? `inline-flex items-center justify-center w-8 h-8 rounded-md ${variantStyles[variant]}`
-    : `inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm transition-all ${variantStyles[variant]}`;
+  const base = effectiveIconOnly
+    ? `inline-flex items-center justify-center w-8 h-8 rounded-md ${variantStyles[effectiveVariant]}`
+    : `inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm transition-all ${variantStyles[effectiveVariant]}`;
 
   return (
     <button
@@ -81,7 +84,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
       className={`${base} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       {getIcon()}
-      {getLabel() && !iconOnly ? <span>{getLabel()}</span> : null}
+      {getLabel() && !effectiveIconOnly ? <span>{getLabel()}</span> : null}
     </button>
   );
 };

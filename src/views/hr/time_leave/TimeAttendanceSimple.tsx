@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle, Clock, Eye, FileText, Users, X } from "lucide-react";
+import { CheckCircle, Clock, FileText, Users, X } from "lucide-react";
+import ActionButton from "../../../components/ui/Table/ActionButton";
+import Modal from "../../../components/ui/modal/modal";
+import { Button } from "../../../components/ui/modal/formComponent";
 import {
   checkinAndMarkAttendance,
   getAllAttendance,
@@ -314,14 +317,12 @@ export default function TimeAttendanceSimple() {
                     </td>
                     <td className="px-6 py-3 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-2">
-                        <button
-                          type="button"
+                        <ActionButton
+                          type="view"
+                          iconOnly
+                          label={null}
                           onClick={() => setViewRecord(r)}
-                          className="h-9 px-3 text-sm font-medium border border-theme rounded-xl inline-flex items-center gap-2 hover:bg-app"
-                        >
-                          <Eye className="w-4 h-4" />
-                          View
-                        </button>
+                        />
 
                         {r.isWorking ? (
                           <button
@@ -437,93 +438,92 @@ export default function TimeAttendanceSimple() {
           </div>
         ) : null}
 
-        {viewRecord ? (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
-              <div className="px-6 py-4 bg-app flex items-center justify-between">
-                <div className="text-sm font-bold text-main">
-                  Attendance Details
+        <Modal
+          isOpen={!!viewRecord}
+          onClose={() => setViewRecord(null)}
+          title={
+            viewRecord?.name
+              ? `Attendance ${String(viewRecord.name)}`
+              : "Attendance Details"
+          }
+          subtitle={viewRecord?.employee ? String(viewRecord.employee) : undefined}
+          maxWidth="4xl"
+          height="520px"
+          footer={
+            <div className="w-full flex items-center justify-end gap-2">
+              <Button variant="secondary" type="button" onClick={() => setViewRecord(null)}>
+                Close
+              </Button>
+            </div>
+          }
+        >
+          {viewRecord ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1">
+                <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                  ID
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setViewRecord(null)}
-                  className="p-1 rounded hover:bg-card"
-                >
-                  <X className="w-4 h-4 text-muted" />
-                </button>
-              </div>
-
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="text-xs font-semibold text-muted uppercase">
-                    ID
-                  </div>
-                  <div className="font-semibold text-main mt-1 break-words">
-                    {viewRecord.name}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-muted uppercase">
-                    Employee
-                  </div>
-                  <div className="font-semibold text-main mt-1 break-words">
-                    {viewRecord.employee}
-                  </div>
-                </div>
-                <div className="sm:col-span-2">
-                  <div className="text-xs font-semibold text-muted uppercase">
-                    Employee Name
-                  </div>
-                  <div className="font-semibold text-main mt-1 break-words">
-                    {viewRecord.employee_name || "—"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-muted uppercase">
-                    Date
-                  </div>
-                  <div className="font-semibold text-main mt-1">
-                    {viewRecord.attendance_date}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-muted uppercase">
-                    Status
-                  </div>
-                  <div className="font-semibold text-main mt-1">
-                    {viewRecord.status}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-muted uppercase">
-                    Working Hours
-                  </div>
-                  <div className="font-semibold text-main mt-1">
-                    {fmt(Number(viewRecord.working_hours ?? 0))}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-muted uppercase">
-                    Is Working
-                  </div>
-                  <div className="font-semibold text-main mt-1">
-                    {viewRecord.isWorking ? "Yes" : "No"}
-                  </div>
+                <div className="w-full px-3 py-2 rounded-lg border border-theme bg-card text-sm text-main">
+                  {viewRecord.name}
                 </div>
               </div>
 
-              <div className="px-6 py-4 bg-muted/5 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setViewRecord(null)}
-                  className="px-4 py-2 text-sm font-medium border border-border/30 rounded-xl"
-                >
-                  Close
-                </button>
+              <div className="flex flex-col gap-1">
+                <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                  Employee
+                </div>
+                <div className="w-full px-3 py-2 rounded-lg border border-theme bg-card text-sm text-main">
+                  {viewRecord.employee}
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 flex flex-col gap-1">
+                <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                  Employee Name
+                </div>
+                <div className="w-full px-3 py-2 rounded-lg border border-theme bg-card text-sm text-main">
+                  {viewRecord.employee_name || "—"}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                  Date
+                </div>
+                <div className="w-full px-3 py-2 rounded-lg border border-theme bg-card text-sm text-main">
+                  {viewRecord.attendance_date}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                  Status
+                </div>
+                <div className="w-full px-3 py-2 rounded-lg border border-theme bg-card text-sm text-main">
+                  {viewRecord.status}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                  Working Hours
+                </div>
+                <div className="w-full px-3 py-2 rounded-lg border border-theme bg-card text-sm text-main">
+                  {fmt(Number(viewRecord.working_hours ?? 0))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                  Is Working
+                </div>
+                <div className="w-full px-3 py-2 rounded-lg border border-theme bg-card text-sm text-main">
+                  {viewRecord.isWorking ? "Yes" : "No"}
+                </div>
               </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </Modal>
       </div>
     </div>
   );
