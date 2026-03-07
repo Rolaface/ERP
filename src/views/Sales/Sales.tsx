@@ -21,7 +21,6 @@ import {
   FaMoneyBillWave,
   FaCalendarAlt,
   FaFileInvoice,
-  FaFileInvoiceDollar,
   FaChartBar,
 } from "react-icons/fa";
 
@@ -33,12 +32,12 @@ const salesTabs = [
   {
     id: "proformaInvoice",
     name: "Proforma Invoice",
-    icon: <FaFileInvoiceDollar />,
+    icon: <FaFileInvoice />,
   },
-  { id: "invoices", name: "Invoices", icon: <FaFileInvoiceDollar /> },
+  { id: "invoices", name: "Invoices", icon: <FaFileInvoice /> },
 
-  { id: "creditNotes", name: "Credit Notes", icon: <FaFileInvoiceDollar /> },
-  { id: "debitNotes", name: "Debit Notes", icon: <FaFileInvoiceDollar /> },
+  { id: "creditNotes", name: "Credit Notes", icon: <FaFileInvoice /> },
+  { id: "debitNotes", name: "Debit Notes", icon: <FaFileInvoice /> },
 
   // { id: "pos", name: "POS", icon: <FaCashRegister /> },
   { id: "reports", name: "Reports", icon: <FaChartBar /> },

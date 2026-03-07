@@ -15,7 +15,7 @@ import {
   BarChart,
 } from "recharts";
 
-import { DollarSign, FileText, FileSignature, Receipt } from "lucide-react";
+import { FileText, FileSignature, Receipt } from "lucide-react";
 
 import { getSalesDashboardSummary } from "../../api/salesDashboardApi";
 import { ChartSkeleton } from "../../components/ChartSkeleton";
@@ -287,7 +287,7 @@ const SalesDashboard: React.FC = () => {
                 {
                   label: "Debit Notes",
                   value: String(summaryData?.totalSalesDebitNotes ?? 0),
-                  icon: DollarSign,
+                  icon: Receipt,
                   gradient: "from-[var(--primary)] to-[var(--primary-700)]",
                 },
               ].map((stat) => (

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
-  BadgeDollarSign,
+  Receipt,
   Users,
   ShoppingCart,
   Boxes,
@@ -29,7 +29,7 @@ const menuItems = [
   {
     name: "Sales",
     to: "/sales",
-    icon: <BadgeDollarSign className="w-5 h-5" />,
+    icon: <Receipt className="w-5 h-5" />,
   },
   { name: "Customer", to: "/crm", icon: <Users className="w-5 h-5" /> },
   {

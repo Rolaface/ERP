@@ -19,7 +19,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { DollarSign, FileText, TrendingUp, Users } from "lucide-react";
+import { FileText, Receipt, TrendingUp, Users } from "lucide-react";
 
 const Dashboard = () => {
   const chartColors = useMemo(
@@ -192,7 +192,7 @@ const Dashboard = () => {
     {
       label: "Total Sales Amount",
       value: currencyZMW.format(summaryData?.totalSalesAmount ?? 0),
-      icon: DollarSign,
+      icon: Receipt,
       gradient: "from-[var(--primary)] to-[var(--primary-700)]",
     },
   ];
