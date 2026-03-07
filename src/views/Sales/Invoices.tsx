@@ -137,6 +137,20 @@ const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
     setSortOrder(order);
     setPage(1);
   };
+  const handleTakePayment = async (invoiceNumber: string) => {
+  try {
+    console.log("Take payment for:", invoiceNumber);
+
+    // open payment modal or redirect
+    // example
+    // setPaymentInvoice(invoiceNumber);
+    // setPaymentModalOpen(true);
+
+    showSuccess(`Opening payment for invoice ${invoiceNumber}`);
+  } catch (err) {
+    showApiError(err);
+  }
+};
 
 
   const fetchAllInvoicesForExport = async (): Promise<InvoiceSummary[]> => {
@@ -506,6 +520,14 @@ const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
                 label: "View PDF",
                 onClick: () => handlePreviewPDF(inv),
               },
+              ...(inv.invoiceStatus === "Approved"
+    ? [
+        {
+          label: "Take Payment",
+          onClick: () => handleTakePayment(inv.invoiceNumber),
+        },
+      ]
+    : []),
               ...((STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
                 label: `Mark as ${status}`,
                 danger: status === "Paid",

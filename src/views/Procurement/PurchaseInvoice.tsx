@@ -83,7 +83,28 @@ const invoiceStatusOptions = [
 ];
 
 const CRITICAL_STATUSES: PIStatus[] = ["Debit Note Issued", "Cancelled"];
+const handleMakePayment = async (pId: string) => {
+  try {
+    showLoading("Opening payment...");
 
+    const res = await getPurchaseInvoiceById(pId);
+
+    closeSwal();
+
+    if (!res || res.status !== "success") {
+      showApiError("Failed to load invoice");
+      return;
+    }
+
+    console.log("Make payment for:", pId);
+
+    showSuccess(`Opening payment for Purchase Invoice ${pId}`);
+
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) => {
   const [orders, setOrders]     = useState<Purchaseinvoice[]>([]);
   const [loading, setLoading]   = useState(false);
@@ -384,6 +405,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
                 label: "View PDF",
                 onClick: () => handleOpenPDF(o),
               },
+              ...(o.status === "Submitted"
+                ? [{ label: "Make Payment", onClick: () => handleMakePayment(o.pId) }]
+                : []),
+
               ...(STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map((status) => ({
                 label: `Mark as ${status}`,
                 danger: status === "Cancelled" || status === "Debit Note Issued",

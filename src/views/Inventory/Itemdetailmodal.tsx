@@ -651,8 +651,8 @@ const packingDisplay =
                           <th rowSpan={2} className="px-4 py-2 text-left text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-theme whitespace-nowrap">Date</th>
                           <th rowSpan={2} className="px-4 py-2 text-left text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-theme whitespace-nowrap">Voucher Type</th>
                           <th rowSpan={2} className="px-4 py-2 text-left text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-theme whitespace-nowrap">Voucher No</th>
-                          <th colSpan={3} className="px-4 py-2 text-center text-[10px] font-black text-white uppercase tracking-widest border-b border-r border-theme bg-primary">Inwards</th>
-                          <th colSpan={3} className="px-4 py-2 text-center text-[10px] font-black text-white uppercase tracking-widest border-b border-r border-theme bg-primary/75">Outwards</th>
+                          <th colSpan={3} className="px-4 py-2 text-center text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-theme bg-muted">Inwards</th>
+                          <th colSpan={3} className="px-4 py-2 text-center text-[10px] font-black text-white uppercase tracking-widest border-b border-r border-theme bg-primary">Outwards</th>
                           <th colSpan={3} className="px-4 py-2 text-center text-[10px] font-black text-white uppercase tracking-widest border-b border-theme bg-primary/50">Closing</th>
                         </tr>
                         <tr className="bg-row-hover border-b border-theme">

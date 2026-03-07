@@ -44,3 +44,18 @@ export async function correctStock(payload: any): Promise<any> {
   const resp: AxiosResponse = await api.post(StockAPI.correct, payload);
   return resp.data;
 }
+export async function getStockReport(
+  page: number,
+  pageSize: number,
+  search?: string,
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(StockAPI.stockReport, {
+    params: {
+      page,
+      pageSize,
+      search,
+    },
+  });
+
+  return resp.data;
+}

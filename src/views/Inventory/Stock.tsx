@@ -1,9 +1,4 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import React, { useEffect, useState } from "react";
 import {
   showApiError,
@@ -13,7 +8,7 @@ import {
 } from "../../utils/alert";
 
 import {
-  getAllStockEntries,
+  getStockReport,
   getStockById,
   deleteStockEntry,
 } from "../../api/stockApi";
@@ -51,43 +46,60 @@ const Items: React.FC = () => {
   const [itemToDelete, setItemToDelete] = useState<ItemSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
 
- const fetchItems = async () => {
-  try {
-    setLoading(true);
+  const fetchItems = async () => {
+    try {
+      setLoading(true);
 
-    const res = await getAllStockEntries(page, pageSize);
+      const res = await getStockReport(page, pageSize, searchTerm);
 
-    const list = res?.message?.data || [];
+      const list = res?.message?.data || [];
 
-   const mapped = list.map((item: any) => ({
-  id: item.item_code || "",
-  itemCode: item.item_code || "",
-  itemGroup: item.item_group || "",
-  warehouse: item.warehouse || "",
-  uom: item.stock_uom || "",
-  inQty: item.in_qty ?? 0,
-  outQty: item.out_qty ?? 0,
-  qty: item.bal_qty ?? 0,
-  valuationRate: Number(item.valuation_rate ?? 0),
-  totalAmount: Number(item.bal_val ?? 0),
-}));
+      const mapped = list.map((item: any) => ({
+        id: item.item_code || "",
+        itemCode: item.item_code || "",
+        itemName: item.item_name || "",
+        itemGroup: item.item_group || "",
+        uom: item.stock_uom || "",
 
-    setItems(mapped);
+        // totals from top-level
+        openingQty: item.total_opening_qty ?? 0,
+        openingValue: Number(item.total_opening_value ?? 0),
+        inQty: item.total_in_qty ?? 0,
+        inValue: Number(item.total_in_value ?? 0),
+        outQty: item.total_out_qty ?? 0,
+        outValue: Number(item.total_out_value ?? 0),
+        balQty: item.total_bal_qty ?? 0,
+        balValue: Number(item.total_bal_val ?? 0),
+        buyValue: Number(item.total_buy_value ?? 0),
+        sellValue: Number(item.total_sell_value ?? 0),
 
-    setTotalItems(res?.message?.pagination?.total_records ?? 0);
-    setTotalPages(res?.message?.pagination?.total_pages ?? 1);
+        // from first batch
+        warehouse: item.batches?.[0]?.warehouse || "",
+        valuationRate: Number(item.batches?.[0]?.valuation_rate ?? 0),
+        batchNo: item.batches?.[0]?.batch_no || "-",
+        expiryDate: item.batches?.[0]?.expiry_date || null,
+        manufacturingDate: item.batches?.[0]?.manufacturing_date || null,
 
-  } catch (err) {
-    console.error(err);
-    showApiError("Failed to load stock entries");
-  } finally {
-    setLoading(false);
-    setInitialLoad(false);
-  }
-};
+        // raw batches for view modal
+        batches: item.batches || [],
+      }));
+
+      setItems(mapped);
+
+      setTotalItems(res?.message?.pagination?.total_records ?? 0);
+      setTotalPages(res?.message?.pagination?.total_pages ?? 1);
+    } catch (err) {
+      console.error(err);
+      showApiError("Failed to load stock entries");
+    } finally {
+      setLoading(false);
+      setInitialLoad(false);
+    }
+  };
+
   useEffect(() => {
     fetchItems();
-  }, [page, pageSize]);
+  }, [page, pageSize, searchTerm]);
 
   /*      HANDLERS
    */
@@ -151,10 +163,6 @@ const Items: React.FC = () => {
       showSuccess("Stock entry deleted successfully");
 
       setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
-
-      setDeleteModalOpen(false);
-
-      setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
       setDeleteModalOpen(false);
     } catch (error: any) {
       closeSwal();
@@ -174,7 +182,6 @@ const Items: React.FC = () => {
     try {
       await fetchItems();
       closeSwal();
-
       showSuccess(wasEdit ? "Stock entry updated" : "Stock entry created");
     } catch (err) {
       closeSwal();
@@ -192,19 +199,26 @@ const columns: Column<any>[] = [
     align: "left",
   },
   {
+    key: "itemName",
+    header: "Item Name",
+    align: "left",
+  },
+  {
     key: "itemGroup",
     header: "Item Group",
     align: "left",
   },
+
   {
-    key: "warehouse",
-    header: "Warehouse",
-    align: "left",
+    key: "openingQty",
+    header: "Opening Qty",
+    align: "right",
   },
   {
-    key: "uom",
-    header: "UOM",
-    align: "center",
+    key: "openingValue",
+    header: "Opening Value",
+    align: "right",
+    render: (i) => `INR ${i.openingValue.toLocaleString()}`,
   },
   {
     key: "inQty",
@@ -212,54 +226,68 @@ const columns: Column<any>[] = [
     align: "right",
   },
   {
+    key: "inValue",
+    header: "In Value",
+    align: "right",
+    render: (i) => `INR ${i.inValue.toLocaleString()}`,
+  },
+  {
     key: "outQty",
     header: "Out Qty",
     align: "right",
   },
   {
-    key: "qty",
+    key: "outValue",
+    header: "Out Value",
+    align: "right",
+    render: (i) => `INR ${i.outValue.toLocaleString()}`,
+  },
+  {
+    key: "balQty",
     header: "Balance Qty",
     align: "right",
   },
   {
-    key: "valuationRate",
-    header: "Valuation Rate",
-    align: "right",
-    render: (i) => `INR ${i.valuationRate.toLocaleString()}`,
-  },
-  {
-    key: "totalAmount",
+    key: "balValue",
     header: "Balance Value",
     align: "right",
-    render: (i) => (
-      <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-        INR {i.totalAmount.toLocaleString()}
-      </code>
-    ),
+    render: (i) => `INR ${i.balValue.toLocaleString()}`,
   },
   {
-    key: "actions",
-    header: "Actions",
-    align: "center",
-    render: (i) => (
-      <ActionGroup>
-        <ActionButton
-          type="view"
-          onClick={(e) => handleEdit(i.id, e)}
-          iconOnly
-        />
-
-        <ActionMenu
-          onEdit={() => {
-            setEditItem(i);
-            setShowModal(true);
-          }}
-          onDelete={(e) => handleDeleteClick(i, e)}
-        />
-      </ActionGroup>
-    ),
+    key: "buyValue",
+    header: "Buy Value",
+    align: "right",
+    render: (i) => `INR ${i.buyValue.toLocaleString()}`,
   },
-];
+  {
+    key: "sellValue",
+    header: "Sell Value",
+    align: "right",
+    render: (i) => `INR ${i.sellValue.toLocaleString()}`,
+  },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (i) => (
+        <ActionGroup>
+          <ActionButton
+            type="view"
+            onClick={(e) => handleEdit(i.id, e)}
+            iconOnly
+          />
+          <ActionMenu
+            onEdit={() => {
+              setEditItem(i);
+              setShowModal(true);
+            }}
+            onDelete={(e) => handleDeleteClick(i, e)}
+          />
+        </ActionGroup>
+      ),
+    },
+  ];
+
   /*      RENDER
    */
 
@@ -272,7 +300,10 @@ const columns: Column<any>[] = [
         enableColumnSelector
         showToolbar
         searchValue={searchTerm}
-        onSearch={setSearchTerm}
+        onSearch={(value) => {
+  setSearchTerm(value);
+  setPage(1);
+}}
         enableAdd
         addLabel="Stock Correction"
         onAdd={handleAdd}
@@ -283,7 +314,7 @@ const columns: Column<any>[] = [
         pageSizeOptions={[10, 25, 50, 100]}
         onPageSizeChange={(size) => {
           setPageSize(size);
-          setPage(1); // reset page
+          setPage(1);
         }}
         onPageChange={setPage}
       />
