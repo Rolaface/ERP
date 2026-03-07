@@ -1,32 +1,18 @@
 import React, { useState } from "react";
-import { Calendar, Clock, ClipboardList, Settings, User } from "lucide-react";
+import { Calendar, ClipboardList, Users } from "lucide-react";
 import LeaveManagement from "./LeaveApproval";
 import LeaveApply from "./LeaveApply";
 import History from "./History";
-import Setup from "./Setup";
-import EmployeeDashboard from "./EmployeeLeaveDashboard";
-import EmployeeHistory from "./EmployeeLeaveHistory";
+import LeaveAllocation from "../../../components/Hr/leave/setup/LeaveAllocation";
 
 const Leave: React.FC = () => {
   const [tab, setTab] = useState<
-    | "leave"
-    | "employeeDashboard"
-    | "leaveApply"
-    | "history"
-    | "employeeHistory"
-    | "setup"
-  >("leave");
+    | "assign"
+    | "approve"
+    | "apply"
+  >("assign");
+
   const [editLeaveId, setEditLeaveId] = useState<string | null>(null);
-
-  const handleGoToApply = () => {
-    setEditLeaveId(null);
-    setTab("leaveApply");
-  };
-
-  const handleEditLeave = (leaveId: string) => {
-    setEditLeaveId(leaveId);
-    setTab("leaveApply");
-  };
 
   return (
     <div className=" bg-app">
@@ -34,96 +20,67 @@ const Leave: React.FC = () => {
         {/* top tabs */}
         <div className="flex gap-8 overflow-x-auto">
           <button
-            onClick={() => setTab("leave")}
+            onClick={() => setTab("assign")}
             className={`flex items-center gap-2 text-sm font-semibold pb-2 border-b-2 transition ${
-              tab === "leave"
+              tab === "assign"
                 ? "text-primary border-primary"
                 : "text-muted border-transparent hover:text-main"
             }`}
           >
-            <Clock size={15} /> Leave Approval
+            <Users size={15} /> Assign / Balance
           </button>
 
           <button
-            onClick={() => setTab("employeeDashboard")}
+            onClick={() => setTab("approve")}
             className={`flex items-center gap-2 text-sm font-semibold pb-2 border-b-2 transition
     ${
-      tab === "employeeDashboard"
+      tab === "approve"
         ? "text-primary border-primary"
         : "text-muted border-transparent hover:text-main"
     }`}
           >
-            <User size={15} />
-            Employee Dashboard
+            <ClipboardList size={15} />
+            Approve
           </button>
           <button
-            onClick={() => setTab("leaveApply")}
+            onClick={() => setTab("apply")}
             className={`flex items-center gap-2 text-sm font-semibold pb-2 border-b-2 transition ${
-              tab === "leaveApply"
+              tab === "apply"
                 ? "text-primary border-primary"
                 : "text-muted border-transparent hover:text-main"
             }`}
           >
             <Calendar size={15} /> Leave Apply
           </button>
-
-          <button
-            onClick={() => setTab("employeeHistory")}
-            className={`flex items-center gap-2 text-sm font-semibold pb-2 border-b-2 transition
-    ${
-      tab === "employeeHistory"
-        ? "text-primary border-primary"
-        : "text-muted border-transparent hover:text-main"
-    }`}
-          >
-            <ClipboardList size={15} />
-            Employee History
-          </button>
-
-          <button
-            onClick={() => setTab("history")}
-            className={`flex items-center gap-2 text-sm font-semibold pb-2 border-b-2 transition
-    ${
-      tab === "history"
-        ? "text-primary border-primary"
-        : "text-muted border-transparent hover:text-main"
-    }`}
-          >
-            <ClipboardList size={15} />
-            History
-          </button>
-
-          <button
-            onClick={() => setTab("setup")}
-            className={`flex items-center gap-2 text-sm font-semibold pb-2 border-b-2 transition
-    ${
-      tab === "setup"
-        ? "text-primary border-primary"
-        : "text-muted border-transparent hover:text-main"
-    }`}
-          >
-            <Settings size={15} />
-            Setup
-          </button>
         </div>
 
         <div>
-          {tab === "leave" && <LeaveManagement />}
-
-          {tab === "leaveApply" && <LeaveApply editLeaveId={editLeaveId} />}
-
-          {tab === "employeeDashboard" && <EmployeeDashboard />}
-
-          {tab === "employeeHistory" && <EmployeeHistory />}
-
-          {tab === "history" && (
-            <History
-              onNewRequest={handleGoToApply}
-              onEditLeave={handleEditLeave}
+          {tab === "assign" && (
+            <LeaveAllocation
+              employeeId=""
+              onAdd={() => {
+                // allocation list refresh handled inside component
+              }}
             />
           )}
 
-          {tab === "setup" && <Setup />}
+          {tab === "approve" && (
+            <div className="space-y-6">
+              <LeaveManagement />
+              <History
+                onNewRequest={() => {
+                  setEditLeaveId(null);
+                  setTab("apply");
+                }}
+                onEditLeave={(leaveId) => {
+                  setEditLeaveId(leaveId);
+                  setTab("apply");
+                }}
+              />
+            </div>
+          )}
+
+          {tab === "apply" && <LeaveApply editLeaveId={editLeaveId} />}
         </div>
       </div>
     </div>

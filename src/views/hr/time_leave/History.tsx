@@ -6,11 +6,12 @@ import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import ActionButton from "../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../components/ui/Table/type";
 import { useTableLogic } from "../../../components/ui/Table/useTableLogic";
-import { getLeaveHistoryByEmployee } from "../../../api/leaveApi";
+import { getAllEmployeeLeaveHistory, getLeaveHistoryByEmployee } from "../../../api/leaveApi";
 import LeaveDetailModal from "../../../components/Hr/leave/LeaveDetailModal";
 import { cancelLeave } from "../../../api/leaveApi";
 import type { LeaveUI } from "../../../types/leave/uiLeave";
 import { mapLeaveFromApi } from "../../../types/leave/leaveMapper";
+import { getAllEmployees } from "../../../api/employeeapi";
 import {
   closeSwal,
   showApiError,
@@ -27,23 +28,44 @@ const History: React.FC<HistoryProps> = ({ onNewRequest, onEditLeave }) => {
   const [leaves, setLeaves] = useState<LeaveUI[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedLeaveId, setSelectedLeaveId] = useState<string | null>(null);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [employeeId, setEmployeeId] = useState<string>("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
+    const run = async () => {
+      try {
+        const res = await getAllEmployees(1, 200);
+        setEmployees(res.employees || []);
+      } catch {
+        setEmployees([]);
+      }
+    };
+
+    run();
+  }, []);
+
+  useEffect(() => {
     const fetchHistory = async () => {
       setLoading(true);
       try {
-        const res = await getLeaveHistoryByEmployee("20", page, pageSize);
+        const res = employeeId
+          ? await getLeaveHistoryByEmployee(employeeId, page, pageSize)
+          : await getAllEmployeeLeaveHistory(page, pageSize);
 
-        setLeaves(res.data.leaves.map(mapLeaveFromApi));
+        const list = res?.data?.leaves ?? res?.data?.leaveHistory ?? res?.data ?? [];
+        setLeaves((Array.isArray(list) ? list : []).map(mapLeaveFromApi));
 
-        const pg = res.data.pagination;
+        const pg = res?.data?.pagination ?? res?.pagination;
         if (pg) {
-          setTotalItems(pg.total);
-          setTotalPages(pg.total_pages);
+          setTotalItems(Number(pg.total ?? 0));
+          setTotalPages(Number(pg.total_pages ?? pg.totalPages ?? 1));
+        } else {
+          setTotalItems(Array.isArray(list) ? list.length : 0);
+          setTotalPages(1);
         }
       } finally {
         setLoading(false);
@@ -51,7 +73,7 @@ const History: React.FC<HistoryProps> = ({ onNewRequest, onEditLeave }) => {
     };
 
     fetchHistory();
-  }, [page, pageSize]);
+  }, [page, pageSize, employeeId]);
 
   const handleCancelLeave = async (leaveId: string) => {
     try {
@@ -237,7 +259,43 @@ const History: React.FC<HistoryProps> = ({ onNewRequest, onEditLeave }) => {
         searchValue={table.effectiveSearch}
         onSearch={table.setSearch}
         enableAdd
-        extraFilters={historyFilters}
+        extraFilters={
+          <>
+            <div className="relative">
+              <select
+                value={employeeId}
+                onChange={(e) => {
+                  setEmployeeId(e.target.value);
+                  setPage(1);
+                }}
+                className="
+                  appearance-none
+                  px-4 py-2
+                  pr-9
+                  rounded-xl
+                  border border-[var(--border)]
+                  bg-app
+                  text-[10px] font-black uppercase tracking-widest
+                  text-muted
+                  hover:text-primary hover:border-primary
+                  focus:outline-none focus:ring-2 focus:ring-primary/10
+                  cursor-pointer
+                "
+              >
+                <option value="">Employee: All</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    Employee: {e.name} ({e.employeeId})
+                  </option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">
+                ▾
+              </span>
+            </div>
+            {historyFilters}
+          </>
+        }
         addLabel="New Request"
         onAdd={onNewRequest}
         toolbarPlaceholder="Search reason / type..."
