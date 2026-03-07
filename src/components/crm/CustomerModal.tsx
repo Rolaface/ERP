@@ -656,6 +656,7 @@ const reset = () => {
                   value={form.onboardingBalance}
                   onChange={handleChange}
                   placeholder="0.00"
+                  className="no-spinner"
                 />
 
                 {/* Email + Mobile - span full width as a separate row */}

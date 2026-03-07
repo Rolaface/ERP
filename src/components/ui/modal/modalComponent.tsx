@@ -370,6 +370,7 @@ interface CreditDaysInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
   error?: string;
+  className?: string;
 }
 
 export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
@@ -378,6 +379,7 @@ export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
   onChange,
   required,
   error,
+  className,
 }) => {
   return (
     <label className="flex flex-col text-sm group min-w-0">
@@ -398,6 +400,7 @@ export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
             error
               ? "border-danger focus:border-danger"
               : "border-[var(--border)] hover:border-primary/40",
+              className,
           ].join(" ")}
           onFocus={(e) => {
             e.currentTarget.style.boxShadow = error

@@ -58,6 +58,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
             value={form.openingBalance}
             onChange={onChange}
             error={errors.openingBalance}
+            className="no-spinner"
           />
 
           <CreditDaysInput
@@ -66,6 +67,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
             onChange={onChange}
             required
             error={errors.paymentTerms}
+            className="no-spinner"
           />
 
           <ModalInput
