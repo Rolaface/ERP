@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, Plus, FileText } from "lucide-react";
 import { getLeaveAllocationsByEmployee } from "../../../../api/leaveApi";
+import { getAllEmployees } from "../../../../api/employeeapi";
 import { mapAllocationFromApi } from "../../../../types/leave/leaveMapper";
 import type { LeaveAllocationUI } from "../../../../types/leave/uiLeave";
+import LeaveAllocationForm from "./LeaveAllocationForm";
 
 export interface LeaveAllocationProps {
   employeeId: string;
@@ -15,27 +17,68 @@ const LeaveAllocation: React.FC<LeaveAllocationProps> = ({
   onAdd,
   onClose,
 }) => {
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(employeeId);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [allocations, setAllocations] = useState<LeaveAllocationUI[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
-    if (!employeeId) return;
+    setSelectedEmployeeId(employeeId);
+  }, [employeeId]);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const res = await getAllEmployees(1, 200);
+        setEmployees(res.employees || []);
+      } catch (err) {
+        console.error("Failed to fetch employees", err);
+        setEmployees([]);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedEmployeeId) return;
 
     const fetchAllocations = async () => {
       try {
         setLoading(true);
-        const res = await getLeaveAllocationsByEmployee(employeeId, 1, 20);
+        const res = await getLeaveAllocationsByEmployee(selectedEmployeeId, 1, 20);
         const list = res.data.allocations || [];
         setAllocations(list.map(mapAllocationFromApi));
       } catch (err) {
         console.error("Failed to fetch leave allocations", err);
+        setAllocations([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchAllocations();
-  }, [employeeId]);
+  }, [selectedEmployeeId]);
+
+  const refresh = async () => {
+    if (!selectedEmployeeId) {
+      setAllocations([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await getLeaveAllocationsByEmployee(selectedEmployeeId, 1, 20);
+      const list = res.data.allocations || [];
+      setAllocations(list.map(mapAllocationFromApi));
+    } catch (err) {
+      console.error("Failed to fetch leave allocations", err);
+      setAllocations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-card border border-theme rounded-2xl overflow-hidden">
@@ -54,7 +97,7 @@ const LeaveAllocation: React.FC<LeaveAllocationProps> = ({
         </div>
 
         <button
-          onClick={onAdd}
+          onClick={() => setShowForm(true)}
           className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl font-semibold transition"
         >
           <Plus size={18} />
@@ -67,12 +110,32 @@ const LeaveAllocation: React.FC<LeaveAllocationProps> = ({
         <span className="text-sm text-muted">
           {allocations.length} Allocations
         </span>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted">Employee</span>
+          <select
+            value={selectedEmployeeId}
+            onChange={(e) => setSelectedEmployeeId(e.target.value)}
+            className="px-3 py-1.5 text-xs border border-theme rounded-lg bg-app text-main"
+          >
+            <option value="">Select</option>
+            {employees.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name} ({e.employeeId})
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Content */}
       <div className="p-6">
         {loading ? (
           <div className="text-sm text-muted">Loading allocations…</div>
+        ) : !selectedEmployeeId ? (
+          <div className="text-sm text-muted">
+            Select an employee to view allocations.
+          </div>
         ) : allocations.length === 0 ? (
           /* Empty State */
           <div className="p-16 flex items-center justify-center">
@@ -122,6 +185,21 @@ const LeaveAllocation: React.FC<LeaveAllocationProps> = ({
           </div>
         )}
       </div>
+
+      {showForm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg">
+            <LeaveAllocationForm
+              employeeId={selectedEmployeeId}
+              onClose={() => setShowForm(false)}
+              onSuccess={async () => {
+                await refresh();
+                onAdd();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

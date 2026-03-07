@@ -315,13 +315,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
     setInvoiceDetailsId(null);
   };
 
-  const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (!window.confirm(`Delete invoice ${invoiceNumber}?`)) return;
-    // TODO: wire up delete API call
-    showSuccess("Invoice deleted successfully");
-    console.warn("Delete invoice:", invoiceNumber);
-  };
+
 
   const columns: Column<InvoiceSummary>[] = [
     {
@@ -404,13 +398,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
             type="view"
             onClick={(e) => handleViewClick(inv.invoiceNumber, e)}
             iconOnly
-          />
-          <ActionButton
-            type="delete"
-            iconOnly
-            label={null}
-            variant="danger"
-            onClick={(e) => handleDelete(inv.invoiceNumber, e)}
           />
         </ActionGroup>
       ),

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   getAllProformaInvoices,
   getProformaInvoiceById,
-  deleteProformaInvoiceById,
 } from "../../api/proformaInvoiceApi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -254,48 +253,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
     setDetailsOpen(true);
   };
 
-  const handleDelete = async (proformaId: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
 
-    const result = await Swal.fire({
-      icon: "warning",
-      title: "Are you sure?",
-      text: `Delete proforma invoice ${proformaId}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete",
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      Swal.fire({
-        title: "Deleting...",
-        text: "Please wait while we delete the invoice.",
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => Swal.showLoading(),
-      });
-
-      const res = await deleteProformaInvoiceById(proformaId);
-      Swal.close();
-
-      if (!res || res.status_code !== 200) {
-        showApiError(res?.message || "Delete failed");
-        return;
-      }
-
-      setInvoices((prev) =>
-        prev.filter((inv) => inv.proformaId !== proformaId),
-      );
-      showSuccess("Proforma invoice deleted successfully");
-    } catch (err) {
-      Swal.close();
-      showApiError(err);
-    }
-  };
 
   const mapProformaToInvoiceDetails = (raw: any): InvoiceDetails => {
     const items = Array.isArray(raw?.items)
@@ -402,13 +360,6 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
             type="view"
             onClick={(e) => handleView(inv.proformaId, e)}
             iconOnly
-          />
-          <ActionButton
-            type="delete"
-            iconOnly
-            label={null}
-            variant="danger"
-            onClick={(e) => handleDelete(inv.proformaId, e)}
           />
         </ActionGroup>
       ),

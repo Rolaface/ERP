@@ -90,7 +90,7 @@ export const HolidayList: React.FC<HolidayListProps> = ({ onAdd, onClose }) => {
               </p>
 
               <button
-                onClick={onAdd}
+                onClick={() => setShowForm(true)}
                 className="px-6 py-3 bg-primary rounded-xl font-semibold transition flex items-center gap-2 mx-auto"
               >
                 <Plus size={18} />
@@ -122,8 +122,8 @@ export const HolidayList: React.FC<HolidayListProps> = ({ onAdd, onClose }) => {
           <div className="bg-background w-full max-w-2xl rounded-lg">
             <HolidayListForm
               onClose={() => setShowForm(false)}
-              onSubmit={() => {
-                setShowForm(false);
+              onSuccess={() => {
+                fetchHolidays();
                 onAdd();
               }}
             />
