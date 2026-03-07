@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-export const ERP_BASE = "";
+export const ERP_BASE = ENV.apiBaseUrl;
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -200,7 +200,7 @@ export const API = {
    * STOCK
    * ========================= */
   stock: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_all_stock_entries`,
+    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_stock_balance`,
     getbyId: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_stock_by_id`,
     //  getAllStockItems:'${ERP_BASE}/api'
 
