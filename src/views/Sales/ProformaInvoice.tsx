@@ -6,14 +6,10 @@ import {
 } from "../../api/proformaInvoiceApi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { getCompanyById } from "../../api/companySetupApi";
-const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import type { ProformaInvoiceSummary } from "../../types/proformaInvoice";
-import { generateProformaInvoicePDF } from "../../components/template/proformatemplete/ProformaInvoiceTemplate";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
-  ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import {
@@ -60,7 +56,6 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [invoices, setInvoices] = useState<ProformaInvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [company, setCompany] = useState<any>(null);
 
   // ── Pagination (server) ───────────────────────────────────────────────────
   const [page, setPage] = useState(1);
@@ -83,15 +78,6 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
-
-  // ── Fetch company once ────────────────────────────────────────────────────
-  useEffect(() => {
-    getCompanyById(COMPANY_ID)
-      .then((res) => {
-        if (res?.status_code === 200) setCompany(res.data);
-      })
-      .catch(() => console.error("Failed to load company data"));
-  }, []);
 
   // ── Fetch invoices ────────────────────────────────────────────────────────
   const fetchInvoices = async () => {
@@ -268,33 +254,6 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
     setDetailsOpen(true);
   };
 
-  const handleDownload = async (proformaId: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    try {
-      showLoading("Preparing proforma invoice download...");
-
-      if (!company) {
-        closeSwal();
-        console.error("Company data not loaded");
-        return;
-      }
-
-      const res = await getProformaInvoiceById(proformaId);
-      if (!res || res.status_code !== 200) {
-        closeSwal();
-        showApiError("Failed to load invoice");
-        return;
-      }
-
-      await generateProformaInvoicePDF(res.data, company, "save");
-      closeSwal();
-      showSuccess("Proforma invoice downloaded");
-    } catch (err: any) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
-
   const handleDelete = async (proformaId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
@@ -444,10 +403,12 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
             onClick={(e) => handleView(inv.proformaId, e)}
             iconOnly
           />
-          <ActionMenu
-            showDownload
-            onDownload={(e) => handleDownload(inv.proformaId, e)}
-            onDelete={(e) => handleDelete(inv.proformaId, e)}
+          <ActionButton
+            type="delete"
+            iconOnly
+            label={null}
+            variant="danger"
+            onClick={(e) => handleDelete(inv.proformaId, e)}
           />
         </ActionGroup>
       ),

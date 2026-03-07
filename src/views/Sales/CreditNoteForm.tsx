@@ -95,7 +95,7 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
           const data = res.data;
 
           if (data) {
-            actions.setInvoiceFromApi(data);
+            actions.setFormDataFromInvoice(data);
 
             setCreditMeta((prev) => ({
               ...prev,

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getAllSalesInvoices, getSalesInvoiceById } from "../../api/salesApi";
+import { getAllSalesInvoices } from "../../api/salesApi";
 
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
@@ -9,7 +9,6 @@ const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
-  ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { getCompanyById } from "../../api/companySetupApi";
@@ -303,33 +302,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
     }
   };
 
-  const handleDownload = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    try {
-      showLoading("Preparing invoice download...");
-
-      if (!company) {
-        closeSwal();
-        showApiError("Company data not loaded");
-        return;
-      }
-
-      const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
-      if (!invoiceRes || invoiceRes.status_code !== 200) {
-        closeSwal();
-        showApiError("Failed to load invoice");
-        return;
-      }
-
-      await generateInvoicePDF(invoiceRes.data as Invoice, company, "save");
-      closeSwal();
-      showSuccess("Invoice downloaded successfully!");
-    } catch (err: any) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
-
   // PDF preview modal close (kept — do not remove)
   const handleClosePdf = () => {
     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
@@ -424,10 +396,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
             onClick={(e) => handleViewClick(inv.invoiceNumber, e)}
             iconOnly
           />
-          <ActionMenu
-            onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
-            showDownload
-            onDownload={(e) => handleDownload(inv, e)}
+          <ActionButton
+            type="delete"
+            iconOnly
+            label={null}
+            variant="danger"
+            onClick={(e) => handleDelete(inv.invoiceNumber, e)}
           />
         </ActionGroup>
       ),

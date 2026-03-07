@@ -6,12 +6,10 @@ import {
   closeSwal,
 } from "../../utils/alert";
 import { getAllQuotations, getQuotationById } from "../../api/quotationApi";
-import { getCompanyById } from "../../api/companySetupApi";
 import type { QuotationSummary } from "../../types/quotation";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
-  ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import InvoiceDetailsModal, {
   type InvoiceDetails,
@@ -19,9 +17,7 @@ import InvoiceDetailsModal, {
 import type { Column } from "../../components/ui/Table/type";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { generateQuotationPDF } from "../../components/template/quotation/QuotationTemplate1";
 
-const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 const SORT_FIELD_MAP: Record<string, string> = {
   quotationNumber: "id",
@@ -40,7 +36,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [company, setCompany] = useState<any>(null);
 
   // ── Pagination state (server) ────────────────────────────────────────────
   const [page, setPage] = useState(1);
@@ -67,15 +62,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
-
-  // ── Fetch company once ───────────────────────────────────────────────────
-  useEffect(() => {
-    getCompanyById(COMPANY_ID)
-      .then((res) => {
-        if (res?.status_code === 200) setCompany(res.data);
-      })
-      .catch(() => console.error("Failed to load company data"));
-  }, []);
 
   const fetchQuotations = async () => {
     try {
@@ -249,36 +235,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
     setDetailsOpen(true);
   };
 
-  const handleDownload = async (
-    quotationNumber: string,
-    e?: React.MouseEvent,
-  ) => {
-    e?.stopPropagation();
-    try {
-      showLoading("Preparing quotation download...");
-
-      if (!company) {
-        closeSwal();
-        console.error("Company data not loaded");
-        return;
-      }
-
-      const res = await getQuotationById(quotationNumber);
-      if (!res || res.status_code !== 200) {
-        closeSwal();
-        showApiError("Failed to load quotation");
-        return;
-      }
-
-      await generateQuotationPDF(res.data, company, "save");
-      closeSwal();
-      showSuccess("Quotation downloaded");
-    } catch (err: any) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
-
   const mapQuotationToInvoiceDetails = (raw: any): InvoiceDetails => {
     const items = Array.isArray(raw?.items)
       ? raw.items.map((it: any) => ({
@@ -362,10 +318,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
             type="view"
             onClick={(e) => handleView(q.quotationNumber, e)}
             iconOnly
-          />
-          <ActionMenu
-            showDownload
-            onDownload={(e) => handleDownload(q.quotationNumber, e)}
           />
         </ActionGroup>
       ),

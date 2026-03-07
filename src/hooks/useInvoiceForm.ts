@@ -78,6 +78,43 @@ export const useInvoiceForm = (
     loadCompanyData();
   }, [isOpen, mode]);
 
+  const getCustomerDetailsFromInvoice = (invoice: any) => {
+    const direct =
+      invoice?.customer ??
+      invoice?.customerDetails ??
+      invoice?.customer_detail ??
+      invoice?.Customer;
+    if (direct && typeof direct === "object") return direct;
+
+    const name =
+      invoice?.customerName ??
+      invoice?.customer_name ??
+      invoice?.customer ??
+      invoice?.buyerName ??
+      invoice?.buyer_name;
+    const email =
+      invoice?.customerEmail ??
+      invoice?.customer_email ??
+      invoice?.email ??
+      invoice?.buyerEmail ??
+      invoice?.buyer_email;
+    const mobile_no =
+      invoice?.customerPhone ??
+      invoice?.customer_phone ??
+      invoice?.mobile_no ??
+      invoice?.phone ??
+      invoice?.buyerPhone ??
+      invoice?.buyer_phone;
+
+    if (!name && !email && !mobile_no) return null;
+
+    return {
+      name: name ?? "",
+      email: email ?? "",
+      mobile_no: mobile_no ?? "",
+    };
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -239,7 +276,9 @@ export const useInvoiceForm = (
       items: mappedItems,
     }));
 
-    setCustomerDetails(invoice.customer);
+    const nextCustomer = getCustomerDetailsFromInvoice(invoice);
+    setCustomerDetails(nextCustomer);
+    setCustomerNameDisplay(String(nextCustomer?.name ?? ""));
   };
 
   const validateForm = (): boolean => {
@@ -646,8 +685,9 @@ export const useInvoiceForm = (
       }),
     }));
 
-    setCustomerDetails(invoice.customer);
-    setCustomerNameDisplay(invoice.customer?.name ?? "");
+    const nextCustomer = getCustomerDetailsFromInvoice(invoice);
+    setCustomerDetails(nextCustomer);
+    setCustomerNameDisplay(String(nextCustomer?.name ?? ""));
   };
 
   const setTerms = (selling: TermSection) => {

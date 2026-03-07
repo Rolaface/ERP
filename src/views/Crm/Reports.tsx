@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Users, DollarSign, Calculator, Crown } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -47,6 +48,20 @@ const CRMReports: React.FC = () => {
     currency: "ZMW" as "ZMW" | "USD" | "ZAR" | "GBP" | "CNY" | "EUR",
     search: "",
   });
+
+  const chartColors = useMemo(
+    () => ({
+      primary: "var(--primary)",
+      primary700: "var(--primary-700)",
+      brandBlue: "var(--brand-blue-bottom)",
+      brandBlueTop: "var(--brand-blue-top)",
+      success: "var(--success)",
+      danger: "var(--danger)",
+      warning: "#f59e0b",
+      purple: "#a855f7",
+    }),
+    [],
+  );
 
   const [topCustomersPage, setTopCustomersPage] = useState(1);
 
@@ -227,12 +242,12 @@ const CRMReports: React.FC = () => {
       map.set(cur, (map.get(cur) ?? 0) + 1);
     }
     const palette = [
-      "#2563eb",
-      "#10b981",
-      "#f59e0b",
-      "#a855f7",
-      "#ef4444",
-      "#06b6d4",
+      chartColors.brandBlue,
+      chartColors.primary,
+      chartColors.brandBlueTop,
+      chartColors.success,
+      chartColors.danger,
+      chartColors.warning,
     ];
     return Array.from(map.entries())
       .sort((a, b) => b[1] - a[1])
@@ -242,7 +257,7 @@ const CRMReports: React.FC = () => {
         value: count,
         color: palette[idx],
       }));
-  }, [customersFilteredByType]);
+  }, [customersFilteredByType, chartColors]);
 
   const totalRevenue = useMemo(
     () =>
@@ -494,16 +509,19 @@ const CRMReports: React.FC = () => {
         label: "Total Customers",
         value: String(customersFilteredByType.length),
         sub: filters.type === "all" ? "All types" : filters.type,
+        icon: Users,
       },
       {
         label: "Revenue",
         value: `${filters.currency} ${currencyFormatter(totalRevenue)}`,
         sub: `Invoices: ${invoices.length}`,
+        icon: DollarSign,
       },
       {
         label: "Avg. Order Value",
         value: `${filters.currency} ${currencyFormatter(avgOrderValue)}`,
         sub: `Range: ${filters.dateRange.replace("_", " ")}`,
+        icon: Calculator,
       },
       {
         label: "Top Customer",
@@ -511,6 +529,7 @@ const CRMReports: React.FC = () => {
         sub: topCustomer
           ? `${filters.currency} ${currencyFormatter(topCustomer.revenue)}`
           : "No data",
+        icon: Crown,
       },
     ],
     [
@@ -580,7 +599,7 @@ const CRMReports: React.FC = () => {
           ? Array.from({ length: 4 }).map((_, idx) => (
               <div
                 key={idx}
-                className="bg-card border border-theme rounded-xl p-4"
+                className="bg-card border border-theme rounded-2xl p-5 shadow-sm"
               >
                 <div className="h-3 w-24 bg-gray-300/80 rounded animate-pulse" />
                 <div className="mt-3 h-6 w-40 bg-gray-300/80 rounded animate-pulse" />
@@ -590,13 +609,43 @@ const CRMReports: React.FC = () => {
           : kpis.map((k) => (
               <div
                 key={k.label}
-                className="bg-card border border-theme rounded-xl p-4"
+                className={`bg-card border border-theme rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow border-l-4 ${
+                  k.label === "Revenue"
+                    ? "border-l-primary"
+                    : k.label === "Avg. Order Value"
+                      ? "border-l-[var(--brand-blue-bottom)]"
+                      : k.label === "Top Customer"
+                        ? "border-l-[var(--primary-700)]"
+                        : "border-l-[var(--brand-blue-top)]"
+                }`}
               >
-                <div className="text-xs text-muted">{k.label}</div>
-                <div className="mt-2 text-lg font-semibold text-main">
-                  {k.value}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted">
+                      {k.label}
+                    </div>
+                    <div className="mt-2 text-2xl font-extrabold text-main leading-tight break-words">
+                      {k.value}
+                    </div>
+                    <div className="mt-2 text-xs text-muted font-semibold break-words">
+                      {k.sub}
+                    </div>
+                  </div>
+
+                  <div
+                    className={`shrink-0 w-10 h-10 rounded-xl border border-theme flex items-center justify-center ${
+                      k.label === "Revenue"
+                        ? "bg-primary/10 text-primary"
+                        : k.label === "Avg. Order Value"
+                          ? "bg-[rgba(33,158,188,0.10)] text-[var(--brand-blue-bottom)]"
+                          : k.label === "Top Customer"
+                            ? "bg-primary/10 text-[var(--primary-700)]"
+                            : "bg-[rgba(142,202,230,0.18)] text-[var(--brand-blue-bottom)]"
+                    }`}
+                  >
+                    <k.icon className="w-5 h-5" />
+                  </div>
                 </div>
-                <div className="mt-1 text-[11px] text-muted">{k.sub}</div>
               </div>
             ))}
       </div>
@@ -634,12 +683,12 @@ const CRMReports: React.FC = () => {
                     >
                       <stop
                         offset="5%"
-                        stopColor="#2563eb"
+                        stopColor={chartColors.brandBlue}
                         stopOpacity={0.35}
                       />
                       <stop
                         offset="95%"
-                        stopColor="#2563eb"
+                        stopColor={chartColors.brandBlue}
                         stopOpacity={0.04}
                       />
                     </linearGradient>
@@ -661,7 +710,10 @@ const CRMReports: React.FC = () => {
                     width={32}
                   />
                   <Tooltip
-                    cursor={{ stroke: "rgba(37,99,235,0.2)", strokeWidth: 1 }}
+                    cursor={{
+                      stroke: "rgba(204,0,0,0.18)",
+                      strokeWidth: 1,
+                    }}
                     contentStyle={tooltipLight}
                     labelStyle={{ color: "rgba(15,23,42,1)", fontWeight: 600 }}
                     labelFormatter={(_: any, payload: any) =>
@@ -672,10 +724,14 @@ const CRMReports: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="value"
-                    stroke="#2563eb"
+                    stroke={chartColors.brandBlue}
                     strokeWidth={2}
                     fill="url(#activityFill)"
-                    dot={{ r: 3, strokeWidth: 2, fill: "#2563eb" }}
+                    dot={{
+                      r: 3,
+                      strokeWidth: 2,
+                      fill: chartColors.brandBlue,
+                    }}
                     activeDot={{ r: 5 }}
                   />
                 </AreaChart>
@@ -726,7 +782,7 @@ const CRMReports: React.FC = () => {
                       width={44}
                     />
                     <Tooltip
-                      cursor={{ fill: "rgba(37,99,235,0.08)" }}
+                      cursor={{ fill: "rgba(204,0,0,0.08)" }}
                       contentStyle={tooltipLight}
                       formatter={(v: any) => [
                         `${filters.currency} ${currencyFormatter(Number(v) || 0)}`,
@@ -735,7 +791,7 @@ const CRMReports: React.FC = () => {
                     />
                     <Bar
                       dataKey="revenue"
-                      fill="#2563eb"
+                      fill={chartColors.primary}
                       radius={[8, 8, 0, 0]}
                     />
                   </BarChart>
