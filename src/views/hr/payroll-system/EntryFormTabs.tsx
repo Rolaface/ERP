@@ -259,6 +259,7 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   const [multiAssignmentsLoading, setMultiAssignmentsLoading] = useState(false);
 
   const lastAutoSelectedStructureRef = useRef<string>("");
+  const lastAutoPreviewRef = useRef<string>("");
 
   const miniInputCls =
     "w-56 px-2.5 py-2 bg-app border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[rgba(204,0,0,0.12)] transition";
@@ -385,6 +386,59 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
       return;
     }
   }, [selectionMode]);
+
+  React.useEffect(() => {
+    if (selectionMode !== "single") return;
+    if (singleSubmitting || singleAssignmentLoading) return;
+    if (!selectedSingleEmployeeId) return;
+    if (!String(singleSalaryStructureName || "").trim()) return;
+    if (singleModalOpen) return;
+
+    const key = `single:${selectedSingleEmployeeId}:${String(singleSalaryStructureName).trim()}`;
+    if (lastAutoPreviewRef.current === key) return;
+    lastAutoPreviewRef.current = key;
+
+    setSingleModalOpen(true);
+  }, [
+    selectionMode,
+    selectedSingleEmployeeId,
+    singleSalaryStructureName,
+    singleSubmitting,
+    singleAssignmentLoading,
+    singleModalOpen,
+  ]);
+
+  React.useEffect(() => {
+    if (selectionMode !== "multiple") return;
+    if (multiSubmitting) return;
+    if (multiModalOpen) return;
+    if (data.selectedEmployees.length === 0) return;
+    if (!String(multiSalaryStructureName || "").trim()) return;
+
+    if (!String(data.startDate ?? "").trim() || !String(data.endDate ?? "").trim()) {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const toIso = (d: Date) => d.toISOString().slice(0, 10);
+      onChange("startDate", toIso(start));
+      onChange("endDate", toIso(end));
+    }
+
+    const key = `multi:${data.selectedEmployees.join(",")}:${String(multiSalaryStructureName).trim()}`;
+    if (lastAutoPreviewRef.current === key) return;
+    lastAutoPreviewRef.current = key;
+
+    setMultiModalOpen(true);
+  }, [
+    selectionMode,
+    data.selectedEmployees,
+    data.startDate,
+    data.endDate,
+    multiSalaryStructureName,
+    multiSubmitting,
+    multiModalOpen,
+    onChange,
+  ]);
 
   React.useEffect(() => {
     if (selectionMode !== "multiple") return;
@@ -957,14 +1011,30 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
               {isLoading ? (
                 <div className="h-9 w-44 bg-theme/60 rounded-lg animate-pulse" />
               ) : (
-                <select
-                  value={selectionMode}
-                  onChange={(e) => setSelectionMode(e.target.value as any)}
-                  className={miniSelectCls}
-                >
-                  <option value="multiple">Multiple Payroll</option>
-                  <option value="single">Single Payroll</option>
-                </select>
+                <div className="flex items-center gap-3 px-3 py-2 bg-app border border-theme rounded-lg">
+                  <label className="inline-flex items-center gap-2 text-xs font-bold text-main cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payroll-selection-mode"
+                      value="single"
+                      checked={selectionMode === "single"}
+                      onChange={() => setSelectionMode("single")}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    Single
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-xs font-bold text-main cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payroll-selection-mode"
+                      value="multiple"
+                      checked={selectionMode === "multiple"}
+                      onChange={() => setSelectionMode("multiple")}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    Multiple
+                  </label>
+                </div>
               )}
 
               {selectionMode === "multiple" && !isLoading && (
@@ -1026,132 +1096,6 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                 <div className="h-6 w-24 bg-theme/60 rounded-full animate-pulse" />
               ) : (
                 <div className="flex items-center gap-2">
-                  {selectionMode === "single" && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (singleSubmitting) return;
-                          void runSinglePayroll();
-                        }}
-                        disabled={
-                          !canRunSinglePayroll ||
-                          singleSubmitting ||
-                          singleAssignmentLoading
-                        }
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-primary text-white hover:opacity-90 disabled:opacity-40"
-                      >
-                        Run Payroll
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setSingleModalOpen(true)}
-                        disabled={!selectedSingleEmployeeId}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border border-theme bg-card text-main hover:bg-app disabled:opacity-40"
-                      >
-                        Preview Payroll
-                      </button>
-                    </>
-                  )}
-
-                  {selectionMode === "multiple" && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (multiSubmitting) return;
-
-                          if (data.selectedEmployees.length === 0) {
-                            toast.error("Please select employees");
-                            return;
-                          }
-
-                          if (!String(multiSalaryStructureName ?? "").trim()) {
-                            toast.error("Please select a salary structure");
-                            return;
-                          }
-
-                          if (
-                            !String(data.startDate ?? "").trim() ||
-                            !String(data.endDate ?? "").trim()
-                          ) {
-                            const now = new Date();
-                            const start = new Date(
-                              now.getFullYear(),
-                              now.getMonth(),
-                              1,
-                            );
-                            const end = new Date(
-                              now.getFullYear(),
-                              now.getMonth() + 1,
-                              0,
-                            );
-                            onChange(
-                              "startDate",
-                              start.toISOString().slice(0, 10),
-                            );
-                            onChange("endDate", end.toISOString().slice(0, 10));
-                          }
-
-                          void runMultiplePayroll();
-                        }}
-                        disabled={!canRunMultiplePayroll || multiSubmitting}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-primary text-white hover:opacity-90 disabled:opacity-40"
-                      >
-                        Run Payroll
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (multiSubmitting) return;
-
-                          if (data.selectedEmployees.length === 0) {
-                            toast.error("Please select employees");
-                            return;
-                          }
-
-                          if (!String(multiSalaryStructureName ?? "").trim()) {
-                            toast.error("Please select a salary structure");
-                            return;
-                          }
-
-                          if (
-                            !String(data.startDate ?? "").trim() ||
-                            !String(data.endDate ?? "").trim()
-                          ) {
-                            const now = new Date();
-                            const start = new Date(
-                              now.getFullYear(),
-                              now.getMonth(),
-                              1,
-                            );
-                            const end = new Date(
-                              now.getFullYear(),
-                              now.getMonth() + 1,
-                              0,
-                            );
-                            onChange(
-                              "startDate",
-                              start.toISOString().slice(0, 10),
-                            );
-                            onChange("endDate", end.toISOString().slice(0, 10));
-                          }
-
-                          setMultiModalOpen(true);
-                        }}
-                        disabled={
-                          data.selectedEmployees.length === 0 ||
-                          !String(multiSalaryStructureName ?? "").trim()
-                        }
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border border-theme bg-card text-main hover:bg-app disabled:opacity-40"
-                      >
-                        Preview Payroll
-                      </button>
-                    </>
-                  )}
-
                   <button
                     type="button"
                     onClick={() => {
