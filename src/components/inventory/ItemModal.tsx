@@ -371,13 +371,12 @@ const ItemModal: React.FC<{
                           {/* Packing */}
                           <DynamicFieldWrapper className="w-[120px]">
                             <div className="flex flex-col gap-0.5">
-                              <FieldLabel label="Packing Unit" required />
+                              <FieldLabel label="Packing Unit" />
                               <div className="flex items-center gap-1 h-8">
                                 <input
                                   type="number"
-                                  name="packingunit"
-                                  value={form.packingunit || ""}
-                                  required
+                                  name="packingUnit"
+                                  value={form.packingUnit || ""}
                                   onChange={handleForm}          
                                   className="w-15 h-8 rounded-md border border-theme bg-card text-main  text-sm px-1
                                 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner"
@@ -385,9 +384,8 @@ const ItemModal: React.FC<{
                                 <span className="text-muted text-sm font-bold">×</span>
                                 <input
                                   type="number"
-                                  name="packingsize"
-                                  value={form.packingsize || ""}
-                                  required
+                                  name="packingSize"
+                                  value={form.packingSize || ""}
                                   onChange={handleForm}
                                   className="w-15 h-8 rounded-md border border-theme bg-card text-main text-sm px-1
                                   focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner"

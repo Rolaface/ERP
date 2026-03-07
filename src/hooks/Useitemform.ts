@@ -20,8 +20,8 @@ export const emptyForm: Record<string, any> = {
   itemTypeCode: "",
   originNationCode: "",
   packagingUnitCode: "",
-  pakingunit: 1,
-  packingsize: 1,
+  packingUnit: 1,
+  packingSize: 1,
   svcCharge: "",
   ins: "",
   sellingPrice: "",
@@ -71,8 +71,8 @@ const buildPayload = (form: Record<string, any>) => ({
   itemTypeCode: Number(form.itemTypeCode),
   originNationCode: form.originNationCode,
   packagingUnitCode: form.packagingUnitCode,
-  packingunit: form.packingunit || "",
-  packingsize: form.packingsize || "",
+  packingUnit: form.packingUnit || "",
+  packingSize: form.packingSize || "",
   svcCharge: form.svcCharge,
   ins: form.ins,
   sellingPrice: Number(form.sellingPrice),
@@ -276,10 +276,10 @@ export const useItemForm = ({
           initialData.taxInfo?.countryCode ?? initialData.countryCode ?? "",
 
         // API returns packingUnit / packingSize (capital U, capital S).
-        // Form state uses packingunit / packingsize (all lowercase).
+        // Form state uses packingUnit / packingSize (all lowercase).
         // Explicit remap so edit mode pre-fills these inputs correctly.
-        pakingunit: initialData.pakingUnit ?? initialData.pakingunit ?? "",
-        packingsize: initialData.packingsize ?? initialData.packingsize ?? "",
+        packingUnit: initialData.packingUnit ?? initialData.packingUnit ?? "",
+        packingSize: initialData.packingSize ?? initialData.packingSize ?? "",
 
         // Flatten vendorInfo
         preferredVendor:
@@ -448,18 +448,8 @@ export const useItemForm = ({
       { field: "itemGroup", label: "Item Category" },
       { field: "itemName", label: "Item Name" },
       { field: "description", label: "Description" },
-      { field: "packagingUnitCode", label: "Packaging Unit" },
       { field: "originNationCode", label: "Country of Origin" },
       { field: "unitOfMeasureCd", label: "Unit of Measurement" },
-      { field: "svcCharge", label: "Service Charge" },
-      { field: "ins", label: "Insurance" },
-      { field: "sku", label: "SKU" },
-      { field: "sellingPrice", label: "Selling Price", isNumeric: true },
-      { field: "salesAccount", label: "Sales Account" },
-      { field: "buyingPrice", label: "Buying Price", isNumeric: true },
-      { field: "purchaseAccount", label: "Purchase Account" },
-      { field: "taxPreference", label: "Tax Preference" },
-      { field: "preferredVendor", label: "Preferred Vendor" },
     ];
 
     for (const { field, label, isNumeric } of requiredFields) {
