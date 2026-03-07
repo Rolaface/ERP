@@ -618,7 +618,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   subtitle="Delivery location"
                   data={formData.shippingAddress}
                   sameAsBilling={ui.sameAsBilling}
-                  onSameAsBillingChange={actions.handleSameAsBillingChange}
+                  onSameAsBillingChange={(v) =>
+                    actions.handleSameAsBillingChange(v)
+                  }
                   onChange={(
                     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
                   ) => actions.handleInputChange(e, "shippingAddress")}

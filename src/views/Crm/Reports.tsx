@@ -191,9 +191,7 @@ const CRMReports: React.FC = () => {
   const normalizeCustomerType = (
     raw: unknown,
   ): "Company" | "Individual" | "" => {
-    const t = safeKey(raw)
-      .trim()
-      .toLowerCase();
+    const t = safeKey(raw).trim().toLowerCase();
     if (t === "company") return "Company";
     if (t === "individual") return "Individual";
     return "";
@@ -383,9 +381,7 @@ const CRMReports: React.FC = () => {
     const customersIndex = new Map<string, CustomerSummary>();
 
     const addCustomerKey = (k: unknown, c: CustomerSummary) => {
-      const key = safeKey(k)
-        .trim()
-        .toLowerCase();
+      const key = safeKey(k).trim().toLowerCase();
       if (!key) return;
       if (!customersIndex.has(key)) customersIndex.set(key, c);
     };
