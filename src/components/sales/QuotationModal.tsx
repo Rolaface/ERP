@@ -152,7 +152,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       : "grid-cols-[minmax(220px,1.5fr)_repeat(5,minmax(100px,1fr))]"
     }
     gap-x-2
-    items-end
+    items-start
   `}
 >
                   {/* Customer */}

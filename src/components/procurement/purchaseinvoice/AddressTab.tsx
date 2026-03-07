@@ -1,13 +1,14 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Checkbox } from "../../ui/modal/formComponent";
 import type { PurchaseOrderFormData } from "../../../types/Supply/purchaseOrder";
+import type { PurchaseInvoiceFormData } from "../../../types/Supply/purchaseInvoice";
 import { MapPin, Truck, Building2, Plus, Minus } from "lucide-react";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import SearchSelect from "../../ui/modal/SearchSelect";
 import { getRolaCountryList } from "../../../api/lookupApi";
 
 interface AddressTabProps {
-  form: PurchaseOrderFormData;
+  form: PurchaseOrderFormData | PurchaseInvoiceFormData;
   onFormChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
@@ -24,7 +25,11 @@ interface Country {
   code: string;
 }
 
-type AddressKey = keyof PurchaseOrderFormData["addresses"];
+type AddressKey =
+  | "supplierAddress"
+  | "dispatchAddress"
+  | "shippingAddress"
+  | "companyBillingAddress";
 
 /*  Address Block  */
 
@@ -32,7 +37,7 @@ const AddressBlock: React.FC<{
   title: string;
   icon: any;
   keyName: AddressKey;
-  data: PurchaseOrderFormData["addresses"][AddressKey];
+  data: any;
   isOpen: boolean;
   onToggle: () => void;
   onFormChange: (
@@ -150,7 +155,7 @@ const AddressBlock: React.FC<{
             <ModalInput
               label="City/Town"
               name={`addresses.${keyName}.city`}
-              value={data?.city || ""}
+              value={data?.city ?? ""}
               onChange={onFormChange}
             />
 
@@ -164,7 +169,7 @@ const AddressBlock: React.FC<{
 
             <SearchSelect
               label="Country"
-              value={selectedCountry?.country_name || ""}
+              value={selectedCountry?.country_name ?? ""}
               onChange={(val) =>
                 onFormChange({
                   target: {
@@ -252,20 +257,34 @@ export const AddressTab: React.FC<AddressTabProps> = ({
 
   /*  Copy helper  */
 
-  const copyAddress = useCallback(
-    (from: PurchaseOrderFormData["addresses"][AddressKey], toKey: AddressKey) => {
-      Object.entries(from).forEach(([field, value]) => {
-        onFormChange({
-          target: {
-            name: `addresses.${toKey}.${field}`,
-            value: value ?? "",
-          },
-        } as React.ChangeEvent<HTMLInputElement>);
-      });
-    },
-    [onFormChange]
-  );
+const copyAddress = useCallback(
+  (from: any, toKey: AddressKey) => {
+    if (!from) return;
 
+    const allowedFields = [
+      "addressTitle",
+      "addressType",
+      "addressLine1",
+      "addressLine2",
+      "city",
+      "state",
+      "country",
+      "postalCode",
+      "phone",
+      "email",
+    ];
+
+    allowedFields.forEach((field) => {
+      onFormChange({
+        target: {
+          name: `addresses.${toKey}.${field}`,
+          value: from[field] ?? "",
+        },
+      } as React.ChangeEvent<HTMLInputElement>);
+    });
+  },
+  [onFormChange]
+);
 const handleCopySupplierToDispatch = useCallback(
   (checked: boolean) => {
     onFormChange({
@@ -277,48 +296,49 @@ const handleCopySupplierToDispatch = useCallback(
       },
     } as any);
 
-    if (checked) {
-      copyAddress(form.addresses.supplierAddress, "dispatchAddress");
+   if (checked && form.addresses?.supplierAddress) {
+  copyAddress(form.addresses.supplierAddress, "dispatchAddress");
+}
+  },
+  [form.addresses, copyAddress]
+);
+ const handleCopyBillingToShipping = useCallback(
+  (checked: boolean) => {
+    onFormChange({
+      target: {
+        name: "useShippingAddress",
+        value: checked,
+        type: "checkbox",
+        checked,
+      },
+    } as any);
+
+    if (checked && form.addresses?.companyBillingAddress) {
+      copyAddress(form.addresses.companyBillingAddress, "shippingAddress");
     }
   },
-  [form.addresses.supplierAddress, copyAddress]
+  [form.addresses, copyAddress]
 );
-  const handleCopyBillingToShipping = useCallback(
-    (checked: boolean) => {
-      onFormChange({
-        target: {
-          name: "useShippingAddress",
-          value: checked,
-          type: "checkbox",
-          checked,
-        },
-      } as any);
-      if (checked) {
-        copyAddress(form.addresses.companyBillingAddress, "shippingAddress");
-      }
-    },
-    [form.addresses.companyBillingAddress, copyAddress]
-  );
 
-  const supplierData = useMemo(
-    () => form.addresses.supplierAddress,
-    [form.addresses.supplierAddress]
-  );
+const supplierData = useMemo(
+  () => form.addresses?.supplierAddress,
+  [form.addresses]
+);
 
-  const companyBillingData = useMemo(
-    () => form.addresses.companyBillingAddress,
-    [form.addresses.companyBillingAddress]
-  );
+const companyBillingData = useMemo(
+  () => form.addresses?.companyBillingAddress,
+  [form.addresses]
+);
 
-  const shippingData = useMemo(
-    () => form.addresses.shippingAddress,
-    [form.addresses.shippingAddress]
-  );
+const shippingData = useMemo(
+  () => form.addresses?.shippingAddress,
+  [form.addresses]
+);
 
-  const dispatchData = useMemo(
-    () => form.addresses.dispatchAddress,
-    [form.addresses.dispatchAddress]
-  );
+const dispatchData = useMemo(
+  () => form.addresses?.dispatchAddress,
+  [form.addresses]
+);
 
   /* Reset handlers — clears custom value AND resets form field to "" so select re-appears */
   const handleResetShippingRule = useCallback(() => {
@@ -452,7 +472,7 @@ const handleCopySupplierToDispatch = useCallback(
             title="Company Billing Address"
             icon={Building2}
             keyName="companyBillingAddress"
-            data={companyBillingData}
+            data={companyBillingData || {}}
             isOpen={open.companyBillingAddress}
             onToggle={() => toggle("companyBillingAddress")}
             onFormChange={onFormChange}
@@ -462,7 +482,7 @@ const handleCopySupplierToDispatch = useCallback(
             title="Supplier Address"
             icon={MapPin}
             keyName="supplierAddress"
-            data={supplierData}
+            data={supplierData || {}}
             isOpen={open.supplierAddress}
             onToggle={() => toggle("supplierAddress")}
             onFormChange={onFormChange}
@@ -475,13 +495,13 @@ const handleCopySupplierToDispatch = useCallback(
             title="Shipping Address"
             icon={Truck}
             keyName="shippingAddress"
-            data={shippingData}
+            data={shippingData || {}}
             isOpen={open.shippingAddress}
             onToggle={() => toggle("shippingAddress")}
             onFormChange={onFormChange}
             showCopyCheckbox
             copyCheckboxLabel="Same as Billing"
-            copyChecked={form.useShippingAddress}
+            copyChecked={"useShippingAddress" in form ? form.useShippingAddress : false}
             onCopyToggle={handleCopyBillingToShipping}
           />
 
@@ -489,13 +509,13 @@ const handleCopySupplierToDispatch = useCallback(
             title="Dispatch Address"
             icon={Truck}
             keyName="dispatchAddress"
-            data={dispatchData}
+            data={dispatchData || {}}
             isOpen={open.dispatchAddress}
             onToggle={() => toggle("dispatchAddress")}
             onFormChange={onFormChange}
             showCopyCheckbox
             copyCheckboxLabel="Same as Supplier"
-            copyChecked={form.useDispatchAddress}
+            copyChecked={"useDispatchAddress" in form ? form.useDispatchAddress : false}
             onCopyToggle={handleCopySupplierToDispatch}
           />
         </div>

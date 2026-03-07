@@ -22,8 +22,8 @@ interface DetailsTabProps {
   onRemoveItem: (idx: number) => void;
   getCurrencySymbol: () => string;
 
-  fromPO: boolean;
-  setFromPO: React.Dispatch<React.SetStateAction<boolean>>;
+  fromPO?: boolean;
+setFromPO?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const DetailsTab = ({
@@ -64,7 +64,7 @@ export const DetailsTab = ({
   return (
     <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
       <div className="bg-app">
-        <div className="grid grid-cols-[minmax(300px,380px)_repeat(4,135px)] gap-x-2 items-end">
+        <div className="grid grid-cols-[minmax(300px,380px)_repeat(4,135px)] gap-x-2 items-start">
           <div className="max-w-[380px]">
             <SupplierSelect
               className="w-full"

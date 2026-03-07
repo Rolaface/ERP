@@ -136,9 +136,11 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                   onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
                 />
               </div>
-              {errors.phoneNo && (
-                <span className="text-[10px] text-danger mt-1">{errors.phoneNo}</span>
-              )}
+              <div className="min-h-[14px] mt-1">
+  {errors.phoneNo && (
+    <span className="text-[10px] text-danger">{errors.phoneNo}</span>
+  )}
+</div>
             </div>
 
             {/* Alternate No */}

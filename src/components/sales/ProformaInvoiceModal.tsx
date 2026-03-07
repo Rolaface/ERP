@@ -56,12 +56,20 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     "address",
     "terms",
   ];
-  const handleNext = () => {
+const handleNext = () => {
+  try {
+    actions.validateForm(); // same validation as quotation
+
     const currentIndex = tabs.indexOf(ui.activeTab as any);
+
     if (currentIndex < tabs.length - 1) {
       ui.setActiveTab(tabs[currentIndex + 1]);
     }
-  };
+
+  } catch (err: any) {
+    showApiError(err.message);
+  }
+};
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,7 +224,7 @@ ${ui.isExport
                       ? "grid-cols-[minmax(120px,0.6fr)_100px_100px_90px_110px_120px_100px]"
                       : "grid-cols-[minmax(120px,0.7fr)_105px_105px_100px_115px_115px]"
                     }
-                  gap-x-2 items-end`}
+                  gap-x-2 items-start`}
                 >
 
                   <div>

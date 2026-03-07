@@ -61,12 +61,19 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   ];
   // Removed allowSubmit effect, no longer needed.
   const handleNext = () => {
+  try {
+    actions.validateForm();
+
     const currentIndex = tabs.indexOf(ui.activeTab as any);
+
     if (currentIndex < tabs.length - 1) {
       ui.setActiveTab(tabs[currentIndex + 1]);
-      // setAllowSubmit(false); // removed, no longer needed
     }
-  };
+
+  } catch (err: any) {
+    showApiError(err.message);
+  }
+};
 
   const symbol = currencySymbols[formData.currencyCode] || "";
   const showExchangeRate =
@@ -177,7 +184,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     : showExportField
                       ? "grid-cols-[220px_150px_150px_100px_120px_120px_140px]"
                       : "grid-cols-[220px_150px_150px_100px_120px_120px]"
-                    } gap-3 items-end`}
+                    } gap-3 items-start`}
                 >
                   <CustomerSelect
                     value={customerNameDisplay}

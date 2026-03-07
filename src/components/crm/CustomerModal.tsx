@@ -307,21 +307,59 @@ setForm((prev) => ({
   };
 
   const handleNext = () => {
-    // Validate current tab before proceeding
-    if (activeTab === "details" && !validateDetailsTab()) {
-      return; // Don't proceed if validation fails
-    }
+  if (activeTab === "details") {
+    const isValid = validateDetailsTab();
 
-    if (activeTab === "address" && !validateAddressTab()) {
-      return; // Don't proceed if validation fails
-    }
+    if (!isValid) {
+      const emptyFields = [];
 
-    const currentIndex = tabs.indexOf(activeTab);
-    if (currentIndex < tabs.length - 1) {
-      setActiveTab(tabs[currentIndex + 1]);
-      setAllowSubmit(false); // Reset submission flag when navigating
+      if (!form.type) emptyFields.push("Type");
+      if (!form.name) emptyFields.push("Customer Name");
+      if (!form.contactPerson) emptyFields.push("Contact Person");
+      if (!form.mobileCode || !form.mobile) emptyFields.push("Mobile Number");
+      if (!form.customerTaxCategory) emptyFields.push("Tax Category");
+      if (!form.currency) emptyFields.push("Currency");
+      if (!form.email) emptyFields.push("Email");
+
+      const message =
+        emptyFields.length > 0
+          ? `Please fill in required fields: ${emptyFields.join(", ")}`
+          : "Please fix validation errors in Details tab";
+
+      showApiError({ message });
+      return;
     }
-  };
+  }
+
+  if (activeTab === "address") {
+    const isValid = validateAddressTab();
+
+    if (!isValid) {
+      const emptyFields = [];
+
+      if (!form.billingAddressLine1) emptyFields.push("Address Line 1");
+      if (!form.billingCity) emptyFields.push("City");
+      if (!form.billingState) emptyFields.push("State");
+      if (!form.billingCountry) emptyFields.push("Country");
+      if (!form.billingPostalCode) emptyFields.push("Postal Code");
+
+      const message =
+        emptyFields.length > 0
+          ? `Please fill in required fields: ${emptyFields.join(", ")}`
+          : "Please fix validation errors in Address tab";
+
+      showApiError({ message });
+      return;
+    }
+  }
+
+  const currentIndex = tabs.indexOf(activeTab);
+
+  if (currentIndex < tabs.length - 1) {
+    setActiveTab(tabs[currentIndex + 1]);
+    setAllowSubmit(false);
+  }
+};
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -516,7 +554,7 @@ const reset = () => {
       icon={isEditMode ? Building2 : User}
       footer={footer}
       maxWidth="6xl"
-      height="75vh"
+      height="81vh"
     >
       <form
         id="customerForm"

@@ -83,7 +83,7 @@ export default function CustomerSelect({
   );
 
   return (
-    <div className={`w-full min-w-0 flex flex-col gap-1 ${className}`}>
+    <div className={`w-full min-w-0 flex flex-col ${className}`}>
       <span className="block text-[10px] font-medium text-main mb-1">
         {label}
         {required && <span className="text-danger">*</span>}

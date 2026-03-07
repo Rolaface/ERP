@@ -6,7 +6,11 @@ import type { Invoice, InvoiceItem } from "../types/invoice";
 import { getRolaCountryList } from "../api/lookupApi";
 import { getItemByItemCode } from "../api/itemApi";
 import { getExchangeRate } from "../api/exchangeRateApi";
-
+import {
+  showApiError,
+  showLoading,
+  closeSwal,
+} from "../utils/alert";
 import {
   DEFAULT_INVOICE_FORM,
   EMPTY_ITEM,
@@ -63,18 +67,18 @@ export const useInvoiceForm = (
 
   }, [isOpen]);
   useEffect(() => {
-  const terms = formData.paymentInformation?.paymentTerms;
+    const terms = formData.paymentInformation?.paymentTerms;
 
-  if (!terms || !formData.dateOfInvoice) return;
+    if (!terms || !formData.dateOfInvoice) return;
 
-const due = calculateDueDate(formData.dateOfInvoice, terms);
+    const due = calculateDueDate(formData.dateOfInvoice, terms);
 
-setFormData(prev => ({
-  ...prev,
-  dueDate: prev.dueDate || due
-}));
+    setFormData(prev => ({
+      ...prev,
+      dueDate: prev.dueDate || due
+    }));
 
-}, [formData.dateOfInvoice, formData.paymentInformation?.paymentTerms]);
+  }, [formData.dateOfInvoice, formData.paymentInformation?.paymentTerms]);
 
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
@@ -93,54 +97,55 @@ setFormData(prev => ({
   const lastRateRef = useRef<number>(1);
   const enableExchange = mode === "invoice";
 
-      useEffect(() => {
-  if (!isOpen || !initialData) return;
+  useEffect(() => {
+    if (!isOpen || !initialData) return;
 
-  setFormDataFromInvoice(initialData);
+    setFormDataFromInvoice(initialData);
 
-}, [isOpen, initialData]);
+  }, [isOpen, initialData]);
 
   useEffect(() => {
     if (!isOpen || initialData) return;
 
-const loadCompanyData = async () => {
-  try {
-    const companyRes = await getCompanyById(COMPANY_ID);
-    const company = companyRes?.data;
+    const loadCompanyData = async () => {
+      try {
+        const companyRes = await getCompanyById(COMPANY_ID);
+        const company = companyRes?.data;
 
-    const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
+        const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
 
-    setFormData((prev) => {
-      const dueDate = calculateDueDate(prev.dateOfInvoice, paymentTerms);
+        setFormData((prev) => {
+          const dueDate = calculateDueDate(prev.dateOfInvoice, paymentTerms);
 
-      return {
-        ...prev,
-        invoiceStatus:
-          prev.invoiceStatus || (mode === "proforma" ? "Draft" : prev.invoiceStatus),
+          return {
+            ...prev,
+            invoiceStatus:
+              prev.invoiceStatus || (mode === "proforma" ? "Draft" : prev.invoiceStatus),
 
-        invoiceType:
-          prev.invoiceType || (mode === "proforma" ? "Non-Export" : prev.invoiceType),
+            invoiceType:
+              prev.invoiceType || (mode === "proforma" ? "Non-Export" : prev.invoiceType),
 
-        dueDate: prev.dueDate || dueDate,
+            dueDate: prev.dueDate || dueDate,
 
-        terms: {
-          selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
-        },
+            terms: {
+              selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
+            },
 
-        paymentInformation: {
-          ...prev.paymentInformation,
-          paymentTerms: paymentTerms,
-          bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-          accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-          routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-          swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
-        },
-      };
-    });
-  } catch (err) {
-    console.error("Failed to load company data", err);
-  }
-};
+            paymentInformation: {
+              ...prev.paymentInformation,
+              paymentTerms: paymentTerms,
+              bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+              accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+              routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+              swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+            },
+          };
+        });
+      } catch (err: any) {
+  console.error("Failed to load company data", err);
+  showApiError("Failed to load company configuration");
+}
+    };
     loadCompanyData();
   }, [isOpen, mode]);
 
@@ -249,16 +254,17 @@ const loadCompanyData = async () => {
       throw new Error("Please add at least one item");
     }
 
+
+    if (!formData.paymentInformation?.paymentTerms) {
+      throw new Error("Please select payment terms");
+    }
+
     formData.items.forEach((it, idx) => {
       if (!it.itemCode) {
         throw new Error(`Item ${idx + 1}: Please select item`);
       }
 
 
-
-      if (!formData.paymentInformation?.paymentTerms) {
-        throw new Error("Please select payment terms");
-      }
 
       if (!it.quantity || it.quantity <= 0) {
         throw new Error(`Item ${idx + 1}: Quantity must be greater than 0`);
@@ -317,7 +323,7 @@ const loadCompanyData = async () => {
           setFormData((prev) => ({
             ...prev,
             currencyCode: value,
-            exchangeRt: "1",   
+            exchangeRt: "1",
           }));
           return;
         }
@@ -457,17 +463,18 @@ const loadCompanyData = async () => {
           },
         };
       });
-    } catch (err) {
-      console.error("Failed to load customer data", err);
-    }
+    } catch (err: any) {
+  console.error("Failed to load customer data", err);
+  showApiError("Failed to load customer details");
+}
   };
 
   const handleItemSelect = async (index: number, itemId: string) => {
     const currentItem = formData.items[index];
-if (enableExchange && exchangeRateLoading) {
-  // User ko wait karne ka alert dein ya loader dikhayein
-  throw new Error("Please wait for exchange rate to load...");
-}
+    if (enableExchange && exchangeRateLoading) {
+      showApiError("Please wait for exchange rate to load...");
+      return;
+    }
     // Invoice-loaded item → do NOT auto override
     if (currentItem?._fromInvoice) {
       setFormData((prev) => {
@@ -522,46 +529,47 @@ if (enableExchange && exchangeRateLoading) {
           packingUnit: data.packingUnit ?? "",
           packingSize: data.packingSize ?? "",
           mfgDate: data.batchInfo?.manufacturingDate ?? "",
-  expDate: data.batchInfo?.expiryDate ?? "",
+          expDate: data.batchInfo?.expiryDate ?? "",
         };
 
         return { ...prev, items };
       });
-    } catch (err) {
-      console.error("Failed to fetch item details", err);
-    }
+    } catch (err: any) {
+  console.error("Failed to fetch item details", err);
+  showApiError("Failed to load item details");
+}
   };
 
   /* ---------------- ITEMS ---------------- */
-const handleItemChange = (
-  idx: number,
-  e: React.ChangeEvent<HTMLInputElement>,
-) => {
-  const { name, value } = e.target;
-  const isNum = ["quantity", "price", "discount", "vatRate"].includes(name);
+  const handleItemChange = (
+    idx: number,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const { name, value } = e.target;
+    const isNum = ["quantity", "price", "discount", "vatRate"].includes(name);
 
-  setFormData((prev) => {
-    const items = [...prev.items];
+    setFormData((prev) => {
+      const items = [...prev.items];
 
-    let nextValue: any = value;
+      let nextValue: any = value;
 
-    if (isNum) {
-      if (value === "") {
-        nextValue = "";
-      } else {
-        const parsed = Number(value);
-        nextValue = Number.isFinite(parsed) ? parsed : "";
+      if (isNum) {
+        if (value === "") {
+          nextValue = "";
+        } else {
+          const parsed = Number(value);
+          nextValue = Number.isFinite(parsed) ? parsed : "";
+        }
       }
-    }
 
-    items[idx] = {
-      ...items[idx],
-      [name]: nextValue,
-    };
+      items[idx] = {
+        ...items[idx],
+        [name]: nextValue,
+      };
 
-    return { ...prev, items };
-  });
-};
+      return { ...prev, items };
+    });
+  };
 
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
@@ -579,18 +587,18 @@ const handleItemChange = (
     });
   };
 
-const removeItem = (idx: number) => {
-  setFormData((prev) => {
-    if (prev.items.length === 1) return prev;
+  const removeItem = (idx: number) => {
+    setFormData((prev) => {
+      if (prev.items.length === 1) return prev;
 
-    const items = prev.items.filter((_, i) => i !== idx);
+      const items = prev.items.filter((_, i) => i !== idx);
 
-    const maxPage = Math.max(0, Math.ceil(items.length / ITEMS_PER_PAGE) - 1);
-    setPage((p) => Math.min(p, maxPage));
+      const maxPage = Math.max(0, Math.ceil(items.length / ITEMS_PER_PAGE) - 1);
+      setPage((p) => Math.min(p, maxPage));
 
-    return { ...prev, items };
-  });
-};
+      return { ...prev, items };
+    });
+  };
   const setFormDataFromInvoice = (invoice: any) => {
     setFormData((prev: any) => ({
       ...prev,
@@ -650,84 +658,82 @@ const removeItem = (idx: number) => {
     if (!checked) shippingEditedRef.current = false;
   };
 
-const handleReset = async () => {
-  if (initialData) {
-    setFormDataFromInvoice(initialData);
-  } else {
-    try {
-      const companyRes = await getCompanyById(COMPANY_ID);
-      const company = companyRes?.data;
+  const handleReset = async () => {
+    if (initialData) {
+      setFormDataFromInvoice(initialData);
+    } else {
+      try {
+        const companyRes = await getCompanyById(COMPANY_ID);
+        const company = companyRes?.data;
 
-      const today = new Date().toISOString().split("T")[0];
+        const today = new Date().toISOString().split("T")[0];
 
-      const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
-      const dueDate = calculateDueDate(today, paymentTerms);
+        const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
+        const dueDate = calculateDueDate(today, paymentTerms);
 
-      setFormData({
-        ...DEFAULT_INVOICE_FORM,
-        dateOfInvoice: today,
-        dueDate: dueDate,
-        exchangeRt: "1",
+        setFormData({
+          ...DEFAULT_INVOICE_FORM,
+          dateOfInvoice: today,
+          dueDate: dueDate,
+          exchangeRt: "1",
 
-        terms: {
-          selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
-        },
+          terms: {
+            selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
+          },
 
-        paymentInformation: {
-          ...DEFAULT_INVOICE_FORM.paymentInformation,
-          paymentTerms: paymentTerms,
-          bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-          accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-          routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-          swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
-        },
+          paymentInformation: {
+            ...DEFAULT_INVOICE_FORM.paymentInformation,
+            paymentTerms: paymentTerms,
+            bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+            accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+            routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+            swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+          },
 
-        shippingAddress: { ...DEFAULT_INVOICE_FORM.billingAddress },
-      });
-    } catch (err) {
-      console.error("Failed to re-load company defaults during reset", err);
-      setFormData({ ...DEFAULT_INVOICE_FORM });
+          shippingAddress: { ...DEFAULT_INVOICE_FORM.billingAddress },
+        });
+      } catch (err) {
+        console.error("Failed to re-load company defaults during reset", err);
+         showApiError("Failed to reload company defaults");
+        setFormData({ ...DEFAULT_INVOICE_FORM });
+      }
     }
-  }
 
-  shippingEditedRef.current = false;
-  lastCurrencyRef.current = "INR";
-  lastRateRef.current = 1;
-  setCustomerDetails(null);
-  setCustomerNameDisplay("");
-  setTaxCategory("");
-  setSameAsBilling(true);
-  setPage(0);
-  setActiveTab("details");
-};
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    shippingEditedRef.current = false;
+    lastCurrencyRef.current = "INR";
+    lastRateRef.current = 1;
+    setCustomerDetails(null);
+    setCustomerNameDisplay("");
+    setTaxCategory("");
+    setSameAsBilling(true);
+    setPage(0);
+    setActiveTab("details");
+  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  try {
-    validateForm(); 
+    try {
+      validateForm();
 
-    const payload = {
-      ...formData,
-      subTotal,
-      totalTax,
-      grandTotal,
-      items: formData.items
-        .filter(it => it.itemCode) 
-        .map((item) => ({
-          ...item,
-          vatRate: String(item.vatRate),
-        })),
-    };
+      const payload = {
+        ...formData,
+        subTotal,
+        totalTax,
+        grandTotal,
+        items: formData.items
+          .filter((it) => it.itemCode)
+          .map((item) => ({
+            ...item,
+            vatRate: String(item.vatRate),
+          })),
+      };
 
-    return payload; 
-  } catch (error: any) {
-
-    console.error("Validation Error:", error.message);
-    
-    return null;
-  }
-};
-
+      return payload;
+    } catch (error: any) {
+      showApiError(error?.message || "Validation error");
+      return null;
+    }
+  };
 
   const { subTotal, totalTax, grandTotal } = useMemo(() => {
     let sub = 0;
@@ -780,20 +786,21 @@ const handleReset = async () => {
       exchangeRateLoading: enableExchange ? exchangeRateLoading : false,
       exchangeRateError: enableExchange ? exchangeRateError : null,
     },
-    actions: {
-      handleInputChange,
-      handleCustomerSelect,
-      handleItemSelect,
-      handleItemChange,
-      updateItemDirectly,
-      addItem,
-      removeItem,
-      setTerms,
-      handleSameAsBillingChange,
-      handleReset,
-      handleSubmit,
-      setInvoiceFromApi,
-      setFormDataFromInvoice,
-    },
+actions: {
+  validateForm,
+  handleInputChange,
+  handleCustomerSelect,
+  handleItemSelect,
+  handleItemChange,
+  updateItemDirectly,
+  addItem,
+  removeItem,
+  setTerms,
+  handleSameAsBillingChange,
+  handleReset,
+  handleSubmit,
+  setInvoiceFromApi,
+  setFormDataFromInvoice,
+},
   };
 };
