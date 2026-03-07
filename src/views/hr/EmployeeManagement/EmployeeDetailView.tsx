@@ -46,9 +46,21 @@ const toTitle = (key: string) =>
     .trim()
     .replace(/^./, (c) => c.toUpperCase());
 
+const toAbsoluteFileUrl = (base: string, filePath: string) => {
+  const b = String(base ?? "").trim();
+  const p = String(filePath ?? "").trim();
+  if (!b || !p) return "";
+  if (p.startsWith("http")) return p;
+
+  const cleanBase = b.endsWith("/") ? b.slice(0, -1) : b;
+  const cleanPath = p.startsWith("/") ? p : `/${p}`;
+  return `${cleanBase}${cleanPath}`;
+};
+
 const getFileUrl = (file?: string | null) => {
   if (!file) return null;
-  return `${ERP_BASE}${file}`;
+  const url = toAbsoluteFileUrl(ERP_BASE, String(file));
+  return url || null;
 };
 
 const DocumentUploadModal: React.FC<{
@@ -305,6 +317,19 @@ const EmployeeDetailView: React.FC<Props> = ({
   } = employee;
 
   const profilePhotoUrl = useMemo(() => {
+    const direct = String(
+      employee?.ProfilePicture ??
+        employee?.profilePicture ??
+        employee?.profile_picture ??
+        employee?.profile_photo ??
+        employee?.profilePhoto ??
+        employee?.profilePhotoUrl ??
+        employee?.profile_picture_url ??
+        "",
+    ).trim();
+
+    if (direct) return getFileUrl(direct);
+
     const docs = Array.isArray(documents) ? documents : [];
     const profileDoc = docs.find((d: any) => {
       const desc = String(d?.description ?? d?.name ?? "")
@@ -315,7 +340,7 @@ const EmployeeDetailView: React.FC<Props> = ({
 
     const file = profileDoc?.file ? String(profileDoc.file) : "";
     return getFileUrl(file) || null;
-  }, [documents]);
+  }, [documents, employee]);
 
   const employeeCode = String(
     employee?.employeeId ??
