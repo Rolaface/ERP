@@ -26,14 +26,14 @@ const Card: React.FC<{
       trend: "text-primary bg-primary/10 border-[var(--primary)]/20",
     },
     success: {
-      iconWrap: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
+      iconWrap: "from-[var(--primary)] to-[var(--primary-700)]",
       iconColor: "text-white",
-      trend: "text-success bg-success/10 border-success/20",
+      trend: "text-primary bg-primary/10 border-[var(--primary)]/20",
     },
     warning: {
       iconWrap: "from-[var(--brand-blue-bottom)] to-[var(--primary)]",
       iconColor: "text-white",
-      trend: "text-warning bg-warning/10 border-warning/20",
+      trend: "text-primary bg-primary/10 border-[var(--primary)]/20",
     },
     info: {
       iconWrap: "from-[var(--brand-blue-top)] to-[var(--brand-blue-bottom)]",
@@ -105,7 +105,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         value={onLeaveEmployees}
         sub={onLeaveEmployees > 0 ? "Currently on leave" : "No one on leave"}
         icon={<Clock className="w-5 h-5" />}
-        accent={onLeaveEmployees > 0 ? "warning" : "info"}
+        accent="info"
       />
       <Card
         label="Inactive"
@@ -114,7 +114,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
           inactiveEmployees > 0 ? "Requires follow-up" : "All employees active"
         }
         icon={<Users className="w-5 h-5" />}
-        accent={inactiveEmployees > 0 ? "warning" : "info"}
+        accent="warning"
       />
     </div>
   );

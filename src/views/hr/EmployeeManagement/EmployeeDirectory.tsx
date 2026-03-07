@@ -166,6 +166,38 @@ const EmployeeDirectory: React.FC = () => {
   ================================ */
 
   const columns: Column<EmployeeSummary>[] = [
+    {
+      key: "profile",
+      header: "",
+      align: "left",
+      render: (e) => {
+        const name = String((e as any)?.name ?? "").trim();
+        const initial = (name[0] ?? "?").toUpperCase();
+        const src = String(
+          (e as any)?.profilePictureUrl ??
+            (e as any)?.profile_picture_url ??
+            (e as any)?.photoUrl ??
+            (e as any)?.imageUrl ??
+            (e as any)?.avatarUrl ??
+            "",
+        ).trim();
+
+        return src ? (
+          <img
+            src={src}
+            alt={name || "Employee"}
+            className="w-8 h-8 rounded-full object-cover border border-theme"
+            onError={(ev) => {
+              (ev.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-700)] flex items-center justify-center text-white text-xs font-bold border border-theme">
+            {initial}
+          </div>
+        );
+      },
+    },
     { key: "employeeId", header: "Employee ID", align: "left" },
     { key: "name", header: "Name", align: "left" },
     { key: "jobTitle", header: "Job Title", align: "left" },

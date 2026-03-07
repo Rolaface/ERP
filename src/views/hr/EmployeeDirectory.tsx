@@ -24,6 +24,7 @@ type Employee = {
   department: string;
   workLocation: string | null;
   status: "Active" | "Inactive" | "On Leave";
+  profilePictureUrl?: string | null;
 };
 
 const EmployeeDirectory: React.FC = () => {
@@ -61,7 +62,7 @@ const EmployeeDirectory: React.FC = () => {
       setEmployees(res.employees || []);
       setTotalItems(res.pagination?.total || 0);
     } catch (err) {
-      console.error("Failed to fetch employees", err);
+      return;
     } finally {
       setLoading(false);
     }
@@ -107,7 +108,7 @@ const EmployeeDirectory: React.FC = () => {
     if (e) {
       e.stopPropagation();
     }
-    console.warn("Edit:", id);
+    return;
   };
 
   const handleDelete = (id: string, e?: React.MouseEvent) => {
@@ -115,25 +116,54 @@ const EmployeeDirectory: React.FC = () => {
       e.stopPropagation();
     }
     if (window.confirm(`Delete employee ${id}?`)) {
-      console.warn("Delete:", id);
+      return;
     }
   };
 
   const handleRowClick = (employee: Employee) => {
-    console.warn("Row Click:", employee);
+    return;
   };
 
   // --- COLUMNS DEFINITION ---
   const columns: Column<Employee>[] = [
+    {
+      key: "profile",
+      header: "",
+      align: "left",
+      render: (emp) => {
+        const name = String(emp.name ?? "").trim();
+        const initial = (name[0] ?? "?").toUpperCase();
+        const src = String(
+          (emp as any)?.profilePictureUrl ??
+            (emp as any)?.profile_picture_url ??
+            (emp as any)?.photoUrl ??
+            (emp as any)?.imageUrl ??
+            (emp as any)?.avatarUrl ??
+            "",
+        ).trim();
+
+        return src ? (
+          <img
+            src={src}
+            alt={name || "Employee"}
+            className="w-8 h-8 rounded-full object-cover border border-theme"
+            onError={(ev) => {
+              (ev.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-700)] flex items-center justify-center text-white text-xs font-bold border border-theme">
+            {initial}
+          </div>
+        );
+      },
+    },
     {
       key: "name",
       header: "Name",
       align: "left",
       render: (emp) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-            {emp.name.charAt(0)}
-          </div>
           <span className="font-medium text-gray-800">{emp.name}</span>
         </div>
       ),
