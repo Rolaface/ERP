@@ -166,7 +166,7 @@ const Login = () => {
                 </label>
                 <button
                   type="button"
-                  className="text-sm font-medium text-[hsl(210,70%,55%)] hover:text-[hsl(210,70%,45%)] transition-colors"
+                  className="text-sm font-medium text-primary hover:opacity-90 transition-colors"
                 >
                   Reset Password
                 </button>
@@ -176,11 +176,7 @@ const Login = () => {
               <div className="animate-fade-in delay-650 fill-both opacity-0-start">
                 <button
                   type="submit"
-                  className="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[hsl(210,80%,58%)] to-[hsl(210,80%,48%)] px-6 py-3.5 text-sm font-semibold text-white 
-                      shadow-[0_8px_25px_rgba(124,58,237,0.35)] 
-                        hover:shadow-[0_12px_35px_rgba(124,58,237,0.45)] 
-                          hover:-translate-y-1 active:translate-y-0 
-                            transition-all duration-300 ease-out"
+                  className="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-white shadow-lg hover:opacity-95 hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 ease-out"
                 >
                   Sign In
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />

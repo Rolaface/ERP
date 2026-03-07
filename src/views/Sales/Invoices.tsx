@@ -364,6 +364,15 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
       ),
     },
     {
+      key: "receiptNumber",
+      header: "Receipt No",
+      align: "left",
+      sortable: true,
+      render: (inv) => (
+        <span className="text-xs text-muted">{inv.receiptNumber || "—"}</span>
+      ),
+    },
+    {
       key: "dueDate",
       header: "Due Date",
       align: "left",
