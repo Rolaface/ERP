@@ -533,7 +533,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                   },
                 ]
                 : []),
-               { divider: true },  
+             
               {
                 label: "View PDF",
                 onClick: () => handlePreviewPDF(inv),
