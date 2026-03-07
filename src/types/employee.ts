@@ -1,11 +1,14 @@
 export interface EmployeeSummary {
   id: string;
+  employeeId?: string;
   name: string;
   jobTitle: string;
   department: string;
   workLocation: string;
   status: string;
+  ProfilePicture?: string;
 }
+
 export interface Employee {
   id: string;
   status: string;

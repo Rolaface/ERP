@@ -21,10 +21,23 @@ import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import ActionButton, {
   ActionGroup,
 } from "../../../components/ui/Table/ActionButton";
+import { ERP_BASE } from "../../../config/api";
+import { User } from "lucide-react";
 
 import type { Column } from "../../../components/ui/Table/type";
 import type { EmployeeSummary, Employee } from "../../../types/employee";
 import EmployeeDetailView from "./EmployeeDetailView";
+
+const toAbsoluteFileUrl = (base: string, filePath: string) => {
+  const b = String(base ?? "").trim();
+  const p = String(filePath ?? "").trim();
+  if (!b || !p) return "";
+  if (p.startsWith("http")) return p;
+
+  const cleanBase = b.endsWith("/") ? b.slice(0, -1) : b;
+  const cleanPath = p.startsWith("/") ? p : `/${p}`;
+  return `${cleanBase}${cleanPath}`;
+};
 
 const EmployeeDirectory: React.FC = () => {
   const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
@@ -173,8 +186,11 @@ const EmployeeDirectory: React.FC = () => {
       render: (e) => {
         const name = String((e as any)?.name ?? "").trim();
         const initial = (name[0] ?? "?").toUpperCase();
-        const src = String(
-          (e as any)?.profilePictureUrl ??
+        const raw = String(
+          (e as any)?.ProfilePicture ??
+            (e as any)?.profilePicture ??
+            (e as any)?.profile_picture ??
+            (e as any)?.profilePictureUrl ??
             (e as any)?.profile_picture_url ??
             (e as any)?.photoUrl ??
             (e as any)?.imageUrl ??
@@ -182,18 +198,33 @@ const EmployeeDirectory: React.FC = () => {
             "",
         ).trim();
 
-        return src ? (
-          <img
-            src={src}
-            alt={name || "Employee"}
-            className="w-8 h-8 rounded-full object-cover border border-theme"
-            onError={(ev) => {
-              (ev.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-          />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-700)] flex items-center justify-center text-white text-xs font-bold border border-theme">
-            {initial}
+        const src = raw ? toAbsoluteFileUrl(ERP_BASE, raw) : "";
+
+        return (
+          <div className="w-8 h-8 relative">
+            {src ? (
+              <img
+                src={src}
+                alt={name || "Employee"}
+                className="w-8 h-8 rounded-full object-cover border border-theme"
+                onError={(ev) => {
+                  const img = ev.currentTarget as HTMLImageElement;
+                  img.style.display = "none";
+                  const fallback = img.nextElementSibling as HTMLElement | null;
+                  if (fallback) fallback.style.display = "flex";
+                }}
+              />
+            ) : null}
+            <div
+              className="w-8 h-8 rounded-full bg-app border border-theme items-center justify-center text-muted"
+              style={{ display: src ? "none" : "flex" }}
+              title={name || "Employee"}
+            >
+              <User className="w-4 h-4" />
+            </div>
+            {!src ? (
+              <span className="sr-only">{initial}</span>
+            ) : null}
           </div>
         );
       },

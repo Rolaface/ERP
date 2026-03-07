@@ -938,14 +938,6 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
     onChange("selectedEmployees", next);
   };
 
-  const selectAll = () => {
-    const all = filtered.map((e) => e.id);
-    onChange(
-      "selectedEmployees",
-      data.selectedEmployees.length === all.length ? [] : all,
-    );
-  };
-
   const updateFilter = (field: string, value: any) => {
     onChange(field, value);
     setPage(1);
@@ -1037,22 +1029,7 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                 </div>
               )}
 
-              {selectionMode === "multiple" && !isLoading && (
-                <label className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-main">
-                  <input
-                    type="checkbox"
-                    checked={
-                      data.selectedEmployees.length === filtered.length &&
-                      filtered.length > 0
-                    }
-                    onChange={selectAll}
-                    className="w-4 h-4 accent-primary cursor-pointer"
-                  />
-                  Select All Employees
-                </label>
-              )}
-
-              {isLoading ? (
+                {isLoading ? (
                 <div className="h-4 w-24 bg-theme/60 rounded animate-pulse" />
               ) : (
                 <div className="text-xs text-muted whitespace-nowrap">
