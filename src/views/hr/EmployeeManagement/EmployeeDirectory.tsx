@@ -95,7 +95,12 @@ const EmployeeDirectory: React.FC = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const res = await getAllEmployees(page, pageSize, searchTerm);
+      const res = await getAllEmployees({
+        page,
+        page_size: pageSize,
+        status: "Active",
+        id: searchTerm,
+      });
 
       setEmployees(res.employees);
       setTotalPages(res.pagination?.total_pages || 1);
@@ -109,7 +114,7 @@ const EmployeeDirectory: React.FC = () => {
 
   useEffect(() => {
     fetchEmployees();
-  }, [page]);
+  }, [page, pageSize, searchTerm]);
   /* ===============================
      ACTION HANDLERS
   ================================ */
@@ -290,7 +295,10 @@ const EmployeeDirectory: React.FC = () => {
           serverSide
           showToolbar
           searchValue={searchTerm}
-          onSearch={setSearchTerm}
+          onSearch={(q) => {
+            setSearchTerm(q);
+            setPage(1);
+          }}
           enableAdd
           addLabel="Add Employee"
           onAdd={handleAdd}

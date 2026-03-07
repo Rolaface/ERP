@@ -12,22 +12,17 @@ import EmployeeLeaveDetailModal from "../../../components/Hr/leave/EmployeeLeave
 
 /* Component */
 const EmployeeHistory: React.FC = () => {
-  const [selectedLeave, setSelectedLeave] = useState<LeaveUI | null>(null);
-  const [selectedEmployee, setSelectedEmployee] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [searchTerm, setSearchTerm] = useState("");
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [leaves, setLeaves] = useState<LeaveUI[]>([]);
   const [selectedLeaveId, setSelectedLeaveId] = useState<string | null>(null);
 
   const filteredData = useMemo(() => {
-    return selectedEmployee
-      ? leaves.filter((l) => l.employeeId === selectedEmployee)
-      : leaves;
-  }, [leaves, selectedEmployee]);
+    return leaves;
+  }, [leaves]);
 
   useEffect(() => {
     const fetchEmployeeLeaves = async () => {
@@ -244,6 +239,8 @@ const EmployeeHistory: React.FC = () => {
         data={filteredData}
         loading={loading}
         showToolbar
+        searchValue={table.effectiveSearch}
+        onSearch={table.setSearch}
         extraFilters={historyFilters}
         toolbarPlaceholder="Search employee name, reason..."
         emptyMessage="No leave history found."

@@ -24,7 +24,6 @@ interface HistoryProps {
 }
 
 const History: React.FC<HistoryProps> = ({ onNewRequest, onEditLeave }) => {
-  const [selectedLeave, setSelectedLeave] = useState<LeaveUI | null>(null);
   const [leaves, setLeaves] = useState<LeaveUI[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedLeaveId, setSelectedLeaveId] = useState<string | null>(null);
@@ -235,6 +234,8 @@ const History: React.FC<HistoryProps> = ({ onNewRequest, onEditLeave }) => {
         data={table.processedData}
         loading={loading}
         showToolbar
+        searchValue={table.effectiveSearch}
+        onSearch={table.setSearch}
         enableAdd
         extraFilters={historyFilters}
         addLabel="New Request"
