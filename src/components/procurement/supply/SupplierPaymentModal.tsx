@@ -126,7 +126,7 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
     >
       <div style={{ display: "flex", gap: 24, minHeight: 320 }}>
 
-        {/* ════ LEFT: FORM ════ */}
+        {/*  LEFT: FORM  */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* ── Supplier info row ── */}
@@ -173,26 +173,7 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
                 </p>
               )}
             </div>
-            {/* inline amount-due badge */}
-            <div style={{ textAlign: "right" }}>
-              <p
-                className="text-muted"
-                style={{
-                  fontSize: 10,
-                  margin: "0 0 2px",
-                  textTransform: "uppercase",
-                  letterSpacing: ".06em",
-                }}
-              >
-                Due
-              </p>
-              <p
-                className="text-danger"
-                style={{ fontSize: 15, fontWeight: 800, margin: 0 }}
-              >
-                ₹{amountDue.toLocaleString("en-IN")}
-              </p>
-            </div>
+           
           </div>
 
           {/* ── Row 1: Amount + Mode ── */}
@@ -311,10 +292,10 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
           )}
         </div>
 
-        {/* ════ DIVIDER ════ */}
+        {/*  DIVIDER  */}
         <div className="border-l border-theme" style={{ flexShrink: 0 }} />
 
-        {/* ════ RIGHT: SUMMARY ════ */}
+        {/*  RIGHT: SUMMARY  */}
         <div
           style={{
             width: 200,
@@ -405,41 +386,7 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
             </p>
           </div>
 
-          {/* Progress bar */}
-          <div>
-            <div
-              style={{
-                height: 5,
-                borderRadius: 99,
-                background: "var(--border)",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  height: "100%",
-                  borderRadius: 99,
-                  background: "var(--primary)",
-                  width: `${paidPct}%`,
-                  transition: "width .5s ease",
-                }}
-              />
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 5,
-              }}
-            >
-              <p className="text-muted" style={{ fontSize: 10, margin: 0 }}>
-                Settled
-              </p>
-              <p className="text-muted" style={{ fontSize: 10, margin: 0 }}>
-                {Math.round(paidPct)}%
-              </p>
-            </div>
-          </div>
+         
         </div>
 
       </div>
