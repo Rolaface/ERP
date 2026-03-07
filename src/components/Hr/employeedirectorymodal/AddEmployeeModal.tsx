@@ -137,12 +137,14 @@ type AddEmployeeModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-
+  departments?: string[];
+  prefilledData?: any;
   level?: string[];
   verifiedData?: any;
   editData?: any;
   mode?: "add" | "edit";
 };
+
 import {
   showApiError,
   showSuccess,
@@ -154,13 +156,14 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-
+  departments = [],
+  prefilledData,
   editData,
 }) => {
   //   - Conditional based on company
   const { companyCode } = useCompanySelection();
   const features = getEmployeeFeatures(companyCode);
-  const departments = features.departments;
+  const departmentsFromFeatures = features.departments;
 
   const [step, setStep] = useState<"verification" | "form">(
     features.requireIdentityVerification ? "verification" : "form",

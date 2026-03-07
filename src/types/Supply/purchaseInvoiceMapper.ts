@@ -10,17 +10,11 @@ import type { AddressBlock } from "./purchaseInvoice";
  * FINAL VERSION - Based on Invoice pattern analysis
  */
 export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
-  console.log("MAPPING PI TO BACKEND - Form items:", form.items);
-
   // Filter and map items - CRITICAL: Filter empty items FIRST
   const validItems = form.items.filter((it) => {
     const hasCode = it.itemCode && it.itemCode.trim() !== "";
     const hasQty = it.quantity && Number(it.quantity) > 0;
     const hasRate = it.rate && Number(it.rate) > 0;
-
-    console.log(
-      `Item ${it.itemCode}: hasCode=${hasCode}, hasQty=${hasQty}, hasRate=${hasRate}`,
-    );
 
     return hasCode && hasQty && hasRate; // Only include complete items
   });

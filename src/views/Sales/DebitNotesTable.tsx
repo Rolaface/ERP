@@ -158,7 +158,7 @@ const DebitNotesTable: React.FC = () => {
         return u.toString();
       } catch {
         return normalizedUrl.replace(
-          /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
+          /^(https?:\/\/[^/]+):\d+(\/.*)?$/i,
           "$1$2",
         );
       }
@@ -364,7 +364,7 @@ const DebitNotesTable: React.FC = () => {
         isOpen={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
         onSubmit={(payload) => {
-          console.log("Debit Note Payload:", payload);
+          console.warn("Debit Note Payload:", payload);
           setOpenCreateModal(false);
           fetchDebitNotes();
         }}

@@ -114,17 +114,17 @@ const CRM: React.FC = () => {
 
   const handleAddCustomer = () => {
     setActiveTab("customer-managment");
-    console.log("onAdd -> Customer (parent handler called)");
+    console.warn("onAdd -> Customer (parent handler called)");
   };
 
   const handleAddLead = () => {
     setActiveTab("leads");
-    console.log("onAdd -> Lead (parent handler called)");
+    console.warn("onAdd -> Lead (parent handler called)");
   };
 
   const handleAddTicket = () => {
     setActiveTab("tickets");
-    console.log("onAdd -> Ticket (parent handler called)");
+    console.warn("onAdd -> Ticket (parent handler called)");
   };
 
   return (

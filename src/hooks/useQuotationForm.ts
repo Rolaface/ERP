@@ -28,7 +28,7 @@ type NestedSection =
 export const useQuotationForm = (
   isOpen: boolean,
   onClose: () => void,
-  onSubmit?: (data: any) => void,
+  onSubmit?: (data: any) => void | Promise<unknown>,
   initialData?: any,
 ) => {
   const [formData, setFormData] = useState<Invoice>({
@@ -683,7 +683,7 @@ export const useQuotationForm = (
 
       //  API CALL
       if (onSubmit) {
-        await onSubmit(payload);
+        await Promise.resolve(onSubmit(payload));
       } else {
         throw new Error(
           "No onSubmit handler provided. Please check QuotationModal usage.",

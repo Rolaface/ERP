@@ -83,7 +83,6 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({ terms }) => {
     };
 
     try {
-      console.log("payload:", payload);
       await updateCompanyById(payload);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);

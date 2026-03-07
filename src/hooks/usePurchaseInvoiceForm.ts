@@ -297,7 +297,7 @@ export const usePurchaseInvoiceForm = ({
 
   const handleSaveTemplate = (html: string) => {
     setForm((p) => ({ ...p, messageHtml: html }));
-    console.log("Template saved:", {
+    console.warn("Template saved:", {
       name: form.templateName,
       type: form.templateType,
       subject: form.subject,

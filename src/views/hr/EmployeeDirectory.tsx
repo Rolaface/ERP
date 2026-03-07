@@ -107,7 +107,7 @@ const EmployeeDirectory: React.FC = () => {
     if (e) {
       e.stopPropagation();
     }
-    console.log("Edit:", id);
+    console.warn("Edit:", id);
   };
 
   const handleDelete = (id: string, e?: React.MouseEvent) => {
@@ -115,12 +115,12 @@ const EmployeeDirectory: React.FC = () => {
       e.stopPropagation();
     }
     if (window.confirm(`Delete employee ${id}?`)) {
-      console.log("Delete:", id);
+      console.warn("Delete:", id);
     }
   };
 
   const handleRowClick = (employee: Employee) => {
-    console.log("Row Click:", employee);
+    console.warn("Row Click:", employee);
   };
 
   // --- COLUMNS DEFINITION ---

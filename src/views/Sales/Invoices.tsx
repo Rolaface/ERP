@@ -283,7 +283,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
           return u.toString();
         } catch {
           return normalizedUrl.replace(
-            /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
+            /^(https?:\/\/[^/]+):\d+(\/.*)?$/i,
             "$1$2",
           );
         }
@@ -348,7 +348,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
     if (!window.confirm(`Delete invoice ${invoiceNumber}?`)) return;
     // TODO: wire up delete API call
     showSuccess("Invoice deleted successfully");
-    console.log("Delete invoice:", invoiceNumber);
+    console.warn("Delete invoice:", invoiceNumber);
   };
 
   const columns: Column<InvoiceSummary>[] = [

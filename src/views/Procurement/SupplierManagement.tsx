@@ -16,9 +16,7 @@ import type { Column } from "../../components/ui/Table/type";
 import type { Supplier } from "../../types/Supply/supplier";
 import type { SupplierFilters } from "../../api/procurement/supplierApi";
 
-interface Props {}
-
-const SupplierManagement: React.FC<Props> = () => {
+const SupplierManagement: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");

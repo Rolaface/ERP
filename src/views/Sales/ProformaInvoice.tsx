@@ -159,7 +159,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
         return u.toString();
       } catch {
         return normalizedUrl.replace(
-          /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
+          /^(https?:\/\/[^/]+):\d+(\/.*)?$/i,
           "$1$2",
         );
       }

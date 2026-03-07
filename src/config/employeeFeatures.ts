@@ -68,15 +68,17 @@ export function getEmployeeFeatures(
     case "comp-00003":
       return ZRA_FEATURES;
     default:
-      if (!(globalThis as any).__unknown_company_warned__) {
-        (globalThis as any).__unknown_company_warned__ = new Set<string>();
+      {
+        if (!(globalThis as any).__unknown_company_warned__) {
+          (globalThis as any).__unknown_company_warned__ = new Set<string>();
+        }
+        const warned: Set<string> = (globalThis as any)
+          .__unknown_company_warned__;
+        if (!warned.has(key)) {
+          warned.add(key);
+          console.warn(`Unknown company: ${raw}, defaulting to ZRA`);
+        }
+        return ZRA_FEATURES;
       }
-      const warned: Set<string> = (globalThis as any)
-        .__unknown_company_warned__;
-      if (!warned.has(key)) {
-        warned.add(key);
-        console.warn(`Unknown company: ${raw}, defaulting to ZRA`);
-      }
-      return ZRA_FEATURES;
   }
 }

@@ -43,7 +43,7 @@ const BalanceSheet: React.FC<Props> = ({
   profitLoss,
 }) => {
   const handleExport = (type: string) => {
-    console.log(`Exporting as ${type}`);
+    console.warn(`Exporting as ${type}`);
     // Add export logic here
   };
 

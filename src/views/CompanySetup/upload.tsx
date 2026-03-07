@@ -379,7 +379,7 @@ const Upload: React.FC<UploadProps> = ({ COMPANY_ID, onUploadSuccess }) => {
         hasNewSignature ? signature.file : null,
       );
 
-      console.log("Upload successful:", response);
+      console.warn("Upload successful:", response);
       showSuccessMessage();
 
       // Reload existing files to get updated URLs

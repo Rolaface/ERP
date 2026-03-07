@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import QuotationsTable from "./Quotations";
 import InvoiceTable from "./Invoices";
 import ReportTable from "./Reports";
-import POS from "./POS";
+import Pos from "./POS";
 import SalesDashboard from "./SalesDashboard";
 import ProformaInvoicesTable from "./ProformaInvoice";
 
@@ -62,7 +62,7 @@ const SalesModule: React.FC = () => {
           key={refreshKey}
           onAddQuotation={() => setOpenModal("quotation")}
           onExportQuotation={() => {
-            console.log("Export quotations");
+            console.warn("Export quotations");
           }}
         />
       ),
@@ -73,7 +73,7 @@ const SalesModule: React.FC = () => {
           refreshKey={refreshKey}
           onAddProformaInvoice={() => setOpenModal("proforma")}
           onExportProformaInvoice={() => {
-            console.log("Export proforma invoices");
+            console.warn("Export proforma invoices");
           }}
         />
       ),
@@ -84,14 +84,14 @@ const SalesModule: React.FC = () => {
           key={refreshKey}
           onAddInvoice={() => setOpenModal("invoice")}
           onExportInvoice={() => {
-            console.log("Export invoices");
+            console.warn("Export invoices");
           }}
         />
       ),
     },
 
     pos: {
-      component: <POS />,
+      component: <Pos />,
       onAdd: () => setOpenModal("pos"),
     },
     creditNotes: {
@@ -126,18 +126,14 @@ const SalesModule: React.FC = () => {
   };
 
   const handleQuotationSubmit = async (payload: any) => {
-    try {
-      const response = await createQuotation(payload);
+    const response = await createQuotation(payload);
 
-      if (!response || ![200, 201].includes(response.status_code)) {
-        throw response;
-      }
-
-      setRefreshKey((prev) => prev + 1);
-      setOpenModal(null);
-    } catch (error: any) {
-      throw error;
+    if (!response || ![200, 201].includes(response.status_code)) {
+      throw response;
     }
+
+    setRefreshKey((prev) => prev + 1);
+    setOpenModal(null);
   };
 
   const handleProformaCreated = () => {

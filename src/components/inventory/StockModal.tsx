@@ -105,8 +105,6 @@ const ItemModal: React.FC<{
     if (!form.id) return;
 
     getStockById(form.id).then((res) => {
-      console.log("Full Response:", res);
-
       const item = res?.items?.[0];
 
       if (!item) return;

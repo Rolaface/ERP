@@ -9,7 +9,6 @@ import {
   FaLandmark,
 } from "react-icons/fa";
 import SupplierManagement from "./SupplierManagement";
-import SupplierModal from "../../components/procurement/supply/SupplierModal";
 import PurchaseInvoiceTable from "./PurchaseInvoice";
 
 const procurement = {
@@ -30,14 +29,9 @@ const procurement = {
 
 const Procurement: React.FC = () => {
   const [activeTab, setActiveTab] = useState(procurement.defaultTab);
-  const [showSupplierModal, setShowSupplierModal] = useState(false);
-  const [showGRModal, setShowGRModal] = useState(false);
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   const handleAdd = () => {
-    if (activeTab === "supplier") setShowSupplierModal(true);
-    else if (activeTab === "goodsreceipt") setShowGRModal(true);
-    else if (activeTab === "invoicematching") setShowInvoiceModal(true);
+    return;
   };
 
   return (
@@ -68,18 +62,11 @@ const Procurement: React.FC = () => {
 
       {/* Content */}
       <div>
-        {activeTab === "supplier" && <SupplierManagement onAdd={handleAdd} />}
+        {activeTab === "supplier" && <SupplierManagement />}
         {activeTab === "orders" && <PurchaseOrdersTable onAdd={handleAdd} />}
         {activeTab === "purchase" && <PurchaseInvoiceTable onAdd={handleAdd} />}
         {activeTab === "procurementdashboard" && <Dashboard />}
       </div>
-
-      {/* Modals */}
-      <SupplierModal
-        isOpen={showSupplierModal}
-        onClose={() => setShowSupplierModal(false)}
-        onSubmit={(data) => console.log("New RFQ:", data)}
-      />
     </div>
   );
 };

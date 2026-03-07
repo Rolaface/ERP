@@ -5,8 +5,6 @@ import type { FieldConfig } from "../types/fieldConfig.types";
 export function getItemFieldConfigs(companyCode: string): FieldConfig[] {
   const code = companyCode?.toUpperCase(); // Convert to uppercase for matching
 
-  console.log("🔍 Resolver received:", companyCode, "→ normalized:", code);
-
   switch (code) {
     case "ZRA":
       return ZRA_ITEM_FIELDS;

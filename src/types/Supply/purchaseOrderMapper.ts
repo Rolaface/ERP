@@ -6,8 +6,6 @@ import type { AddressBlock } from "./purchaseOrder";
  * FINAL VERSION - Based on Invoice pattern analysis
  */
 export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
-  console.log("MAPPING PO TO BACKEND - Form items:", form.items);
-
   // Filter and map items - CRITICAL: Filter empty items FIRST
   const validItems = form.items.filter((it) => {
     const hasCode = it.itemCode && it.itemCode.trim() !== "";

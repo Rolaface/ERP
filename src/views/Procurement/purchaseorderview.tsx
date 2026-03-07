@@ -184,12 +184,12 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
   };
 
   const handleDownloadPDF = () => {
-    console.log("Download PDF");
+    console.warn("Download PDF");
     toast.success("PDF download feature coming soon!");
   };
 
   const handleSendEmail = () => {
-    console.log("Send Email");
+    console.warn("Send Email");
     toast.success("Email feature coming soon!");
   };
 

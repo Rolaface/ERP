@@ -301,7 +301,7 @@ export const usePurchaseOrderForm = ({
 
   const handleSaveTemplate = (html: string) => {
     setForm((p) => ({ ...p, messageHtml: html }));
-    console.log("Template saved:", {
+    console.warn("Template saved:", {
       name: form.templateName,
       type: form.templateType,
       subject: form.subject,
@@ -389,8 +389,6 @@ export const usePurchaseOrderForm = ({
 
       const payload = mapUIToCreatePO(form);
 
-      let res;
-
       // ❌ EDIT NOT ALLOWED
       if (isEditMode) {
         showApiError({
@@ -401,7 +399,7 @@ export const usePurchaseOrderForm = ({
       }
 
       // ✅ CREATE ONLY
-      res = await createPurchaseOrder(payload);
+      const res = await createPurchaseOrder(payload);
 
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(res);

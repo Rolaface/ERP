@@ -32,8 +32,8 @@ const toCsv = (rows: Array<Record<string, any>>): string => {
 
   const esc = (v: any) => {
     const s = v === null || v === undefined ? "" : String(v);
-    const needs = /[\n\r,\"]/g.test(s);
-    const out = s.replace(/\"/g, '""');
+    const needs = /[\n\r,"]/g.test(s);
+    const out = s.replace(/"/g, '""');
     return needs ? `"${out}"` : out;
   };
 

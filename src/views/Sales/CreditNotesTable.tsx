@@ -154,7 +154,7 @@ const CreditNotesTable: React.FC = () => {
         return u.toString();
       } catch {
         return normalizedUrl.replace(
-          /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
+          /^(https?:\/\/[^/]+):\d+(\/.*)?$/i,
           "$1$2",
         );
       }
@@ -370,7 +370,7 @@ const CreditNotesTable: React.FC = () => {
         isOpen={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
         onSubmit={(payload) => {
-          console.log("Credit Note Payload:", payload);
+          console.warn("Credit Note Payload:", payload);
           setOpenCreateModal(false);
         }}
         invoiceId={data.length > 0 ? data[0].invoiceNo : ""}
