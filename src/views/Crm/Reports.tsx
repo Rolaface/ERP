@@ -181,10 +181,17 @@ const CRMReports: React.FC = () => {
     fontSize: 12,
   } as const;
 
+  const safeKey = (v: unknown): string => {
+    if (v === null || v === undefined) return "";
+    if (typeof v === "string") return v;
+    if (typeof v === "number" || typeof v === "boolean") return String(v);
+    return "";
+  };
+
   const normalizeCustomerType = (
     raw: unknown,
   ): "Company" | "Individual" | "" => {
-    const t = String(raw ?? "")
+    const t = safeKey(raw)
       .trim()
       .toLowerCase();
     if (t === "company") return "Company";
@@ -376,7 +383,7 @@ const CRMReports: React.FC = () => {
     const customersIndex = new Map<string, CustomerSummary>();
 
     const addCustomerKey = (k: unknown, c: CustomerSummary) => {
-      const key = String(k ?? "")
+      const key = safeKey(k)
         .trim()
         .toLowerCase();
       if (!key) return;

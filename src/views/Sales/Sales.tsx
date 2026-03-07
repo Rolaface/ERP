@@ -203,7 +203,7 @@ const SalesModule: React.FC = () => {
       <PosModal
         isOpen={openModal === "pos"}
         onClose={() => setOpenModal(null)}
-        onSave={(data) => console.log("POS", data)}
+        onSave={(data) => console.warn("POS", data)}
       />
     </div>
   );

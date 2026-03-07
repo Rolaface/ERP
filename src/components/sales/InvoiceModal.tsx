@@ -25,7 +25,7 @@ import { showApiError } from "../../utils/alert";
 interface InvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (data: any) => void;
+  onSubmit?: (data: any) => void | Promise<unknown>;
 }
 
 const InvoiceModal: React.FC<InvoiceModalProps> = ({
@@ -33,7 +33,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   onClose,
   onSubmit,
 }) => {
-  if (!isOpen) return null;
   const [submitting, setSubmitting] = useState(false);
   const {
     formData,
@@ -62,7 +61,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       if (!payload) return;
 
       // ❗ Wait for parent API response
-      await onSubmit?.(payload);
+      if (onSubmit) {
+        await Promise.resolve(onSubmit(payload));
+      }
     } catch (err: any) {
       showApiError(err);
     } finally {
@@ -83,7 +84,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       <div className="flex gap-2">
         <Button
           variant="ghost"
-          onClick={actions.handleReset}
+          onClick={() => actions.handleReset()}
           type="button"
           disabled={submitting}
         >
@@ -100,6 +101,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       </div>
     </>
   );
+
+  if (!isOpen) return null;
 
   return (
     <Modal
@@ -150,7 +153,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 >
                   <CustomerSelect
                     value={customerNameDisplay}
-                    onChange={actions.handleCustomerSelect}
+                    onChange={(v) => actions.handleCustomerSelect(v)}
                     className="w-full"
                   />
 
@@ -160,7 +163,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       name="dueDate"
                       type="date"
                       value={formData.dueDate}
-                      onChange={actions.handleInputChange}
+                      onChange={(e) => actions.handleInputChange(e)}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   </div>
@@ -171,7 +174,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       required
                       name="currencyCode"
                       value={formData.currencyCode}
-                      onChange={actions.handleInputChange}
+                      onChange={(e) => actions.handleInputChange(e)}
                       options={[...currencyOptions]}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
@@ -187,7 +190,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                         }
                         name="exchangeRt"
                         value={formData.exchangeRt}
-                        onChange={actions.handleInputChange}
+                        onChange={(e) => actions.handleInputChange(e)}
                         className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                       />
                       {!!ui.exchangeRateError && (
@@ -246,7 +249,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       label="LPO Number"
                       name="lpoNumber"
                       value={formData.lpoNumber}
-                      onChange={actions.handleInputChange}
+                      onChange={(e) => actions.handleInputChange(e)}
                       inputMode="numeric"
                       pattern="\d{10}"
                       placeholder="Enter 10 digits"
@@ -435,7 +438,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   <div className="flex justify-between mt-3">
                     <button
                       type="button"
-                      onClick={actions.addItem}
+                      onClick={() => actions.addItem()}
                       className="px-4 py-1.5 bg-primary hover:bg-[var(--primary-600)] text-white rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
                     >
                       <Plus className="w-4 h-4" /> Add Item

@@ -396,7 +396,7 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                     label="LPO Number"
                     name="lpoNumber"
                     value={formData.lpoNumber}
-                    onChange={actions.handleInputChange}
+                    onChange={(e) => actions.handleInputChange(e)}
                     placeholder="local purchase order number"
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
@@ -750,7 +750,9 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
                 subtitle="Delivery location"
                 data={formData.shippingAddress}
                 sameAsBilling={ui.sameAsBilling}
-                onSameAsBillingChange={actions.handleSameAsBillingChange}
+                onSameAsBillingChange={(v) =>
+                  actions.handleSameAsBillingChange(v)
+                }
                 onChange={(
                   e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
                 ) => actions.handleInputChange(e, "shippingAddress")}

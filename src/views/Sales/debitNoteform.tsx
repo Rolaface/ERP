@@ -391,7 +391,7 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                     label="LPO Number"
                     name="lpoNumber"
                     value={formData.lpoNumber}
-                    onChange={actions.handleInputChange}
+                    onChange={(e) => actions.handleInputChange(e)}
                     placeholder="local purchase order number"
                   />
                 )}
@@ -731,7 +731,9 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
                 subtitle="Delivery location"
                 data={formData.shippingAddress}
                 sameAsBilling={ui.sameAsBilling}
-                onSameAsBillingChange={actions.handleSameAsBillingChange}
+                onSameAsBillingChange={(v) =>
+                  actions.handleSameAsBillingChange(v)
+                }
                 onChange={(
                   e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
                 ) => actions.handleInputChange(e, "shippingAddress")}

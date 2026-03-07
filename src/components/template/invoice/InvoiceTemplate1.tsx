@@ -4,7 +4,7 @@ import { getPaymentMethodLabel } from "../../../constants/invoice.constants";
 import { ERP_BASE } from "../../../config/api";
 
 const loadImageFromUrl = async (url: string): Promise<string> => {
-  console.log("Fetching image from URL:", url);
+  console.warn("Fetching image from URL:", url);
 
   try {
     const res = await fetch(url, {
@@ -17,7 +17,7 @@ const loadImageFromUrl = async (url: string): Promise<string> => {
     }
 
     const blob = await res.blob();
-    console.log("Image blob type:", blob.type);
+    console.warn("Image blob type:", blob.type);
 
     return await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -65,8 +65,8 @@ export const generateInvoicePDF = async (
   if (company.documents?.companyLogoUrl) {
     try {
       const fullLogoUrl = getFullImageUrl(company.documents.companyLogoUrl);
-      console.log("Original path:", company.documents.companyLogoUrl);
-      console.log("Full URL:", fullLogoUrl);
+      console.warn("Original path:", company.documents.companyLogoUrl);
+      console.warn("Full URL:", fullLogoUrl);
 
       const logoBase64 = await loadImageFromUrl(fullLogoUrl);
 
@@ -79,7 +79,7 @@ export const generateInvoicePDF = async (
       }
 
       doc.addImage(logoBase64, format, 150, 10, 30, 15);
-      console.log("Logo added successfully");
+      console.warn("Logo added successfully");
     } catch (e) {
       console.error("Logo load failed:", e);
       doc.setFontSize(8);

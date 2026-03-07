@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const loadImageFromUrl = async (url: string): Promise<string> => {
-  console.log("Url: ", url);
+  console.warn("Url: ", url);
 
   const res = await fetch(url);
   if (!res.ok) throw new Error("Image fetch failed");
@@ -40,7 +40,7 @@ export const generateProformaInvoicePDF = async (
   /* ================= LOGO ================= */
   if (company.documents.companyLogoUrl) {
     try {
-      console.log(
+      console.warn(
         "company.documents.companyLogoUrl",
         company.documents.companyLogoUrl,
       );

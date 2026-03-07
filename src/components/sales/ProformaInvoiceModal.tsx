@@ -95,6 +95,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           console.error("Error loading customers:", err);
         }
       } finally {
+        // no-op
       }
     };
 
@@ -124,7 +125,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           <div className="flex gap-2">
             <Button
               variant="ghost"
-              onClick={actions.handleReset}
+              onClick={() => actions.handleReset()}
               disabled={isSubmitting}
             >
               Reset
@@ -181,7 +182,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                 >
                   <CustomerSelect
                     value={customerNameDisplay}
-                    onChange={actions.handleCustomerSelect}
+                    onChange={(v) => actions.handleCustomerSelect(v)}
                     className="w-full"
                   />
 
@@ -191,7 +192,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       name="dueDate"
                       type="date"
                       value={formData.dueDate}
-                      onChange={actions.handleInputChange}
+                      onChange={(e) => actions.handleInputChange(e)}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   </div>
@@ -202,7 +203,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       required
                       name="currencyCode"
                       value={formData.currencyCode}
-                      onChange={actions.handleInputChange}
+                      onChange={(e) => actions.handleInputChange(e)}
                       options={[...currencyOptions]}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
@@ -218,7 +219,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                         }
                         name="exchangeRt"
                         value={formData.exchangeRt}
-                        onChange={actions.handleInputChange}
+                        onChange={(e) => actions.handleInputChange(e)}
                         className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                       />
                       {!!ui.exchangeRateError && (

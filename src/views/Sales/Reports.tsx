@@ -75,7 +75,14 @@ export default function ReportTable() {
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
-  const normalized = (s: unknown) => String(s ?? "").toLowerCase();
+  const normalized = (s: unknown) => {
+    if (s === null || s === undefined) return "";
+    if (typeof s === "string") return s.toLowerCase();
+    if (typeof s === "number" || typeof s === "boolean") {
+      return String(s).toLowerCase();
+    }
+    return "";
+  };
 
   const dateStringForInput = (date: string) => {
     const d = new Date(date);
