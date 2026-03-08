@@ -16,7 +16,7 @@ import PurchaseInvoiceModal from "../../components/procurement/PurchaseInvoiceMo
 import PurchaseOrderModal from "../../components/procurement/PurchaseOrderModal";
 import SupplierPurchaseOrders from "./SupplierPurchaseOrders";
 import SupplierPaymentModal from "../../components/procurement/supply/SupplierPaymentModal";
-/*  PROPS  */
+import SupplierPurchaseInvoices from "./SupplierPurchaseInvoices";
 
 interface Props {
   supplier: Supplier;
@@ -398,6 +398,10 @@ const SupplierDetailView: React.FC<Props> = ({
             {activeTab === "statement" && supplierDetail && (
               <SupplierStatement supplier={supplierDetail} />
             )}
+
+          {activeTab === "bills" && supplierName && (
+  <SupplierPurchaseInvoices supplierName={supplierName} />
+)}
 
             {activeTab === "payments" && (
   <div className="flex flex-col items-center justify-center py-20 text-center">

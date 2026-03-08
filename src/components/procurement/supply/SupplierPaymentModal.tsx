@@ -23,24 +23,19 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
   amountPaid = 0,
   onSubmit,
 }) => {
-  const amountDue = billAmount - amountPaid;
-  const paidPct = billAmount > 0 ? Math.min((amountPaid / billAmount) * 100, 100) : 0;
-  const initials = supplierName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+const amountDue = billAmount - amountPaid;
+const paidPct = billAmount > 0 ? Math.min((amountPaid / billAmount) * 100, 100) : 0;
 
-  const [form, setForm] = useState({
-    amount: amountDue,
-    paymentMode: "Cash",
-    referenceNumber: "",
-    depositInto: "",
-    cashAccount: "Cash In Hand",
-    paymentDate: new Date().toISOString().split("T")[0],
-  });
+const [form, setForm] = useState({
+  amount: amountDue,
+  paymentMode: "Cash",
+  referenceNumber: "",
+  depositInto: "",
+  cashAccount: "Cash In Hand",
+  paymentDate: new Date().toISOString().split("T")[0],
+});
 
+const balanceAfterPayment = amountDue - Number(form.amount || 0);
   const isCash = form.paymentMode === "Cash";
 
   const handleChange = (
@@ -112,7 +107,7 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
     </>
   );
 
-  /* ── RENDER ──────────────────────────────── */
+  /* ── RENDER  */
   return (
     <Modal
       isOpen={isOpen}
@@ -129,55 +124,8 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
         {/*  LEFT: FORM  */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* ── Supplier info row ── */}
-          <div
-            className="border border-theme bg-card"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "10px 14px",
-              borderRadius: 10,
-            }}
-          >
-            <div
-              className="bg-primary"
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 9,
-                flexShrink: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 13,
-                fontWeight: 800,
-                color: "#fff",
-              }}
-            >
-              {initials || "?"}
-            </div>
-            <div style={{ flex: 1 }}>
-              <p
-                className="text-main"
-                style={{ fontWeight: 700, fontSize: 14, margin: 0 }}
-              >
-                {supplierName || "—"}
-              </p>
-              {supplierCode && (
-                <p
-                  className="text-muted"
-                  style={{ fontSize: 11, margin: "1px 0 0" }}
-                >
-                  {supplierCode}
-                </p>
-              )}
-            </div>
-           
-          </div>
-
           {/* ── Row 1: Amount + Mode ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 15 }}>
             <div>
               <label
                 className="form-label"
@@ -305,7 +253,6 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
             gap: 0,
           }}
         >
-          {/* Section label */}
           <p
             className="text-muted"
             style={{
@@ -319,44 +266,44 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
             Summary
           </p>
 
-          {/* Bill number */}
+          {/* Supplier Name */}
           <p className="text-muted" style={{ fontSize: 11, margin: "0 0 2px" }}>
-            Bill No.
+            Supplier
           </p>
           <p
             className="text-main"
             style={{ fontSize: 14, fontWeight: 800, margin: "0 0 16px" }}
           >
-            {billNumber || "—"}
+            {supplierName || "—"}
           </p>
 
           <div className="border-t border-theme" style={{ marginBottom: 14 }} />
 
-          {/* Bill Amount */}
+          {/* Due Amount */}
           <p className="text-muted" style={{ fontSize: 11, margin: "0 0 2px" }}>
-            Bill Amount
+            Due Amount
           </p>
           <p
             className="text-main"
             style={{ fontSize: 15, fontWeight: 700, margin: "0 0 14px" }}
           >
-            ₹{billAmount.toLocaleString("en-IN")}
+            ₹{amountDue.toLocaleString("en-IN")}
           </p>
 
-          {/* Amount Paid */}
+          {/* Payment Amount */}
           <p className="text-muted" style={{ fontSize: 11, margin: "0 0 2px" }}>
-            Amount Paid
+            Payment Amount
           </p>
           <p
             className="text-main"
             style={{ fontSize: 15, fontWeight: 700, margin: "0 0 14px" }}
           >
-            ₹{amountPaid.toLocaleString("en-IN")}
+            ₹{Number(form.amount || 0).toLocaleString("en-IN")}
           </p>
 
           <div className="border-t border-theme" style={{ marginBottom: 14 }} />
 
-          {/* Balance Due */}
+          {/* Balance After Payment */}
           <div
             className="bg-primary"
             style={{ borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}
@@ -371,7 +318,7 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
                 fontWeight: 600,
               }}
             >
-              Amount Due
+              Balance After Payment
             </p>
             <p
               style={{
@@ -382,11 +329,9 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
                 letterSpacing: "-.01em",
               }}
             >
-              ₹{amountDue.toLocaleString("en-IN")}
+              ₹{balanceAfterPayment.toLocaleString("en-IN")}
             </p>
           </div>
-
-         
         </div>
 
       </div>

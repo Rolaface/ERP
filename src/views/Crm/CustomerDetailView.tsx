@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Search,
@@ -18,6 +18,8 @@ import QuotationModal from "../../components/sales/QuotationModal";
 import InvoiceModal from "../../components/sales/InvoiceModal";
 import CustomerStatement from "../Crm/CustomerStatement";
 import CustomerPaymentModal from "../../components/sales/CustomerPaymentModal";
+import CustomerInvoices from "./CustomerInvoices";
+import CustomerQuotations from "./CustomerQuotations";
 import { CreditCard } from "lucide-react";
 interface Props {
   customer: CustomerDetail;
@@ -41,9 +43,9 @@ const CustomerDetailView: React.FC<Props> = ({
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-const [activeTab, setActiveTab] = useState<
-  "overview" | "quotations" | "invoices" | "payments" | "statement"
->("overview");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "quotations" | "invoices" | "payments" | "statement"
+  >("overview");
 
   const q = searchTerm.trim().toLowerCase();
   const filteredCustomers = (customers || []).filter(
@@ -79,14 +81,14 @@ const [activeTab, setActiveTab] = useState<
   const billingAddress = [bLine1, bLine2, bLine3].filter(Boolean).join("\n");
   const sellingTerms = customer?.terms?.selling;
 
-const formattedTerms = `
+  const formattedTerms = `
 PAYMENT TERMS:
 ${sellingTerms?.payment?.phases
-  ?.map(
-    (p: any) =>
-      `• ${p.percentage} - ${p.condition}`
-  )
-  .join("\n") || ""}
+      ?.map(
+        (p: any) =>
+          `• ${p.percentage} - ${p.condition}`
+      )
+      .join("\n") || ""}
 
 Due Dates: ${sellingTerms?.payment?.dueDates || ""}
 Late Charges: ${sellingTerms?.payment?.lateCharges || ""}
@@ -105,52 +107,54 @@ LIABILITY:
 ${sellingTerms?.liability || ""}
 `.trim();
 
- const renderActionButton = () => {
-  switch (activeTab) {
-    case "overview":
-      return (
-        <button
-          onClick={() => setCustomerModalOpen(true)}
-          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-        >
-          <Plus size={14} /> New Customer
-        </button>
-      );
+  const renderActionButton = () => {
+    switch (activeTab) {
+      case "overview":
+        return (
+          <button
+            onClick={() => setCustomerModalOpen(true)}
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+          >
+            <Plus size={14} /> New Customer
+          </button>
+        );
 
-    case "quotations":
-      return (
-        <button
-          onClick={() => setShowQuotationModal(true)}
-          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-        >
-          <Plus size={14} /> New Quotation
-        </button>
-      );
+      case "quotations":
+        return (
+          <button
+            onClick={() => setShowQuotationModal(true)}
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+          >
+            <Plus size={14} /> New Quotation
+          </button>
+        );
 
-    case "invoices":
-      return (
-        <button
-          onClick={() => setShowInvoiceModal(true)}
-          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-        >
-          <Plus size={14} /> New Invoice
-        </button>
-      );
+      case "invoices":
+        return (
+          <button
+            onClick={() => setShowInvoiceModal(true)}
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+          >
+            <Plus size={14} /> New Invoice
+          </button>
+        );
 
-    case "payments":
-      return (
-        <button
-          onClick={() => setShowPaymentModal(true)}
-          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-        >
-          <Plus size={14} /> Record Payment
-        </button>
-      );
+      case "payments":
+        return (
+          <button
+            onClick={() => setShowPaymentModal(true)}
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+          >
+            <Plus size={14} /> Record Payment
+          </button>
+        );
 
-    default:
-      return null;
-  }
-};
+      default:
+        return null;
+    }
+  };
+
+
 
   return (
     <div className="flex flex-col  bg-app text-main overflow-hidden">
@@ -201,11 +205,10 @@ ${sellingTerms?.liability || ""}
               <button
                 key={c.id}
                 onClick={() => onCustomerSelect(c)}
-                className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-3 border ${
-                  c.id === customer.id
+                className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-3 border ${c.id === customer.id
                     ? "bg-primary text-white border-primary shadow-sm"
                     : "bg-transparent border-transparent hover:bg-row-hover"
-                }`}
+                  }`}
               >
                 <div
                   className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-bold text-[10px] ${c.id === customer.id ? "bg-white/20" : "bg-muted text-white"}`}
@@ -256,7 +259,7 @@ ${sellingTerms?.liability || ""}
             </button>
           </div>
 
-          <div>
+          <div className="flex-1 min-w-0 overflow-hidden">
             {activeTab === "overview" && (
               <div className="max-w-6xl mx-auto space-y-4 animate-in fade-in duration-500 p-5">
                 {/* REFINED QUICK INFO ROW */}
@@ -309,60 +312,60 @@ ${sellingTerms?.liability || ""}
                   </div>
                   <div className="bg-card rounded-2xl border border-theme shadow-sm flex flex-col h-[400px]">
                     <h4 className="text-[10px] font-black text-muted uppercase tracking-widest p-5 border-b border-theme">
-  Terms & Conditions
-</h4>
+                      Terms & Conditions
+                    </h4>
 
-<div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
- <div className="text-xs text-muted space-y-4">
+                    <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
+                      <div className="text-xs text-muted space-y-4">
 
-  {/* PAYMENT TERMS */}
-  <div>
-    <h5 className="text-main font-semibold mb-2">Payment Terms</h5>
+                        {/* PAYMENT TERMS */}
+                        <div>
+                          <h5 className="text-main font-semibold mb-2">Payment Terms</h5>
 
-    <ul className="list-disc pl-4 space-y-1">
-      {sellingTerms?.payment?.phases?.map((p: any) => (
-        <li key={p.id}>
-          <span className="font-medium text-main">{p.percentage}</span> - {p.condition}
-        </li>
-      ))}
-    </ul>
+                          <ul className="list-disc pl-4 space-y-1">
+                            {sellingTerms?.payment?.phases?.map((p: any) => (
+                              <li key={p.id}>
+                                <span className="font-medium text-main">{p.percentage}</span> - {p.condition}
+                              </li>
+                            ))}
+                          </ul>
 
-    <div className="mt-2 space-y-1">
-      <p><span className="text-main font-medium">Due Dates:</span> {sellingTerms?.payment?.dueDates}</p>
-      <p><span className="text-main font-medium">Late Charges:</span> {sellingTerms?.payment?.lateCharges}</p>
-      <p><span className="text-main font-medium">Notes:</span> {sellingTerms?.payment?.notes}</p>
-    </div>
-  </div>
+                          <div className="mt-2 space-y-1">
+                            <p><span className="text-main font-medium">Due Dates:</span> {sellingTerms?.payment?.dueDates}</p>
+                            <p><span className="text-main font-medium">Late Charges:</span> {sellingTerms?.payment?.lateCharges}</p>
+                            <p><span className="text-main font-medium">Notes:</span> {sellingTerms?.payment?.notes}</p>
+                          </div>
+                        </div>
 
-  {/* DELIVERY */}
-  <div>
-    <h5 className="text-main font-semibold mb-1">Delivery</h5>
-    <p>{sellingTerms?.delivery}</p>
-  </div>
+                        {/* DELIVERY */}
+                        <div>
+                          <h5 className="text-main font-semibold mb-1">Delivery</h5>
+                          <p>{sellingTerms?.delivery}</p>
+                        </div>
 
-  {/* CANCELLATION */}
-  <div>
-    <h5 className="text-main font-semibold mb-1">Cancellation</h5>
-    <p>{sellingTerms?.cancellation}</p>
-  </div>
+                        {/* CANCELLATION */}
+                        <div>
+                          <h5 className="text-main font-semibold mb-1">Cancellation</h5>
+                          <p>{sellingTerms?.cancellation}</p>
+                        </div>
 
-  {/* WARRANTY */}
-  <div>
-    <h5 className="text-main font-semibold mb-1">Warranty</h5>
-    <p>{sellingTerms?.warranty}</p>
-  </div>
+                        {/* WARRANTY */}
+                        <div>
+                          <h5 className="text-main font-semibold mb-1">Warranty</h5>
+                          <p>{sellingTerms?.warranty}</p>
+                        </div>
 
-  {/* LIABILITY */}
-  <div>
-    <h5 className="text-main font-semibold mb-1">Liability</h5>
-    <p>{sellingTerms?.liability}</p>
-  </div>
+                        {/* LIABILITY */}
+                        <div>
+                          <h5 className="text-main font-semibold mb-1">Liability</h5>
+                          <p>{sellingTerms?.liability}</p>
+                        </div>
 
-</div>
-</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div> 
+              </div>
             )}
 
             {activeTab === "statement" && (
@@ -370,39 +373,33 @@ ${sellingTerms?.liability || ""}
             )}
 
             {/* Empty States for other tabs */}
-            {(activeTab === "quotations" || activeTab === "invoices") && (
+           {activeTab === "quotations" && (
+  <div className="p-5 w-full min-w-0 overflow-hidden">
+    <CustomerQuotations customerId={customer.id} />
+  </div>
+)}
+
+{activeTab === "invoices" && (
+  <div className="p-5 w-full min-w-0 overflow-hidden">
+    <CustomerInvoices customerName={customer.name} />
+  </div>
+)}
+
+            {activeTab === "payments" && (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="p-5 rounded-2xl bg-row-hover text-muted mb-4">
-                  {activeTab === "quotations" ? (
-                    <FileText size={32} />
-                  ) : (
-                    <Receipt size={32} />
-                  )}
+                  <CreditCard size={32} />
                 </div>
+
                 <h3 className="text-sm font-bold text-main">
-                  No {activeTab} available
+                  No payments recorded
                 </h3>
+
                 <p className="text-[10px] text-muted font-bold uppercase mt-1">
-                  Transaction history is empty
+                  Customer payment history will appear here
                 </p>
               </div>
             )}
-
-            {activeTab === "payments" && (
-  <div className="flex flex-col items-center justify-center py-20 text-center">
-    <div className="p-5 rounded-2xl bg-row-hover text-muted mb-4">
-      <CreditCard size={32} />
-    </div>
-
-    <h3 className="text-sm font-bold text-main">
-      No payments recorded
-    </h3>
-
-    <p className="text-[10px] text-muted font-bold uppercase mt-1">
-      Customer payment history will appear here
-    </p>
-  </div>
-)}
           </div>
         </main>
       </div>
@@ -421,10 +418,10 @@ ${sellingTerms?.liability || ""}
         onSubmit={(created: any) => onCustomerSelect(created)}
       />
       <CustomerPaymentModal
-  isOpen={showPaymentModal}
-  onClose={() => setShowPaymentModal(false)}
-  customerId={customer.id}
-/>
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        customerId={customer.id}
+      />
     </div>
   );
 };

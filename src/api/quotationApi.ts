@@ -9,6 +9,7 @@ export async function getAllQuotations(
   page = 1,
   page_size = 10,
   options?: {
+    customer?: string;
     search?: string;
     status?: string;
     fromDate?: string;
@@ -18,9 +19,11 @@ export async function getAllQuotations(
   }
 ) {
   const params: Record<string, any> = {
-    page,
-    page_size,
-  };
+  page,
+  page_size,
+};
+
+if (options?.customer) params.customer = options.customer;
 
   if (options?.search) params.search = options.search;
   if (options?.status) params.status = options.status;

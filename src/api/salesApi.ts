@@ -28,10 +28,23 @@ export async function getAllSalesInvoices(
   sortBy: string = "",
   sortOrder: "asc" | "desc" = "asc",
   search?: string,
+  customer?: string
 ): Promise<any> {
-  const resp: AxiosResponse = await api.get(InvoiceAPI.getAll, {
-    params: { page, page_size, sortBy, sortOrder, search},
-  });
+
+  const params: any = {
+    page,
+    page_size,
+    sortBy,
+    sortOrder,
+    search
+  };
+
+  if (customer) {
+    params.customer = customer;
+  }
+
+  const resp: AxiosResponse = await api.get(InvoiceAPI.getAll, { params });
+
   return resp.data;
 }
 
