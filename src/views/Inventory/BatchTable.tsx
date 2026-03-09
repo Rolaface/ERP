@@ -90,22 +90,22 @@ const PortalMenu: React.FC<{
     setPos({ top, left: r.right - 172 });
   }, [open, anchor]);
 
- useEffect(() => {
-  if (!open) return;
+  useEffect(() => {
+    if (!open) return;
 
-  const h = (e: MouseEvent) => {
-    const target = e.target as Node;
+    const h = (e: MouseEvent) => {
+      const target = e.target as Node;
 
-    if (anchor?.contains(target)) return;
+      if (anchor?.contains(target)) return;
 
-    if ((target as HTMLElement).closest(".batch-menu")) return;
+      if ((target as HTMLElement).closest(".batch-menu")) return;
 
-    onClose();
-  };
+      onClose();
+    };
 
-  document.addEventListener("mousedown", h);
-  return () => document.removeEventListener("mousedown", h);
-}, [open, anchor, onClose]);
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open, anchor, onClose]);
 
   if (!open) return null;
   return ReactDOM.createPortal(
@@ -147,10 +147,10 @@ const BatchMenu: React.FC<{
       color: "#c97d2e",
       danger: false,
       action: () => {
-  console.log("Stock correction clicked", batch);
-  onEdit?.(batch);
-  setOpen(false);
-}
+        console.log("Stock correction clicked", batch);
+        onEdit?.(batch);
+        setOpen(false);
+      },
     },
     onLedger && {
       icon: BookOpen,
@@ -744,7 +744,7 @@ const BatchTable: React.FC<Props> = ({
   const totalQty = enriched.reduce((s, b) => s + (b.bal_qty ?? 0), 0);
   const totalBuy = enriched.reduce((s, b) => s + Number(b.buy_value || 0), 0);
   const totalSell = enriched.reduce((s, b) => s + Number(b.sell_value || 0), 0);
- 
+
   return (
     <>
       <div
@@ -932,16 +932,16 @@ const BatchTable: React.FC<Props> = ({
                     </td>
 
                     {/* ── Actions ── */}
-                   <td
-  className="px-4 py-3"
-  onMouseDown={(e) => {
-    e.stopPropagation();
-  }}
-  onClick={(e) => {
-    e.stopPropagation();
-    e.preventDefault();
-  }}
->
+                    <td
+                      className="px-4 py-3"
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                    >
                       <div
                         style={{
                           display: "flex",
@@ -983,12 +983,12 @@ const BatchTable: React.FC<Props> = ({
                           View
                         </button>
                         {/* Three-dot menu */}
-<BatchMenu
-  batch={b}
-  onEdit={(batch) => onEdit?.(batch)}
-  onDelete={(batch) => onDelete?.(batch)}
-  onLedger={(batch) => onLedger?.(batch)}
-/>
+                        <BatchMenu
+                          batch={b}
+                          onEdit={(batch) => onEdit?.(batch)}
+                          onDelete={(batch) => onDelete?.(batch)}
+                          onLedger={(batch) => onLedger?.(batch)}
+                        />
                       </div>
                     </td>
                   </tr>
@@ -1042,7 +1042,6 @@ const BatchTable: React.FC<Props> = ({
       </div>
 
       <BatchDetailModal batch={viewBatch} onClose={() => setViewBatch(null)} />
-     
     </>
   );
 };
