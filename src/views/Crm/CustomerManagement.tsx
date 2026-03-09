@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import CustomerDetailView from "./CustomerDetailView";
-import { showLoading,showApiError,showSuccess,closeSwal } from "../../utils/alert";
+import { showLoading, showApiError, showSuccess, closeSwal } from "../../utils/alert";
 import {
   getAllCustomers,
   deleteCustomerById,
@@ -44,28 +44,28 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [taxCategory, setTaxCategory] = useState<string>("");
 
 
-const fetchCustomers = async () => {
-  try {
-    setCustLoading(true);
+  const fetchCustomers = async () => {
+    try {
+      setCustLoading(true);
 
-    const response = await getAllCustomers(
-      page,
-      pageSize,
-      taxCategory || undefined
-    );
+      const response = await getAllCustomers(
+        page,
+        pageSize,
+        taxCategory || undefined
+      );
 
-    setCustomers(response.data);
-    setTotalPages(response.pagination?.total_pages || 1);
-    setTotalItems(response.pagination?.total || 1);
+      setCustomers(response.data);
+      setTotalPages(response.pagination?.total_pages || 1);
+      setTotalItems(response.pagination?.total || 1);
 
-  } catch (error) {
-    console.error("Error loading customers:", error);
-    showApiError(error);
-  } finally {
-    setCustLoading(false);
-    setInitialLoad(false);
-  }
-};
+    } catch (error) {
+      console.error("Error loading customers:", error);
+      showApiError(error);
+    } finally {
+      setCustLoading(false);
+      setInitialLoad(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -89,42 +89,42 @@ const fetchCustomers = async () => {
   };
 
 
- const handleDelete = async (
-  customerId: string,
-  e: React.MouseEvent
-) => {
-  e.stopPropagation();
+  const handleDelete = async (
+    customerId: string,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
 
-  const confirm = await Swal.fire({
-    icon: "warning",
-    title: "Are you sure?",
-    text: `Delete customer ${customerId}?`,
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, delete",
-  });
+    const confirm = await Swal.fire({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete customer ${customerId}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+    });
 
-  if (!confirm.isConfirmed) return;
+    if (!confirm.isConfirmed) return;
 
-  try {
-    showLoading("Deleting Customer...");
+    try {
+      showLoading("Deleting Customer...");
 
-    await deleteCustomerById(customerId);
+      await deleteCustomerById(customerId);
 
-    closeSwal();
+      closeSwal();
 
-    setCustomers((prev) =>
-      prev.filter((c) => c.id !== customerId)
-    );
+      setCustomers((prev) =>
+        prev.filter((c) => c.id !== customerId)
+      );
 
-    showSuccess("Customer deleted successfully.");
+      showSuccess("Customer deleted successfully.");
 
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
 
   const handleAddCustomer = () => {
@@ -139,9 +139,9 @@ const fetchCustomers = async () => {
       setEditCustomer(customer.data ?? customer);
       setShowModal(true);
     } catch (error) {
-  console.error("Failed to fetch customer:", error);
-  showApiError(error);
-}
+      console.error("Failed to fetch customer:", error);
+      showApiError(error);
+    }
   };
 
   const handleCustomerSaved = async () => {
@@ -186,14 +186,16 @@ const fetchCustomers = async () => {
       key: "type",
       header: "Type",
       align: "left",
-      render: (c: CustomerSummary) => <StatusBadge status={c.type} />,
+      render: (c: CustomerSummary) => (
+        <span>{c.type ?? "—"}</span>
+      ),
     },
     {
       key: "customerTaxCategory",
       header: "TaxCategory",
       align: "left",
       render: (c: CustomerSummary) => (
-        <StatusBadge status={c.customerTaxCategory} />
+        <span>{c.customerTaxCategory ?? "—"}</span>
       ),
     },
     {
@@ -268,7 +270,7 @@ const fetchCustomers = async () => {
                   }}
                   options={[
                     { label: "Non-Export", value: "Non-Export" },
-                    {label: "Export", value:"Export"}
+                    { label: "Export", value: "Export" }
                   ]}
                 />
               </div>

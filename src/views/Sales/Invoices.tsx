@@ -19,7 +19,7 @@ import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { getCompanyById } from "../../api/companySetupApi";
 import type { Company } from "../../types/company";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import { showApiError, showSuccess, showLoading, closeSwal, showConfirm } from "../../utils/alert";
 import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -142,19 +142,19 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setPage(1);
   };
   const handleTakePayment = async (invoiceNumber: string) => {
-  try {
-    console.log("Take payment for:", invoiceNumber);
+    try {
+      console.log("Take payment for:", invoiceNumber);
 
-    // open payment modal or redirect
-    // example
-    // setPaymentInvoice(invoiceNumber);
-    // setPaymentModalOpen(true);
+      // open payment modal or redirect
+      // example
+      // setPaymentInvoice(invoiceNumber);
+      // setPaymentModalOpen(true);
 
-    showSuccess(`Opening payment for invoice ${invoiceNumber}`);
-  } catch (err) {
-    showApiError(err);
-  }
-};
+      showSuccess(`Opening payment for invoice ${invoiceNumber}`);
+    } catch (err) {
+      showApiError(err);
+    }
+  };
 
 
   const handleReceivePayment = (inv: InvoiceSummary) => {
@@ -371,11 +371,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     invoiceNumber: string,
     status: InvoiceStatus,
   ) => {
-    if (
-      CRITICAL_STATUSES.includes(status) &&
-      !window.confirm(`Mark invoice ${invoiceNumber} as ${status}? This action cannot be undone.`)
-    ) {
-      return;
+    if (CRITICAL_STATUSES.includes(status)) {
+      const confirmed = await showConfirm(
+        `Mark invoice ${invoiceNumber} as ${status}? This action cannot be undone.`
+      );
+
+      if (!confirmed) return;
     }
 
     const res = await updateInvoiceStatus(invoiceNumber, status);
@@ -533,7 +534,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                   },
                 ]
                 : []),
-             
+
               {
                 label: "View PDF",
                 onClick: () => handlePreviewPDF(inv),
