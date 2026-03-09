@@ -24,7 +24,7 @@ import autoTable from "jspdf-autotable";
 import { getPurchaseOrderById } from "../../api/procurement/PurchaseOrderApi";
 import type { PurchaseOrderFilters } from "../../api/procurement/PurchaseOrderApi";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
-import { generatePurchaseOrderPDF } from "../../components/template/purchasetOrderemplete";
+import { generatePurchaseOrderPDF } from "../../components/template/purchaseordertemplete";
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
@@ -322,6 +322,19 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     } catch (error) {
       closeSwal();
       showApiError(error);
+    }
+  };
+  const handleView = async (poId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDrawerOpen(true);
+    setDrawerLoading(true);
+    setDrawerData(null);
+    try {
+      const res = await getPurchaseOrderById(poId);
+      if (res?.status === "success")
+        setDrawerData(res.data as PurchaseOrderDetail);
+    } finally {
+      setDrawerLoading(false);
     }
   };
 

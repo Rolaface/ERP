@@ -143,40 +143,45 @@ export const usePurchaseOrderForm = ({
   }, [isOpen, poId]);
 
   // Calculate totals (Items + Taxes + Rounding)
-  useEffect(() => {
-    const subTotal = form.items.reduce(
-      (sum, item) => sum + item.quantity * item.rate,
-      0,
-    );
+useEffect(() => {
+  let subTotal = 0;
+  let totalTax = 0;
 
-    const itemTaxTotal = form.items.reduce((sum, item) => {
-      const base = item.quantity * item.rate;
-      return sum + (base * (item.vatRate || 0)) / 100;
-    }, 0);
+  form.items.forEach((item) => {
+    const qty = Number(item.quantity || 0);
+    const rate = Number(item.rate || 0);
+    const vatRate = Number(item.vatRate || 0);
 
-    const taxRowTotal = form.taxRows.reduce((sum, t) => {
-      return sum + (t.amount * t.taxRate) / 100;
-    }, 0);
+    const lineAmount = qty * rate;
+    const taxAmount = (lineAmount * vatRate) / 100;
 
-    const grandTotal = subTotal + itemTaxTotal + taxRowTotal;
+    subTotal += lineAmount;
+    totalTax += taxAmount;
+  });
 
-    const totalQuantity = form.items.reduce(
-      (sum, item) => sum + (Number(item.quantity) || 0),
-      0,
-    );
+  const taxRowTotal = form.taxRows.reduce((sum, t) => {
+    const amount = Number(t.amount || 0);
+    const rate = Number(t.taxRate || 0);
+    return sum + (amount * rate) / 100;
+  }, 0);
 
-    const roundedTotal = Math.round(grandTotal);
-    const roundingAdjustment = Number((roundedTotal - grandTotal).toFixed(2));
+  totalTax += taxRowTotal;
 
-    setForm((p) => ({
-      ...p,
-      totalQuantity,
-      grandTotal,
-      roundingAdjustment,
-      roundedTotal,
-    }));
-  }, [form.items, form.taxRows]);
+  const grandTotal = subTotal + totalTax;
 
+  const totalQuantity = form.items.reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
+    0
+  );
+
+  setForm((prev) => ({
+    ...prev,
+    totalQuantity,
+    subTotal,
+    totalTax,
+    grandTotal,
+  }));
+}, [form.items, form.taxRows]);
   type AddressKey = keyof PurchaseOrderFormData["addresses"];
 
   const updateAddress = (

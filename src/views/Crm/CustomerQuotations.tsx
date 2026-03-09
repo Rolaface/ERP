@@ -14,6 +14,7 @@ interface Quotation {
   transactionDate: string;
   validTill: string;
   grandTotal: number;
+    invoiceStatus: string;
   currency: string;
 }
 
@@ -100,6 +101,7 @@ const CustomerQuotations = ({ customerId }: Props) => {
         </span>
       ),
     },
+ 
     {
       key: "validTill",
       header: "Valid Till",
@@ -112,6 +114,23 @@ const CustomerQuotations = ({ customerId }: Props) => {
           <span className="text-xs text-muted">—</span>
         ),
     },
+ {
+  key: "invoiceStatus",
+  header: "Status",
+  render: (row: Quotation) => (
+    <span
+      className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${
+        row.invoiceStatus === "Sent"
+          ? "bg-success/10 text-success"
+          : row.invoiceStatus === "Draft"
+          ? "bg-warning/10 text-warning"
+          : "bg-muted/10 text-muted"
+      }`}
+    >
+      {row.invoiceStatus}
+    </span>
+  ),
+},
     {
       key: "amount",
       header: "Amount",

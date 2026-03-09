@@ -190,7 +190,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
           correction_type: form.type,
           adjustment_qty:  adj,
           new_qty:         newQty,
-          reason_code:     form.reason,
+          reason :     form.reason,
           notes:           form.remarks,
         }],
       });
@@ -644,7 +644,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
 
                   <div>
-                    <FL text="Reason Code" required />
+                    <FL text="Select Reason for Correction" required />
                     <div style={{ position: "relative" }}>
                       <select
                         className="scm-field scm-field-select"
@@ -655,7 +655,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
                           color: form.reason ? "var(--text)" : "var(--muted)",
                         }}
                       >
-                        <option value="">Select reason code…</option>
+                        <option value="">Select reason for correct..…</option>
                         {REASONS.map(r => (
                           <option key={r.id} value={r.id}>{r.id} — {r.label}</option>
                         ))}

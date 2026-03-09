@@ -90,7 +90,9 @@ export interface PurchaseInvoiceFormData {
 
   totalQuantity: number;
   grandTotal: number;
-  roundingAdjustment: number;
+  totalTax: number;
+subTotal: number;
+
   roundedTotal: number;
   items: ItemRow[];
   taxRows: TaxRow[];
@@ -204,8 +206,10 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   paymentTermsTemplate: "",
   totalQuantity: 0,
   grandTotal: 0,
-  roundingAdjustment: 0,
+  subTotal: 0,
   roundedTotal: 0,
+  totalTax: 0,
+
 
   items: [{ ...emptyItem }],
   taxRows: [], // Start with empty array, user can add as needed
