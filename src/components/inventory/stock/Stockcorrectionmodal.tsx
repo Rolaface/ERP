@@ -1,7 +1,6 @@
 // ─── Stock Correction Modal ───────────────────────────────────────────────────
-// Zero top-level external dependencies — opens guaranteed.
-// createItemStock is dynamic-imported only on submit (won't crash on load).
-// Portal into document.body — no z-index / overflow issues.
+// Sections: Item Info (with Warehouse + Date) · System Stock · Correction Details · Reason
+// Uses project CSS variables from index.css — fully theme-aware.
 
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
@@ -15,8 +14,13 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   SlidersHorizontal,
-  ChevronRight,
+  ChevronDown,
   AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ArrowRight,
+  Calendar,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -28,38 +32,61 @@ export interface StockCorrectionModalProps {
   onClose:    () => void;
   onSuccess?: () => void;
   batch?: {
-    batch_no?:  string;
-    bal_qty?:   number;
-    _itemCode?: string;
-    _itemName?: string;
+    batch_no?:     string;
+    bal_qty?:      number;
+    reserved_qty?: number;
+    uom?:          string;
+    warehouse?:    string;
+    _itemCode?:    string;
+    _itemName?:    string;
     [key: string]: any;
   } | null;
+  warehouse?: string;
 }
 
 interface FormState {
-  itemCode:   string;
-  itemName:   string;
-  currentQty: number | null;
-  type:       CorrectionType;
-  qty:        string;
-  reason:     string;
-  notes:      string;
+  itemCode:    string;
+  itemName:    string;
+  batchNo:     string;
+  uom:         string;
+  warehouse:   string;
+  currentQty:  number | null;
+  reservedQty: number | null;
+  type:        CorrectionType;
+  qty:         string;
+  reason:      string;
+  remarks:     string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EMPTY: FormState = {
-  itemCode: "", itemName: "", currentQty: null,
-  type: "add", qty: "", reason: "", notes: "",
+  itemCode: "", itemName: "", batchNo: "", uom: "", warehouse: "",
+  currentQty: null, reservedQty: null,
+  type: "add", qty: "",
+  reason: "", remarks: "",
 };
 
 const TYPES: {
   id: CorrectionType; label: string; desc: string;
-  Icon: React.ElementType; color: string; bg: string; ring: string;
+  Icon: React.ElementType; TrendIcon: React.ElementType;
+  rawColor: string; bgColor: string; ringColor: string;
 }[] = [
-  { id: "add",    label: "Add Stock",    desc: "Increase quantity",      Icon: ArrowUpCircle,    color: "#059669", bg: "rgba(5,150,105,0.09)",  ring: "rgba(5,150,105,0.28)"  },
-  { id: "remove", label: "Remove Stock", desc: "Decrease quantity",      Icon: ArrowDownCircle,  color: "#dc2626", bg: "rgba(220,38,38,0.09)",  ring: "rgba(220,38,38,0.28)"  },
-  { id: "set",    label: "Set Exact",    desc: "Physical count result",  Icon: SlidersHorizontal,color: "#2563eb", bg: "rgba(37,99,235,0.09)",  ring: "rgba(37,99,235,0.28)"  },
+  {
+    id: "add",    label: "Add Stock",    desc: "Increase quantity",
+    Icon: ArrowUpCircle,     TrendIcon: TrendingUp,
+    rawColor: "#22c55e", bgColor: "rgba(34,197,94,0.08)",  ringColor: "rgba(34,197,94,0.22)",
+  },
+  {
+    id: "remove", label: "Remove Stock", desc: "Decrease quantity",
+    Icon: ArrowDownCircle,   TrendIcon: TrendingDown,
+    rawColor: "#dc2626", bgColor: "rgba(220,38,38,0.08)",  ringColor: "rgba(220,38,38,0.22)",
+  },
+  {
+    id: "set",    label: "Set Exact",    desc: "Physical count result",
+    Icon: SlidersHorizontal, TrendIcon: Minus,
+    rawColor: "#2563eb", bgColor: "rgba(37,99,235,0.08)",  ringColor: "rgba(37,99,235,0.22)",
+  },
 ];
 
 const REASONS = [
@@ -76,39 +103,44 @@ const REASONS = [
   { id: "OTHER",           label: "Other"                     },
 ];
 
-// ─── Pure helpers ─────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function calcNew(cur: number, adj: number, t: CorrectionType) {
   if (t === "add")    return cur + adj;
   if (t === "remove") return Math.max(0, cur - adj);
-  return adj; // set
+  return adj;
+}
+
+function nowLabel() {
+  return new Date().toLocaleString("en-GB", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
   isOpen, onClose, onSuccess, batch,
+  warehouse: propWarehouse,
 }) => {
-  const [form,      setForm]      = useState<FormState>(EMPTY);
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState<string | null>(null);
-  const [success,   setSuccess]   = useState(false);
-  const batchKey = useRef<string | null>(null);
+  const [form,    setForm]    = useState<FormState>(EMPTY);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [docDate]             = useState(nowLabel());
+  const batchKey              = useRef<string | null>(null);
 
-  // Reset when modal closes
   useEffect(() => {
     if (!isOpen) {
       const t = setTimeout(() => {
-        setForm(EMPTY);
-        setError(null);
-        setSuccess(false);
+        setForm(EMPTY); setError(null); setSuccess(false);
         batchKey.current = null;
       }, 220);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
 
-  // Pre-fill from batch prop — no API call needed
   useEffect(() => {
     if (!isOpen || !batch) return;
     const key = `${batch._itemCode ?? ""}|${batch.batch_no ?? ""}`;
@@ -116,13 +148,16 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
     batchKey.current = key;
     setForm(prev => ({
       ...prev,
-      itemCode:   batch._itemCode ?? "",
-      itemName:   batch._itemName ?? "",
-      currentQty: typeof batch.bal_qty === "number" ? batch.bal_qty : null,
+      itemCode:    batch._itemCode   ?? "",
+      itemName:    batch._itemName   ?? "",
+      batchNo:     batch.batch_no    ?? "",
+      uom:         batch.uom         ?? "",
+      warehouse:   propWarehouse ?? batch.warehouse ?? "",
+      currentQty:  typeof batch.bal_qty      === "number" ? batch.bal_qty      : null,
+      reservedQty: typeof batch.reserved_qty === "number" ? batch.reserved_qty : null,
     }));
-  }, [isOpen, batch]);
+  }, [isOpen, batch, propWarehouse]);
 
-  // Escape key
   useEffect(() => {
     if (!isOpen) return;
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -130,15 +165,16 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
     return () => document.removeEventListener("keydown", h);
   }, [isOpen, onClose]);
 
-  // Derived values
-  const adj    = parseFloat(form.qty) || 0;
-  const cur    = form.currentQty ?? 0;
-  const newQty = calcNew(cur, adj, form.type);
-  const diff   = newQty - cur;
-  const AT     = TYPES.find(t => t.id === form.type)!;
-  const canSave = !!form.itemCode && adj > 0 && !!form.reason && !loading;
+  const adj       = parseFloat(form.qty) || 0;
+  const cur       = form.currentQty  ?? 0;
+  const reserved  = form.reservedQty ?? 0;
+  const available = Math.max(0, cur - reserved);
+  const newQty    = calcNew(cur, adj, form.type);
+  const diff      = newQty - cur;
+  const AT        = TYPES.find(t => t.id === form.type)!;
+  const canSave   = !!form.itemCode && adj > 0 && !!form.reason && !loading;
 
-  const setField = <K extends keyof FormState>(k: K, v: FormState[K]) =>
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,7 +183,6 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
     setError(null);
     setLoading(true);
     try {
-      // Dynamic import — won't crash modal if API module has issues
       const { createItemStock } = await import("../../../api/stockApi");
       const res = await createItemStock({
         items: [{
@@ -156,7 +191,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
           adjustment_qty:  adj,
           new_qty:         newQty,
           reason_code:     form.reason,
-          notes:           form.notes,
+          notes:           form.remarks,
         }],
       });
       if (!res || res.status_code !== 200) {
@@ -164,7 +199,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
         return;
       }
       setSuccess(true);
-      setTimeout(() => { onSuccess?.(); onClose(); }, 1100);
+      setTimeout(() => { onSuccess?.(); onClose(); }, 1400);
     } catch (err: any) {
       setError(err?.message ?? "Something went wrong.");
     } finally {
@@ -174,291 +209,549 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
 
   if (!isOpen) return null;
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  const diffLabel = diff > 0 ? `+${diff}` : `${diff}`;
+  const diffColor = diff > 0 ? "var(--success)" : diff < 0 ? "var(--danger)" : "var(--muted)";
+
+  // All form fields share this exact height so every row is consistent
+  const FIELD_H = 36;
 
   return ReactDOM.createPortal(
     <>
-      {/* ── Injected styles ── */}
       <style>{`
-        @keyframes scm-backdrop { from{opacity:0} to{opacity:1} }
-        @keyframes scm-slide    { from{opacity:0;transform:translateY(20px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-        .scm-backdrop { animation: scm-backdrop 0.18s ease; }
-        .scm-panel    { animation: scm-slide    0.22s cubic-bezier(0.34,1.3,0.64,1); }
-        .scm-input    { transition: border-color 0.15s, box-shadow 0.15s; }
-        .scm-input:focus { outline:none; border-color:#c97d2e !important; box-shadow:0 0 0 3px rgba(201,125,46,0.14) !important; }
-        .scm-input::placeholder { color:#c4b8ac; }
-        .scm-type-card { transition: all 0.15s; cursor:pointer; }
-        .scm-type-card:hover { opacity:0.82; }
-        .scm-ghost { transition: background 0.12s; }
-        .scm-ghost:hover { background: rgba(201,125,46,0.06) !important; }
+        @keyframes scm-in   { from{opacity:0} to{opacity:1} }
+        @keyframes scm-up   { from{opacity:0;transform:translateY(24px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes scm-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes scm-pop  { 0%{transform:scale(0.92)} 60%{transform:scale(1.06)} 100%{transform:scale(1)} }
+
+        .scm-overlay     { animation: scm-in  0.18s ease; }
+        .scm-dialog      { animation: scm-up  0.24s cubic-bezier(0.22,1,0.36,1); }
+        .scm-spinner     { animation: scm-spin 0.75s linear infinite; }
+        .scm-success-pop { animation: scm-pop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+
+        /* ── Shared field base ── */
+        .scm-field {
+          width: 100%; height: 36px; border-radius: 8px;
+          border: 1.5px solid var(--border);
+          background: var(--bg); color: var(--text);
+          font-size: 13px; font-family: inherit;
+          transition: border-color .14s, box-shadow .14s;
+          box-sizing: border-box;
+        }
+        .scm-field-input  { padding: 0 11px; display: block; }
+        .scm-field-select { padding: 0 32px 0 11px; display: block; appearance: none; cursor: pointer; }
+        .scm-field:focus  {
+          outline: none; border-color: var(--primary);
+          box-shadow: 0 0 0 3px rgba(192,132,61,0.13);
+        }
+        .scm-field::placeholder { color: var(--muted); opacity: .45; }
+
+        /* readonly display — same height as fields */
+        .scm-readonly {
+          height: 36px; border-radius: 8px;
+          border: 1.5px solid var(--border);
+          background: var(--bg);
+          display: flex; align-items: center; padding: 0 11px;
+          font-size: 13px; box-sizing: border-box;
+        }
+
+        /* textarea — taller but consistent border style */
+        .scm-textarea {
+          width: 100%; border-radius: 8px;
+          border: 1.5px solid var(--border);
+          background: var(--bg); color: var(--text);
+          font-size: 13px; font-family: inherit;
+          padding: 8px 11px; resize: none; line-height: 1.55;
+          box-sizing: border-box;
+          transition: border-color .14s, box-shadow .14s;
+        }
+        .scm-textarea:focus {
+          outline: none; border-color: var(--primary);
+          box-shadow: 0 0 0 3px rgba(192,132,61,0.13);
+        }
+        .scm-textarea::placeholder { color: var(--muted); opacity: .45; }
+
+        /* ── Buttons ── */
+        .scm-ghost {
+          display: flex; align-items: center; gap: 6px;
+          padding: 0 14px; height: 34px; border-radius: 8px;
+          border: 1.5px solid var(--border);
+          background: transparent; color: var(--muted);
+          font-size: 12px; font-weight: 600; cursor: pointer;
+          transition: all .13s; font-family: inherit; white-space: nowrap;
+        }
+        .scm-ghost:hover { background: var(--bg); color: var(--text); border-color: var(--primary); }
+
+        .scm-submit {
+          display: flex; align-items: center; gap: 7px;
+          padding: 0 22px; height: 34px; border-radius: 8px; border: none;
+          font-size: 12px; font-weight: 800; letter-spacing: .06em;
+          text-transform: uppercase; cursor: pointer;
+          transition: all .18s; font-family: inherit; white-space: nowrap;
+        }
+        .scm-submit:disabled { cursor: not-allowed; }
+        .scm-submit:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+        /* ── Section header ── */
+        .scm-section-hd {
+          display: flex; align-items: center; gap: 8px;
+          padding-bottom: 11px; border-bottom: 1px solid var(--border);
+          margin-bottom: 14px;
+        }
+        .scm-badge {
+          width: 20px; height: 20px; border-radius: 50%;
+          background: var(--primary); color: #fff;
+          font-size: 10px; font-weight: 900;
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .scm-section-title {
+          font-size: 10px; font-weight: 900; letter-spacing: .11em;
+          text-transform: uppercase; color: var(--primary);
+        }
+
+        /* ── Stock stat cards ── */
+        .scm-stat {
+          flex: 1; border-radius: 10px; padding: 11px 14px;
+          background: var(--bg); border: 1.5px solid var(--border);
+          display: flex; flex-direction: column; gap: 3px; min-width: 0;
+        }
+        .scm-stat-lbl { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+        .scm-stat-val { font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }
+        .scm-stat-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+        /* ── Flow panel ── */
+        .scm-flow {
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 14px; border-radius: 10px;
+          background: var(--bg); border: 1.5px solid var(--border);
+        }
+        .scm-flow-col { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; }
+        .scm-flow-lbl { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+        .scm-flow-num { font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; color: var(--text); line-height: 1; }
+
+        /* ── Type indicator badge ── */
+        .scm-type-badge {
+          display: inline-flex; align-items: center; gap: 5px;
+          margin-top: 5px; padding: 3px 9px; border-radius: 6px;
+          font-size: 10px; font-weight: 700;
+        }
+
+        /* ── Scrollbar ── */
+        .scm-scroll::-webkit-scrollbar { width: 4px; }
+        .scm-scroll::-webkit-scrollbar-track { background: transparent; }
+        .scm-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
       `}</style>
 
-      {/* ── Backdrop ── */}
+      {/* ── Overlay ── */}
       <div
-        className="scm-backdrop"
-        style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(10,6,2,0.55)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}
+        className="scm-overlay"
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+        style={{
+          position: "fixed", inset: 0, zIndex: 10000,
+          background: "rgba(0,0,0,0.48)",
+          backdropFilter: "blur(8px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 16,
+        }}
       >
-        {/* ── Panel ── */}
+        {/* ── Dialog ── */}
         <div
-          className="scm-panel"
-          style={{ width:"min(860px,100%)", maxHeight:"92vh", display:"flex", flexDirection:"column", borderRadius:22, overflow:"hidden", boxShadow:"0 40px 100px rgba(0,0,0,.4), 0 0 0 1px rgba(201,125,46,.18)" }}
+          className="scm-dialog"
+          style={{
+            width: "min(820px,100%)", maxHeight: "92vh",
+            display: "flex", flexDirection: "column",
+            borderRadius: 16, overflow: "hidden",
+            background: "var(--card)",
+            boxShadow: "0 28px 72px rgba(0,0,0,0.26), 0 0 0 1px var(--border)",
+          }}
         >
 
-          {/* ═══ HEADER ═══ */}
-          <div style={{ flexShrink:0, background:"linear-gradient(135deg,#161009 0%,#28180a 100%)", padding:"18px 26px", display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:"1px solid rgba(201,125,46,.16)" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-              {/* Icon box */}
-              <div style={{ width:44, height:44, borderRadius:13, background:"rgba(201,125,46,.13)", border:"1px solid rgba(201,125,46,.26)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <Package size={20} style={{ color:"#c97d2e" }} />
+          {/* ══════════════ HEADER ══════════════ */}
+          <div style={{
+            flexShrink: 0,
+            background: "var(--table-head)",
+            padding: "14px 20px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            borderBottom: "1px solid var(--border)",
+          }}>
+            {/* Left: icon + title + date */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 9,
+                background: "rgba(255,255,255,0.12)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                <Package size={17} style={{ color: "var(--table-head-text,#fff)" }} />
               </div>
               <div>
-                <p style={{ color:"#f0e8de", fontWeight:800, fontSize:15, margin:0, letterSpacing:"-0.01em" }}>Stock Correction</p>
-                <p style={{ color:"rgba(201,125,46,.6)", fontSize:11, margin:"3px 0 0", lineHeight:1 }}>
-                  {form.itemName
-                    ? `Adjusting · ${form.itemName}${batch?.batch_no ? ` · Batch ${batch.batch_no}` : ""}`
-                    : "Manual inventory adjustment — full audit trail"}
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: "var(--table-head-text,#fff)", letterSpacing: "-0.01em" }}>
+                  Stock Correction
                 </p>
-              </div>
-            </div>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 11px", borderRadius:8, background:"rgba(201,125,46,.09)", border:"1px solid rgba(201,125,46,.2)", color:"rgba(201,125,46,.75)", fontSize:10, fontWeight:700, letterSpacing:".05em" }}>
-                <ShieldCheck size={12} style={{ color:"#c97d2e" }} />
-                Audit-logged
-              </div>
-              <button
-                onClick={onClose}
-                style={{ width:32, height:32, borderRadius:9, border:"1px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.05)", color:"rgba(255,255,255,.45)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}
-                onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,.1)")}
-                onMouseLeave={e=>(e.currentTarget.style.background="rgba(255,255,255,.05)")}
-              >
-                <X size={15} />
-              </button>
-            </div>
-          </div>
-
-          {/* ═══ BODY ═══ */}
-          <form onSubmit={handleSubmit} style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden", background:"#f8f4f0" }}>
-            <div style={{ flex:1, display:"flex", overflowY:"auto", minHeight:0 }}>
-
-              {/* ── LEFT: Form ── */}
-              <div style={{ flex:1, padding:"26px 28px", display:"flex", flexDirection:"column", gap:24, minWidth:0, overflowY:"auto" }}>
-
-                {/* ① Item */}
-                <Section step={1} title="Item">
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-                    <div>
-                      <Label text="Item Code / Name" required />
-                      <input
-                        className="scm-input"
-                        value={form.itemCode}
-                        onChange={e => { setField("itemCode", e.target.value); setField("itemName", e.target.value); }}
-                        placeholder="Enter item code…"
-                        style={inputStyle()}
-                      />
-                    </div>
-                    <div>
-                      <Label text="Current Stock" />
-                      <div style={{ height:40, borderRadius:10, border:"1.5px solid #e8e0d8", background:"#f1ece6", display:"flex", alignItems:"center", gap:8, padding:"0 14px" }}>
-                        {form.currentQty !== null
-                          ? <><span style={{ fontSize:17, fontWeight:900, color:"#1f1a14", fontVariantNumeric:"tabular-nums" }}>{form.currentQty}</span><span style={{ fontSize:11, color:"#b0a496" }}>units</span></>
-                          : <span style={{ fontSize:12, color:"#c4b8ac", fontStyle:"italic" }}>—</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
-                </Section>
-
-                {/* Divider */}
-                <div style={{ height:1, background:"linear-gradient(to right,transparent,rgba(201,125,46,.2),transparent)" }} />
-
-                {/* ② Correction Type */}
-                <Section step={2} title="Correction Type">
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
-                    {TYPES.map(t => {
-                      const active = form.type === t.id;
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          className="scm-type-card"
-                          onClick={() => setField("type", t.id)}
-                          style={{ padding:"16px 12px", borderRadius:14, border:`2px solid ${active ? t.color : "#e8e0d8"}`, background:active ? t.bg : "#fff", boxShadow:active ? `0 0 0 4px ${t.ring}` : "none", display:"flex", flexDirection:"column", alignItems:"center", gap:7 }}
-                        >
-                          <t.Icon size={22} style={{ color:active ? t.color : "#c4b8ac", strokeWidth:active ? 2.5 : 1.8 }} />
-                          <span style={{ fontSize:11, fontWeight:800, color:active ? t.color : "#5a5049" }}>{t.label}</span>
-                          <span style={{ fontSize:10, color:active ? t.color : "#a09488", opacity:active ? 0.8 : 0.7 }}>{t.desc}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Section>
-
-                {/* Divider */}
-                <div style={{ height:1, background:"linear-gradient(to right,transparent,rgba(201,125,46,.2),transparent)" }} />
-
-                {/* ③ Details */}
-                <Section step={3} title="Details">
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-
-                    <div>
-                      <Label text={form.type === "set" ? "Physical Count" : "Adjustment Quantity"} required />
-                      <input
-                        className="scm-input"
-                        type="number"
-                        min={0}
-                        value={form.qty}
-                        onChange={e => setField("qty", e.target.value)}
-                        placeholder="0"
-                        style={{ ...inputStyle(), border:`1.5px solid ${adj > 0 ? AT.color : "#e8e0d8"}`, fontSize:16, fontWeight:800 }}
-                      />
-                    </div>
-
-                    <div>
-                      <Label text="Reason for Correction" required />
-                      <div style={{ position:"relative" }}>
-                        <select
-                          className="scm-input"
-                          value={form.reason}
-                          onChange={e => setField("reason", e.target.value)}
-                          style={{ ...inputStyle(), border:`1.5px solid ${form.reason ? AT.color : "#e8e0d8"}`, color: form.reason ? "#1f1a14" : "#c4b8ac", cursor:"pointer", appearance:"none", paddingRight:32 }}
-                        >
-                          <option value="">Select reason…</option>
-                          {REASONS.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
-                        </select>
-                        <ChevronRight size={13} style={{ position:"absolute", right:11, top:"50%", transform:"translateY(-50%) rotate(90deg)", color:"#a09488", pointerEvents:"none" }} />
-                      </div>
-                    </div>
-
-                    <div style={{ gridColumn:"1/-1" }}>
-                      <Label text="Notes / Remarks" />
-                      <input
-                        className="scm-input"
-                        value={form.notes}
-                        onChange={e => setField("notes", e.target.value)}
-                        placeholder="Optional — add context for the audit trail…"
-                        style={inputStyle()}
-                      />
-                    </div>
-                  </div>
-                </Section>
-
-                {/* Error */}
-                {error && (
-                  <div style={{ display:"flex", alignItems:"center", gap:10, padding:"11px 15px", borderRadius:10, background:"rgba(220,38,38,.06)", border:"1px solid rgba(220,38,38,.22)", color:"#b91c1c", fontSize:13 }}>
-                    <AlertCircle size={15} style={{ flexShrink:0, color:"#dc2626" }} />
-                    {error}
-                  </div>
-                )}
-              </div>
-
-              {/* ── RIGHT: Live Preview ── */}
-              <div style={{ width:220, flexShrink:0, background:"linear-gradient(160deg,#161009 0%,#1e1208 100%)", borderLeft:"1px solid rgba(201,125,46,.14)", padding:"22px 18px", display:"flex", flexDirection:"column", gap:14 }}>
-                <p style={{ fontSize:10, fontWeight:900, letterSpacing:".14em", textTransform:"uppercase", color:"rgba(201,125,46,.5)", margin:0 }}>Live Preview</p>
-
-                {/* Item card */}
-                <DarkCard>
-                  <DarkLabel>Item</DarkLabel>
-                  <p style={{ fontSize:13, fontWeight:700, color:form.itemName ? "#f0e8de" : "rgba(255,255,255,.18)", marginTop:5, lineHeight:1.4, wordBreak:"break-word" }}>
-                    {form.itemName || "No item selected"}
-                  </p>
-                  {batch?.batch_no && (
-                    <p style={{ fontSize:10, fontFamily:"monospace", color:"rgba(201,125,46,.55)", marginTop:3 }}>Batch: {batch.batch_no}</p>
-                  )}
-                </DarkCard>
-
-                {/* Stock flow */}
-                <DarkCard>
-                  <DarkLabel>Stock Change</DarkLabel>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:8 }}>
-                    <span style={{ fontSize:11, color:"rgba(255,255,255,.38)" }}>Before</span>
-                    <span style={{ fontSize:14, fontWeight:800, color:"#f0e8de", fontVariantNumeric:"tabular-nums" }}>
-                      {form.currentQty !== null ? form.currentQty : "—"}
-                    </span>
-                  </div>
-
-                  {form.itemCode && adj > 0 ? (
-                    <>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 10px", borderRadius:9, background:AT.bg, margin:"8px 0" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                          <AT.Icon size={11} style={{ color:AT.color }} />
-                          <span style={{ fontSize:10, fontWeight:700, color:AT.color }}>
-                            {form.type === "add" ? `+${adj}` : form.type === "remove" ? `−${adj}` : `= ${adj}`}
-                          </span>
-                        </div>
-                        <span style={{ fontSize:10, fontWeight:800, color:AT.color, fontVariantNumeric:"tabular-nums" }}>
-                          {diff > 0 ? "+" : ""}{diff}
-                        </span>
-                      </div>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid rgba(255,255,255,.07)", paddingTop:8 }}>
-                        <span style={{ fontSize:11, color:"rgba(255,255,255,.38)" }}>After</span>
-                        <span style={{ fontSize:24, fontWeight:900, fontVariantNumeric:"tabular-nums", color: diff > 0 ? "#4ade80" : diff < 0 ? "#f87171" : "#94a3b8" }}>
-                          {Math.max(0, newQty)}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <p style={{ fontSize:10, color:"rgba(255,255,255,.18)", textAlign:"center", padding:"10px 0" }}>Fill the form to preview</p>
-                  )}
-                </DarkCard>
-
-                {/* Reason */}
-                {form.reason && (
-                  <DarkCard accent>
-                    <DarkLabel accent>Reason</DarkLabel>
-                    <p style={{ fontSize:11, fontWeight:600, color:"rgba(201,125,46,.9)", marginTop:4 }}>
-                      {REASONS.find(r => r.id === form.reason)?.label}
-                    </p>
-                  </DarkCard>
-                )}
-
-                {/* Audit trail */}
-                <div style={{ marginTop:"auto" }}>
-                  <DarkCard>
-                    <DarkLabel>Audit Trail</DarkLabel>
-                    {["Timestamp", "User account", "Before / after qty", "Reason code"].map(x => (
-                      <div key={x} style={{ display:"flex", alignItems:"center", gap:6, marginTop:6 }}>
-                        <span style={{ color:"rgba(201,125,46,.4)", fontSize:9 }}>›</span>
-                        <span style={{ fontSize:10, color:"rgba(255,255,255,.28)" }}>{x}</span>
-                      </div>
-                    ))}
-                  </DarkCard>
+                {/* Date sits right below the title */}
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
+                  <Calendar size={10} style={{ color: "rgba(255,255,255,0.45)" }} />
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1 }}>
+                    {docDate}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* ═══ FOOTER ═══ */}
-            <div style={{ flexShrink:0, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 28px", background:"#fff", borderTop:"1px solid #ede6dc" }}>
-              <p style={{ fontSize:12, color:"#b0a496", margin:0 }}>
-                {form.itemName || "No item selected"}
-                {form.reason && ` · ${REASONS.find(r => r.id === form.reason)?.label}`}
+            {/* Right: audit badge + close */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+             
+              <button
+                onClick={onClose}
+                style={{
+                  width: 28, height: 28, borderRadius: 7,
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  background: "rgba(255,255,255,0.08)",
+                  color: "rgba(255,255,255,0.55)",
+                  cursor: "pointer", display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  transition: "background 0.13s",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.18)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </div>
+
+          {/* ══════════════ BODY ══════════════ */}
+          <form
+            onSubmit={handleSubmit}
+            style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}
+          >
+            <div
+              className="scm-scroll"
+              style={{ flex: 1, overflowY: "auto", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 22 }}
+            >
+
+              {/* ①  Item Information — 5 equal columns */}
+              <section>
+                <div className="scm-section-hd">
+                  <div className="scm-badge">1</div>
+                  <span className="scm-section-title">Item Information</span>
+                </div>
+                {/* All 5 fields in one row with equal column widths */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
+
+                  <div>
+                    <FL text="Item Code" required />
+                    <input
+                      className="scm-field scm-field-input"
+                      value={form.itemCode}
+                      onChange={e => set("itemCode", e.target.value)}
+                      placeholder="ITM-00123"
+                    />
+                  </div>
+
+                  <div>
+                    <FL text="Item Name" />
+                    <input
+                      className="scm-field scm-field-input"
+                      value={form.itemName}
+                      onChange={e => set("itemName", e.target.value)}
+                      placeholder="Item description"
+                    />
+                  </div>
+
+                  <div>
+                    <FL text="Batch No." />
+                    <div className="scm-readonly">
+                      <span style={{
+                        fontSize: 13, fontWeight: 600,
+                        color: form.batchNo ? "var(--text)" : "var(--muted)",
+                        opacity: form.batchNo ? 1 : 0.45,
+                      }}>
+                        {form.batchNo || "—"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <FL text="UOM" />
+                    <input
+                      className="scm-field scm-field-input"
+                      value={form.uom}
+                      onChange={e => set("uom", e.target.value)}
+                      placeholder="PCS"
+                    />
+                  </div>
+
+                  <div>
+                    <FL text="Warehouse" />
+                    <input
+                      className="scm-field scm-field-input"
+                      value={form.warehouse}
+                      onChange={e => set("warehouse", e.target.value)}
+                      placeholder="Main Store"
+                    />
+                  </div>
+
+                </div>
+              </section>
+
+              {/* ② System Stock */}
+              <section>
+                <div className="scm-section-hd">
+                  <div className="scm-badge">2</div>
+                  <span className="scm-section-title">System Stock</span>
+                </div>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <div className="scm-stat">
+                    <span className="scm-stat-lbl">Current Qty</span>
+                    <span className="scm-stat-val" style={{ color: "var(--text)" }}>
+                      {form.currentQty !== null ? form.currentQty : "—"}
+                    </span>
+                    <span className="scm-stat-sub">System balance · {form.uom || "units"}</span>
+                  </div>
+                  <div className="scm-stat">
+                    <span className="scm-stat-lbl">Reserved</span>
+                    <span className="scm-stat-val" style={{ color: "var(--muted)" }}>
+                      {form.reservedQty !== null ? form.reservedQty : "—"}
+                    </span>
+                    <span className="scm-stat-sub">Pending orders</span>
+                  </div>
+                  <div className="scm-stat" style={{ borderColor: "rgba(34,197,94,0.3)" }}>
+                    <span className="scm-stat-lbl">Available</span>
+                    <span className="scm-stat-val" style={{ color: "var(--success)" }}>
+                      {form.currentQty !== null ? available : "—"}
+                    </span>
+                    <span className="scm-stat-sub">Free to use</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* ③ Correction Details — 3 equal columns */}
+              <section>
+                <div className="scm-section-hd">
+                  <div className="scm-badge">3</div>
+                  <span className="scm-section-title">Correction Details</span>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+
+                  {/* Correction Type select */}
+                  <div>
+                    <FL text="Correction Type" required />
+                    <div style={{ position: "relative" }}>
+                      <select
+                        className="scm-field scm-field-select"
+                        value={form.type}
+                        onChange={e => set("type", e.target.value as CorrectionType)}
+                        style={{
+                          border: `1.5px solid ${AT.rawColor}`,
+                          color: "var(--text)",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {TYPES.map(t => (
+                          <option key={t.id} value={t.id}>{t.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--muted)", pointerEvents: "none" }} />
+                    </div>
+                    {/* Colour-coded indicator under the select */}
+                    <div
+                      className="scm-type-badge"
+                      style={{ background: AT.bgColor, border: `1px solid ${AT.ringColor}` }}
+                    >
+                      <AT.Icon size={11} style={{ color: AT.rawColor }} />
+                      <span style={{ color: AT.rawColor }}>{AT.desc}</span>
+                    </div>
+                  </div>
+
+                  {/* Adjustment Quantity */}
+                  <div>
+                    <FL text={form.type === "set" ? "Physical Count Qty" : "Adjustment Quantity"} required />
+                    <input
+                      className="scm-field scm-field-input no-spinner"
+                      type="number"
+                      min={0}
+                      value={form.qty}
+                      onChange={e => set("qty", e.target.value)}
+                      placeholder="0"
+                      style={{
+                        border: `1.5px solid ${adj > 0 ? AT.rawColor : "var(--border)"}`,
+                        fontSize: 16, fontWeight: 900, fontVariantNumeric: "tabular-nums",
+                      }}
+                    />
+                  </div>
+
+                  {/* System Qty → New Qty live flow */}
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <FL text="System Qty → New Qty" />
+                    <div className="scm-flow" style={{ flex: 1 }}>
+                      <div className="scm-flow-col">
+                        <span className="scm-flow-lbl">System</span>
+                        <span className="scm-flow-num">
+                          {form.currentQty !== null ? cur : "—"}
+                        </span>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                        {adj > 0 ? (
+                          <div style={{
+                            display: "flex", alignItems: "center", gap: 4,
+                            padding: "3px 8px", borderRadius: 6,
+                            background: AT.bgColor, border: `1px solid ${AT.ringColor}`,
+                          }}>
+                            <AT.TrendIcon size={10} style={{ color: AT.rawColor }} />
+                            <span style={{ fontSize: 11, fontWeight: 800, color: AT.rawColor }}>
+                              {form.type === "add" ? `+${adj}` : form.type === "remove" ? `−${adj}` : `=${adj}`}
+                            </span>
+                          </div>
+                        ) : (
+                          <ArrowRight size={15} style={{ color: "var(--muted)", opacity: .3 }} />
+                        )}
+                      </div>
+
+                      <div className="scm-flow-col">
+                        <span className="scm-flow-lbl">New Qty</span>
+                        <span
+                          className="scm-flow-num"
+                          style={{
+                            fontSize: 22,
+                            color: adj > 0
+                              ? (diff > 0 ? "var(--success)" : diff < 0 ? "var(--danger)" : "var(--muted)")
+                              : "var(--muted)",
+                            opacity: adj > 0 ? 1 : 0.28,
+                          }}
+                        >
+                          {adj > 0 ? Math.max(0, newQty) : "—"}
+                        </span>
+                        {adj > 0 && diff !== 0 && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: diffColor }}>
+                            ({diffLabel} {form.uom || "units"})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </section>
+
+              {/* ④ Reason — 2 equal columns */}
+              <section>
+                <div className="scm-section-hd">
+                  <div className="scm-badge">4</div>
+                  <span className="scm-section-title">Reason</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+
+                  <div>
+                    <FL text="Reason Code" required />
+                    <div style={{ position: "relative" }}>
+                      <select
+                        className="scm-field scm-field-select"
+                        value={form.reason}
+                        onChange={e => set("reason", e.target.value)}
+                        style={{
+                          border: `1.5px solid ${form.reason ? AT.rawColor : "var(--border)"}`,
+                          color: form.reason ? "var(--text)" : "var(--muted)",
+                        }}
+                      >
+                        <option value="">Select reason code…</option>
+                        {REASONS.map(r => (
+                          <option key={r.id} value={r.id}>{r.id} — {r.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--muted)", pointerEvents: "none" }} />
+                    </div>
+                    {form.reason && (
+                      <p style={{ margin: "5px 0 0", fontSize: 11, color: AT.rawColor, fontWeight: 600 }}>
+                        {REASONS.find(r => r.id === form.reason)?.label}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <FL text="Remarks" />
+                    <textarea
+                      className="scm-textarea"
+                      rows={3}
+                      value={form.remarks}
+                      onChange={e => set("remarks", e.target.value)}
+                      placeholder="Add context for the audit trail… (optional)"
+                    />
+                  </div>
+
+                </div>
+              </section>
+
+              {/* Error */}
+              {error && (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "10px 14px", borderRadius: 9,
+                  background: "rgba(220,38,38,0.06)",
+                  border: "1px solid rgba(220,38,38,0.22)",
+                  color: "var(--danger)", fontSize: 13,
+                }}>
+                  <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                  {error}
+                </div>
+              )}
+
+            </div>
+
+            {/* ══════════════ FOOTER ══════════════ */}
+            <div style={{
+              flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "12px 22px",
+              background: "var(--card)",
+              borderTop: "1px solid var(--border)",
+            }}>
+              {/* Summary line */}
+              <p style={{ margin: 0, fontSize: 12, color: "var(--muted)" }}>
+                {form.itemCode
+                  ? (
+                    <>
+                      <span style={{ color: "var(--text)", fontWeight: 700 }}>{form.itemCode}</span>
+                      {form.reason && (
+                        <> · <span style={{ color: AT.rawColor, fontWeight: 600 }}>
+                          {REASONS.find(r => r.id === form.reason)?.label}
+                        </span></>
+                      )}
+                      {adj > 0 && (
+                        <> · <span style={{ fontWeight: 700, color: diffColor }}>
+                          {diffLabel} {form.uom || "units"}
+                        </span></>
+                      )}
+                    </>
+                  )
+                  : "No item selected"
+                }
               </p>
-              <div style={{ display:"flex", gap:9, alignItems:"center" }}>
-                <GhostBtn onClick={() => { setForm(EMPTY); setError(null); }}>
-                  <RotateCcw size={12} /> Reset
-                </GhostBtn>
-                <GhostBtn onClick={onClose}>
+
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button type="button" className="scm-ghost" onClick={() => { setForm(EMPTY); setError(null); }}>
+                  <RotateCcw size={11} /> Reset
+                </button>
+                <button type="button" className="scm-ghost" onClick={onClose}>
                   Cancel
-                </GhostBtn>
+                </button>
                 <button
                   type="submit"
                   disabled={!canSave}
+                  className={`scm-submit${success ? " scm-success-pop" : ""}`}
                   style={{
-                    display:"flex", alignItems:"center", gap:7,
-                    padding:"9px 24px", borderRadius:11, border:"none",
-                    background: success ? "#059669" : canSave ? "#c97d2e" : "#e8e0d8",
-                    color: canSave ? "#fff" : "#b0a496",
-                    fontSize:12, fontWeight:900, letterSpacing:".06em", textTransform:"uppercase",
-                    cursor: canSave ? "pointer" : "not-allowed",
-                    boxShadow: canSave && !success ? "0 4px 16px rgba(201,125,46,.32)" : "none",
-                    transition:"all 0.2s",
+                    background: success ? "var(--success)" : canSave ? "var(--primary)" : "var(--border)",
+                    color: canSave || success ? "#fff" : "var(--muted)",
+                    boxShadow: canSave && !success ? "0 4px 14px rgba(192,132,61,0.28)" : "none",
                   }}
                 >
                   {success
                     ? <><CheckCircle2 size={14} /> Applied!</>
                     : loading
-                    ? <><Loader2 size={14} style={{ animation:"spin 0.8s linear infinite" }} /> Applying…</>
-                    : "Apply Correction"}
+                    ? <><Loader2 size={14} className="scm-spinner" /> Applying…</>
+                    : "Apply Correction"
+                  }
                 </button>
               </div>
             </div>
@@ -470,49 +763,16 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
   );
 };
 
-// ─── Tiny internal helpers ────────────────────────────────────────────────────
+// ─── Field Label helper ───────────────────────────────────────────────────────
 
-const inputStyle = (): React.CSSProperties => ({
-  width:"100%", height:40, borderRadius:10, border:"1.5px solid #e8e0d8",
-  padding:"0 13px", fontSize:13, background:"#fff", color:"#1f1a14",
-  boxSizing:"border-box", display:"block",
-});
-
-const Section: React.FC<{ step:number; title:string; children:React.ReactNode }> = ({ step, title, children }) => (
-  <div>
-    <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:16 }}>
-      <div style={{ width:22, height:22, borderRadius:"50%", background:"#c97d2e", color:"#fff", fontSize:11, fontWeight:900, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{step}</div>
-      <span style={{ fontSize:10, fontWeight:900, letterSpacing:".12em", textTransform:"uppercase", color:"#c97d2e" }}>{title}</span>
-    </div>
-    {children}
-  </div>
-);
-
-const Label: React.FC<{ text:string; required?:boolean }> = ({ text, required }) => (
-  <label style={{ display:"block", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:".1em", color:"#8a7e72", marginBottom:7 }}>
-    {text}{required && <span style={{ color:"#ef4444", marginLeft:2 }}>*</span>}
+const FL: React.FC<{ text: string; required?: boolean }> = ({ text, required }) => (
+  <label style={{
+    display: "block", fontSize: 10, fontWeight: 700,
+    textTransform: "uppercase", letterSpacing: ".09em",
+    color: "var(--muted)", marginBottom: 6,
+  }}>
+    {text}{required && <span style={{ color: "var(--danger)", marginLeft: 2 }}>*</span>}
   </label>
-);
-
-const DarkCard: React.FC<{ accent?:boolean; children:React.ReactNode }> = ({ accent, children }) => (
-  <div style={{ borderRadius:12, background:accent?"rgba(201,125,46,.09)":"rgba(255,255,255,.04)", border:`1px solid ${accent?"rgba(201,125,46,.2)":"rgba(255,255,255,.07)"}`, padding:14 }}>
-    {children}
-  </div>
-);
-
-const DarkLabel: React.FC<{ accent?:boolean; children:React.ReactNode }> = ({ accent, children }) => (
-  <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", color:accent?"rgba(201,125,46,.55)":"rgba(255,255,255,.28)", margin:0 }}>{children}</p>
-);
-
-const GhostBtn: React.FC<{ onClick:()=>void; children:React.ReactNode }> = ({ onClick, children }) => (
-  <button
-    type="button"
-    className="scm-ghost"
-    onClick={onClick}
-    style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px", borderRadius:10, border:"1.5px solid #e8e0d8", background:"transparent", color:"#5a5049", fontSize:12, fontWeight:600, cursor:"pointer" }}
-  >
-    {children}
-  </button>
 );
 
 export default StockCorrectionModal;
