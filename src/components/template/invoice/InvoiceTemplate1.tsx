@@ -3,31 +3,24 @@ import autoTable from "jspdf-autotable";
 import { getPaymentMethodLabel } from "../../../constants/invoice.constants";
 import { ERP_BASE } from "../../../config/api";
 
-// ── Palette (matches Purchase Order exactly) ──────────────────────────────────
+// ── Palette — identical to Purchase Order ────────────────────────────────────
 const ERP_BLUE: [number, number, number] = [46, 109, 197];
-const HDR_DARK: [number, number, number] = ERP_BLUE;
-const BOX_TITLE: [number, number, number] = ERP_BLUE;
-const RULE: [number, number, number] = [200, 220, 240];
-const WHITE: [number, number, number] = [255, 255, 255];
-const INK: [number, number, number] = [25, 45, 75];
-const INK_SOFT: [number, number, number] = [70, 95, 130];
+const RULE:     [number, number, number] = [200, 220, 240];
+const WHITE:    [number, number, number] = [255, 255, 255];
+const INK:      [number, number, number] = [25,  45,  75];
+const INK_SOFT: [number, number, number] = [70,  95,  130];
 const INK_PALE: [number, number, number] = [130, 150, 180];
-const TINT: [number, number, number] = [240, 248, 255];
-const NAVY: [number, number, number] = [13, 38, 64];
-const TAX_BG: [number, number, number] = [232, 241, 252];
-const TAX_TEXT: [number, number, number] = [30, 70, 130];
-const DISCOUNT: [number, number, number] = [160, 60, 60];
+const TINT:     [number, number, number] = [240, 248, 255];
+const NAVY:     [number, number, number] = [13,  38,  64];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const px = (path: string): string => {
-  if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${ERP_BASE}${path}`;
-};
+const px = (path: string) =>
+  !path ? "" :
+  path.startsWith("http://") || path.startsWith("https://") ? path :
+  `${ERP_BASE}${path}`;
 
 const fmt2 = (n: any) => Number(n ?? 0).toFixed(2);
 
-// Invoice uses line1/line2 (not addressLine1/addressLine2)
 const addrBlock = (a: any): string[] => {
   if (!a) return [];
   return [
@@ -37,57 +30,42 @@ const addrBlock = (a: any): string[] => {
   ].filter(Boolean);
 };
 
-const fmtDate = (dateStr: any) => {
-  if (!dateStr) return "-";
-  const d = new Date(dateStr);
-  const day = String(d.getDate()).padStart(2, "0");
-  const months = [
-    "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
-  ];
-  return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`;
+const fmtDate = (s: any) => {
+  if (!s) return "-";
+  const d = new Date(s);
+  const mon = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  return `${String(d.getDate()).padStart(2,"0")}-${mon[d.getMonth()]}-${d.getFullYear()}`;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const generateInvoicePDF = async (
   invoice: any,
-  company: any,
+  company:  any,
   resultType: "save" | "bloburl" = "save",
 ) => {
   const doc = new jsPDF("p", "mm", "a4");
-  const W = doc.internal.pageSize.width;
-  const H = doc.internal.pageSize.height;
+  const W  = doc.internal.pageSize.width;   // 210
+  const H  = doc.internal.pageSize.height;  // 297
   const cur = invoice.currencyCode ?? "INR";
-  const M = 14;
-  const MR = W - M;
-  const LOGO_Y = 5;
-  const LOGO_SZ = 32;
-  const LOGO_X = M;
+  const M   = 14;
+  const MR  = W - M;
 
   /* ══════════════════════════════════════════════════════════
      LOGO
   ══════════════════════════════════════════════════════════ */
+  const LOGO_SZ = 32;
+  const LOGO_X  = M;
+  const LOGO_Y  = 5;
+
   if (company?.documents?.companyLogoUrl) {
     try {
-      doc.addImage(
-        px(company.documents.companyLogoUrl),
-        "PNG",
-        LOGO_X,
-        LOGO_Y,
-        LOGO_SZ,
-        LOGO_SZ,
-      );
+      doc.addImage(px(company.documents.companyLogoUrl), "PNG",
+        LOGO_X, LOGO_Y, LOGO_SZ, LOGO_SZ);
     } catch {}
   } else {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.setTextColor(...INK);
-    doc.text(
-      (company?.companyName ?? "Rx").slice(0, 2).toUpperCase(),
-      LOGO_X + LOGO_SZ / 2,
-      LOGO_Y + LOGO_SZ / 2 + 3,
-      { align: "center" },
-    );
+    doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(...INK);
+    doc.text((company?.companyName ?? "Rx").slice(0,2).toUpperCase(),
+      LOGO_X + LOGO_SZ/2, LOGO_Y + LOGO_SZ/2 + 3, { align:"center" });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -97,344 +75,287 @@ export const generateInvoicePDF = async (
     if (company?.documents?.companyLogoUrl) {
       try {
         doc.setGState(doc.GState({ opacity: 0.06 }));
-        doc.addImage(
-          px(company.documents.companyLogoUrl),
-          "PNG",
-          (W - 80) / 2,
-          H / 2 - 40,
-          80,
-          80,
-        );
+        doc.addImage(px(company.documents.companyLogoUrl), "PNG",
+          (W-80)/2, H/2-40, 80, 80);
         doc.setGState(doc.GState({ opacity: 1 }));
       } catch {}
     }
     const name = (company?.companyName ?? "").toUpperCase();
-    doc.setFont("helvetica", "bold");
-    let fontSize = 20;
-    doc.setFontSize(fontSize);
-    while (doc.getTextWidth(name) > W - 20 && fontSize > 8) {
-      fontSize -= 1;
-      doc.setFontSize(fontSize);
-    }
-    doc.setTextColor(...HDR_DARK);
+    doc.setFont("helvetica","bold");
+    let fs = 20; doc.setFontSize(fs);
+    while (doc.getTextWidth(name) > W - 20 && fs > 8) { fs--; doc.setFontSize(fs); }
+    doc.setTextColor(...ERP_BLUE);
     doc.setGState(doc.GState({ opacity: 0.07 }));
-    doc.text(name, W / 2, H - 48, { align: "center" });
+    doc.text(name, W/2, H - 48, { align:"center" });
     doc.setGState(doc.GState({ opacity: 1 }));
   };
   drawWatermark();
 
   /* ══════════════════════════════════════════════════════════
-     ①  HEADER — Company info (left) | Invoice title + meta (right)
+     ①  HEADER — logo+company (left) | doc type+number (right)
   ══════════════════════════════════════════════════════════ */
   const TX = LOGO_X + LOGO_SZ + 6;
 
   // Company name
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(15);
-  doc.setTextColor(...INK);
+  doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(...INK);
   doc.text((company?.companyName ?? "").toUpperCase(), TX, 14);
 
   // Tagline
   if (company?.tagline) {
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(7.5);
-    doc.setTextColor(180, 210, 255);
+    doc.setFont("helvetica","italic"); doc.setFontSize(7.5); doc.setTextColor(180, 210, 255);
     doc.text(company.tagline.toUpperCase(), TX, 20);
   }
 
-  // Company contact info
+  // Company info lines
   const infoY = company?.tagline ? 26 : 22;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5);
-  doc.setTextColor(28, 60, 110);
+  doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(28, 60, 110);
   const infoLines: string[] = [];
-  if (company?.tpin) infoLines.push(`TPIN / TAX ID: ${company.tpin}`);
-  if (company?.contactInfo?.companyPhone)
-    infoLines.push(`Phone: ${company.contactInfo.companyPhone}`);
-  if (company?.contactInfo?.companyEmail)
-    infoLines.push(`Email: ${company.contactInfo.companyEmail}`);
+  if (company?.tpin)                      infoLines.push(`TPIN / TAX ID: ${company.tpin}`);
+  if (company?.contactInfo?.companyPhone) infoLines.push(`Phone: ${company.contactInfo.companyPhone}`);
+  if (company?.contactInfo?.companyEmail) infoLines.push(`Email: ${company.contactInfo.companyEmail}`);
   infoLines.forEach((l, i) => doc.text(l, TX, infoY + i * 5));
 
-  // Invoice type badge label (right side, top)
-  const badgeLabel =
-    invoice.invoiceType === "Export" ? "EXPORT INVOICE" : "TAX INVOICE";
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...INK);
-  doc.text(badgeLabel, MR, 14, { align: "right" });
+  // Right side — invoice type label
+  const badgeLabel = invoice.invoiceType === "Export" ? "EXPORT INVOICE" : "TAX INVOICE";
+  doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(...INK);
+  doc.text(badgeLabel, MR, 14, { align:"right" });
 
   // Invoice number
   doc.setFontSize(10);
-  doc.text(invoice.invoiceNumber ?? "-", MR, 20, { align: "right" });
+  doc.text(invoice.invoiceNumber ?? "-", MR, 20, { align:"right" });
 
-  // Meta info (right side)
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...INK_SOFT);
+  // Meta lines right
+  doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...INK_SOFT);
   const metaLines = [
     `Invoice Date: ${fmtDate(invoice.dateOfInvoice)}`,
-    `Due Date: ${fmtDate(invoice.dueDate)}`,
+    `Payment Method: ${getPaymentMethodLabel(invoice?.paymentInformation?.paymentMethod) ?? "-"}`,
     `Status: ${invoice.invoiceStatus ?? "-"}`,
-    `Currency: ${cur}`,
   ];
-  if (invoice.lpoNumber) metaLines.push(`LPO No: ${invoice.lpoNumber}`);
-  metaLines.forEach((line, i) => {
-    doc.text(line, MR, 26 + i * 4, { align: "right" });
-  });
+  metaLines.forEach((l, i) => doc.text(l, MR, 26 + i * 4, { align:"right" }));
 
   /* ══════════════════════════════════════════════════════════
      ②  ADDRESS BOXES — Bill To | Ship To | Payment Info
   ══════════════════════════════════════════════════════════ */
-  const AY = 44;
-  const BOX_HDR = 7;
-  const LH = 4.5;
-  const PAD = 3;
-  const gap = 3;
-  const colW = (W - M * 2 - gap * 2) / 3;
+  const AY    = 40;
+  const BH    = 7;
+  const LH    = 4.5;
+  const PAD   = 3;
+  const gap   = 3;
+  const bColW = (W - M * 2 - gap * 2) / 3;
 
   const billL = addrBlock(invoice?.billingAddress);
   const shipL = addrBlock(invoice?.shippingAddress);
-  const payL: string[] = (
-    [
-      `Method: ${getPaymentMethodLabel(invoice?.paymentInformation?.paymentMethod) ?? "-"}`,
-      `Terms: ${invoice?.paymentInformation?.paymentTerms ?? "-"}`,
-      `Bank: ${invoice?.paymentInformation?.bankName ?? "-"}`,
-      invoice?.paymentInformation?.accountNumber
-        ? `A/C: ${invoice.paymentInformation.accountNumber}`
-        : null,
-      invoice?.paymentInformation?.swiftCode
-        ? `SWIFT: ${invoice.paymentInformation.swiftCode}`
-        : null,
-    ] as (string | null)[]
-  ).filter(Boolean) as string[];
 
-  const calcBoxH = (lines: string[], hasBoldTop = false) => {
-    let h = BOX_HDR + PAD * 2;
-    if (hasBoldTop) h += LH + 1;
-    lines.forEach((l) => {
-      h += doc.splitTextToSize(l, colW - 6).length * LH;
-    });
-    return h + 2;
+  // Add email/phone if available on billing address
+  if (invoice?.billingAddress?.email)  billL.push(`Email: ${invoice.billingAddress.email}`);
+  if (invoice?.billingAddress?.phone)  billL.push(`Phone: ${invoice.billingAddress.phone}`);
+
+  const payL: string[] = ([
+    `Method: ${getPaymentMethodLabel(invoice?.paymentInformation?.paymentMethod) ?? "-"}`,
+    `Terms: ${invoice?.paymentInformation?.paymentTerms ?? "-"}`,
+    `Bank: ${invoice?.paymentInformation?.bankName ?? "-"}`,
+    invoice?.paymentInformation?.accountNumber
+      ? `A/C: ${invoice.paymentInformation.accountNumber}` : null,
+    invoice?.paymentInformation?.swiftCode
+      ? `SWIFT: ${invoice.paymentInformation.swiftCode}` : null,
+  ] as (string|null)[]).filter(Boolean) as string[];
+
+  const calcBH = (lines: string[], hasBold = false) => {
+    let h = BH + PAD * 2 + LH;
+    if (hasBold) h += LH + 0.5;
+    lines.forEach(l => { h += doc.splitTextToSize(l, bColW - 6).length * LH; });
+    return h;
   };
+  const boxH = Math.max(calcBH(billL, true), calcBH(shipL), calcBH(payL)) + 2;
 
-  const boxH = Math.max(
-    calcBoxH(billL, true),
-    calcBoxH(shipL),
-    calcBoxH(payL),
-  );
-
-  const drawBox = (
-    bx: number,
-    title: string,
-    lines: string[],
-    boldTop?: string,
-  ) => {
-    doc.setFillColor(...BOX_TITLE);
-    doc.rect(bx, AY, colW, BOX_HDR, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(...WHITE);
+  const drawBox = (bx: number, title: string, lines: string[], boldTop?: string) => {
+    doc.setFillColor(...ERP_BLUE);
+    doc.rect(bx, AY, bColW, BH, "F");
+    doc.setFont("helvetica","bold"); doc.setFontSize(8); doc.setTextColor(...WHITE);
     doc.text(title, bx + 3, AY + 5.2);
 
-    doc.setFillColor(...WHITE);
-    doc.setDrawColor(...RULE);
-    doc.setLineWidth(0.25);
-    doc.rect(bx, AY + BOX_HDR, colW, boxH - BOX_HDR, "FD");
+    doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
+    doc.rect(bx, AY + BH, bColW, boxH - BH, "FD");
 
-    let cy = AY + BOX_HDR + PAD + LH;
+    let cy = AY + BH + PAD + LH;
     if (boldTop) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
-      doc.setTextColor(...INK);
+      doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(...INK);
       doc.text(boldTop, bx + 3, cy);
       cy += LH + 1;
     }
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    lines.forEach((l) => {
-      const wr = doc.splitTextToSize(l, colW - 6);
+    doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(0, 0, 0);
+    lines.forEach(l => {
+      const wr = doc.splitTextToSize(l, bColW - 6);
       doc.text(wr, bx + 3, cy);
       cy += wr.length * LH;
     });
   };
 
-  drawBox(M, "Bill To", billL, invoice?.customerName ?? "-");
-  drawBox(M + colW + gap, "Ship To", shipL);
-  drawBox(M + (colW + gap) * 2, "Payment Info", payL);
+  drawBox(M,                     "Bill To",      billL, invoice?.customerName ?? "-");
+  drawBox(M + bColW + gap,       "Ship To",      shipL);
+  drawBox(M + (bColW + gap) * 2, "Payment Info", payL);
 
   /* ══════════════════════════════════════════════════════════
-     ③  Customer TPIN
+     ③  META INFO ROW — LPO No | Customer TPIN | Invoice Type | Currency | Due Date
+         (matches the "LPO No | Supplier Invoice | Tax Category | Incoterm | Shipping Rule" row in PO)
   ══════════════════════════════════════════════════════════ */
   const afterBoxY = AY + boxH + 4;
-  if (invoice?.customerTpin) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(...INK_SOFT);
-    doc.text(`Customer TPIN: ${invoice.customerTpin}`, M, afterBoxY);
-  }
+
+  const metaColCount = 5;
+  const metaColW = (W - M * 2) / metaColCount;
+  const META_HDR_H = 6.5;
+  const META_VAL_H = 7;
+
+  const metaCols = [
+    { label: "LPO No",         value: invoice?.lpoNumber        || "-" },
+    { label: "Customer TPIN",  value: invoice?.customerTpin     || "-" },
+    { label: "Invoice Type",   value: invoice?.invoiceType      || "-" },
+    { label: "Currency",       value: cur },
+    { label: "Due Date",       value: fmtDate(invoice?.dueDate) },
+  ];
+
+  metaCols.forEach((col, i) => {
+    const bx = M + i * metaColW;
+
+    // Header cell
+    doc.setFillColor(...ERP_BLUE);
+    doc.rect(bx, afterBoxY, metaColW, META_HDR_H, "F");
+    doc.setFont("helvetica","bold"); doc.setFontSize(7.5); doc.setTextColor(...WHITE);
+    doc.text(col.label, bx + 3, afterBoxY + 4.5);
+
+    // Value cell
+    doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.2);
+    doc.rect(bx, afterBoxY + META_HDR_H, metaColW, META_VAL_H, "FD");
+    doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(0, 0, 0);
+    doc.text(col.value, bx + 3, afterBoxY + META_HDR_H + 4.8);
+  });
+
+  const afterMetaY = afterBoxY + META_HDR_H + META_VAL_H + 5;
 
   /* ══════════════════════════════════════════════════════════
      ④  ITEMS TABLE
+     Columns: # | Item | Batch | Packing | MFG | EXP | Qty | Rate | Disc% | Tax | Amount
+     Widths:  6 + 42 + 22 + 12 + 14 + 14 + 14 + 14 + 10 + 10 + 24 = 182 ✓
   ══════════════════════════════════════════════════════════ */
-  doc.setFont("helvetica");
-  doc.setFontSize(7);
-  doc.setTextColor(...INK_PALE);
-  doc.text("ITEMS", M, afterBoxY + 9);
+  doc.setFont("helvetica","normal"); doc.setFontSize(6.5); doc.setTextColor(...INK_PALE);
+  doc.text("ITEMS", M, afterMetaY + 7);
 
-  // Column widths must sum to exactly W - M*2 = 182mm
-  // 6+20+28+26+12+14+14+12+12+10+10+18 = 182 ✓
-  const TOTAL_W = 18;
+  const TOTAL_W = 24;
 
   autoTable(doc, {
-    startY: afterBoxY + 11,
-    head: [
-      [
-        "#",
-        "Item Code",
-        "Description",
-        "Batch",
-        "Packing",
-        "MFG",
-        "EXP",
-        "Qty",
-        "Rate",
-        "Disc%",
-        "Tax",
-        `Amt(${cur})`,
-      ],
-    ],
+    startY: afterMetaY + 8,
+    head: [[
+      "#", "Item", "Batch", "Packing", "MFG", "EXP", "Qty", "Rate", "Disc%", "Tax", `Amount(${cur})`,
+    ]],
     body: invoice.items.map((item: any, idx: number) => {
-      const qty = Number(item.quantity ?? 0);
-      const rate = Number(item.price ?? 0);
-      const disc = Number(item.discount ?? 0);
-      // Discount may be a flat negative amount (as in sample data)
+      const qty     = Number(item.quantity ?? 0);
+      const rate    = Number(item.price    ?? 0);
+      const disc    = Number(item.discount ?? 0);
       const discAbs = Math.abs(disc);
-      const discPct = (qty * rate) > 0 ? ((discAbs / (qty * rate)) * 100) : 0;
-      const net = qty * rate - discAbs;
-      const packing =
-        item.packingUnit && item.packingSize
-          ? `${item.packingUnit}×${item.packingSize}`
-          : "-";
+      const gross   = qty * rate;
+      const discPct = gross > 0 ? (discAbs / gross) * 100 : 0;
+      const net     = gross - discAbs;
+      const packing = item.packingUnit && item.packingSize
+        ? `${item.packingUnit}×${item.packingSize}` : "-";
+      const batchShort = (item.batchNo || "-").length > 18
+        ? (item.batchNo as string).slice(0, 16) + ".." : (item.batchNo || "-");
+
       return [
         idx + 1,
-        item.itemCode ?? "-",
-        item.description ?? "-",
-        item.batchNo || "-",
+        item.description || item.itemCode || "-",
+        batchShort,
         packing,
         fmtDate(item.mfgDate),
         fmtDate(item.expDate),
-        Math.round(qty).toLocaleString(),
+        Number.isInteger(qty) ? qty.toLocaleString() : fmt2(qty),
         fmt2(rate),
-        discAbs > 0 ? `${discPct.toFixed(2)}%` : "0%",
-        item.vatCode ?? "-",
+        discAbs > 0 ? `${discPct.toFixed(1)}%` : "0%",
+        `${item.vatCode ?? "-"}`,
         fmt2(net),
       ];
     }),
     styles: {
-      fontSize: 6.5,
+      fontSize: 7.5,
       textColor: [0, 0, 0],
-      cellPadding: { top: 1.5, bottom: 1.5, left: 1.5, right: 1.5 },
+      cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
       lineColor: RULE,
       lineWidth: 0.15,
       overflow: "linebreak",
     },
     headStyles: {
       fillColor: ERP_BLUE,
-      textColor: [255, 255, 255],
+      textColor: WHITE,
       fontStyle: "bold",
       halign: "center",
-      fontSize: 6.5,
-      cellPadding: { top: 2, bottom: 2, left: 1.5, right: 1.5 },
+      fontSize: 7.5,
+      cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
     },
-    alternateRowStyles: { fillColor: TINT },
     columnStyles: {
-      0:  { cellWidth: 6,        halign: "center" },
-      1:  { cellWidth: 20,       halign: "left",  fontStyle: "bold", textColor: INK },
-      2:  { cellWidth: 28,       halign: "left" },
-      3:  { cellWidth: 26,       halign: "center" },
-      4:  { cellWidth: 12,       halign: "center" },
-      5:  { cellWidth: 14,       halign: "center" },
-      6:  { cellWidth: 14,       halign: "center" },
-      7:  { cellWidth: 12,       halign: "right" },
-      8:  { cellWidth: 12,       halign: "right" },
-      9:  { cellWidth: 10,       halign: "center" },
-      10: { cellWidth: 10,       halign: "center" },
-      11: { cellWidth: TOTAL_W,  halign: "right", fontStyle: "bold", textColor: ERP_BLUE },
+      0:  { cellWidth: 6,         halign: "center" },
+      1:  { cellWidth: 42,        halign: "left" },
+      2:  { cellWidth: 22,        halign: "center", fontSize: 6.5 },
+      3:  { cellWidth: 12,        halign: "center" },
+      4:  { cellWidth: 14,        halign: "center" },
+      5:  { cellWidth: 14,        halign: "center" },
+      6:  { cellWidth: 14,        halign: "center" },
+      7:  { cellWidth: 14,        halign: "center" },
+      8:  { cellWidth: 10,        halign: "center" },
+      9:  { cellWidth: 10,        halign: "center" },
+      10: { cellWidth: TOTAL_W,   halign: "center", textColor: [0, 0, 0], fontSize: 7.5 },
     },
-    margin: { left: M, right: M },
+    margin:     { left: M, right: M },
     tableWidth: W - M * 2,
   });
 
-  const tblY = (doc as any).lastAutoTable.finalY;
+  const tblEndY = (doc as any).lastAutoTable.finalY;
 
   /* ══════════════════════════════════════════════════════════
-     ⑤  TOTALS (right) — aligned to Amount column
+     ⑤  TOTALS  — right-aligned labels + amount column values
+         (exactly like PO: text labels left of amount column)
   ══════════════════════════════════════════════════════════ */
-  const SEC_Y = tblY;
+  const SEC_Y = tblEndY;
 
-  // Calculate totals from invoice items
-  let gross = 0, totalDiscAmt = 0;
+  // Calc totals
+  let gross = 0, discTotal = 0;
   invoice.items.forEach((i: any) => {
     const q = Number(i.quantity ?? 0);
-    const p = Number(i.price ?? 0);
+    const p = Number(i.price    ?? 0);
     const d = Math.abs(Number(i.discount ?? 0));
-    gross += q * p;
-    totalDiscAmt += d;
+    gross     += q * p;
+    discTotal += d;
   });
-
-  const subTotal = gross - totalDiscAmt;
-
-  // Tax: sum vatTaxableAmount if present, else estimate from vatCode
+  const subTotal = gross;
+  const netAfterDisc = gross - discTotal;
   const taxableRaw = invoice.items.reduce(
-    (a: number, i: any) => a + Number(i.vatTaxableAmount ?? 0),
-    0,
-  );
-  const taxTotal = taxableRaw > 0 ? taxableRaw : 0;
-  const grandTotal = subTotal + taxTotal;
+    (a: number, i: any) => a + Number(i.vatTaxableAmount ?? 0), 0);
+  const taxTotal   = taxableRaw > 0 ? taxableRaw : 0;
+  const grandTotal = netAfterDisc + taxTotal;
 
-  // Amount column X = M + sum of all preceding column widths = M + 164
-  const AMOUNT_COL_X =
-    M +
-    6  +  // #
-    20 +  // Item Code
-    28 +  // Description
-    26 +  // Batch
-    12 +  // Packing
-    14 +  // MFG
-    14 +  // EXP
-    12 +  // Qty
-    12 +  // Rate
-    10 +  // Disc%
-    10;   // Tax
+  // AMOUNT_COL_X = M + sum of all columns except last
+  const AMOUNT_COL_X = M + 6 + 42 + 22 + 12 + 14 + 14 + 14 + 14 + 10 + 10; // = M + 158
 
   const LABEL_X = AMOUNT_COL_X - 4;
-  const ROW_H = 6;
+  const ROW_H   = 6;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(0, 0, 0);
 
-  doc.setFont("helvetica", "bold");
-  doc.text("Sub Total", LABEL_X, SEC_Y + ROW_H * 0.7, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.text("Discount", LABEL_X, SEC_Y + ROW_H * 1.7, { align: "right" });
-  doc.text("Tax Total", LABEL_X, SEC_Y + ROW_H * 2.7, { align: "right" });
-  doc.setFont("helvetica", "bold");
-  doc.text("Grand Total", LABEL_X, SEC_Y + ROW_H * 3.7, { align: "right" });
-
-  type TR = [string, "normal" | "discount" | "tax" | "grand"];
-  const totRows: [string, TR[1]][] = [
-    [`${fmt2(gross)} ${cur}`,       "normal"],
-    [`-${fmt2(totalDiscAmt)} ${cur}`, "discount"],
-    [`${fmt2(taxTotal)} ${cur}`,    "tax"],
-    [`${fmt2(grandTotal)} ${cur}`,  "grand"],
-  ];
+  doc.setFont("helvetica","bold");
+  doc.text("Sub Total",   LABEL_X, SEC_Y + ROW_H * 0.7, { align:"right" });
+  doc.setFont("helvetica","normal");
+  doc.text("Discount",    LABEL_X, SEC_Y + ROW_H * 1.7, { align:"right" });
+  doc.text("Tax Total",   LABEL_X, SEC_Y + ROW_H * 2.7, { align:"right" });
+  doc.setFont("helvetica","bold");
+  doc.text("Grand Total", LABEL_X, SEC_Y + ROW_H * 3.7, { align:"right" });
 
   autoTable(doc, {
     startY: SEC_Y,
-    head: [],
-    body: totRows.map((r) => [r[0]]),
+    head:   [],
+    body: [
+      [`${fmt2(subTotal)} ${cur}`],
+      [`-${fmt2(discTotal)} ${cur}`],
+      [`${fmt2(taxTotal)} ${cur}`],
+      [`${fmt2(grandTotal)} ${cur}`],
+    ],
     styles: {
       fontSize: 8,
       halign: "center",
@@ -446,81 +367,72 @@ export const generateInvoicePDF = async (
       0: { cellWidth: TOTAL_W },
     },
     didParseCell: (data) => {
-      const t = totRows[data.row.index]?.[1];
-      if (!t) return;
-      if (t === "normal" || t === "grand") {
-        data.cell.styles.fontStyle = "bold";
-      }
-      if (t === "discount") {
-        data.cell.styles.textColor = DISCOUNT;
+      if (data.row.index === 0) { data.cell.styles.fontStyle = "bold"; }
+      if (data.row.index === 1) {
+        data.cell.styles.textColor = [160, 60, 60] as any;
         data.cell.styles.fillColor = [252, 245, 245] as any;
       }
-      if (t === "tax") {
-        data.cell.styles.fillColor = TAX_BG;
-        data.cell.styles.textColor = TAX_TEXT;
+      if (data.row.index === 2) {
+        data.cell.styles.fillColor = [232, 241, 252] as any;
+        data.cell.styles.textColor = [30, 70, 130] as any;
       }
-      if (t === "grand") {
-        data.cell.styles.fillColor = NAVY;
-        data.cell.styles.textColor = WHITE;
+      if (data.row.index === 3) {
+        data.cell.styles.fillColor = NAVY as any;
+        data.cell.styles.textColor = WHITE as any;
         data.cell.styles.fontStyle = "bold";
-        data.cell.styles.fontSize = 9;
+        data.cell.styles.fontSize  = 8;
       }
     },
-    margin: { left: AMOUNT_COL_X, right: M },
+    margin:     { left: AMOUNT_COL_X, right: M },
     tableWidth: TOTAL_W,
   });
 
   const sumEndY = (doc as any).lastAutoTable.finalY;
 
   /* ══════════════════════════════════════════════════════════
-     ⑥  AUTHORISED SIGNATORY (same position as PO)
+     ⑥  TERMS (left)  +  AUTHORISED SIGNATORY (right)
+         — exactly like the PO screenshot layout
   ══════════════════════════════════════════════════════════ */
   const SIG_Y = sumEndY;
-  const LABEL_W = 28;
-  const SIGN_X = AMOUNT_COL_X - LABEL_W;
-  const SIGN_W = LABEL_W + TOTAL_W;
 
+  // — Signatory dimensions (anchored to right, same as PO) —
+  const LABEL_W = 28;  // label column width in totals
+  const SIGN_X  = AMOUNT_COL_X - LABEL_W;
+  const SIGN_W  = LABEL_W + TOTAL_W;
+  const SIGN_HDR_H = 6;
+  const SIGN_BOX_H = 22;
+
+  // Signatory header bar
   doc.setFillColor(...ERP_BLUE);
-  doc.rect(SIGN_X, SIG_Y, SIGN_W, 6, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...WHITE);
-  doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, SIG_Y + 4, {
-    align: "center",
-  });
+  doc.rect(SIGN_X, SIG_Y, SIGN_W, SIGN_HDR_H, "F");
+  doc.setFont("helvetica","bold"); doc.setFontSize(8); doc.setTextColor(...WHITE);
+  doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, SIG_Y + 4, { align:"center" });
 
-  doc.setFillColor(...WHITE);
-  doc.rect(SIGN_X, SIG_Y + 6, SIGN_W, 22, "F");
-  doc.setDrawColor(...RULE);
-  doc.line(SIGN_X, SIG_Y + 6,  SIGN_X + SIGN_W, SIG_Y + 6);
-  doc.line(SIGN_X, SIG_Y + 28, SIGN_X + SIGN_W, SIG_Y + 28);
+  // Signatory body
+  doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
+  doc.rect(SIGN_X, SIG_Y + SIGN_HDR_H, SIGN_W, SIGN_BOX_H, "F");
+  doc.line(SIGN_X,          SIG_Y + SIGN_HDR_H,               SIGN_X + SIGN_W, SIG_Y + SIGN_HDR_H);
+  doc.line(SIGN_X,          SIG_Y + SIGN_HDR_H + SIGN_BOX_H,  SIGN_X + SIGN_W, SIG_Y + SIGN_HDR_H + SIGN_BOX_H);
 
   if (company?.documents?.authorizedSignatureUrl) {
     try {
       doc.addImage(
-        px(company.documents.authorizedSignatureUrl),
-        "PNG",
-        SIGN_X + (SIGN_W - 40) / 2,
-        SIG_Y + 9,
-        40,
-        14,
+        px(company.documents.authorizedSignatureUrl), "PNG",
+        SIGN_X + (SIGN_W - 40) / 2, SIG_Y + SIGN_HDR_H + 3, 40, 13,
       );
     } catch {}
   }
 
-  doc.line(SIGN_X + 5, SIG_Y + 22, SIGN_X + SIGN_W - 5, SIG_Y + 22);
-  doc.setFontSize(6.5);
-  doc.setTextColor(120, 120, 120);
-  doc.text("Signature", SIGN_X + SIGN_W / 2, SIG_Y + 26, { align: "center" });
+  const sigLineY = SIG_Y + SIGN_HDR_H + SIGN_BOX_H - 5;
+  doc.line(SIGN_X + 5, sigLineY, SIGN_X + SIGN_W - 5, sigLineY);
+  doc.setFont("helvetica","normal"); doc.setFontSize(6.5); doc.setTextColor(120, 120, 120);
+  doc.text("Signature", SIGN_X + SIGN_W / 2, sigLineY + 4, { align:"center" });
 
-  /* ══════════════════════════════════════════════════════════
-     ⑦  TERMS & CONDITIONS — invoice uses terms.selling
-  ══════════════════════════════════════════════════════════ */
-  let termsY = SIG_Y;
-  const selling = invoice?.terms?.selling;
-  const termW = SIGN_X - M;
+  // — Terms & Conditions (left of signatory) —
+  const termW  = SIGN_X - M;
   const termTW = termW - 14;
   const tLines: string[] = [];
+  const selling = invoice?.terms?.selling;
 
   if (selling) {
     if (selling.general)      tLines.push(`General: ${selling.general}`);
@@ -534,58 +446,47 @@ export const generateInvoicePDF = async (
       if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
       if (p.notes)       tLines.push(`Notes: ${p.notes}`);
       p.phases?.forEach((ph: any, i: number) =>
-        tLines.push(`  ${i + 1}. ${ph.percentage}% — ${ph.condition}`),
-      );
+        tLines.push(`  ${i + 1}. ${ph.percentage}% — ${ph.condition}`));
     }
   }
   if (!tLines.length) tLines.push("No terms and conditions specified.");
 
   let tH = 12;
-  tLines.forEach((l) => {
-    tH += doc.splitTextToSize(l, termTW).length * 3.5;
-  });
-  const tBH = Math.max(24, tH + 4);
+  tLines.forEach(l => { tH += doc.splitTextToSize(l, termTW).length * 3.5; });
+  const tBH = Math.max(SIGN_HDR_H + SIGN_BOX_H + 2, tH + 6);
+
+  let termsY = SIG_Y;
   if (termsY + tBH > H - 16) {
-    doc.addPage();
-    drawWatermark();
-    termsY = 16;
+    doc.addPage(); drawWatermark(); termsY = 16;
   }
 
-  doc.setFillColor(...WHITE);
-  doc.setDrawColor(...RULE);
-  doc.setLineWidth(0.25);
+  doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
   doc.rect(M, termsY, termW, tBH, "F");
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica","bold"); doc.setFontSize(7); doc.setTextColor(0, 0, 0);
   doc.text("TERMS & CONDITIONS", M + 7, termsY + 5.5);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica","normal"); doc.setFontSize(6.5); doc.setTextColor(0, 0, 0);
   let tcy = termsY + 10.5;
-  tLines.forEach((l) => {
+  tLines.forEach(l => {
     const wr = doc.splitTextToSize(l, termTW);
     doc.text(wr, M + 7, tcy);
     tcy += wr.length * 3.5;
   });
 
   /* ══════════════════════════════════════════════════════════
-     ⑧  FOOTER — simple text (same as PO)
+     ⑦  FOOTER — same as PO
   ══════════════════════════════════════════════════════════ */
   const totalPg = (doc as any).internal.getNumberOfPages();
   for (let pg = 1; pg <= totalPg; pg++) {
     doc.setPage(pg);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.5);
-    doc.setTextColor(...INK_PALE);
-    doc.text("Powered by ERP SYSTEM", W / 2, H - 6, { align: "center" });
-    doc.text(`Page ${pg} / ${totalPg}`, MR, H - 6, { align: "right" });
+    doc.setFont("helvetica","normal"); doc.setFontSize(6.5); doc.setTextColor(...INK_PALE);
     doc.text("This is a computer-generated document.", M, H - 6);
+    doc.text("Powered by ERP SYSTEM", W / 2, H - 6, { align:"center" });
+    doc.text(`Page ${pg} / ${totalPg}`, MR, H - 6, { align:"right" });
   }
 
   /* ══════════════════════════════════════════════════════════
-     ⑨  OUTPUT
+     ⑧  OUTPUT
   ══════════════════════════════════════════════════════════ */
   return resultType === "save"
     ? doc.save(`Invoice_${invoice.invoiceNumber}.pdf`)

@@ -173,23 +173,18 @@ useEffect(() => {
   const grandTotal = sub + tax;
 
   const totalQuantity = form.items.reduce(
-    (sum, item) => sum + (Number(item.quantity) || 0),
-    0,
+    (sum, item) => sum + Number(item.quantity || 0),
+    0
   );
 
-  const roundedTotal = Math.round(grandTotal);
-  const roundingAdjustment = Number((roundedTotal - grandTotal).toFixed(2));
-
-setForm((p) => ({
-  ...p,
-  totalQuantity,
-  subTotal: sub,
-  totalTax: tax,
-  grandTotal,
-  roundingAdjustment,
-  roundedTotal,
-}));
-}, [form.items, form.taxRows]);
+  setForm((p) => ({
+    ...p,
+    totalQuantity,
+    subTotal: sub,
+    totalTax: tax,
+    grandTotal,
+  }));
+}, [form.items]);
   type AddressKey = keyof PurchaseInvoiceFormData["addresses"];
 
   const updateAddress = (

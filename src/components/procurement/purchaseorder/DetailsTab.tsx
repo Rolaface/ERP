@@ -393,57 +393,47 @@ export const DetailsTab = ({
           </div>
 
           <div className="bg-card rounded-lg p-3 w-[220px]">
-            <h3 className="text-[13px] font-semibold text-main mb-2">
-              Summary
-            </h3>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Total Items</span>
-                <span className="font-medium text-main">{items.length}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Total Quantity</span>
-                <span className="font-medium text-main">
-                  {form.totalQuantity}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Subtotal</span>
-                <span className="font-medium text-main">
-                  {symbol} {form.subTotal?.toFixed(2) || "0.00"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Total Tax</span>
-                <span className="font-medium text-main">
-                  {symbol} {form.totalTax?.toFixed(2) || "0.00"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Grand Total</span>
-                <span className="font-medium text-main">
-                  {symbol} {form.grandTotal.toFixed(2)}
-                </span>
-              </div>
-              <div className="border-t border-theme my-1"></div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Rounding Adj</span>
-                <span className="font-medium text-main">
-                  {symbol} {form.roundingAdjustment.toFixed(2)}
-                </span>
-              </div>
-              <div className="mt-2 p-2 bg-primary rounded-lg w-full">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-white">
-                    Rounded Total
-                  </span>
-                  <span className="text-sm font-bold text-white">
-                    {symbol} {form.roundedTotal.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+  <h3 className="text-[13px] font-semibold text-main mb-2">
+    Summary
+  </h3>
+
+  <div className="flex flex-col gap-2">
+
+    <div className="flex justify-between text-xs">
+      <span className="text-muted">Total Items</span>
+      <span className="font-medium text-main">{items.length}</span>
+    </div>
+
+    <div className="flex justify-between text-xs">
+      <span className="text-muted">Total Quantity</span>
+      <span className="font-medium text-main">{form.totalQuantity}</span>
+    </div>
+
+    <div className="flex justify-between text-xs">
+      <span className="text-muted">Subtotal</span>
+      <span className="font-medium text-main">
+        {symbol} {form.subTotal?.toFixed(2) || "0.00"}
+      </span>
+    </div>
+
+    <div className="flex justify-between text-xs">
+      <span className="text-muted">Total Tax</span>
+      <span className="font-medium text-main">
+        {symbol} {form.totalTax?.toFixed(2) || "0.00"}
+      </span>
+    </div>
+
+    <div className="border-t border-theme my-1"></div>
+
+    <div className="flex justify-between text-sm font-semibold">
+      <span className="text-main">Grand Total</span>
+      <span className="text-main">
+        {symbol} {form.grandTotal?.toFixed(2) || "0.00"}
+      </span>
+    </div>
+
+  </div>
+</div>
         </div>
       </div>
     </div>

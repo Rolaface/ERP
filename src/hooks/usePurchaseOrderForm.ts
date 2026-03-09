@@ -174,19 +174,12 @@ useEffect(() => {
     0
   );
 
-  const roundedTotal = Math.round(grandTotal);
-  const roundingAdjustment = Number(
-    (roundedTotal - grandTotal).toFixed(2)
-  );
-
   setForm((prev) => ({
     ...prev,
     totalQuantity,
     subTotal,
     totalTax,
     grandTotal,
-    roundingAdjustment,
-    roundedTotal,
   }));
 }, [form.items, form.taxRows]);
   type AddressKey = keyof PurchaseOrderFormData["addresses"];
