@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from "react";
 import PurchaseOrderModal from "../../components/procurement/PurchaseOrderModal";
-import toast from "react-hot-toast";
 import PurchaseOrderView from "../../views/Procurement/purchaseorderview";
-
-// Shared UI Table Components
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import ActionButton, {
@@ -153,22 +150,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     fetchOrders();
   }, [page, pageSize, filters]);
 
-  // ── Drawer: open + fetch (same as proforma/invoice handleView)
-  const handleView = async (poId: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setDrawerOpen(true);
-    setDrawerLoading(true);
-    setDrawerData(null);
-    try {
-      const res = await getPurchaseOrderById(poId);
-      if (res?.status === "success")
-        setDrawerData(res.data as PurchaseOrderDetail);
-    } finally {
-      setDrawerLoading(false);
-    }
-  };
 
-  // ── Drawer: generate PDF inside drawer (same as proforma handleDrawerPdf)
   const handleDrawerPdf = async (poId: string) => {
     setDrawerPdfLoading(true);
     setDrawerPdfUrl(null);
@@ -235,6 +217,12 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
   const handleEdit = (order: PurchaseOrder, e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (order.status !== "Draft") {
+      showApiError("Only Draft purchase orders can be edited");
+      return;
+    }
+
     setSelectedOrder(order);
     setModalOpen(true);
   };
@@ -242,7 +230,6 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const handleDelete = (order: PurchaseOrder, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm(`Delete Purchase Order "${order.id}"?`)) {
-      toast.success("Delete API ready — connect backend later");
     }
   };
 
@@ -392,6 +379,18 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
             onClick={(e) => handleView(o.id, e)}
             iconOnly
           />
+
+          <ActionButton
+            type="edit"
+            onClick={(e) => handleEdit(o, e)}
+            iconOnly
+            disabled={o.status !== "Draft"}
+            title={
+              o.status !== "Draft"
+                ? "Only Draft purchase orders can be edited"
+                : "Edit Purchase Order"
+            }
+          />
           <ActionMenu
             onDelete={(e) => handleDelete(o, e as any)}
             customActions={[
@@ -460,15 +459,15 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
         }
       />
 
-      {/* ── Add / Edit modal ── */}
+
       <PurchaseOrderModal
         isOpen={modalOpen}
         onClose={handleCloseModal}
-        poId={selectedOrder?.poId}
+        poId={selectedOrder?.id}
         onSubmit={handlePOSaved}
       />
 
-      {/* ── Drawer modal (same as ProformaDetailModal usage) ── */}
+
       <PurchaseOrderDetailModal
         open={drawerOpen}
         data={drawerData}
@@ -493,7 +492,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
         }}
       />
 
-      {/* ── PDF Preview modal — kept, used by handlePreviewPDF ── */}
+
       <PdfPreviewModal
         open={pdfOpen}
         title="Purchase Order Preview"

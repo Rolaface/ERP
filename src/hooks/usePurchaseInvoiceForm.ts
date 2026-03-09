@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
 import { showApiError, showSuccess } from "../utils/alert";
 import type {
   PurchaseInvoiceFormData,
@@ -215,11 +214,11 @@ export const usePurchaseInvoiceForm = ({
       if (form.supplier && !form.supplierInvoiceNumber?.trim())
         return "Supplier Invoice No is required";
 
-        if (!form.transactionProgress)
-      return "Transaction Progress is required";
+      if (!form.transactionProgress)
+        return "Transaction Progress is required";
 
-         if (!form.paymentType)
-      return "Payment Type is required";
+      if (!form.paymentType)
+        return "Payment Type is required";
 
 
       if (!form.items.length)
@@ -535,7 +534,6 @@ export const usePurchaseInvoiceForm = ({
       subject: form.subject,
       messageHtml: html,
     });
-    toast.success("Template saved!");
   };
 
   const resetTemplate = () => {
@@ -652,21 +650,21 @@ export const usePurchaseInvoiceForm = ({
       let res;
 
       if (isEditMode) {
-        showApiError({
-          message:
-            "Editing Purchase Invoice is not supported. Only status update is allowed.",
-        });
-        return;
+        res = await updatePurchaseInvoice(pId, payload);
       } else {
         res = await createPurchaseInvoice(payload);
-
-        if (!res || ![200, 201].includes(res.status_code)) {
-          showApiError(res);
-          return;
-        }
-
-        showSuccess("Purchase Invoice Created");
       }
+
+      if (!res || ![200, 201].includes(res.status_code)) {
+        showApiError(res);
+        return;
+      }
+
+      showSuccess(
+        isEditMode
+          ? "Purchase Invoice Updated"
+          : "Purchase Invoice Created"
+      );
 
       onSuccess?.(res);
       onClose?.();

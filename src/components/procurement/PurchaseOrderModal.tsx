@@ -87,7 +87,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={poId ? "View Purchase Order" : "New Purchase Order"}
+      title={poId ? "Edit Purchase Order" : "New Purchase Order"}
       subtitle="Create and manage purchase order"
       icon={Building2}
       customWidth="85vw"

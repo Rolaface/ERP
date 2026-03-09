@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import toast from "react-hot-toast";
 import PurchaseInvoiceView from "../../views/Procurement/PurchaseInvoiceView";
 import PurchaseInvoiceModal from "../../components/procurement/PurchaseInvoiceModal";
 // Shared UI Table Components
@@ -65,21 +64,21 @@ const STATUS_TRANSITIONS: Record<PIStatus, PIStatus[]> = {
     "Debit Note Issued",
     "Return",
   ],
-  Submitted:            ["Paid", "Party Paid", "Cancelled", "Return"],
-  Paid:                 ["Debit Note Issued", "Return"],
-  "Party Paid":         ["Paid", "Debit Note Issued"],
-  Return:               ["Debit Note Issued"],
-  "Debit Note Issued":  [],
-  "Internal Transfer":  [],
-  Cancelled:            [],
+  Submitted: ["Paid", "Party Paid", "Cancelled", "Return"],
+  Paid: ["Debit Note Issued", "Return"],
+  "Party Paid": ["Paid", "Debit Note Issued"],
+  Return: ["Debit Note Issued"],
+  "Debit Note Issued": [],
+  "Internal Transfer": [],
+  Cancelled: [],
 };
 
 const invoiceStatusOptions = [
-  { label: "Draft",      value: "Draft" },
-  { label: "Submitted",  value: "Submitted" },
-  { label: "Paid",       value: "Paid" },
+  { label: "Draft", value: "Draft" },
+  { label: "Submitted", value: "Submitted" },
+  { label: "Paid", value: "Paid" },
   { label: "Party Paid", value: "Party Paid" },
-  { label: "Cancelled",  value: "Cancelled" },
+  { label: "Cancelled", value: "Cancelled" },
 ];
 
 const CRITICAL_STATUSES: PIStatus[] = ["Debit Note Issued", "Cancelled"];
@@ -106,28 +105,28 @@ const handleMakePayment = async (pId: string) => {
   }
 };
 const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) => {
-  const [orders, setOrders]     = useState<Purchaseinvoice[]>([]);
-  const [loading, setLoading]   = useState(false);
+  const [orders, setOrders] = useState<Purchaseinvoice[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage]         = useState(1);
+  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [modalOpen, setModalOpen]   = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
-  const [filters, setFilters]   = useState<PurchaseInvoiceFilters>({});
-  const [company, setCompany]   = useState<any | null>(null);
+  const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
+  const [company, setCompany] = useState<any | null>(null);
 
   // ── PDF preview modal (kept — do not remove)
-  const [pdfUrl, setPdfUrl]   = useState<string | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
 
   // ── Drawer (same pattern as ProformaInvoicesTable)
-  const [drawerOpen, setDrawerOpen]             = useState(false);
-  const [drawerData, setDrawerData]             = useState<PurchaseInvoiceDetail | null>(null);
-  const [drawerLoading, setDrawerLoading]       = useState(false);
-  const [drawerPdfUrl, setDrawerPdfUrl]         = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerData, setDrawerData] = useState<PurchaseInvoiceDetail | null>(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
   useEffect(() => {
@@ -164,12 +163,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
       setTotalItems(res.pagination?.total || 0);
 
       const mappedInvoice: Purchaseinvoice[] = res.data.map((pi: any) => ({
-        pId:              pi.pId,
-        supplier:         pi.supplierName,
-        podate:           pi.poDate,
-        deliveryDate:     pi.deliveryDate,
-        amount:           pi.grandTotal,
-        status:           pi.status,
+        pId: pi.pId,
+        supplier: pi.supplierName,
+        podate: pi.poDate,
+        deliveryDate: pi.deliveryDate,
+        amount: pi.grandTotal,
+        status: pi.status,
         registrationType: pi.registrationType,
       }));
 
@@ -255,6 +254,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
 
   const handleEdit = (invoice: Purchaseinvoice, e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (invoice.status !== "Draft") {
+      showApiError("Only Draft purchase invoices can be edited");
+      return;
+    }
+
     setSelectedInvoice(invoice);
     setModalOpen(true);
   };
@@ -262,7 +267,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
   const handleDelete = (invoice: Purchaseinvoice, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm(`Delete Purchase Invoice "${invoice.pId}"?`)) {
-      toast.success("Delete");
     }
   };
 
@@ -281,12 +285,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
 
         if (res?.status_code === 200) {
           const mapped = res.data.map((pi: any) => ({
-            pId:              pi.pId,
-            supplier:         pi.supplierName,
-            podate:           pi.poDate,
-            deliveryDate:     pi.deliveryDate,
-            amount:           pi.grandTotal,
-            status:           pi.status,
+            pId: pi.pId,
+            supplier: pi.supplierName,
+            podate: pi.poDate,
+            deliveryDate: pi.deliveryDate,
+            amount: pi.grandTotal,
+            status: pi.status,
             registrationType: pi.registrationType,
           }));
           allData = [...allData, ...mapped];
@@ -316,17 +320,17 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
       }
 
       const formattedData = dataToExport.map((pi) => ({
-        "PI ID":            pi.pId,
-        Supplier:           pi.supplier,
-        "PO Date":          pi.podate,
-        "Delivery Date":    pi.deliveryDate,
-        "Registration Type":pi.registrationType,
-        Amount:             pi.amount,
-        Status:             pi.status,
+        "PI ID": pi.pId,
+        Supplier: pi.supplier,
+        "PO Date": pi.podate,
+        "Delivery Date": pi.deliveryDate,
+        "Registration Type": pi.registrationType,
+        Amount: pi.amount,
+        Status: pi.status,
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(formattedData);
-      const workbook  = XLSX.utils.book_new();
+      const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Invoices");
 
       saveAs(
@@ -360,15 +364,15 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
 
       showSuccess(`Purchase Invoice marked as ${newStatus}`);
     } catch (err) {
-      toast.error("Failed to update Purchase Invoice status");
+      showApiError({ message: "Failed to update Purchase Invoice status" });
     }
   };
 
   // ── Columns
   const columns: Column<Purchaseinvoice>[] = [
-    { key: "pId",      header: "PI ID",    align: "left" },
+    { key: "pId", header: "PI ID", align: "left" },
     { key: "supplier", header: "Supplier", align: "left" },
-    { key: "podate",   header: "PI Date",  align: "left" },
+    { key: "podate", header: "PI Date", align: "left" },
     { key: "registrationType", header: "Registration Type", align: "left" },
     {
       key: "amount",
@@ -397,6 +401,17 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
             type="view"
             onClick={(e) => handleViewClick(o.pId, e)}
             iconOnly
+          />
+          <ActionButton
+            type="edit"
+            onClick={(e) => handleEdit(o, e)}
+            iconOnly
+            disabled={o.status !== "Draft"}
+            title={
+              o.status !== "Draft"
+                ? "Only Draft purchase invoices can be edited"
+                : "Edit Purchase Invoice"
+            }
           />
           <ActionMenu
             onDelete={(e) => handleDelete(o, e as any)}
