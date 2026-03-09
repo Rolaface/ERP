@@ -735,25 +735,34 @@ export const useInvoiceForm = (
     }
   };
 
-  const { subTotal, totalTax, grandTotal } = useMemo(() => {
-    let sub = 0;
-    let tax = 0;
+const { subTotal, totalTax, grandTotal } = useMemo(() => {
+  let sub = 0;
+  let tax = 0;
 
-    formData.items.forEach((item) => {
-      const discountAmount = item.quantity * item.price * (Number(item.discount || 0) / 100);
-      const totalInclusive = item.quantity * item.price - discountAmount;
-      const exclusive = totalInclusive / (1 + Number(item.vatRate || 0) / 100);
-      const taxAmt = totalInclusive - exclusive;
-      sub += exclusive;
-      tax += taxAmt;
-    });
+  formData.items.forEach((item) => {
+    const qty = Number(item.quantity || 0);
+    const price = Number(item.price || 0);
+    const discount = Number(item.discount || 0);
+    const vatRate = Number(item.vatRate || 0);
 
-    return {
-      subTotal: sub,
-      totalTax: tax,
-      grandTotal: sub + tax,
-    };
-  }, [formData.items]);
+    const lineAmount = qty * price;
+
+    const discountAmount = lineAmount * (discount / 100);
+
+    const netAmount = lineAmount - discountAmount;
+
+    const taxAmount = netAmount * (vatRate / 100);
+
+    sub += netAmount;
+    tax += taxAmount;
+  });
+
+  return {
+    subTotal: sub,
+    totalTax: tax,
+    grandTotal: sub + tax,
+  };
+}, [formData.items]);
 
 
   const paginatedItems = formData.items.slice(

@@ -89,6 +89,9 @@ destnCountryCd: string; // New field for Export country
   totalQuantity: number;
   grandTotal: number;
   roundingAdjustment: number;
+  totalTax: number;
+  subTotal: number;
+  
   roundedTotal: number;
   items: ItemRow[];
   taxRows: TaxRow[];
@@ -197,6 +200,9 @@ export const emptyPOForm: PurchaseOrderFormData = {
   paymentTermsTemplate: "",
   totalQuantity: 0,
   grandTotal: 0,
+  totalTax: 0,
+  subTotal: 0,
+  
   roundingAdjustment: 0,
   roundedTotal: 0,
 

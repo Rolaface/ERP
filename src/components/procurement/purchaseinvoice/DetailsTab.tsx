@@ -49,7 +49,6 @@ export const DetailsTab = ({
 
   // UI state to toggle between PO selection and manual input
 
-
   useEffect(() => {
     const newPage = Math.floor((items.length - 1) / ITEMS_PER_PAGE);
     if (newPage !== page) setPage(newPage);
@@ -62,13 +61,14 @@ export const DetailsTab = ({
 
   return (
     <div className="flex flex-col gap-4 max-h-screen overflow-auto  bg-app text-main">
-
       {/* ── Top fields ── */}
       <div className="bg-app">
         <div className="grid grid-cols-[250px_160px_135px_90px_110px_100px_100px_120px] gap-x-2 items-end">
-
           <div className="w-[250px]">
-            <SupplierSelect selectedId={form.supplierId} onChange={onSupplierChange} />
+            <SupplierSelect
+              selectedId={form.supplierId}
+              onChange={onSupplierChange}
+            />
           </div>
 
           {/* PO Number Logic: Checkbox + Conditional Field */}
@@ -94,7 +94,9 @@ export const DetailsTab = ({
                       value: po.poId,
                     }))}
                   onChange={(e) => {
-                    const selected = poList.find((p) => p.poId === e.target.value);
+                    const selected = poList.find(
+                      (p) => p.poId === e.target.value,
+                    );
                     if (selected) onPOSelect(selected);
                   }}
                 />
@@ -122,7 +124,14 @@ export const DetailsTab = ({
           </div>
 
           <div className="w-[100px] ml-2">
-            <ModalInput label="Date" type="date" name="date" value={form.date} onChange={onFormChange} required />
+            <ModalInput
+              label="Date"
+              type="date"
+              name="date"
+              value={form.date}
+              onChange={onFormChange}
+              required
+            />
           </div>
 
           <div className="w-[110px] ml-4">
@@ -145,11 +154,21 @@ export const DetailsTab = ({
           </div>
 
           <div className="w-[100px] ml-3">
-            <ModalInput label="Cost Center" name="costCenter" value={form.costCenter} disabled />
+            <ModalInput
+              label="Cost Center"
+              name="costCenter"
+              value={form.costCenter}
+              disabled
+            />
           </div>
 
           <div className="w-[100px] ml-3">
-            <ModalInput label="Project" name="project" value={form.project} disabled />
+            <ModalInput
+              label="Project"
+              name="project"
+              value={form.project}
+              disabled
+            />
           </div>
 
           <div className="w-[120px] ml-3">
@@ -192,7 +211,6 @@ export const DetailsTab = ({
 
       {/* ── Main Body ── */}
       <div className="grid grid-cols-[4fr_1fr] gap-4">
-
         {/* LEFT: Table */}
         <div className="bg-card rounded-lg p-2 shadow-sm flex-1">
           <div className="flex items-center gap-1 mb-2">
@@ -202,26 +220,51 @@ export const DetailsTab = ({
           <table className="w-full border-collapse text-[10px] table-fixed">
             <thead>
               <tr className="border-b border-theme">
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">#</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">Item</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[76px]">Description</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">
+                  #
+                </th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
+                  Item
+                </th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[76px]">
+                  Description
+                </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
                   Packing
-                  <span className="ml-1 text-[9px] font-normal text-muted/60">(unit × size)</span>
+                  <span className="ml-1 text-[9px] font-normal text-muted/60">
+                    (unit × size)
+                  </span>
                 </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
-                  Batch No {items.some((it) => it.requiresBatch) && (
+                  Batch No{" "}
+                  {items.some((it) => it.requiresBatch) && (
                     <span className="text-danger">*</span>
                   )}
                 </th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">Qty</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">Mfg Date</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">Expiry Date</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">Unit Price</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Dis (%)</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Tax</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px]">Tax Code</th>
-                <th className="px-2 py-1  text-muted font-medium text-[11px] w-[80px] text-right">Amount</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">
+                  Qty
+                </th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
+                  Mfg Date
+                </th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
+                  Expiry Date
+                </th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
+                  Unit Price
+                </th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
+                  Dis (%)
+                </th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
+                  Tax
+                </th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px]">
+                  Tax Code
+                </th>
+                <th className="px-2 py-1  text-muted font-medium text-[11px] w-[80px] text-right">
+                  Amount
+                </th>
                 <th className="w-[30px]" />
               </tr>
             </thead>
@@ -229,12 +272,23 @@ export const DetailsTab = ({
             <tbody>
               {paginatedItems.map((it, idx) => {
                 const i = page * ITEMS_PER_PAGE + idx;
-                const discountAmount = it.quantity * it.rate * (Number(it.discount || 0) / 100);
-                const totalInclusive = it.quantity * it.rate - discountAmount;
-                const amount = totalInclusive;
+                const qty = Number(it.quantity || 0);
+                const rate = Number(it.rate || 0);
+                const discount = Number(it.discount || 0);
+                const vatRate = Number(it.vatRate || 0);
+
+                const lineAmount = qty * rate;
+                const discountAmount = lineAmount * (discount / 100);
+                const netAmount = lineAmount - discountAmount;
+                const taxAmount = netAmount * (vatRate / 100);
+
+                const amount = netAmount + taxAmount;
 
                 return (
-                  <tr key={i} className="border-b border-theme bg-card row-hover">
+                  <tr
+                    key={i}
+                    className="border-b border-theme bg-card row-hover"
+                  >
                     <td className="px-2 py-1 text-[10px]">{i + 1}</td>
 
                     {/* ITEM */}
@@ -269,8 +323,9 @@ export const DetailsTab = ({
                           className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
                         />
 
-
-                        <span className="text-muted text-[10px] font-bold">×</span>
+                        <span className="text-muted text-[10px] font-bold">
+                          ×
+                        </span>
 
                         <input
                           type="number"
@@ -442,11 +497,15 @@ export const DetailsTab = ({
         {/* RIGHT: Sidebar */}
         <div className="flex flex-col gap-2">
           <div className="bg-card rounded-lg p-2 w-[220px]">
-            <h3 className="text-[12px] font-semibold text-main mb-2">Supplier Details</h3>
+            <h3 className="text-[12px] font-semibold text-main mb-2">
+              Supplier Details
+            </h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <User size={16} className="text-muted shrink-0" />
-                <span className="text-xs text-main">{form.supplier || "Supplier Name"}</span>
+                <span className="text-xs text-main">
+                  {form.supplier || "Supplier Name"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-[10px] text-muted">
                 <Mail size={14} className="text-muted shrink-0" />
@@ -458,15 +517,21 @@ export const DetailsTab = ({
               </div>
               {form.taxCategory && (
                 <div className="mt-1">
-                  <h3 className="text-[11px] font-semibold text-main mb-1">Order Information</h3>
+                  <h3 className="text-[11px] font-semibold text-main mb-1">
+                    Order Information
+                  </h3>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted">Tax Category</span>
-                      <span className="font-medium text-main">{form.taxCategory}</span>
+                      <span className="font-medium text-main">
+                        {form.taxCategory}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted">Currency</span>
-                      <span className="font-medium text-main">{form.currency || "-"}</span>
+                      <span className="font-medium text-main">
+                        {form.currency || "-"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -474,33 +539,66 @@ export const DetailsTab = ({
             </div>
           </div>
 
-          <div className="bg-card rounded-lg p-3 w-[220px]">
-            <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Total Items</span>
-                <span className="font-medium text-main">{items.length}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Total Quantity</span>
-                <span className="font-medium text-main">{form.totalQuantity}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Grand Total</span>
-                <span className="font-medium text-main">{symbol} {form.grandTotal.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Rounding Adj</span>
-                <span className="font-medium text-main">{symbol} {form.roundingAdjustment.toFixed(2)}</span>
-              </div>
-              <div className="mt-2 p-2 bg-primary rounded-lg w-full">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-white">Rounded Total</span>
-                  <span className="text-sm font-bold text-white">{symbol} {form.roundedTotal.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+         <div className="bg-card rounded-lg p-3 w-[220px]">
+  <h3 className="text-[13px] font-semibold text-main mb-2">
+    Summary
+  </h3>
+
+  <div className="flex flex-col gap-2">
+
+    <div className="flex justify-between text-xs">
+      <span className="text-muted">Total Items</span>
+      <span className="font-medium tabular-nums">{items.length}</span>
+    </div>
+
+    <div className="flex justify-between text-xs">
+      <span className="text-muted">Total Quantity</span>
+      <span className="font-medium tabular-nums">{form.totalQuantity}</span>
+    </div>
+
+    <div className="flex justify-between text-xs">
+      <span className="text-muted">Subtotal</span>
+      <span className="font-medium tabular-nums">
+        {symbol} {form.subTotal?.toFixed(2)}
+      </span>
+    </div>
+
+    <div className="flex justify-between text-xs">
+      <span className="text-muted">Total Tax</span>
+      <span className="font-medium tabular-nums">
+        {symbol} {form.totalTax?.toFixed(2)}
+      </span>
+    </div>
+
+    <div className="flex justify-between text-xs">
+      <span className="text-muted">Grand Total</span>
+      <span className="font-medium tabular-nums">
+        {symbol} {form.grandTotal?.toFixed(2)}
+      </span>
+    </div>
+
+    <div className="flex justify-between text-xs">
+      <span className="text-muted">Rounding Adj</span>
+      <span className="font-medium tabular-nums">
+        {symbol} {form.roundingAdjustment?.toFixed(2)}
+      </span>
+    </div>
+
+    <div className="border-t border-theme my-1"></div>
+
+    <div className="mt-1 p-2 bg-primary rounded-lg">
+      <div className="flex justify-between items-center">
+        <span className="text-sm font-semibold text-white">
+          Rounded Total
+        </span>
+        <span className="text-sm font-bold text-white tabular-nums">
+          {symbol} {form.roundedTotal?.toFixed(2)}
+        </span>
+      </div>
+    </div>
+
+  </div>
+</div>
         </div>
       </div>
     </div>
