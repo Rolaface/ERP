@@ -46,13 +46,13 @@ export async function correctStock(payload: any): Promise<any> {
 }
 export async function getStockReport(
   page: number,
-  pageSize: number,
+  page_size: number,
   search?: string,
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(StockAPI.stockReport, {
     params: {
       page,
-      pageSize,
+      page_size,
       search,
     },
   });

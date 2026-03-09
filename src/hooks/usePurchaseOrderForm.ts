@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
 import { showApiError, showSuccess } from "../utils/alert";
 import type {
   PurchaseOrderFormData,
@@ -38,6 +37,7 @@ export const usePurchaseOrderForm = ({
   onSuccess,
   onClose,
   poId,
+
 }: UsePurchaseOrderFormProps) => {
   const [form, setForm] = useState<PurchaseOrderFormData>(emptyPOForm);
   const [activeTab, setActiveTab] = useState<POTab>("details");
@@ -45,10 +45,10 @@ export const usePurchaseOrderForm = ({
   const [customShippingRule, setCustomShippingRule] = useState("");
   const [customIncoterm, setCustomIncoterm] = useState("");
   const [companyDefaults, setCompanyDefaults] = useState<{
-  buyingTerms?: any;
-  companyBillingAddress?: any;
-  baseCurrency?: string;
-}>({});
+    buyingTerms?: any;
+    companyBillingAddress?: any;
+    baseCurrency?: string;
+  }>({});
 
   useEffect(() => {
     if (!isOpen) {
@@ -59,61 +59,61 @@ export const usePurchaseOrderForm = ({
 
   const isEditMode = !!poId;
 
- useEffect(() => {
-  if (!isOpen || !COMPANY_ID) return;
+  useEffect(() => {
+    if (!isOpen || !COMPANY_ID) return;
 
-  const loadCompanyData = async () => {
-    try {
-      const res = await getCompanyById(COMPANY_ID);
+    const loadCompanyData = async () => {
+      try {
+        const res = await getCompanyById(COMPANY_ID);
 
-      const company =
-        res?.data?.data ||   // if wrapped
-        res?.data ||         // if semi wrapped
-        res;
+        const company =
+          res?.data?.data ||   // if wrapped
+          res?.data ||         // if semi wrapped
+          res;
 
-      if (!company?.companyName) return;
-      const buyingTerms = company?.terms?.buying;
-const baseCurrency = company?.financialConfig?.baseCurrency;
+        if (!company?.companyName) return;
+        const buyingTerms = company?.terms?.buying;
+        const baseCurrency = company?.financialConfig?.baseCurrency;
 
-const companyBillingAddress: AddressBlock = {
-  addressTitle: company.companyName || "",
-  addressType: "Billing",
-  addressLine1: company.address?.addressLine1 || "",
-  addressLine2: company.address?.addressLine2 || "",
-  city: company.address?.city || "",
-  state: company.address?.province || "",
-  postalCode: company.address?.postalCode || "",
-  country: company.address?.country || "",
-  phone: company.contactInfo?.companyPhone || "",
-  email: company.contactInfo?.companyEmail || "",
-};
+        const companyBillingAddress: AddressBlock = {
+          addressTitle: company.companyName || "",
+          addressType: "Billing",
+          addressLine1: company.address?.addressLine1 || "",
+          addressLine2: company.address?.addressLine2 || "",
+          city: company.address?.city || "",
+          state: company.address?.province || "",
+          postalCode: company.address?.postalCode || "",
+          country: company.address?.country || "",
+          phone: company.contactInfo?.companyPhone || "",
+          email: company.contactInfo?.companyEmail || "",
+        };
 
-setCompanyDefaults({
-  buyingTerms,
-  baseCurrency,
-  companyBillingAddress,
-});
+        setCompanyDefaults({
+          buyingTerms,
+          baseCurrency,
+          companyBillingAddress,
+        });
 
-setForm((prev) => ({
-  ...prev,
-  terms: {
-    ...prev.terms,
-    buying: buyingTerms || prev.terms?.buying,
-  },
-  currency: baseCurrency || prev.currency,
-  addresses: {
-    ...prev.addresses,
-    companyBillingAddress,
-  },
-}));
+        setForm((prev) => ({
+          ...prev,
+          terms: {
+            ...prev.terms,
+            buying: buyingTerms || prev.terms?.buying,
+          },
+          currency: baseCurrency || prev.currency,
+          addresses: {
+            ...prev.addresses,
+            companyBillingAddress,
+          },
+        }));
 
-    } catch (e) {
-      console.error("Failed to load company data", e);
-    }
-  };
+      } catch (e) {
+        console.error("Failed to load company data", e);
+      }
+    };
 
-  loadCompanyData();
-}, [isOpen, poId]);
+    loadCompanyData();
+  }, [isOpen, poId]);
 
 
   // Load PO Data in Edit Mode
@@ -121,17 +121,14 @@ setForm((prev) => ({
     if (!isOpen || !poId) return;
 
     const loadPO = async () => {
-      const toastId = toast.loading("Loading Purchase Order...");
 
       try {
         const apiData = await getPurchaseOrderById(poId);
         const mapped = mapApiToUI(apiData);
 
         setForm(mapped);
-        toast.success("Purchase Order Loaded", { id: toastId });
       } catch (err) {
         console.error("PO Load Error", err);
-        toast.error("Failed to load Purchase Order", { id: toastId });
       }
     };
 
@@ -271,10 +268,10 @@ setForm((prev) => ({
     const { name, value } = e.target;
     const isNum = ["quantity", "rate"].includes(name);
     const items = [...form.items];
-   items[idx] = {
-  ...items[idx],
-  [name]: isNum ? (value === "" ? "" : Number(value)) : value,
-};
+    items[idx] = {
+      ...items[idx],
+      [name]: isNum ? (value === "" ? "" : Number(value)) : value,
+    };
     setForm((p) => ({ ...p, items }));
   };
 
@@ -293,7 +290,7 @@ setForm((prev) => ({
 
   const removeItem = (idx: number) => {
     if (form.items.length === 1) {
-      toast.error("At least one item is required");
+      showApiError({ message: "At least one item is required" });
       return;
     }
     setForm((p) => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
@@ -346,7 +343,6 @@ setForm((prev) => ({
       subject: form.subject,
       messageHtml: html,
     });
-    toast.success("Template saved!");
   };
 
   const resetTemplate = () => {
@@ -376,6 +372,47 @@ setForm((prev) => ({
     }
   };
 
+  const validateTab = (tab: POTab): string | null => {
+    if (tab === "details") {
+      if (!form.supplierId) return "Supplier is required";
+      if (!form.date) return "PO Date is required";
+
+      if (!form.items.length || !form.items[0].itemCode) {
+        return "Please add at least one item";
+      }
+
+      for (let i = 0; i < form.items.length; i++) {
+        const item = form.items[i];
+
+        if (!item.itemCode) return `Row ${i + 1}: Item required`;
+        if (!item.quantity || item.quantity <= 0)
+          return `Row ${i + 1}: Quantity required`;
+        if (!item.rate || item.rate <= 0)
+          return `Row ${i + 1}: Rate required`;
+
+        if (!item.vatCd || !item.vatCd.trim())
+          return `Row ${i + 1}: Tax Code required`;
+      }
+    }
+
+    if (tab === "address") {
+      const supplier = form.addresses?.supplierAddress;
+      const dispatch = form.addresses?.dispatchAddress;
+      const shipping = form.addresses?.shippingAddress;
+
+      if (!supplier?.addressLine1?.trim())
+        return "Supplier Address Line 1 is required";
+
+      if (!dispatch?.addressLine1?.trim())
+        return "Dispatch Address Line 1 is required";
+
+      if (!shipping?.addressLine1?.trim())
+        return "Shipping Address Line 1 is required";
+    }
+
+    return null;
+  };
+
   const handleItemSelect = async (itemId: string, idx: number) => {
     try {
       const res = await getItemByItemCode(itemId);
@@ -391,23 +428,22 @@ setForm((prev) => ({
           itemCode: data.id,
           itemName: data.itemName,
           description: data.description,
-     
-        
+
+
           rate: Number(data.buyingPrice ?? 0),
-          uom: data.unitOfMeasureCd ,
+          uom: data.unitOfMeasureCd,
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
           requiredBy: items[idx].requiredBy || prev.date,
-            packingUnit: Number(data.packingUnit || 0),
-  packingSize: Number(data.packingSize || 0),
-  packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
+          packingUnit: Number(data.packingUnit || 0),
+          packingSize: Number(data.packingSize || 0),
+          packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
         };
 
         return { ...prev, items };
       });
     } catch (err) {
       console.error("Failed to fetch item details", err);
-      toast.error("Failed to load item details");
     }
   };
 
@@ -451,22 +487,17 @@ setForm((prev) => ({
       let res;
 
       if (isEditMode) {
-        showApiError({
-          message:
-            "Editing Purchase Order is not supported. Only status update is allowed.",
-        });
-        return;
+        res = await updatePurchaseOrder(poId, payload);
+      } else {
+        res = await createPurchaseOrder(payload);
       }
-
-
-      res = await createPurchaseOrder(payload);
 
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(res);
         return;
       }
 
-      showSuccess("Purchase Order Created");
+      showSuccess(isEditMode ? "Purchase Order Updated" : "Purchase Order Created");
 
       onSuccess?.(res);
       onClose?.();
@@ -478,31 +509,31 @@ setForm((prev) => ({
     }
   };
 
-const reset = () => {
-  setForm({
-    ...emptyPOForm,
+  const reset = () => {
+    setForm({
+      ...emptyPOForm,
 
-    terms: {
-      ...(emptyPOForm.terms ?? {}),
-      buying:
-        companyDefaults.buyingTerms ??
-        emptyPOForm.terms?.buying,
-    },
+      terms: {
+        ...(emptyPOForm.terms ?? {}),
+        buying:
+          companyDefaults.buyingTerms ??
+          emptyPOForm.terms?.buying,
+      },
 
-    currency:
-      companyDefaults.baseCurrency ??
-      emptyPOForm.currency,
+      currency:
+        companyDefaults.baseCurrency ??
+        emptyPOForm.currency,
 
-    addresses: {
-      ...(emptyPOForm.addresses ?? {}),
-      companyBillingAddress:
-        companyDefaults.companyBillingAddress ??
-        emptyPOForm.addresses?.companyBillingAddress,
-    },
-  });
+      addresses: {
+        ...(emptyPOForm.addresses ?? {}),
+        companyBillingAddress:
+          companyDefaults.companyBillingAddress ??
+          emptyPOForm.addresses?.companyBillingAddress,
+      },
+    });
 
-  setActiveTab("details");
-};
+    setActiveTab("details");
+  };
   return {
     form,
     activeTab,
@@ -524,27 +555,11 @@ const reset = () => {
     getCurrencySymbol,
     handleSubmit,
     reset,
+    validateTab,
     setForm,
     customShippingRule,
-setCustomShippingRule,
-customIncoterm,
-setCustomIncoterm,
+    setCustomShippingRule,
+    customIncoterm,
+    setCustomIncoterm,
   };
 };
-
-function getCountryCode(list: any[], countryName?: string): string {
-  if (!countryName || !Array.isArray(list)) return "";
-
-  const n = countryName.trim().toLowerCase();
-
-  const byCode = list.find((c: any) => c.code?.toLowerCase() === n);
-  if (byCode) return byCode.code;
-
-  const byName = list.find((c: any) => c.name?.toLowerCase().includes(n));
-  if (byName) return byName.code;
-
-  const reverse = list.find((c: any) => n.includes(c.name?.toLowerCase()));
-  if (reverse) return reverse.code;
-
-  return "";
-}
