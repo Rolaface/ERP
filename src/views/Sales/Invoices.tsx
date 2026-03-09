@@ -19,7 +19,7 @@ import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { getCompanyById } from "../../api/companySetupApi";
 import type { Company } from "../../types/company";
-import { showApiError, showSuccess, showLoading, closeSwal, showConfirm } from "../../utils/alert";
+import { showApiError, showSuccess, showLoading, closeSwal,  } from "../../utils/alert";
 import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -367,19 +367,33 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setPdfOpen(false);
   };
 
-  const handleRowStatusChange = async (
-    invoiceNumber: string,
-    status: InvoiceStatus,
-  ) => {
-    if (CRITICAL_STATUSES.includes(status)) {
-      const confirmed = await showConfirm(
-        `Mark invoice ${invoiceNumber} as ${status}? This action cannot be undone.`
-      );
+const handleRowStatusChange = async (
+  invoiceNumber: string,
+  status: InvoiceStatus,
+) => {
 
-      if (!confirmed) return;
-    }
+  if (CRITICAL_STATUSES.includes(status)) {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Confirm Status Change",
+      text: `Mark invoice ${invoiceNumber} as ${status}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#22c55e",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+  }
+
+  try {
+    showLoading("Updating invoice status...");
 
     const res = await updateInvoiceStatus(invoiceNumber, status);
+
+    closeSwal();
+
     if (!res || res.status_code !== 200) {
       showApiError(res?.message || "Failed to update invoice status");
       return;
@@ -387,13 +401,18 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
     setInvoices((prev) =>
       prev.map((inv) =>
-        inv.invoiceNumber === invoiceNumber ? { ...inv, invoiceStatus: status } : inv
+        inv.invoiceNumber === invoiceNumber
+          ? { ...inv, invoiceStatus: status }
+          : inv
       )
     );
 
     showSuccess(`Invoice marked as ${status}`);
-  };
-
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
   const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
