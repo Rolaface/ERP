@@ -9,16 +9,12 @@ const HDR_MED: [number, number, number] = ERP_BLUE;
 const BADGE_BG: [number, number, number] = [120, 180, 235];
 const STRIP_BG: [number, number, number] = [150, 200, 245];
 const BOX_TITLE: [number, number, number] = ERP_BLUE;
-const TINT: [number, number, number] = [240, 248, 255];
+
 const RULE: [number, number, number] = [200, 220, 240];
 const WHITE: [number, number, number] = [255, 255, 255];
 const INK: [number, number, number] = [25, 45, 75];
 const INK_SOFT: [number, number, number] = [70, 95, 130];
 const INK_PALE: [number, number, number] = [130, 150, 180];
-const GRAND_BG: [number, number, number] = [190, 220, 250];
-const AMT_BLUE: [number, number, number] = [40, 100, 190];
-const TAX_BG: [number, number, number] = [225, 238, 255];
-const TAX_TEXT: [number, number, number] = [40, 90, 170];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const px = (path: string): string => {
@@ -64,7 +60,36 @@ export const generatePurchaseInvoicePDF = async (
   const cur = pi.currency ?? "INR";
   const M = 14;
   const MR = W - M;
+const LOGO_Y = 5;
+  const LOGO_SZ = 32; // ← bigger: was 24, now 32
+  const LOGO_X = M;
 
+  if (company?.documents?.companyLogoUrl) {
+    try {
+      // No box, no frosted rect — just draw image directly
+      doc.addImage(
+        px(company.documents.companyLogoUrl),
+        "PNG",
+        LOGO_X,
+        LOGO_Y,
+        LOGO_SZ,
+        LOGO_SZ,
+      );
+    } catch {
+      /* ignore */
+    }
+  } else {
+    // Fallback: clean text initials, no box
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(...WHITE);
+    doc.text(
+      (company?.companyName ?? "Rx").slice(0, 2).toUpperCase(),
+      LOGO_X + LOGO_SZ / 2,
+      LOGO_Y + LOGO_SZ / 2 + 3,
+      { align: "center" },
+    );
+  }
   /* ══════════════════════════════════════════════════════════
      WATERMARK — auto-shrink font so full name always fits
   ══════════════════════════════════════════════════════════ */
@@ -102,7 +127,7 @@ export const generatePurchaseInvoicePDF = async (
      ①  HEADER — clean white bg | company left | doc info right
         (matches PO layout exactly — no dark band, no logo strip)
   ══════════════════════════════════════════════════════════ */
-  const TX = M;
+const TX = LOGO_X + LOGO_SZ + 6;
 
   // Company name
   doc.setFont("helvetica", "bold");
