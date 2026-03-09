@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
 import { showApiError, showSuccess } from "../utils/alert";
 import type {
   PurchaseOrderFormData,
@@ -122,17 +121,14 @@ export const usePurchaseOrderForm = ({
     if (!isOpen || !poId) return;
 
     const loadPO = async () => {
-      const toastId = toast.loading("Loading Purchase Order...");
 
       try {
         const apiData = await getPurchaseOrderById(poId);
         const mapped = mapApiToUI(apiData);
 
         setForm(mapped);
-        toast.success("Purchase Order Loaded", { id: toastId });
       } catch (err) {
         console.error("PO Load Error", err);
-        toast.error("Failed to load Purchase Order", { id: toastId });
       }
     };
 
@@ -294,7 +290,7 @@ export const usePurchaseOrderForm = ({
 
   const removeItem = (idx: number) => {
     if (form.items.length === 1) {
-      toast.error("At least one item is required");
+      showApiError({ message: "At least one item is required" });
       return;
     }
     setForm((p) => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
@@ -347,7 +343,6 @@ export const usePurchaseOrderForm = ({
       subject: form.subject,
       messageHtml: html,
     });
-    toast.success("Template saved!");
   };
 
   const resetTemplate = () => {
@@ -395,8 +390,8 @@ export const usePurchaseOrderForm = ({
         if (!item.rate || item.rate <= 0)
           return `Row ${i + 1}: Rate required`;
 
-          if (!item.vatCd || !item.vatCd.trim())
-    return `Row ${i + 1}: Tax Code required`;
+        if (!item.vatCd || !item.vatCd.trim())
+          return `Row ${i + 1}: Tax Code required`;
       }
     }
 
@@ -449,7 +444,6 @@ export const usePurchaseOrderForm = ({
       });
     } catch (err) {
       console.error("Failed to fetch item details", err);
-      toast.error("Failed to load item details");
     }
   };
 
@@ -493,22 +487,17 @@ export const usePurchaseOrderForm = ({
       let res;
 
       if (isEditMode) {
-        showApiError({
-          message:
-            "Editing Purchase Order is not supported. Only status update is allowed.",
-        });
-        return;
+        res = await updatePurchaseOrder(poId, payload);
+      } else {
+        res = await createPurchaseOrder(payload);
       }
-
-
-      res = await createPurchaseOrder(payload);
 
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(res);
         return;
       }
 
-      showSuccess("Purchase Order Created");
+      showSuccess(isEditMode ? "Purchase Order Updated" : "Purchase Order Created");
 
       onSuccess?.(res);
       onClose?.();
