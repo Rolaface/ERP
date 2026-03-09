@@ -9,6 +9,7 @@ import { AddressTab } from "../procurement/purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
 import { usePurchaseInvoiceForm } from "../../hooks/usePurchaseInvoiceForm";
 import type { POTab } from "../../types/Supply/purchaseInvoice";
+import { showApiError } from "../../utils/alert";
 
 interface PurchaseInvoiceModalProps {
   isOpen: boolean;
@@ -25,6 +26,8 @@ const tabs: { key: POTab; icon: typeof Building2; label: string }[] = [
   { key: "address", icon: MapPin, label: "Address" },
   { key: "terms", icon: FileText, label: "Terms" },
 ];
+
+const tabOrder: POTab[] = ["details", "address", "terms"];
 
 const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
   isOpen,
@@ -46,17 +49,17 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     getCurrencySymbol,
     handleSubmit,
     reset,
-     poList,
-     poLoading,
-     handleTogglePO,
-     usePO,
+    poList,
+    poLoading,
+    handleTogglePO,
+    usePO,
+    validateTab,
+    handlePOSelect,
+    customShippingRule,
+    setCustomShippingRule,
+    customIncoterm,
+    setCustomIncoterm
 
-  handlePOSelect,
-   customShippingRule,
-  setCustomShippingRule,
-  customIncoterm,
-  setCustomIncoterm
-  
 
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
@@ -69,12 +72,20 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         <Button variant="secondary" onClick={reset}>
           Reset
         </Button>
-        <Button variant="primary" type="submit" form="purchaseOrderForm">
-          Save Purchase Invoice
+        <Button variant="primary" type="submit" form="purchaseInvoiceForm">
+          {activeTab === "terms" ? "Save Purchase Invoice" : "Next"}
         </Button>
       </div>
     </>
   );
+
+  const handleNext = () => {
+    const currentIndex = tabOrder.indexOf(activeTab);
+
+    if (currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1]);
+    }
+  };
 
   return (
     <Modal
@@ -88,8 +99,25 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
       footer={footer}
     >
       <form
-        id="purchaseOrderForm"
-        onSubmit={handleSubmit}
+        id="purchaseInvoiceForm"
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+
+          const error = validateTab(activeTab);
+
+          if (error) {
+            showApiError(error);
+            return;
+          }
+
+          if (activeTab !== "terms") {
+            handleNext();
+            return;
+          }
+
+          handleSubmit(e);
+        }}
         className="h-full flex flex-col"
       >
         <div className=" sticky  bg-app border-b border-theme px-8 shrink-0">
@@ -99,11 +127,10 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
                 key={key}
                 type="button"
                 onClick={() => setActiveTab(key)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
-                  activeTab === key
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === key
                     ? "text-primary border-b-[3px] border-primary"
                     : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+                  }`}
               >
                 {label}
               </button>
@@ -127,8 +154,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               poLoading={poLoading}
               onPOSelect={handlePOSelect}
               usePO={usePO}
-onTogglePO={handleTogglePO}
-            
+              onTogglePO={handleTogglePO}
+
 
             />
           )}
@@ -173,13 +200,13 @@ onTogglePO={handleTogglePO}
 
           {activeTab === "address" && (
             <AddressTab
-  form={form}
-  onFormChange={handleFormChange}
-  customShippingRule={customShippingRule}
-  setCustomShippingRule={setCustomShippingRule}
-  customIncoterm={customIncoterm}
-  setCustomIncoterm={setCustomIncoterm}
-/>
+              form={form}
+              onFormChange={handleFormChange}
+              customShippingRule={customShippingRule}
+              setCustomShippingRule={setCustomShippingRule}
+              customIncoterm={customIncoterm}
+              setCustomIncoterm={setCustomIncoterm}
+            />
           )}
 
           {activeTab === "terms" && (

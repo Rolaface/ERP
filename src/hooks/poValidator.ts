@@ -13,8 +13,6 @@ export const validatePO = (form: PurchaseOrderFormData) => {
   }
   
 
-
-
   // Items Validation
   if (form.items.length === 0) {
     errors.push("At least 1 item required");
@@ -31,8 +29,6 @@ export const validatePO = (form: PurchaseOrderFormData) => {
       errors.push(`Rate invalid at row ${i + 1}`);
     }
   });
-
- 
 
   return errors;
 };

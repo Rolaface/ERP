@@ -205,6 +205,61 @@ export const usePurchaseInvoiceForm = ({
     }));
   };
 
+  const validateTab = (tab: POTab): string | null => {
+
+    if (tab === "details") {
+
+      if (!form.supplier)
+        return "Supplier is required";
+
+      if (form.supplier && !form.supplierInvoiceNumber?.trim())
+        return "Supplier Invoice No is required";
+
+        if (!form.transactionProgress)
+      return "Transaction Progress is required";
+
+         if (!form.paymentType)
+      return "Payment Type is required";
+
+
+      if (!form.items.length)
+        return "At least one item required";
+
+      for (let i = 0; i < form.items.length; i++) {
+        const item = form.items[i];
+
+        if (!item.itemCode)
+          return `Row ${i + 1}: Item required`;
+
+        if (!item.quantity || item.quantity <= 0)
+          return `Row ${i + 1}: Quantity required`;
+
+        if (!item.rate || item.rate <= 0)
+          return `Row ${i + 1}: Unit Price required`;
+
+        if (!item.vatCd || !item.vatCd)
+          return `Row ${i + 1}: Tax Code required`;
+
+        if (item.requiresBatch && !item.batchNo?.trim())
+          return `Row ${i + 1}: Batch No required`;
+      }
+    }
+    if (tab === "address") {
+      const addr = form.addresses?.supplierAddress;
+
+      if (!addr?.addressLine1?.trim())
+        return "Address Line 1 is required";
+
+      if (!addr?.city?.trim())
+        return "City is required";
+
+      if (!addr?.country?.trim())
+        return "Country is required";
+    }
+
+    return null;
+  };
+
   const handlePOSelect = async (po: any) => {
     if (!po?.poId) return;
 
@@ -253,6 +308,7 @@ export const usePurchaseInvoiceForm = ({
             batchNo: item.batchNo || "",
             mfgDate: item.mfgDate || "",
             expDate: "",
+            requiresBatch: Boolean(item.has_batch_no),
             discount: 0,
           };
         })
@@ -528,7 +584,7 @@ export const usePurchaseInvoiceForm = ({
           rate: Number(data.buyingPrice ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
-          
+
 
           description: data.description || "",
 
@@ -563,14 +619,6 @@ export const usePurchaseInvoiceForm = ({
     }
 
 
-    for (const item of form.items) {
-  if (item.requiresBatch && !item.batchNo?.trim()) {
-    showApiError({
-      message: `Batch number required for item ${item.itemName || item.itemCode}`,
-    });
-    return;
-  }
-}
     const errors = validatePI(form);
 
     if (errors.length) {
@@ -688,24 +736,10 @@ export const usePurchaseInvoiceForm = ({
     setCustomIncoterm,
     poLoading,
     setPoLoading,
+    validateTab,
     usePO,
     handleTogglePO,
   };
 };
 
-function getCountryCode(list: any[], countryName?: string): string {
-  if (!countryName || !Array.isArray(list)) return "";
 
-  const n = countryName.trim().toLowerCase();
-
-  const byCode = list.find((c: any) => c.code?.toLowerCase() === n);
-  if (byCode) return byCode.code;
-
-  const byName = list.find((c: any) => c.name?.toLowerCase().includes(n));
-  if (byName) return byName.code;
-
-  const reverse = list.find((c: any) => n.includes(c.name?.toLowerCase()));
-  if (reverse) return reverse.code;
-
-  return "";
-}

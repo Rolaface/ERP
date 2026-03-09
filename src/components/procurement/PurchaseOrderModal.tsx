@@ -8,6 +8,7 @@ import { AddressTab } from "./purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
 import { usePurchaseOrderForm } from "../../hooks/usePurchaseOrderForm";
 import type { POTab } from "../../types/Supply/purchaseOrder";
+import { showApiError } from "../../utils/alert";
 
 interface PurchaseOrderModalProps {
   isOpen: boolean;
@@ -24,13 +25,15 @@ const tabs: { key: POTab; icon: typeof Building2; label: string }[] = [
   { key: "terms", icon: FileText, label: "Terms" },
 ];
 
+const tabOrder: POTab[] = ["details", "address", "terms"];
+
 const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
   poId,
 }) => {
-  
+
   const {
     form,
     setForm,
@@ -49,6 +52,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     resetTemplate,
     getCurrencySymbol,
     handleSubmit,
+    validateTab,
     reset,
     customShippingRule,
     setCustomShippingRule,
@@ -66,12 +70,19 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           Reset
         </Button>
         <Button variant="primary" type="submit" form="purchaseOrderForm">
-          Save Purchase Order
+          {activeTab === "terms" ? "Save Purchase Order" : "Next"}
         </Button>
       </div>
     </>
   );
 
+  const handleNext = () => {
+    const currentIndex = tabOrder.indexOf(activeTab);
+
+    if (currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1]);
+    }
+  };
   return (
     <Modal
       isOpen={isOpen}
@@ -85,9 +96,26 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     >
       <form
         id="purchaseOrderForm"
-        onSubmit={handleSubmit}
+        onSubmit={(e) => {
+          e.preventDefault();
+
+          const error = validateTab(activeTab);
+
+          if (error) {
+            showApiError(error);
+            return;
+          }
+
+          if (activeTab !== "terms") {
+            handleNext();
+            return;
+          }
+
+          handleSubmit(e);
+        }}
         className="h-full flex flex-col"
       >
+
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
             {tabs.map(({ key, icon: Icon, label }) => (
@@ -96,8 +124,8 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                 type="button"
                 onClick={() => setActiveTab(key)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === key
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  ? "text-primary border-b-[3px] border-primary"
+                  : "text-muted border-b-[3px] border-transparent hover:text-main"
                   }`}
               >
                 {label}
@@ -121,7 +149,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
             />
           )}
 
-          
+
 
           {activeTab === "tax" && (
             <TaxTab
