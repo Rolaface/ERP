@@ -12,60 +12,62 @@ import {
   deleteStockEntry,
 } from "../../api/stockApi";
 import { ChevronRight, ChevronDown, Upload } from "lucide-react";
-import StockModal      from "../../components/inventory/stock/Stockcorrectionmodal";
-import BulkUploadModal from "../../components/inventory/stock/BulkUploadModal";
-import ViewStockModal  from "../../components/inventory/ViewStockModal";
-import DeleteModal     from "../../components/actionModal/DeleteModal";
-import Table           from "../../components/ui/Table/Table";
-import type { Column } from "../../components/ui/Table/type";
+import StockCorrectionModal from "../../components/inventory/stock/Stockcorrectionmodal";
+import BulkUploadModal      from "../../components/inventory/stock/BulkUploadModal";
+import ViewStockModal       from "../../components/inventory/ViewStockModal";
+import DeleteModal          from "../../components/actionModal/DeleteModal";
+import Table                from "../../components/ui/Table/Table";
+import type { Column }      from "../../components/ui/Table/type";
 import type { ItemSummary, Item } from "../../types/item";
 
 const Items: React.FC = () => {
-  const [items, setItems] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [items,       setItems]       = useState<any[]>([]);
+  const [searchTerm,  setSearchTerm]  = useState("");
+  const [loading,     setLoading]     = useState(true);
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const [page,        setPage]        = useState(1);
+  const [pageSize,    setPageSize]    = useState(10);
+  const [totalPages,  setTotalPages]  = useState(1);
+  const [totalItems,  setTotalItems]  = useState(0);
 
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
-  const [showModal, setShowModal] = useState(false);
-  const [showBulkModal, setShowBulkModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [editItem, setEditItem] = useState<Item | null>(null);
-  const [viewStockData, setViewStockData] = useState<any>(null);
-  const [initialLoad, setInitialLoad] = useState(true);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<ItemSummary | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [showBulkModal,    setShowBulkModal]    = useState(false);
+  const [showViewModal,    setShowViewModal]     = useState(false);
+  const [viewStockData,    setViewStockData]     = useState<any>(null);
+  const [initialLoad,      setInitialLoad]       = useState(true);
+  const [deleteModalOpen,  setDeleteModalOpen]   = useState(false);
+  const [itemToDelete,     setItemToDelete]      = useState<ItemSummary | null>(null);
+  const [deleting,         setDeleting]          = useState(false);
 
-  // ─── FETCH ──────────────────────────────────────────────────────────────────
+  // ── Stock Correction modal state ──────────────────────────────────────────
+  const [showStockCorrection, setShowStockCorrection] = useState(false);
+  const [selectedBatch,       setSelectedBatch]       = useState<any>(null);
+
+  // ─── FETCH ────────────────────────────────────────────────────────────────
 
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const res = await getStockReport(page, pageSize, searchTerm);
+      const res  = await getStockReport(page, pageSize, searchTerm);
       const list = res?.message?.data || [];
 
       const mapped = list.map((item: any) => ({
-        id: item.item_code || "",
-        itemCode: item.item_code || "",
-        itemName: item.item_name || "",
-        description: item.description ?? "-",
-        packingUnit: item.packingUnit || "-",
-        packingSize: item.packingSize || "-",
-        totalQty: item.total_bal_qty ?? 0,
-        totalBuyValue: Number(item.total_buy_value ?? 0),
+        id:             item.item_code   || "",
+        itemCode:       item.item_code   || "",
+        itemName:       item.item_name   || "",
+        description:    item.description ?? "-",
+        packingUnit:    item.packingUnit  || "-",
+        packingSize:    item.packingSize  || "-",
+        totalQty:       item.total_bal_qty  ?? 0,
+        totalBuyValue:  Number(item.total_buy_value  ?? 0),
         totalSellValue: Number(item.total_sell_value ?? 0),
-        batches: item.batches || [],
+        batches:        item.batches || [],
       }));
 
       setItems(mapped);
       setTotalItems(res?.message?.pagination?.total_records ?? 0);
-      setTotalPages(res?.message?.pagination?.total_pages ?? 1);
+      setTotalPages(res?.message?.pagination?.total_pages   ?? 1);
     } catch (err) {
       console.error(err);
       showApiError("Failed to load stock entries");
@@ -75,31 +77,26 @@ const Items: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchItems();
-  }, [page, pageSize, searchTerm]);
+  useEffect(() => { fetchItems(); }, [page, pageSize, searchTerm]);
 
-  // ─── HANDLERS ───────────────────────────────────────────────────────────────
+  // ─── HANDLERS ─────────────────────────────────────────────────────────────
 
-  const toggleRow = (id: string) => {
-    setExpandedRows((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+  const toggleRow = (id: string) =>
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+
+  /** Opens StockCorrectionModal pre-filled with the batch's data */
+  const handleStockCorrection = (batch: any) => {
+    setSelectedBatch(batch);
+    setShowStockCorrection(true);
   };
 
-  const handleEdit = async (stockId: string, e?: React.MouseEvent<Element>) => {
-    e?.stopPropagation();
-    try {
-      const res = await getStockById(stockId);
-      const stockData = Array.isArray(res?.data?.data) ? res.data.data[0] : null;
-      if (!stockData) { showApiError("Invalid stock data"); return; }
-      setViewStockData(stockData);
-      setShowViewModal(true);
-    } catch (err) {
-      console.error(err);
-      showApiError("Unable to fetch stock entry details");
-    }
+  const handleBatchDelete = (batch: any) => {
+    setItemToDelete({ id: batch.batch_no, ...batch });
+    setDeleteModalOpen(true);
+  };
+
+  const handleBatchLedger = (batch: any) => {
+    console.log("Open ledger for batch:", batch.batch_no);
   };
 
   const handleDeleteClick = (item: ItemSummary, e?: React.MouseEvent<Element>) => {
@@ -121,7 +118,7 @@ const Items: React.FC = () => {
       }
       closeSwal();
       showSuccess("Stock entry deleted successfully");
-      setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
+      setItems(prev => prev.filter(i => i.id !== itemToDelete.id));
       setDeleteModalOpen(false);
     } catch (error: any) {
       closeSwal();
@@ -129,20 +126,6 @@ const Items: React.FC = () => {
     } finally {
       setDeleting(false);
       setItemToDelete(null);
-    }
-  };
-
-  const handleSaved = async () => {
-    const wasEdit = !!editItem;
-    setShowModal(false);
-    setEditItem(null);
-    try {
-      await fetchItems();
-      closeSwal();
-      showSuccess(wasEdit ? "Stock entry updated" : "Stock entry created");
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
     }
   };
 
@@ -158,7 +141,7 @@ const Items: React.FC = () => {
     }
   };
 
-  // ─── COLUMNS ────────────────────────────────────────────────────────────────
+  // ─── COLUMNS ──────────────────────────────────────────────────────────────
 
   const columns: Column<any>[] = [
     {
@@ -176,48 +159,21 @@ const Items: React.FC = () => {
     {
       key: "itemCode",
       header: "Item Code",
-      render: (row) => (
-        <span className="font-mono text-xs font-medium text-main">
-          {row.itemCode}
-        </span>
-      ),
+      render: (row) => <span className="font-mono text-xs font-medium text-main">{row.itemCode}</span>,
     },
-    {
-      key: "itemName",
-      header: "Item Name",
-      render: (row) => row.itemName,
-    },
-    {
-      key: "description",
-      header: "Description",
-      render: (row) => row.description,
-    },
+    { key: "itemName",    header: "Item Name",    render: (row) => row.itemName    },
+    { key: "description", header: "Description",  render: (row) => row.description },
     {
       key: "packingUnit",
       header: "Packing Unit",
       render: (row) => `${row.packingUnit ?? "-"} × ${row.packingSize ?? "-"}`,
     },
-    {
-      key: "totalQty",
-      header: "Qty",
-      align: "right",
-      render: (row) => row.totalQty,
-    },
-    {
-      key: "totalBuyValue",
-      header: "Total Buy Value",
-      align: "right",
-      render: (row) => `INR ${row.totalBuyValue.toLocaleString("en-IN")}`,
-    },
-    {
-      key: "totalSellValue",
-      header: "Total Sell Value",
-      align: "right",
-      render: (row) => `INR ${row.totalSellValue.toLocaleString("en-IN")}`,
-    },
+    { key: "totalQty",       header: "Qty",             align: "right", render: (row) => row.totalQty },
+    { key: "totalBuyValue",  header: "Total Buy Value",  align: "right", render: (row) => `INR ${row.totalBuyValue.toLocaleString("en-IN")}` },
+    { key: "totalSellValue", header: "Total Sell Value", align: "right", render: (row) => `INR ${row.totalSellValue.toLocaleString("en-IN")}` },
   ];
 
-  // ─── RENDER ─────────────────────────────────────────────────────────────────
+  // ─── RENDER ───────────────────────────────────────────────────────────────
 
   return (
     <div className="p-8">
@@ -227,9 +183,16 @@ const Items: React.FC = () => {
         data={items}
         onRowClick={(row) => toggleRow(row.id)}
         expandedRowRender={(row) =>
-          expandedRows[row.id]
-            ? <BatchTable batches={row.batches || []} />
-            : null
+          expandedRows[row.id] ? (
+            <BatchTable
+              batches={row.batches || []}
+              itemCode={row.itemCode}
+              itemName={row.itemName}
+              onEdit={handleStockCorrection}
+              onDelete={handleBatchDelete}
+              onLedger={handleBatchLedger}
+            />
+          ) : null
         }
         enableColumnSelector
         showToolbar
@@ -237,33 +200,22 @@ const Items: React.FC = () => {
         onSearch={(value) => { setSearchTerm(value); setPage(1); }}
         extraFilters={
           <div className="flex items-center gap-2">
-            {/* Bulk Upload — outlined */}
             <button
               onClick={() => setShowBulkModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
-              style={{
-                border: "1.5px solid var(--primary, #c97d2e)",
-                color: "var(--primary, #c97d2e)",
-                background: "transparent",
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,125,46,0.06)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+              style={{ border: "1.5px solid var(--primary,#c97d2e)", color: "var(--primary,#c97d2e)", background: "transparent" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,125,46,0.06)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
             >
-              <Upload size={12} />
-              Bulk Upload
+              <Upload size={12} /> Bulk Upload
             </button>
 
-            {/* Stock Correction — solid primary */}
             <button
-              onClick={() => { setEditItem(null); setShowModal(true); }}
+              onClick={() => { setSelectedBatch(null); setShowStockCorrection(true); }}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all whitespace-nowrap"
-              style={{
-                background: "var(--primary, #c97d2e)",
-                color: "#fff",
-                boxShadow: "0 4px 12px rgba(201,125,46,0.25)",
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.9"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+              style={{ background: "var(--primary,#c97d2e)", color: "#fff", boxShadow: "0 4px 12px rgba(201,125,46,0.25)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.9"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
             >
               Stock Correction
             </button>
@@ -284,16 +236,14 @@ const Items: React.FC = () => {
         stockData={viewStockData}
       />
 
-      {/* Manual stock correction */}
-      <StockModal
-        isOpen={showModal}
-        onClose={() => { setShowModal(false); setEditItem(null); }}
-        onSubmit={handleSaved}
-        initialData={editItem}
-        isEditMode={!!editItem}
+      {/* ── Stock Correction Modal — wired to both toolbar button + batch row ── */}
+      <StockCorrectionModal
+        isOpen={showStockCorrection}
+        onClose={() => { setShowStockCorrection(false); setSelectedBatch(null); }}
+        onSuccess={() => { setShowStockCorrection(false); setSelectedBatch(null); fetchItems(); }}
+        batch={selectedBatch}
       />
 
-      {/* Bulk upload */}
       <BulkUploadModal
         isOpen={showBulkModal}
         onClose={() => setShowBulkModal(false)}
