@@ -67,9 +67,9 @@ const CustomerQuotations = ({ customerId }: Props) => {
   const summary = useMemo(() => {
     const total = quotations.length;
 
-    const draft = quotations.filter((q: any) => q.status === "Draft").length;
+    const draft = quotations.filter((q: any) => q.invoiceStatus === "Draft").length;
 
-    const sent = quotations.filter((q: any) => q.status === "Sent").length;
+    const sent = quotations.filter((q: any) => q.invoiceStatus === "Sent").length;
 
     const totalValue = quotations.reduce(
       (sum, q) => sum + (q.grandTotal || 0),

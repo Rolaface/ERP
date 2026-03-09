@@ -130,7 +130,7 @@ const [editQuotation, setEditQuotation] = useState<any>(null);
   validTill: q.validTill || "",
   grandTotal: Number(q.grandTotal ?? 0),
   currency: q.currency ,
-  status: q.status || "Draft",   
+  status: q.invoiceStatus  || "Draft",   
 })));
 
       setTotalPages(res.data?.pagination?.totalPages || 1);
