@@ -445,27 +445,34 @@ const handleReset = () => {
   shippingEditedRef.current = false;
   setTaxCategory("");
 };
-  const { subTotal, totalTax, grandTotal } = useMemo(() => {
-    let sub = 0;
-    let tax = 0;
+const { subTotal, totalTax, grandTotal } = useMemo(() => {
+  let sub = 0;
+  let tax = 0;
 
-    formData.items.forEach((item) => {
-      const discountAmount =
-        item.quantity * item.price * (Number(item.discount || 0) / 100);
-      const totalInclusive = item.quantity * item.price - discountAmount;
-      const exclusive = totalInclusive / (1 + Number(item.vatRate || 0) / 100);
-      const taxAmt = totalInclusive - exclusive;
+  formData.items.forEach((item) => {
+    const qty = Number(item.quantity || 0);
+    const price = Number(item.price || 0);
+    const vatRate = Number(item.vatRate || 0);
+    const discount = Number(item.discount || 0);
 
-      sub += exclusive;
-      tax += taxAmt;
-    });
+    const lineAmount = qty * price;
 
-    return {
-      subTotal: sub,
-      totalTax: tax,
-      grandTotal: sub + tax,
-    };
-  }, [formData.items]);
+    const discountAmount = lineAmount * (discount / 100);
+
+    const netAmount = lineAmount - discountAmount;
+
+    const taxAmount = netAmount * (vatRate / 100);
+
+    sub += netAmount;
+    tax += taxAmount;
+  });
+
+  return {
+    subTotal: sub,
+    totalTax: tax,
+    grandTotal: sub + tax,
+  };
+}, [formData.items]);
   const validateDetails = (): string | null => {
   if (!formData.customerId) return "Please select a customer";
   if (!formData.dateOfInvoice) return "Please select quotation date";

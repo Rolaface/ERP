@@ -85,11 +85,11 @@ const Items: React.FC = () => {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
 
   /** Opens StockCorrectionModal pre-filled with the batch's data */
-  const handleStockCorrection = (batch: any) => {
-    setSelectedBatch(batch);
-    setShowStockCorrection(true);
-  };
-
+const handleStockCorrection = (batch: any) => {
+  console.log("Opening modal", batch);
+  setSelectedBatch(batch);
+  setShowStockCorrection(true);
+};
   const handleBatchDelete = (batch: any) => {
     setItemToDelete({ id: batch.batch_no, ...batch });
     setDeleteModalOpen(true);
@@ -184,14 +184,14 @@ const Items: React.FC = () => {
         onRowClick={(row) => toggleRow(row.id)}
         expandedRowRender={(row) =>
           expandedRows[row.id] ? (
-            <BatchTable
-              batches={row.batches || []}
-              itemCode={row.itemCode}
-              itemName={row.itemName}
-              onEdit={handleStockCorrection}
-              onDelete={handleBatchDelete}
-              onLedger={handleBatchLedger}
-            />
+           <BatchTable
+      batches={row.batches || []}
+      itemCode={row.itemCode}
+      itemName={row.itemName}
+      onEdit={handleStockCorrection}
+      onDelete={handleBatchDelete}
+      onLedger={handleBatchLedger}
+    />
           ) : null
         }
         enableColumnSelector
@@ -249,6 +249,7 @@ const Items: React.FC = () => {
         onClose={() => setShowBulkModal(false)}
         onSubmit={handleBulkSaved}
       />
+
 
       {deleteModalOpen && itemToDelete && (
         <DeleteModal

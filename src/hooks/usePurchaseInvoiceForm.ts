@@ -148,43 +148,48 @@ export const usePurchaseInvoiceForm = ({
   }, [isOpen, pId]);
 
   // Calculate totals (Items + Taxes + Rounding)
-  useEffect(() => {
-    let sub = 0;
-    let tax = 0;
+useEffect(() => {
+  let sub = 0;
+  let tax = 0;
 
-    form.items.forEach((item) => {
-      const discountAmount =
-        item.quantity * item.rate * (Number(item.discount || 0) / 100);
+  form.items.forEach((item) => {
+    const qty = Number(item.quantity || 0);
+    const rate = Number(item.rate || 0);
+    const discount = Number(item.discount || 0);
+    const vatRate = Number(item.vatRate || 0);
 
-      const totalInclusive = item.quantity * item.rate - discountAmount;
+    const lineAmount = qty * rate;
 
-      const exclusive = totalInclusive / (1 + Number(item.vatRate || 0) / 100);
+    const discountAmount = lineAmount * (discount / 100);
 
-      const taxAmt = totalInclusive - exclusive;
+    const netAmount = lineAmount - discountAmount;
 
-      sub += exclusive;
-      tax += taxAmt;
-    });
+    const taxAmount = netAmount * (vatRate / 100);
 
-    const grandTotal = sub + tax;
+    sub += netAmount;
+    tax += taxAmount;
+  });
 
-    const totalQuantity = form.items.reduce(
-      (sum, item) => sum + (Number(item.quantity) || 0),
-      0,
-    );
+  const grandTotal = sub + tax;
 
-    const roundedTotal = Math.round(grandTotal);
-    const roundingAdjustment = Number((roundedTotal - grandTotal).toFixed(2));
+  const totalQuantity = form.items.reduce(
+    (sum, item) => sum + (Number(item.quantity) || 0),
+    0,
+  );
 
-    setForm((p) => ({
-      ...p,
-      totalQuantity,
-      grandTotal,
-      roundingAdjustment,
-      roundedTotal,
-    }));
-  }, [form.items, form.taxRows]);
+  const roundedTotal = Math.round(grandTotal);
+  const roundingAdjustment = Number((roundedTotal - grandTotal).toFixed(2));
 
+setForm((p) => ({
+  ...p,
+  totalQuantity,
+  subTotal: sub,
+  totalTax: tax,
+  grandTotal,
+  roundingAdjustment,
+  roundedTotal,
+}));
+}, [form.items, form.taxRows]);
   type AddressKey = keyof PurchaseInvoiceFormData["addresses"];
 
   const updateAddress = (

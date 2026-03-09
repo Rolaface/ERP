@@ -23,7 +23,7 @@ interface DetailsTabProps {
   getCurrencySymbol: () => string;
 
   fromPO?: boolean;
-setFromPO?: React.Dispatch<React.SetStateAction<boolean>>;
+  setFromPO?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const DetailsTab = ({
@@ -133,21 +133,43 @@ export const DetailsTab = ({
             <table className="w-full border-collapse text-[10px] table-fixed">
               <thead>
                 <tr className="border-b border-theme">
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">#</th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">Item Name</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">
+                    #
+                  </th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
+                    Item Name
+                  </th>
                   {/* Packing column — wider for comfort */}
                   <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[120px]">
                     Packing
-                    <span className="ml-1 text-[9px] text-muted/60 font-normal">(unit × size)</span>
+                    <span className="ml-1 text-[9px] text-muted/60 font-normal">
+                      (unit × size)
+                    </span>
                   </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">Required By</th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">Qty</th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">UOM</th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">Rate</th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Tax(%)</th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px]">Tax Code</th>
-                  <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">Amount</th>
-                  <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[35px]">-</th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
+                    Required By
+                  </th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
+                    Qty
+                  </th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
+                    UOM
+                  </th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
+                    Rate
+                  </th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
+                    Tax(%)
+                  </th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px]">
+                    Tax Code
+                  </th>
+                  <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">
+                    Amount
+                  </th>
+                  <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[35px]">
+                    -
+                  </th>
                 </tr>
               </thead>
 
@@ -155,11 +177,13 @@ export const DetailsTab = ({
                 {paginatedItems.map((it, idx) => {
                   const i = page * ITEMS_PER_PAGE + idx;
                   const base = it.quantity * it.rate;
-                  const tax = (base * (it.vatRate || 0)) / 100;
-                  const amount = base + tax;
+                  const amount = base;
 
                   return (
-                    <tr key={i} className="border-b border-theme bg-card row-hover">
+                    <tr
+                      key={i}
+                      className="border-b border-theme bg-card row-hover"
+                    >
                       <td className="px-2 py-1 text-[10px]">{i + 1}</td>
 
                       <td className="px-2 py-1">
@@ -183,7 +207,9 @@ export const DetailsTab = ({
                             className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
                           />
 
-                          <span className="text-muted text-[10px] font-bold">×</span>
+                          <span className="text-muted text-[10px] font-bold">
+                            ×
+                          </span>
 
                           <input
                             type="number"
@@ -204,7 +230,6 @@ export const DetailsTab = ({
                             id={`requiredBy-${i}`}
                             value={it.requiredBy || ""}
                             onChange={(e) => onItemChange(e, i)}
-
                           />
                         </div>
                       </td>
@@ -323,12 +348,16 @@ export const DetailsTab = ({
         {/* RIGHT: Supplier Details + Summary */}
         <div className="flex flex-col gap-2">
           <div className="bg-card rounded-lg p-2 w-[220px]">
-            <h3 className="text-[12px] font-semibold text-main mb-2">Supplier Details</h3>
+            <h3 className="text-[12px] font-semibold text-main mb-2">
+              Supplier Details
+            </h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5 text-xs text-main">
                 <span className="flex items-center gap-2">
                   <User size={16} className="text-muted" />
-                  <span className="text-xs text-main">{form.supplier || "Supplier Name"}</span>
+                  <span className="text-xs text-main">
+                    {form.supplier || "Supplier Name"}
+                  </span>
                 </span>
               </div>
               <div className="flex items-center gap-2 text-[10px] text-muted">
@@ -341,15 +370,21 @@ export const DetailsTab = ({
               </div>
               {form.taxCategory && (
                 <div className="bg-card rounded-lg mt-1">
-                  <h3 className="text-[11px] font-semibold text-main mb-1">Order Information</h3>
+                  <h3 className="text-[11px] font-semibold text-main mb-1">
+                    Order Information
+                  </h3>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted">Tax Category</span>
-                      <span className="font-medium text-main">{form.taxCategory}</span>
+                      <span className="font-medium text-main">
+                        {form.taxCategory}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted">Currency</span>
-                      <span className="font-medium text-main">{form.currency || "-"}</span>
+                      <span className="font-medium text-main">
+                        {form.currency || "-"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -358,7 +393,9 @@ export const DetailsTab = ({
           </div>
 
           <div className="bg-card rounded-lg p-3 w-[220px]">
-            <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
+            <h3 className="text-[13px] font-semibold text-main mb-2">
+              Summary
+            </h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Total Items</span>
@@ -366,20 +403,43 @@ export const DetailsTab = ({
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Total Quantity</span>
-                <span className="font-medium text-main">{form.totalQuantity}</span>
+                <span className="font-medium text-main">
+                  {form.totalQuantity}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted">Subtotal</span>
+                <span className="font-medium text-main">
+                  {symbol} {form.subTotal?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted">Total Tax</span>
+                <span className="font-medium text-main">
+                  {symbol} {form.totalTax?.toFixed(2) || "0.00"}
+                </span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Grand Total</span>
-                <span className="font-medium text-main">{symbol} {form.grandTotal.toFixed(2)}</span>
+                <span className="font-medium text-main">
+                  {symbol} {form.grandTotal.toFixed(2)}
+                </span>
               </div>
+              <div className="border-t border-theme my-1"></div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Rounding Adj</span>
-                <span className="font-medium text-main">{symbol} {form.roundingAdjustment.toFixed(2)}</span>
+                <span className="font-medium text-main">
+                  {symbol} {form.roundingAdjustment.toFixed(2)}
+                </span>
               </div>
               <div className="mt-2 p-2 bg-primary rounded-lg w-full">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-white">Rounded Total</span>
-                  <span className="text-sm font-bold text-white">{symbol} {form.roundedTotal.toFixed(2)}</span>
+                  <span className="text-sm font-semibold text-white">
+                    Rounded Total
+                  </span>
+                  <span className="text-sm font-bold text-white">
+                    {symbol} {form.roundedTotal.toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>
