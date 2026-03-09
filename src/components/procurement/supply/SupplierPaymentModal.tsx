@@ -7,7 +7,6 @@ interface SupplierPaymentModalProps {
   onClose: () => void;
   supplierName?: string;
   supplierCode?: string;
-  billNumber?: string;
   billAmount?: number;
   amountPaid?: number;
   onSubmit?: (data: any) => void;
@@ -18,7 +17,6 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
   onClose,
   supplierName = "",
   supplierCode = "",
-  billNumber = "",
   billAmount = 0,
   amountPaid = 0,
   onSubmit,
@@ -53,7 +51,7 @@ const balanceAfterPayment = amountDue - Number(form.amount || 0);
     });
 
   const handleSubmit = () =>
-    onSubmit?.({ ...form, supplierName, supplierCode, billNumber });
+    onSubmit?.({ ...form, supplierName, supplierCode });
 
   /* ── FOOTER ─────────────────────────────── */
   const footer = (
@@ -113,7 +111,7 @@ const balanceAfterPayment = amountDue - Number(form.amount || 0);
       isOpen={isOpen}
       onClose={onClose}
       title="Make Payment"
-      subtitle={billNumber}
+      subtitle={supplierName}
       icon={Wallet}
       maxWidth="4xl"
       height="auto"

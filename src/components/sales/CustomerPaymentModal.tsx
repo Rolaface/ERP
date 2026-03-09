@@ -218,6 +218,26 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
             )}
 
           </div>
+{!isCash && (
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+    <div>
+      <label className="form-label" style={{ marginBottom: 5 }}>
+        Deposit Into *
+      </label>
+
+      <select
+        name="depositInto"
+        value={form.depositInto}
+        onChange={handleChange}
+        className="form-input w-full"
+      >
+        <option value="">Select account</option>
+        <option>Bank</option>
+      </select>
+    </div>
+  </div>
+)}
+          
 
         </div>
 
