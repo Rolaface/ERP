@@ -67,8 +67,8 @@ export interface InvoiceItem {
   packingSize?: string;
   mfgDate?: string;
   expDate?: string;
-  boxStart?: string;
-  boxEnd?: string;
+ boxStart?: number;
+  boxEnd?: number;
 }
 
 export interface PaymentInformation {

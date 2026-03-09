@@ -63,7 +63,7 @@ export const DetailsTab = ({
     <div className="flex flex-col gap-4 max-h-screen overflow-auto  bg-app text-main">
       {/* ── Top fields ── */}
       <div className="bg-app">
-        <div className="grid grid-cols-[250px_160px_135px_90px_110px_100px_100px_120px] gap-x-2 items-end">
+        <div className="grid grid-cols-[250px_160px_135px_90px_110px_100px_100px_120px_100px] gap-x-2 items-end">
           <div className="w-[250px]">
             <SupplierSelect
               selectedId={form.supplierId}
@@ -171,7 +171,7 @@ export const DetailsTab = ({
             />
           </div>
 
-          <div className="w-[120px] ml-3">
+          <div className="w-[110px] ml-3">
             <ModalSelect
               label="Transaction Progress"
               name="transactionProgress"
@@ -185,10 +185,10 @@ export const DetailsTab = ({
               ]}
             />
           </div>
-        </div>
+       
 
-        <div className="mt-2">
-          <div className="w-[140px]">
+
+          <div className="w-[110px] ml-2">
             <ModalSelect
               label="Payment Type"
               name="paymentType"
@@ -205,8 +205,9 @@ export const DetailsTab = ({
                 { value: "OTHER", label: "Other" },
               ]}
             />
-          </div>
+
         </div>
+         </div>
       </div>
 
       {/* ── Main Body ── */}
