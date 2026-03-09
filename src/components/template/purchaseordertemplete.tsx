@@ -5,7 +5,7 @@ import { ERP_BASE } from "../../config/api";
 // ── Palette (matches invoice/purchase invoice exactly) ────────────────────────
 // ── Slightly Darker Light-Blue Palette ─────────────────────────
 ;
-const ERP_BLUE: [number, number, number] = [0, 150, 255];
+const ERP_BLUE: [number, number, number] = [46, 109, 197];
 const HDR_DARK: [number, number, number] = ERP_BLUE;
 const HDR_MED: [number, number, number] =  ERP_BLUE;
 const BADGE_BG: [number, number, number] = [120, 180, 235];
@@ -158,7 +158,6 @@ doc.setTextColor(...INK_SOFT);
 
 const metaLines = [
   `PO Date: ${fmtDate(po.poDate)}`,
-  `Required By: ${fmtDate(po.requiredBy)}`,
   `Incoterm: ${po.incoterm ?? "-"}`,
   `Status: ${po.status ?? "-"}`,
   `Currency: ${cur}`,
@@ -247,9 +246,7 @@ metaLines.forEach((line, i) => {
      ④  META LINE — Project / Cost Center / Tax Category / Conv Rate
   ══════════════════════════════════════════════════════════ */
   const afterBoxY = AY + boxH + 4;
-  doc.setDrawColor(...RULE);
-  doc.setLineWidth(0.25);
-  doc.line(M, afterBoxY + 3, MR, afterBoxY + 3);
+ 
 
   /* ══════════════════════════════════════════════════════════
      ⑤  ITEMS TABLE — PO fields: item_code/name/qty/rate/amount/vatCd
@@ -264,7 +261,6 @@ metaLines.forEach((line, i) => {
     head: [
       [
         "#",
-        "Item Code",
         "Item",
         "Required By",
         "Packing",
@@ -282,7 +278,6 @@ metaLines.forEach((line, i) => {
           : "-";
       return [
         idx + 1,
-        item.item_code ?? "-",
         item.item_name ?? "-",
         fmtDate(item.schedule_date),
         packing,
@@ -309,19 +304,19 @@ metaLines.forEach((line, i) => {
       fontSize: 7.5,
       cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
     },
-    alternateRowStyles: { fillColor: WHITE },
+
 columnStyles: {
   0: { cellWidth: 7, halign: "center" },
-  1: { cellWidth: 25, halign: "center", textColor: INK },
-  2: { cellWidth: 25, halign: "left" },
-  3: { cellWidth: 20, halign: "center" },
-  4: { cellWidth: 14, halign: "center" },
-  5: { cellWidth: 13, halign: "center" },
-  6: { cellWidth: 18, halign: "center" },
-  7: { cellWidth: 17, halign: "center" },
-  8: { cellWidth: 15, halign: "center" },
-  9: { cellWidth: TOTAL_W, halign: "center", textColor: [0,0,0], fontSize: 7.5 }
+  1: { cellWidth: 36, halign: "left" },     // Item (expanded)
+  2: { cellWidth: 22, halign: "center" },   // Required By
+  3: { cellWidth: 16, halign: "center" },   // Packing
+  4: { cellWidth: 17, halign: "center" },   // Qty
+  5: { cellWidth: 20, halign: "center" },   // UOM
+  6: { cellWidth: 18, halign: "center" },   // Rate
+  7: { cellWidth: 20, halign: "center" },   // Tax
+  8: { cellWidth: TOTAL_W, halign: "center", textColor: [0,0,0], fontSize: 7.5 }
 },
+
     margin: { left: M, right: M },
     tableWidth: W - M * 2,
   });
@@ -355,17 +350,17 @@ columnStyles: {
   ];
 const ROW_H = 6;
 // exact X where Amount column starts
-const AMOUNT_COL_X =
+
+ const AMOUNT_COL_X =
   M +
-  7 +
-  25 +
-  25 +
-  20 +
-  14 +
-  13 +
-  18 +
-  17 +
-  15;  // Tax
+  7 +   // #
+  36 +  // Item
+  22 +  // Required By
+  16+  // Packing
+  17 +  // Qty
+  20 +  // UOM
+  18 +  // Rate
+  20;   // Tax  // Tax
 
 // label position just before amount column
 const LABEL_X = AMOUNT_COL_X - 4;
