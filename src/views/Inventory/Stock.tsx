@@ -6,23 +6,22 @@ import {
   showLoading,
   closeSwal,
 } from "../../utils/alert";
-
+import BatchTable from "./BatchTable";
 import {
   getStockReport,
   getStockById,
   deleteStockEntry,
 } from "../../api/stockApi";
-
+import { ChevronRight, ChevronDown } from "lucide-react";
 import StockModal from "../../components/inventory/stock/Stockcorrectionmodal";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
 import DeleteModal from "../../components/actionModal/DeleteModal";
-
 import Table from "../../components/ui/Table/Table";
+
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
-
 import type { Column } from "../../components/ui/Table/type";
 
 import type { ItemSummary, Item } from "../../types/item";
@@ -36,7 +35,7 @@ const Items: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
+const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
@@ -54,35 +53,22 @@ const Items: React.FC = () => {
 
       const list = res?.message?.data || [];
 
-      const mapped = list.map((item: any) => ({
-        id: item.item_code || "",
-        itemCode: item.item_code || "",
-        itemName: item.item_name || "",
-        itemGroup: item.item_group || "",
-        uom: item.stock_uom || "",
+     const mapped = list.map((item: any) => ({
+  id: item.item_code || "",
 
-        // totals from top-level
-        openingQty: item.total_opening_qty ?? 0,
-        openingValue: Number(item.total_opening_value ?? 0),
-        inQty: item.total_in_qty ?? 0,
-        inValue: Number(item.total_in_value ?? 0),
-        outQty: item.total_out_qty ?? 0,
-        outValue: Number(item.total_out_value ?? 0),
-        balQty: item.total_bal_qty ?? 0,
-        balValue: Number(item.total_bal_val ?? 0),
-        buyValue: Number(item.total_buy_value ?? 0),
-        sellValue: Number(item.total_sell_value ?? 0),
+  itemCode: item.item_code || "",
+  itemName: item.item_name || "",
+  description: item.description ?? "-",
 
-        // from first batch
-        warehouse: item.batches?.[0]?.warehouse || "",
-        valuationRate: Number(item.batches?.[0]?.valuation_rate ?? 0),
-        batchNo: item.batches?.[0]?.batch_no || "-",
-        expiryDate: item.batches?.[0]?.expiry_date || null,
-        manufacturingDate: item.batches?.[0]?.manufacturing_date || null,
+  packingUnit: item.packingUnit || "-",
+  packingSize: item.packingSize || "-",
 
-        // raw batches for view modal
-        batches: item.batches || [],
-      }));
+  totalQty: item.total_bal_qty ?? 0,
+  totalBuyValue: Number(item.total_buy_value ?? 0),
+  totalSellValue: Number(item.total_sell_value ?? 0),
+
+  batches: item.batches || [],
+}));
 
       setItems(mapped);
 
@@ -108,6 +94,12 @@ const Items: React.FC = () => {
     setEditItem(null);
     setShowModal(true);
   };
+
+const toggleRow = (id: string) => {
+  setExpandedRows((prev) => ({
+    [id]: !prev[id],
+  }));
+};
 
   const handleEdit = async (stockId: string, e?: React.MouseEvent<Element>) => {
     e?.stopPropagation();
@@ -193,100 +185,93 @@ const Items: React.FC = () => {
    */
 
 const columns: Column<any>[] = [
-  {
-    key: "itemCode",
-    header: "Item Code",
-    align: "left",
-  },
-  {
-    key: "itemName",
-    header: "Item Name",
-    align: "left",
-  },
-  {
-    key: "itemGroup",
-    header: "Item Group",
-    align: "left",
-  },
+{
+  key: "expand",
+  header: "",
+  align: "center",
+  render: (row) => {
+    if (row.isBatchRow) return null;
 
-  {
-    key: "openingQty",
-    header: "Opening Qty",
-    align: "right",
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleRow(row.id);
+        }}
+        className="flex items-center justify-center"
+      >
+        {expandedRows[row.id] ? (
+          <ChevronDown size={18} />
+        ) : (
+          <ChevronRight size={18} />
+        )}
+      </button>
+    );
   },
-  {
-    key: "openingValue",
-    header: "Opening Value",
-    align: "right",
-    render: (i) => `INR ${i.openingValue.toLocaleString()}`,
+},
+
+{
+  key: "itemCode",
+  header: "Item Code",
+  render: (row) => {
+    if (row.isBatchRow) {
+      return (
+        <div className="px-4 py-2">
+          <BatchTable batches={row.batches || []} />
+        </div>
+      );
+    }
+
+    return row.itemCode;
   },
-  {
-    key: "inQty",
-    header: "In Qty",
-    align: "right",
+},
+{
+  key: "itemName",
+  header: "Item Name",
+  render: (row) => (row.isBatchRow ? null : row.itemName),
+},
+{
+  key: "description",
+  header: "Description",
+  render: (row) => (row.isBatchRow ? null : row.description),
+},
+{
+  key: "packingUnit",
+  header: "Packing Unit",
+  render: (row) => {
+    if (row.isBatchRow) return null;
+
+    const unit = row.packingUnit ?? "-";
+    const size = row.packingSize ?? "-";
+
+    return `${unit} × ${size}`;
   },
-  {
-    key: "inValue",
-    header: "In Value",
-    align: "right",
-    render: (i) => `INR ${i.inValue.toLocaleString()}`,
-  },
-  {
-    key: "outQty",
-    header: "Out Qty",
-    align: "right",
-  },
-  {
-    key: "outValue",
-    header: "Out Value",
-    align: "right",
-    render: (i) => `INR ${i.outValue.toLocaleString()}`,
-  },
-  {
-    key: "balQty",
-    header: "Balance Qty",
-    align: "right",
-  },
-  {
-    key: "balValue",
-    header: "Balance Value",
-    align: "right",
-    render: (i) => `INR ${i.balValue.toLocaleString()}`,
-  },
-  {
-    key: "buyValue",
-    header: "Buy Value",
-    align: "right",
-    render: (i) => `INR ${i.buyValue.toLocaleString()}`,
-  },
-  {
-    key: "sellValue",
-    header: "Sell Value",
-    align: "right",
-    render: (i) => `INR ${i.sellValue.toLocaleString()}`,
-  },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (i) => (
-        <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={(e) => handleEdit(i.id, e)}
-            iconOnly
-          />
-          <ActionMenu
-            onEdit={() => {
-              setEditItem(i);
-              setShowModal(true);
-            }}
-            onDelete={(e) => handleDeleteClick(i, e)}
-          />
-        </ActionGroup>
-      ),
-    },
-  ];
+},
+{
+  key: "totalQty",
+  header: "Qty",
+  align: "right",
+  render: (row) => (row.isBatchRow ? null : row.totalQty),
+},
+{
+  key: "totalBuyValue",
+  header: "Total Buy Value",
+  align: "right",
+  render: (row) =>
+    row.isBatchRow
+      ? null
+      : `INR ${row.totalBuyValue.toLocaleString()}`,
+},
+{
+  key: "totalSellValue",
+  header: "Total Sell Value",
+  align: "right",
+  render: (row) =>
+    row.isBatchRow
+      ? null
+      : `INR ${row.totalSellValue.toLocaleString()}`,
+},
+];
 
   /*      RENDER
    */
@@ -295,8 +280,21 @@ const columns: Column<any>[] = [
     <div className="p-8">
       <Table
         loading={loading || initialLoad}
-        columns={columns}
-        data={items}
+       columns={columns}
+    data={items.flatMap((item) => {
+  const rows: any[] = [item];
+
+  if (expandedRows[item.id]) {
+    rows.push({
+  id: `${item.id}-batch`,
+  isBatchRow: true,
+  batches: item.batches,
+  itemCode: "",
+});
+  }
+
+  return rows;
+})}
         enableColumnSelector
         showToolbar
         searchValue={searchTerm}
