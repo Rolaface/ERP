@@ -225,6 +225,10 @@ const handleDeleteSupplier = async (supplier: Supplier) => {
 
     { key: "supplierName", header: "Supplier Name", align: "left" },
 
+    { key: "taxCategory", header: "Tax Category", align: "left" },
+
+    {key: "phoneNo", header: "Phone", align: "left"},
+
     {
       key: "tpin",
       header: "TPIN",

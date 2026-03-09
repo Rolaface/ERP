@@ -41,7 +41,7 @@ const calculateDueDate = (invoiceDate: string, terms: string) => {
   return date.toISOString().split("T")[0];
 };
 
-
+const NUM_FIELDS = ["quantity", "price", "discount", "vatRate", "boxStart", "boxEnd"];
 
 export const useInvoiceForm = (
   isOpen: boolean,
@@ -142,9 +142,9 @@ export const useInvoiceForm = (
           };
         });
       } catch (err: any) {
-  console.error("Failed to load company data", err);
-  showApiError("Failed to load company configuration");
-}
+        console.error("Failed to load company data", err);
+        showApiError("Failed to load company configuration");
+      }
     };
     loadCompanyData();
   }, [isOpen, mode]);
@@ -464,9 +464,9 @@ export const useInvoiceForm = (
         };
       });
     } catch (err: any) {
-  console.error("Failed to load customer data", err);
-  showApiError("Failed to load customer details");
-}
+      console.error("Failed to load customer data", err);
+      showApiError("Failed to load customer details");
+    }
   };
 
   const handleItemSelect = async (index: number, itemId: string) => {
@@ -535,9 +535,9 @@ export const useInvoiceForm = (
         return { ...prev, items };
       });
     } catch (err: any) {
-  console.error("Failed to fetch item details", err);
-  showApiError("Failed to load item details");
-}
+      console.error("Failed to fetch item details", err);
+      showApiError("Failed to load item details");
+    }
   };
 
   /* ---------------- ITEMS ---------------- */
@@ -546,7 +546,9 @@ export const useInvoiceForm = (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const { name, value } = e.target;
-    const isNum = ["quantity", "price", "discount", "vatRate"].includes(name);
+
+
+    const isNum = NUM_FIELDS.includes(name);
 
     setFormData((prev) => {
       const items = [...prev.items];
@@ -562,11 +564,36 @@ export const useInvoiceForm = (
         }
       }
 
-      items[idx] = {
+      const updatedItem = {
         ...items[idx],
         [name]: nextValue,
       };
 
+      const start = Number(updatedItem.boxStart || 0);
+      const end = Number(updatedItem.boxEnd || 0);
+
+      // sequential validation
+      if (idx > 0 && name === "boxStart") {
+        const prevEnd = Number(items[idx - 1]?.boxEnd || 0);
+        const expected = prevEnd + 1;
+
+        if (prevEnd > 0 && start !== expected) {
+          if (start > expected) {
+            showApiError(`Row ${idx + 1}: Box must start from ${expected}`);
+            return prev;
+          }
+        }
+      }
+
+      items[idx] = updatedItem;
+    
+      // auto fill next row start
+      if (name === "boxEnd" && end >= start && items[idx + 1]) {
+        items[idx + 1] = {
+          ...items[idx + 1],
+          boxStart: end + 1,
+        };
+      }
       return { ...prev, items };
     });
   };
@@ -581,8 +608,22 @@ export const useInvoiceForm = (
 
   const addItem = () => {
     setFormData((prev) => {
-      const items = [...prev.items, { ...EMPTY_ITEM }];
+      const items = [...prev.items];
+
+      let start = 1;
+
+      if (items.length > 0) {
+        const lastEnd = Number(items[items.length - 1]?.boxEnd || 0);
+        start = lastEnd ? lastEnd + 1 : 1;
+      }
+
+      items.push({
+        ...EMPTY_ITEM,
+        boxStart: start,
+      });
+
       setPage(Math.floor((items.length - 1) / ITEMS_PER_PAGE));
+
       return { ...prev, items };
     });
   };
@@ -694,7 +735,7 @@ export const useInvoiceForm = (
         });
       } catch (err) {
         console.error("Failed to re-load company defaults during reset", err);
-         showApiError("Failed to reload company defaults");
+        showApiError("Failed to reload company defaults");
         setFormData({ ...DEFAULT_INVOICE_FORM });
       }
     }
@@ -735,34 +776,34 @@ export const useInvoiceForm = (
     }
   };
 
-const { subTotal, totalTax, grandTotal } = useMemo(() => {
-  let sub = 0;
-  let tax = 0;
+  const { subTotal, totalTax, grandTotal } = useMemo(() => {
+    let sub = 0;
+    let tax = 0;
 
-  formData.items.forEach((item) => {
-    const qty = Number(item.quantity || 0);
-    const price = Number(item.price || 0);
-    const discount = Number(item.discount || 0);
-    const vatRate = Number(item.vatRate || 0);
+    formData.items.forEach((item) => {
+      const qty = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      const discount = Number(item.discount || 0);
+      const vatRate = Number(item.vatRate || 0);
 
-    const lineAmount = qty * price;
+      const lineAmount = qty * price;
 
-    const discountAmount = lineAmount * (discount / 100);
+      const discountAmount = lineAmount * (discount / 100);
 
-    const netAmount = lineAmount - discountAmount;
+      const netAmount = lineAmount - discountAmount;
 
-    const taxAmount = netAmount * (vatRate / 100);
+      const taxAmount = netAmount * (vatRate / 100);
 
-    sub += netAmount;
-    tax += taxAmount;
-  });
+      sub += netAmount;
+      tax += taxAmount;
+    });
 
-  return {
-    subTotal: sub,
-    totalTax: tax,
-    grandTotal: sub + tax,
-  };
-}, [formData.items]);
+    return {
+      subTotal: sub,
+      totalTax: tax,
+      grandTotal: sub + tax,
+    };
+  }, [formData.items]);
 
 
   const paginatedItems = formData.items.slice(
@@ -795,21 +836,21 @@ const { subTotal, totalTax, grandTotal } = useMemo(() => {
       exchangeRateLoading: enableExchange ? exchangeRateLoading : false,
       exchangeRateError: enableExchange ? exchangeRateError : null,
     },
-actions: {
-  validateForm,
-  handleInputChange,
-  handleCustomerSelect,
-  handleItemSelect,
-  handleItemChange,
-  updateItemDirectly,
-  addItem,
-  removeItem,
-  setTerms,
-  handleSameAsBillingChange,
-  handleReset,
-  handleSubmit,
-  setInvoiceFromApi,
-  setFormDataFromInvoice,
-},
+    actions: {
+      validateForm,
+      handleInputChange,
+      handleCustomerSelect,
+      handleItemSelect,
+      handleItemChange,
+      updateItemDirectly,
+      addItem,
+      removeItem,
+      setTerms,
+      handleSameAsBillingChange,
+      handleReset,
+      handleSubmit,
+      setInvoiceFromApi,
+      setFormDataFromInvoice,
+    },
   };
 };
