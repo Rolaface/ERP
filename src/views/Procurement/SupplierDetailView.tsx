@@ -151,7 +151,7 @@ const SupplierDetailView: React.FC<Props> = ({
     );
   };
   return (
-    <div className="flex flex-col bg-app text-main overflow-hidden ">
+    <div className="flex flex-col bg-app text-main overflow-hidden h-screen">
       {/*  HEADER  */}
       <header className="bg-card px-5 py-3 flex items-center justify-between border-b border-[var(--border)] shrink-0">
         <div className="flex items-center gap-4">
@@ -189,10 +189,10 @@ const SupplierDetailView: React.FC<Props> = ({
         {renderActionButton()}
       </header>
 
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         {/*  SIDEBAR  */}
-        <aside className="w-60 bg-card border-r border-[var(--border)] flex flex-col rounded-br-2xl rounded-bl-2xl overflow-hidden ">
-          <div className="p-3 border-b border-[var(--border)] bg-row-hover/10">
+     <aside className="w-60 bg-card border-r border-[var(--border)] flex flex-col overflow-hidden max-h-[500px] self-start rounded-b-2xl">
+         <div className="p-3 border-b border-[var(--border)] bg-row-hover/10 shrink-0">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
               <input
@@ -205,7 +205,7 @@ const SupplierDetailView: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className=" overflow-y-auto custom-scrollbar mt-3 px-2 ">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-2 min-h-0">
             {filteredSuppliers.map((s) => (
               <button
                 key={s.supplierId || s.supplierCode}
@@ -250,7 +250,7 @@ const SupplierDetailView: React.FC<Props> = ({
         </aside>
 
         {/*  MAIN  */}
-        <main className="flex-1 flex flex-col min-w-0 bg-app/20">
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-app/20 min-h-0">
           {/* Tabs */}
           <div className="bg-card border-b border-[var(--border)] px-4 shrink-0 z-10">
             <div className="flex">
@@ -277,9 +277,9 @@ const SupplierDetailView: React.FC<Props> = ({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto pt-4 px-2 box-border">
+          <div className="flex-1 overflow-y-auto p-4 min-h-0">
             {activeTab === "overview" && (
-              <div className="max-w-6xl mx-auto space-y-4 animate-in fade-in duration-500 p-5">
+             <div className="h-full max-w-6xl mx-auto space-y-4 animate-in fade-in duration-500 p-5">
                 {/* Info Strips */}
                 <div className="bg-card rounded-2xl border border-[var(--border)] p-5 shadow-sm">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
