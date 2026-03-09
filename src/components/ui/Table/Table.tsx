@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { Column } from "./type";
 import ColumnSelector from "./ColumnSelector";
 import Pagination from "../../Pagination";
@@ -19,43 +19,37 @@ interface SortState {
 }
 
 interface TableProps<T> {
-  // Core data
   columns: Column<T>[];
   data: T[];
   rowKey?: (row: T) => string;
   loading?: boolean;
   emptyMessage?: string;
 
-  // Row interaction
+  // ✅ Expandable rows
+  expandedRowRender?: (row: T) => React.ReactNode;
+
   onRowClick?: (item: T) => void;
 
-  // Toolbar
   showToolbar?: boolean;
   extraFilters?: React.ReactNode;
   toolbarPlaceholder?: string;
 
-  // Search — controlled by parent (backend)
   searchValue?: string;
   onSearch?: (q: string) => void;
 
-  // Add button
   enableAdd?: boolean;
   addLabel?: string;
   onAdd?: () => void;
 
-  // Export button
   enableExport?: boolean;
   onExport?: () => void;
 
-  // Column visibility selector (UI-only, stays local)
   enableColumnSelector?: boolean;
 
-  // Server-side sort — controlled by parent (backend)
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   onSortChange?: (sort: SortState) => void;
 
-  // Server-side pagination — controlled by parent (backend)
   currentPage?: number;
   totalPages?: number;
   pageSize?: number;
@@ -72,10 +66,7 @@ interface TableProps<T> {
 const SkeletonRow: React.FC<{ columnsCount: number }> = ({ columnsCount }) => (
   <tr className="bg-transparent">
     {Array.from({ length: columnsCount }).map((_, idx) => (
-      <td
-        key={idx}
-        className="px-3 sm:px-5 py-3.5 border-b border-[var(--border)]/20"
-      >
+      <td key={idx} className="px-3 sm:px-5 py-3.5 border-b border-[var(--border)]/20">
         <div className="h-4 bg-gray-300 animate-pulse rounded" />
       </td>
     ))}
@@ -83,8 +74,38 @@ const SkeletonRow: React.FC<{ columnsCount: number }> = ({ columnsCount }) => (
 );
 
 // ---------------------------------------------------------------------------
+// Animated expand wrapper — smooth height transition
+// ---------------------------------------------------------------------------
+
+const ExpandedPanel: React.FC<{ children: React.ReactNode; open: boolean }> = ({ children, open }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    if (ref.current) {
+      setHeight(open ? ref.current.scrollHeight : 0);
+    }
+  }, [open, children]);
+
+  return (
+    <div
+      style={{
+        height: `${height}px`,
+        overflow: "hidden",
+        transition: "height 220ms cubic-bezier(0.4, 0, 0.2, 1)",
+      }}
+    >
+      <div ref={ref}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Table
 // ---------------------------------------------------------------------------
+
 function Table<T extends Record<string, any>>({
   columns = [],
   data = [],
@@ -92,36 +113,29 @@ function Table<T extends Record<string, any>>({
   loading = false,
   emptyMessage = "No records found.",
 
-  // Row
+  expandedRowRender,
   onRowClick,
 
-  // Toolbar
   showToolbar = false,
   extraFilters,
   toolbarPlaceholder = "Search...",
 
-  // Search
   searchValue = "",
   onSearch,
 
-  // Add
   enableAdd = false,
   addLabel = "+ Add",
   onAdd,
 
-  // Export
   enableExport = false,
   onExport,
 
-  // Column selector
   enableColumnSelector = false,
 
-  // Sort (server)
   sortBy,
   sortOrder: sortOrderProp,
   onSortChange,
 
-  // Pagination (server)
   currentPage = 1,
   totalPages = 1,
   pageSize = 10,
@@ -131,7 +145,6 @@ function Table<T extends Record<string, any>>({
   onPageSizeChange,
 }: TableProps<T>) {
 
-  // Column visibility is the only local UI state that remains
   const allKeys = columns.map((col) => col.key);
   const [visibleKeys, setVisibleKeys] = useState<string[]>(allKeys);
 
@@ -141,10 +154,6 @@ function Table<T extends Record<string, any>>({
     );
   };
 
-  // ---------------------------------------------------------------------------
-  // Sort handler — delegates entirely to parent
-  // ---------------------------------------------------------------------------
-
   const handleColumnSort = (colKey: string) => {
     if (!onSortChange) return;
     const isSameColumn = sortBy === colKey;
@@ -152,10 +161,6 @@ function Table<T extends Record<string, any>>({
       isSameColumn && sortOrderProp === "asc" ? "desc" : "asc";
     onSortChange({ sortBy: colKey, sortOrder: newOrder });
   };
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
 
   const getAlignment = (align?: "left" | "center" | "right"): string => {
     switch (align) {
@@ -167,18 +172,12 @@ function Table<T extends Record<string, any>>({
 
   const visibleColumns = columns.filter((col) => visibleKeys.includes(col.key));
 
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
-
   return (
     <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col shadow-sm transition-all relative z-10 w-full">
 
       {/* ── Toolbar ── */}
       {showToolbar && (
         <div className="px-5 py-4 border-b border-[var(--border)] bg-card flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 shrink-0">
-
-          {/* Search — value and handler always come from parent */}
           <div className="relative w-52 group">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs group-focus-within:text-primary transition-colors" />
             <input
@@ -189,16 +188,11 @@ function Table<T extends Record<string, any>>({
             />
           </div>
 
-          {/* Extra filters slot */}
           {extraFilters && (
-            <div className="flex items-center gap-4 shrink-0">
-              {extraFilters}
-            </div>
+            <div className="flex items-center gap-4 shrink-0">{extraFilters}</div>
           )}
 
-          {/* Right-side buttons */}
           <div className="flex items-center gap-2 shrink-0">
-
             {enableColumnSelector && (
               <ColumnSelector
                 columns={columns}
@@ -208,7 +202,6 @@ function Table<T extends Record<string, any>>({
                 allKeys={allKeys}
               />
             )}
-
             {enableAdd && (
               <button
                 onClick={onAdd}
@@ -217,7 +210,6 @@ function Table<T extends Record<string, any>>({
                 {addLabel}
               </button>
             )}
-
             {enableExport && (
               <button
                 onClick={onExport}
@@ -226,118 +218,133 @@ function Table<T extends Record<string, any>>({
                 Export
               </button>
             )}
-
           </div>
         </div>
       )}
 
       {/* ── Table ── */}
-      {/*
-        FIX: Removed the inner div with max-h-[420px] that was clipping the last
-        row behind the sticky footer. Scrolling is now handled on the outer wrapper
-        using a dynamic max-height that accounts for the toolbar (~73px) and
-        footer (~57px), so every row — including action buttons on the last row —
-        is always fully visible before the footer begins.
-      */}
       <div
         className="w-full overflow-x-auto custom-scrollbar"
-        style={{ 
-          minHeight: "200px",
-          overflowY: "auto",
-          maxHeight: "60vh",
-        }}
+        style={{ minHeight: "200px", overflowY: "auto", maxHeight: "60vh" }}
       >
-        {/* pb-4 ensures the last row's action buttons/dropdowns are never clipped by the sticky footer */}
         <div className="pb-4">
-        <table className="w-full min-w-full md:min-w-[800px] border-separate border-spacing-0">
+          <table className="w-full min-w-full md:min-w-[800px] border-separate border-spacing-0">
 
-          {/* Header */}
-          <thead className="sticky top-0 z-30 shadow-sm">
-            <tr>
-              {visibleColumns.map((column) => {
-                const isSortable = !!column.sortable && !!onSortChange;
-                const isActive   = sortBy === column.key;
-                const isAsc      = isActive && sortOrderProp === "asc";
-                const isDesc     = isActive && sortOrderProp === "desc";
-
-                return (
-                  <th
-                    key={column.key}
-                    onClick={isSortable ? () => handleColumnSort(column.key) : undefined}
-                    className={[
-                      "px-3 sm:px-5 py-3.5 sm:py-4",
-                      "text-[10px] font-black uppercase tracking-[0.08em] sm:tracking-[0.12em]",
-                      "text-muted border-b border-[var(--border)] bg-card whitespace-nowrap",
-                      getAlignment(column.align),
-                      isSortable ? "cursor-pointer select-none hover:text-primary transition-colors" : "",
-                      isActive   ? "text-primary" : "",
-                    ].join(" ")}
-                  >
-                    <span className="inline-flex items-center gap-1.5">
-                      {column.header}
-                      {isSortable && (
-                        <span className="inline-flex opacity-60">
-                          {isAsc  ? <FaSortUp   size={10} className="text-primary opacity-100" /> :
-                           isDesc ? <FaSortDown size={10} className="text-primary opacity-100" /> :
-                                    <FaSort     size={10} />}
-                        </span>
-                      )}
-                    </span>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-
-          {/* Body */}
-          <tbody className="relative z-10">
-            {loading ? (
-              Array.from({ length: pageSize }).map((_, idx) => (
-                <SkeletonRow key={idx} columnsCount={visibleColumns.length} />
-              ))
-            ) : data.length === 0 ? (
+            {/* Header */}
+            <thead className="sticky top-0 z-30 shadow-sm">
               <tr>
-                <td colSpan={visibleColumns.length} className="px-6 py-24 text-center">
-                  <p className="text-xs font-bold text-muted uppercase tracking-widest opacity-40">
-                    {emptyMessage}
-                  </p>
-                </td>
-              </tr>
-            ) : (
-              data.map((item, idx) => (
-                <tr
-                  key={rowKey ? rowKey(item) : JSON.stringify(item)}
-                  onClick={() => onRowClick?.(item)}
-                  className={[
-                    "group transition-none",
-                    onRowClick ? "cursor-pointer" : "",
-                    idx % 2 === 0 ? "bg-transparent" : "bg-row-hover/10",
-                    "hover:bg-row-hover",
-                  ].join(" ")}
-                >
-                  {visibleColumns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={`px-3 sm:px-5 py-3.5 text-xs font-medium text-main border-b border-[var(--border)]/20 ${getAlignment(column.align)}`}
-                    >
-                      {column.render
-                        ? column.render(item)
-                        : <span className="opacity-90">{item[column.key]}</span>
-                      }
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
+                {visibleColumns.map((column) => {
+                  const isSortable = !!column.sortable && !!onSortChange;
+                  const isActive   = sortBy === column.key;
+                  const isAsc      = isActive && sortOrderProp === "asc";
+                  const isDesc     = isActive && sortOrderProp === "desc";
 
-        </table>
-        </div>{/* end pb-4 wrapper */}
+                  return (
+                    <th
+                      key={column.key}
+                      onClick={isSortable ? () => handleColumnSort(column.key) : undefined}
+                      className={[
+                        "px-3 sm:px-5 py-3.5 sm:py-4",
+                        "text-[10px] font-black uppercase tracking-[0.08em] sm:tracking-[0.12em]",
+                        "text-muted border-b border-[var(--border)] bg-card whitespace-nowrap",
+                        getAlignment(column.align),
+                        isSortable ? "cursor-pointer select-none hover:text-primary transition-colors" : "",
+                        isActive ? "text-primary" : "",
+                      ].join(" ")}
+                    >
+                      <span className="inline-flex items-center gap-1.5">
+                        {column.header}
+                        {isSortable && (
+                          <span className="inline-flex opacity-60">
+                            {isAsc  ? <FaSortUp   size={10} className="text-primary opacity-100" /> :
+                             isDesc ? <FaSortDown size={10} className="text-primary opacity-100" /> :
+                                      <FaSort     size={10} />}
+                          </span>
+                        )}
+                      </span>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+
+            {/* Body */}
+            <tbody className="relative z-10">
+              {loading ? (
+                Array.from({ length: pageSize }).map((_, idx) => (
+                  <SkeletonRow key={idx} columnsCount={visibleColumns.length} />
+                ))
+              ) : data.length === 0 ? (
+                <tr>
+                  <td colSpan={visibleColumns.length} className="px-6 py-24 text-center">
+                    <p className="text-xs font-bold text-muted uppercase tracking-widest opacity-40">
+                      {emptyMessage}
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                data.map((item, idx) => {
+                  const expandedContent = expandedRowRender?.(item);
+                  const isExpanded = !!expandedContent;
+
+                  return (
+                    <React.Fragment key={rowKey ? rowKey(item) : JSON.stringify(item)}>
+
+                      {/* ── Data row — full row is clickable ── */}
+                      <tr
+                        onClick={() => onRowClick?.(item)}
+                        className={[
+                          "group transition-colors duration-150",
+                          // ✅ Always show pointer so user knows row is clickable
+                          onRowClick ? "cursor-pointer" : "",
+                          idx % 2 === 0 ? "bg-transparent" : "bg-row-hover/10",
+                          "hover:bg-row-hover",
+                          // ✅ Highlight the expanded row so it stays visually "active"
+                          isExpanded ? "bg-row-hover/20" : "",
+                        ].join(" ")}
+                      >
+                        {visibleColumns.map((column) => (
+                          <td
+                            key={column.key}
+                            className={`px-3 sm:px-5 py-3.5 text-xs font-medium text-main border-b border-[var(--border)]/20 ${getAlignment(column.align)}`}
+                          >
+                            {column.render
+                              ? column.render(item)
+                              : <span className="opacity-90">{item[column.key]}</span>
+                            }
+                          </td>
+                        ))}
+                      </tr>
+
+                      {/* ── Animated expanded row ── */}
+                      <tr>
+                        <td
+                          colSpan={visibleColumns.length}
+                          className="p-0"
+                          style={{
+                            borderBottom: isExpanded
+                              ? "2px solid rgba(201,125,46,0.25)"
+                              : "1px solid rgba(0,0,0,0.04)",
+                          }}
+                        >
+                          <ExpandedPanel open={isExpanded}>
+                            {expandedRowRender?.(item)}
+                          </ExpandedPanel>
+                        </td>
+                      </tr>
+
+                    </React.Fragment>
+                  );
+                })
+              )}
+            </tbody>
+
+          </table>
+        </div>
       </div>
 
       {/* ── Footer / Pagination ── */}
       <div className="px-5 py-3 border-t border-[var(--border)] bg-card flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-
         <div className="text-[9px] font-black uppercase text-muted tracking-[0.2em] opacity-50">
           Total: {totalItems}
         </div>
@@ -366,7 +373,6 @@ function Table<T extends Record<string, any>>({
           totalItems={totalItems}
           onPageChange={onPageChange ?? (() => {})}
         />
-
       </div>
     </div>
   );

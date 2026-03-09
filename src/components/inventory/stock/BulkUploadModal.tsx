@@ -1,7 +1,7 @@
 import React from "react";
 import Modal from "../../ui/modal/modal";
-import { useStockCorrection }   from "./../../../types/Usestockcorrection";
-import { ManualCorrectionForm } from "./Manualcorrectionform";
+import { BulkUploadZone }       from "./Bulkuploadzone";
+import { useStockCorrection }   from "../../../types/Usestockcorrection";
 import { ShieldCheck } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -14,7 +14,7 @@ interface Props {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const StockCorrectionModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
+const BulkUploadModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
   const correction = useStockCorrection(isOpen, onSubmit, onClose);
 
   if (!isOpen) return null;
@@ -23,10 +23,10 @@ const StockCorrectionModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) =>
     <Modal
       isOpen={isOpen}
       onClose={correction.handleClose}
-      title="Stock Correction"
-      subtitle="Adjust existing stock quantities with full audit trail"
-      maxWidth="6xl"
-      height="90vh"
+      title="Bulk Stock Upload"
+      subtitle="Import multiple stock corrections at once via CSV or Excel"
+      maxWidth="5xl"
+      height="88vh"
     >
       <div className="h-full flex flex-col" style={{ background: "var(--bg-app, #f9f6f1)" }}>
 
@@ -47,27 +47,17 @@ const StockCorrectionModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) =>
             }}
           >
             <ShieldCheck size={13} style={{ color: "var(--primary, #c97d2e)" }} strokeWidth={2} />
-            <span>Logged with timestamp &amp; user</span>
+            <span>All imports are logged with timestamp &amp; user</span>
           </div>
         </div>
 
-        {/* ── Form ─────────────────────────────────────────────────────────── */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <ManualCorrectionForm
-            form      ={correction.form}
-            setForm   ={correction.setForm}
-            setField  ={correction.setField}
-            resetForm ={correction.resetForm}
-            loading   ={correction.loading}
-            adjQty    ={correction.adjQty}
-            curQty    ={correction.curQty}
-            newQty    ={correction.newQty}
-            diff      ={correction.diff}
-            hasItem   ={correction.hasItem}
-            hasAdj    ={correction.hasAdj}
-            isValid   ={correction.isValid}
-            onSubmit  ={correction.handleManualSubmit}
-            onClose   ={correction.handleClose}
+        {/* ── Bulk upload content ───────────────────────────────────────────── */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
+          <BulkUploadZone
+            rows        ={correction.bulkRows}
+            onRowsChange={correction.setBulkRows}
+            onSubmit    ={correction.handleBulkSubmit}
+            loading     ={correction.bulkLoading}
           />
         </div>
 
@@ -76,4 +66,4 @@ const StockCorrectionModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) =>
   );
 };
 
-export default StockCorrectionModal;
+export default BulkUploadModal;
