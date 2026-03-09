@@ -539,7 +539,7 @@ export const DetailsTab = ({
             </div>
           </div>
 
-         <div className="bg-card rounded-lg p-3 w-[220px]">
+<div className="bg-card rounded-lg p-3 w-[220px]">
   <h3 className="text-[13px] font-semibold text-main mb-2">
     Summary
   </h3>
@@ -548,53 +548,35 @@ export const DetailsTab = ({
 
     <div className="flex justify-between text-xs">
       <span className="text-muted">Total Items</span>
-      <span className="font-medium tabular-nums">{items.length}</span>
+      <span className="font-medium text-main">{items.length}</span>
     </div>
 
     <div className="flex justify-between text-xs">
       <span className="text-muted">Total Quantity</span>
-      <span className="font-medium tabular-nums">{form.totalQuantity}</span>
+      <span className="font-medium text-main">{form.totalQuantity}</span>
     </div>
 
     <div className="flex justify-between text-xs">
       <span className="text-muted">Subtotal</span>
-      <span className="font-medium tabular-nums">
-        {symbol} {form.subTotal?.toFixed(2)}
+      <span className="font-medium text-main">
+        {symbol} {form.subTotal?.toFixed(2) || "0.00"}
       </span>
     </div>
 
     <div className="flex justify-between text-xs">
       <span className="text-muted">Total Tax</span>
-      <span className="font-medium tabular-nums">
-        {symbol} {form.totalTax?.toFixed(2)}
-      </span>
-    </div>
-
-    <div className="flex justify-between text-xs">
-      <span className="text-muted">Grand Total</span>
-      <span className="font-medium tabular-nums">
-        {symbol} {form.grandTotal?.toFixed(2)}
-      </span>
-    </div>
-
-    <div className="flex justify-between text-xs">
-      <span className="text-muted">Rounding Adj</span>
-      <span className="font-medium tabular-nums">
-        {symbol} {form.roundingAdjustment?.toFixed(2)}
+      <span className="font-medium text-main">
+        {symbol} {form.totalTax?.toFixed(2) || "0.00"}
       </span>
     </div>
 
     <div className="border-t border-theme my-1"></div>
 
-    <div className="mt-1 p-2 bg-primary rounded-lg">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-semibold text-white">
-          Rounded Total
-        </span>
-        <span className="text-sm font-bold text-white tabular-nums">
-          {symbol} {form.roundedTotal?.toFixed(2)}
-        </span>
-      </div>
+    <div className="flex justify-between text-sm font-semibold">
+      <span className="text-main">Grand Total</span>
+      <span className="text-main">
+        {symbol} {form.grandTotal?.toFixed(2) || "0.00"}
+      </span>
     </div>
 
   </div>
