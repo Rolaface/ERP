@@ -441,8 +441,9 @@ const validateItemDetails = (): boolean => {
     { field: "itemName", label: "Item Name" },
     { field: "description", label: "Description" },
     { field: "itemClassCode", label: "HSN Code" },
-    { field: "originNationCode", label: "Country of Origin" },
     { field: "unitOfMeasureCd", label: "Unit of Measurement" },
+    { field: "originNationCode", label: "Country of Origin" },
+   
   ];
 
   for (const { field, label } of requiredFields) {

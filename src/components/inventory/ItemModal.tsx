@@ -7,7 +7,10 @@ import { YesNoCheckbox } from "../ui/modal/modalComponent";
 // ─── Compact shared primitives ────────────────────────────────────────────────
 
 /** Tiny label text with optional required asterisk */
-const FieldLabel: React.FC<{ label: string; required?: boolean }> = ({ label, required }) => (
+const FieldLabel: React.FC<{ label: string; required?: boolean }> = ({
+  label,
+  required,
+}) => (
   <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
     {label}
     {required && <span className="ml-0.5 text-danger">*</span>}
@@ -47,9 +50,11 @@ const DynamicFieldWrapper: React.FC<{
 }> = ({ children, className = "" }) => (
   <div
     className={`dynamic-field-wrap ${className}`}
-    style={{
-      // Force every input / select rendered by DynamicField to be compact
-    }}
+    style={
+      {
+        // Force every input / select rendered by DynamicField to be compact
+      }
+    }
   >
     <style>{`
 
@@ -147,47 +152,47 @@ const ToggleField: React.FC<{
   onChange,
   required,
 }) => {
-    const isOn =
-      value === onValue ||
-      value === true ||
-      value === "true" ||
-      value === "Taxable";
+  const isOn =
+    value === onValue ||
+    value === true ||
+    value === "true" ||
+    value === "Taxable";
 
-    return (
-      <div className="flex flex-col gap-0.5">
-        <FieldLabel label={label} required={required} />
-        {/* Pill toggle — same h-8 height as all other inputs */}
-        <div className="flex h-8 rounded-md border border-theme overflow-hidden w-fit">
-          <button
-            type="button"
-            onClick={() => !isOn && onChange(name, onValue)}
-            className={[
-              "px-3 text-sm font-semibold transition-colors select-none",
-              isOn
-                ? "bg-primary text-white"
-                : "bg-card text-muted hover:bg-primary/10 hover:text-primary",
-            ].join(" ")}
-          >
-            {onLabel ?? onValue}
-          </button>
-          <div className="w-px bg-theme shrink-0" />
-          <button
-            type="button"
-            onClick={() => isOn && onChange(name, offValue)}
-            className={[
-              "px-3 text-sm font-semibold transition-colors select-none",
-              !isOn
-                ? "bg-primary text-white"
-                : "bg-card text-muted hover:bg-primary/10 hover:text-primary"
-            ].join(" ")}
-          >
-            {offLabel ?? offValue}
-          </button>
-        </div>
-        <input type="hidden" name={name} value={isOn ? onValue : offValue} />
+  return (
+    <div className="flex flex-col gap-0.5">
+      <FieldLabel label={label} required={required} />
+      {/* Pill toggle — same h-8 height as all other inputs */}
+      <div className="flex h-8 rounded-md border border-theme overflow-hidden w-fit">
+        <button
+          type="button"
+          onClick={() => !isOn && onChange(name, onValue)}
+          className={[
+            "px-3 text-sm font-semibold transition-colors select-none",
+            isOn
+              ? "bg-primary text-white"
+              : "bg-card text-muted hover:bg-primary/10 hover:text-primary",
+          ].join(" ")}
+        >
+          {onLabel ?? onValue}
+        </button>
+        <div className="w-px bg-theme shrink-0" />
+        <button
+          type="button"
+          onClick={() => isOn && onChange(name, offValue)}
+          className={[
+            "px-3 text-sm font-semibold transition-colors select-none",
+            !isOn
+              ? "bg-primary text-white"
+              : "bg-card text-muted hover:bg-primary/10 hover:text-primary",
+          ].join(" ")}
+        >
+          {offLabel ?? offValue}
+        </button>
       </div>
-    );
-  };
+      <input type="hidden" name={name} value={isOn ? onValue : offValue} />
+    </div>
+  );
+};
 
 /** Simple checkbox with label */
 const CheckboxField: React.FC<{
@@ -217,8 +222,18 @@ const CheckboxField: React.FC<{
         ].join(" ")}
       >
         {checked && (
-          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          <svg
+            className="w-2.5 h-2.5 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={3}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M5 13l4 4L19 7"
+            />
           </svg>
         )}
       </div>
@@ -255,7 +270,9 @@ const TabButton: React.FC<{
 /** Section heading */
 const SectionHeading: React.FC<{ title: string }> = ({ title }) => (
   <div className="flex items-center gap-3 mb-3 mt-5 first:mt-0">
-    <span className="text-[10px] font-bold uppercase tracking-widest text-muted">{title}</span>
+    <span className="text-[10px] font-bold uppercase tracking-widest text-muted">
+      {title}
+    </span>
     <div className="flex-1 h-px bg-theme" />
   </div>
 );
@@ -317,12 +334,19 @@ const ItemModal: React.FC<{
       height="60vh"
     >
       <form onSubmit={handleSubmit} noValidate className="h-full flex flex-col">
-
         {/* ── Tab bar ─────────────────────────────────────────────────── */}
         <div className="bg-app border-b border-theme px-6 shrink-0">
           <div className="flex gap-6">
-            <TabButton label="Item Details" active={activeTab === "details"} onClick={() => setActiveTab("details")} />
-            <TabButton label="Tax Details" active={activeTab === "taxDetails"} onClick={() => setActiveTab("taxDetails")} />
+            <TabButton
+              label="Item Details"
+              active={activeTab === "details"}
+              onClick={() => setActiveTab("details")}
+            />
+            <TabButton
+              label="Tax Details"
+              active={activeTab === "taxDetails"}
+              onClick={() => setActiveTab("taxDetails")}
+            />
             <TabButton
               label="Inventory Details"
               active={activeTab === "inventoryDetails"}
@@ -335,15 +359,12 @@ const ItemModal: React.FC<{
         {/* ── Tab content  */}
         <section className="flex-1 overflow-y-auto bg-app">
           <div className="p-5 max-w-full">
-
             {/*  ITEM DETAILS TAB  */}
             {activeTab === "details" && (
               <>
-
                 {/* 4-col grid for item fields */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-4 items-end">
                   {fieldConfigs.map((fieldConfig) => {
-
                     /* HSN Code */
                     if (fieldConfig.fieldName === "itemClassCode") {
                       return (
@@ -367,7 +388,6 @@ const ItemModal: React.FC<{
                           key="uom-svc-ins-sku"
                           className="col-span-3 grid grid-cols-[120px_140px_160px_180px_80px_80px_90px] gap-3 items-end"
                         >
-
                           {/* Packing */}
                           <DynamicFieldWrapper className="w-[120px]">
                             <div className="flex flex-col gap-0.5">
@@ -377,11 +397,13 @@ const ItemModal: React.FC<{
                                   type="number"
                                   name="packingUnit"
                                   value={form.packingUnit || ""}
-                                  onChange={handleForm}          
+                                  onChange={handleForm}
                                   className="w-15 h-8 rounded-md border border-theme bg-card text-main  text-sm px-1
                                 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner"
                                 />
-                                <span className="text-muted text-sm font-bold">×</span>
+                                <span className="text-muted text-sm font-bold">
+                                  ×
+                                </span>
                                 <input
                                   type="number"
                                   name="packingSize"
@@ -407,18 +429,26 @@ const ItemModal: React.FC<{
                           {/* SKU */}
                           <DynamicFieldWrapper className="w-[160px] shrink-0">
                             <DynamicField
-                              config={fieldConfigs.find(f => f.fieldName === "sku")!}
+                              config={{
+                                ...fieldConfigs.find(
+                                  (f) => f.fieldName === "sku",
+                                )!,
+                                required: false,
+                              }}
                               value={form.sku}
                               onChange={handleDynamicFieldChange}
                               filterValue={form.itemTypeCode}
                             />
                           </DynamicFieldWrapper>
 
-
                           {/* Country of Origin */}
                           <DynamicFieldWrapper className="w-[180px] shrink-0">
                             <DynamicField
-                              config={fieldConfigs.find(f => f.fieldName === "originNationCode")!}
+                              config={
+                                fieldConfigs.find(
+                                  (f) => f.fieldName === "originNationCode",
+                                )!
+                              }
                               value={form.originNationCode}
                               onChange={handleDynamicFieldChange}
                             />
@@ -446,17 +476,20 @@ const ItemModal: React.FC<{
                             <YesNoCheckbox
                               label="Taxable"
                               name="taxPreference"
-                              value={form.taxPreference === "Taxable" ? "Y" : "N"}
+                              value={
+                                form.taxPreference === "Taxable" ? "Y" : "N"
+                              }
                               onChange={(name, val) =>
-                                handleDynamicFieldChange(name, val === "Y" ? "Taxable" : "Non-Taxable")
+                                handleDynamicFieldChange(
+                                  name,
+                                  val === "Y" ? "Taxable" : "Non-Taxable",
+                                )
                               }
                             />
                           </div>
-
                         </div>
                       );
                     }
-
 
                     /* SKIP default rendering */
                     if (fieldConfig.fieldName === "sku") return null;
@@ -465,8 +498,23 @@ const ItemModal: React.FC<{
                     if (fieldConfig.fieldName === "sellingPrice") return null;
                     if (fieldConfig.fieldName === "buyingPrice") return null;
                     if (fieldConfig.fieldName === "dimensionWidth") return null;
-                    if (fieldConfig.fieldName === "originNationCode") return null;
-
+                    if (fieldConfig.fieldName === "originNationCode")
+                      return null;
+if (fieldConfig.fieldName === "description") {
+  return (
+    <DynamicFieldWrapper key="description">
+      <DynamicField
+        config={{
+          ...fieldConfig,
+          required: true
+        }}
+        value={form[fieldConfig.fieldName]}
+        onChange={handleDynamicFieldChange}
+        filterValue={form.itemTypeCode}
+      />
+    </DynamicFieldWrapper>
+  );
+}
                     /* Item Group */
                     if (fieldConfig.fieldName === "itemGroup") {
                       return (
@@ -525,7 +573,6 @@ const ItemModal: React.FC<{
                       className="no-spinner"
                     />
                   </div>
-
 
                   <div className="max-w-[150px]">
                     <Input
@@ -588,7 +635,6 @@ const ItemModal: React.FC<{
             {/*  TAX DETAILS TAB  */}
             {activeTab === "taxDetails" && (
               <>
-
                 <div className="w-[130px]">
                   <CompactSelect
                     label="Tax Category"
@@ -599,7 +645,9 @@ const ItemModal: React.FC<{
                   >
                     <option value="">Select…</option>
                     {Object.keys(taxConfigs).map((key) => (
-                      <option key={key} value={key}>{key}</option>
+                      <option key={key} value={key}>
+                        {key}
+                      </option>
                     ))}
                   </CompactSelect>
                   {form.taxCategory && (
@@ -609,10 +657,15 @@ const ItemModal: React.FC<{
                   )}
                 </div>
 
-                <SectionHeading title={form.taxCategory ? `${form.taxCategory} Tax Details` : "Tax Details"} />
+                <SectionHeading
+                  title={
+                    form.taxCategory
+                      ? `${form.taxCategory} Tax Details`
+                      : "Tax Details"
+                  }
+                />
 
                 <div className="flex flex-wrap items-end gap-3">
-
                   <div className="max-w-[140px]">
                     <Input
                       label="Tax Type"
@@ -662,7 +715,9 @@ const ItemModal: React.FC<{
                         ].join(" ")}
                         disabled={autoPopulateTax}
                       />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted font-semibold">%</span>
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted font-semibold">
+                        %
+                      </span>
                     </div>
                   </div>
                   <div className="w-[210px]">
@@ -680,16 +735,23 @@ const ItemModal: React.FC<{
 
                 {/* Summary card */}
                 <div className="mt-4 bg-card border border-theme rounded-lg p-3 w-fit min-w-[420px]">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Current Configuration</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">
+                    Current Configuration
+                  </p>
                   <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
                     {[
                       { label: "Category", value: form.taxCategory },
                       { label: "Type", value: form.taxType },
                       { label: "Code", value: form.taxCode },
-                      { label: "Rate", value: form.taxPerct ? `${form.taxPerct}%` : null },
+                      {
+                        label: "Rate",
+                        value: form.taxPerct ? `${form.taxPerct}%` : null,
+                      },
                     ].map(({ label, value }) => (
                       <span key={label}>
-                        <span className="font-semibold text-main">{label}:</span>{" "}
+                        <span className="font-semibold text-main">
+                          {label}:
+                        </span>{" "}
                         <span>{value || "—"}</span>
                       </span>
                     ))}
@@ -701,8 +763,6 @@ const ItemModal: React.FC<{
             {/*  INVENTORY DETAILS TAB  */}
             {activeTab === "inventoryDetails" && (
               <>
-
-
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-4 items-end">
                   <Input
                     label="Brand"
@@ -717,9 +777,17 @@ const ItemModal: React.FC<{
                   <div className="flex flex-col gap-0.5 min-w-[150px]">
                     <FieldLabel label="Dimensions (L × W × H)" />
                     <div className="flex items-center gap-1 h-8">
-                      {["dimensionLength", "dimensionWidth", "dimensionHeight"].map((dim, i) => (
+                      {[
+                        "dimensionLength",
+                        "dimensionWidth",
+                        "dimensionHeight",
+                      ].map((dim, i) => (
                         <React.Fragment key={dim}>
-                          {i > 0 && <span className="text-muted text-sm font-bold">×</span>}
+                          {i > 0 && (
+                            <span className="text-muted text-sm font-bold">
+                              ×
+                            </span>
+                          )}
                           <input
                             type="number"
                             name={dim}
@@ -786,8 +854,6 @@ const ItemModal: React.FC<{
                   </CompactSelect>
                 </div>
 
-
-
                 {/* Track Inventory */}
                 <SectionHeading title="Inventory Tracking" />
                 <div className="flex items-end gap-5 flex-wrap mt-[-6px]">
@@ -838,22 +904,44 @@ const ItemModal: React.FC<{
                 {/* Stock Levels */}
                 <SectionHeading title="Stock Level Tracking" />
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-w-lg">
-                  <Input label="Min Stock Level" name="minStockLevel" value={form.minStockLevel || ""} onChange={handleForm} placeholder="0" />
-                  <Input label="Max Stock Level" name="maxStockLevel" value={form.maxStockLevel || ""} onChange={handleForm} placeholder="0" />
-                  <Input label="Re-order Level" name="reorderLevel" value={form.reorderLevel || ""} onChange={handleForm} placeholder="0" />
+                  <Input
+                    label="Min Stock Level"
+                    name="minStockLevel"
+                    value={form.minStockLevel || ""}
+                    onChange={handleForm}
+                    placeholder="0"
+                  />
+                  <Input
+                    label="Max Stock Level"
+                    name="maxStockLevel"
+                    value={form.maxStockLevel || ""}
+                    onChange={handleForm}
+                    placeholder="0"
+                  />
+                  <Input
+                    label="Re-order Level"
+                    name="reorderLevel"
+                    value={form.reorderLevel || ""}
+                    onChange={handleForm}
+                    placeholder="0"
+                  />
                 </div>
               </>
             )}
-
           </div>
         </section>
 
         {/* ── Footer ───────────────────────────────────────────────────── */}
         <div className="flex justify-end gap-2 border-t border-theme px-5 py-3 bg-app shrink-0">
-          <Button variant="secondary" type="button" onClick={handleClose}>Cancel</Button>
-          <Button variant="danger" type="button" onClick={reset}>Reset</Button>
+          <Button variant="secondary" type="button" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button variant="danger" type="button" onClick={reset}>
+            Reset
+          </Button>
           <Button variant="primary" type="submit" loading={loading}>
-            {activeTab === "inventoryDetails" || (activeTab === "taxDetails" && isServiceItem)
+            {activeTab === "inventoryDetails" ||
+            (activeTab === "taxDetails" && isServiceItem)
               ? "Submit"
               : "Next →"}
           </Button>
