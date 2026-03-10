@@ -30,6 +30,13 @@ const itemTypeOptions = [
   { value: "3", label: "Service" },
 ];
 
+
+const inputClass =
+  "h-8 rounded-md border border-theme bg-card text-main text-sm px-2.5 w-full " +
+  "focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary";
+
+const labelClass =
+  "text-[11px] font-medium uppercase tracking-wide text-muted";
 /* 
    Component
  */
@@ -181,38 +188,56 @@ const ItemsCategoryModal: React.FC<{
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5">
 
-                <ModalSelect
-                  label="Item Type"
-                  name="itemType"
-                  value={form.itemType}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Select Type</option>
-                  {itemTypeOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </ModalSelect>
+          <label className="flex flex-col gap-0.5">
+  <span className={labelClass}>
+    Item Type <span className="text-danger">*</span>
+  </span>
 
-                <ModalInput
-                  label="Category Name"
-                  name="groupName"
-                  value={form.groupName}
-                  onChange={handleChange}
-                  required
-                />
+  <select
+    name="itemType"
+    value={form.itemType}
+    onChange={handleChange}
+    required
+    className={inputClass}
+  >
+    <option value="">Select Type</option>
+    {itemTypeOptions.map((opt) => (
+      <option key={opt.value} value={opt.value}>
+        {opt.label}
+      </option>
+    ))}
+  </select>
+</label>
 
-                <ModalInput
-                  label="Description"
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                />
+             <label className="flex flex-col gap-0.5">
+  <span className={labelClass}>
+    Category Name <span className="text-danger">*</span>
+  </span>
+
+  <input
+    type="text"
+    name="groupName"
+    value={form.groupName}
+    onChange={handleChange}
+    required
+    className={inputClass}
+  />
+</label>
+
+              <label className="flex flex-col gap-0.5">
+  <span className={labelClass}>Description</span>
+
+  <input
+    type="text"
+    name="description"
+    value={form.description}
+    onChange={handleChange}
+    className={inputClass}
+  />
+</label>
 
                 <ItemGenericSelect
-                  label="Unit of Measure"
+                  label="UOM"
                   value={form.unitOfMeasurement}
                   fetchData={getRolaUOMs}
                   variant="modal"
@@ -231,21 +256,29 @@ const ItemsCategoryModal: React.FC<{
           {activeTab === "pricing" && (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5">
 
-              <ModalInput
-                label="Selling Price"
-                name="sellingPrice"
-                type="number"
-                value={form.sellingPrice}
-                onChange={handleChange}
-                className="no-spinner"
-              />
+        <label className="flex flex-col gap-0.5">
+  <span className={labelClass}>Selling Price</span>
 
-              <ModalInput
-                label="Sales Account"
-                name="salesAccount"
-                value={form.salesAccount}
-                onChange={handleChange}
-              />
+  <input
+    type="number"
+    name="sellingPrice"
+    value={form.sellingPrice}
+    onChange={handleChange}
+    className={`${inputClass} no-spinner`}
+  />
+</label>
+
+            <label className="flex flex-col gap-0.5">
+  <span className={labelClass}>Sales Account</span>
+
+  <input
+    type="text"
+    name="salesAccount"
+    value={form.salesAccount}
+    onChange={handleChange}
+    className={inputClass}
+  />
+</label>
 
             </div>
           )}
