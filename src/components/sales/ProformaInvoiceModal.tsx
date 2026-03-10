@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import TermsAndCondition from "../TermsAndCondition";
-import { showApiError, showSuccess } from "../../utils/alert";
+import { showApiError, showSuccess ,showValidationError } from "../../utils/alert";
 import { User, Mail, Phone , Plus, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
@@ -67,12 +67,13 @@ const handleNext = () => {
     }
 
   } catch (err: any) {
-    showApiError(err.message);
+    showValidationError(err.message);
   }
 };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
 
     if (ui.activeTab !== "terms") {
       handleNext();
@@ -90,7 +91,7 @@ const handleNext = () => {
 if (mode === "edit") {
 
   if (!initialData?.proformaId) {
-    showApiError("Invalid invoice reference");
+    showValidationError("Invalid invoice reference");
     return;
   }
 
@@ -175,14 +176,23 @@ if (mode === "edit") {
             <Button variant="secondary" onClick={actions.handleReset}>
               Reset
             </Button>
-            <Button
-              variant="primary"
-              type={ui.activeTab === "terms" ? "submit" : "button"}
-              form={ui.activeTab === "terms" ? "proforma-form" : undefined}
-              onClick={ui.activeTab !== "terms" ? handleNext : undefined}
-            >
-              {ui.activeTab === "terms" ? "Submit" : "Next"}
-            </Button>
+  <Button
+  variant="primary"
+  type="button"
+  onClick={() => {
+    if (ui.activeTab === "terms") {
+      const form = document.getElementById("proforma-form");
+
+      if (form instanceof HTMLFormElement) {
+        form.requestSubmit();
+      }
+    } else {
+      handleNext();
+    }
+  }}
+>
+  {ui.activeTab === "terms" ? "Submit" : "Next"}
+</Button>
           </div>
         </>
       }
@@ -197,7 +207,16 @@ if (mode === "edit") {
               <button
                 key={tab}
                 type="button"
-                onClick={() => ui.setActiveTab(tab)}
+                onClick={() => {
+  if (tab !== "details") {
+    try {
+      actions.validateForm();
+    } catch {
+      return;
+    }
+  }
+  ui.setActiveTab(tab);
+}}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${ui.activeTab === tab
                   ? "text-primary border-b-[3px] border-primary"
                   : "text-muted border-b-[3px] border-transparent hover:text-main"

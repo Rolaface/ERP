@@ -8,7 +8,7 @@ import { AddressTab } from "./purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
 import { usePurchaseOrderForm } from "../../hooks/usePurchaseOrderForm";
 import type { POTab } from "../../types/Supply/purchaseOrder";
-import { showApiError } from "../../utils/alert";
+import { showApiError, showValidationError } from "../../utils/alert";
 
 interface PurchaseOrderModalProps {
   isOpen: boolean;
@@ -102,7 +102,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           const error = validateTab(activeTab);
 
           if (error) {
-            showApiError(error);
+            showValidationError(error);
             return;
           }
 

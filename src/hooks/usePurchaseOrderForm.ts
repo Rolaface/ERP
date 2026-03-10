@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { showApiError, showSuccess } from "../utils/alert";
+import { showApiError, showSuccess , showValidationError } from "../utils/alert";
 import type {
   PurchaseOrderFormData,
   POTab,
@@ -295,7 +295,7 @@ useEffect(() => {
 
   const removeItem = (idx: number) => {
     if (form.items.length === 1) {
-      showApiError({ message: "At least one item is required" });
+      showValidationError("At least one item is required");
       return;
     }
     setForm((p) => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
@@ -456,20 +456,16 @@ useEffect(() => {
     e?.preventDefault();
 
     if (!form.taxCategory) {
-      showApiError({
-        message: "Tax Category is required",
-      });
+      showValidationError("Tax Category is required");
       return;
     }
 
     const errors = validatePO(form);
 
-    if (errors.length) {
-      showApiError({
-        message: [...new Set(errors)].join("\n"),
-      });
-      return;
-    }
+   if (errors.length) {
+  showValidationError([...new Set(errors)].join("\n"));
+  return;
+}
 
     try {
       setSaving(true);

@@ -6,6 +6,7 @@ import {
   showSuccess,
   closeSwal,
   showLoading,
+  showValidationError
 } from "../../utils/alert";
 import { getCompanyById } from "../../api/companySetupApi";
 const companyId = import.meta.env.VITE_COMPANY_ID;
@@ -28,7 +29,7 @@ const defaultSellingTerms: TermSection = {
   warranty: "",
   liability: "",
   payment: {
-  
+
     dueDates: "",
     lateCharges: "",
     taxes: "",
@@ -66,9 +67,9 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   shippingState: "",
   shippingCountry: "",
 
-terms: {
-  selling: defaultSellingTerms,
-},
+  terms: {
+    selling: defaultSellingTerms,
+  },
   sameAsBilling: false,
 };
 
@@ -109,7 +110,7 @@ const CustomerModal: React.FC<{
   );
   const [allowSubmit, setAllowSubmit] = useState(false);
   const [companySellingTerms, setCompanySellingTerms] = useState<TermSection | null>(null);
-  
+
 
   useEffect(() => {
     if (!isOpen || !companyId || isEditMode) return;
@@ -120,17 +121,17 @@ const CustomerModal: React.FC<{
 
         const sellingTerms = res?.data?.terms?.selling;
 
-if (!sellingTerms) return;
+        if (!sellingTerms) return;
 
-setCompanySellingTerms(sellingTerms);
+        setCompanySellingTerms(sellingTerms);
 
-setForm((prev) => ({
-  ...prev,
-  terms: {
-    ...prev.terms,
-    selling: sellingTerms,
-  },
-}));
+        setForm((prev) => ({
+          ...prev,
+          terms: {
+            ...prev.terms,
+            selling: sellingTerms,
+          },
+        }));
       } catch (err) {
         console.error("Failed to load company terms", err);
       }
@@ -166,15 +167,15 @@ setForm((prev) => ({
 
       const mobile = splitMobile(initialData.mobile);
 
-     setForm({
-  ...initialData,
-  terms: initialData.terms ?? {
-    selling: companySellingTerms ?? defaultSellingTerms,
-  },
-  mobileCode: mobile.code,
-  mobile: mobile.number,
-  sameAsBilling: false,
-});
+      setForm({
+        ...initialData,
+        terms: initialData.terms ?? {
+          selling: companySellingTerms ?? defaultSellingTerms,
+        },
+        mobileCode: mobile.code,
+        mobile: mobile.number,
+        sameAsBilling: false,
+      });
     } else {
       setForm(emptyForm);
     }
@@ -242,6 +243,10 @@ setForm((prev) => ({
       newErrors.contactPerson = "Contact person is required";
     }
 
+    // Validate TPIN
+    if (!form.tpin || form.tpin.trim() === "") {
+      newErrors.tpin = "TPIN is required";
+    }
 
     if (!form.mobileCode || !form.mobile) {
       newErrors.mobile = "Mobile number is required";
@@ -307,59 +312,61 @@ setForm((prev) => ({
   };
 
   const handleNext = () => {
-  if (activeTab === "details") {
-    const isValid = validateDetailsTab();
+    if (activeTab === "details") {
+      const isValid = validateDetailsTab();
 
-    if (!isValid) {
-      const emptyFields = [];
+      if (!isValid) {
+        const emptyFields = [];
 
-      if (!form.type) emptyFields.push("Type");
-      if (!form.name) emptyFields.push("Customer Name");
-      if (!form.contactPerson) emptyFields.push("Contact Person");
-      if (!form.mobileCode || !form.mobile) emptyFields.push("Mobile Number");
-      if (!form.customerTaxCategory) emptyFields.push("Tax Category");
-      if (!form.currency) emptyFields.push("Currency");
-      if (!form.email) emptyFields.push("Email");
+        if (!form.type) emptyFields.push("Customer Type");
+        if (!form.name) emptyFields.push("Customer Name");
+        if (!form.contactPerson) emptyFields.push("Contact Person");
+        if (!form.tpin) emptyFields.push("TPIN");
+        if (!form.mobileCode || !form.mobile) emptyFields.push("Mobile Number");
+        if (!form.customerTaxCategory) emptyFields.push("Tax Category");
+        if (!form.currency) emptyFields.push("Currency");
+        if (!form.email) emptyFields.push("Email");
 
-      const message =
-        emptyFields.length > 0
-          ? `Please fill in required fields: ${emptyFields.join(", ")}`
-          : "Please fix validation errors in Details tab";
 
-      showApiError({ message });
-      return;
+        const message =
+          emptyFields.length > 0
+            ? `Please fill in required fields: ${emptyFields.join(", ")}`
+            : "Please fix validation errors in Details tab";
+
+        showValidationError(message);
+        return;
+      }
     }
-  }
 
-  if (activeTab === "address") {
-    const isValid = validateAddressTab();
+    if (activeTab === "address") {
+      const isValid = validateAddressTab();
 
-    if (!isValid) {
-      const emptyFields = [];
+      if (!isValid) {
+        const emptyFields = [];
 
-      if (!form.billingAddressLine1) emptyFields.push("Address Line 1");
-      if (!form.billingCity) emptyFields.push("City");
-      if (!form.billingState) emptyFields.push("State");
-      if (!form.billingCountry) emptyFields.push("Country");
-      if (!form.billingPostalCode) emptyFields.push("Postal Code");
+        if (!form.billingAddressLine1) emptyFields.push("Address Line 1");
+        if (!form.billingCity) emptyFields.push("City");
+        if (!form.billingState) emptyFields.push("State");
+        if (!form.billingCountry) emptyFields.push("Country");
+        if (!form.billingPostalCode) emptyFields.push("Postal Code");
 
-      const message =
-        emptyFields.length > 0
-          ? `Please fill in required fields: ${emptyFields.join(", ")}`
-          : "Please fix validation errors in Address tab";
+        const message =
+          emptyFields.length > 0
+            ? `Please fill in required fields: ${emptyFields.join(", ")}`
+            : "Please fix validation errors in Address tab";
 
-      showApiError({ message });
-      return;
+        showValidationError(message);
+        return;
+      }
     }
-  }
 
-  const currentIndex = tabs.indexOf(activeTab);
+    const currentIndex = tabs.indexOf(activeTab);
 
-  if (currentIndex < tabs.length - 1) {
-    setActiveTab(tabs[currentIndex + 1]);
-    setAllowSubmit(false);
-  }
-};
+    if (currentIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentIndex + 1]);
+      setAllowSubmit(false);
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -470,31 +477,9 @@ setForm((prev) => ({
     }
   };
 
-const handleClose = () => {
-  if (loading) return;
+  const handleClose = () => {
+    if (loading) return;
 
-  setForm({
-    ...emptyForm,
-    terms: {
-      selling: companySellingTerms ?? defaultSellingTerms,
-    },
-    sameAsBilling: false,
-  });
-
-  setErrors({});
-  setActiveTab("details");
-  onClose();
-};
-const reset = () => {
- if (initialData) {
-  setForm({
-    ...initialData,
-    terms: initialData.terms ?? {
-      selling: companySellingTerms ?? defaultSellingTerms,
-    },
-    sameAsBilling: false,
-  });
-}else {
     setForm({
       ...emptyForm,
       terms: {
@@ -502,11 +487,33 @@ const reset = () => {
       },
       sameAsBilling: false,
     });
-  }
 
-  setErrors({});
-  setActiveTab("details");
-};
+    setErrors({});
+    setActiveTab("details");
+    onClose();
+  };
+  const reset = () => {
+    if (initialData) {
+      setForm({
+        ...initialData,
+        terms: initialData.terms ?? {
+          selling: companySellingTerms ?? defaultSellingTerms,
+        },
+        sameAsBilling: false,
+      });
+    } else {
+      setForm({
+        ...emptyForm,
+        terms: {
+          selling: companySellingTerms ?? defaultSellingTerms,
+        },
+        sameAsBilling: false,
+      });
+    }
+
+    setErrors({});
+    setActiveTab("details");
+  };
   // Footer content
   const footer = (
     <>
@@ -605,6 +612,8 @@ const reset = () => {
                   name="type"
                   value={form.type || ""}
                   onChange={handleChange}
+                  required
+                  error={errors.type}
                   placeholder="Select Customer Type"
                 >
                   <option value="Individual">Individual</option>
@@ -655,6 +664,7 @@ const reset = () => {
                   value={form.tpin}
                   onChange={handleChange}
                   required
+                  error={errors.tpin}
                   placeholder="Tax identification"
                 />
 
