@@ -155,14 +155,14 @@ export const DetailsTab = ({
                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
                     UOM
                   </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
-                    Rate
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
+                    Rate <span className="text-danger">*</span>
                   </th>
                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
                     Tax(%)
                   </th>
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px]">
-                    Tax Code
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px] whitespace-nowrap">
+                    Tax Code <span className="text-danger">*</span>
                   </th>
                   <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">
                     Amount

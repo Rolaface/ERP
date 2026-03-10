@@ -234,7 +234,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   </div>
 
                   {ui.isExport && (
-                    <div className="mt-2">
+                    <div >
                       <ModalInput
                         label="Export To Country"
                         name="destnCountryCd"
@@ -295,7 +295,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                             Qty
                           </th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
-                            Unit Price
+                            Unit Price <span className="text-danger">*</span>
                           </th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
                             Dis(%)
