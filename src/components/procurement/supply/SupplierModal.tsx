@@ -66,20 +66,28 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
         <Button variant="secondary" onClick={reset} type="button">
           Reset
         </Button>
-        {!isEditMode && activeTab !== "terms" ? (
-          <Button variant="primary" onClick={handleNext} type="button">
-            Next →
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            loading={loading}
-            type="submit"
-            form="supplierForm"
-          >
-            {isEditMode ? "Update Supplier" : "Save Supplier"}
-          </Button>
-        )}
+       {activeTab !== "terms" ? (
+  <Button
+  variant="primary"
+  type="button"
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleNext();
+  }}
+>
+  Next →
+</Button>
+) : (
+  <Button
+    variant="primary"
+    loading={loading}
+    type="submit"
+    form="supplierForm"
+  >
+    {isEditMode ? "Update Supplier" : "Save Supplier"}
+  </Button>
+)}
       </div>
     </>
   );

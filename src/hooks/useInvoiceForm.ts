@@ -10,6 +10,7 @@ import {
   showApiError,
   showLoading,
   closeSwal,
+  showValidationError,
 } from "../utils/alert";
 import {
   DEFAULT_INVOICE_FORM,
@@ -473,7 +474,7 @@ export const useInvoiceForm = (
   const handleItemSelect = async (index: number, itemId: string) => {
     const currentItem = formData.items[index];
     if (enableExchange && exchangeRateLoading) {
-      showApiError("Please wait for exchange rate to load...");
+      showValidationError("Please wait for exchange rate to load...");
       return;
     }
     // Invoice-loaded item → do NOT auto override
@@ -580,7 +581,7 @@ export const useInvoiceForm = (
 
         if (prevEnd > 0 && start !== expected) {
           if (start > expected) {
-            showApiError(`Row ${idx + 1}: Box must start from ${expected}`);
+            showValidationError(`Row ${idx + 1}: Box must start from ${expected}`);
             return prev;
           }
         }
@@ -772,7 +773,7 @@ export const useInvoiceForm = (
 
       return payload;
     } catch (error: any) {
-      showApiError(error?.message || "Validation error");
+      showValidationError(error?.message || "Validation error");
       return null;
     }
   };
