@@ -16,6 +16,7 @@ import {
   showLoading,
   showSuccess,
   closeSwal,
+  showValidationError
 } from "../utils/alert";
 
 const getDefaultBank = (accounts: any[] = []) =>
@@ -473,122 +474,135 @@ const { subTotal, totalTax, grandTotal } = useMemo(() => {
     grandTotal: sub + tax,
   };
 }, [formData.items]);
-  const validateDetails = (): string | null => {
-  if (!formData.customerId) return "Please select a customer";
-  if (!formData.dateOfInvoice) return "Please select quotation date";
-  if (!formData.dueDate) return "Please select valid until date";
-  if (formData.dueDate < formData.dateOfInvoice) return "Valid until date cannot be before quotation date";
-  if (formData.items.length === 0 || !formData.items[0].itemCode) return "Please add at least one item";
+const validateDetails = (): boolean => {
+  if (!formData.customerId) {
+    showValidationError("Please select a customer");
+    document.querySelector('[name="customerId"]')?.focus();
+    return false;
+  }
+
+  if (!formData.dateOfInvoice) {
+    showValidationError("Please select quotation date");
+  
+    return false;
+  }
+
+  if (!formData.dueDate) {
+    showValidationError("Please select valid until date");
+    return false;
+  }
+
+  if (formData.dueDate < formData.dateOfInvoice) {
+    showValidationError("Valid until date cannot be before quotation date");
+  
+    return false;
+  }
+
+  if (!formData.paymentInformation?.paymentTerms) {
+    showValidationError("Please select payment terms");
+    
+    return false;
+  }
+
+  if (formData.items.length === 0 || !formData.items[0].itemCode) {
+    showValidationError("Please add at least one item");
+    return false;
+  }
 
   for (let i = 0; i < formData.items.length; i++) {
     const item = formData.items[i];
-    if (!item.itemCode) return `Row ${i + 1}: Item is required`;
-    if (!item.quantity || Number(item.quantity) <= 0) return `Row ${i + 1}: Quantity is required`;
-    if (!item.price || Number(item.price) <= 0) return `Row ${i + 1}: Unit Price is required`;
+
+    if (!item.itemCode) {
+      showValidationError(`Row ${i + 1}: Item is required`);
+      return false;
+    }
+
+    if (!item.quantity || Number(item.quantity) <= 0) {
+      showValidationError(`Row ${i + 1}: Quantity is required`);
+      return false;
+    }
+
+    if (!item.price || Number(item.price) <= 0) {
+      showValidationError(`Row ${i + 1}: Unit Price is required`);
+      return false;
+    }
   }
 
-  return null;
+  if (formData.invoiceType === "Export" && !formData.destnCountryCd) {
+    showValidationError("Please enter Export To Country");
+  
+    return false;
+  }
+
+  return true;
 };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    try {
-      //  VALIDATION
-      if (!formData.customerId) {
-        throw new Error("Please select a customer");
-      }
+  const isValid = validateDetails();
+  if (!isValid) return;
 
-      if (!formData.dateOfInvoice) {
-        throw new Error("Please select quotation date");
-      }
+  try {
+    showLoading("Saving quotation...");
 
-      if (!formData.dueDate) {
-        throw new Error("Please select valid until date");
-      }
+    const payload = {
+      customerId: formData.customerId,
+      currencyCode: formData.currencyCode,
+      dateOfQuotation: formData.dateOfInvoice,
+      validUntil: formData.dueDate,
+      invoiceType: formData.invoiceType,
+      invoiceStatus: formData.invoiceStatus,
 
-      if (formData.dueDate < formData.dateOfInvoice) {
-        throw new Error("Valid until date cannot be before quotation date");
-      }
+      ...(formData.invoiceType === "Export" && {
+        destnCountryCd: formData.destnCountryCd,
+      }),
 
-      if (!formData.paymentInformation?.paymentTerms) {
-        throw new Error("Please select payment terms");
-      }
+      ...(formData.invoiceType === "Lpo" && {
+        lpoNumber: formData.lpoNumber,
+      }),
 
-      if (formData.items.length === 0 || !formData.items[0].itemCode) {
-        throw new Error("Please add at least one item");
-      }
+      billingAddress: formData.billingAddress,
+      shippingAddress: formData.shippingAddress,
+      paymentInformation: formData.paymentInformation,
 
-      if (formData.invoiceType === "Export" && !formData.destnCountryCd) {
-  throw new Error("Please enter Export To Country");
-}
+      items: formData.items
+        .filter((item) => item.itemCode)
+        .map((item) => ({
+          itemCode: item.itemCode,
+          quantity: item.quantity,
+          description: item.description,
+          discount: item.discount,
+          vatRate: item.vatRate.toString(),
+          price: item.price,
+          vatCode: item.vatCode,
+          batchNo: item.batchNo,
+          packingUnit: item.packingUnit,
+          packingSize: item.packingSize,
+        })),
 
-      //  LOADING
-      showLoading("Saving quotation...");
+      terms: formData.terms,
+      subTotal,
+      totalTax,
+      grandTotal,
+      documentType: "quotation",
+    };
 
-      //  PAYLOAD
-      const payload = {
-        customerId: formData.customerId,
-        currencyCode: formData.currencyCode,
-        dateOfQuotation: formData.dateOfInvoice,
-        validUntil: formData.dueDate,
-        invoiceType: formData.invoiceType,
-        invoiceStatus: formData.invoiceStatus,
-
-        ...(formData.invoiceType === "Export" && {
-          destnCountryCd: formData.destnCountryCd,
-        }),
-        ...(formData.invoiceType === "Lpo" && {
-          lpoNumber: formData.lpoNumber,
-        }),
-
-        billingAddress: formData.billingAddress,
-        shippingAddress: formData.shippingAddress,
-        paymentInformation: formData.paymentInformation,
-
-        items: formData.items
-          .filter((item) => item.itemCode) // Only include items with itemCode
-          .map((item) => ({
-            itemCode: item.itemCode,
-            quantity: item.quantity,
-            description: item.description,
-            discount: item.discount,
-            vatRate: item.vatRate.toString(),
-            price: item.price,
-            vatCode: item.vatCode,
-            batchNo: item.batchNo,
-            packingUnit: item.packingUnit,
-            packingSize: item.packingSize,
-          })),
-
-        terms: formData.terms,
-        subTotal,
-        totalTax,
-        grandTotal,
-        documentType: "quotation",
-      };
-
-      //  API CALL
-      if (onSubmit) {
-        await onSubmit(payload);
-      } else {
-        throw new Error(
-          "No onSubmit handler provided. Please check QuotationModal usage.",
-        );
-      }
-
-      //  SUCCESS
-      closeSwal();
-
-      showSuccess("Quotation saved successfully");
-
-      onClose?.();
-    } catch (error: any) {
-      closeSwal();
-      showApiError(error);
+    if (!onSubmit) {
+      throw new Error("No onSubmit handler provided");
     }
-  };
 
+    await onSubmit(payload);
+
+    closeSwal();
+    showSuccess("Quotation saved successfully");
+
+    onClose?.();
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
   const paginatedItems = formData.items.slice(
     page * ITEMS_PER_PAGE,
     (page + 1) * ITEMS_PER_PAGE,

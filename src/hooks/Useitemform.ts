@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
-import { showApiError, showLoading, closeSwal } from "../utils/alert";
+
+import { showApiError, showLoading, closeSwal, showValidationError } from "../utils/alert";
 import { updateItemByItemCode, createItem } from "../api/itemApi";
 import { getItemGroupById } from "../api/itemCategoryApi";
 import { useCompanySelection } from "../hooks/useCompanySelection";
@@ -433,47 +433,39 @@ export const useItemForm = ({
 
   // ── Validation ─────────────────────────────────────────────────────────────
 
-  const validateItemDetails = (): boolean => {
-    if (!form.itemClassCode?.trim()) {
-      toast.error("HSN / Item Class Code is required.");
+const validateItemDetails = (): boolean => {
+
+  const requiredFields = [
+    { field: "itemTypeCode", label: "Item Type" },
+    { field: "itemGroup", label: "Item Category" },
+    { field: "itemName", label: "Item Name" },
+    { field: "description", label: "Description" },
+    { field: "itemClassCode", label: "HSN Code" },
+    { field: "originNationCode", label: "Country of Origin" },
+    { field: "unitOfMeasureCd", label: "Unit of Measurement" },
+  ];
+
+  for (const { field, label } of requiredFields) {
+    const val = form[field];
+    const empty = !val || String(val).trim() === "";
+
+    if (empty) {
+      showValidationError(`${label} is required.`);
       return false;
     }
+  }
 
-    const requiredFields: Array<{
-      field: string;
-      label: string;
-      isNumeric?: boolean;
-    }> = [
-      { field: "itemTypeCode", label: "Item Type" },
-      { field: "itemGroup", label: "Item Category" },
-      { field: "itemName", label: "Item Name" },
-      { field: "description", label: "Description" },
-      { field: "originNationCode", label: "Country of Origin" },
-      { field: "unitOfMeasureCd", label: "Unit of Measurement" },
-    ];
+  return true;
+};
 
-    for (const { field, label, isNumeric } of requiredFields) {
-      const val = form[field];
-      const empty = isNumeric
-        ? val === "" || val === null || val === undefined
-        : !val || String(val).trim() === "";
+const validateTaxDetails = (): boolean => {
+  if (!form.taxCategory?.trim()) {
+    showValidationError("Please select a Tax Category.");
+    return false;
+  }
 
-      if (empty) {
-        toast.error(`${label} is required.`);
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  const validateTaxDetails = (): boolean => {
-    if (!form.taxCategory?.trim()) {
-      toast.error("Please select a Tax Category.");
-      return false;
-    }
-    return true;
-  };
+  return true;
+};
 
   // ── Event handlers ─────────────────────────────────────────────────────────
 

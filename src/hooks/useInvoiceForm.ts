@@ -259,21 +259,22 @@ export const useInvoiceForm = (
       throw new Error("Please select payment terms");
     }
 
-    formData.items.forEach((it, idx) => {
-      if (!it.itemCode) {
-        throw new Error(`Item ${idx + 1}: Please select item`);
-      }
+ formData.items.forEach((it, idx) => {
+  if (!it.itemCode) {
+    setPage(Math.floor(idx / ITEMS_PER_PAGE));
+    throw new Error(`Item ${idx + 1}: Please select item`);
+  }
 
+  if (!it.quantity || it.quantity <= 0) {
+    setPage(Math.floor(idx / ITEMS_PER_PAGE));
+    throw new Error(`Item ${idx + 1}: Quantity must be greater than 0`);
+  }
 
-
-      if (!it.quantity || it.quantity <= 0) {
-        throw new Error(`Item ${idx + 1}: Quantity must be greater than 0`);
-      }
-
-      if (!it.price || it.price <= 0) {
-        throw new Error(`Item ${idx + 1}: Price must be greater than 0`);
-      }
-    });
+  if (!it.price || it.price <= 0) {
+    setPage(Math.floor(idx / ITEMS_PER_PAGE));
+    throw new Error(`Item ${idx + 1}: Price must be greater than 0`);
+  }
+});
 
     if (invoiceType === "lpo") {
       const lpoNumber = String(formData.lpoNumber ?? "").trim();

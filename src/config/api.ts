@@ -261,6 +261,8 @@ export const API = {
     create: `${ERP_BASE}/api/method/erpnext.supplier.api.create_supplier`,
     update: `${ERP_BASE}/api/method/erpnext.supplier.api.update_supplier`,
     delete: `${ERP_BASE}/api/method/erpnext.supplier.api.delete_supplier`,
+    getStatement: `${ERP_BASE}/api/method/erpnext.supplier.statement.api.get_supplier_statement`,
+
   },
 
   places: {

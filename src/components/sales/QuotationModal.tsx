@@ -59,25 +59,28 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
 
   const symbol = currencySymbols[formData.currencyCode] || "";
 
- const handleFormSubmit = async (e: React.FormEvent) => {
+const handleFormSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   if (ui.activeTab === "details") {
-    const error = actions.validateDetails();
-    if (error) {
-      showApiError(error);
-      return;
+    const isValid = actions.validateDetails();
+
+    if (!isValid) {
+      return; 
     }
+
     handleNext();
     return;
   }
 
-  if (ui.activeTab !== "terms") {
+  if (ui.activeTab === "address") {
     handleNext();
     return;
   }
 
-  await actions.handleSubmit(e);
+  if (ui.activeTab === "terms") {
+    await actions.handleSubmit(e);
+  }
 };
 
 
