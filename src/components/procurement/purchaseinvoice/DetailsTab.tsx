@@ -177,6 +177,7 @@ export const DetailsTab = ({
               name="transactionProgress"
               value={form.transactionProgress}
               onChange={onFormChange}
+              required
               options={[
                 { value: "APPROVED", label: "Approved" },
                 { value: "REFUNDED", label: "Refunded" },
@@ -193,6 +194,7 @@ export const DetailsTab = ({
               label="Payment Type"
               name="paymentType"
               value={form.paymentType}
+              required
               onChange={onFormChange}
               options={[
                 { value: "CASH", label: "CASH" },
@@ -251,8 +253,8 @@ export const DetailsTab = ({
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
                   Expiry Date
                 </th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
-                  Unit Price
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
+                  Unit Price <span className="text-danger">*</span>
                 </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
                   Dis (%)
@@ -260,8 +262,8 @@ export const DetailsTab = ({
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
                   Tax
                 </th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px]">
-                  Tax Code
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px] whitespace-nowrap">
+                  Tax Code  <span className="text-danger">*</span>
                 </th>
                 <th className="px-2 py-1  text-muted font-medium text-[11px] w-[80px] text-right">
                   Amount

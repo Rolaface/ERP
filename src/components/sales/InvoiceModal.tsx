@@ -169,7 +169,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto px-3 py-1 ">
+        <div className="flex-1 overflow-y-auto px-5 py-3 ">
           {/* DETAILS */}
           {ui.activeTab === "details" && (
             <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
@@ -343,7 +343,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                             Expiry Date
                           </th>
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">
-                            Unit Price
+                            Unit Price <span className="text-danger">*</span>
                           </th>
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
                             Dis(%)

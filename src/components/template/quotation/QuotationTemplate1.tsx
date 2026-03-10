@@ -327,7 +327,7 @@ export const generateQuotationPDF = async (
 
   doc.setFontSize(8); doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "bold");
-  doc.text("Gross Total",  LABEL_X, SEC_Y + ROW_H * 0.7, { align: "right" });
+  doc.text("Sub Total",  LABEL_X, SEC_Y + ROW_H * 0.7, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.text("Discount",     LABEL_X, SEC_Y + ROW_H * 1.7, { align: "right" });
   doc.setFont("helvetica", "bold");

@@ -96,3 +96,20 @@ export const showLoading = (title = "Processing...") => {
 export const closeSwal = () => {
   Swal.close();
 };
+
+
+export const showConfirm = async (message: string) => {
+  const result = await Swal.fire({
+    icon: "warning",
+    title: "Are you sure?",
+    text: message,
+    showCancelButton: true,
+    confirmButtonText: "Yes",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    reverseButtons: true,
+  });
+
+  return result.isConfirmed;
+};

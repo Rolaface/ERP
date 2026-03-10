@@ -272,9 +272,7 @@ useEffect(() => {
 
       const data = res.data;
 
-      const taxRate = Number(
-        (data.tax?.taxRate || "0").replace("%", "")
-      );
+     const taxRate = Number(data.tax?.taxRate || 0);
 
       // Reset custom fields
       setCustomIncoterm("");

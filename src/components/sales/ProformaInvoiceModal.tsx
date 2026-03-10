@@ -379,7 +379,7 @@ ${ui.isExport
                             <span className="ml-1 text-[9px] text-muted/60 font-normal">(unit × size)</span>
                           </th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">Quantity</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[55px]  whitespace-nowrap">Unit Price</th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[55px]  whitespace-nowrap">Unit Price <span className="text-danger">*</span></th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">Dis(%)</th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">Tax(%)</th>
                           <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[45px]  whitespace-nowrap">Tax Code</th>
