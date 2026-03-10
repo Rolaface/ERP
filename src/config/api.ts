@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-export const ERP_BASE =ENV.apiBaseUrl;
+export const ERP_BASE ="";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -79,6 +79,7 @@ export const API = {
     update: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.update_customer_by_id`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.delete_customer_by_id`,
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
+    receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
   },
 
   /* =========================

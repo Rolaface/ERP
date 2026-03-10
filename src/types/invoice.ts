@@ -31,6 +31,7 @@ export interface Invoice {
 
 export interface InvoiceSummary {
   invoiceNumber: string;
+  customerId: string;
   customerName: string;
   receiptNumber: string;
   currency: string;

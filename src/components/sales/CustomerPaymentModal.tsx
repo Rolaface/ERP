@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CreditCard } from "lucide-react";
 import Modal from "../ui/modal/modal";
-
+import { receiveCustomerPayment } from "../../api/CustomerPayment";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,6 +10,7 @@ interface PaymentModalProps {
   customerName?: string;
   totalAmount?: number;
   amountPaid?: number;
+  currency?: string;   
   onSubmit?: (data: any) => void;
 }
 
@@ -20,11 +21,12 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
   invoiceNumber = "",
   customerName = "",
   totalAmount = 0,
+   currency = "",  
   amountPaid = 0,
   onSubmit,
 }) => {
 
-  const amountDue = totalAmount - amountPaid;
+ const amountDue = Math.max(totalAmount - amountPaid, 0);
 
   const [form, setForm] = useState({
     amount: amountDue,
@@ -35,7 +37,8 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
     paymentDate: new Date().toISOString().split("T")[0],
   });
 
-  const balanceAfterPayment = amountDue - Number(form.amount || 0);
+  const paymentAmount = Number(form.amount || 0);
+  const balanceAfterPayment = Math.max(amountDue - paymentAmount, 0);
 
   const isCash = form.paymentMode === "Cash";
 
@@ -53,8 +56,39 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
       paymentDate: new Date().toISOString().split("T")[0],
     });
 
-  const handleSubmit = () =>
-    onSubmit?.({ ...form, invoiceNumber, customerName, customerId });
+    useEffect(() => {
+  if (isOpen) {
+    setForm({
+      amount: amountDue,
+      paymentMode: "Cash",
+      referenceNumber: "",
+      depositInto: "",
+      cashAccount: "Cash In Hand",
+      paymentDate: new Date().toISOString().split("T")[0],
+    });
+  }
+}, [isOpen, amountDue]);
+
+  const handleSubmit = async () => {
+    if (!customerId || !invoiceNumber) return;
+
+    try {
+  await receiveCustomerPayment({
+  customer_id: customerId,
+  invoice_number: invoiceNumber,
+  payment_date: form.paymentDate,
+  payment_mode: form.paymentMode,
+  amount: paymentAmount,
+  reference_number:
+    form.paymentMode !== "Cash" ? form.referenceNumber : "",
+});
+
+      onClose();
+
+    } catch (error) {
+      console.error("Receive payment failed:", error);
+    }
+  };
 
   const footer = (
     <>
@@ -91,6 +125,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
 
         <button
           onClick={handleSubmit}
+          disabled={!paymentAmount || paymentAmount > amountDue}
           className="bg-primary"
           style={{
             padding: "8px 24px",
@@ -218,26 +253,26 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
             )}
 
           </div>
-{!isCash && (
-  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-    <div>
-      <label className="form-label" style={{ marginBottom: 5 }}>
-        Deposit Into *
-      </label>
+          {!isCash && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div>
+                <label className="form-label" style={{ marginBottom: 5 }}>
+                  Deposit Into *
+                </label>
 
-      <select
-        name="depositInto"
-        value={form.depositInto}
-        onChange={handleChange}
-        className="form-input w-full"
-      >
-        <option value="">Select account</option>
-        <option>Bank</option>
-      </select>
-    </div>
-  </div>
-)}
-          
+                <select
+                  name="depositInto"
+                  value={form.depositInto}
+                  onChange={handleChange}
+                  className="form-input w-full"
+                >
+                  <option value="">Select account</option>
+                  <option>Bank</option>
+                </select>
+              </div>
+            </div>
+          )}
+
 
         </div>
 
@@ -284,13 +319,13 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
           {/* Due */}
           <p className="text-muted" style={{ fontSize: 11 }}>Due Amount</p>
           <p className="text-main" style={{ fontWeight: 700, marginBottom: 14 }}>
-            ₹{amountDue.toLocaleString("en-IN")}
+            {currency} {amountDue.toLocaleString("en-IN")}
           </p>
 
           {/* Pay */}
           <p className="text-muted" style={{ fontSize: 11 }}>Pay Amount</p>
           <p className="text-main" style={{ fontWeight: 700, marginBottom: 14 }}>
-            ₹{Number(form.amount || 0).toLocaleString("en-IN")}
+            {currency} {paymentAmount.toLocaleString("en-IN")}
           </p>
 
           <div className="border-t border-theme" style={{ marginBottom: 14 }} />
@@ -322,7 +357,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
                 margin: 0,
               }}
             >
-              ₹{balanceAfterPayment.toLocaleString("en-IN")}
+              {currency} {balanceAfterPayment.toLocaleString("en-IN")}
             </p>
 
           </div>
