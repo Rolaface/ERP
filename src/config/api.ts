@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-export const ERP_BASE = "";
+export const ERP_BASE =ENV.apiBaseUrl;
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -261,6 +261,8 @@ export const API = {
     create: `${ERP_BASE}/api/method/erpnext.supplier.api.create_supplier`,
     update: `${ERP_BASE}/api/method/erpnext.supplier.api.update_supplier`,
     delete: `${ERP_BASE}/api/method/erpnext.supplier.api.delete_supplier`,
+    getStatement: `${ERP_BASE}/api/method/erpnext.supplier.statement.api.get_supplier_statement`,
+
   },
 
   places: {
