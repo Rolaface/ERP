@@ -4,7 +4,7 @@ import {
   createItemGroup,
 } from "../../api/itemCategoryApi";
 import { getRolaUOMs } from "../../api/itemZraApi";
-import { showApiError } from "../../utils/alert";
+import { showApiError, showValidationError } from "../../utils/alert";
 import ItemGenericSelect from "../selects/ItemGenericSelect";
 import Modal from "../ui/modal/modal";
 import { Button } from "../ui/modal/formComponent";
@@ -89,10 +89,29 @@ const ItemsCategoryModal: React.FC<{
   /* 
      Submit
   ──────────────────────────────── */
+const validateForm = () => {
+  if (!form.itemType) {
+    setActiveTab("details");
+    showValidationError("Item Type is required.");
+    return false;
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  if (!form.groupName?.trim()) {
+    setActiveTab("details");
+    showValidationError("Category Name is required.");
+    return false;
+  }
+
+  return true;
+};
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+   if (loading) return; 
+  if (!validateForm()) return;
+
+  setLoading(true);
 
     try {
       const payload: any = { ...form };
@@ -133,10 +152,12 @@ const ItemsCategoryModal: React.FC<{
     }
   };
 
-  const handleClose = () => {
-    setForm(emptyForm);
-    onClose();
-  };
+const handleClose = () => {
+  setForm(emptyForm);
+  setActiveTab("details");
+  setLoading(false);
+  onClose();
+};
 
   if (!isOpen) return null;
 
@@ -153,7 +174,7 @@ const ItemsCategoryModal: React.FC<{
       customWidth="55vw"
       height="45vh"
     >
-      <form onSubmit={handleSubmit} className="h-full flex flex-col">
+      <form onSubmit={handleSubmit} noValidate className="h-full flex flex-col">
 
         {/* ───── Tabs ───── */}
         <div className="border-b border-theme px-6 bg-app shrink-0">

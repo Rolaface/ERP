@@ -185,7 +185,7 @@ const SupplierDetailView: React.FC<Props> = ({
       </div>
 
       {/* List — flex-1 fills remaining sidebar height, scrolls when overflow */}
-      <div className="flex-1 overflow-y-auto min-h-0 px-2 py-1.5 custom-scrollbar">
+      <div className="overflow-y-auto px-2 py-1.5 custom-scrollbar h-[420px]">
         {filteredSuppliers.length === 0 && (
           <p className="text-[10px] text-muted text-center py-6">No suppliers found</p>
         )}

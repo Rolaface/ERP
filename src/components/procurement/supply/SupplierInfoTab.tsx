@@ -49,6 +49,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               value={form.tpin}
               onChange={onChange}
               placeholder="Enter TPIN"
+              error={errors.tpin}
               required
             />
             <ModalInput

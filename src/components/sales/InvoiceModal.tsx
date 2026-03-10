@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
-import { showApiError } from "../../utils/alert";
+import { showApiError,showValidationError } from "../../utils/alert";
 import { User, Mail, Phone } from "lucide-react";
 import CustomerSelect from "../selects/CustomerSelect";
 import Modal from "../../components/ui/modal/modal";
@@ -58,7 +58,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     "address",
     "terms",
   ];
-  // Removed allowSubmit effect, no longer needed.
+
   const handleNext = () => {
   try {
     actions.validateForm();
@@ -70,7 +70,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     }
 
   } catch (err: any) {
-    showApiError(err.message);
+    showValidationError(err.message);
   }
 };
 
@@ -107,7 +107,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               const dummyEvent = { preventDefault: () => { } } as React.FormEvent;
               const payload = await actions.handleSubmit(dummyEvent);
               if (!payload) {
-                showApiError("Please fill all required fields correctly.");
+                showValidationError("Please fill all required fields correctly.");
                 setSubmitting(false);
                 return;
               }

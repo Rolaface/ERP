@@ -5,7 +5,7 @@ import { createSupplier, updateSupplier } from "../api/procurement/supplierApi";
 import { mapSupplierToApi } from "../types/Supply/supplierMapper";
 import { Supplier } from "../types/Supply/supplier";
 import { mapSupplierToForm } from "../types/Supply/supplierMapper";
-import { showApiError, showSuccess } from "../utils/alert";
+import { showApiError, showSuccess , showValidationError } from "../utils/alert";
 import { generateSupplierCode } from "../types/Supply/generateSupplierCode";
 import { getCompanyById } from "../api/companySetupApi";
 const companyId = import.meta.env.VITE_COMPANY_ID;
@@ -107,6 +107,10 @@ setForm(prev => ({
     const newErrors: SupplierErrors = {};
 
 
+    if (!form.tpin || form.tpin.trim() === "") {
+  newErrors.tpin = "TPIN is required";
+}
+
     if (!form.supplierName || form.supplierName.trim() === "") {
       newErrors.supplierName = "Supplier Name is required";
     }
@@ -149,7 +153,7 @@ setForm(prev => ({
       newErrors.dateOfAddition = "Date of Addition is required";
     }
 
-    if (!form.openingBalance && form.openingBalance !== 0) {
+    if (form.openingBalance === null || form.openingBalance === undefined) {
       newErrors.openingBalance = "Opening Balance is required";
     }
 
@@ -300,14 +304,11 @@ setForm(prev => ({
   };
 
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+const handleSubmit = async (e?: React.FormEvent) => {
+  e?.preventDefault();
+  e?.stopPropagation();
 
-    if (!isEditMode && activeTab !== "terms") {
-      setAllowSubmit(true);
-      handleNext();
-      return;
-    }
+  if (activeTab !== "terms") return;
 
     // Validate all tabs before submission
     const supplierValid = validateSupplierTab();
@@ -327,7 +328,7 @@ setForm(prev => ({
       const message = emptyFields.length > 0
         ? `Please fill in required fields: ${emptyFields.join(", ")}`
         : "Please fix validation errors in Supplier tab";
-      showApiError({ message });
+    showValidationError(message);
       return;
     }
 
@@ -341,12 +342,11 @@ setForm(prev => ({
       if (!form.bankAccount) emptyFields.push("Bank");
       if (!form.accountNumber) emptyFields.push("Account Number");
       if (!form.accountHolder) emptyFields.push("Account Holder Name");
-      if (!form.branchAddress) emptyFields.push("Branch Address");
 
       const message = emptyFields.length > 0
-        ? `Please fill in required fields: ${emptyFields.join(", ")}`
+        ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
         : "Please fix validation errors in Payment tab";
-      showApiError({ message });
+      showValidationError(message);
       return;
     }
 
@@ -361,9 +361,9 @@ setForm(prev => ({
       if (!form.billingPostalCode) emptyFields.push("Postal Code");
 
       const message = emptyFields.length > 0
-        ? `Please fill in required fields: ${emptyFields.join(", ")}`
+        ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
         : "Please fix validation errors in Address tab";
-      showApiError({ message });
+      showValidationError(message);
       return;
     }
 
@@ -441,7 +441,7 @@ setForm(prev => ({
   setErrors({});
   setIsCodeEdited(false);
   setAllowSubmit(false);
-  showSuccess("Form reset");
+
 };
   // Handle Next Tab with Validation
   const handleNext = () => {
@@ -459,9 +459,9 @@ setForm(prev => ({
         if (!form.emailId) emptyFields.push("Email");
 
         const message = emptyFields.length > 0
-          ? `Please fill in required fields: ${emptyFields.join(", ")}`
+          ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
           : "Please fix validation errors in Supplier tab";
-        showApiError({ message });
+        showValidationError(message);
         return;
       }
     } else if (activeTab === "payment") {
@@ -476,13 +476,12 @@ setForm(prev => ({
     if (!form.accountNumber) emptyFields.push("Account Number");
     if (!form.accountHolder) emptyFields.push("Account Holder Name");
     if (!form.sortCode) emptyFields.push("Sort Code");
-    if (!form.swiftCode) emptyFields.push("SWIFT Code");
-    if (!form.branchAddress) emptyFields.push("Branch Address");
+
 
     const message = emptyFields.length > 0
-      ? `Please fill in required fields: ${emptyFields.join(", ")}`
+      ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
       : "Please fix validation errors in Payment tab";
-    showApiError({ message });
+    showValidationError(message);
     return;
   }
 }
@@ -498,9 +497,9 @@ else if (activeTab === "address") {
     if (!form.billingPostalCode) emptyFields.push("Postal Code");
 
     const message = emptyFields.length > 0
-      ? `Please fill in required fields: ${emptyFields.join(", ")}`
+      ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
       : "Please fix validation errors in Address tab";
-    showApiError({ message });
+    showValidationError(message);
     return;
   }
 }
