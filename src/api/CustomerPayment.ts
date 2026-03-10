@@ -32,3 +32,24 @@ export async function receiveCustomerPayment(
 
   return resp.data;
 }
+
+export const getAllPayments = async (
+  partyType: "Customer" | "Supplier",
+  page: number,
+  pageSize: number,
+  search?: string
+): Promise<any> => {
+  const resp: AxiosResponse = await api.get(
+    CustomerPaymentAPI.getAllpayements,
+    {
+      params: {
+        partyType,
+        page,
+        pageSize,
+        search,
+      },
+    }
+  );
+
+ return resp.data;
+};
