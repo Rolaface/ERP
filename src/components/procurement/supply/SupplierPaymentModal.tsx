@@ -1,12 +1,18 @@
 import React, { useState } from "react";
 import { Wallet } from "lucide-react";
 import Modal from "../../ui/modal/modal"; // adjust path as needed
-
+import { createSupplierPayment } from "../../../api/procurement/supplierApi";
+import {
+  showSuccess,
+  showApiError,
+  showLoading,
+  closeSwal,
+} from "../../../utils/alert";
 interface SupplierPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   supplierName?: string;
-  supplierCode?: string;
+  supplierId?: string;
   billAmount?: number;
   amountPaid?: number;
   onSubmit?: (data: any) => void;
@@ -16,28 +22,29 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
   isOpen,
   onClose,
   supplierName = "",
-  supplierCode = "",
+  supplierId = "",
   billAmount = 0,
   amountPaid = 0,
   onSubmit,
 }) => {
-const amountDue = billAmount - amountPaid;
-const paidPct = billAmount > 0 ? Math.min((amountPaid / billAmount) * 100, 100) : 0;
+  const amountDue = billAmount - amountPaid;
+  const paidPct =
+    billAmount > 0 ? Math.min((amountPaid / billAmount) * 100, 100) : 0;
 
-const [form, setForm] = useState({
-  amount: amountDue,
-  paymentMode: "Cash",
-  referenceNumber: "",
-  depositInto: "",
-  cashAccount: "Cash In Hand",
-  paymentDate: new Date().toISOString().split("T")[0],
-});
+  const [form, setForm] = useState({
+    amount: amountDue,
+    paymentMode: "Cash",
+    referenceNumber: "",
+    depositInto: "",
+    cashAccount: "Cash In Hand",
+    paymentDate: new Date().toISOString().split("T")[0],
+  });
 
-const balanceAfterPayment = amountDue - Number(form.amount || 0);
+  const balanceAfterPayment = amountDue - Number(form.amount || 0);
   const isCash = form.paymentMode === "Cash";
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleReset = () =>
@@ -50,8 +57,55 @@ const balanceAfterPayment = amountDue - Number(form.amount || 0);
       paymentDate: new Date().toISOString().split("T")[0],
     });
 
-  const handleSubmit = () =>
-    onSubmit?.({ ...form, supplierName, supplierCode });
+  const handleSubmit = async () => {
+    try {
+      if (!form.amount || Number(form.amount) <= 0) {
+        showApiError("Please enter valid payment amount");
+        return;
+      }
+
+      if (!form.paymentDate) {
+        showApiError("Please select payment date");
+        return;
+      }
+
+      if (!isCash && !form.referenceNumber) {
+        showApiError("Reference number is required");
+        return;
+      }
+
+      if (!isCash && !form.depositInto) {
+        showApiError("Please select deposit account");
+        return;
+      }
+
+      showLoading("Processing payment...");
+
+      const payload = {
+        supplier_id: supplierId,
+        payment_date: form.paymentDate,
+        payment_mode: form.paymentMode,
+        amount: Number(form.amount),
+        reference_number: isCash ? "" : form.referenceNumber,
+        deposit_into_account: isCash ? form.cashAccount : form.depositInto,
+      };
+
+      const response = await createSupplierPayment(payload);
+
+      closeSwal();
+
+if (!response || response?.message?.status !== "success") {
+  showApiError(response?.message?.message || "Payment failed");
+  return;
+}
+     showSuccess(response?.message?.message || "Payment recorded successfully");
+      onSubmit?.(response);
+      onClose();
+    } catch (err: any) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
   /* ── FOOTER ─────────────────────────────── */
   const footer = (
@@ -118,12 +172,19 @@ const balanceAfterPayment = amountDue - Number(form.amount || 0);
       footer={footer}
     >
       <div style={{ display: "flex", gap: 24, minHeight: 320 }}>
-
         {/*  LEFT: FORM  */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
-
+        <div
+          style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}
+        >
           {/* ── Row 1: Amount + Mode ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 15 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 14,
+              marginTop: 15,
+            }}
+          >
             <div>
               <label
                 className="form-label"
@@ -161,7 +222,9 @@ const balanceAfterPayment = amountDue - Number(form.amount || 0);
           </div>
 
           {/* ── Row 2: Date + Cash A/C or Ref ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
+          >
             <div>
               <label
                 className="form-label"
@@ -216,7 +279,13 @@ const balanceAfterPayment = amountDue - Number(form.amount || 0);
 
           {/* ── Row 3: Deposit Into (non-cash only) ── */}
           {!isCash && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 14,
+              }}
+            >
               <div>
                 <label
                   className="form-label"
@@ -331,7 +400,6 @@ const balanceAfterPayment = amountDue - Number(form.amount || 0);
             </p>
           </div>
         </div>
-
       </div>
     </Modal>
   );
