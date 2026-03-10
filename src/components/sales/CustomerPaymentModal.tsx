@@ -6,11 +6,13 @@ interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   customerId?: string;
+  
   invoiceNumber?: string;
   customerName?: string;
   totalAmount?: number;
   amountPaid?: number;
   currency?: string;   
+  
   onSubmit?: (data: any) => void;
 }
 
@@ -33,7 +35,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
     paymentMode: "Cash",
     referenceNumber: "",
     depositInto: "",
-    cashAccount: "Cash In Hand",
+    cashAccount: "",
     paymentDate: new Date().toISOString().split("T")[0],
   });
 
@@ -52,7 +54,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
       paymentMode: "Cash",
       referenceNumber: "",
       depositInto: "",
-      cashAccount: "Cash In Hand",
+      cashAccount: "",
       paymentDate: new Date().toISOString().split("T")[0],
     });
 
@@ -63,26 +65,28 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
       paymentMode: "Cash",
       referenceNumber: "",
       depositInto: "",
-      cashAccount: "Cash In Hand",
+      cashAccount: "",
       paymentDate: new Date().toISOString().split("T")[0],
     });
   }
 }, [isOpen, amountDue]);
 
   const handleSubmit = async () => {
-    if (!customerId || !invoiceNumber) return;
+    if (!invoiceNumber) return;
 
     try {
-  await receiveCustomerPayment({
-  customer_id: customerId,
+await receiveCustomerPayment({
+  
+  customer_name: customerName,
   invoice_number: invoiceNumber,
   payment_date: form.paymentDate,
   payment_mode: form.paymentMode,
   amount: paymentAmount,
   reference_number:
     form.paymentMode !== "Cash" ? form.referenceNumber : "",
+  deposit_into_account:
+    form.paymentMode === "Cash" ? form.cashAccount : form.depositInto
 });
-
       onClose();
 
     } catch (error) {
@@ -198,7 +202,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
                 <option>Cash</option>
                 <option>Card / E-wallet</option>
                 <option>Cheque</option>
-                <option>Bank Transfer</option>
+                <option>Bank Draft</option>
               </select>
             </div>
 
@@ -233,7 +237,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
                   onChange={handleChange}
                   className="form-input w-full"
                 >
-                  <option>Cash In Hand</option>
+                  <option></option>
                 </select>
               </div>
             ) : (

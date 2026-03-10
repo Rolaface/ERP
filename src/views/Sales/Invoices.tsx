@@ -111,6 +111,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         dueDate: inv.dueDate,
         dateOfInvoice: new Date(inv.dateOfInvoice),
         total: Number(inv.totalAmount),
+         OutStandingAmount: inv.OutStandingAmount ?? 0,
         totalTax: inv.totalTax,
         invoiceStatus: inv.invoiceStatus,
         invoiceTypeParent: inv.invoiceTypeParent,
@@ -247,6 +248,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           Date: inv.dateOfInvoice.toLocaleDateString(),
           "Due Date": inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "",
           Amount: inv.total,
+          OutStanding:inv.OutStandingAmount,
           Currency: inv.currency,
           Status: inv.invoiceStatus,
         }))
@@ -512,7 +514,20 @@ const handleRowStatusChange = async (
           {inv.total.toLocaleString()} {inv.currency}
         </code>
       ),
+
     },
+    {
+  key: "OutStandingAmount",
+  header: "OutStanding",
+  align: "right",
+  sortable: true,
+  render: (inv) => (
+    <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
+      {(inv.OutStandingAmount ?? 0).toLocaleString()} {inv.currency}
+    </code>
+  ),
+},
+   
     {
       key: "invoiceStatus",
       header: "Status",
@@ -657,7 +672,7 @@ const handleRowStatusChange = async (
     setPaymentOpen(false);
     setPaymentInvoice(null);
   }}
-  customerId={paymentInvoice?.customerId}
+  
   invoiceNumber={paymentInvoice?.invoiceNumber}
   customerName={paymentInvoice?.customerName}
   totalAmount={paymentInvoice?.total}

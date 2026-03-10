@@ -39,6 +39,8 @@ export interface InvoiceSummary {
   dueDate: string | null;
   dateOfInvoice: Date;
   total: number;
+  OutStandingAmount: number;
+  totalDiscount: string;
   totalTax: string;
   invoiceStatus: InvoiceStatus;
   invoiceTypeParent: string;
