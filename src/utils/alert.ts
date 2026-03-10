@@ -51,7 +51,14 @@ const toUserFriendlyMessage = (message: string): string => {
 
   return m;
 };
-
+export const showValidationError = (message: string) => {
+  Swal.fire({
+    icon: "warning",
+    title: "Validation Error",
+    text: message,
+    confirmButtonColor: "#f59e0b",
+  });
+};
 
 export const showApiError = (error: any) => {
   const rawMessage = extractErrorMessage(error);
