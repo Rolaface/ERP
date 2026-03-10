@@ -104,6 +104,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
       const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
         invoiceNumber: inv.invoiceNumber,
+        customerId: inv.customerId,
         customerName: inv.customerName,
         currency: inv.currency,
         exchangeRate: inv.exchangeRate,
@@ -650,17 +651,22 @@ const handleRowStatusChange = async (
           fetchInvoices();
         }}
       />
-      <CustomerPaymentModal
-        isOpen={paymentOpen}
-        onClose={() => {
-          setPaymentOpen(false);
-          setPaymentInvoice(null);
-        }}
-        invoiceNumber={paymentInvoice?.invoiceNumber}
-        customerName={paymentInvoice?.customerName}
-        totalAmount={paymentInvoice?.total}
-        amountPaid={0}
-      />
+  <CustomerPaymentModal
+  isOpen={paymentOpen}
+  onClose={() => {
+    setPaymentOpen(false);
+    setPaymentInvoice(null);
+  }}
+  customerId={paymentInvoice?.customerId}
+  invoiceNumber={paymentInvoice?.invoiceNumber}
+  customerName={paymentInvoice?.customerName}
+  totalAmount={paymentInvoice?.total}
+  currency={paymentInvoice?.currency}
+  amountPaid={0}
+  onSubmit={() => {
+    fetchInvoices();
+  }}
+/>
     </div>
   );
 };
