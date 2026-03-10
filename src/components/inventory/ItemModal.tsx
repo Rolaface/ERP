@@ -671,6 +671,7 @@ const ItemModal: React.FC<{
                       name="taxDescription"
                       value={form.taxDescription || ""}
                       onChange={handleForm}
+                      required
                       placeholder="12% VAT on Non-Export"
                       disabled={autoPopulateTax}
                     />

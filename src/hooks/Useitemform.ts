@@ -433,17 +433,14 @@ export const useItemForm = ({
 
   // ── Validation ─────────────────────────────────────────────────────────────
 
- const validateItemDetails = (): boolean => {
-  if (!form.itemClassCode?.trim()) {
-    showValidationError("HSN / Item Class Code is required.");
-    return false;
-  }
+const validateItemDetails = (): boolean => {
 
   const requiredFields = [
     { field: "itemTypeCode", label: "Item Type" },
     { field: "itemGroup", label: "Item Category" },
     { field: "itemName", label: "Item Name" },
     { field: "description", label: "Description" },
+    { field: "itemClassCode", label: "HSN Code" },
     { field: "originNationCode", label: "Country of Origin" },
     { field: "unitOfMeasureCd", label: "Unit of Measurement" },
   ];
