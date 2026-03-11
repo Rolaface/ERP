@@ -31,7 +31,7 @@ const FixedAssets = () => {
   const [filterCategory, setFilterCategory] = useState("all");
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-  /* ---------------- DATA ---------------- */
+  /*  DATA  */
 
   const stats = [
     { label: "Total Asset Value", value: "₹45,00,000" },
@@ -112,7 +112,7 @@ const FixedAssets = () => {
     return matchesSearch && matchesFilter;
   });
 
-  /* ---------------- TABLE COLUMNS ---------------- */
+  /*  TABLE COLUMNS  */
 
   const columns: Column<Asset>[] = [
     {
