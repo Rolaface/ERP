@@ -672,12 +672,14 @@ const handleRowStatusChange = async (
     setPaymentOpen(false);
     setPaymentInvoice(null);
   }}
-  
+
   invoiceNumber={paymentInvoice?.invoiceNumber}
   customerName={paymentInvoice?.customerName}
+  customerId={paymentInvoice?.customerId}   
   totalAmount={paymentInvoice?.total}
   currency={paymentInvoice?.currency}
   amountPaid={0}
+
   onSubmit={() => {
     fetchInvoices();
   }}

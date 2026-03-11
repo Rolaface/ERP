@@ -28,7 +28,9 @@ export async function getAllSalesInvoices(
   sortBy: string = "",
   sortOrder: "asc" | "desc" = "asc",
   search?: string,
-  customer?: string
+  customer?: string,
+  minOutstanding?: number,
+
 ): Promise<any> {
 
   const params: any = {
@@ -36,11 +38,13 @@ export async function getAllSalesInvoices(
     page_size,
     sortBy,
     sortOrder,
-    search
+    search,
+    minOutstanding
   };
 
   if (customer) {
     params.customer = customer;
+    if (minOutstanding) params.minOutstanding = minOutstanding;
   }
 
   const resp: AxiosResponse = await api.get(InvoiceAPI.getAll, { params });
