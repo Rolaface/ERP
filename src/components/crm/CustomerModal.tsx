@@ -73,7 +73,7 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   sameAsBilling: false,
 };
 
-const currencyOptions = ["ZMW", "USD", "INR"];
+const currencyOptions = ["ZMW", "USD", "INR" , "GHS"];
 const customerTaxCategoryOptions = ["Export", "Non-Export", "LPO"];
 
 const CustomerModal: React.FC<{

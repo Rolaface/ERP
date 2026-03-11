@@ -81,7 +81,6 @@ export const API = {
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
-
   },
 
   /* =========================
@@ -197,6 +196,7 @@ export const API = {
     createDebitNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_debit_note_from_invoice`,
     getCreditNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_credit_notes`,
     getDebitNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_debit_notes`,
+    editInvoice : `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.edit_sales_invoice`,
   },
 
   /* =========================

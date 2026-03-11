@@ -4,6 +4,7 @@ import {
   updateInvoiceStatus,
   getSalesInvoiceById,
   deleteSalesInvoiceById,
+  editSalesInvoice
 } from "../../api/salesApi";
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
@@ -658,13 +659,34 @@ const handleRowStatusChange = async (
         mode="edit"
         initialData={editInvoice}
         onSubmit={async (data) => {
-          console.log("Edited invoice payload:", data);
+  try {
+    if (!editInvoice?.invoiceNumber) {
+      showApiError("Invalid invoice selected");
+      return;
+    }
 
-          // future edit API yaha lagegi
+    showLoading("Updating invoice...");
 
-          setEditOpen(false);
-          fetchInvoices();
-        }}
+    const res = await editSalesInvoice(editInvoice.invoiceNumber, data);
+
+    closeSwal();
+
+    if (!res || res.status_code !== 200) {
+      showApiError(res?.message || "Failed to update invoice");
+      return;
+    }
+
+    showSuccess("Invoice updated successfully");
+
+    setEditOpen(false);
+    setEditInvoice(null);
+
+    fetchInvoices();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+}}
       />
   <CustomerPaymentModal
   isOpen={paymentOpen}

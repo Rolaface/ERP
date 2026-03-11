@@ -117,3 +117,16 @@ export async function getAllCreditNotes(
   });
   return resp.data;
 }
+
+
+export async function editSalesInvoice(
+  invoiceNumber: string,
+  payload: any
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(InvoiceAPI.editInvoice, {
+    invoiceNumber,
+    ...payload,
+  });
+
+  return resp.data;
+}

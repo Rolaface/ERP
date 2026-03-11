@@ -99,11 +99,12 @@ export const useInvoiceForm = (
   const enableExchange = mode === "invoice";
 
   useEffect(() => {
-    if (!isOpen || !initialData) return;
+    if (!isOpen) return;
 
-    setFormDataFromInvoice(initialData);
-
-  }, [isOpen, initialData]);
+    if (mode === "edit" && initialData?.invoiceNumber) {
+      setFormDataFromInvoice(initialData);
+    }
+  }, [isOpen, initialData, mode]);
 
   useEffect(() => {
     if (!isOpen || initialData) return;
@@ -260,22 +261,22 @@ export const useInvoiceForm = (
       throw new Error("Please select payment terms");
     }
 
- formData.items.forEach((it, idx) => {
-  if (!it.itemCode) {
-    setPage(Math.floor(idx / ITEMS_PER_PAGE));
-    throw new Error(`Item ${idx + 1}: Please select item`);
-  }
+    formData.items.forEach((it, idx) => {
+      if (!it.itemCode) {
+        setPage(Math.floor(idx / ITEMS_PER_PAGE));
+        throw new Error(`Item ${idx + 1}: Please select item`);
+      }
 
-  if (!it.quantity || it.quantity <= 0) {
-    setPage(Math.floor(idx / ITEMS_PER_PAGE));
-    throw new Error(`Item ${idx + 1}: Quantity must be greater than 0`);
-  }
+      if (!it.quantity || it.quantity <= 0) {
+        setPage(Math.floor(idx / ITEMS_PER_PAGE));
+        throw new Error(`Item ${idx + 1}: Quantity must be greater than 0`);
+      }
 
-  if (!it.price || it.price <= 0) {
-    setPage(Math.floor(idx / ITEMS_PER_PAGE));
-    throw new Error(`Item ${idx + 1}: Price must be greater than 0`);
-  }
-});
+      if (!it.price || it.price <= 0) {
+        setPage(Math.floor(idx / ITEMS_PER_PAGE));
+        throw new Error(`Item ${idx + 1}: Price must be greater than 0`);
+      }
+    });
 
     if (invoiceType === "lpo") {
       const lpoNumber = String(formData.lpoNumber ?? "").trim();
@@ -646,17 +647,19 @@ export const useInvoiceForm = (
     setFormData((prev: any) => ({
       ...prev,
       invoiceNumber: invoice.invoiceNumber,
+      customerId: invoice.customerId ?? prev.customerId,
       invoiceType: invoice.invoiceType ?? "",
       invoiceStatus: invoice.invoiceStatus ?? "",
       currencyCode: invoice.currencyCode,
       dateOfInvoice: invoice.dateOfInvoice,
       dueDate: invoice.dueDate,
+      destnCountryCd: invoice.destnCountryCd ?? "",   
       billingAddress: invoice.billingAddress ?? prev.billingAddress,
       shippingAddress: invoice.shippingAddress ?? prev.shippingAddress,
       paymentInformation:
         invoice.paymentInformation ?? prev.paymentInformation,
       terms: invoice.terms ?? prev.terms,
-      items: invoice.items.map((it: any) => {
+      items: (invoice.items || []).map((it: any) => {
         const quantity = Number(it.quantity);
         const price = Number(it.price);
         const discount = Number(it.discount || 0);
@@ -680,16 +683,26 @@ export const useInvoiceForm = (
           discount,
           vatRate: taxRate,
           vatCode: it.vatCode ?? "",
-          packingUnit: it.packingUnit ?? "",
+          packingUnit: it.packingUnit ?? "",           
           packingSize: it.packingSize ?? "",
+          batchNo: it.batchNo ?? "",
+          boxStart: Number(it.boxStart) || "",
+          boxEnd: Number(it.boxEnd) || "",
+          mfgDate: it.mfgDate ?? "",
+          expDate: it.expDate ?? "",
           _fromInvoice: true,
+
         };
       }),
 
     }));
 
-    setCustomerDetails(invoice.customer);
-    setCustomerNameDisplay(invoice.customer?.name ?? "");
+    setCustomerDetails({
+      name: invoice.customerName,
+      id: invoice.customerId
+    });
+
+    setCustomerNameDisplay(invoice.customerName ?? "");
   };
 
   const setTerms = (selling: TermSection) => {
