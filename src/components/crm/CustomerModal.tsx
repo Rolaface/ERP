@@ -693,6 +693,7 @@ const CustomerModal: React.FC<{
                     { value: "ZMW", label: "ZMW" },
                     { value: "USD", label: "USD" },
                     { value: "INR", label: "INR" },
+                    {value: "GHS", label: "GHS"}
                   ]}
                 />
 
