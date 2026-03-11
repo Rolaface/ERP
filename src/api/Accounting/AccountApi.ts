@@ -14,3 +14,22 @@ export async function getChartOfAccounts(): Promise<any> {
 
   return resp.data;
 }
+
+export interface TrialBalanceFilters {
+  from_date: string;
+  to_date: string;
+  fiscal_year: string;
+  show_zero_values?: boolean;
+  with_period_closing_entry?: number;
+  show_closing_entries?: number;
+}
+
+export async function getTrialBalance(
+  filters: TrialBalanceFilters
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(AccountingAPI.getTB, {
+    params: filters,
+  });
+
+  return resp.data;
+}

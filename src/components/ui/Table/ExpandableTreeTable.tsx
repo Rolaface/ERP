@@ -16,6 +16,7 @@ export interface ExpandableTreeTableProps<T extends Record<string, any>> {
 
   // ── Toolbar (mirrors Table's toolbar props) ──
   showToolbar?: boolean;
+   showSearch?: boolean; 
   searchValue?: string;
   onSearch?: (q: string) => void;
   toolbarPlaceholder?: string;
@@ -256,6 +257,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
   nodeKey,
 
   showToolbar = false,
+  showSearch = true,
   searchValue = "",
   onSearch,
   toolbarPlaceholder = "Search...",
@@ -328,15 +330,17 @@ function ExpandableTreeTable<T extends Record<string, any>>({
         <div className="px-5 py-4 border-b border-[var(--border)] bg-card flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 shrink-0">
 
           {/* Search — identical to Table */}
-          <div className="relative w-52 group">
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs group-focus-within:text-primary transition-colors" />
-            <input
-              value={searchValue}
-              onChange={(e) => onSearch?.(e.target.value)}
-              placeholder={toolbarPlaceholder}
-              className="w-full pl-10 pr-4 py-2 bg-card border border-[var(--border)] rounded-xl text-xs font-medium text-main focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all"
-            />
-          </div>
+          {showSearch && (
+            <div className="relative w-52 group">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs group-focus-within:text-primary transition-colors" />
+              <input
+                value={searchValue}
+                onChange={(e) => onSearch?.(e.target.value)}
+                placeholder={toolbarPlaceholder}
+                className="w-full pl-10 pr-4 py-2 bg-card border border-[var(--border)] rounded-xl text-xs font-medium text-main focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all"
+              />
+            </div>
+          )}
 
           {/* Extra filters slot */}
           {extraFilters && (
@@ -362,15 +366,6 @@ function ExpandableTreeTable<T extends Record<string, any>>({
                   Collapse
                 </button>
               </>
-            )}
-            {onRefresh && (
-              <button
-                onClick={onRefresh}
-                className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
-              >
-                <RefreshCw size={11} />
-                Refresh
-              </button>
             )}
           </div>
         </div>

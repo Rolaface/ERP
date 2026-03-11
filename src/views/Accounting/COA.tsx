@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
-import { getChartOfAccounts } from "../../api/Accounting/CoaApi";
+import { getChartOfAccounts } from "../../api/Accounting/AccountApi";
 import { AlertCircle, Loader2, RefreshCw, FolderOpen, Folder, BookOpen } from "lucide-react";
 
 /* 
@@ -259,7 +259,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
 
                 return (
                     <code className="text-xs px-2 py-1 rounded bg-row-hover text-success">
-                        {row.account_currency} {row.balance}
+                        {row.account_currency} {row.balance_in_account_currency ?? row.balance}
                     </code>
                 );
             },
@@ -273,7 +273,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
 
                 return (
                     <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-                        {coaData?.base_currency} {row.balance_in_account_currency ?? row.balance}
+                        {coaData?.base_currency} {row.balance}
                     </code>
                 );
             },

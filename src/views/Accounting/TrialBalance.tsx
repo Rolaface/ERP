@@ -1,214 +1,353 @@
-import React from "react";
-import Table from "../../components/ui/Table/Table";
+import React, { useState, useEffect } from "react";
+import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
 import {
-  FaDownload,
-  FaCheckCircle,
-  FaExclamationTriangle,
-} from "react-icons/fa";
+  getTrialBalance,
+  type TrialBalanceFilters,
+} from "../../api/Accounting/AccountApi";
 
-type TrialBalanceAccount = {
-  code: string;
-  name: string;
+import {
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+  Folder,
+  FolderOpen,
+  BookOpen,
+} from "lucide-react";
+
+/*  TYPES  */
+
+export type TBAccount = {
+  account: string;
+  account_name: string;
+  indent: number;
+
+  opening_debit: number;
+  opening_credit: number;
+
   debit: number;
   credit: number;
+
+  closing_debit: number;
+  closing_credit: number;
+
+  has_value: boolean;
+  children: TBAccount[];
 };
 
-type Props = {
-  trialBalance: TrialBalanceAccount[];
-  totalDebit: number;
-  totalCredit: number;
-  reportMonth: string;
-  reportYear: string;
-  setReportMonth: (month: string) => void;
-  setReportYear: (year: string) => void;
-  monthNames: { [key: string]: string };
+type TBResponse = {
+  message: {
+    status_code: number;
+    status: string;
+    data: {
+      company: string;
+      totals: {
+        opening_debit: number;
+        opening_credit: number;
+        debit: number;
+        credit: number;
+        closing_debit: number;
+        closing_credit: number;
+      };
+      accounts: TBAccount[];
+    };
+  };
 };
+
+/*  HELPERS  */
 
 const nf = (v: number) =>
-  new Intl.NumberFormat("en-US", { minimumFractionDigits: 0 }).format(
-    Math.round(v),
+  new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: 0,
+  }).format(Math.round(v));
+
+function expandIcon(
+  _node: TBAccount,
+  isExpanded: boolean,
+  hasChildren: boolean
+) {
+  if (!hasChildren)
+    return <BookOpen size={12} className="text-muted opacity-50" />;
+
+  return isExpanded ? (
+    <FolderOpen size={13} className="text-muted" />
+  ) : (
+    <Folder size={13} className="text-muted" />
   );
+}
 
-const TrialBalance: React.FC<Props> = ({
-  trialBalance,
-  totalDebit,
-  totalCredit,
-  reportMonth,
-  reportYear,
-  setReportMonth,
-  setReportYear,
-  monthNames,
-}) => {
-  const balanced = totalDebit === totalCredit;
+/*  COMPONENT  */
 
-  /* ---------------- TABLE COLUMNS ---------------- */
+const TrialBalance: React.FC = () => {
+  const [data, setData] = useState<TBResponse["message"]["data"] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const columns: Column<TrialBalanceAccount>[] = [
+
+
+  /*  Filters  */
+
+  const currentYear = new Date().getFullYear();
+
+  const [filters, setFilters] = useState<TrialBalanceFilters>({
+    from_date: `01-01-${currentYear}`,
+    to_date: `31-12-${currentYear}`,
+    fiscal_year: String(currentYear),
+    show_zero_values: false,
+    with_period_closing_entry: 0,
+    show_closing_entries: 0,
+  });
+
+  useEffect(() => {
+  const year = filters.fiscal_year;
+
+  if (!/^\d{4}$/.test(year)) return;
+
+  const newFrom = `01-01-${year}`;
+  const newTo = `31-12-${year}`;
+
+  setFilters((f) => {
+    if (f.from_date === newFrom && f.to_date === newTo) return f;
+
+    return {
+      ...f,
+      from_date: newFrom,
+      to_date: newTo,
+    };
+  });
+}, [filters.fiscal_year]);
+
+  /*  Fetch API  */
+
+  const fetchTB = async (currentFilters: TrialBalanceFilters = filters) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (!/^\d{4}$/.test(String(currentFilters.fiscal_year))) {
+        setError("Fiscal year must be a 4 digit year.");
+        setLoading(false);
+        return;
+      }
+
+      const res: TBResponse = await getTrialBalance(currentFilters);
+
+      if (res?.message?.status_code === 200) {
+        setData(res.message.data);
+      } else {
+        setError("Failed to load trial balance.");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Error fetching trial balance.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+useEffect(() => {
+  if (!/^\d{4}$/.test(String(filters.fiscal_year))) return;
+
+  const timer = setTimeout(() => {
+    fetchTB(filters);
+  }, 300);
+
+  return () => clearTimeout(timer);
+}, [filters]);
+  /*  COLUMNS  */
+
+const toApiDate = (date: string) => {
+  if (!date || !date.includes("-")) return "";
+  const [y, m, d] = date.split("-");
+  return `${d}-${m}-${y}`;
+};
+  const columns: Column<TBAccount>[] = [
     {
-      key: "code",
-      header: "Account Code",
+      key: "account_name",
+      header: "Account",
       render: (row) => (
-        <span className="font-mono text-xs font-semibold text-primary">
-          {row.code}
+        <span className={row.indent === 0 ? "font-semibold" : ""}>
+          {row.account_name}
         </span>
       ),
     },
     {
-      key: "name",
-      header: "Account Name",
+      key: "opening_debit",
+      header: "Opening Debit",
+      align: "right",
+      render: (row) => (row.opening_debit ? nf(row.opening_debit) : "—"),
+    },
+    {
+      key: "opening_credit",
+      header: "Opening Credit",
+      align: "right",
+      render: (row) => (row.opening_credit ? nf(row.opening_credit) : "—"),
     },
     {
       key: "debit",
       header: "Debit",
       align: "right",
-      render: (row) => (row.debit > 0 ? nf(row.debit) : "—"),
+      render: (row) => (row.debit ? nf(row.debit) : "—"),
     },
     {
       key: "credit",
       header: "Credit",
       align: "right",
-      render: (row) => (row.credit > 0 ? nf(row.credit) : "—"),
+      render: (row) => (row.credit ? nf(row.credit) : "—"),
+    },
+    {
+      key: "closing_debit",
+      header: "Closing Debit",
+      align: "right",
+      render: (row) => (row.closing_debit ? nf(row.closing_debit) : "—"),
+    },
+    {
+      key: "closing_credit",
+      header: "Closing Credit",
+      align: "right",
+      render: (row) => (row.closing_credit ? nf(row.closing_credit) : "—"),
     },
   ];
 
-  return (
-    <div className="p-6 bg-app">
-      <div className="space-y-6 max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold text-main">Trial Balance</h2>
-            <p className="text-sm text-muted">
-              {monthNames[reportMonth]} {reportYear} — amounts in USD
-            </p>
-          </div>
+  /*  FILTER UI  */
 
-          <div className="flex items-center gap-3">
-            <div className="flex gap-2 items-center bg-card rounded-lg border border-theme p-2">
-              <select
-                value={reportMonth}
-                onChange={(e) => setReportMonth(e.target.value)}
-                className="px-3 py-2 bg-card rounded-md text-sm focus:outline-none border border-theme"
-              >
-                {Object.entries(monthNames).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+  const filtersUI = (
+    <div className="flex items-center gap-3 flex-wrap text-xs">
+      {/* From Date */}
+      <input
+        type="date"
+        value={
+          filters.from_date
+            ? filters.from_date.split("-").reverse().join("-")
+            : ""
+        }
+        onChange={(e) => {
+          const d = toApiDate(e.target.value);
+          setFilters((f) => ({ ...f, from_date: d }));
+        }}
+        className="px-2 py-1 border border-[var(--border)] rounded"
+      />
 
-              <select
-                value={reportYear}
-                onChange={(e) => setReportYear(e.target.value)}
-                className="px-3 py-2 bg-card rounded-md text-sm focus:outline-none border border-theme"
-              >
-                <option value="2023">2023</option>
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
-              </select>
-            </div>
+      {/* To Date */}
+      <input
+        type="date"
+        value={
+  filters.to_date
+    ? filters.to_date.split("-").reverse().join("-")
+    : ""
+}
+        onChange={(e) => {
+          const d = toApiDate(e.target.value);
+          setFilters((f) => ({ ...f, to_date: d }));
+        }}
+        className="px-2 py-1 border border-[var(--border)] rounded"
+      />
 
-            <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg shadow-sm">
-              <FaDownload /> Export
-            </button>
-          </div>
-        </div>
+      {/* Fiscal Year */}
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        placeholder="Year"
+        value={filters.fiscal_year}
+        onChange={(e) => {
+          const value = e.target.value;
 
-        {/* Card */}
-        <div className="bg-card rounded-xl shadow-sm border border-theme overflow-hidden">
-          <div className="p-6">
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Table */}
-              <div className="flex-1">
-                <Table<TrialBalanceAccount>
-                  columns={columns}
-                  data={trialBalance}
-                  emptyMessage="No trial balance data for the selected period."
-                  showToolbar={false}
-                />
+          if (/^\d{0,4}$/.test(value)) {
+            setFilters((f) => ({ ...f, fiscal_year: value }));
+          }
+        }}
+        className="px-2 py-1 border border-[var(--border)] rounded w-20"
+      />
 
-                {/* Totals Row */}
-                <div className="mt-2 bg-app border border-theme rounded-lg">
-                  <div className="grid grid-cols-4 text-xs font-bold">
-                    <div className="col-span-2 px-6 py-3">Total</div>
-                    <div className="px-6 py-3 text-right">
-                      {nf(totalDebit)}
-                    </div>
-                    <div className="px-6 py-3 text-right">
-                      {nf(totalCredit)}
-                    </div>
-                  </div>
+      {/* Checkboxes */}
 
-                  <div
-                    className={`grid grid-cols-4 items-center text-xs font-bold ${
-                      balanced ? "bg-success/10" : "bg-danger/10"
-                    }`}
-                  >
-                    <div className="col-span-2 px-6 py-3 flex items-center gap-3">
-                      <span
-                        className={`w-8 h-8 flex items-center justify-center rounded-full ${
-                          balanced
-                            ? "bg-success text-white"
-                            : "bg-danger text-white"
-                        }`}
-                      >
-                        {balanced ? (
-                          <FaCheckCircle />
-                        ) : (
-                          <FaExclamationTriangle />
-                        )}
-                      </span>
-                      {balanced ? "Balanced" : "Out of Balance"}
-                    </div>
-                    <div className="col-span-2 px-6 py-3 text-right">
-                      {nf(Math.abs(totalDebit - totalCredit))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <label className="flex items-center gap-1">
+        <input
+          type="checkbox"
+          checked={filters.show_zero_values}
+          onChange={(e) =>
+            setFilters((f) => ({
+              ...f,
+              show_zero_values: e.target.checked,
+            }))
+          }
+        />
+        Zero Values
+      </label>
 
-              {/* Side summary */}
-              <aside className="w-full lg:w-60">
-                <div className="bg-primary text-white rounded-lg p-3 shadow-md text-sm">
-                  <div className="text-xs opacity-80">Totals</div>
-                  <div className="mt-2 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Debit</span>
-                      <span className="font-bold">{nf(totalDebit)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Credit</span>
-                      <span className="font-bold">{nf(totalCredit)}</span>
-                    </div>
-                  </div>
+      <label className="flex items-center gap-1">
+        <input
+          type="checkbox"
+          checked={filters.with_period_closing_entry === 1}
+          onChange={(e) =>
+            setFilters((f) => ({
+              ...f,
+              with_period_closing_entry: e.target.checked ? 1 : 0,
+            }))
+          }
+        />
+        Period Closing
+      </label>
 
-                  <div className="mt-3 p-2 rounded-md bg-white/10 text-xs">
-                    <div>Status</div>
-                    <div className="mt-1 font-semibold flex justify-between">
-                      <span>{balanced ? "Balanced" : "Difference"}</span>
-                      <span>{nf(Math.abs(totalDebit - totalCredit))}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3 bg-card rounded-lg border border-theme p-2 shadow-sm text-xs">
-                  <div className="text-muted">Actions</div>
-                  <div className="mt-2 flex flex-col gap-2">
-                    <button className="px-3 py-1.5 rounded-md bg-app border border-theme">
-                      Download CSV
-                    </button>
-                    <button className="px-3 py-1.5 rounded-md bg-card border border-theme">
-                      Print
-                    </button>
-                  </div>
-                </div>
-              </aside>
-            </div>
-          </div>
-        </div>
-      </div>
+      <label className="flex items-center gap-1">
+        <input
+          type="checkbox"
+          checked={filters.show_closing_entries === 1}
+          onChange={(e) =>
+            setFilters((f) => ({
+              ...f,
+              show_closing_entries: e.target.checked ? 1 : 0,
+            }))
+          }
+        />
+        Closing Entries
+      </label>
     </div>
+  );
+
+  /*  STATES  */
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 size={30} className="animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center py-20 gap-3">
+        <AlertCircle size={26} className="text-danger" />
+        <p className="text-danger text-sm">{error}</p>
+        <button
+          onClick={fetchTB}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded"
+        >
+          <RefreshCw size={14} />
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  /*  TABLE  */
+
+  return (
+    <ExpandableTreeTable<TBAccount>
+      columns={columns}
+      data={data?.accounts ?? []}
+      childrenKey="children"
+      nodeKey={(node) => node.account}
+      showToolbar
+      showSearch={false}
+      extraFilters={filtersUI}
+      onRefresh={fetchTB}
+      defaultExpandDepth={0}
+      expandIconRender={expandIcon}
+      loading={loading}
+      emptyMessage="No trial balance data."
+    />
   );
 };
 
