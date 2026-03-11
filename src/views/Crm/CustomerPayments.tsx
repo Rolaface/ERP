@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import type { Column } from "../../components/ui/Table/type";
+import CustomerPaymentModal from "../../components/sales/CustomerPaymentModal";
 
 import {
   showLoading,
@@ -35,10 +36,17 @@ const Payments: React.FC = () => {
 
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+const [openPaymentModal, setOpenPaymentModal] = useState(false);
+const [initialLoad, setInitialLoad] = useState(true);
 
+
+const handleAddPayment = () => {
+  setOpenPaymentModal(true);
+};
   /**
    * Fetch Payments
    */
+
 const fetchPayments = useCallback(async () => {
   try {
     setLoading(true);
@@ -72,6 +80,8 @@ const fetchPayments = useCallback(async () => {
     showApiError(error);
   } finally {
     setLoading(false);
+    setInitialLoad(false);
+
   }
 }, [page, pageSize, searchTerm]);
 
@@ -167,19 +177,37 @@ const fetchPayments = useCallback(async () => {
       <Table
         columns={columns}
         data={payments}
-        loading={loading}
+        loading={loading||initialLoad}
+        
         showToolbar
         enableColumnSelector
         searchValue={searchTerm}
-        onSearch={setSearchTerm}
+         enableAdd
+        addLabel="Add Payment"
+        onAdd={handleAddPayment}
+        onSearch={(q) => {
+  setSearchTerm(q);
+  setPage(1);
+}}
+
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
         pageSize={pageSize}
         pageSizeOptions={[10, 25, 50, 100]}
         onPageChange={setPage}
-        onPageSizeChange={(size) => setPageSize(size)}
+        onPageSizeChange={(size) => {
+  setPageSize(size);
+  setPage(1);
+}}
       />
+  <CustomerPaymentModal
+  isOpen={openPaymentModal}
+  onClose={() => setOpenPaymentModal(false)}
+  onSubmit={() => {
+    fetchPayments();
+  }}
+/>
     </div>
   );
 };
