@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState , useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
@@ -43,15 +43,21 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 }) => {
   if (!isOpen) return null;
   const [submitting, setSubmitting] = useState(false);
-  const {
-    formData,
-    customerDetails,
-    customerNameDisplay,
-    paginatedItems,
-    totals,
-    ui,
-    actions,
-  } = useInvoiceForm(isOpen, onClose);
+const {
+  formData,
+  customerDetails,
+  customerNameDisplay,
+  paginatedItems,
+  totals,
+  ui,
+  actions,
+} = useInvoiceForm(
+  isOpen,
+  onClose,
+  undefined,
+  mode === "edit" ? "edit" : "invoice",
+  initialData
+);
   // Removed allowSubmit state, no longer needed.
   const tabs: Array<"details" | "address" | "terms"> = [
     "details",
@@ -73,6 +79,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     showValidationError(err.message);
   }
 };
+
+useEffect(() => {
+  if (isOpen) {
+    ui.setActiveTab("details");
+  }
+}, [isOpen]);
+
 
   const symbol = currencySymbols[formData.currencyCode] || "";
   const showExchangeRate =

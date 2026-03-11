@@ -67,7 +67,7 @@ export const emptySupplierForm: SupplierFormData = {
 },
 };
 
-export const currencyOptions = ["ZMW", "USD", "INR"] as const;
+export const currencyOptions = ["ZMW", "USD", "INR" , "GHS"] as const;
 export type Currency = typeof currencyOptions[number];
 
 export type SupplierTab =
