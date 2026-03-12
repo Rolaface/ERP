@@ -4,6 +4,7 @@ import {
   updateInvoiceStatus,
   getSalesInvoiceById,
   deleteSalesInvoiceById,
+  editSalesInvoice
 } from "../../api/salesApi";
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
@@ -104,12 +105,14 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
       const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
         invoiceNumber: inv.invoiceNumber,
+        customerId: inv.customerId,
         customerName: inv.customerName,
         currency: inv.currency,
         exchangeRate: inv.exchangeRate,
         dueDate: inv.dueDate,
         dateOfInvoice: new Date(inv.dateOfInvoice),
         total: Number(inv.totalAmount),
+         OutStandingAmount: inv.OutStandingAmount ?? 0,
         totalTax: inv.totalTax,
         invoiceStatus: inv.invoiceStatus,
         invoiceTypeParent: inv.invoiceTypeParent,
@@ -246,6 +249,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           Date: inv.dateOfInvoice.toLocaleDateString(),
           "Due Date": inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "",
           Amount: inv.total,
+          OutStanding:inv.OutStandingAmount,
           Currency: inv.currency,
           Status: inv.invoiceStatus,
         }))
@@ -511,7 +515,20 @@ const handleRowStatusChange = async (
           {inv.total.toLocaleString()} {inv.currency}
         </code>
       ),
+
     },
+    {
+  key: "OutStandingAmount",
+  header: "OutStanding",
+  align: "right",
+  sortable: true,
+  render: (inv) => (
+    <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
+      {(inv.OutStandingAmount ?? 0).toLocaleString()} {inv.currency}
+    </code>
+  ),
+},
+   
     {
       key: "invoiceStatus",
       header: "Status",
@@ -642,25 +659,52 @@ const handleRowStatusChange = async (
         mode="edit"
         initialData={editInvoice}
         onSubmit={async (data) => {
-          console.log("Edited invoice payload:", data);
+  try {
+    if (!editInvoice?.invoiceNumber) {
+      showApiError("Invalid invoice selected");
+      return;
+    }
 
-          // future edit API yaha lagegi
+    showLoading("Updating invoice...");
 
-          setEditOpen(false);
-          fetchInvoices();
-        }}
+    const res = await editSalesInvoice(editInvoice.invoiceNumber, data);
+
+    closeSwal();
+
+    if (!res || res.status_code !== 200) {
+      showApiError(res?.message || "Failed to update invoice");
+      return;
+    }
+
+    showSuccess("Invoice updated successfully");
+
+    setEditOpen(false);
+    setEditInvoice(null);
+
+    fetchInvoices();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+}}
       />
-      <CustomerPaymentModal
-        isOpen={paymentOpen}
-        onClose={() => {
-          setPaymentOpen(false);
-          setPaymentInvoice(null);
-        }}
-        invoiceNumber={paymentInvoice?.invoiceNumber}
-        customerName={paymentInvoice?.customerName}
-        totalAmount={paymentInvoice?.total}
-        amountPaid={0}
-      />
+<CustomerPaymentModal
+  mode="invoice"
+  isOpen={paymentOpen}
+  onClose={() => {
+    setPaymentOpen(false);
+    setPaymentInvoice(null);
+  }}
+  invoiceNumber={paymentInvoice?.invoiceNumber}
+  customerName={paymentInvoice?.customerName}
+  customerId={paymentInvoice?.customerId}
+  totalAmount={paymentInvoice?.total}
+  currency={paymentInvoice?.currency}
+  amountPaid={0}
+  onSubmit={() => {
+    fetchInvoices();
+  }}
+/>
     </div>
   );
 };

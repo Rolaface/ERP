@@ -417,11 +417,16 @@ ${sellingTerms?.liability || ""}
         onClose={() => setCustomerModalOpen(false)}
         onSubmit={(created: any) => onCustomerSelect(created)}
       />
-      <CustomerPaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        customerId={customer.id}
-      />
+     <CustomerPaymentModal
+  isOpen={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  customerId={customer.id}
+  customerName={customer.name}
+  currency={customer.currency}
+  invoiceNumber=""
+  totalAmount={0}
+  amountPaid={0}
+/>
     </div>
   );
 };

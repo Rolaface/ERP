@@ -31,6 +31,7 @@ export interface Invoice {
 
 export interface InvoiceSummary {
   invoiceNumber: string;
+  customerId: string;
   customerName: string;
   receiptNumber: string;
   currency: string;
@@ -38,6 +39,8 @@ export interface InvoiceSummary {
   dueDate: string | null;
   dateOfInvoice: Date;
   total: number;
+  OutStandingAmount: number;
+  totalDiscount: string;
   totalTax: string;
   invoiceStatus: InvoiceStatus;
   invoiceTypeParent: string;
@@ -69,6 +72,8 @@ export interface InvoiceItem {
   expDate?: string;
  boxStart?: number;
   boxEnd?: number;
+qty?: number;
+availableQty?: number;
 }
 
 export interface PaymentInformation {

@@ -285,6 +285,10 @@ export const generatePurchaseOrderPDF = async (
   const TOTAL_W = 28;
   autoTable(doc, {
     startY: afterBoxY + 11,
+    theme: "grid",
+    didDrawPage: () => {
+    drawWatermark();
+  },
     head: [
       [
         "#",
@@ -400,6 +404,7 @@ export const generatePurchaseOrderPDF = async (
   doc.text("Grand Total", LABEL_X, SEC_Y + ROW_H * 3.7, { align: "right" });
   autoTable(doc, {
     startY: SEC_Y,
+    theme: "grid",
     head: [],
     body: [
       [`${fmt2(subTotal)} ${cur}`],
@@ -428,7 +433,7 @@ export const generatePurchaseOrderPDF = async (
   });
   const sumEndY = (doc as any).lastAutoTable.finalY;
   const SIG_Y = sumEndY;
-  // width used by labels before amount column
+   // width used by labels before amount column
   const LABEL_W = 28;
 
   // start signature where labels start
@@ -436,64 +441,16 @@ export const generatePurchaseOrderPDF = async (
 
   // total width = labels + amount column
   const SIGN_W = LABEL_W + TOTAL_W;
-
-  // Header bar
-  doc.setFillColor(...ERP_BLUE);
-  doc.rect(SIGN_X, SIG_Y, SIGN_W, 6, "F");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...WHITE);
-  doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, SIG_Y + 4, {
-    align: "center",
-  });
-
-  // Signature box
-  doc.setFillColor(...WHITE);
-  doc.rect(SIGN_X, SIG_Y + 6, SIGN_W, 22, "F");
-
-  doc.setDrawColor(...RULE);
-
-  // top line
-  doc.line(SIGN_X, SIG_Y + 6, SIGN_X + SIGN_W, SIG_Y + 6);
-
-  // bottom line
-  doc.line(SIGN_X, SIG_Y + 28, SIGN_X + SIGN_W, SIG_Y + 28);
-
-  // Signature image
-  if (company?.documents?.authorizedSignatureUrl) {
-    try {
-      doc.addImage(
-        px(company.documents.authorizedSignatureUrl),
-        "PNG",
-        SIGN_X + (SIGN_W - 40) / 2,
-        SIG_Y + 9,
-        40,
-        14,
-      );
-    } catch {}
-  }
-
-  // Signature line
-  doc.line(SIGN_X + 5, SIG_Y + 22, SIGN_X + SIGN_W - 5, SIG_Y + 22);
-
-  doc.setFontSize(6.5);
-  doc.setTextColor(120, 120, 120);
-  doc.text("Signature", SIGN_X + SIGN_W / 2, SIG_Y + 26, { align: "center" });
-  /* ══════════════════════════════════════════════════════════
-     ⑦  TERMS & CONDITIONS — terms.terms.buying
-  ══════════════════════════════════════════════════════════ */
   let termsY = SIG_Y;
+
   const buying = po?.terms?.terms?.buying;
   const termW = SIGN_X - M;
   const termTW = termW - 14;
   const tLines: string[] = [];
-
   if (buying) {
     if (buying.general) tLines.push(`General: ${buying.general}`);
     if (buying.delivery) tLines.push(`Delivery: ${buying.delivery}`);
-    if (buying.cancellation)
-      tLines.push(`Cancellation: ${buying.cancellation}`);
+    if (buying.cancellation) tLines.push(`Cancellation: ${buying.cancellation}`);
     if (buying.warranty) tLines.push(`Warranty: ${buying.warranty}`);
     if (buying.liability) tLines.push(`Liability: ${buying.liability}`);
     if (buying.payment) {
@@ -502,17 +459,63 @@ export const generatePurchaseOrderPDF = async (
       if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
       if (p.notes) tLines.push(`Notes: ${p.notes}`);
       p.phases?.forEach((ph: any, i: number) =>
-        tLines.push(`  ${i + 1}. ${ph.percentage}% — ${ph.condition}`),
+        tLines.push(`  ${i + 1}. ${ph.percentage}% — ${ph.condition}`)
       );
     }
   }
   if (!tLines.length) tLines.push("No terms and conditions specified.");
-
   let tH = 12;
-  tLines.forEach((l) => {
-    tH += doc.splitTextToSize(l, termTW).length * 3.5;
-  });
+  tLines.forEach((l) => { tH += doc.splitTextToSize(l, termTW).length * 3.5; });
   const tBH = Math.max(24, tH + 4);
+
+  const signatureStartY = termsY + tBH - 46; // 6 header + 22 box = 28
+ 
+
+  // Header bar
+  doc.setFillColor(...ERP_BLUE);
+  doc.rect(SIGN_X, signatureStartY, SIGN_W, 6, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...WHITE);
+  doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, signatureStartY + 4, {
+    align: "center",
+  });
+
+  // Signature box
+  doc.setFillColor(...WHITE);
+  doc.rect(SIGN_X, signatureStartY + 6, SIGN_W, 22, "F");
+
+  doc.setDrawColor(...RULE);
+
+  // top line
+  doc.line(SIGN_X, signatureStartY + 6, SIGN_X + SIGN_W, signatureStartY + 6);
+
+  // bottom line
+  doc.line(SIGN_X, signatureStartY + 28, SIGN_X + SIGN_W, signatureStartY + 28);
+
+  // Signature image
+  if (company?.documents?.authorizedSignatureUrl) {
+    try {
+      doc.addImage(
+        px(company.documents.authorizedSignatureUrl),
+        "PNG",
+        SIGN_X + (SIGN_W - 40) / 2,
+        signatureStartY + 9,
+        40,
+        14,
+      );
+    } catch {}
+  }
+
+  // Signature line
+  doc.line(SIGN_X + 5, signatureStartY + 22, SIGN_X + SIGN_W - 5, signatureStartY + 22);
+
+  doc.setFontSize(6.5);
+  doc.setTextColor(120, 120, 120);
+  doc.text("Signature", SIGN_X + SIGN_W / 2, signatureStartY + 26, { align: "center" });
+
+  const termsBottom = termsY + tBH;
   if (termsY + tBH > H - 16) {
     doc.addPage();
     drawWatermark();

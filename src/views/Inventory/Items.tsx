@@ -281,20 +281,29 @@ const Items: React.FC = () => {
         </code>
       ),
     },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (i) => (
-        <ActionGroup>
-          <ActionButton type="view" onClick={(e) => handleEdit(i.id, e)} iconOnly />
-          <ActionMenu
-            onEdit={(e) => handleEdit(i.id, e as any)}
-            onDelete={(e) => handleDeleteClick(i, e as any)}
-          />
-        </ActionGroup>
-      ),
-    },
+   {
+  key: "actions",
+  header: "Actions",
+  align: "center",
+  render: (i) => (
+    <ActionGroup>
+      {/* Eye icon → open detail */}
+      <ActionButton
+        type="view"
+        iconOnly
+        onClick={(e) => {
+          e.stopPropagation();
+          handleRowClick(i);
+        }}
+      />
+
+      <ActionMenu
+        onEdit={(e) => handleEdit(i.id, e as any)}
+        onDelete={(e) => handleDeleteClick(i, e as any)}
+      />
+    </ActionGroup>
+  ),
+},
   ];
 
   // ── RENDER ────────────────────────────────────────────────────────────────
@@ -322,7 +331,6 @@ const Items: React.FC = () => {
             pageSizeOptions={[10, 25, 50, 100]}
             onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
             onPageChange={setPage}
-            onRowClick={handleRowClick}
             extraFilters={
               <div className="w-44">
                 <FilterSelect

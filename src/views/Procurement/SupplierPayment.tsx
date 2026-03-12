@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-import ActionButton, {
-  ActionGroup,
-  ActionMenu,
-} from "../../components/ui/Table/ActionButton";
-
 import type { Column } from "../../components/ui/Table/type";
 
 import {
@@ -16,6 +11,8 @@ import {
 } from "../../utils/alert";
 
 import Swal from "sweetalert2";
+
+import { getAllPayments } from "../../api/CustomerPayment";
 
 interface PaymentSummary {
   id: string;
@@ -39,25 +36,45 @@ const Payments: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const fetchPayments = async () => {
-    try {
-      setLoading(true);
+ const fetchPayments = async () => {
+  try {
+    setLoading(true);
 
-      const response = await getAllPayments(page, pageSize);
+    const response = await getAllPayments(
+      "Supplier",
+      page,
+      pageSize,
+      searchTerm
+    );
 
-      setPayments(response.data);
-      setTotalPages(response.pagination?.total_pages || 1);
-      setTotalItems(response.pagination?.total || 0);
-    } catch (error) {
-      console.error("Error fetching payments:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const paymentsList = response?.data?.payments || [];
+
+    const mapped: PaymentSummary[] = paymentsList.map((p: any) => ({
+      id: p.paymentId,
+      paymentDate: p.paymentDate,
+      supplierName: p.partyName,
+      modeOfPayment: p.paymentMode,
+      referenceNo: p.referenceNumber || "-",
+      amount: Number(p.amount),
+      status: p.status,
+    }));
+
+    setPayments(mapped);
+
+    setTotalPages(response?.data?.pagination?.totalPages || 1);
+    setTotalItems(response?.data?.pagination?.total || mapped.length);
+
+  } catch (error) {
+    console.error("Error fetching payments:", error);
+    showApiError(error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchPayments();
-  }, [page, pageSize]);
+  }, [page, pageSize, searchTerm]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -76,7 +93,7 @@ const Payments: React.FC = () => {
     try {
       showLoading("Deleting Payment...");
 
-      await deletePaymentById(id);
+      // await deletePaymentById(id);
 
       closeSwal();
 
@@ -132,7 +149,9 @@ const Payments: React.FC = () => {
       key: "status",
       header: "Status",
       align: "center",
-      render: (p: PaymentSummary) => <StatusBadge status={p.status} />,
+      render: (p: PaymentSummary) => (
+        <StatusBadge status={p.status} />
+      ),
     },
   ];
 

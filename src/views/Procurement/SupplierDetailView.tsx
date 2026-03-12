@@ -148,26 +148,33 @@ const SupplierDetailView: React.FC<Props> = ({
     }
   };
 
-  const formatAddress = () => {
-    if (!supplier) return "—";
-    const { billingAddressLine1, billingAddressLine2, billingCity,
-            district, province, billingPostalCode, billingCountry } = supplier;
-    return (
-      <div className="flex flex-col text-right leading-tight">
-        {billingAddressLine1 && <span>{billingAddressLine1}</span>}
-        {(billingAddressLine2 || billingCity) &&
-          <span>{[billingAddressLine2, billingCity].filter(Boolean).join(", ")}</span>}
-        {(district || province) &&
-          <span>{[district, province].filter(Boolean).join(", ")}</span>}
-        {billingCountry    && <span>{billingCountry}</span>}
-        {billingPostalCode && <span>{billingPostalCode}</span>}
-      </div>
-    );
-  };
+ const formatAddress = () => {
+  if (!supplier) return "—";
 
-  /* ── sidebar list (shared between desktop + mobile) ── */
+  const {
+    billingAddressLine1,
+    billingAddressLine2,
+    billingCity,
+    district,
+    province,
+    billingPostalCode,
+    billingCountry,
+  } = supplier;
+
+  const line1 = [billingAddressLine1, billingAddressLine2].filter(Boolean).join(", ");
+  const line2 = [billingCity, district, province].filter(Boolean).join(", ");
+  const line3 = [billingCountry, billingPostalCode].filter(Boolean).join(", ");
+
+  return (
+    <div className="flex flex-col text-right leading-tight text-[10px]">
+      {line1 && <span>{line1}</span>}
+      {line2 && <span>{line2}</span>}
+      {line3 && <span>{line3}</span>}
+    </div>
+  );
+};
+
   const SidebarList = () => (
-    /* flex-col + h-full: fills whatever height the parent gives — same as main content */
     <div className="flex flex-col h-full min-h-0">
 
       {/* Search */}
@@ -185,7 +192,7 @@ const SupplierDetailView: React.FC<Props> = ({
       </div>
 
       {/* List — flex-1 fills remaining sidebar height, scrolls when overflow */}
-      <div className="overflow-y-auto px-2 py-1.5 custom-scrollbar h-[420px]">
+      <div className="overflow-y-auto px-2 py-1.5 custom-scrollbar flex-1">
         {filteredSuppliers.length === 0 && (
           <p className="text-[10px] text-muted text-center py-6">No suppliers found</p>
         )}
@@ -321,8 +328,7 @@ const SupplierDetailView: React.FC<Props> = ({
       </header>
 
       {/* ══════════════ BODY ══════════════ */}
-      {/* items-stretch ensures sidebar and main panel are ALWAYS the same height */}
-      <div className="flex flex-1 overflow-hidden min-h-0 relative bg-app items-stretch">
+      <div className="flex flex-1 overflow-hidden min-h-0 relative bg-app ">
 
         {/* ── MOBILE OVERLAY DRAWER ── */}
         {mobileDrawer && (
@@ -352,13 +358,14 @@ const SupplierDetailView: React.FC<Props> = ({
 
         {/* ── DESKTOP SIDEBAR ── */}
         <aside
-          className={`hidden lg:flex flex-col bg-card border-r border-[var(--border)] transition-all duration-300 shrink-0 overflow-hidden ${
-            sidebarOpen ? "w-56" : "w-0 border-r-0"
+          className={`hidden lg:flex flex-col bg-card border border-[var(--border)] rounded-b-2xl  mb-3 transition-all duration-300 shrink-0 overflow-hidden self-start sticky top-0 ${
+            sidebarOpen ? "w-56" : "w-0 border-0"
           }`}
+          style={{ maxHeight: "calc(100vh - 110px)" }}
         >
           {/* Header row */}
           {sidebarOpen && (
-            <div className="px-4 py-2.5 border-b border-[var(--border)] shrink-0">
+            <div className="px-4 py-3 border-b border-[var(--border)] shrink-0">
               <p className="text-[9px] font-black uppercase tracking-[0.15em] text-muted">
                 All Suppliers
                 <span className="ml-1.5 text-[var(--primary)] font-black">
@@ -420,33 +427,60 @@ const SupplierDetailView: React.FC<Props> = ({
                 </div>
 
                 {/* Contact + Bank — stacked on mobile, side-by-side on lg */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 ">
                   <div className="bg-card rounded-2xl border border-[var(--border)] p-4">
                     <h4 className="text-[10px] font-black text-muted uppercase tracking-widest mb-3 flex items-center gap-1.5">
                       <Mail size={11} className="text-primary" /> Contact Channels
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-0.5">
                       <DataRow label="Contact Person"  value={supplierDetail?.contactPerson} />
                       <DataRow label="Phone"           value={supplierDetail?.phoneNo}       />
                       <DataRow label="Alternate"       value={supplierDetail?.alternateNo}   />
                       <DataRow label="Email"           value={supplierDetail?.emailId}       />
                       <DataRow label="Billing Address" value={formatAddress()}               />
                     </div>
-                  </div>
-
-                  <div className="bg-card rounded-2xl border border-[var(--border)] p-4">
-                    <h4 className="text-[10px] font-black text-muted uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                    <h4 className="mt-3 text-[10px] font-black text-muted uppercase tracking-widest mb-3 flex items-center gap-1.5">
                       <CreditCard size={11} className="text-primary" /> Bank Details
                     </h4>
-                    <div className="space-y-2">
-                      <DataRow label="Account Holder" value={supplier?.accountHolder}  />
-                      <DataRow label="Bank Name"      value={supplier?.bankAccount}    />
-                      <DataRow label="Account Number" value={supplier?.accountNumber}  />
-                      <DataRow label="SWIFT Code"     value={supplier?.swiftCode}      />
-                      <DataRow label="Sort/IFSC"      value={supplier?.sortCode}       />
-                      <DataRow label="Branch Address" value={supplier?.branchAddress}  />
+                    <div className="space-y-0.5">
+                      <DataRow label="Account Holder" value={supplier?.accountHolder} />
+                      <DataRow label="Bank Name"      value={supplier?.bankAccount}   />
+                      <DataRow label="Account Number" value={supplier?.accountNumber} />
+                      <DataRow label="SWIFT Code"     value={supplier?.swiftCode}     />
+                      <DataRow label="Sort/IFSC"      value={supplier?.sortCode}      />
+                      <DataRow label="Branch Address" value={supplier?.branchAddress} />
                     </div>
                   </div>
+
+                  {/* <div className="bg-card rounded-2xl border border-[var(--border)] shadow-sm flex flex-col h-full">
+                    <h4 className="text-[10px] font-black text-muted uppercase tracking-widest p-4 border-b border-[var(--border)]">
+                      Terms & Conditions
+                    </h4>
+                    <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
+                      <div className="text-xs text-muted space-y-4">
+                        <div>
+                          <h5 className="text-main font-semibold mb-2">Payment Terms</h5>
+                          <p>{supplier?.terms?.payment}</p>
+                        </div>
+                        <div>
+                          <h5 className="text-main font-semibold mb-1">Delivery</h5>
+                          <p>{supplier?.terms?.delivery}</p>
+                        </div>
+                        <div>
+                          <h5 className="text-main font-semibold mb-1">Cancellation</h5>
+                          <p>{supplier?.terms?.cancellation}</p>
+                        </div>
+                        <div>
+                          <h5 className="text-main font-semibold mb-1">Warranty</h5>
+                          <p>{supplier?.terms?.warranty}</p>
+                        </div>
+                        <div>
+                          <h5 className="text-main font-semibold mb-1">Liability</h5>
+                          <p>{supplier?.terms?.liability}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div> */}
                 </div>
               </div>
             )}
@@ -515,7 +549,7 @@ const SupplierDetailView: React.FC<Props> = ({
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         supplierName={supplierName}
-        supplierCode={supplierCode}
+        // supplierCode={supplierCode}
       />
     </div>
   );

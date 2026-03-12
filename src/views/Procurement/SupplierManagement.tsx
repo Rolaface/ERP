@@ -235,7 +235,7 @@ const SupplierManagement: React.FC<Props> = () => {
         isOpen={showPaymentModal}
         onClose={() => { setShowPaymentModal(false); setPaymentSupplier(null); }}
         supplierName={paymentSupplier?.supplierName}
-        supplierCode={paymentSupplier?.supplierCode}
+        supplierId={paymentSupplier?.supplierId}
       />
     </div>
   );

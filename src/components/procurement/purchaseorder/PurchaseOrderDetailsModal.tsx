@@ -473,7 +473,7 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gridTemplateColumns: "1fr 1fr",
                   gap: 6,
                   marginBottom: 2,
                 }}
@@ -536,36 +536,6 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                     }}
                   >
                     {fmtDate(data.poDate)}
-                  </p>
-                </div>
-                <div
-                  style={{
-                    padding: "9px 11px",
-                    borderRadius: 7,
-                    background: "var(--bg)",
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 700,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "var(--muted)",
-                      marginBottom: 2,
-                    }}
-                  >
-                    Required By
-                  </p>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: "var(--text)",
-                    }}
-                  >
-                    {fmtDate(data.requiredBy)}
                   </p>
                 </div>
               </div>
@@ -843,7 +813,7 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                               color: "var(--muted)",
                             }}
                           >
-                            Sched: {fmtDate(it.schedule_date)}
+                            Required By: {fmtDate(it.schedule_date)}
                           </span>
                         )}
                       </div>
