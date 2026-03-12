@@ -223,7 +223,7 @@ function FilterBar({
     "flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap";
 
   return (
-    <div className="w-[1000px] flex items-center gap-2 flex-nowrap overflow-x-auto p-3 rounded-xl border border-[var(--border)] bg-card shadow-sm scrollbar-thin">
+    <div className="w-[905px] flex items-center gap-2 flex-nowrap overflow-x-auto p-3 rounded-xl border border-[var(--border)] bg-card shadow-sm scrollbar-thin">
       {/* MODE */}
       <div className="flex items-center gap-1">
         <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
@@ -361,16 +361,6 @@ function FilterBar({
         <ChevronRight size={11} />
         Collapse
       </button>
-
-      {/* REFRESH */}
-      <button
-        onClick={onRefresh}
-        disabled={loading}
-        className={`${btnClass} disabled:opacity-40`}
-      >
-        <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
-        Refresh
-      </button>
     </div>
   );
 }
@@ -379,9 +369,13 @@ function FilterBar({
 
 function SectionHeader({
   label,
+  total,
+  currency,
   accentClass,
 }: {
   label: string;
+  total: number;
+  currency?: string;
   accentClass: string;
 }) {
   return (
@@ -389,6 +383,9 @@ function SectionHeader({
       <span className={`w-1 h-4 rounded-full inline-block ${accentClass}`} />
       <span className="text-xs font-bold text-main uppercase tracking-widest">
         {label}
+      </span>
+      <span className={`ml-auto text-xs font-mono font-bold ${accentClass.replace("bg-", "text-")}`}>
+        {nf(total, currency)}
       </span>
     </div>
   );
