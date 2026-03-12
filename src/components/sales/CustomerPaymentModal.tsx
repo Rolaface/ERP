@@ -43,6 +43,7 @@ interface InvoiceRow {
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  mode?: "customer" | "invoice";
   invoiceNumber?: string;
   customerName?: string;
   customerId?: string;
@@ -101,6 +102,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
   OutStandingAmount,
   currency: propCurrency = "",
   onSubmit,
+  mode = "customer",
 }) => {
   // ── Customer dropdown ──
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
@@ -149,7 +151,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
   const overpaid = payAmt > amountDue && amountDue > 0;
   const currency =
     selectedInvoice?.currency || selected?.currency || propCurrency || "₹";
-
+  const isInvoiceMode = mode === "invoice" && !!propInvoiceNo;
   // ── Reset on open ──
   useEffect(() => {
     if (!isOpen) return;
@@ -160,9 +162,26 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
     setInvoices([]);
     setSelectedInvoice(null);
     setInvPage(1);
-    loadCustomers();
-  }, [isOpen]);
+    if (!isInvoiceMode) {
+      loadCustomers();
+    }
+  }, [isOpen, isInvoiceMode, propCustomerName]);
+  useEffect(() => {
+    if (!isInvoiceMode) return;
 
+    if (propCustomerName) {
+      setSelected({
+        id: propCustomerId || "",
+        name: propCustomerName,
+        email: "",
+        mobile: "",
+        currency: propCurrency || "₹",
+        onboardingBalance: 0,
+      });
+
+      setSearch(propCustomerName);
+    }
+  }, [isInvoiceMode, propCustomerName, propCustomerId, propCurrency]);
   useEffect(() => {
     if (!propInvoiceNo) return;
 
@@ -201,7 +220,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
     };
 
     loadInvoice();
-  }, [propInvoiceNo]);
+  }, [propInvoiceNo, propCurrency]);
 
   // ── Pre-select from invoice row ──
   useEffect(() => {
@@ -274,11 +293,11 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
         "desc",
         "",
         customerName,
-        1
+        1,
       );
       if (res?.status_code === 200) {
-   setInvoices(
-  res.data.map((inv: any) => ({
+        setInvoices(
+          res.data.map((inv: any) => ({
             invoiceNumber: inv.invoiceNumber,
             invoiceType: inv.invoiceType ?? "",
             dateOfInvoice: inv.dateOfInvoice
@@ -445,7 +464,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
       subtitle={selected ? selected.name : "Customer Payment"}
       icon={CreditCard}
       maxWidth="6xl"
-      height="auto"
+      height="95"
       footer={footer}
     >
       <style>{`
@@ -521,18 +540,21 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
                 />
                 <input
                   value={search}
+                  disabled={isInvoiceMode}
                   onChange={(e) => {
                     setSearch(e.target.value);
                     setDropOpen(true);
                     if (selected) clearCustomer();
                   }}
-                  onFocus={() => setDropOpen(true)}
+                  onFocus={() => {
+                    if (!isInvoiceMode) setDropOpen(true);
+                  }}
                   placeholder="Search customer by name or ID…"
                   className="form-input w-full"
                   style={{ paddingLeft: 34, paddingRight: 34, fontSize: 13 }}
                   autoComplete="off"
                 />
-                {selected && (
+                {selected && !isInvoiceMode && (
                   <button
                     onClick={clearCustomer}
                     style={{
@@ -666,88 +688,10 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
             </div>
 
             {/* Selected customer chip */}
-            {selected && (
-              <div
-                style={{
-                  marginTop: 8,
-                  padding: "9px 14px",
-                  background: "var(--color-bg-subtle,#f9fafb)",
-                  border: "1.5px solid var(--color-primary-soft,#c7d2fe)",
-                  borderRadius: 9,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  animation: "cIn .18s ease",
-                }}
-              >
-                <div
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: "50%",
-                    background: "var(--color-primary-soft,#eef2ff)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 13,
-                    fontWeight: 800,
-                    color: "var(--color-primary,#6366f1)",
-                    flexShrink: 0,
-                  }}
-                >
-                  {selected.name.charAt(0).toUpperCase()}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 13,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {selected.name}
-                  </p>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 10,
-                      color: "#9ca3af",
-                    }}
-                  >
-                    {selected.id}
-                    {selected.email ? ` · ${selected.email}` : ""}
-                  </p>
-                </div>
-                {selected.onboardingBalance > 0 && (
-                  <div style={{ textAlign: "right", marginRight: 6 }}>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 10,
-                        color: "#9ca3af",
-                      }}
-                    >
-                      Adv. Balance
-                    </p>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: "#22c55e",
-                      }}
-                    >
-                      {selected.currency}{" "}
-                      {selected.onboardingBalance.toLocaleString("en-IN")}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* ── Invoice Table ── */}
-          {selected && (
+          {selected && !isInvoiceMode && (
             <div style={{ animation: "cIn .2s ease" }}>
               <div
                 style={{
@@ -1188,18 +1132,6 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
           </div>
 
           {/* ── Notes ── */}
-          <div>
-            <Label>Notes (optional)</Label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={onChange}
-              rows={2}
-              placeholder="Add any payment remarks…"
-              className="form-input w-full"
-              style={{ resize: "vertical", fontSize: 13 }}
-            />
-          </div>
         </div>
 
         {/* ════════════ DIVIDER ════════════ */}
@@ -1270,100 +1202,6 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
           />
 
           <div className="border-t border-theme" style={{ margin: "14px 0" }} />
-
-          {/* Balance card */}
-          <div
-            className="bg-primary"
-            style={{ borderRadius: 12, padding: "16px" }}
-          >
-            <p
-              style={{
-                color: "rgba(255,255,255,.65)",
-                fontSize: 10,
-                marginBottom: 4,
-                letterSpacing: ".06em",
-                textTransform: "uppercase",
-              }}
-            >
-              Balance After Payment
-            </p>
-            <p
-              style={{
-                color: "#fff",
-                fontSize: 22,
-                fontWeight: 900,
-                margin: 0,
-              }}
-            >
-              {currency} {balance.toLocaleString("en-IN")}
-            </p>
-            {overpaid && (
-              <p
-                style={{
-                  color: "#fca5a5",
-                  fontSize: 10,
-                  marginTop: 6,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                <AlertCircle size={10} /> Exceeds due
-              </p>
-            )}
-            {!overpaid && balance === 0 && payAmt > 0 && (
-              <p
-                style={{
-                  color: "#bbf7d0",
-                  fontSize: 10,
-                  marginTop: 6,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                <CheckCircle2 size={10} /> Fully settled
-              </p>
-            )}
-          </div>
-
-          {/* Selected invoice detail (mini) */}
-          {selectedInvoice && (
-            <div
-              style={{
-                marginTop: 16,
-                padding: "12px",
-                background: "var(--color-bg-subtle,#f9fafb)",
-                border: "1.5px solid var(--color-border-theme,#e5e7eb)",
-                borderRadius: 10,
-                animation: "cIn .18s ease",
-              }}
-            >
-              <p
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: ".07em",
-                  textTransform: "uppercase",
-                  color: "#9ca3af",
-                  marginBottom: 8,
-                }}
-              >
-                Selected Invoice
-              </p>
-              <MiniRow label="No." value={selectedInvoice.invoiceNumber} />
-              <MiniRow
-                label="Total"
-                value={`${selectedInvoice.currency} ${selectedInvoice.total.toLocaleString("en-IN")}`}
-              />
-              <MiniRow
-                label="Outstanding"
-                value={`${selectedInvoice.currency} ${selectedInvoice.OutStandingAmount.toLocaleString("en-IN")}`}
-                red
-              />
-              <MiniRow label="Due Date" value={selectedInvoice.dueDate} />
-            </div>
-          )}
         </div>
       </div>
     </Modal>

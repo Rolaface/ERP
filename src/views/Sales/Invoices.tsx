@@ -688,20 +688,19 @@ const handleRowStatusChange = async (
   }
 }}
       />
-  <CustomerPaymentModal
+<CustomerPaymentModal
+  mode="invoice"
   isOpen={paymentOpen}
   onClose={() => {
     setPaymentOpen(false);
     setPaymentInvoice(null);
   }}
-
   invoiceNumber={paymentInvoice?.invoiceNumber}
   customerName={paymentInvoice?.customerName}
-  customerId={paymentInvoice?.customerId}   
+  customerId={paymentInvoice?.customerId}
   totalAmount={paymentInvoice?.total}
   currency={paymentInvoice?.currency}
   amountPaid={0}
-
   onSubmit={() => {
     fetchInvoices();
   }}

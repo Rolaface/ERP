@@ -18,6 +18,7 @@ export interface ReceiveCustomerPaymentPayload {
   amount: number;
   reference_number?: string;
   deposit_into_account?: string;
+  notes?: string;
 }
 /**
  * Receive payment for a customer invoice

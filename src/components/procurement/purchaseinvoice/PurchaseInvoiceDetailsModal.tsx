@@ -56,7 +56,7 @@ export interface PurchaseInvoiceDetail {
     item_code?: string;
     item_name?: string;
     qty?: number;
-    uom?: string;
+    packing?: string;
     rate?: number;
     amount?: number;
     VatCd?: string;
@@ -64,7 +64,7 @@ export interface PurchaseInvoiceDetail {
     packingUnit?: string;
     packingSize?: string;
     mfgDate?: string | null;
-    schedule_date?: string;
+  schedule_date?: string;
   }>;
   tax?: {
     type?: string;
@@ -272,10 +272,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                 <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Invoice Date</p>
                 <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.pDate)}</p>
               </div>
-              <div style={{ padding: "9px 11px", borderRadius: 7, background: "var(--bg)", border: "1px solid var(--border)" }}>
-                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Required By</p>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.requiredBy)}</p>
-              </div>
+
             </div>
 
             {/* ── SUPPLIER & TRANSACTION ── */}
@@ -302,13 +299,13 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                 {data.destnCountryCd      && <F label="Destination"    value={data.destnCountryCd?.toUpperCase()} />}
               </div>
             )}
-            {data.metadata && (
+            {/* {data.metadata && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginTop: 7 }}>
                 <F label="Created By" value={data.metadata.createdBy} />
                 <F label="Created At" value={fmtDate(data.metadata.createdAt)} />
                 {data.metadata.remarks && <F label="Remarks" value={data.metadata.remarks} />}
               </div>
-            )}
+            )} */}
 
             {/* ── ADDRESSES ── */}
             {data.addresses &&
@@ -346,8 +343,10 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
               <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 60px 60px 88px 88px", padding: "6px 10px", background: "var(--table-head)", color: "var(--table-head-text)", fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", gap: 4 }}>
                 <span>Item</span>
                 <span style={{ textAlign: "right" }}>Qty</span>
-                <span style={{ textAlign: "center" }}>UOM</span>
+                <span style={{ textAlign: "center" }}>Packing</span>
                 <span style={{ textAlign: "right" }}>Rate</span>
+                
+
                 <span style={{ textAlign: "right" }}>Amount</span>
               </div>
 
@@ -385,7 +384,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                     </div>
                   </div>
                   <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{(it.qty ?? 0).toLocaleString()}</p>
-                  <p style={{ fontSize: 11, textAlign: "center", color: "var(--muted)" }}>{it.uom || "—"}</p>
+                  <p style={{ fontSize: 11, textAlign: "center", color: "var(--muted)" }}>{it.packing || "—"}</p>
                   <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(it.rate, currency)}</p>
                   <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(it.amount, currency)}</p>
                 </div>

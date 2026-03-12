@@ -183,7 +183,7 @@ const fetchPayments = useCallback(async () => {
         enableColumnSelector
         searchValue={searchTerm}
          enableAdd
-        addLabel="Add Payment"
+        addLabel="Recieve Payment"
         onAdd={handleAddPayment}
         onSearch={(q) => {
   setSearchTerm(q);

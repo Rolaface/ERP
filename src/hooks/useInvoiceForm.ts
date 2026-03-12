@@ -169,12 +169,14 @@ export const useInvoiceForm = (
     getExchangeRate(code)
       .then((res) => {
         if (cancelled) return;
-        const rate = Number(res?.exchange_rate);
-        if (!Number.isFinite(rate) || rate <= 0) {
-          setExchangeRateError("Invalid exchange rate");
-          return;
-        }
-        setFormData((prev) => ({ ...prev, exchangeRt: String(rate) }));
+       const rate = Number(res?.exchange_rate);
+
+setFormData((prev) => ({
+  ...prev,
+  exchangeRt: Number.isFinite(rate) && rate > 0 ? String(rate) : "1",
+}));
+
+setExchangeRateError(null);
       })
       .catch(() => {
         if (cancelled) return;
@@ -276,6 +278,12 @@ export const useInvoiceForm = (
         setPage(Math.floor(idx / ITEMS_PER_PAGE));
         throw new Error(`Item ${idx + 1}: Price must be greater than 0`);
       }
+      if (it.qty !== undefined && Number(it.quantity) > Number(it.qty)) {
+  setPage(Math.floor(idx / ITEMS_PER_PAGE));
+  throw new Error(
+    `Item ${idx + 1}: Quantity (${it.quantity}) exceeds available stock (${it.qty}) for batch ${it.batchNo || "N/A"}`
+  );
+}
     });
 
     if (invoiceType === "lpo") {
