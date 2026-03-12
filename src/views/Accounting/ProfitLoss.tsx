@@ -1,358 +1,502 @@
-import React, { useMemo, useState } from "react";
-import { FaDownload, FaChartPie } from "react-icons/fa";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
+import type { Column } from "../../components/ui/Table/type";
+import {
+  getProfitAndLoss,
+  type ProfitLossFilters,
+} from "../../api/Accounting/AccountApi";
+import {
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+  Folder,
+  FolderOpen,
+  FileText,
+  ChevronRight,
+  Layers,
+} from "lucide-react";
+import { PLNode, PLData, PLResponse, mapNode, nf, formatPeriod } from "../../types/Accounting/ProfitLoss";
 
-type Account = {
-  code: string;
-  name: string;
-  type: string;
-  balance: number;
+
+
+
+const toInputDate = (apiDate: string): string => {
+  if (!apiDate || !apiDate.includes("-")) return "";
+  const parts = apiDate.split("-");
+  if (parts[0].length === 4) return apiDate;
+  const [d, m, y] = parts;
+  return `${y}-${m}-${d}`;
 };
 
-type ProfitLossData = {
-  revenue?: number;
-  expenses?: number;
-  grossProfit?: number;
-  operatingExpenses?: number;
-  netIncome?: number;
-  activeAccounts?: Account[];
+const toApiDate = (inputDate: string): string => {
+  if (!inputDate || !inputDate.includes("-")) return "";
+  const [y, m, d] = inputDate.split("-");
+  return `${d}-${m}-${y}`;
 };
 
-type Props = {
-  profitLoss?: ProfitLossData;
-  reportPeriod: string;
-  setReportPeriod: (v: string) => void;
-  reportYear: string;
-  setReportYear: (v: string) => void;
-  reportMonth: string;
-  setReportMonth: (v: string) => void;
-  monthNames: { [key: string]: string };
+const currentYear = new Date().getFullYear();
+
+const currentMonthStart = () => {
+  const d = new Date();
+  return `01-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
 };
 
-// keep values identical, only formatting
-const nf = (v?: number) => {
-  const n = typeof v === "number" && !Number.isNaN(v) ? Math.round(v) : 0;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
+const currentMonthEnd = () => {
+  const d = new Date();
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  return `${String(last).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
 };
 
-export default function ProfitLossImproved({
-  profitLoss,
-  reportPeriod,
-  setReportPeriod,
-  reportYear,
-  setReportYear,
-  reportMonth,
-  setReportMonth,
-  monthNames,
-}: Props) {
-  const safeProfitLoss: Required<ProfitLossData> = {
-    revenue: profitLoss?.revenue ?? 0,
-    expenses: profitLoss?.expenses ?? 0,
-    grossProfit: profitLoss?.grossProfit ?? 0,
-    operatingExpenses: profitLoss?.operatingExpenses ?? 0,
-    netIncome: profitLoss?.netIncome ?? 0,
-    activeAccounts: profitLoss?.activeAccounts ?? [],
-  };
 
-  const [showRevenue, setShowRevenue] = useState(true);
-  const [showExpenses, setShowExpenses] = useState(true);
 
-  const revenueAccounts = useMemo(
-    () => safeProfitLoss.activeAccounts.filter((a) => a.type === "Revenue"),
-    [safeProfitLoss.activeAccounts],
+const nodeKey = (n: PLNode) => n.id;
+/*
+  EXPAND ICON
+*/
+
+function expandIcon(
+  _node: PLNode,
+  isExpanded: boolean,
+  hasChildren: boolean
+): React.ReactNode {
+  if (!hasChildren)
+    return <FileText size={12} className="text-muted opacity-50" />;
+  return isExpanded ? (
+    <FolderOpen size={13} className="text-muted" />
+  ) : (
+    <Folder size={13} className="text-muted" />
   );
-  const expenseAccounts = useMemo(
-    () => safeProfitLoss.activeAccounts.filter((a) => a.type === "Expense"),
-    [safeProfitLoss.activeAccounts],
-  );
+}
 
-  const monthLabel = monthNames?.[reportMonth] ?? reportMonth ?? "";
-  const title =
-    reportPeriod === "monthly"
-      ? `${monthLabel} ${reportYear}`
-      : `${reportYear}`;
-  const cogsAccount = safeProfitLoss.activeAccounts.find(
-    (a) => a.code === "5000",
-  );
+/*
+  SUMMARY STRIP
+*/
+
+function SummaryStrip({ data }: { data: PLData }) {
+  const items = data.summary.filter((i) => !i.type);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex gap-3 items-center">
-          <select
-            value={reportPeriod}
-            onChange={(e) => setReportPeriod(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
-          >
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-          </select>
+    <div className="grid grid-cols-3 gap-3 w-full max-w-[900px]">
+      {items.map((item) => {
+        const isProfit = item.indicator?.toLowerCase() === "green";
 
-          {reportPeriod === "monthly" && (
-            <select
-              value={reportMonth}
-              onChange={(e) => setReportMonth(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
-            >
-              {Object.entries(monthNames).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <select
-            value={reportYear}
-            onChange={(e) => setReportYear(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
-          >
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-          </select>
-        </div>
-
-        <div className="flex gap-2 items-center">
-          <button className="px-3 py-2 rounded-lg border border-transparent bg-indigo-600 shadow-sm text-sm hover:bg-indigo-700 text-white flex items-center gap-2">
-            <FaDownload />
-            Export
-          </button>
-          <div className="p-1 rounded-lg bg-white border border-gray-100 shadow-sm">
-            <button className="px-3 py-2 rounded-md bg-rose-500 text-white text-sm hover:bg-rose-600">
-              PDF
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Card container styled like balance sheet */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-5 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Profit & Loss — summary (values unchanged)
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-white border border-gray-100 text-center shadow-sm min-w-[140px]">
-                <div className="text-xs text-gray-500">Revenue</div>
-                <div className="text-lg font-semibold text-indigo-800">
-                  {nf(safeProfitLoss.revenue)}
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg bg-white border border-gray-100 text-center shadow-sm min-w-[140px]">
-                <div className="text-xs text-gray-500">Gross Profit</div>
-                <div className="text-lg font-semibold text-emerald-800">
-                  {nf(safeProfitLoss.grossProfit)}
-                </div>
-              </div>
-
-              <div
-                className={`p-3 rounded-lg border shadow-sm text-center min-w-[140px] ${
-                  safeProfitLoss.netIncome >= 0
-                    ? "border-emerald-100 bg-emerald-50"
-                    : "border-rose-100 bg-rose-50"
-                }`}
-              >
-                <div className="text-xs text-gray-500">Net Income</div>
-                <div
-                  className={`text-lg font-semibold ${safeProfitLoss.netIncome >= 0 ? "text-emerald-700" : "text-rose-700"}`}
-                >
-                  {nf(safeProfitLoss.netIncome)}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: Revenue & COGS */}
-            <div className="flex flex-col">
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100 h-full flex flex-col">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center">
-                    <FaChartPie className="text-white" />
-                  </div>
-                  <h4 className="text-xl font-bold text-indigo-900">
-                    REVENUE & COGS
-                  </h4>
-                </div>
-
-                <div className="flex-1">
-                  <div className="bg-white rounded-lg p-4 shadow-sm border border-indigo-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-sm font-semibold text-gray-700">
-                        Revenue
-                      </div>
-                      <div className="text-sm font-medium text-indigo-800">
-                        {nf(safeProfitLoss.revenue)}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      {showRevenue && (
-                        <div className="grid grid-cols-1 gap-2">
-                          {revenueAccounts.map((acc) => (
-                            <div
-                              key={acc.code}
-                              className="flex justify-between items-center text-sm"
-                            >
-                              <span className="text-gray-600">{acc.name}</span>
-                              <span className="text-gray-900 font-medium">
-                                {nf(acc.balance)}
-                              </span>
-                            </div>
-                          ))}
-
-                          {revenueAccounts.length === 0 && (
-                            <div className="text-sm text-gray-500">
-                              No revenue accounts available
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 font-semibold text-indigo-700">
-                        <span>Gross Profit</span>
-                        <span>{nf(safeProfitLoss.grossProfit)}</span>
-                      </div>
-
-                      <div className="mt-3 flex justify-end">
-                        <button
-                          onClick={() => setShowRevenue((s) => !s)}
-                          className="text-sm px-3 py-1 rounded-md border border-gray-200 bg-white"
-                        >
-                          {showRevenue ? "Hide details" : "Show details"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Expenses & Net Income */}
-            <div className="flex flex-col">
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-100 h-full flex flex-col">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center">
-                    <span className="text-white font-bold">E</span>
-                  </div>
-                  <h4 className="text-xl font-bold text-emerald-900">
-                    OPERATING EXPENSES
-                  </h4>
-                </div>
-
-                <div className="flex-1">
-                  <div className="bg-white rounded-lg p-4 shadow-sm border border-emerald-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-sm font-semibold text-gray-700">
-                        Operating Expenses
-                      </div>
-                      <div className="text-sm font-medium text-emerald-800">
-                        {nf(safeProfitLoss.operatingExpenses)}
-                      </div>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      {showExpenses && (
-                        <table className="w-full text-sm table-auto">
-                          <thead>
-                            <tr className="text-left text-xs text-gray-500 uppercase">
-                              <th className="p-2">Account</th>
-                              <th className="p-2">Code</th>
-                              <th className="p-2 text-right">Balance</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {expenseAccounts
-                              .filter((a) => a.code !== "5000")
-                              .map((acc) => (
-                                <tr
-                                  key={acc.code}
-                                  className="bg-white border-b"
-                                >
-                                  <td className="p-2">{acc.name}</td>
-                                  <td className="p-2">{acc.code}</td>
-                                  <td className="p-2 text-right font-medium">
-                                    {nf(acc.balance)}
-                                  </td>
-                                </tr>
-                              ))}
-
-                            {expenseAccounts.filter((a) => a.code !== "5000")
-                              .length === 0 && (
-                              <tr>
-                                <td
-                                  colSpan={3}
-                                  className="p-3 text-sm text-gray-500"
-                                >
-                                  No operating expense accounts available
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 font-bold text-emerald-700">
-                      <span>Net Income</span>
-                      <span
-                        className={
-                          safeProfitLoss.netIncome >= 0
-                            ? "text-emerald-800"
-                            : "text-rose-700"
-                        }
-                      >
-                        {nf(safeProfitLoss.netIncome)}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        onClick={() => setShowExpenses((s) => !s)}
-                        className="text-sm px-3 py-1 rounded-md border border-gray-200 bg-white"
-                      >
-                        {showExpenses ? "Hide rows" : "Show rows"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom summary */}
+        return (
           <div
-            className={`mt-6 p-4 rounded-lg ${safeProfitLoss.netIncome >= 0 ? "bg-emerald-50" : "bg-rose-50"}`}
+            key={item.label}
+            className="rounded-xl border p-3 flex flex-col gap-1 bg-card w-full"
           >
-            <div className="flex items-center justify-between text-lg font-bold">
-              <div className="text-gray-800">Net Income</div>
-              <div
-                className={
-                  safeProfitLoss.netIncome >= 0
-                    ? "text-emerald-700"
-                    : "text-rose-700"
-                }
-              >
-                {nf(safeProfitLoss.netIncome)}
-              </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-muted opacity-70">
+                {item.label}
+              </span>
+            </div>
+
+            <div
+              className={`text-sm font-black tracking-tight ${isProfit ? "text-emerald-500" : "text-rose-500"
+                }`}
+            >
+              {nf(item.value, item.currency)}
             </div>
           </div>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 }
+
+/*
+  FILTER BAR
+*/
+type FilterBarProps = {
+  filters: ProfitLossFilters;
+  setFilters: React.Dispatch<React.SetStateAction<ProfitLossFilters>>;
+  onRefresh: () => void;
+  loading: boolean;
+  onExpandAll: () => void;
+  onCollapseAll: () => void;
+};
+
+function FilterBar({
+  filters,
+  setFilters,
+  onRefresh,
+  loading,
+  onExpandAll,
+  onCollapseAll,
+}: FilterBarProps) {
+  const inputClass =
+    "w-25 px-2 py-1.5 border border-[var(--border)] rounded-lg bg-card text-main text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all";
+
+  const btnClass =
+    "flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap";
+
+  return (
+    <div className="w-[900px] flex items-center gap-2 flex-nowrap overflow-x-auto p-3 rounded-xl border border-[var(--border)] bg-card shadow-sm scrollbar-thin">
+
+
+      {/* MODE */}
+      <div className="flex items-center gap-1">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+          Mode
+        </span>
+
+        <select
+          value={filters.mode}
+          onChange={(e) => {
+            const mode = e.target.value as "Fiscal Year" | "Date Range";
+
+            setFilters((f) => ({
+              ...f,
+              mode,
+              ...(mode === "Date Range"
+                ? {
+                  from_date: currentMonthStart(),
+                  to_date: currentMonthEnd(),
+                }
+                : {
+                  from_fiscal_year: currentYear,
+                  to_fiscal_year: currentYear,
+                })
+            }));
+          }}
+          className={inputClass}
+        >
+          <option value="Fiscal Year">Fiscal Year</option>
+          <option value="Date Range">Date Range</option>
+        </select>
+      </div>
+      {/* PERIODICITY */}
+      <div className="flex items-center gap-1">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+          Period
+        </span>
+
+        <select
+          value={filters.periodicity}
+          onChange={(e) =>
+            setFilters((f) => ({
+              ...f,
+              periodicity: e.target.value as ProfitLossFilters["periodicity"]
+            }))
+          }
+          className={inputClass}
+        >
+          <option value="Monthly">Monthly</option>
+          <option value="Quarterly">Quarterly</option>
+          <option value="Yearly">Yearly</option>
+          <option value="Half-Yearly">Half-Yearly</option>
+        </select>
+      </div>
+
+      {/* FROM FY */}
+      {filters.mode !== "Date Range" && (
+        <>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+              From FY
+            </span>
+
+            <input
+              type="number"
+              value={filters.from_fiscal_year}
+              onChange={(e) =>
+                setFilters((f) => ({
+                  ...f,
+                  from_fiscal_year: Number(e.target.value)
+                }))
+              }
+              className={inputClass}
+            />
+          </div>
+
+          {/* TO FY */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+              To FY
+            </span>
+
+            <input
+              type="number"
+              value={filters.to_fiscal_year}
+              onChange={(e) =>
+                setFilters((f) => ({
+                  ...f,
+                  to_fiscal_year: Number(e.target.value)
+                }))
+              }
+              className={inputClass}
+            />
+          </div>
+        </>)
+      }
+      {/* FROM DATE */}
+      {filters.mode === "Date Range" && (
+        <>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+              From
+            </span>
+
+            <input
+              type="date"
+              value={toInputDate(filters.from_date ?? "")}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, from_date: toApiDate(e.target.value) }))
+              }
+              className={inputClass}
+            />
+          </div>
+
+          {/* TO DATE */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+              To
+            </span>
+
+            <input
+              type="date"
+              value={toInputDate(filters.to_date ?? "")}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, to_date: toApiDate(e.target.value) }))
+              }
+              className={inputClass}
+            />
+          </div>
+        </>)}
+
+      <div className="h-5 w-px bg-[var(--border)] mx-1" />
+
+      {/* EXPAND */}
+      <button onClick={onExpandAll} className={btnClass}>
+        <Layers size={11} />
+        Expand All
+      </button>
+
+      {/* COLLAPSE */}
+      <button onClick={onCollapseAll} className={btnClass}>
+        <ChevronRight size={11} />
+        Collapse
+      </button>
+
+    </div>
+  );
+}
+
+/*
+  MAIN COMPONENT
+*/
+
+const ProfitLoss: React.FC = () => {
+
+
+  const currentYear = new Date().getFullYear();
+
+  const [filters, setFilters] = useState<ProfitLossFilters>({
+    mode: "Fiscal Year",
+    periodicity: "Monthly",
+    from_fiscal_year: currentYear,
+    to_fiscal_year: currentYear,
+    from_date: currentMonthStart(),
+    to_date: currentMonthEnd()
+  });
+
+  const [data, setData] = useState<PLData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandKey, setExpandKey] = useState(0);
+  const [expandDepth, setExpandDepth] = useState(2);
+
+
+
+  const handleExpandAll = useCallback(() => {
+    setExpandDepth(Number.MAX_SAFE_INTEGER);
+    setExpandKey((k) => k + 1);
+  }, []);
+
+  const handleCollapseAll = useCallback(() => {
+    setExpandDepth(0);
+    setExpandKey((k) => k + 1);
+  }, []);
+
+  const tableData = useMemo(() => {
+    if (!data) return [];
+
+    return [
+      ...data.income,
+      ...data.expense
+    ];
+  }, [data]);
+
+
+  const fetchPL = useCallback(
+    async (currentFilters: ProfitLossFilters) => {
+      setLoading(true);
+      setError(null);
+      try {
+        if (
+          currentFilters.mode === "Date Range" &&
+          (!currentFilters.from_date || !currentFilters.to_date)
+        ) {
+          setError("Please select a valid date range.");
+          return;
+        }
+        const params =
+          currentFilters.mode === "Date Range"
+            ? {
+
+              periodicity: currentFilters.periodicity,
+              from_date: currentFilters.from_date,
+              to_date: currentFilters.to_date,
+              filter_based_on: "Date Range"
+            }
+            : {
+              periodicity: currentFilters.periodicity,
+              from_fiscal_year: currentFilters.from_fiscal_year,
+              to_fiscal_year: currentFilters.to_fiscal_year,
+              filter_based_on: "Fiscal Year"
+            };
+        const res: PLResponse = await getProfitAndLoss(params);
+        console.log("API RESPONSE:", res);
+        if (res?.message?.status_code === 200) {
+          const d = res.message.data;
+
+          setData({
+            ...d,
+            income: d.income.map(mapNode),
+            expense: d.expense.map(mapNode),
+          });
+        } else {
+          setError(res?.message?.message ?? "Failed to load Profit & Loss.");
+        }
+      } catch (err: any) {
+        setError(err?.message ?? "Error fetching Profit & Loss.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+
+  /* Debounced fetch */
+  useEffect(() => {
+    if (
+      filters.mode === "Date Range" &&
+      (!filters.from_date || !filters.to_date)
+    )
+      return;
+
+    if (
+      filters.mode === "Fiscal Year" &&
+      (!filters.from_fiscal_year || !filters.to_fiscal_year)
+    )
+      return;
+
+    const timer = setTimeout(() => fetchPL(filters), 300);
+    return () => clearTimeout(timer);
+  }, [filters, fetchPL]);
+
+
+
+  const columns: Column<PLNode>[] = useMemo(() => {
+    if (!data?.columns) return [];
+
+    return data.columns
+      .filter((col) => !col.hidden)
+      .map((col) => {
+        if (col.fieldname === "account") {
+          return {
+            key: "account_name",
+            header: col.label,
+            width: 220,
+            align: "left" as const,
+            render: (row: PLNode) => (
+              <span className={row.is_group ? "font-semibold" : ""}>
+                {row.account_name}
+              </span>
+            )
+          }
+        }
+
+        return {
+          key: col.fieldname,
+          header: col.label,
+          width: Math.min(col.width ?? 100, 90),
+          align: "right" as const,
+          render: (row: PLNode) =>
+            nf(row.periods?.[col.fieldname] ?? 0, row.currency)
+        }
+      })
+  }, [data]);
+
+  /*  FULL-PAGE STATES  */
+  if (loading && !data) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 size={30} className="animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <div className="flex flex-col items-center py-20 gap-3">
+        <AlertCircle size={26} className="text-danger" />
+        <p className="text-danger text-sm">{error}</p>
+        <button
+          onClick={() => fetchPL(filters)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded"
+        >
+          <RefreshCw size={14} />
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  /*  RENDER  */
+  return (
+    <div className="flex flex-col gap-4 w-full overflow-x-hidden">
+      {/* Summary */}
+      {data && <SummaryStrip data={data} />}
+
+      {/* Filter bar — top, shared */}
+      <FilterBar
+        filters={filters}
+        setFilters={setFilters}
+        onRefresh={() => fetchPL(filters)}
+        loading={loading}
+        onExpandAll={handleExpandAll}
+        onCollapseAll={handleCollapseAll}
+      />
+
+      <style>{`
+ .pl-no-minw table {
+  width: max-content;
+  min-width: 100%;
+}
+`}</style>
+
+      <div className="w-full max-w-full overflow-hidden rounded-xl border border-[var(--border)]">
+        <div className="pl-no-minw w-full max-w-full overflow-x-auto">
+          <ExpandableTreeTable<PLNode>
+            key={`pl-${expandKey}`}
+            columns={columns}
+            data={tableData}
+            childrenKey="children"
+            nodeKey={nodeKey}
+            showToolbar={false}
+            defaultExpandDepth={expandDepth}
+            expandIconRender={expandIcon}
+            loading={loading}
+            emptyMessage="No Profit & Loss data."
+          />
+        </div>
+
+
+      </div>
+    </div>
+  );
+};
+
+export default ProfitLoss;
