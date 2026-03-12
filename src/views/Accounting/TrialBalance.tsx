@@ -20,6 +20,7 @@ import {
 export type TBAccount = {
   account: string;
   account_name: string;
+   currency?: string;
   indent: number;
 
   opening_debit: number;
@@ -33,14 +34,19 @@ export type TBAccount = {
 
   has_value: boolean;
   children: TBAccount[];
+
+
 };
 
 type TBResponse = {
   message: {
     status_code: number;
     status: string;
+    message: string;
     data: {
       company: string;
+      total_accounts: number;
+
       totals: {
         opening_debit: number;
         opening_credit: number;
@@ -49,23 +55,31 @@ type TBResponse = {
         closing_debit: number;
         closing_credit: number;
       };
+
       accounts: TBAccount[];
     };
   };
 };
 
 /*  HELPERS  */
+const nf = (value: number, currency?: string) => {
+  if (!value) return "—";
 
-const nf = (v: number) =>
-  new Intl.NumberFormat("en-IN", {
-    minimumFractionDigits: 0,
-  }).format(Math.round(v));
+  const formatted = new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+
+  return `${currency ?? ""} ${formatted}`.trim();
+};
 
 function expandIcon(
-  _node: TBAccount,
+  node: TBAccount,
   isExpanded: boolean,
   hasChildren: boolean
 ) {
+  if (node.account === "__total__") return null;
+
   if (!hasChildren)
     return <BookOpen size={12} className="text-muted opacity-50" />;
 
@@ -83,7 +97,28 @@ const TrialBalance: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+const tableData: TBAccount[] = React.useMemo(() => {
+  if (!data) return [];
 
+  const totalRow: TBAccount = {
+    account: "__total__",
+    account_name: "TOTAL",
+    indent: 0,
+   currency: data.accounts?.[0]?.currency ?? "",
+
+    opening_debit: data.totals.opening_debit,
+    opening_credit: data.totals.opening_credit,
+    debit: data.totals.debit,
+    credit: data.totals.credit,
+    closing_debit: data.totals.closing_debit,
+    closing_credit: data.totals.closing_credit,
+
+    has_value: true,
+    children: [],
+  };
+
+  return [...data.accounts, totalRow];
+}, [data]);
 
   /*  Filters  */
 
@@ -117,6 +152,16 @@ const TrialBalance: React.FC = () => {
   });
 }, [filters.fiscal_year]);
 
+useEffect(() => {
+  if (!/^\d{4}$/.test(String(filters.fiscal_year))) return;
+
+  const timer = setTimeout(() => {
+    fetchTB(filters);
+  }, 300);
+
+  return () => clearTimeout(timer);
+}, [filters]);
+
   /*  Fetch API  */
 
   const fetchTB = async (currentFilters: TrialBalanceFilters = filters) => {
@@ -144,15 +189,33 @@ const TrialBalance: React.FC = () => {
     }
   };
 
-useEffect(() => {
-  if (!/^\d{4}$/.test(String(filters.fiscal_year))) return;
+   /*  STATES  */
 
-  const timer = setTimeout(() => {
-    fetchTB(filters);
-  }, 300);
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 size={30} className="animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  return () => clearTimeout(timer);
-}, [filters]);
+  if (error) {
+    return (
+      <div className="flex flex-col items-center py-20 gap-3">
+        <AlertCircle size={26} className="text-danger" />
+        <p className="text-danger text-sm">{error}</p>
+        <button
+          onClick={() => fetchTB()}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded"
+        >
+          <RefreshCw size={14} />
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+
   /*  COLUMNS  */
 
 const toApiDate = (date: string) => {
@@ -161,50 +224,86 @@ const toApiDate = (date: string) => {
   return `${d}-${m}-${y}`;
 };
   const columns: Column<TBAccount>[] = [
-    {
-      key: "account_name",
-      header: "Account",
-      render: (row) => (
-        <span className={row.indent === 0 ? "font-semibold" : ""}>
-          {row.account_name}
-        </span>
-      ),
-    },
+{
+  key: "account_name",
+  header: "Account",
+  render: (row) => {
+    const isTotal = row.account === "__total__";
+
+    return (
+      <div
+        className={`max-w-[320px] whitespace-normal break-words ${
+          isTotal
+            ? "font-bold text-primary"
+            : row.indent === 0
+            ? "font-semibold"
+            : ""
+        }`}
+      >
+        {row.account_name}
+      </div>
+    );
+  },
+},
     {
       key: "opening_debit",
       header: "Opening Debit",
       align: "right",
-      render: (row) => (row.opening_debit ? nf(row.opening_debit) : "—"),
+      render: (row) => (
+ <span className="tabular-nums text-right">
+    {nf(row.opening_debit, row.currency)}
+  </span>
+)
     },
     {
       key: "opening_credit",
       header: "Opening Credit",
       align: "right",
-      render: (row) => (row.opening_credit ? nf(row.opening_credit) : "—"),
+     render: (row) => (
+  <span className="tabular-nums text-right">
+    {nf(row.opening_credit, row.currency)}
+  </span>
+)
     },
     {
       key: "debit",
       header: "Debit",
       align: "right",
-      render: (row) => (row.debit ? nf(row.debit) : "—"),
+      render: (row) => (
+  <span className="tabular-nums text-right">
+    {nf(row.debit, row.currency)}
+  </span>
+)
     },
     {
       key: "credit",
       header: "Credit",
       align: "right",
-      render: (row) => (row.credit ? nf(row.credit) : "—"),
+      render: (row) => (
+  <span className="tabular-nums text-right">
+    {nf(row.credit, row.currency)}
+  </span>
+)
     },
     {
       key: "closing_debit",
       header: "Closing Debit",
       align: "right",
-      render: (row) => (row.closing_debit ? nf(row.closing_debit) : "—"),
+     render: (row) => (
+  <span className="tabular-nums text-right">
+    {nf(row.closing_debit, row.currency)}
+  </span>
+)
     },
     {
       key: "closing_credit",
       header: "Closing Credit",
       align: "right",
-      render: (row) => (row.closing_credit ? nf(row.closing_credit) : "—"),
+      render: (row) => (
+  <span className="tabular-nums text-right">
+    {nf(row.closing_credit, row.currency)}
+  </span>
+)
     },
   ];
 
@@ -305,38 +404,17 @@ const toApiDate = (date: string) => {
     </div>
   );
 
-  /*  STATES  */
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 size={30} className="animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center py-20 gap-3">
-        <AlertCircle size={26} className="text-danger" />
-        <p className="text-danger text-sm">{error}</p>
-        <button
-          onClick={fetchTB}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded"
-        >
-          <RefreshCw size={14} />
-          Retry
-        </button>
-      </div>
-    );
-  }
+ 
 
   /*  TABLE  */
 
+  
+
   return (
+  <div className="flex flex-col gap-2">
     <ExpandableTreeTable<TBAccount>
       columns={columns}
-      data={data?.accounts ?? []}
+      data={tableData}
       childrenKey="children"
       nodeKey={(node) => node.account}
       showToolbar
@@ -348,7 +426,10 @@ const toApiDate = (date: string) => {
       loading={loading}
       emptyMessage="No trial balance data."
     />
-  );
+
+    
+  </div>
+);
 };
 
 export default TrialBalance;
