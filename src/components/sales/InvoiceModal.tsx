@@ -1,14 +1,14 @@
-import React, { useState , useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
-import { showApiError,showValidationError } from "../../utils/alert";
+import { showApiError, showValidationError } from "../../utils/alert";
 import { User, Mail, Phone } from "lucide-react";
 import CustomerSelect from "../selects/CustomerSelect";
 import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
-import ItemSelect from "../selects/ItemSelect";
+import StockItemSelect from "../selects/StockItemSelect";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import {
   invoiceStatusOptions,
@@ -20,7 +20,6 @@ import PaymentInfoBlock from "./PaymentInfoBlock";
 import AddressBlock from "../ui/modal/AddressBlock";
 import { formatDate } from "../../utils/dateFormatter";
 import "react-datepicker/dist/react-datepicker.css";
-
 
 // import ModalInput from "../ui/ModalInput";
 // import ModalSelect from "../ui/ModalSelect";
@@ -43,21 +42,21 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 }) => {
   if (!isOpen) return null;
   const [submitting, setSubmitting] = useState(false);
-const {
-  formData,
-  customerDetails,
-  customerNameDisplay,
-  paginatedItems,
-  totals,
-  ui,
-  actions,
-} = useInvoiceForm(
-  isOpen,
-  onClose,
-  undefined,
-  mode === "edit" ? "edit" : "invoice",
-  initialData
-);
+  const {
+    formData,
+    customerDetails,
+    customerNameDisplay,
+    paginatedItems,
+    totals,
+    ui,
+    actions,
+  } = useInvoiceForm(
+    isOpen,
+    onClose,
+    undefined,
+    mode === "edit" ? "edit" : "invoice",
+    initialData,
+  );
   // Removed allowSubmit state, no longer needed.
   const tabs: Array<"details" | "address" | "terms"> = [
     "details",
@@ -66,30 +65,30 @@ const {
   ];
 
   const handleNext = () => {
-  try {
-    actions.validateForm();
+    try {
+      actions.validateForm();
 
-    const currentIndex = tabs.indexOf(ui.activeTab as any);
+      const currentIndex = tabs.indexOf(ui.activeTab as any);
 
-    if (currentIndex < tabs.length - 1) {
-      ui.setActiveTab(tabs[currentIndex + 1]);
+      if (currentIndex < tabs.length - 1) {
+        ui.setActiveTab(tabs[currentIndex + 1]);
+      }
+    } catch (err: any) {
+      showValidationError(err.message);
     }
+  };
 
-  } catch (err: any) {
-    showValidationError(err.message);
-  }
-};
-
-useEffect(() => {
-  if (isOpen) {
-    ui.setActiveTab("details");
-  }
-}, [isOpen]);
-
+  useEffect(() => {
+    if (isOpen) {
+      ui.setActiveTab("details");
+    }
+  }, [isOpen]);
 
   const symbol = currencySymbols[formData.currencyCode] || "";
   const showExchangeRate =
-    String(formData.currencyCode ?? "").trim().toUpperCase() !== "INR";
+    String(formData.currencyCode ?? "")
+      .trim()
+      .toUpperCase() !== "INR";
   const showExportField = ui.isExport;
   // Remove internal handleFormSubmit. Let parent handle submit.
 
@@ -97,7 +96,12 @@ useEffect(() => {
 
   const footerContent = (
     <>
-      <Button variant="secondary" onClick={onClose} type="button" disabled={submitting}>
+      <Button
+        variant="secondary"
+        onClick={onClose}
+        type="button"
+        disabled={submitting}
+      >
         Cancel
       </Button>
       <div className="flex gap-2">
@@ -112,25 +116,33 @@ useEffect(() => {
         <Button
           variant="primary"
           type="button"
-          onClick={ui.activeTab !== "terms" ? handleNext : async () => {
-            if (submitting) return;
-            setSubmitting(true);
-            try {
-              // Create a dummy event to satisfy handleSubmit's required argument
-              const dummyEvent = { preventDefault: () => { } } as React.FormEvent;
-              const payload = await actions.handleSubmit(dummyEvent);
-              if (!payload) {
-                showValidationError("Please fill all required fields correctly.");
-                setSubmitting(false);
-                return;
-              }
-              await onSubmit?.(payload);
-            } catch (err: any) {
-              showApiError(err);
-            } finally {
-              setSubmitting(false);
-            }
-          }}
+          onClick={
+            ui.activeTab !== "terms"
+              ? handleNext
+              : async () => {
+                  if (submitting) return;
+                  setSubmitting(true);
+                  try {
+                    // Create a dummy event to satisfy handleSubmit's required argument
+                    const dummyEvent = {
+                      preventDefault: () => {},
+                    } as React.FormEvent;
+                    const payload = await actions.handleSubmit(dummyEvent);
+                    if (!payload) {
+                      showValidationError(
+                        "Please fill all required fields correctly.",
+                      );
+                      setSubmitting(false);
+                      return;
+                    }
+                    await onSubmit?.(payload);
+                  } catch (err: any) {
+                    showApiError(err);
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }
+          }
           disabled={submitting}
         >
           {ui.activeTab === "terms"
@@ -168,10 +180,11 @@ useEffect(() => {
                 type="button"
                 onClick={() => ui.setActiveTab(tab)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all 
-              ${ui.activeTab === tab
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+              ${
+                ui.activeTab === tab
+                  ? "text-primary border-b-[3px] border-primary"
+                  : "text-muted border-b-[3px] border-transparent hover:text-main"
+              }`}
               >
                 {tab === "details" && "Details"}
                 {tab === "address" && "Additional Details"}
@@ -187,16 +200,16 @@ useEffect(() => {
           {ui.activeTab === "details" && (
             <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
               <div className="">
-
                 <div
-                  className={`grid ${showExchangeRate
-                    ? showExportField
-                      ? "grid-cols-[220px_150px_150px_100px_100px_120px_120px_140px]"
-                      : "grid-cols-[220px_150px_150px_100px_100px_120px_120px]"
-                    : showExportField
-                      ? "grid-cols-[220px_150px_150px_100px_120px_120px_140px]"
-                      : "grid-cols-[220px_150px_150px_100px_120px_120px]"
-                    } gap-3 items-start`}
+                  className={`grid ${
+                    showExchangeRate
+                      ? showExportField
+                        ? "grid-cols-[220px_150px_150px_100px_100px_120px_120px_140px]"
+                        : "grid-cols-[220px_150px_150px_100px_100px_120px_120px]"
+                      : showExportField
+                        ? "grid-cols-[220px_150px_150px_100px_120px_120px_140px]"
+                        : "grid-cols-[220px_150px_150px_100px_120px_120px]"
+                  } gap-3 items-start`}
                 >
                   <CustomerSelect
                     value={customerNameDisplay}
@@ -215,7 +228,6 @@ useEffect(() => {
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
 
-
                   <ModalInput
                     label="Due Date"
                     name="dueDate"
@@ -227,8 +239,6 @@ useEffect(() => {
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
 
-
-
                   <ModalSelect
                     label="Currency"
                     name="currencyCode"
@@ -238,7 +248,6 @@ useEffect(() => {
                     disabled
                     className="w-full  border border-theme rounded text-[11px] text-main bg-card"
                   />
-
 
                   {showExchangeRate && (
                     <div>
@@ -285,9 +294,7 @@ useEffect(() => {
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
 
-
                   {ui.isExport && (
-
                     <ModalInput
                       label="Export To Country"
                       name="destnCountryCd"
@@ -296,7 +303,6 @@ useEffect(() => {
                       onChange={actions.handleInputChange}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
-
                   )}
 
                   {ui.isLocal && (
@@ -338,7 +344,9 @@ useEffect(() => {
                           </th>
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
                             Packing
-                            <span className="ml-1 text-[9px] text-muted/60 font-normal">(unit × size)</span>
+                            <span className="ml-1 text-[9px] text-muted/60 font-normal">
+                              (unit × size)
+                            </span>
                           </th>
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
                             Box
@@ -346,6 +354,7 @@ useEffect(() => {
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
                             Batch No
                           </th>
+
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
                             Qty
                           </th>
@@ -400,19 +409,44 @@ useEffect(() => {
                                     }}
                                   /> */}
 
-
                               {/* ITEM COLUMN */}
                               <td className="px-0.5 py-1 min-w-[135px]">
-                                <ItemSelect
-                                  taxCategory={ui.taxCategory}
+                                <StockItemSelect
                                   value={it.itemCode}
+                                  batchNo={it.batchNo}
+                                  itemName={it.description}
                                   onChange={(item) => {
-                                    if (!item?.id) return;
-                                    actions.handleItemSelect(i, item.id);
+                                    actions.updateItemDirectly(i, {
+                                      qty: item.qty,
+                                      itemCode: item.itemCode,
+                                      description: item.description,
+                                      batchNo: item.batchNo,
+                                      mfgDate: item.mfgDate,
+                                      expDate: item.expiryDate,
+                                      packingUnit: item.packingUnit,
+                                      packingSize: item.packingSize,
+                                      price: item.valuation_rate,
+                                      vatRate: item.taxRate,
+                                      vatCode: item.taxCode,
+                                      
+                                    });
+                                  }}
+                                  onClear={() => {
+                                    actions.updateItemDirectly(i, {
+                                      itemCode: "",
+                                      description: "",
+                                      batchNo: "",
+                                      mfgDate: "",
+                                      expDate: "",
+                                      packingUnit: "",
+                                      packingSize: "",
+                                      price: 0,
+                                      vatRate: undefined,
+                                      vatCode: "",
+                                    });
                                   }}
                                 />
                               </td>
-
 
                               <td className="px-0.5 py-1">
                                 <input
@@ -426,30 +460,33 @@ useEffect(() => {
                               </td>
                               <td className="px-0.5 py-1">
                                 <div className="flex items-center gap-1">
-
                                   {/* PACKING UNIT */}
                                   <input
                                     type="number"
                                     name="packingUnit"
                                     value={it.packingUnit || ""}
-                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
                                     className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
                                   />
 
-                                  <span className="text-[10px] text-muted font-semibold">×</span>
+                                  <span className="text-[10px] text-muted font-semibold">
+                                    ×
+                                  </span>
 
                                   {/* PACKING SIZE */}
                                   <input
                                     type="number"
                                     name="packingSize"
                                     value={it.packingSize || ""}
-                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
                                     className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
                                   />
-
                                 </div>
                               </td>
-
 
                               {/* BOX COLUMN */}
                               <td className="px-0.5 py-1">
@@ -457,32 +494,40 @@ useEffect(() => {
                                   <input
                                     name="boxStart"
                                     value={it.boxStart || ""}
-                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
                                     placeholder="Start"
                                     className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
                                   />
-                                  <span className="text-[10px] text-muted">-</span>
+                                  <span className="text-[10px] text-muted">
+                                    -
+                                  </span>
                                   <input
                                     name="boxEnd"
                                     value={it.boxEnd || ""}
-                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
                                     placeholder="End"
                                     className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
                                   />
                                 </div>
                               </td>
 
-                              <td className="px-0.5 py-1">
-                                <input
-                                  type="string"
-                                  className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                  name="batchNo"
-                                  value={it.batchNo}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                />
-                              </td>
+                              {
+                                <td className="px-0.5 py-1">
+                                  <input
+                                    type="string"
+                                    className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                    name="batchNo"
+                                    value={it.batchNo}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
+                                  />
+                                </td>
+                              }
 
                               <td className="px-0.5 py-1">
                                 <input
@@ -490,7 +535,33 @@ useEffect(() => {
                                   className="w-[75px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                   name="quantity"
                                   value={it.quantity ?? ""}
-                                  onChange={(e) => actions.handleItemChange(i, e)}
+                                  onChange={(e) => {
+                                    const qty = Number(e.target.value);
+                                    const available =
+                                      it.availableQty ?? it.qty ?? 0;
+
+                                    const usedQty = formData.items
+                                      .filter(
+                                        (x, idx) =>
+                                          x.batchNo === it.batchNo && idx !== i,
+                                      )
+                                      .reduce(
+                                        (sum, x) =>
+                                          sum + Number(x.quantity || 0),
+                                        0,
+                                      );
+
+                                    const remaining = available - usedQty;
+
+                                    if (qty > remaining) {
+                                      showValidationError(
+                                        `Only ${remaining} items remaining in batch ${it.batchNo}`,
+                                      );
+                                      return;
+                                    }
+
+                                    actions.handleItemChange(i, e);
+                                  }}
                                 />
                               </td>
                               <td className="px-0.5 py-1">
@@ -501,7 +572,9 @@ useEffect(() => {
                                     name="mfgDate"
                                     id={`mfgDate-${i}`}
                                     value={it.mfgDate || ""}
-                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
                                     className="w-full"
                                   />
                                 </div>
@@ -515,7 +588,9 @@ useEffect(() => {
                                     name="expDate"
                                     id={`expDate-${i}`}
                                     value={it.expDate || ""}
-                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
                                     className="w-full"
                                   />
                                 </div>
@@ -601,8 +676,11 @@ useEffect(() => {
                       <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
                         <div className="text-[11px] text-muted whitespace-nowrap">
                           Showing {ui.page * ITEMS_PER_PAGE + 1} to{" "}
-                          {Math.min((ui.page + 1) * ITEMS_PER_PAGE, ui.itemCount)} of{" "}
-                          {ui.itemCount} items
+                          {Math.min(
+                            (ui.page + 1) * ITEMS_PER_PAGE,
+                            ui.itemCount,
+                          )}{" "}
+                          of {ui.itemCount} items
                         </div>
 
                         <div className="flex gap-1.5 items-center">
@@ -618,7 +696,9 @@ useEffect(() => {
                           <button
                             type="button"
                             onClick={() => ui.setPage(ui.page + 1)}
-                            disabled={(ui.page + 1) * ITEMS_PER_PAGE >= ui.itemCount}
+                            disabled={
+                              (ui.page + 1) * ITEMS_PER_PAGE >= ui.itemCount
+                            }
                             className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px]"
                           >
                             Next
@@ -659,8 +739,6 @@ useEffect(() => {
                               {formatDate(formData.dateOfInvoice)}
                             </span>
                           </div>
-
-
 
                           <div className="flex flex-col gap-1">
                             {/* Invoice Type */}
@@ -764,9 +842,9 @@ useEffect(() => {
                   title="Billing Address"
                   subtitle="Invoice and payment details"
                   data={formData.billingAddress}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-                    actions.handleInputChange(e, "billingAddress")
-                  }
+                  onChange={(
+                    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+                  ) => actions.handleInputChange(e, "billingAddress")}
                 />
 
                 {/* Shipping */}
@@ -777,9 +855,9 @@ useEffect(() => {
                   data={formData.shippingAddress}
                   sameAsBilling={ui.sameAsBilling}
                   onSameAsBillingChange={actions.handleSameAsBillingChange}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-                    actions.handleInputChange(e, "shippingAddress")
-                  }
+                  onChange={(
+                    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+                  ) => actions.handleInputChange(e, "shippingAddress")}
                 />
               </div>
             </div>

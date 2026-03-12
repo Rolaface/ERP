@@ -277,7 +277,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
                         {it.vatCode && (
                           <span style={{ fontSize: 9, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 5px", color: "var(--muted)", fontFamily: "monospace" }}>
-                            VAT: {it.vatCode}
+                           Tax code: {it.vatCode}
                           </span>
                         )}
                         {it.batchNo && (

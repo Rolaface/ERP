@@ -43,6 +43,7 @@ interface InvoiceRow {
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  mode?: "customer" | "invoice";
   invoiceNumber?: string;
   customerName?: string;
   customerId?: string;
@@ -101,6 +102,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
   OutStandingAmount,
   currency: propCurrency = "",
   onSubmit,
+  mode = "customer",
 }) => {
   // ── Customer dropdown ──
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
@@ -149,7 +151,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
   const overpaid = payAmt > amountDue && amountDue > 0;
   const currency =
     selectedInvoice?.currency || selected?.currency || propCurrency || "₹";
-
+  const isInvoiceMode = mode === "invoice" && !!propInvoiceNo;
   // ── Reset on open ──
   useEffect(() => {
     if (!isOpen) return;
@@ -160,9 +162,26 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
     setInvoices([]);
     setSelectedInvoice(null);
     setInvPage(1);
-    loadCustomers();
-  }, [isOpen]);
+    if (!isInvoiceMode) {
+      loadCustomers();
+    }
+  }, [isOpen,isInvoiceMode,propCustomerName]);
+ useEffect(() => {
+  if (!isInvoiceMode) return;
 
+  if (propCustomerName) {
+    setSelected({
+      id: propCustomerId || "",
+      name: propCustomerName,
+      email: "",
+      mobile: "",
+      currency: propCurrency || "₹",
+      onboardingBalance: 0,
+    });
+
+    setSearch(propCustomerName);
+  }
+}, [isInvoiceMode, propCustomerName, propCustomerId, propCurrency]);
   useEffect(() => {
     if (!propInvoiceNo) return;
 
@@ -201,7 +220,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
     };
 
     loadInvoice();
-  }, [propInvoiceNo]);
+  }, [propInvoiceNo, propCurrency]);
 
   // ── Pre-select from invoice row ──
   useEffect(() => {
@@ -274,11 +293,11 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
         "desc",
         "",
         customerName,
-        1
+        1,
       );
       if (res?.status_code === 200) {
-   setInvoices(
-  res.data.map((inv: any) => ({
+        setInvoices(
+          res.data.map((inv: any) => ({
             invoiceNumber: inv.invoiceNumber,
             invoiceType: inv.invoiceType ?? "",
             dateOfInvoice: inv.dateOfInvoice
@@ -521,18 +540,21 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
                 />
                 <input
                   value={search}
+                  disabled={isInvoiceMode}
                   onChange={(e) => {
                     setSearch(e.target.value);
                     setDropOpen(true);
                     if (selected) clearCustomer();
                   }}
-                  onFocus={() => setDropOpen(true)}
+                  onFocus={() => {
+                    if (!isInvoiceMode) setDropOpen(true);
+                  }}
                   placeholder="Search customer by name or ID…"
                   className="form-input w-full"
                   style={{ paddingLeft: 34, paddingRight: 34, fontSize: 13 }}
                   autoComplete="off"
                 />
-                {selected && (
+                {selected && !isInvoiceMode && (
                   <button
                     onClick={clearCustomer}
                     style={{
@@ -747,7 +769,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
           </div>
 
           {/* ── Invoice Table ── */}
-          {selected && (
+          {selected && !isInvoiceMode && (
             <div style={{ animation: "cIn .2s ease" }}>
               <div
                 style={{

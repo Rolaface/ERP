@@ -72,6 +72,8 @@ export interface InvoiceItem {
   expDate?: string;
  boxStart?: number;
   boxEnd?: number;
+qty?: number;
+availableQty?: number;
 }
 
 export interface PaymentInformation {

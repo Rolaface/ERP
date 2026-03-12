@@ -316,14 +316,18 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                   addr ? (
                     <div key={label} style={{ padding: "7px 9px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)" }}>
                       <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{label}</p>
-                      {[
-                        addr.addressLine1,
-                        addr.city,
-                        [addr.state, addr.postalCode].filter(Boolean).join(", "),
-                        addr.country?.toUpperCase(),
-                      ].filter(Boolean).map((l, i) => (
-                        <p key={i} style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>{l}</p>
-                      ))}
+                    {[
+  addr.addressLine1,
+  addr.city,
+  [addr.state, addr.postalCode].filter(Boolean).join(", "),
+  addr.country?.toUpperCase(),
+]
+.filter((v): v is string => Boolean(v))
+.map((l, i) => (
+  <p key={i} style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>
+    {l}
+  </p>
+))}
                       
                       {"phone" in addr && addr.phone && (
                         <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{addr.phone}</p>

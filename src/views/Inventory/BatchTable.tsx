@@ -986,7 +986,7 @@ const BatchTable: React.FC<Props> = ({
                         <BatchMenu
                           batch={b}
                           onEdit={(batch) => onEdit?.(batch)}
-                          onDelete={(batch) => onDelete?.(batch)}
+                          
                           onLedger={(batch) => onLedger?.(batch)}
                         />
                       </div>
