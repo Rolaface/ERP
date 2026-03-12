@@ -2,11 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ChevronRight, ChevronDown, Folder, FolderOpen, FileText } from "lucide-react";
 import { FaSearch } from "react-icons/fa";
 import { Layers, RefreshCw } from "lucide-react";
-import type { Column } from "./type"; // same type as Table
+import type { Column } from "./type";
 
 
 // Types
-
 
 export interface ExpandableTreeTableProps<T extends Record<string, any>> {
   columns: Column<T>[];
@@ -438,12 +437,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
         </div>
       </div>
 
-      {/* ── Footer — same as Table (no pagination for tree, just a bottom border close) ── */}
-      <div className="px-5 py-3 border-t border-[var(--border)] bg-card shrink-0">
-        <div className="text-[9px] font-black uppercase text-muted tracking-[0.2em] opacity-50">
-          Total: {data.length} root nodes
-        </div>
-      </div>
+   
     </div>
   );
 }
