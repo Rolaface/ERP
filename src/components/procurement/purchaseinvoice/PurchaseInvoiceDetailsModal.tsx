@@ -139,6 +139,10 @@ const STATUS_MAP: Record<string, string> = {
   "Internal Transfer": "bg-info",
 };
 
+function hasPhone(addr: any): addr is { phone?: string } {
+  return addr && typeof addr === "object" && "phone" in addr;
+}
+
 const F: React.FC<{ label: string; value?: string | null; mono?: boolean }> = ({ label, value, mono }) => (
   <div>
     <p style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700, marginBottom: 1 }}>{label}</p>
@@ -327,7 +331,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                       ].filter(Boolean).map((l, i) => (
                         <p key={i} style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>{l}</p>
                       ))}
-                      {"phone" in addr && addr.phone && (
+                      {hasPhone(addr) && addr.phone && (
                         <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{addr.phone}</p>
                       )}
                     </div>
