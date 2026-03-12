@@ -51,7 +51,12 @@ export const usePurchaseInvoiceForm = ({
     Partial<PurchaseInvoiceFormData>
   >({});
 
-
+const handleBulkItemChange = (field: string, value: string) => {
+  setForm((prev) => ({
+    ...prev,
+    items: prev.items.map((item) => ({ ...item, [field]: value })),
+  }));
+};
   useEffect(() => {
     if (!isOpen) {
       setForm(emptyPOForm);
@@ -470,10 +475,19 @@ useEffect(() => {
     setForm((p) => ({ ...p, items }));
   };
 
-  const addItem = () => {
-    setForm((p) => ({ ...p, items: [...p.items, { ...emptyItem }] }));
-  };
-
+const addItem = () => {
+  setForm((p) => ({
+    ...p,
+    items: [
+      ...p.items,
+      {
+        ...emptyItem,
+        warehouse: (p as any).warehouse || "",
+        
+      },
+    ],
+  }));
+};
   const removeItem = (idx: number) => {
     if (form.items.length === 1) {
       showValidationError("At least one item is required");
@@ -730,6 +744,7 @@ useEffect(() => {
     validateTab,
     usePO,
     handleTogglePO,
+    handleBulkItemChange
   };
 };
 

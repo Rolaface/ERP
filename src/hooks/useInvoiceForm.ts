@@ -616,6 +616,12 @@ setExchangeRateError(null);
       return { ...prev, items };
     });
   };
+  const handleBulkItemChange = (field: string, value: string) => {
+  setFormData((prev) => ({
+    ...prev,
+    items: prev.items.map((item) => ({ ...item, [field]: value })),
+  }));
+};
 
   const addItem = () => {
     setFormData((prev) => {
@@ -631,6 +637,7 @@ setExchangeRateError(null);
       items.push({
         ...EMPTY_ITEM,
         boxStart: start,
+          warehouse: (prev as any).warehouse || "",
       });
 
       setPage(Math.floor((items.length - 1) / ITEMS_PER_PAGE));
@@ -874,6 +881,7 @@ setExchangeRateError(null);
       handleSubmit,
       setInvoiceFromApi,
       setFormDataFromInvoice,
+      handleBulkItemChange
     },
   };
 };

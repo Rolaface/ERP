@@ -217,13 +217,13 @@ function FilterBar({
   onCollapseAll,
 }: FilterBarProps) {
   const inputClass =
-    "w-25 px-2 py-1.5 border border-[var(--border)] rounded-lg bg-card text-main text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all";
+    "w-25 px-2 py-1.5 border border-[var(--border)] rounded-lg bg-card text-main text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all no-spinner";
 
   const btnClass =
     "flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap";
 
   return (
-    <div className="w-[905px] flex items-center gap-2 flex-nowrap overflow-x-auto p-3 rounded-xl border border-[var(--border)] bg-card shadow-sm scrollbar-thin">
+    <div className="w-[905px] flex items-center gap-2 flex-nowrap overflow-x-auto p-3 rounded-xl border border-[var(--border)] bg-card shadow-sm scrollbar-thin no-spinner">
       {/* MODE */}
       <div className="flex items-center gap-1">
         <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
@@ -274,7 +274,7 @@ function FilterBar({
       {filters.mode !== "Date Range" && (
         <>
           <div className="flex items-center gap-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50 no-spinner">
               From FY
             </span>
             <input
@@ -384,9 +384,7 @@ function SectionHeader({
       <span className="text-xs font-bold text-main uppercase tracking-widest">
         {label}
       </span>
-      <span className={`ml-auto text-xs font-mono font-bold ${accentClass.replace("bg-", "text-")}`}>
-        {nf(total, currency)}
-      </span>
+      
     </div>
   );
 }

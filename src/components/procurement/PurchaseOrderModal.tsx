@@ -58,6 +58,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     setCustomShippingRule,
     customIncoterm,
     setCustomIncoterm,
+    handleBulkItemChange
   } = usePurchaseOrderForm({ isOpen, onSuccess: onSubmit, onClose, poId });
 
   const footer = (
@@ -146,6 +147,8 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
               onRemoveItem={removeItem}
               getCurrencySymbol={getCurrencySymbol}
               onItemSelect={handleItemSelect}
+              onBulkItemChange={handleBulkItemChange}
+
             />
           )}
 

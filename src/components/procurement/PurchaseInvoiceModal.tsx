@@ -58,7 +58,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     customShippingRule,
     setCustomShippingRule,
     customIncoterm,
-    setCustomIncoterm
+    setCustomIncoterm,
+    handleBulkItemChange
 
 
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
@@ -155,6 +156,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               onPOSelect={handlePOSelect}
               usePO={usePO}
               onTogglePO={handleTogglePO}
+               onBulkItemChange={handleBulkItemChange} 
 
 
             />

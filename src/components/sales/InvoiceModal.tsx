@@ -293,6 +293,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
+                  
 
                   {ui.isExport && (
                     <ModalInput

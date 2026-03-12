@@ -74,6 +74,7 @@ export interface InvoiceItem {
   boxEnd?: number;
 qty?: number;
 availableQty?: number;
+warehouse?: string;
 }
 
 export interface PaymentInformation {

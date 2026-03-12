@@ -49,6 +49,13 @@ export const usePurchaseOrderForm = ({
     companyBillingAddress?: any;
     baseCurrency?: string;
   }>({});
+  
+const handleBulkItemChange = (field: string, value: string) => {
+  setForm((prev) => ({
+    ...prev,
+    items: prev.items.map((item) => ({ ...item, [field]: value })),
+  }));
+};
 
   useEffect(() => {
     if (!isOpen) {
@@ -280,18 +287,19 @@ useEffect(() => {
     setForm((p) => ({ ...p, items }));
   };
 
-  const addItem = () => {
-    setForm((p) => ({
-      ...p,
-      items: [
-        ...p.items,
-        {
-          ...emptyItem,
-          requiredBy: p.date,
-        },
-      ],
-    }));
-  };
+const addItem = () => {
+  setForm((p) => ({
+    ...p,
+    items: [
+      ...p.items,
+      {
+        ...emptyItem,
+        warehouse: (p as any).warehouse || "",
+        requiredBy: p.requiredBy || "",
+      },
+    ],
+  }));
+};
 
   const removeItem = (idx: number) => {
     if (form.items.length === 1) {
@@ -562,5 +570,6 @@ useEffect(() => {
     setCustomShippingRule,
     customIncoterm,
     setCustomIncoterm,
+    handleBulkItemChange
   };
 };

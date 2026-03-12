@@ -21,6 +21,7 @@ interface DetailsTabProps {
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
   getCurrencySymbol: () => string;
+  onBulkItemChange?: (field: string, value: string) => void;
 
   fromPO?: boolean;
   setFromPO?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -36,6 +37,7 @@ export const DetailsTab = ({
   onAddItem,
   onRemoveItem,
   getCurrencySymbol,
+  onBulkItemChange,
   fromPO,
   setFromPO,
 }: DetailsTabProps) => {
@@ -54,18 +56,33 @@ export const DetailsTab = ({
     (page + 1) * ITEMS_PER_PAGE,
   );
 
-  const currencySelectOptions = [
-    ...currencyOptions.map((c) => ({
-      value: c,
-      label: c,
-    })),
-  ];
+  // Handler: jab top-level RequiredBy change ho, sab items mein propagate karo
+  const handleTopRequiredByChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    onFormChange(e);
+    if (onBulkItemChange) {
+      onBulkItemChange("requiredBy", (e.target as HTMLInputElement).value);
+    }
+  };
+
+  // Handler: jab top-level Warehouse change ho, sab items mein propagate karo
+  const handleTopWarehouseChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    onFormChange(e);
+    if (onBulkItemChange) {
+      onBulkItemChange("warehouse", e.target.value);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
+      {/* TOP FIELDS */}
       <div className="bg-app">
-        <div className="grid grid-cols-[minmax(300px,380px)_repeat(4,135px)] gap-x-2 items-start">
-          <div className="max-w-[380px]">
+        {/* Row 1: Supplier | Required By | Date | Status | Cost Center */}
+        <div className="flex flex-wrap gap-x-2 gap-y-3 items-end mb-3">
+          <div className="w-[300px]">
             <SupplierSelect
               className="w-full"
               selectedId={form.supplierId}
@@ -73,7 +90,17 @@ export const DetailsTab = ({
             />
           </div>
 
-          <div className="w-[120px]">
+          <div className="w-[135px]">
+            <ModalInput
+              label="Required By"
+              type="date"
+              name="requiredBy"
+              value={form.requiredBy}
+              onChange={handleTopRequiredByChange}
+            />
+          </div>
+
+          <div className="w-[135px]">
             <ModalInput
               label="Date"
               type="date"
@@ -83,7 +110,8 @@ export const DetailsTab = ({
               required
             />
           </div>
-          <div className="w-[120px]">
+
+          <div className="w-[135px]">
             <ModalSelect
               label="Status"
               name="status"
@@ -102,7 +130,8 @@ export const DetailsTab = ({
               ]}
             />
           </div>
-          <div className="w-[130px]">
+
+          <div className="w-[135px]">
             <ModalInput
               label="Cost Center"
               name="costCenter"
@@ -110,12 +139,30 @@ export const DetailsTab = ({
               disabled
             />
           </div>
-          <div className="w-[120px]">
+        </div>
+
+        {/* Row 2: Project | Warehouse */}
+        <div className="flex flex-wrap gap-x-2 gap-y-3 items-end">
+          <div className="w-[300px]">
             <ModalInput
               label="Project"
               name="project"
               value={form.project}
               disabled
+            />
+          </div>
+
+          <div className="w-[135px]">
+            <ModalSelect
+              label="Warehouse *"
+              name="warehouse"
+              value={form.warehouse}
+              onChange={handleTopWarehouseChange}
+              options={[
+                { value: "", label: "Select Warehouse" },
+                { value: "1", label: "Warehouse 1" },
+                { value: "2", label: "Warehouse 2" },
+              ]}
             />
           </div>
         </div>
@@ -139,15 +186,18 @@ export const DetailsTab = ({
                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
                     Item Name
                   </th>
-                  {/* Packing column — wider for comfort */}
                   <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[120px]">
                     Packing
                     <span className="ml-1 text-[9px] text-muted/60 font-normal">
                       (unit × size)
                     </span>
                   </th>
+
                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
                     Required By
+                  </th>
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
+                    Warehouse <span className="text-danger">*</span>
                   </th>
                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
                     Qty
@@ -176,8 +226,7 @@ export const DetailsTab = ({
               <tbody>
                 {paginatedItems.map((it, idx) => {
                   const i = page * ITEMS_PER_PAGE + idx;
-                  const base = it.quantity * it.rate;
-                  const amount = base;
+                  const amount = it.quantity * it.rate;
 
                   return (
                     <tr
@@ -196,7 +245,6 @@ export const DetailsTab = ({
                         </div>
                       </td>
 
-                      {/* PACKING */}
                       <td className="px-2 py-1">
                         <div className="flex items-center justify-center gap-1">
                           <input
@@ -206,11 +254,9 @@ export const DetailsTab = ({
                             onChange={(e) => onItemChange(e, i)}
                             className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
                           />
-
                           <span className="text-muted text-[10px] font-bold">
                             ×
                           </span>
-
                           <input
                             type="number"
                             name="packingSize"
@@ -230,6 +276,21 @@ export const DetailsTab = ({
                             id={`requiredBy-${i}`}
                             value={it.requiredBy || ""}
                             onChange={(e) => onItemChange(e, i)}
+                          />
+                        </div>
+                      </td>
+                      <td className="px-2 py-1">
+                        <div style={{ width: "105px" }}>
+                          <ModalSelect
+                            label=""
+                            name="warehouse"
+                            value={(it as any).warehouse || ""}
+                            onChange={(e) => onItemChange(e as any, i)}
+                            options={[
+                              { value: "", label: "Select" },
+                              { value: "1", label: "Warehouse 1" },
+                              { value: "2", label: "Warehouse 2" },
+                            ]}
                           />
                         </div>
                       </td>
@@ -393,47 +454,41 @@ export const DetailsTab = ({
           </div>
 
           <div className="bg-card rounded-lg p-3 w-[220px]">
-  <h3 className="text-[13px] font-semibold text-main mb-2">
-    Summary
-  </h3>
-
-  <div className="flex flex-col gap-2">
-
-    <div className="flex justify-between text-xs">
-      <span className="text-muted">Total Items</span>
-      <span className="font-medium text-main">{items.length}</span>
-    </div>
-
-    <div className="flex justify-between text-xs">
-      <span className="text-muted">Total Quantity</span>
-      <span className="font-medium text-main">{form.totalQuantity}</span>
-    </div>
-
-    <div className="flex justify-between text-xs">
-      <span className="text-muted">Subtotal</span>
-      <span className="font-medium text-main">
-        {symbol} {form.subTotal?.toFixed(2) || "0.00"}
-      </span>
-    </div>
-
-    <div className="flex justify-between text-xs">
-      <span className="text-muted">Total Tax</span>
-      <span className="font-medium text-main">
-        {symbol} {form.totalTax?.toFixed(2) || "0.00"}
-      </span>
-    </div>
-
-    <div className="border-t border-theme my-1"></div>
-
-    <div className="flex justify-between text-sm font-semibold">
-      <span className="text-main">Grand Total</span>
-      <span className="text-main">
-        {symbol} {form.grandTotal?.toFixed(2) || "0.00"}
-      </span>
-    </div>
-
-  </div>
-</div>
+            <h3 className="text-[13px] font-semibold text-main mb-2">
+              Summary
+            </h3>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted">Total Items</span>
+                <span className="font-medium text-main">{items.length}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted">Total Quantity</span>
+                <span className="font-medium text-main">
+                  {form.totalQuantity}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted">Subtotal</span>
+                <span className="font-medium text-main">
+                  {symbol} {form.subTotal?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted">Total Tax</span>
+                <span className="font-medium text-main">
+                  {symbol} {form.totalTax?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+              <div className="border-t border-theme my-1"></div>
+              <div className="flex justify-between text-sm font-semibold">
+                <span className="text-main">Grand Total</span>
+                <span className="text-main">
+                  {symbol} {form.grandTotal?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

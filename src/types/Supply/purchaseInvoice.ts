@@ -17,6 +17,7 @@ export interface ItemRow {
   packingUnit?: number;
 packingSize?: number;
 requiresBatch?: boolean; 
+warehouse?: string;
   
 }
 
@@ -61,6 +62,7 @@ export interface PurchaseInvoiceFormData {
   supplierId: string;
   supplierEmail?: string;
   supplierPhone?: string;
+
 
   supplierCode: string;
   taxCategory: string;

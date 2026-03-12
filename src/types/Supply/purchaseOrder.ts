@@ -70,7 +70,9 @@ destnCountryCd: string; // New field for Export country
   currency: string;
   status: string;
   costCenter: string;
+  requiredBy: string;
   project: string;
+  warehouse: string;
    useSupplierAddress: boolean;
   useDispatchAddress: boolean;
   useShippingAddress: boolean;
@@ -169,6 +171,9 @@ export const emptyPOForm: PurchaseOrderFormData = {
   taxesChargesTemplate: "",
   costCenter: "UD-001 - Udvil - RI",
   project: "Project-0001",
+  requiredBy: "",
+  warehouse: "",
+
 
   addresses: {
     supplierAddress: {
