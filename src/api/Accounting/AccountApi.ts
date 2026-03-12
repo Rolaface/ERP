@@ -33,3 +33,22 @@ export async function getTrialBalance(
 
   return resp.data;
 }
+
+export interface BalanceSheetFilters {
+  periodicity: string;
+  from_fiscal_year: string;
+  to_fiscal_year: string;
+}
+
+export async function getBalanceSheet(
+  filters: BalanceSheetFilters
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(
+    AccountingAPI.getBalanceSheet,
+    {
+      params: filters,
+    }
+  );
+
+  return resp.data;
+}
