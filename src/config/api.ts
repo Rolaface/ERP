@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-export const ERP_BASE =ENV.napsaBaseUrl
+export const ERP_BASE =""
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -73,6 +73,7 @@ export const API = {
 accounting:{
   getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
   getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
+  getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
 },
   /* =========================
    * CUSTOMER
