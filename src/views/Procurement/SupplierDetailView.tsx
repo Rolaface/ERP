@@ -35,11 +35,11 @@ interface Props {
    TABS config
 ───────────────────────────────────────────── */
 const TABS = [
-  { id: "overview",        label: "Overview"        },
+  { id: "overview", label: "Overview" },
   { id: "purchase-orders", label: "Purchase Orders" },
-  { id: "bills",           label: "Bills"           },
-  { id: "payments",        label: "Payments"        },
-  { id: "statement",       label: "Statement"       },
+  { id: "bills", label: "Bills" },
+  { id: "payments", label: "Payments" },
+  { id: "statement", label: "Statement" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -54,35 +54,38 @@ const SupplierDetailView: React.FC<Props> = ({
   onSupplierSelect,
   onEdit,
 }) => {
-  const [searchTerm,       setSearchTerm]       = useState("");
-  const [activeTab,        setActiveTab]        = useState<TabId>("overview");
-  const [showPOModal,      setShowPOModal]      = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [showPOModal, setShowPOModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [statement,        setStatement]        = useState<any>(null);
+  const [statement, setStatement] = useState<any>(null);
   const [statementLoading, setStatementLoading] = useState(false);
   // sidebar collapsed (desktop) or open (mobile drawer)
-  const [sidebarOpen,      setSidebarOpen]      = useState(true);
-  const [mobileDrawer,     setMobileDrawer]     = useState(false);
-
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileDrawer, setMobileDrawer] = useState(false);
+  const terms = supplier?.terms?.buying;
   /* ── derived ── */
   const supplierDetail = suppliers.find((s) =>
     supplier.supplierId
       ? s.supplierId === supplier.supplierId
       : s.supplierCode === supplier.supplierCode,
   );
-  const supplierName  = supplierDetail?.supplierName;
-  const supplierCode  = supplierDetail?.supplierCode;
+  const supplierName = supplierDetail?.supplierName;
+  const supplierCode = supplierDetail?.supplierCode;
   const formattedDate = supplier?.dateOfAddition
     ? new Date(supplier.dateOfAddition).toLocaleDateString("en-GB", {
-        day: "2-digit", month: "short", year: "numeric",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
       })
     : null;
 
-  const filteredSuppliers = suppliers.filter((s) =>
-    (s.supplierName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.supplierCode || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.tpin         || "").toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredSuppliers = suppliers.filter(
+    (s) =>
+      (s.supplierName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.supplierCode || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.tpin || "").toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   /* ── statement loader ── */
@@ -141,42 +144,49 @@ const SupplierDetailView: React.FC<Props> = ({
 
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case "active":   return "bg-success/15 text-success";
-      case "inactive": return "bg-danger/15 text-danger";
-      case "pending":  return "bg-warning/15 text-warning";
-      default:         return "bg-muted/15 text-muted";
+      case "active":
+        return "bg-success/15 text-success";
+      case "inactive":
+        return "bg-danger/15 text-danger";
+      case "pending":
+        return "bg-warning/15 text-warning";
+      default:
+        return "bg-muted/15 text-muted";
     }
   };
 
- const formatAddress = () => {
-  if (!supplier) return "—";
+  const formatAddress = () => {
+    if (!supplier) return "—";
 
-  const {
-    billingAddressLine1,
-    billingAddressLine2,
-    billingCity,
-    district,
-    province,
-    billingPostalCode,
-    billingCountry,
-  } = supplier;
+    const {
+      billingAddressLine1,
+      billingAddressLine2,
+      billingCity,
+      district,
+      province,
+      billingPostalCode,
+      billingCountry,
+    } = supplier;
 
-  const line1 = [billingAddressLine1, billingAddressLine2].filter(Boolean).join(", ");
-  const line2 = [billingCity, district, province].filter(Boolean).join(", ");
-  const line3 = [billingCountry, billingPostalCode].filter(Boolean).join(", ");
+    const line1 = [billingAddressLine1, billingAddressLine2]
+      .filter(Boolean)
+      .join(", ");
+    const line2 = [billingCity, district, province].filter(Boolean).join(", ");
+    const line3 = [billingCountry, billingPostalCode]
+      .filter(Boolean)
+      .join(", ");
 
-  return (
-    <div className="flex flex-col text-right leading-tight text-[10px]">
-      {line1 && <span>{line1}</span>}
-      {line2 && <span>{line2}</span>}
-      {line3 && <span>{line3}</span>}
-    </div>
-  );
-};
+    return (
+      <div className="flex flex-col text-right leading-tight text-[10px]">
+        {line1 && <span>{line1}</span>}
+        {line2 && <span>{line2}</span>}
+        {line3 && <span>{line3}</span>}
+      </div>
+    );
+  };
 
   const SidebarList = () => (
     <div className="flex flex-col h-full min-h-0">
-
       {/* Search */}
       <div className="px-3 py-2.5 border-b border-[var(--border)] shrink-0">
         <div className="relative">
@@ -194,19 +204,28 @@ const SupplierDetailView: React.FC<Props> = ({
       {/* List — flex-1 fills remaining sidebar height, scrolls when overflow */}
       <div className="overflow-y-auto px-2 py-1.5 custom-scrollbar flex-1">
         {filteredSuppliers.length === 0 && (
-          <p className="text-[10px] text-muted text-center py-6">No suppliers found</p>
+          <p className="text-[10px] text-muted text-center py-6">
+            No suppliers found
+          </p>
         )}
         {filteredSuppliers.map((s) => {
           const isActive = s.supplierCode === supplierDetail?.supplierCode;
           return (
             <button
               key={s.supplierId || s.supplierCode}
-              onClick={() => { onSupplierSelect(s); setMobileDrawer(false); }}
-              style={isActive ? {
-                background: "var(--primary)",
-                borderColor: "var(--primary)",
-                color: "var(--primary-foreground, #fff)",
-              } : {}}
+              onClick={() => {
+                onSupplierSelect(s);
+                setMobileDrawer(false);
+              }}
+              style={
+                isActive
+                  ? {
+                      background: "var(--primary)",
+                      borderColor: "var(--primary)",
+                      color: "var(--primary-foreground, #fff)",
+                    }
+                  : {}
+              }
               className={`w-full text-left px-2.5 py-2 rounded-xl transition-all duration-150 flex items-center gap-2.5 mb-0.5 border ${
                 isActive
                   ? "border-[var(--primary)] shadow-sm"
@@ -215,7 +234,14 @@ const SupplierDetailView: React.FC<Props> = ({
             >
               {/* Avatar */}
               <div
-                style={isActive ? { background: "rgba(255,255,255,0.18)", color: "var(--primary-foreground, #fff)" } : {}}
+                style={
+                  isActive
+                    ? {
+                        background: "rgba(255,255,255,0.18)",
+                        color: "var(--primary-foreground, #fff)",
+                      }
+                    : {}
+                }
                 className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-black text-[11px] ${
                   isActive ? "" : "bg-[var(--primary)]/10 text-[var(--primary)]"
                 }`}
@@ -226,7 +252,9 @@ const SupplierDetailView: React.FC<Props> = ({
               {/* Name + code */}
               <div className="flex-1 min-w-0">
                 <p
-                  style={isActive ? { color: "var(--primary-foreground, #fff)" } : {}}
+                  style={
+                    isActive ? { color: "var(--primary-foreground, #fff)" } : {}
+                  }
                   className={`font-bold text-[11px] truncate leading-tight ${!isActive ? "text-main" : ""}`}
                 >
                   {s.supplierName}
@@ -242,7 +270,14 @@ const SupplierDetailView: React.FC<Props> = ({
               {/* Status badge */}
               {s.status && (
                 <span
-                  style={isActive ? { background: "rgba(255,255,255,0.18)", color: "var(--primary-foreground, #fff)" } : {}}
+                  style={
+                    isActive
+                      ? {
+                          background: "rgba(255,255,255,0.18)",
+                          color: "var(--primary-foreground, #fff)",
+                        }
+                      : {}
+                  }
                   className={`px-1.5 py-0.5 text-[8px] font-black rounded-full shrink-0 ${
                     !isActive ? getStatusColor(s.status) : ""
                   }`}
@@ -260,10 +295,8 @@ const SupplierDetailView: React.FC<Props> = ({
   /* ═══════════════════ RENDER ═══════════════════ */
   return (
     <div className="flex flex-col bg-app text-main overflow-hidden h-full">
-
       {/* ══════════════ HEADER ══════════════ */}
       <header className="bg-card px-4 py-2.5 flex items-center justify-between border-b border-[var(--border)] shrink-0 gap-3">
-
         <div className="flex items-center gap-2 min-w-0">
           {/* Mobile hamburger */}
           <button
@@ -279,9 +312,11 @@ const SupplierDetailView: React.FC<Props> = ({
             className="hidden lg:flex p-1.5 hover:bg-row-hover rounded-lg transition-all border border-[var(--border)]"
             title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
-            {sidebarOpen
-              ? <PanelLeftClose size={15} className="text-muted" />
-              : <PanelLeftOpen  size={15} className="text-muted" />}
+            {sidebarOpen ? (
+              <PanelLeftClose size={15} className="text-muted" />
+            ) : (
+              <PanelLeftOpen size={15} className="text-muted" />
+            )}
           </button>
 
           {/* Close */}
@@ -329,7 +364,6 @@ const SupplierDetailView: React.FC<Props> = ({
 
       {/* ══════════════ BODY ══════════════ */}
       <div className="flex flex-1 overflow-hidden min-h-0 relative bg-app ">
-
         {/* ── MOBILE OVERLAY DRAWER ── */}
         {mobileDrawer && (
           <>
@@ -341,7 +375,9 @@ const SupplierDetailView: React.FC<Props> = ({
             {/* drawer */}
             <div className="fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-[var(--border)] z-50 flex flex-col lg:hidden shadow-2xl">
               <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] shrink-0">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted">Suppliers</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted">
+                  Suppliers
+                </span>
                 <button
                   onClick={() => setMobileDrawer(false)}
                   className="p-1 rounded-lg hover:bg-row-hover transition-all"
@@ -382,7 +418,6 @@ const SupplierDetailView: React.FC<Props> = ({
 
         {/* ── MAIN CONTENT ── */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden min-h-0 bg-card">
-
           {/* ── TABS ── */}
           <div className="bg-card border-b border-[var(--border)] px-2 sm:px-4 shrink-0">
             <div className="flex overflow-x-auto scrollbar-hide">
@@ -404,23 +439,28 @@ const SupplierDetailView: React.FC<Props> = ({
 
           {/* ── TAB CONTENT ── */}
           <div className="flex-1 overflow-y-auto p-3 sm:p-4 min-h-0 bg-app">
-
             {/* OVERVIEW */}
             {activeTab === "overview" && (
               <div className="max-w-5xl mx-auto space-y-4 animate-in fade-in duration-300">
-
                 {/* Quick-info strip */}
                 <div className="bg-card rounded-2xl border border-[var(--border)] p-4">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                      { label: "Tax Category",    value: supplier?.taxCategory    },
-                      { label: "TPIN",             value: supplier?.tpin           },
-                      { label: "Opening Balance",  value: supplier?.openingBalance },
-                      { label: "Currency",         value: supplier?.currency       },
+                      { label: "Tax Category", value: supplier?.taxCategory },
+                      { label: "TPIN", value: supplier?.tpin },
+                      {
+                        label: "Opening Balance",
+                        value: supplier?.openingBalance,
+                      },
+                      { label: "Currency", value: supplier?.currency },
                     ].map(({ label, value }) => (
                       <div key={label} className="bg-app/40 rounded-xl p-3">
-                        <p className="text-[8px] font-black text-muted uppercase tracking-wider mb-1">{label}</p>
-                        <p className="text-[12px] font-bold text-main">{value || "—"}</p>
+                        <p className="text-[8px] font-black text-muted uppercase tracking-wider mb-1">
+                          {label}
+                        </p>
+                        <p className="text-[12px] font-bold text-main">
+                          {value || "—"}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -430,57 +470,95 @@ const SupplierDetailView: React.FC<Props> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 ">
                   <div className="bg-card rounded-2xl border border-[var(--border)] p-4">
                     <h4 className="text-[10px] font-black text-muted uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <Mail size={11} className="text-primary" /> Contact Channels
+                      <Mail size={11} className="text-primary" /> Contact
+                      Channels
                     </h4>
                     <div className="space-y-0.5">
-                      <DataRow label="Contact Person"  value={supplierDetail?.contactPerson} />
-                      <DataRow label="Phone"           value={supplierDetail?.phoneNo}       />
-                      <DataRow label="Alternate"       value={supplierDetail?.alternateNo}   />
-                      <DataRow label="Email"           value={supplierDetail?.emailId}       />
-                      <DataRow label="Billing Address" value={formatAddress()}               />
+                      <DataRow
+                        label="Contact Person"
+                        value={supplierDetail?.contactPerson}
+                      />
+                      <DataRow label="Phone" value={supplierDetail?.phoneNo} />
+                      <DataRow
+                        label="Alternate"
+                        value={supplierDetail?.alternateNo}
+                      />
+                      <DataRow label="Email" value={supplierDetail?.emailId} />
+                      <DataRow
+                        label="Billing Address"
+                        value={formatAddress()}
+                      />
                     </div>
                     <h4 className="mt-3 text-[10px] font-black text-muted uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <CreditCard size={11} className="text-primary" /> Bank Details
+                      <CreditCard size={11} className="text-primary" /> Bank
+                      Details
                     </h4>
                     <div className="space-y-0.5">
-                      <DataRow label="Account Holder" value={supplier?.accountHolder} />
-                      <DataRow label="Bank Name"      value={supplier?.bankAccount}   />
-                      <DataRow label="Account Number" value={supplier?.accountNumber} />
-                      <DataRow label="SWIFT Code"     value={supplier?.swiftCode}     />
-                      <DataRow label="Sort/IFSC"      value={supplier?.sortCode}      />
-                      <DataRow label="Branch Address" value={supplier?.branchAddress} />
+                      <DataRow
+                        label="Account Holder"
+                        value={supplier?.accountHolder}
+                      />
+                      <DataRow
+                        label="Bank Name"
+                        value={supplier?.bankAccount}
+                      />
+                      <DataRow
+                        label="Account Number"
+                        value={supplier?.accountNumber}
+                      />
+                      <DataRow label="SWIFT Code" value={supplier?.swiftCode} />
+                      <DataRow label="Sort/IFSC" value={supplier?.sortCode} />
+                      <DataRow
+                        label="Branch Address"
+                        value={supplier?.branchAddress}
+                      />
                     </div>
                   </div>
 
-                  {/* <div className="bg-card rounded-2xl border border-[var(--border)] shadow-sm flex flex-col h-full">
+                  <div className="bg-card rounded-2xl border border-[var(--border)] shadow-sm flex flex-col h-full">
                     <h4 className="text-[10px] font-black text-muted uppercase tracking-widest p-4 border-b border-[var(--border)]">
                       Terms & Conditions
                     </h4>
+
                     <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
                       <div className="text-xs text-muted space-y-4">
                         <div>
-                          <h5 className="text-main font-semibold mb-2">Payment Terms</h5>
-                          <p>{supplier?.terms?.payment}</p>
+                          <h5 className="text-main font-semibold mb-2">
+                            Payment Terms
+                          </h5>
+                          <p>{terms?.payment?.dueDates || "—"}</p>
                         </div>
+
                         <div>
-                          <h5 className="text-main font-semibold mb-1">Delivery</h5>
-                          <p>{supplier?.terms?.delivery}</p>
+                          <h5 className="text-main font-semibold mb-1">
+                            Delivery
+                          </h5>
+                          <p>{terms?.delivery || "—"}</p>
                         </div>
+
                         <div>
-                          <h5 className="text-main font-semibold mb-1">Cancellation</h5>
-                          <p>{supplier?.terms?.cancellation}</p>
+                          <h5 className="text-main font-semibold mb-1">
+                            Cancellation
+                          </h5>
+                          <p>{terms?.cancellation || "—"}</p>
                         </div>
+
                         <div>
-                          <h5 className="text-main font-semibold mb-1">Warranty</h5>
-                          <p>{supplier?.terms?.warranty}</p>
+                          <h5 className="text-main font-semibold mb-1">
+                            Warranty
+                          </h5>
+                          <p>{terms?.warranty || "—"}</p>
                         </div>
+
                         <div>
-                          <h5 className="text-main font-semibold mb-1">Liability</h5>
-                          <p>{supplier?.terms?.liability}</p>
+                          <h5 className="text-main font-semibold mb-1">
+                            Liability
+                          </h5>
+                          <p>{terms?.liability || "—"}</p>
                         </div>
                       </div>
                     </div>
-                  </div> */}
+                  </div>
                 </div>
               </div>
             )}
@@ -501,7 +579,9 @@ const SupplierDetailView: React.FC<Props> = ({
                 <div className="p-5 rounded-2xl bg-row-hover text-muted mb-4">
                   <CreditCard size={28} />
                 </div>
-                <h3 className="text-sm font-bold text-main">No payments recorded</h3>
+                <h3 className="text-sm font-bold text-main">
+                  No payments recorded
+                </h3>
                 <p className="text-[10px] text-muted font-bold uppercase mt-1">
                   Supplier payment history will appear here
                 </p>
@@ -517,14 +597,17 @@ const SupplierDetailView: React.FC<Props> = ({
             )}
 
             {/* STATEMENT — loaded */}
-            {activeTab === "statement" && !statementLoading && supplierDetail && statement && (
-              <SupplierStatement
-                supplier={supplier}
-                statement={statement}
-                onMakePayment={(entry) => console.log("pay", entry)}
-                onViewEntry={(entry)   => console.log("view", entry)}
-              />
-            )}
+            {activeTab === "statement" &&
+              !statementLoading &&
+              supplierDetail &&
+              statement && (
+                <SupplierStatement
+                  supplier={supplier}
+                  statement={statement}
+                  onMakePayment={(entry) => console.log("pay", entry)}
+                  onViewEntry={(entry) => console.log("view", entry)}
+                />
+              )}
 
             {/* STATEMENT — no data */}
             {activeTab === "statement" && !statementLoading && !statement && (
@@ -532,7 +615,9 @@ const SupplierDetailView: React.FC<Props> = ({
                 <div className="p-5 rounded-2xl bg-row-hover text-muted mb-4">
                   <FileText size={28} />
                 </div>
-                <h3 className="text-sm font-bold text-main">No statement available</h3>
+                <h3 className="text-sm font-bold text-main">
+                  No statement available
+                </h3>
                 <p className="text-[10px] text-muted font-bold uppercase mt-1">
                   Statement data could not be loaded
                 </p>
@@ -543,8 +628,14 @@ const SupplierDetailView: React.FC<Props> = ({
       </div>
 
       {/* ══════════════ MODALS ══════════════ */}
-      <PurchaseOrderModal  isOpen={showPOModal}      onClose={() => setShowPOModal(false)} />
-      <PurchaseInvoiceModal isOpen={showInvoiceModal} onClose={() => setShowInvoiceModal(false)} />
+      <PurchaseOrderModal
+        isOpen={showPOModal}
+        onClose={() => setShowPOModal(false)}
+      />
+      <PurchaseInvoiceModal
+        isOpen={showInvoiceModal}
+        onClose={() => setShowInvoiceModal(false)}
+      />
       <SupplierPaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
@@ -556,9 +647,17 @@ const SupplierDetailView: React.FC<Props> = ({
 };
 
 /* ─── SUB-COMPONENTS ─── */
-const DataRow = ({ label, value }: { label: string; value?: React.ReactNode }) => (
+const DataRow = ({
+  label,
+  value,
+}: {
+  label: string;
+  value?: React.ReactNode;
+}) => (
   <div className="flex justify-between items-center gap-3 py-1.5 px-3 bg-app/40 rounded-xl">
-    <span className="text-[9px] font-bold text-muted uppercase tracking-widest shrink-0">{label}</span>
+    <span className="text-[9px] font-bold text-muted uppercase tracking-widest shrink-0">
+      {label}
+    </span>
     <span className="text-[11px] font-semibold text-main text-right max-w-[220px] break-words">
       {value || "Not provided"}
     </span>
