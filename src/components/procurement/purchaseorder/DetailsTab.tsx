@@ -56,7 +56,7 @@ export const DetailsTab = ({
     (page + 1) * ITEMS_PER_PAGE,
   );
 
-  // Handler: jab top-level RequiredBy change ho, sab items mein propagate karo
+
   const handleTopRequiredByChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -66,7 +66,7 @@ export const DetailsTab = ({
     }
   };
 
-  // Handler: jab top-level Warehouse change ho, sab items mein propagate karo
+ 
   const handleTopWarehouseChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
