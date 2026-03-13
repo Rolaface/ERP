@@ -170,15 +170,30 @@ export const generatePurchaseOrderPDF = async (
   infoLines.forEach((l, i) => doc.text(l, TX, infoY + i * 5));
   // Document number — po.poId
   // PURCHASE ORDER title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...INK);
+// BEFORE
+doc.setFont("helvetica", "bold");
+doc.setFontSize(10);
+doc.setTextColor(...INK);
+doc.text("PURCHASE ORDER", MR, 14, { align: "right" });
 
-  doc.text("PURCHASE ORDER", MR, 14, { align: "right" });
+// AFTER
+const badgeLabel = "PURCHASE ORDER";
+doc.setFont("helvetica", "bold");
+doc.setFontSize(10);
+const badgeTextW = doc.getTextWidth(badgeLabel);
+const badgePadX  = 2;
+const badgeH     = 8;
+const badgeW     = badgeTextW + badgePadX * 2;
+const badgeX     = MR - badgeW;
+const badgeY     = 8;
+doc.setFillColor(...ERP_BLUE);
+doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.5, 1.5, "F");
+doc.setTextColor(...WHITE);
+doc.text(badgeLabel, badgeX + badgeW - badgePadX, badgeY + badgeH / 2 + 1.5, { align: "right" });
+doc.setTextColor(...INK);
+doc.text(po.poId ?? "-", MR, 20, { align: "right" });
 
-  // PO NUMBER
-  doc.setFontSize(10);
-  doc.text(po.poId ?? "-", MR, 20, { align: "right" });
+ 
 
   // META INFO
   doc.setFont("helvetica", "normal");
@@ -458,9 +473,15 @@ export const generatePurchaseOrderPDF = async (
       if (p.dueDates) tLines.push(`Payment Due: ${p.dueDates}`);
       if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
       if (p.notes) tLines.push(`Notes: ${p.notes}`);
-      p.phases?.forEach((ph: any, i: number) =>
-        tLines.push(`  ${i + 1}. ${ph.percentage}% — ${ph.condition}`)
-      );
+     p.phases?.forEach((ph: any, i: number) => {
+  const phaseName = ph.name ?? "Phase";
+  const percent = ph.percentage ?? "0";
+  const condition = ph.condition ?? "";
+
+  tLines.push(
+    `${i + 1}. ${phaseName} — ${percent}%${condition ? ` (${condition})` : ""}`
+  );
+});
     }
   }
   if (!tLines.length) tLines.push("No terms and conditions specified.");

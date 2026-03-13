@@ -3,14 +3,13 @@ import autoTable from "jspdf-autotable";
 import { getPaymentMethodLabel } from "../../../constants/invoice.constants";
 import { ERP_BASE } from "../../../config/api";
 
-// ── Palette — identical to Purchase Order ────────────────────────────────────
+// ── Palette — IDENTICAL to Proforma Invoice ──────────────────────────────────
 const ERP_BLUE: [number, number, number] = [46, 109, 197];
 const RULE:     [number, number, number] = [200, 220, 240];
 const WHITE:    [number, number, number] = [255, 255, 255];
 const INK:      [number, number, number] = [25,  45,  75];
 const INK_SOFT: [number, number, number] = [70,  95,  130];
 const INK_PALE: [number, number, number] = [130, 150, 180];
-const TINT:     [number, number, number] = [240, 248, 255];
 const NAVY:     [number, number, number] = [13,  38,  64];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -40,18 +39,47 @@ const fmtDate = (s: any) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const generateInvoicePDF = async (
   invoice: any,
-  company:  any,
+  company: any,
   resultType: "save" | "bloburl" = "save",
 ) => {
   const doc = new jsPDF("p", "mm", "a4");
-  const W  = doc.internal.pageSize.width;   // 210
-  const H  = doc.internal.pageSize.height;  // 297
+  const W   = doc.internal.pageSize.width;   // 210
+  const H   = doc.internal.pageSize.height;  // 297
   const cur = invoice.currencyCode ?? "INR";
   const M   = 14;
   const MR  = W - M;
 
+  // Column widths (same pattern as Proforma)
+  const COL_WIDTHS = [6, 42, 18, 14, 14, 14, 14, 14, 12, 10, 24];
+  const TOTAL_W    = 24;
+  // AMOUNT_COL_X = M + sum of first 10 cols = M + (182 - 24) = M + 158
+  const AMOUNT_COL_X = W - M - TOTAL_W;
+
   /* ══════════════════════════════════════════════════════════
-     LOGO
+     WATERMARK  (identical to Proforma)
+  ══════════════════════════════════════════════════════════ */
+  const drawWatermark = () => {
+    if (company?.documents?.companyLogoUrl) {
+      try {
+        doc.setGState(doc.GState({ opacity: 0.06 }));
+        doc.addImage(px(company.documents.companyLogoUrl), "PNG",
+          (W - 80) / 2, H / 2 - 40, 80, 80);
+        doc.setGState(doc.GState({ opacity: 1 }));
+      } catch {}
+    }
+    const name = (company?.companyName ?? "").toUpperCase();
+    doc.setFont("helvetica", "bold");
+    let fs = 20; doc.setFontSize(fs);
+    while (doc.getTextWidth(name) > W - 20 && fs > 8) { fs--; doc.setFontSize(fs); }
+    doc.setTextColor(...ERP_BLUE);
+    doc.setGState(doc.GState({ opacity: 0.07 }));
+    doc.text(name, W / 2, H - 48, { align: "center" });
+    doc.setGState(doc.GState({ opacity: 1 }));
+  };
+  drawWatermark();
+
+  /* ══════════════════════════════════════════════════════════
+     ①  LOGO  (identical to Proforma)
   ══════════════════════════════════════════════════════════ */
   const LOGO_SZ = 32;
   const LOGO_X  = M;
@@ -63,78 +91,63 @@ export const generateInvoicePDF = async (
         LOGO_X, LOGO_Y, LOGO_SZ, LOGO_SZ);
     } catch {}
   } else {
-    doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(...INK);
-    doc.text((company?.companyName ?? "Rx").slice(0,2).toUpperCase(),
-      LOGO_X + LOGO_SZ/2, LOGO_Y + LOGO_SZ/2 + 3, { align:"center" });
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(...INK);
+    doc.text((company?.companyName ?? "Rx").slice(0, 2).toUpperCase(),
+      LOGO_X + LOGO_SZ / 2, LOGO_Y + LOGO_SZ / 2 + 3, { align: "center" });
   }
 
   /* ══════════════════════════════════════════════════════════
-     WATERMARK
-  ══════════════════════════════════════════════════════════ */
-  const drawWatermark = () => {
-    if (company?.documents?.companyLogoUrl) {
-      try {
-        doc.setGState(doc.GState({ opacity: 0.06 }));
-        doc.addImage(px(company.documents.companyLogoUrl), "PNG",
-          (W-80)/2, H/2-40, 80, 80);
-        doc.setGState(doc.GState({ opacity: 1 }));
-      } catch {}
-    }
-    const name = (company?.companyName ?? "").toUpperCase();
-    doc.setFont("helvetica","bold");
-    let fs = 20; doc.setFontSize(fs);
-    while (doc.getTextWidth(name) > W - 20 && fs > 8) { fs--; doc.setFontSize(fs); }
-    doc.setTextColor(...ERP_BLUE);
-    doc.setGState(doc.GState({ opacity: 0.07 }));
-    doc.text(name, W/2, H - 48, { align:"center" });
-    doc.setGState(doc.GState({ opacity: 1 }));
-  };
-  drawWatermark();
-
-  /* ══════════════════════════════════════════════════════════
-     ①  HEADER — logo+company (left) | doc type+number (right)
+     ②  HEADER — company left | doc type badge + number right
+         Identical structure to Proforma, badge text differs
   ══════════════════════════════════════════════════════════ */
   const TX = LOGO_X + LOGO_SZ + 6;
 
-  // Company name
-  doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(...INK);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(...INK);
   doc.text((company?.companyName ?? "").toUpperCase(), TX, 14);
 
-  // Tagline
   if (company?.tagline) {
-    doc.setFont("helvetica","italic"); doc.setFontSize(7.5); doc.setTextColor(180, 210, 255);
+    doc.setFont("helvetica", "italic"); doc.setFontSize(7.5); doc.setTextColor(180, 210, 255);
     doc.text(company.tagline.toUpperCase(), TX, 20);
   }
 
-  // Company info lines
   const infoY = company?.tagline ? 26 : 22;
-  doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(28, 60, 110);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(28, 60, 110);
   const infoLines: string[] = [];
-  if (company?.tpin)                      infoLines.push(`TPIN / TAX ID: ${company.tpin}`);
-  if (company?.contactInfo?.companyPhone) infoLines.push(`Phone: ${company.contactInfo.companyPhone}`);
-  if (company?.contactInfo?.companyEmail) infoLines.push(`Email: ${company.contactInfo.companyEmail}`);
+  if (company?.tpin)                       infoLines.push(`TPIN / TAX ID: ${company.tpin}`);
+  if (company?.contactInfo?.companyPhone)  infoLines.push(`Phone: ${company.contactInfo.companyPhone}`);
+  if (company?.contactInfo?.companyEmail)  infoLines.push(`Email: ${company.contactInfo.companyEmail}`);
   infoLines.forEach((l, i) => doc.text(l, TX, infoY + i * 5));
 
-  // Right side — invoice type label
+  // ── Rounded-rect badge (same as Proforma) ────────────────
   const badgeLabel = invoice.invoiceType === "Export" ? "EXPORT INVOICE" : "TAX INVOICE";
-  doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(...INK);
-  doc.text(badgeLabel, MR, 14, { align:"right" });
 
-  // Invoice number
-  doc.setFontSize(10);
-  doc.text(invoice.invoiceNumber ?? "-", MR, 20, { align:"right" });
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+  const badgeTextW = doc.getTextWidth(badgeLabel);
+  const badgePadX  = 2;
+  const badgeH     = 8;
+  const badgeW     = badgeTextW + badgePadX * 2;
+  const badgeX     = MR - badgeW;
+  const badgeY     = 8;
+
+  doc.setFillColor(...ERP_BLUE);
+  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.5, 1.5, "F");
+  doc.setTextColor(...WHITE);
+  doc.text(badgeLabel, badgeX + badgeW - badgePadX, badgeY + badgeH / 2 + 1.5, { align: "right" });
+
+  // Invoice number below badge
+  doc.setTextColor(...INK);
+  doc.text(`Invoice No.: ${invoice.invoiceNumber ?? "-"}`, MR, 20, { align: "right" });
 
   // Meta lines right
-  doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...INK_SOFT);
-  const metaLines = [
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...INK_SOFT);
+  [
     `Invoice Date: ${fmtDate(invoice.dateOfInvoice)}`,
     `Payment Method: ${getPaymentMethodLabel(invoice?.paymentInformation?.paymentMethod) ?? "-"}`,
     `Status: ${invoice.invoiceStatus ?? "-"}`,
-  ];
-  metaLines.forEach((l, i) => doc.text(l, MR, 26 + i * 4, { align:"right" }));
+  ].forEach((l, i) => doc.text(l, MR, 26 + i * 4, { align: "right" }));
 
   /* ══════════════════════════════════════════════════════════
-     ②  ADDRESS BOXES — Bill To | Ship To | Payment Info
+     ③  ADDRESS BOXES — Bill To | Ship To | Payment Info
   ══════════════════════════════════════════════════════════ */
   const AY    = 40;
   const BH    = 7;
@@ -145,10 +158,8 @@ export const generateInvoicePDF = async (
 
   const billL = addrBlock(invoice?.billingAddress);
   const shipL = addrBlock(invoice?.shippingAddress);
-
-  // Add email/phone if available on billing address
-  if (invoice?.billingAddress?.email)  billL.push(`Email: ${invoice.billingAddress.email}`);
-  if (invoice?.billingAddress?.phone)  billL.push(`Phone: ${invoice.billingAddress.phone}`);
+  if (invoice?.billingAddress?.email) billL.push(`Email: ${invoice.billingAddress.email}`);
+  if (invoice?.billingAddress?.phone) billL.push(`Phone: ${invoice.billingAddress.phone}`);
 
   const payL: string[] = ([
     `Method: ${getPaymentMethodLabel(invoice?.paymentInformation?.paymentMethod) ?? "-"}`,
@@ -158,7 +169,7 @@ export const generateInvoicePDF = async (
       ? `A/C: ${invoice.paymentInformation.accountNumber}` : null,
     invoice?.paymentInformation?.swiftCode
       ? `SWIFT: ${invoice.paymentInformation.swiftCode}` : null,
-  ] as (string|null)[]).filter(Boolean) as string[];
+  ] as (string | null)[]).filter(Boolean) as string[];
 
   const calcBH = (lines: string[], hasBold = false) => {
     let h = BH + PAD * 2 + LH;
@@ -171,7 +182,7 @@ export const generateInvoicePDF = async (
   const drawBox = (bx: number, title: string, lines: string[], boldTop?: string) => {
     doc.setFillColor(...ERP_BLUE);
     doc.rect(bx, AY, bColW, BH, "F");
-    doc.setFont("helvetica","bold"); doc.setFontSize(8); doc.setTextColor(...WHITE);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...WHITE);
     doc.text(title, bx + 3, AY + 5.2);
 
     doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
@@ -179,11 +190,11 @@ export const generateInvoicePDF = async (
 
     let cy = AY + BH + PAD + LH;
     if (boldTop) {
-      doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(...INK);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(...INK);
       doc.text(boldTop, bx + 3, cy);
       cy += LH + 1;
     }
-    doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(0, 0, 0);
     lines.forEach(l => {
       const wr = doc.splitTextToSize(l, bColW - 6);
       doc.text(wr, bx + 3, cy);
@@ -191,59 +202,54 @@ export const generateInvoicePDF = async (
     });
   };
 
-  drawBox(M,                     "Bill To",      billL, invoice?.customerName ?? "-");
-  drawBox(M + bColW + gap,       "Ship To",      shipL);
-  drawBox(M + (bColW + gap) * 2, "Payment Info", payL);
+  drawBox(M,                      "Bill To",      billL, invoice?.customerName ?? "-");
+  drawBox(M + bColW + gap,        "Ship To",      shipL);
+  drawBox(M + (bColW + gap) * 2,  "Payment Info", payL);
 
   /* ══════════════════════════════════════════════════════════
-     ③  META INFO ROW — LPO No | Customer TPIN | Invoice Type | Currency | Due Date
-         (matches the "LPO No | Supplier Invoice | Tax Category | Incoterm | Shipping Rule" row in PO)
+     ④  META INFO ROW — LPO No | Customer TPIN | Invoice Type | Currency | Due Date
   ══════════════════════════════════════════════════════════ */
-  const afterBoxY = AY + boxH + 4;
-
-  const metaColCount = 5;
-  const metaColW = (W - M * 2) / metaColCount;
+  const afterBoxY  = AY + boxH + 4;
+  const metaColW   = (W - M * 2) /4 ;
   const META_HDR_H = 6.5;
   const META_VAL_H = 7;
 
   const metaCols = [
-    { label: "LPO No",         value: invoice?.lpoNumber        || "-" },
-    { label: "Customer TPIN",  value: invoice?.customerTpin     || "-" },
-    { label: "Invoice Type",   value: invoice?.invoiceType      || "-" },
-    { label: "Currency",       value: cur },
-    { label: "Due Date",       value: fmtDate(invoice?.dueDate) },
+    { label: "Customer TPIN", value: invoice?.customerTpin || "-" },
+    { label: "Invoice Type",  value: invoice?.invoiceType  || "-" },
+    { label: "Currency",      value: cur },
+    { label: "Due Date",      value: fmtDate(invoice?.dueDate) },
   ];
 
   metaCols.forEach((col, i) => {
     const bx = M + i * metaColW;
-
-    // Header cell
     doc.setFillColor(...ERP_BLUE);
     doc.rect(bx, afterBoxY, metaColW, META_HDR_H, "F");
-    doc.setFont("helvetica","bold"); doc.setFontSize(7.5); doc.setTextColor(...WHITE);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(...WHITE);
     doc.text(col.label, bx + 3, afterBoxY + 4.5);
 
-    // Value cell
     doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.2);
     doc.rect(bx, afterBoxY + META_HDR_H, metaColW, META_VAL_H, "FD");
-    doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(0, 0, 0);
     doc.text(col.value, bx + 3, afterBoxY + META_HDR_H + 4.8);
   });
 
   const afterMetaY = afterBoxY + META_HDR_H + META_VAL_H + 5;
 
   /* ══════════════════════════════════════════════════════════
-     ④  ITEMS TABLE
-     Columns: # | Item | Batch | Packing | MFG | EXP | Qty | Rate | Disc% | Tax | Amount
-     Widths:  6 + 42 + 22 + 12 + 14 + 14 + 14 + 14 + 10 + 10 + 24 = 182 ✓
+     ⑤  ITEMS TABLE — blue header, grid theme, white alt rows
+         Columns: # | Item | Batch | Packing | MFG | EXP | Qty | Rate | Disc% | Tax | Amount
   ══════════════════════════════════════════════════════════ */
-  doc.setFont("helvetica","normal"); doc.setFontSize(6.5); doc.setTextColor(...INK_PALE);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...INK_PALE);
   doc.text("ITEMS", M, afterMetaY + 7);
-
-  const TOTAL_W = 24;
 
   autoTable(doc, {
     startY: afterMetaY + 8,
+    theme: "grid",
+    alternateRowStyles: { fillColor: WHITE },
+    willDrawPage: () => {
+      drawWatermark();
+    },
     head: [[
       "#", "Item", "Batch", "Packing", "MFG", "EXP", "Qty", "Rate", "Disc%", "Tax", `Amount(${cur})`,
     ]],
@@ -270,7 +276,9 @@ export const generateInvoicePDF = async (
         Number.isInteger(qty) ? qty.toLocaleString() : fmt2(qty),
         fmt2(rate),
         discAbs > 0 ? `${discPct.toFixed(1)}%` : "0%",
-        `${item.vatCode ?? "-"}`,
+        item.vatCode
+          ? `${item.vatCode} (${item.vatRate ?? "0"})`
+          : "-",
         fmt2(net),
       ];
     }),
@@ -291,17 +299,17 @@ export const generateInvoicePDF = async (
       cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
     },
     columnStyles: {
-      0:  { cellWidth: 6,         halign: "center" },
-      1:  { cellWidth: 42,        halign: "left" },
-      2:  { cellWidth: 22,        halign: "center", fontSize: 6.5 },
-      3:  { cellWidth: 12,        halign: "center" },
-      4:  { cellWidth: 14,        halign: "center" },
-      5:  { cellWidth: 14,        halign: "center" },
-      6:  { cellWidth: 14,        halign: "center" },
-      7:  { cellWidth: 14,        halign: "center" },
-      8:  { cellWidth: 10,        halign: "center" },
-      9:  { cellWidth: 10,        halign: "center" },
-      10: { cellWidth: TOTAL_W,   halign: "center", textColor: [0, 0, 0], fontSize: 7.5 },
+      0:  { cellWidth: COL_WIDTHS[0],  halign: "center" },
+      1:  { cellWidth: COL_WIDTHS[1],  halign: "left" },
+      2:  { cellWidth: COL_WIDTHS[2],  halign: "center", fontSize: 6.5 },
+      3:  { cellWidth: COL_WIDTHS[3],  halign: "center" },
+      4:  { cellWidth: COL_WIDTHS[4],  halign: "center" },
+      5:  { cellWidth: COL_WIDTHS[5],  halign: "center" },
+      6:  { cellWidth: COL_WIDTHS[6],  halign: "center" },
+      7:  { cellWidth: COL_WIDTHS[7],  halign: "center" },
+      8:  { cellWidth: COL_WIDTHS[8],  halign: "center" },
+      9:  { cellWidth: COL_WIDTHS[9],  halign: "center" },
+      10: { cellWidth: COL_WIDTHS[10], halign: "center", textColor: [0, 0, 0], fontSize: 7.5 },
     },
     margin:     { left: M, right: M },
     tableWidth: W - M * 2,
@@ -310,12 +318,12 @@ export const generateInvoicePDF = async (
   const tblEndY = (doc as any).lastAutoTable.finalY;
 
   /* ══════════════════════════════════════════════════════════
-     ⑤  TOTALS  — right-aligned labels + amount column values
-         (exactly like PO: text labels left of amount column)
+     ⑥  TOTALS — right-aligned text labels + amount column cells
+         Rows: Sub Total (bold) | Discount (red) | Tax Total | Grand Total (bold black)
+         ── matches Proforma coloring exactly ──
   ══════════════════════════════════════════════════════════ */
   const SEC_Y = tblEndY;
 
-  // Calc totals
   let gross = 0, discTotal = 0;
   invoice.items.forEach((i: any) => {
     const q = Number(i.quantity ?? 0);
@@ -324,36 +332,33 @@ export const generateInvoicePDF = async (
     gross     += q * p;
     discTotal += d;
   });
-  const subTotal = gross;
-  const netAfterDisc = gross - discTotal;
-  const taxableRaw = invoice.items.reduce(
+  const subTotal    = gross;
+  const taxableRaw  = invoice.items.reduce(
     (a: number, i: any) => a + Number(i.vatTaxableAmount ?? 0), 0);
-  const taxTotal   = taxableRaw > 0 ? taxableRaw : 0;
-  const grandTotal = netAfterDisc + taxTotal;
-
-  // AMOUNT_COL_X = M + sum of all columns except last
-  const AMOUNT_COL_X = M + 6 + 42 + 22 + 12 + 14 + 14 + 14 + 14 + 10 + 10; // = M + 158
+  const taxTotal    = taxableRaw > 0 ? taxableRaw : 0;
+  const grandTotal  = gross - discTotal + taxTotal;
 
   const LABEL_X = AMOUNT_COL_X - 4;
   const ROW_H   = 6;
 
-  doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(0, 0, 0);
-
-  doc.setFont("helvetica","bold");
-  doc.text("Sub Total",   LABEL_X, SEC_Y + ROW_H * 0.7, { align:"right" });
-  doc.setFont("helvetica","normal");
-  doc.text("Discount",    LABEL_X, SEC_Y + ROW_H * 1.7, { align:"right" });
-  doc.text("Tax Total",   LABEL_X, SEC_Y + ROW_H * 2.7, { align:"right" });
-  doc.setFont("helvetica","bold");
-  doc.text("Grand Total", LABEL_X, SEC_Y + ROW_H * 3.7, { align:"right" });
+  doc.setFontSize(8); doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "bold");
+  doc.text("Sub Total",   LABEL_X, SEC_Y + ROW_H * 0.7, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.text("Tax Total",   LABEL_X, SEC_Y + ROW_H * 1.7, { align: "right" });
+  doc.text("Discount",    LABEL_X, SEC_Y + ROW_H * 2.7, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.text("Grand Total", LABEL_X, SEC_Y + ROW_H * 3.7, { align: "right" });
 
   autoTable(doc, {
     startY: SEC_Y,
     head:   [],
+    theme:  "grid",
+    alternateRowStyles: { fillColor: WHITE },
     body: [
       [`${fmt2(subTotal)} ${cur}`],
-      [`-${fmt2(discTotal)} ${cur}`],
       [`${fmt2(taxTotal)} ${cur}`],
+      [`${fmt2(discTotal)} ${cur}`],
       [`${fmt2(grandTotal)} ${cur}`],
     ],
     styles: {
@@ -363,24 +368,21 @@ export const generateInvoicePDF = async (
       lineColor: RULE,
       lineWidth: 0.15,
     },
-    columnStyles: {
-      0: { cellWidth: TOTAL_W },
-    },
+    columnStyles: { 0: { cellWidth: TOTAL_W } },
     didParseCell: (data) => {
-      if (data.row.index === 0) { data.cell.styles.fontStyle = "bold"; }
-      if (data.row.index === 1) {
+      if (data.row.index === 0) {
+        // Sub Total — bold
+        data.cell.styles.fontStyle = "bold";
+      }
+      if (data.row.index === 2) {
+        // Discount — red tint (matches Proforma)
         data.cell.styles.textColor = [160, 60, 60] as any;
         data.cell.styles.fillColor = [252, 245, 245] as any;
       }
-      if (data.row.index === 2) {
-        data.cell.styles.fillColor = [232, 241, 252] as any;
-        data.cell.styles.textColor = [30, 70, 130] as any;
-      }
       if (data.row.index === 3) {
-        data.cell.styles.fillColor = NAVY as any;
-        data.cell.styles.textColor = WHITE as any;
+        // Grand Total — bold black (matches Proforma)
+        data.cell.styles.textColor = [0, 0, 0] as any;
         data.cell.styles.fontStyle = "bold";
-        data.cell.styles.fontSize  = 8;
       }
     },
     margin:     { left: AMOUNT_COL_X, right: M },
@@ -390,45 +392,16 @@ export const generateInvoicePDF = async (
   const sumEndY = (doc as any).lastAutoTable.finalY;
 
   /* ══════════════════════════════════════════════════════════
-     ⑥  TERMS (left)  +  AUTHORISED SIGNATORY (right)
-         — exactly like the PO screenshot layout
+     ⑦  TERMS (left)  +  AUTHORISED SIGNATORY (right)
+         Signature bottom-aligned to terms box (same as Proforma)
   ══════════════════════════════════════════════════════════ */
-  const SIG_Y = sumEndY;
-
-  // — Signatory dimensions (anchored to right, same as PO) —
-  const LABEL_W = 28;  // label column width in totals
-  const SIGN_X  = AMOUNT_COL_X - LABEL_W;
-  const SIGN_W  = LABEL_W + TOTAL_W;
+  const LABEL_W    = 28;
+  const SIGN_X     = AMOUNT_COL_X - LABEL_W;
+  const SIGN_W     = LABEL_W + TOTAL_W;
   const SIGN_HDR_H = 6;
   const SIGN_BOX_H = 22;
 
-  // Signatory header bar
-  doc.setFillColor(...ERP_BLUE);
-  doc.rect(SIGN_X, SIG_Y, SIGN_W, SIGN_HDR_H, "F");
-  doc.setFont("helvetica","bold"); doc.setFontSize(8); doc.setTextColor(...WHITE);
-  doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, SIG_Y + 4, { align:"center" });
-
-  // Signatory body
-  doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
-  doc.rect(SIGN_X, SIG_Y + SIGN_HDR_H, SIGN_W, SIGN_BOX_H, "F");
-  doc.line(SIGN_X,          SIG_Y + SIGN_HDR_H,               SIGN_X + SIGN_W, SIG_Y + SIGN_HDR_H);
-  doc.line(SIGN_X,          SIG_Y + SIGN_HDR_H + SIGN_BOX_H,  SIGN_X + SIGN_W, SIG_Y + SIGN_HDR_H + SIGN_BOX_H);
-
-  if (company?.documents?.authorizedSignatureUrl) {
-    try {
-      doc.addImage(
-        px(company.documents.authorizedSignatureUrl), "PNG",
-        SIGN_X + (SIGN_W - 40) / 2, SIG_Y + SIGN_HDR_H + 3, 40, 13,
-      );
-    } catch {}
-  }
-
-  const sigLineY = SIG_Y + SIGN_HDR_H + SIGN_BOX_H - 5;
-  doc.line(SIGN_X + 5, sigLineY, SIGN_X + SIGN_W - 5, sigLineY);
-  doc.setFont("helvetica","normal"); doc.setFontSize(6.5); doc.setTextColor(120, 120, 120);
-  doc.text("Signature", SIGN_X + SIGN_W / 2, sigLineY + 4, { align:"center" });
-
-  // — Terms & Conditions (left of signatory) —
+  // ── Build terms lines & compute box height FIRST ─────────
   const termW  = SIGN_X - M;
   const termTW = termW - 14;
   const tLines: string[] = [];
@@ -445,8 +418,11 @@ export const generateInvoicePDF = async (
       if (p.dueDates)    tLines.push(`Payment Due: ${p.dueDates}`);
       if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
       if (p.notes)       tLines.push(`Notes: ${p.notes}`);
-      p.phases?.forEach((ph: any, i: number) =>
-        tLines.push(`  ${i + 1}. ${ph.percentage}% — ${ph.condition}`));
+      p.phases?.forEach((ph: any, i: number) => {
+        const pct = String(ph.percentage ?? "0").includes("%")
+          ? ph.percentage : `${ph.percentage}%`;
+        tLines.push(`${i + 1}. ${ph.name ?? "Phase"}—${pct} (${ph.condition ?? ""})`);
+      });
     }
   }
   if (!tLines.length) tLines.push("No terms and conditions specified.");
@@ -455,17 +431,48 @@ export const generateInvoicePDF = async (
   tLines.forEach(l => { tH += doc.splitTextToSize(l, termTW).length * 3.5; });
   const tBH = Math.max(SIGN_HDR_H + SIGN_BOX_H + 2, tH + 6);
 
-  let termsY = SIG_Y;
+  // ── Resolve termsY (page-break aware) ────────────────────
+  let termsY = sumEndY;
   if (termsY + tBH > H - 16) {
     doc.addPage(); drawWatermark(); termsY = 16;
   }
 
+  // ── Signature box top: bottom-aligned to terms box ───────
+  const SIG_OFFSET   = 0; // increase to push signature upward
+  const ACTUAL_SIG_Y = termsY + tBH - SIGN_HDR_H - SIGN_BOX_H - SIG_OFFSET;
+
+  // ── Draw signature box ────────────────────────────────────
+  doc.setFillColor(...ERP_BLUE);
+  doc.rect(SIGN_X, ACTUAL_SIG_Y, SIGN_W, SIGN_HDR_H, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...WHITE);
+  doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, ACTUAL_SIG_Y + 4, { align: "center" });
+
+  doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
+  doc.rect(SIGN_X, ACTUAL_SIG_Y + SIGN_HDR_H, SIGN_W, SIGN_BOX_H, "F");
+  doc.line(SIGN_X, ACTUAL_SIG_Y + SIGN_HDR_H, SIGN_X + SIGN_W, ACTUAL_SIG_Y + SIGN_HDR_H);
+  doc.line(SIGN_X, ACTUAL_SIG_Y + SIGN_HDR_H + SIGN_BOX_H, SIGN_X + SIGN_W, ACTUAL_SIG_Y + SIGN_HDR_H + SIGN_BOX_H);
+
+  if (company?.documents?.authorizedSignatureUrl) {
+    try {
+      doc.addImage(
+        px(company.documents.authorizedSignatureUrl), "PNG",
+        SIGN_X + (SIGN_W - 40) / 2, ACTUAL_SIG_Y + SIGN_HDR_H + 3, 40, 13,
+      );
+    } catch {}
+  }
+
+  const sigLineY = ACTUAL_SIG_Y + SIGN_HDR_H + SIGN_BOX_H - 5;
+  doc.line(SIGN_X + 5, sigLineY, SIGN_X + SIGN_W - 5, sigLineY);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(120, 120, 120);
+  doc.text("Signature", SIGN_X + SIGN_W / 2, sigLineY + 4, { align: "center" });
+
+  // ── Draw terms box ────────────────────────────────────────
   doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
   doc.rect(M, termsY, termW, tBH, "F");
 
-  doc.setFont("helvetica","bold"); doc.setFontSize(7); doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(0, 0, 0);
   doc.text("TERMS & CONDITIONS", M + 7, termsY + 5.5);
-  doc.setFont("helvetica","normal"); doc.setFontSize(6.5); doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(0, 0, 0);
   let tcy = termsY + 10.5;
   tLines.forEach(l => {
     const wr = doc.splitTextToSize(l, termTW);
@@ -474,19 +481,19 @@ export const generateInvoicePDF = async (
   });
 
   /* ══════════════════════════════════════════════════════════
-     ⑦  FOOTER — same as PO
+     ⑧  FOOTER — identical to Proforma
   ══════════════════════════════════════════════════════════ */
   const totalPg = (doc as any).internal.getNumberOfPages();
   for (let pg = 1; pg <= totalPg; pg++) {
     doc.setPage(pg);
-    doc.setFont("helvetica","normal"); doc.setFontSize(6.5); doc.setTextColor(...INK_PALE);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...INK_PALE);
     doc.text("This is a computer-generated document.", M, H - 6);
-    doc.text("Powered by ERP SYSTEM", W / 2, H - 6, { align:"center" });
-    doc.text(`Page ${pg} / ${totalPg}`, MR, H - 6, { align:"right" });
+    doc.text("Powered by ERP SYSTEM", W / 2, H - 6, { align: "center" });
+    doc.text(`Page ${pg} / ${totalPg}`, MR, H - 6, { align: "right" });
   }
 
   /* ══════════════════════════════════════════════════════════
-     ⑧  OUTPUT
+     ⑨  OUTPUT
   ══════════════════════════════════════════════════════════ */
   return resultType === "save"
     ? doc.save(`Invoice_${invoice.invoiceNumber}.pdf`)

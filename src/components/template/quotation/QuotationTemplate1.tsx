@@ -49,21 +49,16 @@ export const generateQuotationPDF = async (
   const M   = 14;
   const MR  = W - M;
 
-  // ── Column widths (must sum to W - M*2 = 182) ────────────────────────────
-  // # (6) + ItemCode (20) + ItemName (22) + Desc (40) + Packing (12) +
-  // Qty (14) + Rate (14) + Disc% (10) + TaxCode (20) + Amount (24) = 182 ✓
-  const COL_WIDTHS = [6, 20, 22, 40, 12, 14, 14, 10, 20, 24];
-  const TOTAL_W    = 24; // last column width
-  // AMOUNT_COL_X = M + sum of all columns except last
-  const AMOUNT_COL_X = M + COL_WIDTHS.slice(0, -1).reduce((a, b) => a + b, 0); // M + 158
+
+  const TOTAL_W    = 28; // last column width
 
   /* ══════════════════════════════════════════════════════════
-     WATERMARK  (same as Invoice)
+     WATERMARK 
   ══════════════════════════════════════════════════════════ */
   const drawWatermark = () => {
     if (company?.documents?.companyLogoUrl) {
       try {
-        doc.setGState(doc.GState({ opacity: 0.06 }));
+        doc.setGState(doc.GState({ opacity: 0.10 }));
         doc.addImage(px(company.documents.companyLogoUrl), "PNG",
           (W - 80) / 2, H / 2 - 40, 80, 80);
         doc.setGState(doc.GState({ opacity: 1 }));
@@ -125,14 +120,36 @@ export const generateQuotationPDF = async (
   if (company?.contactInfo?.companyEmail) infoLines.push(`Email: ${company.contactInfo.companyEmail}`);
   infoLines.forEach((l, i) => doc.text(l, TX, infoY + i * 5));
 
-  // Right: doc type badge (Export Quotation or Quotation)
-  const badgeLabel = quotation.invoiceType === "Export" ? "EXPORT QUOTATION" : "QUOTATION";
-  doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...INK);
-  doc.text(badgeLabel, MR, 14, { align: "right" });
+const badgeLabel = quotation.invoiceType === "Export" ? "EXPORT QUOTATION" : "QUOTATION";
+
+doc.setFont("helvetica", "bold");
+doc.setFontSize(10);
+
+const badgeTextW = doc.getTextWidth(badgeLabel);
+const badgePadX  = 2;
+const badgeH     = 8;
+
+const badgeW = badgeTextW + badgePadX * 2;
+const badgeX = MR - badgeW;
+const badgeY = 8;
+
+// badge background
+doc.setFillColor(...ERP_BLUE);
+doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.5, 1.5, "F");
+
+// right-aligned text inside badge
+doc.setTextColor(...WHITE);
+doc.text(
+  badgeLabel,
+  badgeX + badgeW - badgePadX,
+  badgeY + badgeH / 2 + 1.5,
+  { align: "right" }
+);
 
   // Quotation ID (mirrors invoice number position)
+  doc.setTextColor(...INK);
   doc.setFontSize(10);
-  doc.text(quotation.id ?? "-", MR, 20, { align: "right" });
+  doc.text(`Quote No.: ${quotation.id ?? "-"}`, MR, 20, { align: "right" });
 
   // Meta lines right
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...INK_SOFT);
@@ -207,18 +224,17 @@ export const generateQuotationPDF = async (
      ④  META INFO ROW  (same blue double-row cells as Invoice)
          Quotation No | Customer TPIN | LPO No / Exchange Rate | Currency | Valid Until
   ══════════════════════════════════════════════════════════ */
-  const afterBoxY  = AY + boxH + 4;
-  const metaColW   = (W - M * 2) / 5;
-  const META_HDR_H = 6.5;
-  const META_VAL_H = 7;
-
+  
   const metaCols = [
-    { label: "Quotation No",  value: quotation?.id                         || "-" },
     { label: "Customer TPIN", value: quotation?.customerTpin               || "-" },
-    { label: "LPO No",        value: quotation?.lpoNumber || quotation?.exchangeRt || "-" },
     { label: "Currency",      value: cur },
     { label: "Valid Until",   value: fmtDate(quotation?.validUntil) },
   ];
+  const afterBoxY  = AY + boxH + 4;
+  const metaColW = (W - M * 2) / metaCols.length;
+  const META_HDR_H = 6.5;
+  const META_VAL_H = 7;
+
 
   metaCols.forEach((col, i) => {
     const bx = M + i * metaColW;
@@ -238,71 +254,82 @@ export const generateQuotationPDF = async (
 
   /* ══════════════════════════════════════════════════════════
      ⑤  ITEMS TABLE  — blue header, same cell style as Invoice
-         Columns: # | Item Code | Item Name | Description |
-                  Packing | Qty | Rate | Disc% | Tax Code | Amount
-         Widths: 6+20+22+40+12+14+14+10+20+24 = 182 ✓
   ══════════════════════════════════════════════════════════ */
   doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...INK_PALE);
   doc.text("ITEMS", M, afterMetaY + 7);
 
-  autoTable(doc, {
-    startY: afterMetaY + 8,
-    head: [[
-      "#", "Item Code", "Item Name", "Description",
-      "Packing", "Qty", "Rate", "Disc%", "Tax Code", `Amount(${cur})`,
-    ]],
-    body: quotation.items.map((item: any, idx: number) => {
+autoTable(doc, {
+  startY: afterMetaY + 11,
+  theme: "grid",
+  willDrawPage: () => {
+  drawWatermark();
+},
+
+  head: [[
+    "#",
+    "Item",
+    "Description",
+    "Packing",
+    "Qty",
+    "Rate",
+    "Disc%",
+    "Tax",
+    `Amount(${cur})`,
+  ]],
+
+  body: quotation.items.map((item: any, idx: number) => {
       const qty  = Number(item.quantity ?? 0);
       const rate = Number(item.price    ?? 0);
-      const disc = Number(item.discount ?? 0);
+    const disc = Number(item.discount ?? 0);
       const net  = qty * rate * (1 - disc / 100);
       const packing = item.packingUnit && item.packingSize
         ? `${item.packingUnit}×${item.packingSize}` : "-";
 
-      return [
-        idx + 1,
-        item.itemCode    ?? "-",
-        item.itemName    ?? "-",
-        item.description ?? "-",
-        packing,
-        Number.isInteger(qty) ? qty.toLocaleString() : fmt2(qty),
-        fmt2(rate),
-        disc > 0 ? `${disc}%` : "0%",
-        item.vatCode || "-",
-        fmt2(net),
-      ];
-    }),
-    styles: {
-      fontSize: 7.5,
-      textColor: [0, 0, 0],
-      cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
-      lineColor: RULE,
-      lineWidth: 0.15,
-      overflow: "linebreak",
-    },
-    headStyles: {
-      fillColor: ERP_BLUE,
-      textColor: WHITE,
-      fontStyle: "bold",
-      halign: "center",
-      fontSize: 7.5,
-      cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
-    },
-    columnStyles: {
-      0: { cellWidth: COL_WIDTHS[0], halign: "center" },
-      1: { cellWidth: COL_WIDTHS[1], halign: "left",   fontStyle: "bold" },
-      2: { cellWidth: COL_WIDTHS[2], halign: "left" },
-      3: { cellWidth: COL_WIDTHS[3], halign: "left",   fontSize: 6.5 },
-      4: { cellWidth: COL_WIDTHS[4], halign: "center" },
-      5: { cellWidth: COL_WIDTHS[5], halign: "center" },
-      6: { cellWidth: COL_WIDTHS[6], halign: "center" },
-      7: { cellWidth: COL_WIDTHS[7], halign: "center" },
-      8: { cellWidth: COL_WIDTHS[8], halign: "center" },
-      9: { cellWidth: COL_WIDTHS[9], halign: "center", textColor: [0, 0, 0], fontSize: 7.5 },
-    },
-    margin:     { left: M, right: M },
-    tableWidth: W - M * 2,
-  });
+    return [
+      idx + 1,
+      item.itemName ?? "-",
+      item.description ?? "-",
+      packing,
+      Number.isInteger(qty) ? qty.toLocaleString() : fmt2(qty),
+      fmt2(rate),
+      disc > 0 ? `${disc}%` : "0%",
+      item.vatCode ?? "-",
+      fmt2(net),
+    ];
+  }),
+
+  styles: {
+    fontSize: 7.5,
+    textColor: [0, 0, 0],
+    cellPadding: { top: 1, bottom: 1, left: 2, right: 2 },
+    lineColor: RULE,
+    lineWidth: 0.15,
+  },
+
+  headStyles: {
+    fillColor: ERP_BLUE,
+    textColor: WHITE,
+    fontStyle: "bold",
+    halign: "center",
+    fontSize: 7.5,
+    cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
+  },
+
+  columnStyles: {
+    0: { cellWidth: 7, halign: "center" },
+    1: { cellWidth: 32, halign: "left" },
+    2: { cellWidth: 32, halign: "left", fontSize: 6.5 },
+    3: { cellWidth: 16, halign: "center" },
+    4: { cellWidth: 18, halign: "center" },
+    5: { cellWidth: 17, halign: "center" },
+    6: { cellWidth: 14, halign: "center" },
+    7: { cellWidth: 18, halign: "center" },
+    8: { cellWidth: TOTAL_W, halign: "center" },
+  },
+
+  margin: { left: M, right: M },
+  tableWidth: W - M * 2,
+});
 
   const tblEndY = (doc as any).lastAutoTable.finalY;
 
@@ -311,9 +338,13 @@ export const generateQuotationPDF = async (
          Rows: Gross Total | Discount (red) | Grand Total (navy)
          (same layout as Invoice totals section)
   ══════════════════════════════════════════════════════════ */
-  const SEC_Y   = tblEndY;
-  const LABEL_X = AMOUNT_COL_X - 4;
-  const ROW_H   = 6;
+  const SEC_Y = tblEndY;
+
+const ROW_H = 6;
+
+const AMOUNT_COL_X = W - M - TOTAL_W;
+
+const LABEL_X = AMOUNT_COL_X - 4;
 
   let gross = 0, discTotal = 0;
   quotation.items.forEach((i: any) => {
@@ -326,130 +357,138 @@ export const generateQuotationPDF = async (
   const grandTotal = gross - discTotal;
 
   doc.setFontSize(8); doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "bold");
+doc.setFont("helvetica", "bold");
   doc.text("Sub Total",  LABEL_X, SEC_Y + ROW_H * 0.7, { align: "right" });
-  doc.setFont("helvetica", "normal");
+doc.setFont("helvetica", "normal");
   doc.text("Discount",     LABEL_X, SEC_Y + ROW_H * 1.7, { align: "right" });
-  doc.setFont("helvetica", "bold");
+doc.setFont("helvetica", "bold");
   doc.text("Grand Total",  LABEL_X, SEC_Y + ROW_H * 2.7, { align: "right" });
 
-  autoTable(doc, {
-    startY: SEC_Y,
-    head:   [],
-    body: [
+autoTable(doc, {
+  startY: SEC_Y,
+  theme: "grid",
+  head: [],
+body: [
       [`${fmt2(gross)} ${cur}`],
-      [`-${fmt2(discTotal)} ${cur}`],
+      [`${fmt2(discTotal)} ${cur}`],
       [`${fmt2(grandTotal)} ${cur}`],
-    ],
-    styles: {
-      fontSize: 8,
-      halign: "center",
-      cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
-      lineColor: RULE,
-      lineWidth: 0.15,
-    },
-    columnStyles: { 0: { cellWidth: TOTAL_W } },
-    didParseCell: (data) => {
-      if (data.row.index === 0) { data.cell.styles.fontStyle = "bold"; }
-      if (data.row.index === 1) {
-        data.cell.styles.textColor = [160, 60, 60] as any;
-        data.cell.styles.fillColor = [252, 245, 245] as any;
-      }
-      if (data.row.index === 2) {
-        data.cell.styles.fillColor = NAVY as any;
-        data.cell.styles.textColor = WHITE as any;
-        data.cell.styles.fontStyle = "bold";
-        data.cell.styles.fontSize  = 8;
-      }
-    },
-    margin:     { left: AMOUNT_COL_X, right: M },
-    tableWidth: TOTAL_W,
-  });
+],
 
+  styles: {
+    fontSize: 8,
+    halign: "center",
+    cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
+    lineColor: RULE,
+    lineWidth: 0.15,
+  },
+
+  columnStyles: {
+    0: { cellWidth: TOTAL_W },
+  },
+
+  didParseCell: (data) => {
+    if (data.row.index === 0 || data.row.index === 3) {
+      data.cell.styles.fontStyle = "bold";
+    }
+  },
+
+  margin: { left: AMOUNT_COL_X, right: M },
+  tableWidth: TOTAL_W,
+});
+  
   const sumEndY = (doc as any).lastAutoTable.finalY;
 
   /* ══════════════════════════════════════════════════════════
      ⑦  TERMS (left)  +  AUTHORISED SIGNATORY (right)
          Exact same layout as Invoice
   ══════════════════════════════════════════════════════════ */
-  const SIG_Y      = sumEndY;
-  const LABEL_W    = 28;
-  const SIGN_X     = AMOUNT_COL_X - LABEL_W;
-  const SIGN_W     = LABEL_W + TOTAL_W;
-  const SIGN_HDR_H = 6;
-  const SIGN_BOX_H = 22;
+/* ══════════════════════════════════════════════════════════
+   7  TERMS (left)  +  AUTHORISED SIGNATORY (right)
+══════════════════════════════════════════════════════════ */
+const SIG_Y      = sumEndY;
+const LABEL_W    = 28;
+const SIGN_X = W - M - TOTAL_W - LABEL_W;
+const SIGN_W     = LABEL_W + TOTAL_W;
+const SIGN_HDR_H = 6;
+const SIGN_BOX_H = 22;
 
-  // Header bar
-  doc.setFillColor(...ERP_BLUE);
-  doc.rect(SIGN_X, SIG_Y, SIGN_W, SIGN_HDR_H, "F");
-  doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...WHITE);
-  doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, SIG_Y + 4, { align: "center" });
+// ── Calculate terms FIRST so we know tBH before drawing signatory ──
+const termW  = SIGN_X - M;
+const termTW = termW - 14;
+const tLines: string[] = [];
+const selling = quotation?.terms?.selling;
 
-  // Body
-  doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
-  doc.rect(SIGN_X, SIG_Y + SIGN_HDR_H, SIGN_W, SIGN_BOX_H, "F");
-  doc.line(SIGN_X, SIG_Y + SIGN_HDR_H,               SIGN_X + SIGN_W, SIG_Y + SIGN_HDR_H);
-  doc.line(SIGN_X, SIG_Y + SIGN_HDR_H + SIGN_BOX_H,  SIGN_X + SIGN_W, SIG_Y + SIGN_HDR_H + SIGN_BOX_H);
-
-  if (company?.documents?.authorizedSignatureUrl) {
-    try {
-      doc.addImage(
-        px(company.documents.authorizedSignatureUrl), "PNG",
-        SIGN_X + (SIGN_W - 40) / 2, SIG_Y + SIGN_HDR_H + 3, 40, 13,
-      );
-    } catch {}
+if (selling) {
+  if (selling.general)      tLines.push(`General: ${selling.general}`);
+  if (selling.delivery)     tLines.push(`Delivery: ${selling.delivery}`);
+  if (selling.cancellation) tLines.push(`Cancellation: ${selling.cancellation}`);
+  if (selling.warranty)     tLines.push(`Warranty: ${selling.warranty}`);
+  if (selling.liability)    tLines.push(`Liability: ${selling.liability}`);
+  if (selling.payment) {
+    const p = selling.payment;
+    if (p.dueDates)    tLines.push(`Payment Due: ${p.dueDates}`);
+    if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
+    if (p.notes)       tLines.push(`Notes: ${p.notes}`);
+   p.phases?.forEach((ph: any, i: number) =>
+  tLines.push(
+    `  ${i + 1}. ${ph.name} — ${ph.percentage} : ${ph.condition}`
+  )
+);
   }
+}
+if (!tLines.length) tLines.push("No terms and conditions specified.");
 
-  const sigLineY = SIG_Y + SIGN_HDR_H + SIGN_BOX_H - 5;
-  doc.line(SIGN_X + 5, sigLineY, SIGN_X + SIGN_W - 5, sigLineY);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(120, 120, 120);
-  doc.text("Signature", SIGN_X + SIGN_W / 2, sigLineY + 4, { align: "center" });
+let tH = 12;
+tLines.forEach(l => { tH += doc.splitTextToSize(l, termTW).length * 3.5; });
 
-  // Terms & Conditions (left of signatory)
-  const termW  = SIGN_X - M;
-  const termTW = termW - 14;
-  const tLines: string[] = [];
-  const selling = quotation?.terms?.selling;
+const SIGN_TOTAL_HEIGHT = SIGN_HDR_H + SIGN_BOX_H;
+const tBH       = Math.max(tH, SIGN_TOTAL_HEIGHT); // terms box height
+const sigOffset = tBH - SIGN_TOTAL_HEIGHT;          // push sig down if terms are taller
+const actualSIG_Y = SIG_Y + sigOffset;
 
-  if (selling) {
-    if (selling.general)      tLines.push(`General: ${selling.general}`);
-    if (selling.delivery)     tLines.push(`Delivery: ${selling.delivery}`);
-    if (selling.cancellation) tLines.push(`Cancellation: ${selling.cancellation}`);
-    if (selling.warranty)     tLines.push(`Warranty: ${selling.warranty}`);
-    if (selling.liability)    tLines.push(`Liability: ${selling.liability}`);
-    if (selling.payment) {
-      const p = selling.payment;
-      if (p.dueDates)    tLines.push(`Payment Due: ${p.dueDates}`);
-      if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
-      if (p.notes)       tLines.push(`Notes: ${p.notes}`);
-      p.phases?.forEach((ph: any, i: number) =>
-        tLines.push(`  ${i + 1}. ${ph.percentage}% — ${ph.condition}`));
-    }
-  }
-  if (!tLines.length) tLines.push("No terms and conditions specified.");
+// ── Signatory (drawn at actualSIG_Y so bottom aligns with terms bottom) ──
+doc.setFillColor(...ERP_BLUE);
+doc.rect(SIGN_X, actualSIG_Y, SIGN_W, SIGN_HDR_H, "F");
+doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...WHITE);
+doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, actualSIG_Y + 4, { align: "center" });
 
-  let tH = 12;
-  tLines.forEach(l => { tH += doc.splitTextToSize(l, termTW).length * 3.5; });
-  const tBH = Math.max(SIGN_HDR_H + SIGN_BOX_H + 2, tH + 6);
+doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
+doc.rect(SIGN_X, actualSIG_Y + SIGN_HDR_H, SIGN_W, SIGN_BOX_H, "F");
+doc.line(SIGN_X, actualSIG_Y + SIGN_HDR_H,               SIGN_X + SIGN_W, actualSIG_Y + SIGN_HDR_H);
+doc.line(SIGN_X, actualSIG_Y + SIGN_HDR_H + SIGN_BOX_H,  SIGN_X + SIGN_W, actualSIG_Y + SIGN_HDR_H + SIGN_BOX_H);
 
-  let termsY = SIG_Y;
-  if (termsY + tBH > H - 16) {
-    doc.addPage(); drawWatermark(); termsY = 16;
-  }
+if (company?.documents?.authorizedSignatureUrl) {
+  try {
+    doc.addImage(
+      px(company.documents.authorizedSignatureUrl), "PNG",
+      SIGN_X + (SIGN_W - 40) / 2, actualSIG_Y + SIGN_HDR_H + 3, 40, 13,
+    );
+  } catch {}
+}
 
-  doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
-  doc.rect(M, termsY, termW, tBH, "F");
+const sigLineY = actualSIG_Y + SIGN_HDR_H + SIGN_BOX_H - 5;
+doc.line(SIGN_X + 5, sigLineY, SIGN_X + SIGN_W - 5, sigLineY);
+doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(120, 120, 120);
+doc.text("Signature", SIGN_X + SIGN_W / 2, sigLineY + 4, { align: "center" });
 
-  doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(0, 0, 0);
-  doc.text("TERMS & CONDITIONS", M + 7, termsY + 5.5);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(0, 0, 0);
-  let tcy = termsY + 10.5;
-  tLines.forEach(l => {
-    const wr = doc.splitTextToSize(l, termTW);
-    doc.text(wr, M + 7, tcy);
-    tcy += wr.length * 3.5;
-  });
+// ── Terms box (starts at SIG_Y, height = tBH) ──
+let termsY = SIG_Y;
+if (termsY + tBH > H - 16) {
+  doc.addPage(); drawWatermark(); termsY = 16;
+}
 
+doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
+doc.rect(M, termsY, termW, tBH, "F");
+
+doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(0, 0, 0);
+doc.text("TERMS & CONDITIONS", M + 7, termsY + 5.5);
+doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(0, 0, 0);
+let tcy = termsY + 10.5;
+tLines.forEach(l => {
+  const wr = doc.splitTextToSize(l, termTW);
+  doc.text(wr, M + 7, tcy);
+  tcy += wr.length * 3.5;
+});
   /* ══════════════════════════════════════════════════════════
      ⑧  FOOTER — identical to Invoice
   ══════════════════════════════════════════════════════════ */
