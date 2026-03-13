@@ -7,6 +7,7 @@ import type {
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
+import WarehouseSelect from "../../selects/WarehouseSelect";
 
 interface DetailsTabProps {
   form: PurchaseInvoiceFormData;
@@ -216,17 +217,11 @@ export const DetailsTab = ({
               ]}
             />
           </div>
-          <div className="w-[110px] ">
-            <ModalSelect
-              label="Warehouse *"
-              name="warehouse"
+          <div className="w-[110px]">
+            <WarehouseSelect
               value={(form as any).warehouse || ""}
               onChange={handleTopWarehouseChange}
-              options={[
-                { value: "", label: "Select Warehouse" },
-                { value: "1", label: "Warehouse 1" },
-                { value: "2", label: "Warehouse 2" },
-              ]}
+              required
             />
           </div>
         </div>
@@ -427,18 +422,13 @@ export const DetailsTab = ({
                       />
                     </td>
                     {/* WAREHOUSE */}
-<td className="px-2 py-1">
-  <select
-    name="warehouse"
-    value={(it as any).warehouse || ""}
-    onChange={(e) => onItemChange(e as any, i)}
-    className="w-[90px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-  >
-    <option value="">Select</option>
-    <option value="1">Warehouse 1</option>
-    <option value="2">Warehouse 2</option>
-  </select>
-</td>
+                    <td className="px-2 py-1">
+                      <WarehouseSelect
+                        compact
+                        value={(it as any).warehouse || ""}
+                        onChange={(e) => onItemChange(e as any, i)}
+                      />
+                    </td>
 
                     {/* DISCOUNT */}
                     <td className="px-2 py-1">

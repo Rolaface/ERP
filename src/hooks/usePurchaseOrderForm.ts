@@ -441,7 +441,7 @@ const addItem = () => {
           itemCode: data.id,
           itemName: data.itemName,
           description: data.description,
-
+         warehouse: data.warehouse || "",
 
           rate: Number(data.buyingPrice ?? 0),
           uom: data.unitOfMeasureCd,

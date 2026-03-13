@@ -8,6 +8,7 @@ import { currencyOptions } from "../../../types/Supply/supplier";
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
+import WarehouseSelect from "../../selects/WarehouseSelect";
 
 interface DetailsTabProps {
   form: PurchaseOrderFormData;
@@ -56,7 +57,6 @@ export const DetailsTab = ({
     (page + 1) * ITEMS_PER_PAGE,
   );
 
-
   const handleTopRequiredByChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -66,7 +66,6 @@ export const DetailsTab = ({
     }
   };
 
- 
   const handleTopWarehouseChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -151,18 +150,11 @@ export const DetailsTab = ({
               disabled
             />
           </div>
-
           <div className="w-[135px]">
-            <ModalSelect
-              label="Warehouse *"
-              name="warehouse"
-              value={form.warehouse}
+            <WarehouseSelect
+              value={form.warehouse || ""}
               onChange={handleTopWarehouseChange}
-              options={[
-                { value: "", label: "Select Warehouse" },
-                { value: "1", label: "Warehouse 1" },
-                { value: "2", label: "Warehouse 2" },
-              ]}
+              required
             />
           </div>
         </div>
@@ -280,19 +272,11 @@ export const DetailsTab = ({
                         </div>
                       </td>
                       <td className="px-2 py-1">
-                        <div style={{ width: "105px" }}>
-                          <ModalSelect
-                            label=""
-                            name="warehouse"
-                            value={(it as any).warehouse || ""}
-                            onChange={(e) => onItemChange(e as any, i)}
-                            options={[
-                              { value: "", label: "Select" },
-                              { value: "1", label: "Warehouse 1" },
-                              { value: "2", label: "Warehouse 2" },
-                            ]}
-                          />
-                        </div>
+                        <WarehouseSelect
+                          compact
+                         value={it.warehouse || ""}
+                          onChange={(e) => onItemChange(e as any, i)}
+                        />
                       </td>
 
                       <td className="px-2 py-1">

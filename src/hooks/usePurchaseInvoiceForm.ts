@@ -591,6 +591,7 @@ const addItem = () => {
           rate: Number(data.buyingPrice ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
+          warehouse: data.warehouse || "",
 
 
           description: data.description || "",

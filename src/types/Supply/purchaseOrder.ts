@@ -8,7 +8,7 @@ description?: string;
   quantity: number;
   uom: string;
   rate: number;
-
+  warehouse ?: string;
   vatCd: string;   
   vatRate: number; 
   packing?: string;

@@ -10,6 +10,7 @@ import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import StockItemSelect from "../selects/StockItemSelect";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
+import WarehouseSelect from "../selects/WarehouseSelect";
 import {
   invoiceStatusOptions,
   currencySymbols,
@@ -204,11 +205,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   className={`grid ${
                     showExchangeRate
                       ? showExportField
-                        ? "grid-cols-[220px_150px_150px_100px_100px_120px_120px_140px]"
-                        : "grid-cols-[220px_150px_150px_100px_100px_120px_120px]"
+                        ? "grid-cols-[220px_150px_150px_100px_100px_120px_120px_140px_120px]"
+                        : "grid-cols-[220px_150px_150px_100px_100px_120px_120px_120px]"
                       : showExportField
-                        ? "grid-cols-[220px_150px_150px_100px_120px_120px_140px]"
-                        : "grid-cols-[220px_150px_150px_100px_120px_120px]"
+                        ? "grid-cols-[220px_150px_150px_100px_120px_120px_140px_120px]"
+                        : "grid-cols-[220px_150px_150px_100px_120px_120px_120px]"
                   } gap-3 items-start`}
                 >
                   <CustomerSelect
@@ -293,7 +294,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
-                  
+                  <WarehouseSelect
+                    value={(formData as any).warehouse || ""}
+                    onChange={(e) => {
+                      actions.handleInputChange(e);
+                      actions.handleBulkItemChange("warehouse", e.target.value);
+                    }}
+                    label="Warehouse"
+                  />
 
                   {ui.isExport && (
                     <ModalInput
@@ -365,6 +373,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
                             Expiry Date
                           </th>
+                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">
+                            Warehouse
+                          </th>
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">
                             Unit Price <span className="text-danger">*</span>
                           </th>
@@ -429,7 +440,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                       price: item.valuation_rate,
                                       vatRate: item.taxRate,
                                       vatCode: item.taxCode,
-                                      
+                                      warehouse: item.warehouse,
                                     });
                                   }}
                                   onClear={() => {
@@ -595,6 +606,15 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     className="w-full"
                                   />
                                 </div>
+                              </td>
+                              <td className="px-0.5 py-1">
+                                <WarehouseSelect
+                                  compact
+                                  value={(it as any).warehouse || ""}
+                                  onChange={(e) =>
+                                    actions.handleItemChange(i, e as any)
+                                  }
+                                />
                               </td>
 
                               <td className="px-0.5 py-1">
