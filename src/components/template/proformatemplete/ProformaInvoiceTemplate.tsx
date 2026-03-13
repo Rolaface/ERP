@@ -77,20 +77,6 @@ export const generateProformaInvoicePDF = async (
      WATERMARK  (same as Invoice)
   ══════════════════════════════════════════════════════════ */
   const drawWatermark = () => {
-    if (company?.documents?.companyLogoUrl) {
-      try {
-        doc.setGState(doc.GState({ opacity: 0.06 }));
-        doc.addImage(
-          px(company.documents.companyLogoUrl),
-          "PNG",
-          (W - 80) / 2,
-          H / 2 - 40,
-          80,
-          80,
-        );
-        doc.setGState(doc.GState({ opacity: 1 }));
-      } catch {}
-    }
     const name = (company?.companyName ?? "").toUpperCase();
     doc.setFont("helvetica", "bold");
     let fs = 20;
