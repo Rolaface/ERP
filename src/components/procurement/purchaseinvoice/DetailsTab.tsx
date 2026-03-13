@@ -7,6 +7,7 @@ import type {
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
+import WarehouseSelect from "../../selects/WarehouseSelect";
 
 interface DetailsTabProps {
   form: PurchaseInvoiceFormData;
@@ -25,6 +26,7 @@ interface DetailsTabProps {
   onPOSelect: (po: any) => void;
   usePO: boolean;
   onTogglePO: (checked: boolean) => void;
+  onBulkItemChange?: (field: keyof ItemRow, value: string) => void;
 }
 
 export const DetailsTab = ({
@@ -41,11 +43,20 @@ export const DetailsTab = ({
   onPOSelect,
   usePO,
   onTogglePO,
+  onBulkItemChange,
 }: DetailsTabProps) => {
   const symbol = getCurrencySymbol();
 
   const ITEMS_PER_PAGE = 5;
   const [page, setPage] = useState(0);
+  const handleTopWarehouseChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    onFormChange(e);
+    if (onBulkItemChange) {
+      onBulkItemChange("warehouse", e.target.value);
+    }
+  };
 
   // UI state to toggle between PO selection and manual input
 
@@ -60,10 +71,10 @@ export const DetailsTab = ({
   );
 
   return (
-    <div className="flex flex-col gap-4 max-h-screen overflow-auto  bg-app text-main">
+    <div className="flex flex-col gap-4 h-full bg-app text-main">
       {/* ── Top fields ── */}
       <div className="bg-app">
-        <div className="grid grid-cols-[250px_160px_135px_90px_110px_100px_100px_120px_100px] gap-x-2 items-end">
+        <div className="flex flex-wrap gap-x-3 gap-y-3 items-end">
           <div className="w-[250px]">
             <SupplierSelect
               selectedId={form.supplierId}
@@ -139,6 +150,7 @@ export const DetailsTab = ({
               label="Status"
               name="status"
               value={form.status}
+              disabled
               onChange={onFormChange}
               options={[
                 { value: "Draft", label: "Draft" },
@@ -186,8 +198,6 @@ export const DetailsTab = ({
               ]}
             />
           </div>
-       
-
 
           <div className="w-[110px] ml-2">
             <ModalSelect
@@ -207,9 +217,30 @@ export const DetailsTab = ({
                 { value: "OTHER", label: "Other" },
               ]}
             />
+          </div>
+          <div className="w-[110px]">
+            <WarehouseSelect
+              name="warehouse"
+              value={form.warehouse || ""}
+              onChange={handleTopWarehouseChange}
+              required={form.updateStock}
+              disabled={!form.updateStock}
+            />
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <input
+              type="checkbox"
+              name="updateStock"
+              checked={form.updateStock ?? false}
+              onChange={onFormChange}
+              className="w-3.5 h-3.5 accent-primary"
+            />
 
+            <span className="text-xs text-main">
+              Update Stock
+            </span>
+          </div>
         </div>
-         </div>
       </div>
 
       {/* ── Main Body ── */}
@@ -256,6 +287,9 @@ export const DetailsTab = ({
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
                   Unit Price <span className="text-danger">*</span>
                 </th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">
+                  Warehouse 
+                </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
                   Dis (%)
                 </th>
@@ -263,11 +297,12 @@ export const DetailsTab = ({
                   Tax
                 </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px] whitespace-nowrap">
-                  Tax Code  <span className="text-danger">*</span>
+                  Tax Code <span className="text-danger">*</span>
                 </th>
                 <th className="px-2 py-1  text-muted font-medium text-[11px] w-[80px] text-right">
                   Amount
                 </th>
+
                 <th className="w-[30px]" />
               </tr>
             </thead>
@@ -400,6 +435,25 @@ export const DetailsTab = ({
                         value={it.rate}
                         onChange={(e) => onItemChange(e, i)}
                         className="w-[65px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+                      />
+                    </td>
+                    {/* WAREHOUSE */}
+                    <td className="px-2 py-1">
+                      <WarehouseSelect
+                        compact
+                        value={it.warehouse || ""}
+                        onChange={(e: any) =>
+                          onItemChange(
+                            {
+                              target: {
+                                name: "warehouse",
+                                value: e.target?.value ?? e,
+                              },
+                            } as any,
+                            i
+                          )
+                        }
+                        disabled={!form.updateStock}
                       />
                     </td>
 
@@ -542,48 +596,48 @@ export const DetailsTab = ({
             </div>
           </div>
 
-<div className="bg-card rounded-lg p-3 w-[220px]">
-  <h3 className="text-[13px] font-semibold text-main mb-2">
-    Summary
-  </h3>
+          <div className="bg-card rounded-lg p-3 w-[220px]">
+            <h3 className="text-[13px] font-semibold text-main mb-2">
+              Summary
+            </h3>
 
-  <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted">Total Items</span>
+                <span className="font-medium text-main">{items.length}</span>
+              </div>
 
-    <div className="flex justify-between text-xs">
-      <span className="text-muted">Total Items</span>
-      <span className="font-medium text-main">{items.length}</span>
-    </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted">Total Quantity</span>
+                <span className="font-medium text-main">
+                  {form.totalQuantity}
+                </span>
+              </div>
 
-    <div className="flex justify-between text-xs">
-      <span className="text-muted">Total Quantity</span>
-      <span className="font-medium text-main">{form.totalQuantity}</span>
-    </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted">Subtotal</span>
+                <span className="font-medium text-main">
+                  {symbol} {form.subTotal?.toFixed(2) || "0.00"}
+                </span>
+              </div>
 
-    <div className="flex justify-between text-xs">
-      <span className="text-muted">Subtotal</span>
-      <span className="font-medium text-main">
-        {symbol} {form.subTotal?.toFixed(2) || "0.00"}
-      </span>
-    </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted">Total Tax</span>
+                <span className="font-medium text-main">
+                  {symbol} {form.totalTax?.toFixed(2) || "0.00"}
+                </span>
+              </div>
 
-    <div className="flex justify-between text-xs">
-      <span className="text-muted">Total Tax</span>
-      <span className="font-medium text-main">
-        {symbol} {form.totalTax?.toFixed(2) || "0.00"}
-      </span>
-    </div>
+              <div className="border-t border-theme my-1"></div>
 
-    <div className="border-t border-theme my-1"></div>
-
-    <div className="flex justify-between text-sm font-semibold">
-      <span className="text-main">Grand Total</span>
-      <span className="text-main">
-        {symbol} {form.grandTotal?.toFixed(2) || "0.00"}
-      </span>
-    </div>
-
-  </div>
-</div>
+              <div className="flex justify-between text-sm font-semibold">
+                <span className="text-main">Grand Total</span>
+                <span className="text-main">
+                  {symbol} {form.grandTotal?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

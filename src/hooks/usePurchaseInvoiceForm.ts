@@ -5,6 +5,7 @@ import type {
   POTab,
   TaxRow,
   PaymentRow,
+  ItemRow,
 } from "../types/Supply/purchaseInvoice";
 import {
   emptyPOForm,
@@ -51,6 +52,16 @@ export const usePurchaseInvoiceForm = ({
     Partial<PurchaseInvoiceFormData>
   >({});
 
+const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
+  setForm((prev) => ({
+    ...prev,
+    warehouse: field === "warehouse" ? value : prev.warehouse,
+    items: prev.items.map((item) => ({
+      ...item,
+      [field]: value
+    })),
+  }));
+};
 
   useEffect(() => {
     if (!isOpen) {
@@ -236,7 +247,7 @@ useEffect(() => {
         if (!item.rate || item.rate <= 0)
           return `Row ${i + 1}: Unit Price required`;
 
-        if (!item.vatCd || !item.vatCd)
+        if (!item.vatCd)
           return `Row ${i + 1}: Tax Code required`;
 
         if (item.requiresBatch && !item.batchNo?.trim())
@@ -299,6 +310,7 @@ useEffect(() => {
             vatCd: item.vatCd || "",
             vatRate: taxRate,
             description,
+            warehouse: form.updateStock ? (item.warehouse || "") : "",
             packingUnit: Number(item.packingUnit || 0),
             packingSize: Number(item.packingSize || 0),
             packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
@@ -314,14 +326,13 @@ useEffect(() => {
       setForm((prev) => ({
         ...prev,
 
-        // BASIC INFO
         poNumber: data.poId,
         supplier: data.supplierName,
         currency: data.currency || "",
         taxCategory: data.taxCategory || "",
         project: data.project || "",
         costCenter: data.costCenter || "",
-        // shippingRule: data.shippingRule || "",
+         shippingRule: data.shippingRule || "",
         incoterm:
           typeof data.incoterm === "string"
             ? data.incoterm.trim().toUpperCase()
@@ -370,27 +381,50 @@ useEffect(() => {
       }));
     }
   };
-  const handleFormChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    const { name, value } = e.target;
+const handleFormChange = (
+  e: React.ChangeEvent<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  >
+) => {
+  const target = e.target as HTMLInputElement;
 
-    if (name.startsWith("addresses.")) {
-      const parts = name.split(".") as [
-        "addresses",
-        AddressKey,
-        keyof AddressBlock,
-      ];
+  const { name, value, type } = target;
+  const checked = target.checked;
 
-      const [, key, field] = parts;
-      updateAddress(key, field, value);
-      return;
-    }
+  const finalValue = type === "checkbox" ? checked : value;
 
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+
+  if (name === "updateStock") {
+    setForm((prev) => ({
+      ...prev,
+      updateStock: checked,
+      warehouse: checked ? prev.warehouse : "",
+      items: prev.items.map((item) => ({
+        ...item,
+        warehouse: checked ? item.warehouse : "",
+      })),
+    }));
+
+    return;
+  }
+
+  if (name.startsWith("addresses.")) {
+    const parts = name.split(".") as [
+      "addresses",
+      AddressKey,
+      keyof AddressBlock
+    ];
+
+    const [, key, field] = parts;
+    updateAddress(key, field, value);
+    return;
+  }
+
+  setForm((prev) => ({
+    ...prev,
+    [name]: finalValue,
+  }));
+};
 
   const handleSupplierChange = async (sup: any) => {
     if (!sup) return;
@@ -470,10 +504,18 @@ useEffect(() => {
     setForm((p) => ({ ...p, items }));
   };
 
-  const addItem = () => {
-    setForm((p) => ({ ...p, items: [...p.items, { ...emptyItem }] }));
-  };
-
+const addItem = () => {
+  setForm((p) => ({
+    ...p,
+    items: [
+      ...p.items,
+      {
+        ...emptyItem,
+        warehouse: p.updateStock ? p.warehouse ?? "" : "",
+      },
+    ],
+  }));
+};
   const removeItem = (idx: number) => {
     if (form.items.length === 1) {
       showValidationError("At least one item is required");
@@ -577,6 +619,10 @@ useEffect(() => {
           rate: Number(data.buyingPrice ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
+        warehouse:
+  prev.updateStock
+    ? (items[idx].warehouse || data.warehouse || prev.warehouse || "")
+    : "",
 
 
           description: data.description || "",
@@ -730,6 +776,7 @@ useEffect(() => {
     validateTab,
     usePO,
     handleTogglePO,
+    handleBulkItemChange
   };
 };
 

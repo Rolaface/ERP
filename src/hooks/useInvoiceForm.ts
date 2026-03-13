@@ -316,6 +316,14 @@ setExchangeRateError(null);
   ) => {
     const { name, value } = e.target;
 
+    if (name === "updateStock") {
+  setFormData((prev) => ({
+    ...prev,
+    updateStock: e.target.checked
+  }));
+  return;
+}
+
     if (section) {
       setFormData((prev) => ({
         ...prev,
@@ -616,6 +624,21 @@ setExchangeRateError(null);
       return { ...prev, items };
     });
   };
+const handleBulkItemChange = (
+  field: keyof InvoiceItem,
+  value: string
+) => {
+  if (field !== "warehouse") return;
+
+  setFormData((prev) => ({
+    ...prev,
+    warehouse: value,
+    items: prev.items.map((item) => ({
+      ...item,
+      warehouse: value,
+    })),
+  }));
+};
 
   const addItem = () => {
     setFormData((prev) => {
@@ -628,10 +651,11 @@ setExchangeRateError(null);
         start = lastEnd ? lastEnd + 1 : 1;
       }
 
-      items.push({
-        ...EMPTY_ITEM,
-        boxStart: start,
-      });
+    items.push({
+  ...EMPTY_ITEM,
+  boxStart: start,
+  warehouse: prev.warehouse || "",
+});
 
       setPage(Math.floor((items.length - 1) / ITEMS_PER_PAGE));
 
@@ -699,7 +723,7 @@ setExchangeRateError(null);
           mfgDate: it.mfgDate ?? "",
           expDate: it.expDate ?? "",
           _fromInvoice: true,
-
+           warehouse: it.warehouse ?? "",
         };
       }),
 
@@ -740,6 +764,8 @@ setExchangeRateError(null);
           dateOfInvoice: today,
           dueDate: dueDate,
           exchangeRt: "1",
+          warehouse: "",
+  updateStock: true,
 
           terms: {
             selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
@@ -874,6 +900,7 @@ setExchangeRateError(null);
       handleSubmit,
       setInvoiceFromApi,
       setFormDataFromInvoice,
+      handleBulkItemChange
     },
   };
 };

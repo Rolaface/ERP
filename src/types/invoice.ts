@@ -20,7 +20,8 @@ export interface Invoice {
   invoiceType: string;
   destnCountryCd?: string;
   lpoNumber?: string;
-
+   updateStock?: boolean
+  warehouse?: string
   billingAddress: Address;
   shippingAddress: Address;
   paymentInformation: PaymentInformation;
@@ -74,6 +75,7 @@ export interface InvoiceItem {
   boxEnd?: number;
 qty?: number;
 availableQty?: number;
+warehouse?: string;
 }
 
 export interface PaymentInformation {

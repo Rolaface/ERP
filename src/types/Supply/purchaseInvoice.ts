@@ -17,6 +17,7 @@ export interface ItemRow {
   packingUnit?: number;
 packingSize?: number;
 requiresBatch?: boolean; 
+warehouse?: string;
   
 }
 
@@ -55,12 +56,14 @@ export type AddressBlock = {
 };
 
 export interface PurchaseInvoiceFormData {
+  warehouse?: string;
   poNumber: string;
   date: string;
   supplier: string;
   supplierId: string;
   supplierEmail?: string;
   supplierPhone?: string;
+updateStock?: boolean;  
 
   supplierCode: string;
   taxCategory: string;
@@ -122,10 +125,14 @@ export const emptyItem: ItemRow = {
   vatRate: 0,
   description: "",
   packing: "",
+  packingUnit: 0,
+packingSize: 0,
   batchNo: "",
   mfgDate: "",
   expDate: "",
   discount: 0,
+  warehouse: "",
+  requiresBatch: false,
 };
 
 
@@ -158,21 +165,22 @@ export const emptyAddress: AddressBlock = {
 };
 
 export const emptyPOForm: PurchaseInvoiceFormData = {
+  
   poNumber: "",
   date: "",
   supplier: "",
   supplierContact: "",
   taxCategory: "",
-  currency: "INR",
+  currency: "",
   status: "Draft",
   destnCountryCd: "",
-  shippingRule: "STANDARD",
-  incoterm: "EXW",
+  shippingRule: " ",
+  incoterm: " ",
   taxesChargesTemplate: "",
   supplierInvoiceNumber: "",
   paymentType: "",
   transactionProgress: "",
-
+  updateStock: true,
   costCenter: "UD-001 - Udvil - RI",
   project: "Project-0001",
 
