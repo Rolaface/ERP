@@ -251,7 +251,7 @@ accounting:{
     create: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.create_purchase_order`,
 
     update: `${ERP_BASE}/api/method/erpnext.zra_client.update_purchase_order`,
-    updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.update_purchase_order_status`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.update_po_status.update_purchase_order_status`,
   },
   //purchase invoice
   purchaseIvoice: {
