@@ -726,7 +726,6 @@ if (fieldConfig.fieldName === "description") {
                       name="taxDescription"
                       value={form.taxDescription || ""}
                       onChange={handleForm}
-                      required
                       placeholder="12% VAT on Non-Export"
                       disabled={autoPopulateTax}
                     />
