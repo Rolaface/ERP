@@ -94,20 +94,6 @@ const LOGO_Y = 5;
      WATERMARK — auto-shrink font so full name always fits
   ══════════════════════════════════════════════════════════ */
   const drawWatermark = () => {
-    if (company?.documents?.companyLogoUrl) {
-      try {
-        doc.setGState(doc.GState({ opacity: 0.06 }));
-        doc.addImage(
-          px(company.documents.companyLogoUrl),
-          "PNG",
-          (W - 80) / 2,
-          H / 2 - 40,
-          80,
-          80,
-        );
-        doc.setGState(doc.GState({ opacity: 1 }));
-      } catch { /* ignore */ }
-    }
     const name = (company?.companyName ?? "").toUpperCase();
     doc.setFont("helvetica", "bold");
     let fontSize = 20;
