@@ -156,15 +156,32 @@ const TX = LOGO_X + LOGO_SZ + 6;
     infoLines.push(`Email: ${company.contactInfo.companyEmail}`);
   infoLines.forEach((l, i) => doc.text(l, TX, infoY + i * 5));
 
-  // Document title — right aligned
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...INK);
-  doc.text("PURCHASE INVOICE", MR, 14, { align: "right" });
+// BEFORE
+doc.setFont("helvetica", "bold");
+doc.setFontSize(10);
+doc.setTextColor(...INK);
+doc.text("PURCHASE INVOICE", MR, 14, { align: "right" });
 
-  // Invoice ID
-  doc.setFontSize(10);
-  doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
+// Invoice ID
+doc.setFontSize(10);
+doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
+
+// AFTER
+const badgeLabel = "PURCHASE INVOICE";
+doc.setFont("helvetica", "bold");
+doc.setFontSize(10);
+const badgeTextW = doc.getTextWidth(badgeLabel);
+const badgePadX  = 2;
+const badgeH     = 8;
+const badgeW     = badgeTextW + badgePadX * 2;
+const badgeX     = MR - badgeW;
+const badgeY     = 8;
+doc.setFillColor(...ERP_BLUE);
+doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.5, 1.5, "F");
+doc.setTextColor(...WHITE);
+doc.text(badgeLabel, badgeX + badgeW - badgePadX, badgeY + badgeH / 2 + 1.5, { align: "right" });
+doc.setTextColor(...INK);
+doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
 
   // Meta info — right aligned (matches PO meta block)
   doc.setFont("helvetica", "normal");
@@ -442,50 +459,12 @@ const AMOUNT_COL_X = M + 8 + 48 + 20 + 18 + 22 + 18 + 20;
   const SIG_Y = sumEndY;
 
   /* ══════════════════════════════════════════════════════════
-     SIGNATURE — right-aligned under totals (matches PO style)
+     ⑦  PRE-CALCULATE TERMS height so signature box can match it
   ══════════════════════════════════════════════════════════ */
   const LABEL_W = 28;
   const SIGN_X = AMOUNT_COL_X - LABEL_W;
   const SIGN_W = LABEL_W + TOTAL_W;
 
-  // Header bar
-  doc.setFillColor(...ERP_BLUE);
-  doc.rect(SIGN_X, SIG_Y, SIGN_W, 6, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...WHITE);
-  doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, SIG_Y + 4, {
-    align: "center",
-  });
-
-  // Signature content box
-  doc.setFillColor(...WHITE);
-  doc.rect(SIGN_X, SIG_Y + 6, SIGN_W, 22, "F");
-  doc.setDrawColor(...RULE);
-  doc.line(SIGN_X, SIG_Y + 6,  SIGN_X + SIGN_W, SIG_Y + 6);
-  doc.line(SIGN_X, SIG_Y + 28, SIGN_X + SIGN_W, SIG_Y + 28);
-
-  if (company?.documents?.authorizedSignatureUrl) {
-    try {
-      doc.addImage(
-        px(company.documents.authorizedSignatureUrl),
-        "PNG",
-        SIGN_X + (SIGN_W - 40) / 2,
-        SIG_Y + 9,
-        40,
-        14,
-      );
-    } catch { /* ignore */ }
-  }
-
-  doc.line(SIGN_X + 5, SIG_Y + 22, SIGN_X + SIGN_W - 5, SIG_Y + 22);
-  doc.setFontSize(6.5);
-  doc.setTextColor(120, 120, 120);
-  doc.text("Signature", SIGN_X + SIGN_W / 2, SIG_Y + 26, { align: "center" });
-
-  /* ══════════════════════════════════════════════════════════
-     ⑦  TERMS & CONDITIONS — left of signature area (PO style)
-  ══════════════════════════════════════════════════════════ */
   let termsY = SIG_Y;
   const buying = pi?.terms?.terms?.buying;
   const termW  = SIGN_X - M;
@@ -503,29 +482,89 @@ const AMOUNT_COL_X = M + 8 + 48 + 20 + 18 + 22 + 18 + 20;
       if (p.dueDates)    tLines.push(`Payment Due: ${p.dueDates}`);
       if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
       if (p.notes)       tLines.push(`Notes: ${p.notes}`);
-      p.phases?.forEach((ph: any, i: number) =>
-        tLines.push(`  ${i + 1}. ${ph.percentage}% — ${ph.condition}`),
-      );
+      p.phases?.forEach((ph: any, i: number) => {
+        const phaseName = ph.phaseName ?? ph.name ?? `Phase ${i + 1}`;
+        const percent = ph.percentage ?? 0;
+        const condition = ph.condition ?? "";
+        tLines.push(`${phaseName}: ${percent}% — ${condition}`);
+      });
     }
   }
   if (!tLines.length) tLines.push("No terms and conditions specified.");
 
+  // Calculate terms box height first
   let tH = 12;
   tLines.forEach((l) => {
     tH += doc.splitTextToSize(l, termTW).length * 3.5;
   });
-  const tBH = Math.max(24, tH + 4);
+  const tBH = Math.max(28, tH + 4); // min 28 = 6 (header bar) + 22 (content)
 
+  /* ══════════════════════════════════════════════════════════
+     ⑧  PAGE-BREAK CHECK — before drawing either block
+  ══════════════════════════════════════════════════════════ */
   if (termsY + tBH > H - 16) {
     doc.addPage();
     drawWatermark();
     termsY = 16;
   }
 
-  doc.setFillColor(...WHITE);
-  doc.setDrawColor(...RULE);
-  doc.setLineWidth(0.25);
-  doc.rect(M, termsY, termW, tBH, "F");
+  /* ══════════════════════════════════════════════════════════
+     SIGNATURE — drawn after page-break check, uses termsY
+     so it always sits at the same Y as the T&C box
+  ══════════════════════════════════════════════════════════ */
+// Align signature with bottom of terms block (same as PO)
+const signatureStartY = termsY + tBH - 46;
+
+// Header bar
+doc.setFillColor(...ERP_BLUE);
+doc.rect(SIGN_X, signatureStartY, SIGN_W, 6, "F");
+
+doc.setFont("helvetica", "bold");
+doc.setFontSize(8);
+doc.setTextColor(...WHITE);
+doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, signatureStartY + 4, {
+  align: "center",
+});
+
+// Signature box
+doc.setFillColor(...WHITE);
+doc.rect(SIGN_X, signatureStartY + 6, SIGN_W, 22, "F");
+
+doc.setDrawColor(...RULE);
+
+// top line
+doc.line(SIGN_X, signatureStartY + 6, SIGN_X + SIGN_W, signatureStartY + 6);
+
+// bottom line
+doc.line(SIGN_X, signatureStartY + 28, SIGN_X + SIGN_W, signatureStartY + 28);
+
+// Signature image
+if (company?.documents?.authorizedSignatureUrl) {
+  try {
+    doc.addImage(
+      px(company.documents.authorizedSignatureUrl),
+      "PNG",
+      SIGN_X + (SIGN_W - 40) / 2,
+      signatureStartY + 9,
+      40,
+      14,
+    );
+  } catch {}
+}
+
+// Signature line
+doc.line(
+  SIGN_X + 5,
+  signatureStartY + 22,
+  SIGN_X + SIGN_W - 5,
+  signatureStartY + 22,
+);
+
+doc.setFontSize(6.5);
+doc.setTextColor(120, 120, 120);
+doc.text("Signature", SIGN_X + SIGN_W / 2, signatureStartY + 26, {
+  align: "center",
+});
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
@@ -543,7 +582,7 @@ const AMOUNT_COL_X = M + 8 + 48 + 20 + 18 + 22 + 18 + 20;
   });
 
   /* ══════════════════════════════════════════════════════════
-     ⑧  FOOTER — simple text footer (matches PO)
+     ⑨  FOOTER — simple text footer (matches PO)
   ══════════════════════════════════════════════════════════ */
   const totalPg = (doc as any).internal.getNumberOfPages();
   for (let pg = 1; pg <= totalPg; pg++) {
@@ -557,7 +596,7 @@ const AMOUNT_COL_X = M + 8 + 48 + 20 + 18 + 22 + 18 + 20;
   }
 
   /* ══════════════════════════════════════════════════════════
-     ⑨  OUTPUT
+     ⑩  OUTPUT
   ══════════════════════════════════════════════════════════ */
   return resultType === "save"
     ? doc.save(`Purchase_Invoice_${pi.pId}.pdf`)
