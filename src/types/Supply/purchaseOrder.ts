@@ -4,17 +4,16 @@ export interface ItemRow {
   itemCode: string;
   itemName?: string;
   requiredBy: string;
-description?: string;
+  description?: string;
   quantity: number;
   uom: string;
   rate: number;
-  warehouse ?: string;
-  vatCd: string;   
-  vatRate: number; 
+  warehouse?: string;
+  vatCd: string;
+  vatRate: number;
   packing?: string;
   packingUnit?: number;
-packingSize?: number;
-
+  packingSize?: number;
 }
 
 
@@ -58,12 +57,12 @@ export interface PurchaseOrderFormData {
   supplierId: string;
   supplierEmail?: string;
   supplierPhone?: string;
- 
+
   supplierCode: string;
   taxCategory: string;
   supplierContact: string;
-  
-destnCountryCd: string; // New field for Export country
+
+  destnCountryCd: string; 
   shippingRule: string;
   incoterm: string;
   taxesChargesTemplate: string;
@@ -73,7 +72,7 @@ destnCountryCd: string; // New field for Export country
   requiredBy: string;
   project: string;
   warehouse: string;
-   useSupplierAddress: boolean;
+  useSupplierAddress: boolean;
   useDispatchAddress: boolean;
   useShippingAddress: boolean;
   useCompanyBillingAddress: boolean;
@@ -93,7 +92,7 @@ destnCountryCd: string; // New field for Export country
   roundingAdjustment: number;
   totalTax: number;
   subTotal: number;
-  
+
   roundedTotal: number;
   items: ItemRow[];
   taxRows: TaxRow[];
@@ -106,10 +105,10 @@ destnCountryCd: string; // New field for Export country
   sendPrint: boolean;
 
   terms?: {
-  buying: TermSection;
-};
-  itemTerms: ItemTerms[];  
-  acceptedTerms: Record<string, boolean>; 
+    buying: TermSection;
+  };
+  itemTerms: ItemTerms[];
+  acceptedTerms: Record<string, boolean>;
   paymentRows: PaymentRow[];
 }
 
@@ -125,7 +124,7 @@ export const emptyItem: ItemRow = {
   packing: "",
   packingUnit: 0,
   packingSize: 0,
-description: "",
+  description: "",
 };
 
 
@@ -163,7 +162,7 @@ export const emptyPOForm: PurchaseOrderFormData = {
   supplier: "",
   supplierContact: "",
   taxCategory: "",
-  currency: "INR",
+  currency: "",
   status: "Draft",
   destnCountryCd: "",
   shippingRule: "STANDARD",
@@ -207,7 +206,7 @@ export const emptyPOForm: PurchaseOrderFormData = {
   grandTotal: 0,
   totalTax: 0,
   subTotal: 0,
-  
+
   roundingAdjustment: 0,
   roundedTotal: 0,
 
@@ -221,8 +220,8 @@ export const emptyPOForm: PurchaseOrderFormData = {
   messageHtml: "",
   sendAttachedFiles: false,
   sendPrint: false,
-terms: undefined,
-  itemTerms: [],  
+  terms: undefined,
+  itemTerms: [],
   acceptedTerms: {},
   useSupplierAddress: true,
   useDispatchAddress: false,

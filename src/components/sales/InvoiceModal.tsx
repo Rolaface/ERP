@@ -205,11 +205,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   className={`grid ${
                     showExchangeRate
                       ? showExportField
-                        ? "grid-cols-[220px_150px_150px_100px_100px_120px_120px_140px_120px]"
-                        : "grid-cols-[220px_150px_150px_100px_100px_120px_120px_120px]"
+                        ? "grid-cols-[220px_130px_130px_100px_80px_100px_90px_250px_100px]"
+                        : "grid-cols-[220px_130px_130px_100px_100px_120px_120px_100px]"
                       : showExportField
-                        ? "grid-cols-[220px_150px_150px_100px_120px_120px_140px_120px]"
-                        : "grid-cols-[220px_150px_150px_100px_120px_120px_120px]"
+                        ? "grid-cols-[220px_130px_130px_100px_80px_120px_140px_100px]"
+                        : "grid-cols-[220px_130px_130px_100px_100px_120px_100px]"
                   } gap-3 items-start`}
                 >
                   <CustomerSelect
@@ -294,14 +294,30 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
-                  <WarehouseSelect
-                    value={(formData as any).warehouse || ""}
-                    onChange={(e) => {
-                      actions.handleInputChange(e);
-                      actions.handleBulkItemChange("warehouse", e.target.value);
-                    }}
-                    label="Warehouse"
-                  />
+                 <div className="flex items-end gap-4 min-w-[220px]">
+  <WarehouseSelect
+  className="w-[200px]"
+    name="warehouse"
+    value={formData.warehouse || ""}
+    onChange={(e) => {
+      actions.handleBulkItemChange("warehouse", e.target.value);
+    }}
+    label="Warehouse"
+  />
+
+  <label className="flex items-center gap-2 pb-1">
+    <input
+      type="checkbox"
+      name="updateStock"
+      checked={formData.updateStock ?? true}
+      onChange={actions.handleInputChange}
+      className="w-3.5 h-3.5 accent-primary"
+    />
+    <span className="text-xs text-main whitespace-nowrap">
+      Update Stock
+    </span>
+  </label>
+</div>
 
                   {ui.isExport && (
                     <ModalInput
@@ -611,9 +627,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                 <WarehouseSelect
                                   compact
                                   value={(it as any).warehouse || ""}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e as any)
-                                  }
+                                onChange={(e) =>
+  actions.handleItemChange(i, {
+    target: {
+      name: "warehouse",
+      value: e.target?.value ?? e
+    }
+  } as any)
+}
                                 />
                               </td>
 

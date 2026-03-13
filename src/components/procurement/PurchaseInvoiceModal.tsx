@@ -9,7 +9,7 @@ import { AddressTab } from "../procurement/purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
 import { usePurchaseInvoiceForm } from "../../hooks/usePurchaseInvoiceForm";
 import type { POTab } from "../../types/Supply/purchaseInvoice";
-import { showApiError ,showValidationError } from "../../utils/alert";
+import { showValidationError } from "../../utils/alert";
 
 interface PurchaseInvoiceModalProps {
   isOpen: boolean;
@@ -139,7 +139,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           </div>
         </div>
 
-        <section className="flex-1 overflow-y-auto p-4 space-y-6 ">
+        <section className="flex-1 overflow-y-auto  space-y-6 ">
           {activeTab === "details" && (
             <DetailsTab
               form={form}

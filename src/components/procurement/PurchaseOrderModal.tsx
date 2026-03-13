@@ -8,7 +8,7 @@ import { AddressTab } from "./purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
 import { usePurchaseOrderForm } from "../../hooks/usePurchaseOrderForm";
 import type { POTab } from "../../types/Supply/purchaseOrder";
-import { showApiError, showValidationError } from "../../utils/alert";
+import { showValidationError } from "../../utils/alert";
 
 interface PurchaseOrderModalProps {
   isOpen: boolean;
@@ -91,7 +91,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       title={poId ? "Edit Purchase Order" : "New Purchase Order"}
       subtitle="Create and manage purchase order"
       icon={Building2}
-      customWidth="85vw"
+      customWidth="92vw"
       height="90vh"
       footer={footer}
     >

@@ -4,7 +4,6 @@ import type {
   ItemRow,
   PurchaseOrderFormData,
 } from "../../../types/Supply/purchaseOrder";
-import { currencyOptions } from "../../../types/Supply/supplier";
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
@@ -18,11 +17,14 @@ interface DetailsTabProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   onSupplierChange: (s: any) => void;
-  onItemChange: (e: React.ChangeEvent<HTMLInputElement>, idx: number) => void;
+  onItemChange: (
+  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  idx: number
+) => void;
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
   getCurrencySymbol: () => string;
-  onBulkItemChange?: (field: string, value: string) => void;
+  onBulkItemChange?: (field: keyof ItemRow, value: string) => void;
 
   fromPO?: boolean;
   setFromPO?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -66,22 +68,22 @@ export const DetailsTab = ({
     }
   };
 
-  const handleTopWarehouseChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    onFormChange(e);
-    if (onBulkItemChange) {
-      onBulkItemChange("warehouse", e.target.value);
-    }
-  };
+const handleTopWarehouseChange = (
+  e: React.ChangeEvent<HTMLSelectElement>
+) => {
+  onFormChange(e);
 
+  if (onBulkItemChange) {
+    onBulkItemChange("warehouse", e.target.value);
+  }
+};
   return (
     <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
       {/* TOP FIELDS */}
       <div className="bg-app">
         {/* Row 1: Supplier | Required By | Date | Status | Cost Center */}
         <div className="flex flex-wrap gap-x-2 gap-y-3 items-end mb-3">
-          <div className="w-[300px]">
+          <div className="w-[240px]">
             <SupplierSelect
               className="w-full"
               selectedId={form.supplierId}
@@ -89,16 +91,7 @@ export const DetailsTab = ({
             />
           </div>
 
-          <div className="w-[135px]">
-            <ModalInput
-              label="Required By"
-              type="date"
-              name="requiredBy"
-              value={form.requiredBy}
-              onChange={handleTopRequiredByChange}
-            />
-          </div>
-
+        
           <div className="w-[135px]">
             <ModalInput
               label="Date"
@@ -138,11 +131,9 @@ export const DetailsTab = ({
               disabled
             />
           </div>
-        </div>
 
-        {/* Row 2: Project | Warehouse */}
-        <div className="flex flex-wrap gap-x-2 gap-y-3 items-end">
-          <div className="w-[300px]">
+          {/* Project */}
+          <div className="w-[130px]">
             <ModalInput
               label="Project"
               name="project"
@@ -150,6 +141,19 @@ export const DetailsTab = ({
               disabled
             />
           </div>
+
+            <div className="w-[135px]">
+            <ModalInput
+              label="Required By"
+              type="date"
+              name="requiredBy"
+              value={form.requiredBy}
+              onChange={handleTopRequiredByChange}
+            />
+          </div>
+
+
+          {/* Warehouse */}
           <div className="w-[135px]">
             <WarehouseSelect
               value={form.warehouse || ""}
@@ -158,6 +162,7 @@ export const DetailsTab = ({
             />
           </div>
         </div>
+
       </div>
 
       {/* Main Body */}
@@ -272,11 +277,11 @@ export const DetailsTab = ({
                         </div>
                       </td>
                       <td className="px-2 py-1">
-                        <WarehouseSelect
-                          compact
-                         value={it.warehouse || ""}
-                          onChange={(e) => onItemChange(e as any, i)}
-                        />
+                       <WarehouseSelect
+  compact
+  value={it.warehouse || ""}
+  onChange={(e) => onItemChange(e, i)}
+/>
                       </td>
 
                       <td className="px-2 py-1">

@@ -35,6 +35,7 @@ const items = validItems.map((it) => {
     mfgDate: it.mfgDate || "",
     expDate: it.expDate || "",
     discount: Number(it.discount || 0),
+    warehouse: form.updateStock ? (it.warehouse || "") : null,
   };
 });
 
@@ -72,9 +73,9 @@ const payload: any = {
   supplierName: form.supplier,
   supplierCode: form.supplierCode,
   supplierContact: form.supplierContact,
-
+  updateStock: form.updateStock ?? true, 
   poDate: form.date,
-
+  ...(form.updateStock && form.warehouse && { warehouse: form.warehouse }),
   currency: form.currency,
   status: form.status,
 
@@ -245,7 +246,7 @@ else if (api.tax) {
     poNumber: api.lpoNumber || "",
     date: api.poDate || "",
     taxCategory: api.taxCategory || "",
-
+    updateStock: api.updateStock ?? true,
     supplier: api.supplierName || "",
     supplierId: api.supplierId || "",
     supplierCode: api.supplierCode || "",

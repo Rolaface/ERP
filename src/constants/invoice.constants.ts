@@ -15,6 +15,7 @@ export const EMPTY_ITEM: InvoiceItem = {
   boxStart:0,
   boxEnd: 0,
   batchNo: "",
+  warehouse: "",
 };
 
 export const EMPTY_TERMS: InvoiceTerms = {
@@ -59,6 +60,9 @@ export const DEFAULT_INVOICE_FORM: Invoice = {
   invoiceType: "Non-Export",
   destnCountryCd: "",
   lpoNumber: "",
+
+   updateStock: true,
+  warehouse: "",
 
   billingAddress: {
     line1: "",

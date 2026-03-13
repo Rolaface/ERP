@@ -20,7 +20,8 @@ export interface Invoice {
   invoiceType: string;
   destnCountryCd?: string;
   lpoNumber?: string;
-
+   updateStock?: boolean
+  warehouse?: string
   billingAddress: Address;
   shippingAddress: Address;
   paymentInformation: PaymentInformation;

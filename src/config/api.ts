@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-export const ERP_BASE =""
+export const ERP_BASE = ENV.apiBaseUrl;
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -228,6 +228,7 @@ accounting:{
     create: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.create_warehouse_api`,
     update: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.update_warehouse_api`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.delete_warehouse_api`,
+    getAllWarehouses : `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
   },
 
   /* =========================

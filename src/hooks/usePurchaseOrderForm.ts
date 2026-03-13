@@ -11,6 +11,7 @@ import {
   emptyItem,
   emptyTaxRow,
   emptyPaymentRow,
+  ItemRow
 } from "../types/Supply/purchaseOrder";
 import { createPurchaseOrder } from "../api/procurement/PurchaseOrderApi";
 import { mapUIToCreatePO } from "../types/Supply/purchaseOrderMapper";
@@ -50,13 +51,15 @@ export const usePurchaseOrderForm = ({
     baseCurrency?: string;
   }>({});
   
-const handleBulkItemChange = (field: string, value: string) => {
+const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
   setForm((prev) => ({
     ...prev,
-    items: prev.items.map((item) => ({ ...item, [field]: value })),
+    items: prev.items.map((item) => ({
+      ...item,
+      [field]: value,
+    })),
   }));
 };
-
   useEffect(() => {
     if (!isOpen) {
       setForm(emptyPOForm);
@@ -122,6 +125,18 @@ const handleBulkItemChange = (field: string, value: string) => {
     loadCompanyData();
   }, [isOpen, poId]);
 
+
+useEffect(() => {
+  if (!form.requiredBy) return;
+
+  setForm((prev) => {
+    const updatedItems = prev.items.map((item) =>
+      item.requiredBy ? item : { ...item, requiredBy: prev.requiredBy }
+    );
+
+    return { ...prev, items: updatedItems };
+  });
+}, [form.requiredBy]);
 
   // Load PO Data in Edit Mode
   useEffect(() => {
@@ -273,10 +288,10 @@ useEffect(() => {
     }
   };
 
-  const handleItemChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    idx: number,
-  ) => {
+ const handleItemChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  idx: number
+) => {
     const { name, value } = e.target;
     const isNum = ["quantity", "rate"].includes(name);
     const items = [...form.items];
@@ -294,7 +309,7 @@ const addItem = () => {
       ...p.items,
       {
         ...emptyItem,
-        warehouse: (p as any).warehouse || "",
+        warehouse: p.warehouse ?? "",
         requiredBy: p.requiredBy || "",
       },
     ],
@@ -402,6 +417,8 @@ const addItem = () => {
           return `Row ${i + 1}: Quantity required`;
         if (!item.rate || item.rate <= 0)
           return `Row ${i + 1}: Rate required`;
+        if (!item.warehouse)
+    return `Row ${i + 1}: Warehouse required`;
 
         if (!item.vatCd || !item.vatCd.trim())
           return `Row ${i + 1}: Tax Code required`;
@@ -441,13 +458,20 @@ const addItem = () => {
           itemCode: data.id,
           itemName: data.itemName,
           description: data.description,
-         warehouse: data.warehouse || "",
+        warehouse:
+  items[idx].warehouse ??
+  prev.warehouse ??
+  data.warehouse ??
+  "",
 
           rate: Number(data.buyingPrice ?? 0),
           uom: data.unitOfMeasureCd,
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
-          requiredBy: items[idx].requiredBy || prev.date,
+        requiredBy:
+  items[idx].requiredBy ??
+  prev.requiredBy ??
+  "",
           packingUnit: Number(data.packingUnit || 0),
           packingSize: Number(data.packingSize || 0),
           packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,

@@ -1,15 +1,10 @@
-import { Warehouse } from "lucide-react";
 import { PurchaseOrderFormData, emptyPOForm } from "./purchaseOrder";
 import type { AddressBlock } from "./purchaseOrder";
 
-/**
- * UI → Backend API (Create/Update)
- * FINAL VERSION - Based on Invoice pattern analysis
- */
+
 export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
   console.log("MAPPING PO TO BACKEND - Form items:", form.items);
 
-  // Filter and map items - CRITICAL: Filter empty items FIRST
   const validItems = form.items.filter((it) => {
     const hasCode = it.itemCode && it.itemCode.trim() !== "";
     const hasQty = it.quantity && Number(it.quantity) > 0;
@@ -36,7 +31,7 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       packingUnit: Number(it.packingUnit || 0),
       packingSize: Number(it.packingSize || 0),
       packing: it.packing || "",
-      warehouse: it.warehouse || "",
+      ...(it.warehouse && { warehouse: it.warehouse }),
     };
   });
 
@@ -124,6 +119,10 @@ export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
       vatCd: item.vatCd || item.VatCd,
       vatRate: vatRate,
       requiredBy: item.requiredBy || api.deliveryDate || "",
+      warehouse: item.warehouse || "",
+      packingUnit: Number(item.packingUnit || 0),
+      packingSize: Number(item.packingSize || 0),
+      packing: item.packing || "",
     };
   });
 

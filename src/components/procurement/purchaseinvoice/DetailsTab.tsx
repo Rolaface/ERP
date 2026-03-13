@@ -26,7 +26,7 @@ interface DetailsTabProps {
   onPOSelect: (po: any) => void;
   usePO: boolean;
   onTogglePO: (checked: boolean) => void;
-  onBulkItemChange?: (field: string, value: string) => void;
+  onBulkItemChange?: (field: keyof ItemRow, value: string) => void;
 }
 
 export const DetailsTab = ({
@@ -71,7 +71,7 @@ export const DetailsTab = ({
   );
 
   return (
-    <div className="flex flex-col gap-4 max-h-screen overflow-auto  bg-app text-main">
+    <div className="flex flex-col gap-4 h-full bg-app text-main">
       {/* ── Top fields ── */}
       <div className="bg-app">
         <div className="flex flex-wrap gap-x-3 gap-y-3 items-end">
@@ -150,6 +150,7 @@ export const DetailsTab = ({
               label="Status"
               name="status"
               value={form.status}
+              disabled
               onChange={onFormChange}
               options={[
                 { value: "Draft", label: "Draft" },
@@ -219,10 +220,25 @@ export const DetailsTab = ({
           </div>
           <div className="w-[110px]">
             <WarehouseSelect
-              value={(form as any).warehouse || ""}
+              name="warehouse"
+              value={form.warehouse || ""}
               onChange={handleTopWarehouseChange}
-              required
+              required={form.updateStock}
+              disabled={!form.updateStock}
             />
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <input
+              type="checkbox"
+              name="updateStock"
+              checked={form.updateStock ?? false}
+              onChange={onFormChange}
+              className="w-3.5 h-3.5 accent-primary"
+            />
+
+            <span className="text-xs text-main">
+              Update Stock
+            </span>
           </div>
         </div>
       </div>
@@ -272,7 +288,7 @@ export const DetailsTab = ({
                   Unit Price <span className="text-danger">*</span>
                 </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">
-                  Warehouse <span className="text-danger">*</span>
+                  Warehouse 
                 </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
                   Dis (%)
@@ -425,8 +441,19 @@ export const DetailsTab = ({
                     <td className="px-2 py-1">
                       <WarehouseSelect
                         compact
-                        value={(it as any).warehouse || ""}
-                        onChange={(e) => onItemChange(e as any, i)}
+                        value={it.warehouse || ""}
+                        onChange={(e: any) =>
+                          onItemChange(
+                            {
+                              target: {
+                                name: "warehouse",
+                                value: e.target?.value ?? e,
+                              },
+                            } as any,
+                            i
+                          )
+                        }
+                        disabled={!form.updateStock}
                       />
                     </td>
 
