@@ -45,12 +45,11 @@ interface PurchaseOrdersTableProps {
   onAdd?: () => void;
 }
 
-type POStatus = "Draft" | "Approved" | "Rejected" | "Cancelled" | "Completed";
+type POStatus = "Draft" | "Approved" |  "Cancelled" | "Completed";
 
 const STATUS_TRANSITIONS: Record<POStatus, POStatus[]> = {
-  Draft: ["Approved", "Rejected"],
+  Draft: ["Approved"],
   Approved: ["Cancelled", "Completed"],
-  Rejected: [],
   Cancelled: [],
   Completed: [],
 };
@@ -60,7 +59,6 @@ const CRITICAL_STATUSES: POStatus[] = ["Completed"];
 const statusOptions = [
   { label: "Draft", value: "Draft" },
   { label: "Approved", value: "Approved" },
-  { label: "Rejected", value: "Rejected" },
   { label: "Cancelled", value: "Cancelled" },
   { label: "Completed", value: "Completed" },
 ];
