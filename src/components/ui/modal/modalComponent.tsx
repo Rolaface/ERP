@@ -152,15 +152,18 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
         {/* DATE PICKER */}
 {/* DATE PICKER */}
 {props.type === "date" ? (
-  <div className="relative flex items-center">
+ <div className="relative w-full min-w-[140px]">
     {/* visible text display */}
     <input
       type="text"
       readOnly
       value={props.value ? formatDisplay(parseDate(props.value as string)!) : ""}
-      placeholder="dd-MMM-yyyy"
+      placeholder="DD-MMM-YYYY"
       disabled={props.disabled}
-      className={inputClass + " cursor-pointer pr-7"}
+      className={
+  inputClass +
+  " cursor-pointer pr-7 w-full min-w-[140px] h-[28px] text-[11px]"
+}
       onClick={() => {
         if (!props.disabled) {
           (document.getElementById(`date-hidden-${props.name}-${props.id ?? props.name}`) as HTMLInputElement)?.showPicker?.();
@@ -170,7 +173,7 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
     {/* calendar icon */}
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className="absolute right-2 w-3.5 h-3.5 text-muted pointer-events-none"
+      className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none"
       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
     >
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -186,7 +189,7 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
       value={props.value as string ?? ""}
       disabled={props.disabled}
       onChange={(e) => props.onChange?.(e)}
-      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+    className="absolute right-0 top-0 opacity-0 w-7 h-full cursor-pointer"
       tabIndex={-1}
     />
   </div>
@@ -388,7 +391,7 @@ export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
         {required && <span className="text-danger">*</span>}
       </span>
 
-      <div className="relative flex items-center">
+      <div className="relative w-full">
         <input
           type="number"
           name={name}

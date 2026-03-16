@@ -1,6 +1,6 @@
 import React from "react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types 
 export interface QuotationDetail {
   id: string;
   customerId: string;
@@ -33,7 +33,7 @@ interface Props {
   onClosePdf?: () => void;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers 
 const fmt = (n?: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2 }).format(n ?? 0);
 

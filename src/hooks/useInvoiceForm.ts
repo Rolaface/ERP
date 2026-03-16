@@ -30,18 +30,24 @@ type NestedSection =
   | "shippingAddress"
   | "paymentInformation";
 //---------------------- Utility Function to Calculate Due Date Based on Invoice Date and Terms --//
+import dayjs from "dayjs";
+
 const calculateDueDate = (invoiceDate: string, terms: string) => {
   if (!invoiceDate) return "";
 
   const match = terms?.match(/(\d+)/);
   const days = match ? Number(match[1]) : 0;
 
-  const date = new Date(invoiceDate);
-  date.setDate(date.getDate() + days);
+  let date = dayjs(invoiceDate, "DD-MMM-YYYY", true);
 
-  return date.toISOString().split("T")[0];
+  if (!date.isValid()) {
+    date = dayjs(invoiceDate, "YYYY-MM-DD", true);
+  }
+
+  if (!date.isValid()) return "";
+
+  return date.add(days, "day").format("YYYY-MM-DD");
 };
-
 const NUM_FIELDS = ["quantity", "price", "discount", "vatRate", "boxStart", "boxEnd"];
 
 export const useInvoiceForm = (

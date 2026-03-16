@@ -7,6 +7,7 @@ import {
   showApiError,
   showLoading,
   closeSwal,
+  showValidationError,
 } from "../../../utils/alert";
 interface SupplierPaymentModalProps {
   isOpen: boolean;
@@ -57,55 +58,53 @@ const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
       paymentDate: new Date().toISOString().split("T")[0],
     });
 
-  const handleSubmit = async () => {
-    try {
-      if (!form.amount || Number(form.amount) <= 0) {
-        showApiError("Please enter valid payment amount");
-        return;
-      }
-
-      if (!form.paymentDate) {
-        showApiError("Please select payment date");
-        return;
-      }
-
-      if (!isCash && !form.referenceNumber) {
-        showApiError("Reference number is required");
-        return;
-      }
-
-      if (!isCash && !form.depositInto) {
-        showApiError("Please select deposit account");
-        return;
-      }
-
-      showLoading("Processing payment...");
-
-      const payload = {
-        supplier_id: supplierId,
-        payment_date: form.paymentDate,
-        payment_mode: form.paymentMode,
-        amount: Number(form.amount),
-        reference_number: isCash ? "" : form.referenceNumber,
-        deposit_into_account: isCash ? form.cashAccount : form.depositInto,
-      };
-
-      const response = await createSupplierPayment(payload);
-
-      closeSwal();
-
-if (!response || response?.message?.status !== "success") {
-  showApiError(response?.message?.message || "Payment failed");
-  return;
-}
-     showSuccess(response?.message?.message || "Payment recorded successfully");
-      onSubmit?.(response);
-      onClose();
-    } catch (err: any) {
-      closeSwal();
-      showApiError(err);
+const handleSubmit = async () => {
+  try {
+    if (!form.amount || Number(form.amount) <= 0) {
+      showValidationError("Please enter a valid payment amount.");
+      return;
     }
-  };
+
+    if (!form.paymentDate) {
+      showValidationError("Please select payment date.");
+      return;
+    }
+
+    if (!isCash && !form.referenceNumber) {
+      showValidationError("Reference number is required.");
+      return;
+    }
+
+    showLoading("Processing payment...");
+
+    const payload = {
+      supplier_id: supplierId,
+      payment_date: form.paymentDate,
+      payment_mode: form.paymentMode,
+      amount: Number(form.amount),
+      reference_number: isCash ? "" : form.referenceNumber,
+      deposit_into_account: isCash ? form.cashAccount : form.depositInto,
+    };
+
+    const response = await createSupplierPayment(payload);
+
+    closeSwal();
+
+    if (!response || response?.message?.status !== "success") {
+      showApiError(response?.message?.message || "Payment failed");
+      return;
+    }
+
+    showSuccess(response?.message?.message || "Payment recorded successfully");
+
+    onSubmit?.(response);
+    onClose();
+
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   /* ── FOOTER ─────────────────────────────── */
   const footer = (
@@ -291,7 +290,7 @@ if (!response || response?.message?.status !== "success") {
                   className="form-label"
                   style={{ display: "block", marginBottom: 5 }}
                 >
-                  Deposit Into *
+                  Deposit Into 
                 </label>
                 <select
                   name="depositInto"

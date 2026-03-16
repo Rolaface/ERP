@@ -19,6 +19,7 @@ import {
   showLoading,
   closeSwal,
 } from "../../utils/alert";
+import DatePickerInput from "../../components/calendar/DatePickerInput";
 import Swal from "sweetalert2";
 
 import type { BasicDetailsForm } from "../../types/company";
@@ -214,9 +215,27 @@ const InputField: React.FC<InputFieldProps> = ({
           </select>
 
         ) : type === "date" ? (
-          <DateInput id={id} name={name} value={value} onChange={onChange as any} />
-
-        ) : (
+  <DatePickerInput
+    name={name}
+    value={value}
+    onChange={(name, value) =>
+      onChange({
+        target: { name, value },
+      } as React.ChangeEvent<HTMLInputElement>)
+    }
+    sx={{
+      "& .MuiOutlinedInput-root": {
+        height: "40px",
+        fontSize: "14px",
+        borderRadius: "8px",
+        paddingRight: "10px",
+      },
+      "& .MuiOutlinedInput-input": {
+        padding: "10px 14px",
+      },
+    }}
+  />
+) : (
           <input
             id={id} type={type} value={value} onChange={onChange}
             placeholder={placeholder} required={required}
