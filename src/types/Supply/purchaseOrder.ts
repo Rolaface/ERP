@@ -200,20 +200,16 @@ export const emptyPOForm: PurchaseOrderFormData = {
   placeOfSupply: "",
   supplierId: "",
   supplierCode: "",
-
   paymentTermsTemplate: "",
   totalQuantity: 0,
   grandTotal: 0,
   totalTax: 0,
   subTotal: 0,
-
   roundingAdjustment: 0,
   roundedTotal: 0,
-
   items: [{ ...emptyItem }],
-  taxRows: [], // Start with empty array, user can add as needed
-  paymentRows: [], // Start with empty array, user can add as needed
-
+  taxRows: [], 
+  paymentRows: [], 
   templateName: "",
   templateType: "",
   subject: "",
@@ -224,8 +220,8 @@ export const emptyPOForm: PurchaseOrderFormData = {
   itemTerms: [],
   acceptedTerms: {},
   useSupplierAddress: true,
-  useDispatchAddress: false,
-  useShippingAddress: false,
+  useDispatchAddress: true,
+  useShippingAddress: true,
   useCompanyBillingAddress: true,
 
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Card, Checkbox } from "./formComponent";
 import { ModalInput } from "./modalComponent";
 import { getRolaCountryList } from "../../../api/lookupApi";
@@ -52,6 +52,7 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
   errors,
 }) => {
   const isShipping = type === "shipping";
+  const isDisabled = disableAll || !!sameAsBilling; 
 
   const [countriesCache, setCountriesCache] = useState<Country[]>([]);
 
@@ -65,13 +66,10 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
         setCountriesCache([]);
       }
     };
-
     loadCountries();
   }, []);
 
-  const selectedCountry = countriesCache.find(
-    (c) => c.code === data.country
-  );
+  const selectedCountry = countriesCache.find((c) => c.code === data.country);
 
   return (
     <Card title={title} subtitle={subtitle} className="relative">
@@ -91,7 +89,7 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
           name="line1"
           value={data.line1}
           onChange={onChange}
-          disabled={disableAll || sameAsBilling}
+          disabled={isDisabled}
           required
           error={errors?.line1}
         />
@@ -101,7 +99,7 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
           name="line2"
           value={data.line2}
           onChange={onChange}
-          disabled={disableAll || sameAsBilling}
+          disabled={isDisabled}
           error={errors?.line2}
         />
 
@@ -111,48 +109,39 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
             name="city"
             value={data.city}
             onChange={onChange}
-            disabled={disableAll || sameAsBilling}
+            disabled={isDisabled}
             error={errors?.city}
           />
-
-           <ModalInput
+          <ModalInput
             label="State / Province"
             name="state"
             value={data.state}
             onChange={onChange}
-            disabled={disableAll || sameAsBilling}
+            disabled={isDisabled}
             error={errors?.state}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-
           <SearchSelect
             label="Country"
             value={selectedCountry?.country_name || ""}
             onChange={(val) =>
               onChange({
-                target: {
-                  name: "country",
-                  value: val,
-                },
+                target: { name: "country", value: val },
               } as React.ChangeEvent<HTMLInputElement>)
             }
             fetchOptions={async (q: string) => {
               const lowerQ = q.toLowerCase();
-
               return countriesCache
                 .filter(
                   (c) =>
                     c?.country_name &&
                     c.country_name.toLowerCase().includes(lowerQ)
                 )
-                .map((c) => ({
-                  label: c.country_name,
-                  value: c.code,
-                }));
+                .map((c) => ({ label: c.country_name, value: c.code }));
             }}
-            disabled={disableAll || sameAsBilling}
+            disabled={isDisabled}
             error={errors?.country}
             required
           />
@@ -162,7 +151,7 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
             name="postalCode"
             value={data.postalCode}
             onChange={onChange}
-            disabled={disableAll || sameAsBilling}
+            disabled={isDisabled}
             required
             error={errors?.postalCode}
           />
