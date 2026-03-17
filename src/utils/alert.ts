@@ -120,3 +120,26 @@ export const showConfirm = async (message: string) => {
 
   return result.isConfirmed;
 };
+export const showPOConflictDialog = async (
+  existingCount: number,
+  poNumber?: string
+): Promise<"keep" | "replace" | "cancel"> => {
+  const result = await Swal.fire({
+    icon: "question",
+    title: "Add PO Items?",
+    text: `You have ${existingCount} item${existingCount > 1 ? "s" : ""} already added. Do you want to import items from ${poNumber ?? "this PO"} or replace them?`,
+    showCancelButton: true,
+    showDenyButton: true,
+    confirmButtonText: "Import",
+    denyButtonText: "Replace",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#22c55e",
+    denyButtonColor: "#f59e0b",
+    cancelButtonColor: "#6b7280",
+    reverseButtons: true,
+  });
+
+  if (result.isConfirmed) return "keep";
+  if (result.isDenied) return "replace";
+  return "cancel";
+};

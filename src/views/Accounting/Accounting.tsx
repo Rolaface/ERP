@@ -16,7 +16,7 @@ import GeneralLedger from "./GeneralLedger";
 import TrialBalance from "./TrialBalance";
 import ProfitLoss from "./ProfitLoss";
 import BalanceSheet from "./BalanceSheet";
-
+import CashFlow from "./CashFlow";
 // Import NEW components
 import AccountsReceivable from "./AccountsReceivable";
 import AccountsPayable from "./AccountsPayable";
@@ -376,6 +376,12 @@ const allTabs = [
     icon: <FaDollarSign />,
     category: "reports",
   },
+  {
+    id: "cashflow",
+    name: "Cash Flow",
+    icon: <FaBriefcase />,
+    category: "reports",
+  }
 ];
 
 // Main component
@@ -516,6 +522,7 @@ const AccountingModule: React.FC = () => {
         {activeTab === "ap" && <AccountsPayable />}
         {activeTab === "fa" && <FixedAssets />}
         {activeTab === "bank" && <Banking />}
+        {activeTab === "cashflow" && <CashFlow />}
       </div>
     </div>
   );

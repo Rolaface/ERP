@@ -11,6 +11,7 @@ import { User, Mail, Phone } from "lucide-react";
 import AddressBlock from "../ui/modal/AddressBlock";
 import PaymentInfoBlock from "./PaymentInfoBlock";
 import { quotationStatusOptions } from "../../types/quotation";
+import DatePickerInput from "../calendar/DatePickerInput";
 import {
   currencySymbols,
   paymentMethodOptions,
@@ -150,7 +151,7 @@ const handleFormSubmit = async (e: React.FormEvent) => {
     grid
     ${ui.isExport
       ? "grid-cols-[minmax(220px,1.5fr)_repeat(6,minmax(100px,1fr))]"
-      : "grid-cols-[minmax(220px,1.5fr)_repeat(5,minmax(100px,1fr))]"
+      : "grid-cols-[220px_130px_130px_120px_120px_120px]"
     }
     gap-x-2
     items-start
@@ -158,7 +159,7 @@ const handleFormSubmit = async (e: React.FormEvent) => {
 >
                   {/* Customer */}
 
-                <div className="min-w-0">
+                <div className="w-[220px]">
   <CustomerSelect
     value={customerNameDisplay}
     onChange={actions.handleCustomerSelect}
@@ -170,27 +171,32 @@ const handleFormSubmit = async (e: React.FormEvent) => {
 
                   {/* Date of Quotation */}
                   <div>
-                    <ModalInput
-                      label="Date of Quotation"
-                      type="date"
-                      name="dateOfInvoice"
-                      value={formData.dateOfInvoice}
-                      onChange={actions.handleInputChange}
-                      required
-                      
-                    />
+                    <DatePickerInput
+  label="Date of Quotation"
+  name="dateOfInvoice"
+  value={formData.dateOfInvoice}
+  required
+  onChange={(name, value) =>
+    actions.handleInputChange({
+      target: { name, value },
+    } as any)
+  }
+/>
                   </div>
 
                   {/* Valid Until */}
                   <div>
-                    <ModalInput
-                      label="Valid Until"
-                      type="date"
-                      name="dueDate"
-                      value={formData.dueDate}
-                      onChange={actions.handleInputChange}
-                      required
-                    />
+                   <DatePickerInput
+  label="Valid Until"
+  name="dueDate"
+  value={formData.dueDate}
+  required
+  onChange={(name, value) =>
+    actions.handleInputChange({
+      target: { name, value },
+    } as any)
+  }
+/>
                   </div>
 
                   {/* Currency */}

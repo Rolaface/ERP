@@ -42,9 +42,9 @@ export interface EmployeeFormCompanyConfig {
   
   // Feature flags
   features: {
-    requireIdentityVerification: boolean;  // Show verification modal?
-    showStatutoryFields: boolean;          // Show NRC, NAPSA, etc?
-    apiDrivenManagers: boolean;            // Get managers from API?
+    requireIdentityVerification: boolean;  
+    showStatutoryFields: boolean;         
+    apiDrivenManagers: boolean;            
   };
   
   // Tab configurations

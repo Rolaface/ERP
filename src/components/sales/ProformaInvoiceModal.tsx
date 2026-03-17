@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import TermsAndCondition from "../TermsAndCondition";
-import { showApiError, showSuccess ,showValidationError } from "../../utils/alert";
-import { User, Mail, Phone , Plus, Trash2 } from "lucide-react";
+import {
+  showApiError,
+  showSuccess,
+  showValidationError,
+} from "../../utils/alert";
+import { User, Mail, Phone, Plus, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import PaymentInfoBlock from "./PaymentInfoBlock";
@@ -12,6 +16,7 @@ import CustomerSelect from "../selects/CustomerSelect";
 import ItemSelect from "../selects/ItemSelect";
 import { createProformaInvoice } from "../../api/proformaInvoiceApi";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
+import DatePickerInput from "../calendar/DatePickerInput";
 import {
   invoiceStatusOptions,
   currencySymbols,
@@ -43,44 +48,39 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     ui,
     actions,
   } = useInvoiceForm(
-  isOpen,
-  onClose,
-  undefined,
-  mode === "edit" ? "edit" : "proforma",
-  initialData
-);
-
+    isOpen,
+    onClose,
+    undefined,
+    mode === "edit" ? "edit" : "proforma",
+    initialData,
+  );
 
   const tabs: Array<"details" | "address" | "terms"> = [
     "details",
     "address",
     "terms",
   ];
-const handleNext = () => {
-  try {
-    actions.validateForm(); // same validation as quotation
+  const handleNext = () => {
+    try {
+      actions.validateForm(); // same validation as quotation
 
-    const currentIndex = tabs.indexOf(ui.activeTab as any);
+      const currentIndex = tabs.indexOf(ui.activeTab as any);
 
-    if (currentIndex < tabs.length - 1) {
-      ui.setActiveTab(tabs[currentIndex + 1]);
+      if (currentIndex < tabs.length - 1) {
+        ui.setActiveTab(tabs[currentIndex + 1]);
+      }
+    } catch (err: any) {
+      showValidationError(err.message);
     }
-
-  } catch (err: any) {
-    showValidationError(err.message);
-  }
-};
+  };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
 
     if (ui.activeTab !== "terms") {
       handleNext();
       return;
     }
-
-
 
     try {
       const payload = await actions.handleSubmit(e);
@@ -88,26 +88,24 @@ const handleNext = () => {
 
       let res;
 
-if (mode === "edit") {
+      if (mode === "edit") {
+        if (!initialData?.proformaId) {
+          showValidationError("Invalid invoice reference");
+          return;
+        }
 
-  if (!initialData?.proformaId) {
-    showValidationError("Invalid invoice reference");
-    return;
-  }
+        // future API
+        // res = await updateProformaInvoice(initialData.proformaId, payload)
 
-  // future API
-  // res = await updateProformaInvoice(initialData.proformaId, payload)
+        console.log("Edit payload", payload);
 
-  console.log("Edit payload", payload);
-
-  res = {
-    status_code: 200,
-    message: "Proforma invoice updated successfully",
-  };
-
-} else {
-  res = await createProformaInvoice(payload);
-}
+        res = {
+          status_code: 200,
+          message: "Proforma invoice updated successfully",
+        };
+      } else {
+        res = await createProformaInvoice(payload);
+      }
 
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(res);
@@ -164,7 +162,9 @@ if (mode === "edit") {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={mode === "edit" ? "Edit Proforma Invoice" : "Create Proforma Invoice"}
+      title={
+        mode === "edit" ? "Edit Proforma Invoice" : "Create Proforma Invoice"
+      }
       subtitle="Create and manage proforma invoice details"
       footer={
         <>
@@ -176,23 +176,23 @@ if (mode === "edit") {
             <Button variant="secondary" onClick={actions.handleReset}>
               Reset
             </Button>
-  <Button
-  variant="primary"
-  type="button"
-  onClick={() => {
-    if (ui.activeTab === "terms") {
-      const form = document.getElementById("proforma-form");
+            <Button
+              variant="primary"
+              type="button"
+              onClick={() => {
+                if (ui.activeTab === "terms") {
+                  const form = document.getElementById("proforma-form");
 
-      if (form instanceof HTMLFormElement) {
-        form.requestSubmit();
-      }
-    } else {
-      handleNext();
-    }
-  }}
->
-  {ui.activeTab === "terms" ? "Submit" : "Next"}
-</Button>
+                  if (form instanceof HTMLFormElement) {
+                    form.requestSubmit();
+                  }
+                } else {
+                  handleNext();
+                }
+              }}
+            >
+              {ui.activeTab === "terms" ? "Submit" : "Next"}
+            </Button>
           </div>
         </>
       }
@@ -208,19 +208,20 @@ if (mode === "edit") {
                 key={tab}
                 type="button"
                 onClick={() => {
-  if (tab !== "details") {
-    try {
-      actions.validateForm();
-    } catch {
-      return;
-    }
-  }
-  ui.setActiveTab(tab);
-}}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${ui.activeTab === tab
-                  ? "text-primary border-b-[3px] border-primary"
-                  : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+                  if (tab !== "details") {
+                    try {
+                      actions.validateForm();
+                    } catch {
+                      return;
+                    }
+                  }
+                  ui.setActiveTab(tab);
+                }}
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${
+                  ui.activeTab === tab
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                }`}
               >
                 {tab === "details" && "Details"}
                 {tab === "address" && "Additional Details"}
@@ -239,65 +240,59 @@ if (mode === "edit") {
                 <div
                   className={`
                     grid
-${ui.isExport
-                      ? "grid-cols-[minmax(120px,0.6fr)_100px_100px_90px_110px_120px_100px]"
-                      : "grid-cols-[minmax(120px,0.7fr)_105px_105px_100px_115px_115px]"
-                    }
+${
+  ui.isExport
+    ? "grid-cols-[minmax(120px,0.6fr)_100px_100px_90px_110px_120px_100px]"
+    : "grid-cols-[220px_130px_130px_110px_120px_120px]"
+}
                   gap-x-2 items-start`}
                 >
-
                   <div>
                     <CustomerSelect
                       value={customerNameDisplay}
                       onChange={actions.handleCustomerSelect}
-                      className="w-full min-w-0"
+                      className="w-full"
                     />
                   </div>
 
-
                   <div>
-                    <ModalInput
+                    <DatePickerInput
                       label="Date of Invoice"
                       name="dateOfInvoice"
-                      type="date"
                       value={formData.dateOfInvoice}
-                      onChange={actions.handleInputChange}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                      required
+                      onChange={(name, value) =>
+                        actions.handleInputChange({
+                          target: { name, value },
+                        } as any)
+                      }
                     />
                   </div>
 
                   <div>
-                    <ModalInput
+                    <DatePickerInput
                       label="Due Date"
                       name="dueDate"
-                      type="date"
                       value={formData.dueDate}
-                      onChange={actions.handleInputChange}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                      required
+                      onChange={(name, value) =>
+                        actions.handleInputChange({
+                          target: { name, value },
+                        } as any)
+                      }
                     />
                   </div>
 
                   <div>
                     <ModalSelect
-                      label="Currency"
-                      name="currencyCode"
-                      value={formData.currencyCode}
-                      options={[...currencyOptions]}
-                      disabled
+                      label="Invoice Status"
+                      name="invoiceStatus"
+                      value={formData.invoiceStatus}
+                      onChange={actions.handleInputChange}
+                      options={[...invoiceStatusOptions]}
+                      disabled={mode === "edit"}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
-                  </div>
-
-                  <div>
-                   <ModalSelect
-  label="Invoice Status"
-  name="invoiceStatus"
-  value={formData.invoiceStatus}
-  onChange={actions.handleInputChange}
-  options={[...invoiceStatusOptions]}
-  disabled={mode === "edit"}
-  className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-/>
                   </div>
 
                   <div>
@@ -364,7 +359,6 @@ ${ui.isExport
                   )}
 
                   {ui.isLocal && (
-
                     <ModalInput
                       label="LPO Number"
                       name="lpoNumber"
@@ -391,18 +385,39 @@ ${ui.isExport
                     <table className="w-full min-w-[760px] border-collapse text-[10px]">
                       <thead>
                         <tr className="border-b border-theme">
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">#</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">Item</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[110px] whitespace-nowrap">Description</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">Packing
-                            <span className="ml-1 text-[9px] text-muted/60 font-normal">(unit × size)</span>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">
+                            #
                           </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">Quantity</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[55px]  whitespace-nowrap">Unit Price <span className="text-danger">*</span></th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">Dis(%)</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">Tax(%)</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[45px]  whitespace-nowrap">Tax Code</th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">Amount</th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
+                            Item
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[110px] whitespace-nowrap">
+                            Description
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">
+                            Packing
+                            <span className="ml-1 text-[9px] text-muted/60 font-normal">
+                              (unit × size)
+                            </span>
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
+                            Quantity
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[55px]  whitespace-nowrap">
+                            Unit Price <span className="text-danger">*</span>
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">
+                            Dis(%)
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
+                            Tax(%)
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[45px]  whitespace-nowrap">
+                            Tax Code
+                          </th>
+                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
+                            Amount
+                          </th>
                           <th></th>
                         </tr>
                       </thead>
@@ -433,13 +448,13 @@ ${ui.isExport
                                                   }}
                                                 /> */}
                                 <div className="w-[180px]">
-                                <ItemSelect
-  taxCategory={ui.taxCategory}
-  value={it.itemCode}
-  onChange={(item) => {
-    actions.handleItemSelect(i, item.id);
-  }}
-/>
+                                  <ItemSelect
+                                    taxCategory={ui.taxCategory}
+                                    value={it.itemCode}
+                                    onChange={(item) => {
+                                      actions.handleItemSelect(i, item.id);
+                                    }}
+                                  />
                                 </div>
                               </td>
                               {/* Description */}
@@ -456,27 +471,31 @@ ${ui.isExport
 
                               <td className="px-0.5 py-1">
                                 <div className="flex items-center gap-1">
-
                                   {/* PACKING UNIT */}
                                   <input
                                     type="number"
                                     name="packingUnit"
                                     value={it.packingUnit || ""}
-                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
                                     className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
                                   />
 
-                                  <span className="text-[10px] text-muted font-semibold">×</span>
+                                  <span className="text-[10px] text-muted font-semibold">
+                                    ×
+                                  </span>
 
                                   {/* PACKING SIZE */}
                                   <input
                                     type="number"
                                     name="packingSize"
                                     value={it.packingSize || ""}
-                                    onChange={(e) => actions.handleItemChange(i, e)}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
                                     className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
                                   />
-
                                 </div>
                               </td>
                               <td className="px-0.5 py-1">
@@ -622,7 +641,6 @@ ${ui.isExport
                       </div>
                       {customerDetails && (
                         <div className="bg-card rounded-lg ">
-
                           <div className="flex flex-col gap-1">
                             {/* Invoice Type */}
                             <div className="flex items-center gap-19 text-xs">
@@ -724,9 +742,7 @@ ${ui.isExport
                   data={formData.billingAddress}
                   onChange={(
                     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-                  ) =>
-                    actions.handleInputChange(e, "billingAddress")
-                  }
+                  ) => actions.handleInputChange(e, "billingAddress")}
                 />
 
                 {/* Shipping */}
@@ -739,9 +755,7 @@ ${ui.isExport
                   onSameAsBillingChange={actions.handleSameAsBillingChange}
                   onChange={(
                     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-                  ) =>
-                    actions.handleInputChange(e, "shippingAddress")
-                  }
+                  ) => actions.handleInputChange(e, "shippingAddress")}
                 />
               </div>
             </div>

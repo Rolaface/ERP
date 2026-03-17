@@ -1,7 +1,12 @@
 import React from "react";
 import type { SupplierFormData } from "../../../types/Supply/supplier";
 import { currencyOptions } from "../../../types/Supply/supplier";
-import { CreditDaysInput, ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
+import {
+  CreditDaysInput,
+  ModalInput,
+  ModalSelect,
+} from "../../ui/modal/modalComponent";
+import DatePickerInput from "../../calendar/DatePickerInput";
 
 interface PaymentInfoTabProps {
   form: SupplierFormData;
@@ -70,14 +75,16 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
             className="no-spinner"
           />
 
-          <ModalInput
+          <DatePickerInput
             label="Date of Addition"
             name="dateOfAddition"
-            type="date"
             value={form.dateOfAddition}
-            onChange={onChange}
             required
-            error={errors.dateOfAddition}
+            onChange={(name, value) =>
+              onChange({
+                target: { name, value },
+              } as any)
+            }
           />
         </div>
       </div>

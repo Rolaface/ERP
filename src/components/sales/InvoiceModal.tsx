@@ -11,6 +11,7 @@ import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import StockItemSelect from "../selects/StockItemSelect";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import WarehouseSelect from "../selects/WarehouseSelect";
+import DatePickerInput from "../calendar/DatePickerInput";
 import {
   invoiceStatusOptions,
   currencySymbols,
@@ -20,7 +21,6 @@ import {
 import PaymentInfoBlock from "./PaymentInfoBlock";
 import AddressBlock from "../ui/modal/AddressBlock";
 import { formatDate } from "../../utils/dateFormatter";
-import "react-datepicker/dist/react-datepicker.css";
 
 // import ModalInput from "../ui/ModalInput";
 // import ModalSelect from "../ui/ModalSelect";
@@ -218,26 +218,28 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     className="w-full"
                   />
 
-                  <ModalInput
+                  <DatePickerInput
                     label="Date of Invoice"
                     name="dateOfInvoice"
-                    type="date"
                     value={formData.dateOfInvoice}
-                    onChange={actions.handleInputChange}
-                    lang="en-IN"
                     required
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                    onChange={(name, value) =>
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
+                    }
                   />
 
-                  <ModalInput
+                  <DatePickerInput
                     label="Due Date"
                     name="dueDate"
-                    type="date"
                     value={formData.dueDate}
-                    onChange={actions.handleInputChange}
-                    lang="en-IN"
+                    onChange={(name, value) =>
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
+                    }
                     required
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
 
                   <ModalSelect
@@ -294,34 +296,37 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
-                 <div className="flex items-end gap-4 min-w-[220px]">
-  <WarehouseSelect
-  className="w-[200px]"
-    name="warehouse"
-    value={formData.warehouse || ""}
-    onChange={(e) => {
-      actions.handleBulkItemChange("warehouse", e.target.value);
-    }}
-    label="Warehouse"
-  />
+                  <div className="flex items-end gap-4 min-w-[220px]">
+                    <WarehouseSelect
+                      className="w-[200px]"
+                      name="warehouse"
+                      value={formData.warehouse || ""}
+                      onChange={(e) => {
+                        actions.handleBulkItemChange(
+                          "warehouse",
+                          e.target.value,
+                        );
+                      }}
+                      label="Warehouse"
+                    />
 
-  <label className="flex items-center gap-2 pb-1">
-    <input
-      type="checkbox"
-      name="updateStock"
-      checked={formData.updateStock ?? true}
-      onChange={actions.handleInputChange}
-      className="w-3.5 h-3.5 accent-primary"
-    />
-    <span className="text-xs text-main whitespace-nowrap">
-      Update Stock
-    </span>
-  </label>
-</div>
+                    <label className="flex items-center gap-2 pb-1">
+                      <input
+                        type="checkbox"
+                        name="updateStock"
+                        checked={formData.updateStock ?? true}
+                        onChange={actions.handleInputChange}
+                        className="w-3.5 h-3.5 accent-primary"
+                      />
+                      <span className="text-xs text-main whitespace-nowrap">
+                        Update Stock
+                      </span>
+                    </label>
+                  </div>
 
                   {ui.isExport && (
                     <ModalInput
-                      label="Export To Country"
+                      label="Customer Country"
                       name="destnCountryCd"
                       type="text"
                       value={formData.destnCountryCd}
@@ -383,7 +388,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
                             Qty
                           </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
+                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px0px] whitespace-nowrap">
                             Mfg Date
                           </th>
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
@@ -453,7 +458,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                       expDate: item.expiryDate,
                                       packingUnit: item.packingUnit,
                                       packingSize: item.packingSize,
-                                      price: item.valuation_rate,
+                                      
                                       vatRate: item.taxRate,
                                       vatCode: item.taxCode,
                                       warehouse: item.warehouse,
@@ -593,33 +598,31 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                 />
                               </td>
                               <td className="px-0.5 py-1">
-                                <div style={{ width: "103px" }}>
-                                  <ModalInput
+                                <div style={{ width: "130px" }}>
+                                  <DatePickerInput
                                     label=""
-                                    type="date"
                                     name="mfgDate"
-                                    id={`mfgDate-${i}`}
-                                    value={it.mfgDate || ""}
-                                    onChange={(e) =>
-                                      actions.handleItemChange(i, e)
+                                    value={it.mfgDate}
+                                    onChange={(name, value) =>
+                                      actions.handleItemChange(i, {
+                                        target: { name, value },
+                                      } as any)
                                     }
-                                    className="w-full"
                                   />
                                 </div>
                               </td>
 
                               <td className="px-0.5 py-1">
-                                <div style={{ width: "103px" }}>
-                                  <ModalInput
+                                <div style={{ width: "130px" }}>
+                                  <DatePickerInput
                                     label=""
-                                    type="date"
                                     name="expDate"
-                                    id={`expDate-${i}`}
-                                    value={it.expDate || ""}
-                                    onChange={(e) =>
-                                      actions.handleItemChange(i, e)
+                                    value={it.expDate}
+                                    onChange={(name, value) =>
+                                      actions.handleItemChange(i, {
+                                        target: { name, value },
+                                      } as any)
                                     }
-                                    className="w-full"
                                   />
                                 </div>
                               </td>
@@ -627,14 +630,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                 <WarehouseSelect
                                   compact
                                   value={(it as any).warehouse || ""}
-                                onChange={(e) =>
-  actions.handleItemChange(i, {
-    target: {
-      name: "warehouse",
-      value: e.target?.value ?? e
-    }
-  } as any)
-}
+                                  onChange={(e) =>
+                                    actions.handleItemChange(i, {
+                                      target: {
+                                        name: "warehouse",
+                                        value: e.target?.value ?? e,
+                                      },
+                                    } as any)
+                                  }
                                 />
                               </td>
 

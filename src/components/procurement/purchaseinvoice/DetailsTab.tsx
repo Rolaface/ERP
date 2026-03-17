@@ -8,6 +8,7 @@ import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import WarehouseSelect from "../../selects/WarehouseSelect";
+import DatePickerInput from "../../calendar/DatePickerInput";
 
 interface DetailsTabProps {
   form: PurchaseInvoiceFormData;
@@ -133,19 +134,21 @@ export const DetailsTab = ({
               required
             />
           </div>
-
-          <div className="w-[100px] ml-2">
-            <ModalInput
+          <div className="w-[128px] ml-2">
+            <DatePickerInput
               label="Date"
-              type="date"
               name="date"
               value={form.date}
-              onChange={onFormChange}
               required
+              onChange={(name, value) =>
+                onFormChange({
+                  target: { name, value },
+                } as any)
+              }
             />
           </div>
 
-          <div className="w-[110px] ml-4">
+          <div className="w-[130px] ml-4">
             <ModalSelect
               label="Status"
               name="status"
@@ -236,9 +239,7 @@ export const DetailsTab = ({
               className="w-3.5 h-3.5 accent-primary"
             />
 
-            <span className="text-xs text-main">
-              Update Stock
-            </span>
+            <span className="text-xs text-main">Update Stock</span>
           </div>
         </div>
       </div>
@@ -278,17 +279,18 @@ export const DetailsTab = ({
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">
                   Qty
                 </th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
-                  Mfg Date
-                </th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
-                  Expiry Date
-                </th>
+               <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
+  Mfg Date
+</th>
+
+<th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
+  Expiry Date
+</th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
                   Unit Price <span className="text-danger">*</span>
                 </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">
-                  Warehouse 
+                  Warehouse
                 </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
                   Dis (%)
@@ -399,30 +401,36 @@ export const DetailsTab = ({
 
                     {/* MFG DATE */}
                     <td className="px-2 py-1">
-                      <div style={{ width: "103px" }}>
-                        <ModalInput
-                          label=""
-                          type="date"
+                      <div style={{ width: "125px" }}>
+                        <DatePickerInput
                           name="mfgDate"
-                          id={`mfgDate-${i}`}
                           value={it.mfgDate || ""}
-                          onChange={(e) => onItemChange(e, i)}
-                          className="w-full"
+                          onChange={(name, value) =>
+                            onItemChange(
+                              {
+                                target: { name, value },
+                              } as any,
+                              i,
+                            )
+                          }
                         />
                       </div>
                     </td>
 
                     {/* EXPIRY DATE */}
                     <td className="px-2 py-1">
-                      <div style={{ width: "103px" }}>
-                        <ModalInput
-                          label=""
-                          type="date"
+                      <div style={{ width: "125px" }}>
+                        <DatePickerInput
                           name="expDate"
-                          id={`expDate-${i}`}
                           value={it.expDate || ""}
-                          onChange={(e) => onItemChange(e, i)}
-                          className="w-full"
+                          onChange={(name, value) =>
+                            onItemChange(
+                              {
+                                target: { name, value },
+                              } as any,
+                              i,
+                            )
+                          }
                         />
                       </div>
                     </td>
@@ -450,7 +458,7 @@ export const DetailsTab = ({
                                 value: e.target?.value ?? e,
                               },
                             } as any,
-                            i
+                            i,
                           )
                         }
                         disabled={!form.updateStock}
