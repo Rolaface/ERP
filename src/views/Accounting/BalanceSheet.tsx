@@ -5,6 +5,7 @@ import {
   getBalanceSheet,
   type BalanceSheetFilters,
 } from "../../api/Accounting/AccountApi";
+import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
   AlertCircle,
   Loader2,
@@ -312,38 +313,44 @@ function FilterBar({
       {/* DATE RANGE */}
       {filters.mode === "Date Range" && (
         <>
+          {/* FROM DATE */}
           <div className="flex items-center gap-1">
             <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
               From
             </span>
-            <input
-              type="date"
-              value={toInputDate(filters.from_date ?? "")}
-              onChange={(e) =>
-                setFilters((f) => ({
-                  ...f,
-                  from_date: toApiDate(e.target.value),
-                }))
-              }
-              className={inputClass}
-            />
+
+            <div className="w-[120px]">
+              <DatePickerInput
+                name="from_date"
+                value={toInputDate(filters.from_date ?? "")}
+                onChange={(name, value) =>
+                  setFilters((f) => ({
+                    ...f,
+                    from_date: toApiDate(value),
+                  }))
+                }
+              />
+            </div>
           </div>
 
+          {/* TO DATE */}
           <div className="flex items-center gap-1">
             <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
               To
             </span>
-            <input
-              type="date"
-              value={toInputDate(filters.to_date ?? "")}
-              onChange={(e) =>
-                setFilters((f) => ({
-                  ...f,
-                  to_date: toApiDate(e.target.value),
-                }))
-              }
-              className={inputClass}
-            />
+
+            <div className="w-[120px]">
+              <DatePickerInput
+                name="to_date"
+                value={toInputDate(filters.to_date ?? "")}
+                onChange={(name, value) =>
+                  setFilters((f) => ({
+                    ...f,
+                    to_date: toApiDate(value),
+                  }))
+                }
+              />
+            </div>
           </div>
         </>
       )}
@@ -384,7 +391,7 @@ function SectionHeader({
       <span className="text-xs font-bold text-main uppercase tracking-widest">
         {label}
       </span>
-      
+
     </div>
   );
 }
@@ -439,17 +446,17 @@ const BalanceSheet: React.FC = () => {
       const params =
         currentFilters.mode === "Date Range"
           ? {
-              periodicity: currentFilters.periodicity,
-              from_date: currentFilters.from_date,
-              to_date: currentFilters.to_date,
-              filter_based_on: "Date Range" as const,
-            }
+            periodicity: currentFilters.periodicity,
+            from_date: currentFilters.from_date,
+            to_date: currentFilters.to_date,
+            filter_based_on: "Date Range" as const,
+          }
           : {
-              periodicity: currentFilters.periodicity,
-              from_fiscal_year: String(currentFilters.from_fiscal_year),
-              to_fiscal_year: String(currentFilters.to_fiscal_year),
-              filter_based_on: "Fiscal Year" as const,
-            };
+            periodicity: currentFilters.periodicity,
+            from_fiscal_year: String(currentFilters.from_fiscal_year),
+            to_fiscal_year: String(currentFilters.to_fiscal_year),
+            filter_based_on: "Fiscal Year" as const,
+          };
 
       const res: BSResponse = await getBalanceSheet(params as any);
 

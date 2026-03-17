@@ -414,9 +414,9 @@ export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
             e.currentTarget.style.boxShadow = "";
           }}
         />
-        <span className="absolute right-2 text-[11px] text-muted pointer-events-none">
-          Days
-        </span>
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-muted pointer-events-none">
+  Days
+</span>
       </div>
 
       {error && <span className="text-[10px] text-danger mt-1">{error}</span>}

@@ -5,7 +5,7 @@ import {
   getTrialBalance,
   type TrialBalanceFilters,
 } from "../../api/Accounting/AccountApi";
-
+import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
   AlertCircle,
   Loader2,
@@ -20,7 +20,7 @@ import {
 export type TBAccount = {
   account: string;
   account_name: string;
-   currency?: string;
+  currency?: string;
   indent: number;
 
   opening_debit: number;
@@ -97,28 +97,28 @@ const TrialBalance: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-const tableData: TBAccount[] = React.useMemo(() => {
-  if (!data) return [];
+  const tableData: TBAccount[] = React.useMemo(() => {
+    if (!data) return [];
 
-  const totalRow: TBAccount = {
-    account: "__total__",
-    account_name: "TOTAL",
-    indent: 0,
-   currency: data.accounts?.[0]?.currency ?? "",
+    const totalRow: TBAccount = {
+      account: "__total__",
+      account_name: "TOTAL",
+      indent: 0,
+      currency: data.accounts?.[0]?.currency ?? "",
 
-    opening_debit: data.totals.opening_debit,
-    opening_credit: data.totals.opening_credit,
-    debit: data.totals.debit,
-    credit: data.totals.credit,
-    closing_debit: data.totals.closing_debit,
-    closing_credit: data.totals.closing_credit,
+      opening_debit: data.totals.opening_debit,
+      opening_credit: data.totals.opening_credit,
+      debit: data.totals.debit,
+      credit: data.totals.credit,
+      closing_debit: data.totals.closing_debit,
+      closing_credit: data.totals.closing_credit,
 
-    has_value: true,
-    children: [],
-  };
+      has_value: true,
+      children: [],
+    };
 
-  return [...data.accounts, totalRow];
-}, [data]);
+    return [...data.accounts, totalRow];
+  }, [data]);
 
   /*  Filters  */
 
@@ -134,33 +134,33 @@ const tableData: TBAccount[] = React.useMemo(() => {
   });
 
   useEffect(() => {
-  const year = filters.fiscal_year;
+    const year = filters.fiscal_year;
 
-  if (!/^\d{4}$/.test(year)) return;
+    if (!/^\d{4}$/.test(year)) return;
 
-  const newFrom = `01-01-${year}`;
-  const newTo = `31-12-${year}`;
+    const newFrom = `01-01-${year}`;
+    const newTo = `31-12-${year}`;
 
-  setFilters((f) => {
-    if (f.from_date === newFrom && f.to_date === newTo) return f;
+    setFilters((f) => {
+      if (f.from_date === newFrom && f.to_date === newTo) return f;
 
-    return {
-      ...f,
-      from_date: newFrom,
-      to_date: newTo,
-    };
-  });
-}, [filters.fiscal_year]);
+      return {
+        ...f,
+        from_date: newFrom,
+        to_date: newTo,
+      };
+    });
+  }, [filters.fiscal_year]);
 
-useEffect(() => {
-  if (!/^\d{4}$/.test(String(filters.fiscal_year))) return;
+  useEffect(() => {
+    if (!/^\d{4}$/.test(String(filters.fiscal_year))) return;
 
-  const timer = setTimeout(() => {
-    fetchTB(filters);
-  }, 300);
+    const timer = setTimeout(() => {
+      fetchTB(filters);
+    }, 300);
 
-  return () => clearTimeout(timer);
-}, [filters]);
+    return () => clearTimeout(timer);
+  }, [filters]);
 
   /*  Fetch API  */
 
@@ -189,7 +189,7 @@ useEffect(() => {
     }
   };
 
-   /*  STATES  */
+  /*  STATES  */
 
   if (loading) {
     return (
@@ -218,92 +218,98 @@ useEffect(() => {
 
   /*  COLUMNS  */
 
-const toApiDate = (date: string) => {
-  if (!date || !date.includes("-")) return "";
-  const [y, m, d] = date.split("-");
-  return `${d}-${m}-${y}`;
-};
-  const columns: Column<TBAccount>[] = [
-{
-  key: "account_name",
-  header: "Account",
-  render: (row) => {
-    const isTotal = row.account === "__total__";
+  const toApiDate = (date: string) => {
+    if (!date || !date.includes("-")) return "";
+    const [y, m, d] = date.split("-");
+    return `${d}-${m}-${y}`;
+  };
 
-    return (
-      <div
-        className={`max-w-[320px] whitespace-normal break-words ${
-          isTotal
-            ? "font-bold text-primary"
-            : row.indent === 0
-            ? "font-semibold"
-            : ""
-        }`}
-      >
-        {row.account_name}
-      </div>
-    );
-  },
-},
+  const fromApiDate = (date: string) => {
+    if (!date || !date.includes("-")) return "";
+    const [d, m, y] = date.split("-");
+    return `${y}-${m}-${d}`; // for DatePickerInput
+  };
+
+  const columns: Column<TBAccount>[] = [
+    {
+      key: "account_name",
+      header: "Account",
+      render: (row) => {
+        const isTotal = row.account === "__total__";
+
+        return (
+          <div
+            className={`max-w-[320px] whitespace-normal break-words ${isTotal
+                ? "font-bold text-primary"
+                : row.indent === 0
+                  ? "font-semibold"
+                  : ""
+              }`}
+          >
+            {row.account_name}
+          </div>
+        );
+      },
+    },
     {
       key: "opening_debit",
       header: "Opening Debit",
       align: "right",
       render: (row) => (
- <span className="tabular-nums text-right">
-    {nf(row.opening_debit, row.currency)}
-  </span>
-)
+        <span className="tabular-nums text-right">
+          {nf(row.opening_debit, row.currency)}
+        </span>
+      )
     },
     {
       key: "opening_credit",
       header: "Opening Credit",
       align: "right",
-     render: (row) => (
-  <span className="tabular-nums text-right">
-    {nf(row.opening_credit, row.currency)}
-  </span>
-)
+      render: (row) => (
+        <span className="tabular-nums text-right">
+          {nf(row.opening_credit, row.currency)}
+        </span>
+      )
     },
     {
       key: "debit",
       header: "Debit",
       align: "right",
       render: (row) => (
-  <span className="tabular-nums text-right">
-    {nf(row.debit, row.currency)}
-  </span>
-)
+        <span className="tabular-nums text-right">
+          {nf(row.debit, row.currency)}
+        </span>
+      )
     },
     {
       key: "credit",
       header: "Credit",
       align: "right",
       render: (row) => (
-  <span className="tabular-nums text-right">
-    {nf(row.credit, row.currency)}
-  </span>
-)
+        <span className="tabular-nums text-right">
+          {nf(row.credit, row.currency)}
+        </span>
+      )
     },
     {
       key: "closing_debit",
       header: "Closing Debit",
       align: "right",
-     render: (row) => (
-  <span className="tabular-nums text-right">
-    {nf(row.closing_debit, row.currency)}
-  </span>
-)
+      render: (row) => (
+        <span className="tabular-nums text-right">
+          {nf(row.closing_debit, row.currency)}
+        </span>
+      )
     },
     {
       key: "closing_credit",
       header: "Closing Credit",
       align: "right",
       render: (row) => (
-  <span className="tabular-nums text-right">
-    {nf(row.closing_credit, row.currency)}
-  </span>
-)
+        <span className="tabular-nums text-right">
+          {nf(row.closing_credit, row.currency)}
+        </span>
+      )
     },
   ];
 
@@ -311,36 +317,34 @@ const toApiDate = (date: string) => {
 
   const filtersUI = (
     <div className="flex items-center gap-3 flex-wrap text-xs">
+
       {/* From Date */}
-      <input
-        type="date"
-        value={
-          filters.from_date
-            ? filters.from_date.split("-").reverse().join("-")
-            : ""
-        }
-        onChange={(e) => {
-          const d = toApiDate(e.target.value);
-          setFilters((f) => ({ ...f, from_date: d }));
-        }}
-        className="px-2 py-1 border border-[var(--border)] rounded"
-      />
+      <div className="w-[140px]">
+        <DatePickerInput
+          name="from_date"
+          value={fromApiDate(filters.from_date)}
+          onChange={(name, value) => {
+            setFilters((f) => ({
+              ...f,
+              from_date: toApiDate(value),
+            }));
+          }}
+        />
+      </div>
 
       {/* To Date */}
-      <input
-        type="date"
-        value={
-  filters.to_date
-    ? filters.to_date.split("-").reverse().join("-")
-    : ""
-}
-        onChange={(e) => {
-          const d = toApiDate(e.target.value);
-          setFilters((f) => ({ ...f, to_date: d }));
-        }}
-        className="px-2 py-1 border border-[var(--border)] rounded"
-      />
-
+      <div className="w-[140px]">
+        <DatePickerInput
+          name="to_date"
+          value={fromApiDate(filters.to_date)}
+          onChange={(name, value) => {
+            setFilters((f) => ({
+              ...f,
+              to_date: toApiDate(value),
+            }));
+          }}
+        />
+      </div>
       {/* Fiscal Year */}
       <input
         type="text"
@@ -404,32 +408,32 @@ const toApiDate = (date: string) => {
     </div>
   );
 
- 
+
 
   /*  TABLE  */
 
-  
+
 
   return (
-  <div className="flex flex-col gap-2">
-    <ExpandableTreeTable<TBAccount>
-      columns={columns}
-      data={tableData}
-      childrenKey="children"
-      nodeKey={(node) => node.account}
-      showToolbar
-      showSearch={false}
-      extraFilters={filtersUI}
-      onRefresh={fetchTB}
-      defaultExpandDepth={0}
-      expandIconRender={expandIcon}
-      loading={loading}
-      emptyMessage="No trial balance data."
-    />
+    <div className="flex flex-col gap-2">
+      <ExpandableTreeTable<TBAccount>
+        columns={columns}
+        data={tableData}
+        childrenKey="children"
+        nodeKey={(node) => node.account}
+        showToolbar
+        showSearch={false}
+        extraFilters={filtersUI}
+        onRefresh={fetchTB}
+        defaultExpandDepth={0}
+        expandIconRender={expandIcon}
+        loading={loading}
+        emptyMessage="No trial balance data."
+      />
 
-    
-  </div>
-);
+
+    </div>
+  );
 };
 
 export default TrialBalance;

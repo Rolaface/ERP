@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { showApiError, showSuccess , showValidationError } from "../utils/alert";
+import { showApiError, showSuccess, showValidationError } from "../utils/alert";
 import type {
   PurchaseInvoiceFormData,
   POTab,
@@ -24,9 +24,11 @@ import { getCompanyById } from "../api/companySetupApi";
 import { mapSupplierToAddress } from "../types/Supply/purchaseInvoiceMapper";
 import type { AddressBlock } from "../types/Supply/purchaseInvoice";
 import { getItemByItemCode } from "../api/itemApi";
-import { getPurchaseOrderById, getPurchaseOrders } from "../api/procurement/PurchaseOrderApi";
+import {
+  getPurchaseOrderById,
+  getPurchaseOrders,
+} from "../api/procurement/PurchaseOrderApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
-import { showPOConflictDialog } from "../utils/alert";
 
 interface UsePurchaseInvoiceFormProps {
   isOpen: boolean;
@@ -53,28 +55,26 @@ export const usePurchaseInvoiceForm = ({
     Partial<PurchaseInvoiceFormData>
   >({});
 
-const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
-  setForm((prev) => ({
-    ...prev,
-    warehouse: field === "warehouse" ? value : prev.warehouse,
-    items: prev.items.map((item) => ({
-      ...item,
-      [field]: value
-    })),
-  }));
-};
+  const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      warehouse: field === "warehouse" ? value : prev.warehouse,
+      items: prev.items.map((item) => ({
+        ...item,
+        [field]: value,
+      })),
+    }));
+  };
 
   useEffect(() => {
     if (!isOpen) {
       setForm(emptyPOForm);
       setActiveTab("details");
-       setUsePO(true);
+      setUsePO(true);
     }
   }, [isOpen]);
 
   const isEditMode = !!pId;
-
-
 
   useEffect(() => {
     if (!isOpen || !COMPANY_ID) return;
@@ -86,9 +86,9 @@ const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
         console.log("RAW COMPANY RESPONSE:", res);
 
         const company =
-          res?.data?.data ||   // if wrapped
-          res?.data ||         // if semi wrapped
-          res;                 // fallback
+          res?.data?.data || // if wrapped
+          res?.data || // if semi wrapped
+          res; // fallback
 
         console.log("FINAL COMPANY:", company);
 
@@ -161,43 +161,43 @@ const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
   }, [isOpen, pId]);
 
   // Calculate totals (Items + Taxes + Rounding)
-useEffect(() => {
-  let sub = 0;
-  let tax = 0;
+  useEffect(() => {
+    let sub = 0;
+    let tax = 0;
 
-  form.items.forEach((item) => {
-    const qty = Number(item.quantity || 0);
-    const rate = Number(item.rate || 0);
-    const discount = Number(item.discount || 0);
-    const vatRate = Number(item.vatRate || 0);
+    form.items.forEach((item) => {
+      const qty = Number(item.quantity || 0);
+      const rate = Number(item.rate || 0);
+      const discount = Number(item.discount || 0);
+      const vatRate = Number(item.vatRate || 0);
 
-    const lineAmount = qty * rate;
+      const lineAmount = qty * rate;
 
-    const discountAmount = lineAmount * (discount / 100);
+      const discountAmount = lineAmount * (discount / 100);
 
-    const netAmount = lineAmount - discountAmount;
+      const netAmount = lineAmount - discountAmount;
 
-    const taxAmount = netAmount * (vatRate / 100);
+      const taxAmount = netAmount * (vatRate / 100);
 
-    sub += netAmount;
-    tax += taxAmount;
-  });
+      sub += netAmount;
+      tax += taxAmount;
+    });
 
-  const grandTotal = sub + tax;
+    const grandTotal = sub + tax;
 
-  const totalQuantity = form.items.reduce(
-    (sum, item) => sum + Number(item.quantity || 0),
-    0
-  );
+    const totalQuantity = form.items.reduce(
+      (sum, item) => sum + Number(item.quantity || 0),
+      0,
+    );
 
-  setForm((p) => ({
-    ...p,
-    totalQuantity,
-    subTotal: sub,
-    totalTax: tax,
-    grandTotal,
-  }));
-}, [form.items]);
+    setForm((p) => ({
+      ...p,
+      totalQuantity,
+      subTotal: sub,
+      totalTax: tax,
+      grandTotal,
+    }));
+  }, [form.items]);
   type AddressKey = keyof PurchaseInvoiceFormData["addresses"];
 
   const updateAddress = (
@@ -218,30 +218,22 @@ useEffect(() => {
   };
 
   const validateTab = (tab: POTab): string | null => {
-
     if (tab === "details") {
-
-      if (!form.supplier)
-        return "Supplier is required";
+      if (!form.supplier) return "Supplier is required";
 
       if (form.supplier && !form.supplierInvoiceNumber?.trim())
         return "Supplier Invoice No is required";
 
-      if (!form.transactionProgress)
-        return "Transaction Progress is required";
+      if (!form.transactionProgress) return "Transaction Progress is required";
 
-      if (!form.paymentType)
-        return "Payment Type is required";
+      if (!form.paymentType) return "Payment Type is required";
 
-
-      if (!form.items.length)
-        return "At least one item required";
+      if (!form.items.length) return "At least one item required";
 
       for (let i = 0; i < form.items.length; i++) {
         const item = form.items[i];
 
-        if (!item.itemCode)
-          return `Row ${i + 1}: Item required`;
+        if (!item.itemCode) return `Row ${i + 1}: Item required`;
 
         if (!item.quantity || item.quantity <= 0)
           return `Row ${i + 1}: Quantity required`;
@@ -249,8 +241,7 @@ useEffect(() => {
         if (!item.rate || item.rate <= 0)
           return `Row ${i + 1}: Unit Price required`;
 
-        if (!item.vatCd)
-          return `Row ${i + 1}: Tax Code required`;
+        if (!item.vatCd) return `Row ${i + 1}: Tax Code required`;
 
         if (item.requiresBatch && !item.batchNo?.trim())
           return `Row ${i + 1}: Batch No required`;
@@ -259,113 +250,119 @@ useEffect(() => {
     if (tab === "address") {
       const addr = form.addresses?.supplierAddress;
 
-      if (!addr?.addressLine1?.trim())
-        return "Address Line 1 is required";
+      if (!addr?.addressLine1?.trim()) return "Address Line 1 is required";
 
-      if (!addr?.city?.trim())
-        return "City is required";
+      if (!addr?.city?.trim()) return "City is required";
 
-      if (!addr?.country?.trim())
-        return "Country is required";
+      if (!addr?.country?.trim()) return "Country is required";
     }
 
     return null;
   };
 
-  const loadPOData = async (po: any, appendToExisting = false) => {
-  if (!po?.poId) return;
+  const handlePOSelect = async (po: any) => {
+    if (!po?.poId) return;
 
-  const res = await getPurchaseOrderById(po.poId);
-  if (!res || res.status_code !== 200) {
-    showApiError({ message: "Failed to fetch PO" });
-    return;
-  }
+    try {
+      const res = await getPurchaseOrderById(po.poId);
 
-  const data = res.data;
-  const taxRate = Number(data.tax?.taxRate || 0);
+      if (!res || res.status_code !== 200) {
+        showApiError({ message: "Failed to fetch PO" });
+        return;
+      }
 
-  setCustomIncoterm("");
-  setCustomShippingRule("");
+      const data = res.data;
 
-  const enrichedItems = await Promise.all(
-    (data.items || []).map(async (item: any) => {
-      let description = "";
-      try {
-        const itemRes = await getItemByItemCode(item.item_code);
-        if (itemRes?.status_code === 200) {
-          description = itemRes.data?.description || "";
-        }
-      } catch {}
+      const taxRate = Number(data.tax?.taxRate || 0);
 
-      return {
-        itemCode: item.item_code,
-        itemName: item.item_name,
-        quantity: Number(item.qty || 0),
-        rate: Number(item.rate || 0),
-        uom: item.uom || "",
-        vatCd: item.vatCd || "",
-        vatRate: taxRate,
-        description,
-        warehouse: form.updateStock ? (item.warehouse || "") : "",
-        packingUnit: Number(item.packingUnit || 0),
-        packingSize: Number(item.packingSize || 0),
-        packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
-        batchNo: item.batchNo || "",
-        mfgDate: item.mfgDate || "",
-        expDate: "",
-        requiresBatch: Boolean(item.has_batch_no),
-        discount: 0,
-      };
-    })
-  );
+      // Reset custom fields
+      setCustomIncoterm("");
+      setCustomShippingRule("");
 
-  setForm((prev) => ({
-    ...prev,
-    poNumber: data.poId,
-    supplier: data.supplierName,
-    currency: data.currency || "",
-    taxCategory: data.taxCategory || "",
-    project: data.project || "",
-    costCenter: data.costCenter || "",
-    shippingRule: data.shippingRule || "",
-    incoterm: typeof data.incoterm === "string" ? data.incoterm.trim().toUpperCase() : "",
-    placeOfSupply: data.placeOfSupply || "",
-    addresses: {
-      ...prev.addresses,
-      supplierAddress: data.addresses?.supplierAddress || prev.addresses.supplierAddress,
-      dispatchAddress: data.addresses?.dispatchAddress || prev.addresses.dispatchAddress,
-      shippingAddress: data.addresses?.shippingAddress || prev.addresses.shippingAddress,
-    },
-    terms: {
-      buying: data.terms?.terms?.buying || prev.terms?.buying,
-    },
-    // KEY LINE — append or replace
-    items: appendToExisting ? [...prev.items, ...enrichedItems] : enrichedItems,
-  }));
-};
-const handlePOSelect = async (po: any) => {
-  if (!po?.poId) return;
+      // Fetch item descriptions from item master
+      const enrichedItems = await Promise.all(
+        (data.items || []).map(async (item: any) => {
+          let description = "";
 
-  try {
-    const hasManualItems = form.items.some(item => item.itemCode);
+          try {
+            const itemRes = await getItemByItemCode(item.item_code);
+            if (itemRes?.status_code === 200) {
+              description = itemRes.data?.description || "";
+            }
+          } catch {}
 
-    if (hasManualItems) {
-      const existingCount = form.items.filter(item => item.itemCode).length;
-      const choice = await showPOConflictDialog(existingCount, po.poId); 
-      if (choice === "cancel") return;
-      await loadPOData(po, choice === "keep");
-    } else {
-      await loadPOData(po, false);
+          return {
+            itemCode: item.item_code,
+            itemName: item.item_name,
+            quantity: Number(item.qty || 0),
+            rate: Number(item.rate || 0),
+            uom: item.uom || "",
+            vatCd: item.vatCd || "",
+            vatRate: taxRate,
+            description,
+            warehouse: form.updateStock ? item.warehouse || "" : "",
+            packingUnit: Number(item.packingUnit || 0),
+            packingSize: Number(item.packingSize || 0),
+            packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
+            batchNo: item.batchNo || "",
+            mfgDate: item.mfgDate || "",
+            expDate: "",
+            requiresBatch: Boolean(item.has_batch_no),
+            discount: 0,
+          };
+        }),
+      );
+
+      setForm((prev) => ({
+        ...prev,
+
+        poNumber: data.poId,
+        supplier: data.supplierName,
+        currency: data.currency || "",
+        taxCategory: data.taxCategory || "",
+        project: data.project || "",
+        costCenter: data.costCenter || "",
+        shippingRule: data.shippingRule || "",
+        incoterm:
+          typeof data.incoterm === "string"
+            ? data.incoterm.trim().toUpperCase()
+            : "",
+        placeOfSupply: data.placeOfSupply || "",
+
+        // ADDRESSES
+        addresses: {
+          ...prev.addresses,
+          supplierAddress:
+            data.addresses?.supplierAddress || prev.addresses.supplierAddress,
+          dispatchAddress:
+            data.addresses?.dispatchAddress || prev.addresses.dispatchAddress,
+          shippingAddress:
+            data.addresses?.shippingAddress || prev.addresses.shippingAddress,
+        },
+
+        // TERMS
+        terms: {
+          buying: data.terms?.terms?.buying || prev.terms?.buying,
+        },
+
+        // ITEMS
+        items: enrichedItems,
+
+        // // SUMMARY
+        // totalQuantity: data.summary?.totalQuantity || 0,
+        // grandTotal: data.summary?.grandTotal || 0,
+        // roundingAdjustment: data.summary?.roundingAdjustment || 0,
+        // roundedTotal: data.summary?.roundedTotal || 0,
+      }));
+    } catch (e) {
+      showApiError({ message: "Failed to load PO details" });
     }
-  } catch (e) {
-    showApiError({ message: "Failed to load PO details" });
-  }
-};
+  };
   const handleTogglePO = (checked: boolean) => {
     setUsePO(checked);
 
     if (!checked) {
-      setForm(prev => ({
+      setForm((prev) => ({
         ...prev,
         poNumber: "",
         items: [{ ...emptyItem }],
@@ -376,50 +373,49 @@ const handlePOSelect = async (po: any) => {
       }));
     }
   };
-const handleFormChange = (
-  e: React.ChangeEvent<
-    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-  >
-) => {
-  const target = e.target as HTMLInputElement;
+  const handleFormChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    const target = e.target as HTMLInputElement;
 
-  const { name, value, type } = target;
-  const checked = target.checked;
+    const { name, value, type } = target;
+    const checked = target.checked;
 
-  const finalValue = type === "checkbox" ? checked : value;
+    const finalValue = type === "checkbox" ? checked : value;
 
+    if (name === "updateStock") {
+      setForm((prev) => ({
+        ...prev,
+        updateStock: checked,
+        warehouse: checked ? prev.warehouse : "",
+        items: prev.items.map((item) => ({
+          ...item,
+          warehouse: checked ? item.warehouse : "",
+        })),
+      }));
 
-  if (name === "updateStock") {
+      return;
+    }
+
+    if (name.startsWith("addresses.")) {
+      const parts = name.split(".") as [
+        "addresses",
+        AddressKey,
+        keyof AddressBlock,
+      ];
+
+      const [, key, field] = parts;
+      updateAddress(key, field, value);
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
-      updateStock: checked,
-      warehouse: checked ? prev.warehouse : "",
-      items: prev.items.map((item) => ({
-        ...item,
-        warehouse: checked ? item.warehouse : "",
-      })),
+      [name]: finalValue,
     }));
-
-    return;
-  }
-
-  if (name.startsWith("addresses.")) {
-    const parts = name.split(".") as [
-      "addresses",
-      AddressKey,
-      keyof AddressBlock
-    ];
-
-    const [, key, field] = parts;
-    updateAddress(key, field, value);
-    return;
-  }
-
-  setForm((prev) => ({
-    ...prev,
-    [name]: finalValue,
-  }));
-};
+  };
 
   const handleSupplierChange = async (sup: any) => {
     if (!sup) return;
@@ -446,39 +442,35 @@ const handleFormChange = (
           ...p.addresses,
           supplierAddress: mapSupplierToAddress(
             supplier,
-            p.addresses.supplierAddress
+            p.addresses.supplierAddress,
           ),
         },
       }));
- const wasUsingPO = usePO;
+      setPoLoading(true);
+      setPoList([]);
+      setUsePO(false);
 
-setPoLoading(true);
-setPoList([]);
-//setUsePO(false);
-
-setForm(prev => ({
-  ...prev,
-  poNumber: "",
-  ...(wasUsingPO && { items: [{ ...emptyItem }] }), 
-}));
+      setForm((prev) => ({
+        ...prev,
+        poNumber: "",
+        items:
+          prev.items && prev.items.length > 0 ? prev.items : [{ ...emptyItem }],
+      }));
 
       try {
         const poRes = await getPurchaseOrders(1, 100, {
-          supplier: supplier.supplierName
+          supplier: supplier.supplierName,
         });
         if (poRes?.status_code === 200) {
           setPoList(poRes.data || []);
         } else {
           setPoList([]);
         }
-
       } catch (err) {
         setPoList([]);
       } finally {
         setPoLoading(false);
       }
-
-
     } catch (e) {
       console.error("Supplier detail fetch failed", e);
     }
@@ -501,18 +493,18 @@ setForm(prev => ({
     setForm((p) => ({ ...p, items }));
   };
 
-const addItem = () => {
-  setForm((p) => ({
-    ...p,
-    items: [
-      ...p.items,
-      {
-        ...emptyItem,
-        warehouse: p.updateStock ? p.warehouse ?? "" : "",
-      },
-    ],
-  }));
-};
+  const addItem = () => {
+    setForm((p) => ({
+      ...p,
+      items: [
+        ...p.items,
+        {
+          ...emptyItem,
+          warehouse: p.updateStock ? (p.warehouse ?? "") : "",
+        },
+      ],
+    }));
+  };
   const removeItem = (idx: number) => {
     if (form.items.length === 1) {
       showValidationError("At least one item is required");
@@ -616,11 +608,9 @@ const addItem = () => {
           rate: Number(data.buyingPrice ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
-        warehouse:
-  prev.updateStock
-    ? (items[idx].warehouse || data.warehouse || prev.warehouse || "")
-    : "",
-
+          warehouse: prev.updateStock
+            ? items[idx].warehouse || data.warehouse || prev.warehouse || ""
+            : "",
 
           description: data.description || "",
 
@@ -652,15 +642,12 @@ const addItem = () => {
       return;
     }
 
-
     const errors = validatePI(form);
 
     if (errors.length) {
       const uniqueErrors = [...new Set(errors)];
 
-         showValidationError(
-        uniqueErrors.join("\n")
-      );
+      showValidationError(uniqueErrors.join("\n"));
 
       return;
     }
@@ -675,10 +662,7 @@ const addItem = () => {
             ? customShippingRule
             : form.shippingRule,
 
-        incoterm:
-          form.incoterm === "OTHER"
-            ? customIncoterm
-            : form.incoterm,
+        incoterm: form.incoterm === "OTHER" ? customIncoterm : form.incoterm,
       };
 
       const payload = mapUIToCreatePI(finalForm);
@@ -686,8 +670,8 @@ const addItem = () => {
       let res;
 
       if (isEditMode) {
-      //   res = await updatePurchaseInvoice(pId, payload);
-      // } else {
+        res = await updatePurchaseInvoice(pId, payload);
+      } else {
         res = await createPurchaseInvoice(payload);
       }
 
@@ -697,9 +681,7 @@ const addItem = () => {
       }
 
       showSuccess(
-        isEditMode
-          ? "Purchase Invoice Updated"
-          : "Purchase Invoice Created"
+        isEditMode ? "Purchase Invoice Updated" : "Purchase Invoice Created",
       );
 
       onSuccess?.(res);
@@ -713,24 +695,19 @@ const addItem = () => {
   };
 
   const reset = () => {
-     setUsePO(true);
+    setUsePO(true);
     setForm({
       ...emptyPOForm,
 
       terms: {
-        buying:
-          companyDefaults.terms?.buying ??
-          emptyPOForm.terms?.buying!,
+        buying: companyDefaults.terms?.buying ?? emptyPOForm.terms?.buying!,
       },
       addresses: {
-        supplierAddress:
-          emptyPOForm.addresses.supplierAddress,
+        supplierAddress: emptyPOForm.addresses.supplierAddress,
 
-        dispatchAddress:
-          emptyPOForm.addresses.dispatchAddress,
+        dispatchAddress: emptyPOForm.addresses.dispatchAddress,
 
-        shippingAddress:
-          emptyPOForm.addresses.shippingAddress,
+        shippingAddress: emptyPOForm.addresses.shippingAddress,
 
         companyBillingAddress:
           companyDefaults.addresses?.companyBillingAddress ??
@@ -774,8 +751,6 @@ const addItem = () => {
     validateTab,
     usePO,
     handleTogglePO,
-    handleBulkItemChange
+    handleBulkItemChange,
   };
 };
-
-
