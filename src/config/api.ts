@@ -5,21 +5,18 @@ export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
 export const API = {
-
-
-  loginApi:{
-    login : `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`
+  loginApi: {
+    login: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
   },
 
-   /* =========================
+  /* =========================
    * DASHBOARD
    * ========================= */
   dashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.main.api.summary`,
   },
 
-  
-   /* =========================
+  /* =========================
    * SALES DASHBOARD
    * ========================= */
   salesDashboard: {
@@ -69,13 +66,14 @@ export const API = {
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
 
-
-accounting:{
-  getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
-  getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
-  getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
-  getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
-},
+  accounting: {
+    getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
+    getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
+    getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
+    getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
+    getAllPayables: `${ERP_BASE}/api/method/custom_api.api.accounts_payable.get_accounts_payable`,
+    getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
+  },
   /* =========================
    * CUSTOMER
    * ========================= */
@@ -102,8 +100,6 @@ accounting:{
     updateDocuments: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.manage_employee_documents`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
-    
-
   },
 
   /* =========================
@@ -203,7 +199,7 @@ accounting:{
     createDebitNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_debit_note_from_invoice`,
     getCreditNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_credit_notes`,
     getDebitNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_debit_notes`,
-    editInvoice : `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.edit_sales_invoice`,
+    editInvoice: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.edit_sales_invoice`,
   },
 
   /* =========================
@@ -228,7 +224,7 @@ accounting:{
     create: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.create_warehouse_api`,
     update: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.update_warehouse_api`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.delete_warehouse_api`,
-    getAllWarehouses : `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
+    getAllWarehouses: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
   },
 
   /* =========================
@@ -273,8 +269,7 @@ accounting:{
     update: `${ERP_BASE}/api/method/erpnext.supplier.api.update_supplier`,
     delete: `${ERP_BASE}/api/method/erpnext.supplier.api.delete_supplier`,
     getStatement: `${ERP_BASE}/api/method/erpnext.supplier.statement.api.get_supplier_statement`,
-    CreatePayment:`${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
-
+    CreatePayment: `${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
   },
 
   places: {
@@ -295,7 +290,7 @@ accounting:{
 
   /* =========================
    * EXCHANGE RATE
-   * ========================= */ 
+   * ========================= */
   exchangeRate: {
     get: `${CODES_BASE}/exchange/`,
   },
@@ -303,6 +298,6 @@ accounting:{
     getUnitOfMeasure: `${ERP_BASE}/api/resource/UOM?limit_start=0&limit_page_length=500`,
     getItemClasses: `${ERP_BASE}/api/item-class-list/`,
     getCountries: `${ERP_BASE}/api/resource/Country?fields=["name","country_name","code"]&limit_page_length=300`,
-    getPackagingUnits : `${ERP_BASE}/api/method/erpnext.packaging_unit.get_all_packaging_units`
+    getPackagingUnits: `${ERP_BASE}/api/method/erpnext.packaging_unit.get_all_packaging_units`,
   },
 } as const;

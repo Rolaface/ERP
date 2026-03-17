@@ -25,7 +25,7 @@ export interface TrialBalanceFilters {
 }
 
 export async function getTrialBalance(
-  filters: TrialBalanceFilters
+  filters: TrialBalanceFilters,
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(AccountingAPI.getTB, {
     params: filters,
@@ -43,17 +43,13 @@ export interface BalanceSheetFilters {
   filter_based_on?: "Fiscal Year" | "Date Range";
 }
 export async function getBalanceSheet(
-  filters: BalanceSheetFilters
+  filters: BalanceSheetFilters,
 ): Promise<any> {
-  const resp: AxiosResponse = await api.get(
-    AccountingAPI.getBalanceSheet,
-    {
-      params: filters,
-    }
-  );
+  const resp: AxiosResponse = await api.get(AccountingAPI.getBalanceSheet, {
+    params: filters,
+  });
   return resp.data;
 }
-
 
 export interface ProfitLossFilters {
   mode?: "Fiscal Year" | "Date Range";
@@ -64,14 +60,76 @@ export interface ProfitLossFilters {
   to_fiscal_year?: number;
 }
 
-
 export async function getProfitAndLoss(
-  filters: ProfitLossFilters
+  filters: ProfitLossFilters,
 ): Promise<PLResponse> {
-  const resp: AxiosResponse<PLResponse> = await api.get(
-    AccountingAPI.getPL,
-    { params: filters }
-  );
+  const resp: AxiosResponse<PLResponse> = await api.get(AccountingAPI.getPL, {
+    params: filters,
+  });
+
+  return resp.data;
+}
+
+export interface AccountsPayableFilters {
+  company?: string;
+  report_date?: string;
+
+  cost_center?: string;
+  payable_account?: string;
+
+  party_type?: string;
+  party?: string;
+  supplier_group?: string;
+
+  ageing_based_on?: "Due Date" | "Posting Date";
+  calculate_ageing_with?: "Report Date" | "Today Date";
+  range?: string;
+
+  group_by?: "supplier" | "voucher" | "none";
+  search?: any;
+
+  page?: number;
+  page_size?: number;
+}
+
+export async function getAllPayables(
+  filters: AccountsPayableFilters,
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(AccountingAPI.getAllPayables, {
+    params: filters,
+  });
+
+  return resp.data;
+}
+
+export interface AccountsReceivableFilters {
+  company?: string;
+  report_date?: string;
+
+  cost_center?: string;
+  receivable_account?: string;
+
+  party_type?: string;
+  party?: string;
+  customer_group?: string;
+
+  ageing_based_on?: "Due Date" | "Posting Date";
+  calculate_ageing_with?: "Report Date" | "Today Date";
+  range?: string;
+
+  group_by?: "customer" | "voucher" | "none";
+  search?: any;
+
+  page?: number;
+  page_size?: number;
+}
+
+export async function getAllReceivables(
+  filters: AccountsReceivableFilters,
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(AccountingAPI.getAllReceivable, {
+    params: filters,
+  });
 
   return resp.data;
 }

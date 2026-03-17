@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import {
@@ -6,21 +6,54 @@ import {
   FaSearch,
   FaFilter,
   FaDownload,
-  FaEdit,
-  FaTrash,
   FaEye,
-  FaMoneyCheckAlt,
   FaClock,
 } from "react-icons/fa";
 
-type Bill = {
+import { getAllPayables } from "../../api/Accounting/AccountApi";
+
+type PayableRecord = {
+  report_date: string;
+  supplier: string;
+  party_type: string;
+  payable_account: string;
+  voucher_type: string;
+  voucher_no: string;
+  due_date: string | null;
+  bill_no: string | null;
+  bill_date: string | null;
+  cost_center: string | null;
+  currency: string;
+  amounts: {
+    invoiced: number;
+    paid: number;
+    credit_note: number;
+    outstanding: number;
+  };
+  age: number;
+};
+
+type KPIs = {
+  total_outstanding: number;
+  total_invoiced: number;
+  total_paid: number;
+  overdue_amount: number;
+  average_payment_days: number;
+};
+
+type Payable = {
   id: string;
+  billNo: string;
   vendor: string;
-  amount: number;
+  voucherType: string;
+  invoicedAmount: number;
+  paidAmount: number;
+  outstandingAmount: number;
   due: string;
   status: string;
   days: number;
   priority: string;
+  actions?: string;
 };
 
 const AccountsPayable = () => {
@@ -28,90 +61,144 @@ const AccountsPayable = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-  /* -------------------- DATA -------------------- */
+  const [payables, setPayables] = useState<Payable[]>([]);
+  const [kpis, setKpis] = useState<KPIs | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const response: any = await getAllPayables({ page: 1, page_size: 100 });
+
+        if (response?.message?.data) {
+          const { data: backendData, kpis: backendKpis } =
+            response.message.data;
+
+          setKpis(backendKpis);
+
+          const mappedPayables: Payable[] = backendData.map(
+            (row: PayableRecord) => {
+              const today = new Date();
+              let daysLeft = 0;
+              let dueDisplay = "N/A";
+
+              if (row.due_date) {
+                const dueDate = new Date(row.due_date);
+                const timeDiff = dueDate.getTime() - today.getTime();
+                daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                dueDisplay = row.due_date;
+              } else {
+                daysLeft = -row.age;
+                dueDisplay = `Reported: ${row.report_date}`;
+              }
+
+              let status = "Pending";
+              if (row.amounts.outstanding <= 0) status = "Paid";
+              else if (daysLeft < 0) status = "Overdue";
+
+              let priority = "low";
+              if (daysLeft < 0) priority = "high";
+              else if (daysLeft <= 7) priority = "medium";
+
+              return {
+                id: row.voucher_no || "N/A",
+                billNo: row.bill_no || "-",
+                vendor: row.supplier || "Unknown Vendor",
+                voucherType: row.voucher_type || "-",
+                invoicedAmount: row.amounts.invoiced || 0,
+                paidAmount: row.amounts.paid || 0,
+                outstandingAmount: row.amounts.outstanding || 0,
+                due: dueDisplay,
+                status,
+                days: daysLeft,
+                priority,
+              };
+            },
+          );
+
+          setPayables(mappedPayables);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const stats = [
-    { label: "Total Payables", value: "₹8,75,000" },
-    { label: "Due This Week", value: "₹2,15,000" },
-    { label: "Avg Payment Days", value: "38 days" },
-    { label: "Current Month Expenses", value: "₹6,25,000" },
-  ];
-
-  const bills: Bill[] = [
     {
-      id: "BILL-001",
-      vendor: "Office Supplies Co",
-      amount: 45000,
-      due: "2025-01-18",
-      status: "Approved",
-      days: 8,
-      priority: "medium",
+      label: "Total Payables (Outstanding)",
+      value: `₹${(kpis?.total_outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
     {
-      id: "BILL-002",
-      vendor: "Tech Services Inc",
-      amount: 125000,
-      due: "2025-01-14",
-      status: "Pending",
-      days: 4,
-      priority: "high",
+      label: "Overdue Amount",
+      value: `₹${(kpis?.overdue_amount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
     {
-      id: "BILL-003",
-      vendor: "Utilities Provider",
-      amount: 35000,
-      due: "2025-01-22",
-      status: "Scheduled",
-      days: 12,
-      priority: "low",
+      label: "Avg Payment Days",
+      value: `${kpis?.average_payment_days || 0} days`,
     },
     {
-      id: "BILL-004",
-      vendor: "Equipment Rental",
-      amount: 85000,
-      due: "2025-01-16",
-      status: "Approved",
-      days: 6,
-      priority: "medium",
-    },
-    {
-      id: "BILL-005",
-      vendor: "Marketing Agency",
-      amount: 195000,
-      due: "2025-01-12",
-      status: "Pending",
-      days: 2,
-      priority: "high",
-    },
-    {
-      id: "BILL-006",
-      vendor: "Cleaning Services",
-      amount: 25000,
-      due: "2025-01-20",
-      status: "Approved",
-      days: 10,
-      priority: "low",
+      label: "Total Invoiced",
+      value: `₹${(kpis?.total_invoiced || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
   ];
 
-  const filteredBills = bills.filter((bill) => {
+  const filteredPayables = payables.filter((payable) => {
     const matchesSearch =
-      bill.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bill.id.toLowerCase().includes(searchTerm.toLowerCase());
+      payable.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payable.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payable.billNo.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesFilter =
-      filterStatus === "all" ||
-      bill.status.toLowerCase() === filterStatus;
+      filterStatus === "all" || payable.status.toLowerCase() === filterStatus;
 
     return matchesSearch && matchesFilter;
   });
 
-  /* -------------------- TABLE COLUMNS -------------------- */
+  const scheduleData = {
+    thisWeek: { label: "This Week", amount: 0, count: 0 },
+    week2: { label: "Week 2", amount: 0, count: 0 },
+    week3: { label: "Week 3", amount: 0, count: 0 },
+    week4Plus: { label: "Week 4+", amount: 0, count: 0 },
+  };
 
-  const columns: Column<Bill>[] = [
+  payables.forEach((payable) => {
+    if (
+      payable.status.toLowerCase() !== "paid" &&
+      payable.status.toLowerCase() !== "overdue"
+    ) {
+      if (payable.days <= 7) {
+        scheduleData.thisWeek.amount += payable.outstandingAmount;
+        scheduleData.thisWeek.count += 1;
+      } else if (payable.days <= 14) {
+        scheduleData.week2.amount += payable.outstandingAmount;
+        scheduleData.week2.count += 1;
+      } else if (payable.days <= 21) {
+        scheduleData.week3.amount += payable.outstandingAmount;
+        scheduleData.week3.count += 1;
+      } else {
+        scheduleData.week4Plus.amount += payable.outstandingAmount;
+        scheduleData.week4Plus.count += 1;
+      }
+    }
+  });
+
+  const paymentSchedule = [
+    scheduleData.thisWeek,
+    scheduleData.week2,
+    scheduleData.week3,
+    scheduleData.week4Plus,
+  ];
+
+  const columns: Column<Payable>[] = [
     {
       key: "id",
-      header: "Bill ID",
+      header: "Voucher No",
       render: (row) => (
         <span className="font-mono text-primary text-xs font-semibold">
           {row.id}
@@ -119,17 +206,43 @@ const AccountsPayable = () => {
       ),
     },
     {
-      key: "vendor",
-      header: "Vendor",
+      key: "billNo",
+      header: "Bill No",
+      render: (row) => <span className="text-xs text-muted">{row.billNo}</span>,
     },
     {
-      key: "amount",
-      header: "Amount",
-      render: (row) => `₹${row.amount.toLocaleString()}`,
+      key: "vendor",
+      header: "Supplier",
+    },
+    {
+      key: "voucherType",
+      header: "Type",
+      render: (row) => <span className="text-xs">{row.voucherType}</span>,
+    },
+    {
+      key: "invoicedAmount",
+      header: "Invoiced",
+      render: (row) =>
+        `₹${row.invoicedAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+    },
+    {
+      key: "paidAmount",
+      header: "Paid",
+      render: (row) =>
+        `₹${row.paidAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+    },
+    {
+      key: "outstandingAmount",
+      header: "Outstanding",
+      render: (row) => (
+        <span className="font-semibold text-main">
+          {`₹${row.outstandingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+        </span>
+      ),
     },
     {
       key: "due",
-      header: "Due Date",
+      header: "Due/Posted Date",
     },
     {
       key: "days",
@@ -139,66 +252,50 @@ const AccountsPayable = () => {
           <FaClock className="text-muted text-xs" />
           <span
             className={`text-xs font-medium ${
-              row.days <= 3
+              row.days < 0
                 ? "text-danger"
                 : row.days <= 7
-                ? "text-warning"
-                : "text-muted"
+                  ? "text-warning"
+                  : "text-muted"
             }`}
           >
-            {row.days} days
+            {row.days < 0
+              ? `${Math.abs(row.days)} days overdue`
+              : `${row.days} days`}
           </span>
         </div>
       ),
     },
     {
-      key: "priority",
-      header: "Priority",
-      render: (row) => (
-        <span
-          className={`px-3 py-1 rounded-full text-[10px] font-bold capitalize ${
-            row.priority === "high"
-              ? "bg-danger text-danger"
-              : row.priority === "medium"
-              ? "bg-warning text-warning"
-              : "bg-success text-success"
-          }`}
-        >
-          {row.priority}
-        </span>
-      ),
-    },
-    {
       key: "status",
       header: "Status",
-      render: (row) => (
-        <span
-          className={`px-3 py-1 rounded-full text-[10px] font-bold ${
-            row.status.toLowerCase() === "approved"
-              ? "bg-info text-info"
-              : row.status.toLowerCase() === "pending"
-              ? "bg-warning text-warning"
-              : "bg-primary text-white"
-          }`}
-        >
-          {row.status}
-        </span>
-      ),
+      render: (row) => {
+        const s = row.status.toLowerCase();
+        return (
+          <span
+            className={`px-3 py-1 rounded-full text-[10px] font-bold ${
+              s === "paid"
+                ? "bg-success text-success"
+                : s === "overdue"
+                  ? "bg-danger text-white"
+                  : s === "pending"
+                    ? "bg-warning text-warning"
+                    : "bg-primary text-white"
+            }`}
+          >
+            {row.status}
+          </span>
+        );
+      },
     },
     {
-      key: "id",
+      key: "actions",
       header: "Actions",
       align: "center",
       render: () => (
         <div className="flex justify-center gap-2">
-          <button className="text-primary">
+          <button className="text-primary hover:opacity-80 transition-opacity">
             <FaEye />
-          </button>
-          <button className="text-info">
-            <FaEdit />
-          </button>
-          <button className="text-danger">
-            <FaTrash />
           </button>
         </div>
       ),
@@ -207,20 +304,19 @@ const AccountsPayable = () => {
 
   return (
     <div className="space-y-6 bg-app p-6">
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s, i) => (
-          <div
-            key={i}
-            className="bg-card rounded-lg border border-theme p-4"
-          >
+          <div key={i} className="bg-card rounded-lg border border-theme p-4">
             <p className="text-xs text-muted">{s.label}</p>
-            <p className="text-xl font-bold text-main mt-1">{s.value}</p>
+            {isLoading ? (
+              <div className="h-7 w-24 bg-theme rounded mt-1 animate-pulse"></div>
+            ) : (
+              <p className="text-xl font-bold text-main mt-1">{s.value}</p>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Toolbar */}
       <div className="bg-card rounded-lg border border-theme p-4 flex flex-wrap gap-3 justify-between">
         <div className="flex gap-2">
           <div className="relative">
@@ -228,73 +324,88 @@ const AccountsPayable = () => {
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search bills or vendors..."
-              className="pl-9 pr-3 py-2 filter-input-refined"
+              placeholder="Search payables or suppliers..."
+              className="pl-9 pr-3 py-2 filter-input-refined bg-app border border-theme rounded-lg text-sm text-main"
             />
           </div>
 
           <div className="relative">
             <button
               onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-              className="px-4 py-2 border border-theme rounded-lg bg-card text-main flex items-center gap-2 capitalize"
+              className="px-4 py-2 border border-theme rounded-lg bg-card text-main flex items-center gap-2 capitalize text-sm"
             >
               <FaFilter /> {filterStatus}
             </button>
 
             {showFilterDropdown && (
-              <div className="absolute top-full mt-2 bg-card border border-theme rounded-lg z-20">
-                {["all", "pending", "approved", "scheduled", "paid"].map(
-                  (s) => (
-                    <button
-                      key={s}
-                      onClick={() => {
-                        setFilterStatus(s);
-                        setShowFilterDropdown(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 row-hover capitalize"
-                    >
-                      {s}
-                    </button>
-                  )
-                )}
+              <div className="absolute top-full mt-2 bg-card border border-theme rounded-lg z-20 overflow-hidden min-w-[120px]">
+                {["all", "pending", "overdue", "paid"].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setFilterStatus(s);
+                      setShowFilterDropdown(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 hover:bg-app transition-colors capitalize text-sm text-main"
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
             )}
           </div>
         </div>
 
         <div className="flex gap-2">
-          <button className="px-4 py-2 bg-app border border-theme rounded-lg flex gap-2 items-center">
+          <button className="px-4 py-2 bg-app border border-theme rounded-lg flex gap-2 items-center text-main text-sm hover:opacity-80 transition-opacity">
             <FaDownload /> Export
           </button>
-          <button className="px-4 py-2 bg-primary rounded-lg text-white flex gap-2 items-center">
-            <FaPlus /> New Bill
+          <button className="px-4 py-2 bg-primary rounded-lg text-white flex gap-2 items-center text-sm hover:opacity-90 transition-opacity">
+            <FaPlus /> New Payable
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <Table<Bill>
-        columns={columns}
-        data={filteredBills}
-        emptyMessage="No bills found matching your criteria."
-        showToolbar={false}
-      />
+      {isLoading ? (
+        <div className="bg-card border border-theme p-8 rounded-lg flex justify-center items-center">
+          <p className="text-muted text-sm font-medium animate-pulse">
+            Loading Payables Data...
+          </p>
+        </div>
+      ) : (
+        <Table<Payable>
+          columns={columns}
+          data={filteredPayables}
+          emptyMessage="No payables found matching your criteria."
+          showToolbar={false}
+        />
+      )}
 
-      {/* Payment Schedule */}
       <div className="bg-card rounded-lg border border-theme p-6">
         <h3 className="text-lg font-semibold text-main mb-4">
           Payment Schedule - Next 30 Days
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {["This Week", "Week 2", "Week 3", "Week 4+"].map((label) => (
+          {paymentSchedule.map((schedule) => (
             <div
-              key={label}
+              key={schedule.label}
               className="text-center p-4 bg-app rounded-lg border border-theme"
             >
-              <p className="text-xs text-muted mb-1">{label}</p>
-              <p className="text-xl font-bold text-main">₹—</p>
-              <p className="text-xs text-muted mt-1">— bills</p>
+              <p className="text-xs text-muted mb-1">{schedule.label}</p>
+              {isLoading ? (
+                <div className="h-7 w-20 bg-theme rounded mx-auto mt-1 animate-pulse"></div>
+              ) : (
+                <p className="text-xl font-bold text-main">
+                  ₹
+                  {schedule.amount.toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}
+                </p>
+              )}
+              <p className="text-xs text-muted mt-1">
+                {isLoading ? "—" : schedule.count} payables
+              </p>
             </div>
           ))}
         </div>
