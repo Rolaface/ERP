@@ -70,7 +70,7 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   terms: {
     selling: defaultSellingTerms,
   },
-  sameAsBilling: false,
+  sameAsBilling: true,
 };
 
 const currencyOptions = ["ZMW", "USD", "INR" , "GHS"];
@@ -174,7 +174,7 @@ const CustomerModal: React.FC<{
         },
         mobileCode: mobile.code,
         mobile: mobile.number,
-        sameAsBilling: false,
+        sameAsBilling: !isEditMode,
       });
     } else {
       setForm(emptyForm);
@@ -485,7 +485,7 @@ const CustomerModal: React.FC<{
       terms: {
         selling: companySellingTerms ?? defaultSellingTerms,
       },
-      sameAsBilling: false,
+      sameAsBilling: true,
     });
 
     setErrors({});
@@ -507,7 +507,7 @@ const CustomerModal: React.FC<{
         terms: {
           selling: companySellingTerms ?? defaultSellingTerms,
         },
-        sameAsBilling: false,
+        sameAsBilling: true,
       });
     }
 
