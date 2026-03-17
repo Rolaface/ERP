@@ -55,18 +55,10 @@ export async function deleteSupplier(id: string | number): Promise<any> {
   });
   return resp.data;
 }
-export const createSupplierPayment = async (payload: any) => {
-  try {
-    const res = await fetch(API.supplier.CreatePayment, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    return await res.json();
-  } catch (error) {
-    throw error;
-  }
-};
+export async function createSupplierPayment(payload: any): Promise<any> {
+  const resp = await api.post(
+    SupplierAPI.CreatePayment,
+    payload
+  );
+  return resp.data;
+}
