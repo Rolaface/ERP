@@ -50,7 +50,7 @@ export const generateInvoicePDF = async (
   const MR  = W - M;
 
   // Column widths (same pattern as Proforma)
-  const COL_WIDTHS = [6, 42, 18, 14, 14, 14, 14, 14, 12, 10, 24];
+  const COL_WIDTHS = [6,16,26, 16, 14, 14, 14, 14, 14, 12, 12, 24];
   const TOTAL_W    = 24;
   // AMOUNT_COL_X = M + sum of first 10 cols = M + (182 - 24) = M + 158
   const AMOUNT_COL_X = W - M - TOTAL_W;
@@ -243,7 +243,7 @@ export const generateInvoicePDF = async (
       drawWatermark();
     },
     head: [[
-      "#", "Item", "Batch", "Packing", "MFG", "EXP", "Qty", "Rate", "Disc%", "Tax", `Amount(${cur})`,
+      "#", "Box No.","Item", "Batch", "Packing","MFG", "EXP", "Qty", "Rate", "Disc%", "Tax", `Amount(${cur})`,
     ]],
     body: invoice.items.map((item: any, idx: number) => {
       const qty     = Number(item.quantity ?? 0);
@@ -260,6 +260,7 @@ export const generateInvoicePDF = async (
 
       return [
         idx + 1,
+         `${item.boxStart ?? "-"} - ${item.boxEnd ?? "-"}`,
         item.description || item.itemCode || "-",
         batchShort,
         packing,
@@ -292,16 +293,18 @@ export const generateInvoicePDF = async (
     },
     columnStyles: {
       0:  { cellWidth: COL_WIDTHS[0],  halign: "center" },
-      1:  { cellWidth: COL_WIDTHS[1],  halign: "left" },
-      2:  { cellWidth: COL_WIDTHS[2],  halign: "center", fontSize: 6.5 },
-      3:  { cellWidth: COL_WIDTHS[3],  halign: "center" },
+      1:  { cellWidth: COL_WIDTHS[1],  halign: "center" },
+      2:  { cellWidth: COL_WIDTHS[2],  halign: "left" },
+      3:  { cellWidth: COL_WIDTHS[3],  halign: "center", fontSize: 6.5 },
       4:  { cellWidth: COL_WIDTHS[4],  halign: "center" },
+      
       5:  { cellWidth: COL_WIDTHS[5],  halign: "center" },
       6:  { cellWidth: COL_WIDTHS[6],  halign: "center" },
       7:  { cellWidth: COL_WIDTHS[7],  halign: "center" },
       8:  { cellWidth: COL_WIDTHS[8],  halign: "center" },
       9:  { cellWidth: COL_WIDTHS[9],  halign: "center" },
-      10: { cellWidth: COL_WIDTHS[10], halign: "center", textColor: [0, 0, 0], fontSize: 7.5 },
+      10: { cellWidth: COL_WIDTHS[10],  halign: "center"},
+      11: { cellWidth: COL_WIDTHS[11], halign: "center", textColor: [0, 0, 0], fontSize: 7.5 },
     },
     margin:     { left: M, right: M },
     tableWidth: W - M * 2,
