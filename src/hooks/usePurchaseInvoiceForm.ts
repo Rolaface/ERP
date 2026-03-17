@@ -42,7 +42,7 @@ export const usePurchaseInvoiceForm = ({
   pId,
 }: UsePurchaseInvoiceFormProps) => {
   const [form, setForm] = useState<PurchaseInvoiceFormData>(emptyPOForm);
-  const [usePO, setUsePO] = useState(false);
+  const [usePO, setUsePO] = useState(true);
   const [activeTab, setActiveTab] = useState<POTab>("details");
   const [saving, setSaving] = useState(false);
   const [poList, setPoList] = useState<any[]>([]);
@@ -68,6 +68,7 @@ const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
     if (!isOpen) {
       setForm(emptyPOForm);
       setActiveTab("details");
+       setUsePO(true);
     }
   }, [isOpen]);
 
@@ -453,7 +454,7 @@ const handleFormChange = (
 
 setPoLoading(true);
 setPoList([]);
-setUsePO(false);
+//setUsePO(false);
 
 setForm(prev => ({
   ...prev,
@@ -712,6 +713,7 @@ const addItem = () => {
   };
 
   const reset = () => {
+     setUsePO(true);
     setForm({
       ...emptyPOForm,
 
