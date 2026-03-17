@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
-
+ 
 export const createAxiosInstance = (
   baseURL: string
 ): AxiosInstance => {
@@ -11,17 +11,8 @@ export const createAxiosInstance = (
       "Content-Type": "application/json",
     },
   });
-
-  instance.interceptors.request.use((config) => {
-    const sid = localStorage.getItem("session_id");
-
-    if (sid) {
-      config.headers["Cookie"] = `sid=${sid}`;
-    }
-
-    return config;
-  });
-
+ 
+  // Global 401 handler
   instance.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -31,6 +22,7 @@ export const createAxiosInstance = (
       return Promise.reject(error);
     }
   );
-
+ 
   return instance;
 };
+ 
