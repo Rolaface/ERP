@@ -37,14 +37,18 @@ const addrBlock = (a: any): string[] => {
 
 const fmtDate = (dateStr: any) => {
   if (!dateStr) return "-";
+
   const d = new Date(dateStr);
   const day = String(d.getDate()).padStart(2, "0");
+
   const months = [
     "JAN","FEB","MAR","APR","MAY","JUN",
     "JUL","AUG","SEP","OCT","NOV","DEC",
   ];
+
   const month = months[d.getMonth()];
-  const year = d.getFullYear();
+  const year = String(d.getFullYear()).slice(-2); // 👈 last 2 digits
+
   return `${day}-${month}-${year}`;
 };
 
@@ -321,7 +325,7 @@ doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
 
 doc.text("ITEMS", M, metaEndY + 6);
 
-  const TOTAL_W = 28;
+  const TOTAL_W = 24;
 
   autoTable(doc, {
    startY: metaEndY + 8,
@@ -329,6 +333,10 @@ doc.text("ITEMS", M, metaEndY + 6);
       [
         "#",
         "Item",
+        "Batch",
+        "Warehouse",
+        "MFG",
+        "EXP",
         "Packing",
         "Qty",
         "UOM",
@@ -342,6 +350,10 @@ doc.text("ITEMS", M, metaEndY + 6);
       return [
         idx + 1,
         item.item_name ?? "-",
+        item.batchNo ?? "-",
+        item.warehouse ?? "-",
+        fmtDate(item.mfgDate),
+        fmtDate(item.expDate),
         packing,
         Number(item.qty ?? 0),
         item.uom ?? "-",
@@ -367,15 +379,19 @@ doc.text("ITEMS", M, metaEndY + 6);
     },
     alternateRowStyles: { fillColor: WHITE },
     columnStyles: {
-      0: { cellWidth: 8,  halign: "center" },
-      1: { cellWidth: 48, halign: "left" },
-      2: { cellWidth: 20, halign: "center" },
-      3: { cellWidth: 18, halign: "center" },
-      4: { cellWidth: 22, halign: "center" },
-      5: { cellWidth: 18, halign: "center" },
-      6: { cellWidth: 20, halign: "center" },
-      7: { cellWidth: TOTAL_W, halign: "right", textColor: [0, 0, 0], fontSize: 7.5 },
-    },
+  0: { halign: "center" },
+  1: { halign: "left" },
+  2: { halign: "center" },
+  3: { halign: "center" },
+  4: { halign: "center" },
+  5: { halign: "center" },
+  6: { halign: "center" },
+  7: { halign: "center" },
+  8: { halign: "center" },
+  9: { halign: "right" },
+  10: { halign: "center" },
+  11: { halign: "right" }
+},
     margin: { left: M, right: M },
     tableWidth: W - M * 2,
   });
@@ -390,7 +406,7 @@ doc.text("ITEMS", M, metaEndY + 6);
   const ROW_H = 6;
 
   // Column widths must sum to W - M*2 (same as items table)
-const AMOUNT_COL_X = M + 8 + 48 + 20 + 18 + 22 + 18 + 20;
+const AMOUNT_COL_X = W - M - TOTAL_W;
 
   // Label position just before the amount column
   const LABEL_X = AMOUNT_COL_X - 4;
