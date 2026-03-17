@@ -12,7 +12,7 @@ interface Props {
   required?: boolean;
   disabled?: boolean;
   onChange: (name: string, value: string) => void;
-   sx?: any;
+  sx?: any;
 }
 
 const DatePickerInput: React.FC<Props> = ({
@@ -54,27 +54,55 @@ const DatePickerInput: React.FC<Props> = ({
               required,
               fullWidth: true,
               placeholder: "DD-MMM-YYYY",
-             sx: {
-      "& .MuiOutlinedInput-root": {
-        height: "28px",
-        fontSize: "11px",
-        backgroundColor: "var(--card)",
-        borderRadius: "6px",
-        paddingRight: "2px",
-      },
-      "& .MuiOutlinedInput-input": {
-        padding: "2px 6px",
-      },
-      "& fieldset": {
-        borderColor: "var(--border)",
-      },
-      "&:hover fieldset": {
-        borderColor: "rgba(37,99,235,0.4)",
-      },
-      ...sx
-    },
-  },
-}}
+              sx: {
+                "& .MuiOutlinedInput-root": {
+                  height: "28px",
+                  fontSize: "11px",
+                  backgroundColor: "var(--card)",
+                  borderRadius: "6px",
+                  paddingRight: "2px",
+
+
+                  display: "flex",
+                  alignItems: "center",
+                },
+
+                "& .MuiOutlinedInput-input": {
+                  padding: "2px 6px",
+                },
+
+          
+                "& .MuiIconButton-root": {
+                  padding: "2px",
+                  marginRight: "2px",
+                },
+
+  
+                "& .MuiSvgIcon-root": {
+                  fontSize: "16px",
+                  display: "block",
+                },
+
+  
+                "& .MuiInputAdornment-root": {
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  margin: 0,
+                },
+
+                "& fieldset": {
+                  borderColor: "var(--border)",
+                },
+
+                "&:hover fieldset": {
+                  borderColor: "rgba(37,99,235,0.4)",
+                },
+
+                ...sx,
+              }
+            },
+          }}
         />
       </div>
     </LocalizationProvider>

@@ -26,7 +26,6 @@ export interface CFSummaryItem {
   value: number;
   datatype?: string;
   currency?: string;
-  indicator?: string;
 }
  
 export interface CFApiData {

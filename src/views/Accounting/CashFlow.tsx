@@ -12,7 +12,7 @@ import {
     ChevronRight,
     Layers,
 } from "lucide-react";
-
+import DatePickerInput from "../../components/calendar/DatePickerInput";
 import type {
     CFResponse,
     CFRawRow,
@@ -132,6 +132,24 @@ function expandIcon(
     );
 }
 
+
+const getSummaryColor = (item: CFSummaryItem) => {
+    const label = item.label?.toLowerCase() || "";
+    const value = item.value ?? 0;
+
+    // Priority 1 → Label based (better UX)
+    if (label.includes("operating")) return "text-blue-500";
+    if (label.includes("investing")) return "text-purple-500";
+    if (label.includes("financing")) return "text-orange-500";
+    if (label.includes("net")) return value >= 0 ? "text-emerald-600" : "text-red-500";
+
+    // Fallback → value based
+    if (value > 0) return "text-emerald-600";
+    if (value < 0) return "text-red-500";
+
+    return "text-main";
+};
+
 /* ───────────────── SUMMARY STRIP ───────────────── */
 
 function SummaryStrip({ summary }: { summary: CFSummaryItem[] }) {
@@ -146,7 +164,7 @@ function SummaryStrip({ summary }: { summary: CFSummaryItem[] }) {
                         {item.label}
                     </span>
 
-                    <div className="text-sm font-black text-main">
+                    <div className={`text-sm font-black ${getSummaryColor(item)}`}>
                         {nf(item.value, item.currency)}
                     </div>
                 </div>
@@ -246,29 +264,52 @@ function FilterBar({
             {/* DATE RANGE */}
             {filters.mode === "Date Range" && (
                 <>
-                    <input
-                        type="date"
-                        value={toInputDate(filters.from_date)}
-                        onChange={(e) =>
-                            setFilters((f) => ({
-                                ...f,
-                                from_date: toApiDate(e.target.value),
-                            }))
-                        }
-                        className={inputClass}
-                    />
+                    {/* DATE RANGE */}
+                    {filters.mode === "Date Range" && (
+                        <>
+                            {/* FROM */}
+                            <div className="flex items-center gap-1">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+                                    From
+                                </span>
 
-                    <input
-                        type="date"
-                        value={toInputDate(filters.to_date)}
-                        onChange={(e) =>
-                            setFilters((f) => ({
-                                ...f,
-                                to_date: toApiDate(e.target.value),
-                            }))
-                        }
-                        className={inputClass}
-                    />
+                                <div className="w-[120px]">
+                                    <DatePickerInput
+                                        name="from_date"
+                                        value={toInputDate(filters.from_date)}
+                                        onChange={(name, value) =>
+                                            setFilters((f) => ({
+                                                ...f,
+                                                from_date: toApiDate(value),
+                                            }))
+                                        }
+                                        label=""
+                                    />
+                                </div>
+                            </div>
+
+                            {/* TO */}
+                            <div className="flex items-center gap-1">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+                                    To
+                                </span>
+
+                                <div className="w-[120px]">
+                                    <DatePickerInput
+                                        name="to_date"
+                                        value={toInputDate(filters.to_date)}
+                                        onChange={(name, value) =>
+                                            setFilters((f) => ({
+                                                ...f,
+                                                to_date: toApiDate(value),
+                                            }))
+                                        }
+                                        label=""
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </>
             )}
 
