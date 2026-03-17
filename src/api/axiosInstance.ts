@@ -12,7 +12,16 @@ export const createAxiosInstance = (
     },
   });
 
-  // Global 401 handler
+  instance.interceptors.request.use((config) => {
+    const sid = localStorage.getItem("session_id");
+
+    if (sid) {
+      config.headers["Cookie"] = `sid=${sid}`;
+    }
+
+    return config;
+  });
+
   instance.interceptors.response.use(
     (response) => response,
     (error) => {
