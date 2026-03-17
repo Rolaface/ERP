@@ -16,8 +16,7 @@ import {
   Layers,
 } from "lucide-react";
 import { PLNode, PLData, PLResponse, mapNode, nf, formatPeriod } from "../../types/Accounting/ProfitLoss";
-
-
+import DatePickerInput from "../../components/calendar/DatePickerInput";
 
 
 const toInputDate = (apiDate: string): string => {
@@ -232,19 +231,24 @@ function FilterBar({
       {/* FROM DATE */}
       {filters.mode === "Date Range" && (
         <>
+          {/* FROM DATE */}
           <div className="flex items-center gap-1">
             <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
               From
             </span>
 
-            <input
-              type="date"
-              value={toInputDate(filters.from_date ?? "")}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, from_date: toApiDate(e.target.value) }))
-              }
-              className={inputClass}
-            />
+            <div className="w-[120px]">
+              <DatePickerInput
+                name="from_date"
+                value={toInputDate(filters.from_date ?? "")}
+                onChange={(name, value) =>
+                  setFilters((f) => ({
+                    ...f,
+                    from_date: toApiDate(value),
+                  }))
+                }
+              />
+            </div>
           </div>
 
           {/* TO DATE */}
@@ -253,14 +257,18 @@ function FilterBar({
               To
             </span>
 
-            <input
-              type="date"
-              value={toInputDate(filters.to_date ?? "")}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, to_date: toApiDate(e.target.value) }))
-              }
-              className={inputClass}
-            />
+            <div className="w-[120px]">
+              <DatePickerInput
+                name="to_date"
+                value={toInputDate(filters.to_date ?? "")}
+                onChange={(name, value) =>
+                  setFilters((f) => ({
+                    ...f,
+                    to_date: toApiDate(value),
+                  }))
+                }
+              />
+            </div>
           </div>
         </>)}
 

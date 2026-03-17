@@ -75,7 +75,7 @@ accounting:{
   getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
   getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
   getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
-  getCashFlow: `${ERP_BASE}api/method/custom_api.api.cash_flow.get_cash_flow`
+  getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`
 },
   /* =========================
    * CUSTOMER
