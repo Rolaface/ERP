@@ -26,7 +26,6 @@ import type { AddressBlock } from "../types/Supply/purchaseInvoice";
 import { getItemByItemCode } from "../api/itemApi";
 import { getPurchaseOrderById, getPurchaseOrders } from "../api/procurement/PurchaseOrderApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
-import { showPOConflictDialog } from "../utils/alert";
 
 interface UsePurchaseInvoiceFormProps {
   isOpen: boolean;
@@ -272,95 +271,102 @@ useEffect(() => {
     return null;
   };
 
-  const loadPOData = async (po: any, appendToExisting = false) => {
-  if (!po?.poId) return;
+  const handlePOSelect = async (po: any) => {
+    if (!po?.poId) return;
 
-  const res = await getPurchaseOrderById(po.poId);
-  if (!res || res.status_code !== 200) {
-    showApiError({ message: "Failed to fetch PO" });
-    return;
-  }
+    try {
+      const res = await getPurchaseOrderById(po.poId);
 
-  const data = res.data;
-  const taxRate = Number(data.tax?.taxRate || 0);
+      if (!res || res.status_code !== 200) {
+        showApiError({ message: "Failed to fetch PO" });
+        return;
+      }
 
-  setCustomIncoterm("");
-  setCustomShippingRule("");
+      const data = res.data;
 
-  const enrichedItems = await Promise.all(
-    (data.items || []).map(async (item: any) => {
-      let description = "";
-      try {
-        const itemRes = await getItemByItemCode(item.item_code);
-        if (itemRes?.status_code === 200) {
-          description = itemRes.data?.description || "";
-        }
-      } catch {}
+     const taxRate = Number(data.tax?.taxRate || 0);
 
-      return {
-        itemCode: item.item_code,
-        itemName: item.item_name,
-        quantity: Number(item.qty || 0),
-        rate: Number(item.rate || 0),
-        uom: item.uom || "",
-        vatCd: item.vatCd || "",
-        vatRate: taxRate,
-        description,
-        warehouse: form.updateStock ? (item.warehouse || "") : "",
-        packingUnit: Number(item.packingUnit || 0),
-        packingSize: Number(item.packingSize || 0),
-        packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
-        batchNo: item.batchNo || "",
-        mfgDate: item.mfgDate || "",
-        expDate: "",
-        requiresBatch: Boolean(item.has_batch_no),
-        discount: 0,
-      };
-    })
-  );
+      // Reset custom fields
+      setCustomIncoterm("");
+      setCustomShippingRule("");
 
-  setForm((prev) => ({
-    ...prev,
-    poNumber: data.poId,
-    supplier: data.supplierName,
-    currency: data.currency || "",
-    taxCategory: data.taxCategory || "",
-    project: data.project || "",
-    costCenter: data.costCenter || "",
-    shippingRule: data.shippingRule || "",
-    incoterm: typeof data.incoterm === "string" ? data.incoterm.trim().toUpperCase() : "",
-    placeOfSupply: data.placeOfSupply || "",
-    addresses: {
-      ...prev.addresses,
-      supplierAddress: data.addresses?.supplierAddress || prev.addresses.supplierAddress,
-      dispatchAddress: data.addresses?.dispatchAddress || prev.addresses.dispatchAddress,
-      shippingAddress: data.addresses?.shippingAddress || prev.addresses.shippingAddress,
-    },
-    terms: {
-      buying: data.terms?.terms?.buying || prev.terms?.buying,
-    },
-    // KEY LINE — append or replace
-    items: appendToExisting ? [...prev.items, ...enrichedItems] : enrichedItems,
-  }));
-};
-const handlePOSelect = async (po: any) => {
-  if (!po?.poId) return;
+      // Fetch item descriptions from item master
+      const enrichedItems = await Promise.all(
+        (data.items || []).map(async (item: any) => {
+          let description = "";
 
-  try {
-    const hasManualItems = form.items.some(item => item.itemCode);
+          try {
+            const itemRes = await getItemByItemCode(item.item_code);
+            if (itemRes?.status_code === 200) {
+              description = itemRes.data?.description || "";
+            }
+          } catch { }
 
-    if (hasManualItems) {
-      const existingCount = form.items.filter(item => item.itemCode).length;
-      const choice = await showPOConflictDialog(existingCount, po.poId); 
-      if (choice === "cancel") return;
-      await loadPOData(po, choice === "keep");
-    } else {
-      await loadPOData(po, false);
+          return {
+            itemCode: item.item_code,
+            itemName: item.item_name,
+            quantity: Number(item.qty || 0),
+            rate: Number(item.rate || 0),
+            uom: item.uom || "",
+            vatCd: item.vatCd || "",
+            vatRate: taxRate,
+            description,
+            warehouse: form.updateStock ? (item.warehouse || "") : "",
+            packingUnit: Number(item.packingUnit || 0),
+            packingSize: Number(item.packingSize || 0),
+            packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
+            batchNo: item.batchNo || "",
+            mfgDate: item.mfgDate || "",
+            expDate: "",
+            requiresBatch: Boolean(item.has_batch_no),
+            discount: 0,
+          };
+        })
+      );
+
+      setForm((prev) => ({
+        ...prev,
+
+        poNumber: data.poId,
+        supplier: data.supplierName,
+        currency: data.currency || "",
+        taxCategory: data.taxCategory || "",
+        project: data.project || "",
+        costCenter: data.costCenter || "",
+         shippingRule: data.shippingRule || "",
+        incoterm:
+          typeof data.incoterm === "string"
+            ? data.incoterm.trim().toUpperCase()
+            : "",
+        placeOfSupply: data.placeOfSupply || "",
+
+        // ADDRESSES
+        addresses: {
+          ...prev.addresses,
+          supplierAddress: data.addresses?.supplierAddress || prev.addresses.supplierAddress,
+          dispatchAddress: data.addresses?.dispatchAddress || prev.addresses.dispatchAddress,
+          shippingAddress: data.addresses?.shippingAddress || prev.addresses.shippingAddress,
+        },
+
+        // TERMS
+        terms: {
+          buying: data.terms?.terms?.buying || prev.terms?.buying,
+        },
+
+        // ITEMS
+        items: enrichedItems,
+
+        // // SUMMARY
+        // totalQuantity: data.summary?.totalQuantity || 0,
+        // grandTotal: data.summary?.grandTotal || 0,
+        // roundingAdjustment: data.summary?.roundingAdjustment || 0,
+        // roundedTotal: data.summary?.roundedTotal || 0,
+      }));
+
+    } catch (e) {
+      showApiError({ message: "Failed to load PO details" });
     }
-  } catch (e) {
-    showApiError({ message: "Failed to load PO details" });
-  }
-};
+  };
   const handleTogglePO = (checked: boolean) => {
     setUsePO(checked);
 
@@ -450,17 +456,15 @@ const handleFormChange = (
           ),
         },
       }));
- const wasUsingPO = usePO;
+      setPoLoading(true);
+      setPoList([]);
+      setUsePO(false);
 
-setPoLoading(true);
-setPoList([]);
-//setUsePO(false);
-
-setForm(prev => ({
-  ...prev,
-  poNumber: "",
-  ...(wasUsingPO && { items: [{ ...emptyItem }] }), 
-}));
+      setForm(prev => ({
+        ...prev,
+        poNumber: "",
+        items: [{ ...emptyItem }],
+      }));
 
       try {
         const poRes = await getPurchaseOrders(1, 100, {
@@ -686,8 +690,8 @@ const addItem = () => {
       let res;
 
       if (isEditMode) {
-      //   res = await updatePurchaseInvoice(pId, payload);
-      // } else {
+        res = await updatePurchaseInvoice(pId, payload);
+      } else {
         res = await createPurchaseInvoice(payload);
       }
 
