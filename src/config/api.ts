@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-export const ERP_BASE = ENV.apiBaseUrl;
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -8,7 +8,8 @@ export const API = {
 
 
   loginApi:{
-    login : `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`
+    login : `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
+    logout : `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`
   },
 
    /* =========================
