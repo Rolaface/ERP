@@ -52,7 +52,6 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
     if (!isTyping) return;
 
     if (!search) {
-      setOptions([]);
       return;
     }
 
@@ -111,12 +110,18 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
           onChange={(e) => {
             setIsTyping(true);
             setSearch(e.target.value);
+            setOpen(true);
             onChange("");
           }}
-          onFocus={() => search && setOpen(true)}
-          className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0, ${
-            error ? "border-danger" : "border-theme"
-          }`}
+          onFocus={async () => {
+            setOpen(true);
+
+            // fetch all options on focus
+            const data = await fetchOptions("");
+            setOptions(data);
+          }}
+          className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0, ${error ? "border-danger" : "border-theme"
+            }`}
         />
         {error && <span className="text-danger text-[10px] mt-1">{error}</span>}
       </div>

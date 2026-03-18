@@ -1,12 +1,7 @@
 import React from "react";
 import type { SupplierFormData } from "../../../types/Supply/supplier";
-import { currencyOptions } from "../../../types/Supply/supplier";
-import {
-  CreditDaysInput,
-  ModalInput,
-  ModalSelect,
-} from "../../ui/modal/modalComponent";
-import DatePickerInput from "../../calendar/DatePickerInput";
+import { ModalInput } from "../../ui/modal/modalComponent";
+import { Plus, Trash2, Check } from "lucide-react";
 
 interface PaymentInfoTabProps {
   form: SupplierFormData;
@@ -16,136 +11,244 @@ interface PaymentInfoTabProps {
     >,
   ) => void;
   errors?: {
-    currency?: string;
-    paymentTerms?: string;
-    dateOfAddition?: string;
-    openingBalance?: string;
     bankAccount?: string;
-    accountNumber?: string;
-    accountHolder?: string;
-    sortCode?: string;
-    swiftCode?: string;
-    branchAddress?: string;
   };
 }
-
-const currencySelectOptions = currencyOptions.map((c) => ({
-  value: c,
-  label: c,
-}));
 
 export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
   form,
   onChange,
   errors = {},
 }) => {
+  const accounts = form.bankAccounts || [];
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+
+  // auto select first
+  React.useEffect(() => {
+    if (accounts.length && !selectedId) {
+      setSelectedId(accounts[0].id);
+    }
+  }, [accounts]);
+
+  const selectedAccount = accounts.find(a => a.id === selectedId);
+
+  const updateAccount = (field: string, value: string) => {
+    const updated = accounts.map(a =>
+      a.id === selectedId ? { ...a, [field]: value } : a
+    );
+
+    onChange({
+      target: { name: "bankAccounts", value: updated },
+    } as any);
+  };
+
   return (
-    <section className="flex-1 overflow-y-auto p-4 space-y-4 bg-app">
-      {/* Payment Details */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-gray-700">Payment Details</h3>
+    <section className="flex gap-4 h-full min-h-0">
 
-        <div className="grid grid-cols-4 gap-x-2 gap-y-2 items-start max-w-2xl">
-          <ModalSelect
-            label="Currency"
-            name="currency"
-            value={form.currency}
-            onChange={onChange}
-            options={[...currencySelectOptions]}
-            required
-            error={errors.currency}
-          />
+      {/* LEFT PANEL */}
+      <div className="w-1/3 bg-card border rounded-xl overflow-hidden flex flex-col">
 
-          <ModalInput
-            label="Opening Balance"
-            name="openingBalance"
-            type="number"
-            value={form.openingBalance}
-            onChange={onChange}
-            error={errors.openingBalance}
-            className="no-spinner"
-          />
+        {/* HEADER */}
+        <div className="bg-primary text-white px-4 py-3 text-sm font-semibold">
+          BANK ACCOUNTS
+        </div>
 
-          <CreditDaysInput
-            name="paymentTerms"
-            value={form.paymentTerms}
-            onChange={onChange}
-            required
-            error={errors.paymentTerms}
-            className="no-spinner"
-          />
+        <div className="p-3 space-y-3 flex-1 overflow-y-auto min-h-0">
 
-          <DatePickerInput
-            label="Date of Addition"
-            name="dateOfAddition"
-            value={form.dateOfAddition}
-            required
-            onChange={(name, value) =>
+          {/* ERROR */}
+          {errors.bankAccount && (
+            <p className="text-xs text-red-500">{errors.bankAccount}</p>
+          )}
+
+          {/* ADD BUTTON */}
+          <button
+            type="button"
+            onClick={() => {
+              const newAccount = {
+                id: crypto.randomUUID(),
+                bankName: "",
+                accountNumber: "",
+                accountHolder: "",
+                sortCode: "",
+                swiftCode: "",
+                branchAddress: "",
+                isDefault:
+                  !accounts.length ||
+                  !accounts.some(a => a.isDefault),
+              };
+
+              const updated = [...accounts, newAccount];
+
               onChange({
-                target: { name, value },
-              } as any)
-            }
-          />
+                target: { name: "bankAccounts", value: updated },
+              } as any);
+
+              setSelectedId(newAccount.id);
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-primary text-white py-2 rounded-lg text-sm"
+          >
+            <Plus size={14} />
+            Add New Account
+          </button>
+
+          {/* LIST */}
+          {accounts.map(acc => (
+            <div
+              key={acc.id}
+              onClick={() => setSelectedId(acc.id)}
+              className={`p-3 rounded-lg border cursor-pointer transition
+                ${selectedId === acc.id
+                  ? "border-primary bg-primary/10"
+                  : "hover:bg-muted"
+                }`}
+            >
+              <div className="flex justify-between">
+                <div>
+                  <p className="text-sm font-medium">
+                    {acc.bankName || "New Account"}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {acc.accountNumber
+                      ? acc.accountNumber
+                      : "----"}
+                  </p>
+                </div>
+
+                {acc.isDefault && (
+                  <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                    Default
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="my-6 border-t border-gray-200" />
+      {/* RIGHT PANEL */}
+      <div className="flex-1 bg-card border rounded-xl flex flex-col h-full overflow-hidden">
 
-      {/* Bank Details */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-gray-700">Bank Details</h3>
+        {/* HEADER */}
+        <div className="bg-primary text-white px-4 py-3 flex justify-between items-center">
+          <span className="text-sm font-semibold">
+            ACCOUNT DETAILS
+          </span>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-x-2 gap-y-2 items-start">
-          <ModalInput
-            label="Bank"
-            name="bankAccount"
-            value={form.bankAccount}
-            onChange={onChange}
-            required
-            error={errors.bankAccount}
-          />
+          {selectedAccount && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="text-xs bg-white/20 px-3 py-1 rounded"
+                onClick={() => {
+                  const updated = accounts.map(a => ({
+                    ...a,
+                    isDefault: a.id === selectedAccount.id,
+                  }));
 
-          <ModalInput
-            label="Account No"
-            name="accountNumber"
-            value={form.accountNumber}
-            onChange={onChange}
-            required
-            error={errors.accountNumber}
-          />
+                  onChange({
+                    target: {
+                      name: "bankAccounts",
+                      value: updated,
+                    },
+                  } as any);
+                }}
+              >
+                <Check size={12} className="inline mr-1" />
+                Set Default
+              </button>
 
-          <ModalInput
-            label="Account Holder Name"
-            name="accountHolder"
-            value={form.accountHolder}
-            onChange={onChange}
-            required
-            error={errors.accountHolder}
-          />
+              <button
+                type="button"
+                className="text-xs bg-white/20 px-3 py-1 rounded"
+                onClick={() => {
+                  if (accounts.length === 1) {
+                    alert("At least one account is required");
+                    return;
+                  }
 
-          <ModalInput
-            label="Sort/IFSC Code"
-            name="sortCode"
-            value={form.sortCode}
-            required
-            onChange={onChange}
-            error={errors.sortCode}
-          />
+                  const updated = accounts.filter(
+                    a => a.id !== selectedAccount.id
+                  );
 
-          <ModalInput
-            label="SWIFT Code"
-            name="swiftCode"
-            value={form.swiftCode}
-            onChange={onChange}
-          />
+                  if (!updated.some(a => a.isDefault)) {
+                    updated[0].isDefault = true;
+                  }
 
-          <ModalInput
-            label="Branch Address"
-            name="branchAddress"
-            value={form.branchAddress}
-            onChange={onChange}
-            error={errors.branchAddress}
-          />
+                  onChange({
+                    target: {
+                      name: "bankAccounts",
+                      value: updated,
+                    },
+                  } as any);
+
+                  setSelectedId(updated[0]?.id || null);
+                }}
+              >
+                <Trash2 size={12} className="inline mr-1" />
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* BODY */}
+       <div className="p-4 flex-1 overflow-hidden">
+          {!selectedAccount ? (
+            <p className="text-sm text-gray-500">
+              Select an account
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+              <ModalInput
+                label="Bank Name"
+                value={selectedAccount.bankName}
+                onChange={(e) =>
+                  updateAccount("bankName", e.target.value)
+                }
+                required
+              />
+
+              <ModalInput
+                label="Account Holder"
+                value={selectedAccount.accountHolder}
+                onChange={(e) =>
+                  updateAccount("accountHolder", e.target.value)
+                }
+                required
+              />
+
+              <ModalInput
+                label="Account Number"
+                value={selectedAccount.accountNumber}
+                onChange={(e) =>
+                  updateAccount("accountNumber", e.target.value)
+                }
+                required
+              />
+
+
+              <ModalInput
+                label="IFSC / Sort Code"
+                value={selectedAccount.sortCode}
+                onChange={(e) =>
+                  updateAccount("sortCode", e.target.value)
+                }
+                required
+              />
+
+
+
+              <ModalInput
+                label="Branch Address"
+                value={selectedAccount.branchAddress}
+                onChange={(e) =>
+                  updateAccount("branchAddress", e.target.value)
+                }
+              />
+
+            </div>
+          )}
         </div>
       </div>
     </section>

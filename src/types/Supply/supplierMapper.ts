@@ -19,12 +19,20 @@ export const mapSupplierApi = (d: any): Supplier => ({
   billingCity: d.billingCity || d.city || "",
   billingCountry: d.billingCountry || d.country || "",
   billingPostalCode: d.billingPostalCode || d.postalCode || "",
-  bankAccount: d.bankAccount || "",
-  accountNumber: d.accountNumber,
-  accountHolder: d.accountHolder,
-  sortCode: d.sortCode,
-  swiftCode: d.swiftCode,
-  branchAddress: d.branchAddress,
+  bankAccounts:
+    d.bankAccounts?.length > 0
+      ? d.bankAccounts
+      : [
+          {
+            bankName: d.bankAccount || "",
+            accountNumber: d.accountNumber || "",
+            accountHolder: d.accountHolder || "",
+            sortCode: d.sortCode || "",
+            swiftCode: d.swiftCode || "",
+            branchAddress: d.branchAddress || "",
+            isDefault: true,
+          },
+        ],
   openingBalance: Number(d.openingBalance || 0),
   paymentTerms: d.paymentTerms || "",
   dateOfAddition: d.dateOfAddition,
@@ -51,13 +59,15 @@ export const mapSupplierToApi = (
   phoneNo: f.phoneNo,
   alternateNo: f.alternateNo,
   emailId: f.emailId,
-
-  bankAccount: f.bankAccount,
-  accountNumber: f.accountNumber,
-  accountHolder: f.accountHolder,
-  sortCode: f.sortCode,
-  swiftCode: f.swiftCode,
-  branchAddress: f.branchAddress,
+   bankAccounts: (f.bankAccounts || []).map(acc => ({
+    bankName: acc.bankName,
+    accountNumber: acc.accountNumber,
+    accountHolder: acc.accountHolder,
+    sortCode: acc.sortCode,
+    swiftCode: acc.swiftCode,
+    branchAddress: acc.branchAddress,
+    isDefault: acc.isDefault || false,
+  })),
 
   billingAddressLine1: f.billingAddressLine1,
   billingAddressLine2: f.billingAddressLine2,
@@ -74,8 +84,6 @@ export const mapSupplierToApi = (
     buying: f.terms?.buying
   }
 });
-
-
 
 
 
@@ -102,13 +110,30 @@ export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
     dateOfAddition: s.dateOfAddition ?? "",
 
     openingBalance: Number(s.openingBalance ?? 0),
-
-    bankAccount: s.bankAccount ?? "",
-    accountNumber: s.accountNumber ?? "",
-    accountHolder: s.accountHolder ?? "",
-    sortCode: s.sortCode ?? "",
-    swiftCode: s.swiftCode ?? "",
-    branchAddress: s.branchAddress ?? "",
+  bankAccounts:
+      (s as any).bankAccounts?.length > 0
+        ? (s as any).bankAccounts.map((acc: any) => ({
+            id: crypto.randomUUID(),
+            bankName: acc.bankName || "",
+            accountNumber: acc.accountNumber || "",
+            accountHolder: acc.accountHolder || "",
+            sortCode: acc.sortCode || "",
+            swiftCode: acc.swiftCode || "",
+            branchAddress: acc.branchAddress || "",
+            isDefault: acc.isDefault || false,
+          }))
+        : [
+            {
+              id: crypto.randomUUID(),
+              bankName: (s as any).bankAccount || "",
+              accountNumber: (s as any).accountNumber || "",
+              accountHolder: (s as any).accountHolder || "",
+              sortCode: (s as any).sortCode || "",
+              swiftCode: (s as any).swiftCode || "",
+              branchAddress: (s as any).branchAddress || "",
+              isDefault: true,
+            },
+          ],
 
     billingAddressLine1: s.billingAddressLine1 ?? "",
     billingAddressLine2: s.billingAddressLine2 ?? "",

@@ -1,208 +1,158 @@
-import { useState, useEffect } from "react";
-import type { BankAccount } from "../../types/company";
+import { useEffect, useState } from "react";
 import { showApiError } from "../../utils/alert";
-import {
-  getCompanyBankAccounts,
-  getCompanyAccounts,
-} from "../../api/companySetupApi";
-const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+import { getBankAccounts } from "../../api/BankAccountApi";
 
-// ── Extended form type (includes UI-only fields) ──────────────────────────────
-export interface BankAccFormExtended extends BankAccount {
-  accountType?: string;
-  accountSubtype?: string;
-  lastIntegrationDate?: string;
-}
+const today = () => new Date().toISOString().split("T")[0];
 
-export interface UseBankAccLogicProps {
-  onSubmit: (account: BankAccount) => void;
-  onClose: () => void;
-  /** Company name to display when "Is Company Account" is checked */
-  companyName?: string;
-}
+export const useBankAccLogic = ({ onSubmit, onClose }: any) => {
+  const [form, setForm] = useState({
+    dateAdded: today(),
+    accountFor: "",
+    name: "",
+    bank: "",
+    swiftCode: "",
+    currency: "",
+    accountNumber: "",
+    accountHolder: "",
+    sortCode: "",
+    address: "",
+    iban: "",
+    isDefault: false,
+    isDisabled: false,
+  });
 
-export interface UseBankAccLogicReturn {
-  // form
-  form: BankAccFormExtended;
-  // toggles
-  isCompanyAccount: boolean;
-  isDefaultAccount: boolean;
-  isDisabled: boolean;
-  // party (only when NOT company account)
-  partyType: string;
-  party: string;
-  // options
-  bankOptions: { value: string; label: string }[];
-  accountOptions: { value: string; label: string }[];
-  // handlers
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  handleDateChange: (name: string, value: string) => void;
-  handleReset: () => void;
-  handleSubmit: (e: React.FormEvent) => void;
-  setIsCompanyAccount: (v: boolean) => void;
-  setIsDefaultAccount: (v: boolean) => void;
-  setIsDisabled: (v: boolean) => void;
-  setPartyType: (v: string) => void;
-  setParty: (v: string) => void;
-  companyName: string;
+  const [bankOptions, setBankOptions] = useState<any[]>([]);
+  const [accountForOptions, setAccountForOptions] = useState<any[]>([]);
+  const [currencyOptions, setCurrencyOptions] = useState<any[]>([]);
 
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const todayIso = () => new Date().toISOString().split("T")[0];
-
-const emptyForm = (bankName = "", accountName = ""): BankAccFormExtended => ({
-  accountNo: "",
-  accountHolderName: "",
-  sortCode: "",
-  accountName,
-  iban: "",
-  bankName,
-  branchAddress: "",
-  currency: "",
-  dateAdded: todayIso(),
-  isdefault: false,
-  accountType: "",
-  accountSubtype: "",
-  lastIntegrationDate: "",
-});
-
-// ═══════════════════════════════════════════════════════════════════════════════
-export const useBankAccLogic = ({
-  onSubmit,
-  onClose,
-}: UseBankAccLogicProps): UseBankAccLogicReturn => {
-  const [form, setForm] = useState<BankAccFormExtended>(emptyForm());
-  const [isCompanyAccount, setIsCompanyAccount] = useState(false);
-  const [isDefaultAccount, setIsDefaultAccount] = useState(false);
-  const [isDisabled, setIsDisabled] = useState(false);
-  const [partyType, setPartyType] = useState("");
-  const [party, setParty] = useState("");
-  const [bankOptions, setBankOptions] = useState<{ value: string; label: string }[]>([]);
-  const [accountOptions, setAccountOptions] = useState<{ value: string; label: string }[]>([]);
-  const [companyName, setCompanyName] = useState("");
-  //--fetch company
-  useEffect(() => {
-  const fetchCompany = async () => {
-    try {
-      const res = await fetch(
-        `/api/company/${COMPANY_ID}`
-      );
-      const data = await res.json();
-
-      if (data?.status === "success") {
-        setCompanyName(data.data.companyName);
-      }
-    } catch (err) {
-      console.error("Company fetch failed", err);
-    }
-  };
-
-  fetchCompany();
-}, []);
-  // ── Fetch banks ─────────────────────────────────────────────────────────────
+  const isCompany =
+    form.accountFor?.toLowerCase() === "company";
+  // 🔹 Fetch Bank
   useEffect(() => {
     (async () => {
       try {
-        const res = await getCompanyBankAccounts();
-        const banks: { value: string; label: string }[] =
-          res?.message?.data?.data?.map((item: any) => ({
-            value: item.value,
-            label: item.value,
-          })) || [];
-        setBankOptions(banks);
-        if (banks.length > 0)
-          setForm((p) => ({ ...p, bankName: banks[0].value }));
+        const res = await getBankAccounts();
+        const data = res?.message?.data?.data || [];
+
+        setBankOptions(
+          data.map((b: any) => ({
+            value: b.value,
+            label: b.value,
+            swiftCode: b.description,
+          }))
+        );
       } catch {
         showApiError("Failed to load banks");
       }
     })();
   }, []);
 
-  // ── Fetch account names ─────────────────────────────────────────────────────
+
+
+  // 🔹 Fetch Account For
   useEffect(() => {
     (async () => {
       try {
         const res = await getCompanyAccounts();
-        const accounts: { value: string; label: string }[] =
-          res?.message?.data?.data?.map((item: any) => ({
-            value: item.value,
-            label: item.value,
-          })) || [];
-        setAccountOptions(accounts);
-        if (accounts.length > 0)
-          setForm((p) => ({ ...p, accountName: accounts[0].value }));
+        const data = res?.message?.data?.data || [];
+
+        setAccountForOptions(
+          data.map((a: any) => ({
+            value: a.value,
+            label: a.value,
+          }))
+        );
       } catch {
-        showApiError("Failed to load account names");
+        showApiError("Failed to load account types");
       }
     })();
   }, []);
 
-  // ── When company account is unchecked, clear party fields ──────────────────
-  const handleSetIsCompanyAccount = (v: boolean) => {
-    setIsCompanyAccount(v);
-    if (v) {
-      // reset party when switching to company account
-      setPartyType("");
-      setParty("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getCurrencies();
+        const data = res?.message?.data?.data || [];
+
+        setCurrencyOptions(
+          data.map((c: any) => ({
+            value: c.code,
+            label: c.code,
+          }))
+        );
+      } catch {
+        showApiError("Failed to load currencies");
+      }
+    })();
+  }, []);
+
+
+  useEffect(() => {
+    if (form.accountFor?.toLowerCase() === "company") {
+      setForm((prev) => ({
+        ...prev,
+        currency: "",
+      }));
     }
-  };
+  }, [form.accountFor]);
 
-  // ── Generic field change ────────────────────────────────────────────────────
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
-
   const handleDateChange = (name: string, value: string) => {
     setForm((p) => ({ ...p, [name]: value }));
   };
 
-  // ── Reset ───────────────────────────────────────────────────────────────────
   const handleReset = () => {
-    setForm(emptyForm(bankOptions[0]?.value ?? "", accountOptions[0]?.value ?? ""));
-    setIsCompanyAccount(false);
-    setIsDefaultAccount(false);
-    setIsDisabled(false);
-    setPartyType("");
-    setParty("");
+    setForm({
+      dateAdded: today(),
+      accountFor: "",
+      name: "",
+      bank: "",
+      swiftCode: "",
+      currency: "",
+      accountNumber: "",
+      accountHolder: "",
+      sortCode: "",
+      address: "",
+      iban: "",
+      isDefault: false,
+      isDisabled: false,
+    });
   };
 
-  // ── Submit ──────────────────────────────────────────────────────────────────
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
-    if (!form.accountNo || !form.bankName || !form.currency || !form.accountName) {
-      showApiError("Please fill in all required fields.");
+
+    if (
+      !form.accountFor ||
+      !form.bank ||
+      !form.accountNumber
+    ) {
+      showApiError("Please fill required fields");
       return;
     }
-    // Strip UI-only fields so BankAccount type stays clean
-    const { accountType, accountSubtype, lastIntegrationDate, ...bankAccount } = form;
-    onSubmit({ ...bankAccount, isdefault: isDefaultAccount });
+
+    onSubmit(form);
     handleReset();
     onClose();
   };
 
   return {
     form,
-    isCompanyAccount,
-    isDefaultAccount,
-    isDisabled,
-    partyType,
-    party,
-    bankOptions,
-    accountOptions,
+    setForm,
     handleChange,
     handleDateChange,
-    handleReset,
     handleSubmit,
-    setIsCompanyAccount: handleSetIsCompanyAccount,
-    setIsDefaultAccount,
-    setIsDisabled,
-    setPartyType,
-    setParty,
-    companyName,
-  
+    handleReset,
+    bankOptions,
+    accountForOptions,
+    currencyOptions,
+    isCompany
   };
 };

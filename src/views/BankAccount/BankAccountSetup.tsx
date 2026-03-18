@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { BankAccount } from "../../types/company";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
-
+import { FaUniversity } from "react-icons/fa";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -14,65 +14,30 @@ interface Props {
   setBankAccounts: React.Dispatch<React.SetStateAction<BankAccount[]>>;
 }
 
-const mask = (val?: string | number) => {
-  const str = val ? String(val) : "";
-  if (!str) return "";
-  if (str.length <= 4) return "•".repeat(str.length);
-  return "•".repeat(str.length - 4) + str.slice(-4);
+const mask = (val?: string) => {
+  if (!val) return "";
+  if (val.length <= 4) return "•".repeat(val.length);
+  return "•".repeat(val.length - 4) + val.slice(-4);
 };
 
-const BankDetails: React.FC<Props> = ({
+const BankAccountSetup: React.FC<Props> = ({
   bankAccounts,
   setBankAccounts,
 }) => {
   const [showModal, setShowModal] = useState(false);
-  const [editingRow, setEditingRow] = useState<BankAccount | null>(null);
   const [search, setSearch] = useState("");
 
-  // 🔹 FORM → UI MODEL MAPPER
-  const mapFormToBank = (data: any): BankAccount => ({
-    id: editingRow?.id ?? Date.now(), 
-    bankName: data.bank,
-    accountNo: data.accountNumber,
-    accountHolderName: data.accountHolder,
-    swiftCode: data.swiftCode,
-    sortCode: data.sortCode,
-    currency: data.currency,
-    openingBalance: "",
-    dateAdded: data.dateAdded,
-    branchAddress: data.address,
-    isDefault: data.isDefault,
-  });
-
-  // 🔹 ADD / EDIT (UI ONLY)
-  const handleSubmit = (data: any) => {
-    const mapped = mapFormToBank(data);
-
-    if (editingRow) {
-      // EDIT
-      setBankAccounts((prev) =>
-        prev.map((b) => (b.id === editingRow.id ? mapped : b))
-      );
-    } else {
-      // ADD
-      setBankAccounts((prev) => [...prev, mapped]);
-    }
-
-    setShowModal(false);
-    setEditingRow(null);
-  };
-
-  // 🔹 DELETE (UI ONLY)
+  // 🔹 DELETE
   const handleDelete = (id: number | string) => {
     setBankAccounts((prev) => prev.filter((b) => b.id !== id));
   };
 
-  // 🔹 SET DEFAULT (UI ONLY)
+  // 🔹 SET DEFAULT
   const handleSetDefault = (id: number | string) => {
     setBankAccounts((prev) =>
       prev.map((b) => ({
         ...b,
-        isDefault: b.id === id,
+        isdefault: b.id === id,
       }))
     );
   };
@@ -81,6 +46,9 @@ const BankDetails: React.FC<Props> = ({
     {
       key: "bankName",
       header: "Bank",
+      render: (row) => (
+        <span className="font-semibold">{row.bankName}</span>
+      ),
     },
     {
       key: "accountNo",
@@ -110,10 +78,10 @@ const BankDetails: React.FC<Props> = ({
       header: "Date Added",
     },
     {
-      key: "isDefault",
+      key: "isdefault",
       header: "Default",
       render: (row) =>
-        row.isDefault ? (
+        row.isdefault ? (
           <span className="text-green-600 font-semibold">Yes</span>
         ) : (
           "—"
@@ -125,15 +93,8 @@ const BankDetails: React.FC<Props> = ({
       align: "center",
       render: (row) => (
         <ActionGroup>
-          <ActionButton
-            type="edit"
-            onClick={() => {
-              setEditingRow(row);
-              setShowModal(true);
-            }}
-            iconOnly
-          />
-
+          <ActionButton type="view" onClick={() => console.log(row)} iconOnly />
+          <ActionButton type="edit" onClick={() => console.log("edit", row)} iconOnly />
           <ActionMenu
             onDelete={() => handleDelete(row.id)}
             customActions={[
@@ -150,34 +111,51 @@ const BankDetails: React.FC<Props> = ({
 
   return (
     <div className="p-8">
+        <div className="mb-6">
+   <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
+  <FaUniversity className="text-primary" />
+  Bank Accounts
+</h1>
+  </div>
       <Table
         columns={columns}
         data={bankAccounts}
         rowKey={(row) => row.id}
         showToolbar
         searchValue={search}
-        onSearch={setSearch}
+        onSearch={(q) => setSearch(q)}
         enableAdd
         addLabel="Add Bank Account"
-        onAdd={() => {
-          setEditingRow(null);
-          setShowModal(true);
-        }}
+        onAdd={() => setShowModal(true)}
       />
 
+      {/* MODAL */}
       {showModal && (
         <AddBankAccountModal
           isOpen={showModal}
-          onClose={() => {
+          onClose={() => setShowModal(false)}
+          onSubmit={(data) => {
+            const mapped: BankAccount = {
+              id: Date.now(),
+              bankName: data.bank,
+              accountNo: data.accountNumber,
+              accountHolderName: data.accountHolder,
+              swiftCode: data.swiftCode,
+              sortCode: data.sortCode,
+              currency: data.currency,
+              openingBalance: "",
+              dateAdded: data.dateAdded,
+              branchAddress: data.address,
+              isdefault: data.isDefault,
+            };
+
+            setBankAccounts((prev) => [...prev, mapped]);
             setShowModal(false);
-            setEditingRow(null);
           }}
-          onSubmit={handleSubmit}
-          initialData={editingRow}
         />
       )}
     </div>
   );
 };
 
-export default BankDetails;
+export default BankAccountSetup;

@@ -218,6 +218,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                     label: "User Management",
                     icon: <FaUsers />,
                   },
+                  {
+  to: "/bank-account-setup",
+  label: "Bank Account Setup",
+  icon: <FaBars />
+},
                   { to: "/settings", label: "General Settings", icon: <FaCog /> },
                 ].map((sub) => (
                   <NavLink

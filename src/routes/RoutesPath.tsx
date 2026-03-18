@@ -11,4 +11,5 @@ export const ROUTES = {
   FixedAssets: "/fasset",
   CompanySetup: "/companySetup",
   UserManagement: "/userManagement",
+  BankAccountPage: "/BankAccountPage",
 };

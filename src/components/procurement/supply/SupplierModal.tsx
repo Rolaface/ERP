@@ -13,7 +13,6 @@ import type {
 import { AddressTab } from "./AddressTab";
 import TermsAndCondition from "../../TermsAndCondition";
 import type { TermSection } from "../../../types/termsAndCondition";
-
 interface SupplierModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,7 +23,7 @@ interface SupplierModalProps {
 }
 const tabs: { key: SupplierTab; icon: typeof Building2; label: string }[] = [
   { key: "supplier", icon: Building2, label: "Supplier" },
-  { key: "payment", icon: DollarSign, label: "Payment" },
+  { key: "payment", icon: DollarSign, label: "Bank Details" },
   { key: "address", icon: MapPin, label: "Address" },
   { key: "terms", icon: FileText, label: "Terms" },
 ];
@@ -136,7 +135,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="gap-6  p-4">
+        <div className="gap-6 p-4 flex-1 min-h-0 overflow-hidden">
           {activeTab === "supplier" && (
             <SupplierInfoTab
               form={form}
