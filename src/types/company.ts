@@ -34,12 +34,14 @@ export interface BankAccount {
   accountNo: string;
   accountHolderName?: string;
   bankName: string;
-  swiftCode: string;
+  // swiftCode: string;
   sortCode?: string;
   branchAddress: string;
   currency: string;
   dateAdded: string;
-  openingBalance: number;
+  accountName: string;
+ iban?: string;
+  // openingBalance: number;
   isdefault?: boolean;
 }
 export interface FinancialConfig {
