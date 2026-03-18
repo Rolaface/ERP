@@ -71,7 +71,8 @@ export const API = {
   },
 
 Account:{
-  getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_bank_accounts`
+  getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_bank_company_supplier_cutomer`,
+  getReportingAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_company_ledger_accounts`,
 },
 
 accounting:{

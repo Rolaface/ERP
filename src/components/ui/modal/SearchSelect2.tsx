@@ -1,16 +1,21 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-type Option = {
+
+
+
+  type Option = {
   label: string;
   value: string;
-  meta?: Record<string, any>;
+  swiftCode?: string;
 };
 
 interface SearchSelectProps {
   label: string;
   value?: string;
-  onChange: (value: string, option: Option) => void;
+
+
+onChange: (value: string, option: Option) => void;
   fetchOptions: (q: string) => Promise<Option[]>;
   placeholder?: string;
   disabled?: boolean;
@@ -144,7 +149,7 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
           >
             {options.map((opt) => (
               <div
-                key={opt.value}
+                key={opt.value || opt.label}
                 onClick={() => {
                   setIsTyping(false);
                   setJustSelected(true);

@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { showApiError } from "../../utils/alert";
-import { getBankAccounts } from "../../api/BankAccountApi";
+import { getBankAccounts,getCompanyAccounts } from "../../api/BankAccountApi";
 
 const today = () => new Date().toISOString().split("T")[0];
+
+type AccountType = "Supplier" | "Customer" | "Company" | "Bank" | "Currency";
 
 export const useBankAccLogic = ({ onSubmit, onClose }: any) => {
   const [form, setForm] = useState({
     dateAdded: today(),
-    accountFor: "",
+    accountFor: "" as AccountType | "",
     name: "",
     bank: "",
     swiftCode: "",
@@ -19,73 +21,67 @@ export const useBankAccLogic = ({ onSubmit, onClose }: any) => {
     iban: "",
     isDefault: false,
     isDisabled: false,
+    reportingAccount: "",
   });
-
-  const [bankOptions, setBankOptions] = useState<any[]>([]);
-  const [accountForOptions, setAccountForOptions] = useState<any[]>([]);
-  const [currencyOptions, setCurrencyOptions] = useState<any[]>([]);
-
-  const isCompany =
-    form.accountFor?.toLowerCase() === "company";
-  // 🔹 Fetch Bank
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getBankAccounts();
-        const data = res?.message?.data?.data || [];
-
-        setBankOptions(
-          data.map((b: any) => ({
-            value: b.value,
-            label: b.value,
-            swiftCode: b.description,
-          }))
-        );
-      } catch {
-        showApiError("Failed to load banks");
-      }
-    })();
-  }, []);
+const [banks, setBanks] = useState<any[]>([]);
+const [entities, setEntities] = useState<any[]>([]);
+const [currencies, setCurrencies] = useState<any[]>([]);
+const [reportingAccounts, setReportingAccounts] = useState<any[]>([]);
 
 
-
-  // 🔹 Fetch Account For
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getCompanyAccounts();
-        const data = res?.message?.data?.data || [];
-
-        setAccountForOptions(
-          data.map((a: any) => ({
-            value: a.value,
-            label: a.value,
-          }))
-        );
-      } catch {
-        showApiError("Failed to load account types");
-      }
-    })();
-  }, []);
+useEffect(() => {
+  setForm((prev) => ({
+    ...prev,
+    name: "",
+  }));
+}, [form.accountFor]);
 
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getCurrencies();
-        const data = res?.message?.data?.data || [];
+useEffect(() => {
+  (async () => {
+    try {
+      const data = await getBankAccounts("Bank");
+      setBanks(data);
+    } catch {
+      showApiError("Failed to load banks");
+    }
+  })();
+}, []);
 
-        setCurrencyOptions(
-          data.map((c: any) => ({
-            value: c.code,
-            label: c.code,
-          }))
-        );
-      } catch {
-        showApiError("Failed to load currencies");
-      }
-    })();
-  }, []);
+useEffect(() => {
+  if (!form.accountFor) return;
+
+  (async () => {
+    try {
+      const data = await getBankAccounts(form.accountFor as AccountType);
+      setEntities(data);
+    } catch {
+      showApiError("Failed to load data");
+    }
+  })();
+}, [form.accountFor]);
+
+useEffect(() => {
+  (async () => {
+    try {
+      const data = await getCompanyAccounts();
+      setReportingAccounts(data);
+    } catch {
+      showApiError("Failed to load reporting accounts");
+    }
+  })();
+}, []);
+
+useEffect(() => {
+  (async () => {
+    try {
+      const data = await getBankAccounts("Currency");
+      setCurrencies(data);
+    } catch {
+      showApiError("Failed to load currencies");
+    }
+  })();
+}, []);
 
 
   useEffect(() => {
@@ -111,7 +107,7 @@ export const useBankAccLogic = ({ onSubmit, onClose }: any) => {
   const handleReset = () => {
     setForm({
       dateAdded: today(),
-      accountFor: "",
+      accountFor: "" as AccountType | "",
       name: "",
       bank: "",
       swiftCode: "",
@@ -123,6 +119,7 @@ export const useBankAccLogic = ({ onSubmit, onClose }: any) => {
       iban: "",
       isDefault: false,
       isDisabled: false,
+      reportingAccount: "",
     });
   };
 
@@ -150,9 +147,9 @@ export const useBankAccLogic = ({ onSubmit, onClose }: any) => {
     handleDateChange,
     handleSubmit,
     handleReset,
-    bankOptions,
-    accountForOptions,
-    currencyOptions,
-    isCompany
+    currencies,
+banks,
+entities,
+reportingAccounts,
   };
 };
