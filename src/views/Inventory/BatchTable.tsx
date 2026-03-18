@@ -33,6 +33,8 @@ interface Batch {
   out_qty?: number;
   buy_value?: number;
   sell_value?: number;
+   buy_currency?: string;   
+  sell_currency?: string; 
   _itemCode?: string;
   _itemName?: string;
 }
@@ -678,12 +680,12 @@ const BatchDetailModal: React.FC<{
             <Row
               icon={ShoppingCart}
               label="Buy Value"
-              value={`INR ${fmt(batch.buy_value, 2)}`}
+              value={`${batch.buy_currency } ${fmt(batch.buy_value, 2)}`}
             />
             <Row
               icon={Tag}
               label="Sell Value"
-              value={`INR ${fmt(batch.sell_value, 2)}`}
+              value={`${batch.sell_currency } ${fmt(batch.sell_value, 2)}`}
               accent
             />
           </div>
@@ -922,13 +924,13 @@ const BatchTable: React.FC<Props> = ({
                       className="px-5 py-3 text-right text-xs tabular-nums"
                       style={{ color: "var(--muted,#888)" }}
                     >
-                      {Number(b.buy_value || 0).toLocaleString("en-IN")}
+                      {`${b.buy_currency } ${Number(b.buy_value || 0).toLocaleString("en-IN")}`}
                     </td>
                     <td
                       className="px-5 py-3 text-right text-xs font-semibold tabular-nums"
                       style={{ color: "var(--primary,#c97d2e)" }}
                     >
-                      {Number(b.sell_value || 0).toLocaleString("en-IN")}
+                      {`${b.sell_currency} ${Number(b.sell_value || 0).toLocaleString("en-IN")}`}
                     </td>
 
                     {/* ── Actions ── */}
