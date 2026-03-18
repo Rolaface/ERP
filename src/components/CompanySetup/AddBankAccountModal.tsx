@@ -42,28 +42,32 @@ const AddBankAccountModal: React.FC<Props> = ({
     banks,
     entities,
     currencies,
-    reportingAccounts
+    reportingAccounts,
+    isCompany
   } = useBankAccLogic({ onSubmit, onClose });
-useEffect(() => {
-  if (defaultAccountFor) {
-    setForm(prev => ({
-      ...prev,
-      accountFor: defaultAccountFor
-    }));
-  }
+  useEffect(() => {
+    if (defaultAccountFor) {
+      setForm(prev => ({
+        ...prev,
+        accountFor: defaultAccountFor
+      }));
+    }
 
-  if (partyName && entities.length) {
-    const match = entities.find(
-      (e) => e.label.toLowerCase() === partyName.toLowerCase()
-    );
+    if (partyName && entities.length) {
+      const match = entities.find(
+        (e) => e.label.toLowerCase() === partyName.toLowerCase()
+      );
 
-    setForm(prev => ({
-      ...prev,
-      name: match?.label || partyName,
-      currency: match?.meta?.currency || prev.currency
-    }));
-  }
-}, [defaultAccountFor, partyName, entities]);
+      setForm(prev => ({
+        ...prev,
+        name: match?.label || partyName,
+        currency: match?.meta?.currency || prev.currency,
+
+        accountHolder: match?.label || partyName,
+        accountHolderEdited: false,
+      }));
+    }
+  }, [defaultAccountFor, partyName, entities]);
 
   const footer = (
     <>
@@ -127,12 +131,16 @@ useEffect(() => {
             <SearchSelect2
               label="Name"
               value={form.name}
-              disabled={!form.accountFor}
+              disabled={!form.accountFor || form.accountFor === "Company"}
               onChange={(_, option: Option) =>
                 setForm((prev) => ({
                   ...prev,
                   name: option?.label || "",
                   currency: option?.meta?.currency || prev.currency,
+
+                  accountHolderEdited: false,
+
+                  accountHolder: option?.label || "",
                 }))
               }
               fetchOptions={(q): Promise<Option[]> => {
@@ -174,24 +182,24 @@ useEffect(() => {
             />
 
 
-           <SearchSelect2
-  label="Currency"
-  value={form.currency}
-  onChange={(_: string, option: Option) =>
-    setForm((prev) => ({
-      ...prev,
-      currency: option?.value || "",
-    }))
-  }
-  fetchOptions={(q): Promise<Option[]> => {
-    const query = q.toLowerCase();
-    return Promise.resolve(
-      currencies.filter((c) =>
-        c.label.toLowerCase().includes(query)
-      )
-    );
-  }}
-/>
+            <SearchSelect2
+              label="Currency"
+              value={form.currency}
+              onChange={(_: string, option: Option) =>
+                setForm((prev) => ({
+                  ...prev,
+                  currency: option?.value || "",
+                }))
+              }
+              fetchOptions={(q): Promise<Option[]> => {
+                const query = q.toLowerCase();
+                return Promise.resolve(
+                  currencies.filter((c) =>
+                    c.label.toLowerCase().includes(query)
+                  )
+                );
+              }}
+            />
             <ModalInput
               label="Account Number"
               name="accountNumber"
@@ -236,24 +244,26 @@ useEffect(() => {
             </div>
 
 
-<SearchSelect2
-  label="Reporting Account"
-  value={form.reportingAccount}
-  onChange={(_: string, option: Option) =>
-    setForm((prev) => ({
-      ...prev,
-      reportingAccount: option?.value || "",
-    }))
-  }
-  fetchOptions={(q): Promise<Option[]> => {
-    const query = q.toLowerCase();
-    return Promise.resolve(
-      reportingAccounts.filter((acc) =>
-        acc.label.toLowerCase().includes(query)
-      )
-    );
-  }}
-/>
+            {isCompany && (
+              <SearchSelect2
+                label="Reporting Account"
+                value={form.reportingAccount}
+                onChange={(_: string, option: Option) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    reportingAccount: option?.value || "",
+                  }))
+                }
+                fetchOptions={(q): Promise<Option[]> => {
+                  const query = q.toLowerCase();
+                  return Promise.resolve(
+                    reportingAccounts.filter((acc) =>
+                      acc.label.toLowerCase().includes(query)
+                    )
+                  );
+                }}
+              />
+            )}
 
 
 
@@ -285,7 +295,7 @@ useEffect(() => {
           </div>
 
 
-          
+
 
         </div>
       </form>

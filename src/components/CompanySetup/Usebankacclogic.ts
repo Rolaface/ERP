@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { showApiError ,showSuccess} from "../../utils/alert";
-import { getBankAccounts,getCompanyAccounts, createNewBankAccount} from "../../api/BankAccountApi";
+import { showApiError, showSuccess } from "../../utils/alert";
+import { getBankAccounts, getCompanyAccounts, createNewBankAccount } from "../../api/BankAccountApi";
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -22,79 +22,118 @@ export const useBankAccLogic = ({ onSubmit, onClose }: any) => {
     isDefault: false,
     isDisabled: false,
     reportingAccount: "",
+    accountHolderEdited: false,
   });
-const [banks, setBanks] = useState<any[]>([]);
-const [entities, setEntities] = useState<any[]>([]);
-const [currencies, setCurrencies] = useState<any[]>([]);
-const [reportingAccounts, setReportingAccounts] = useState<any[]>([]);
+  const [banks, setBanks] = useState<any[]>([]);
+  const [entities, setEntities] = useState<any[]>([]);
+  const [currencies, setCurrencies] = useState<any[]>([]);
+  const [reportingAccounts, setReportingAccounts] = useState<any[]>([]);
 
-
-useEffect(() => {
-  setForm((prev) => ({
-    ...prev,
-    name: "",
-  }));
-}, [form.accountFor]);
-
-
-useEffect(() => {
-  (async () => {
-    try {
-      const data = await getBankAccounts("Bank");
-      setBanks(data);
-    } catch {
-      showApiError("Failed to load banks");
-    }
-  })();
-}, []);
-
-useEffect(() => {
-  if (!form.accountFor) return;
-
-  (async () => {
-    try {
-      const data = await getBankAccounts(form.accountFor as AccountType);
-      setEntities(data);
-    } catch {
-      showApiError("Failed to load data");
-    }
-  })();
-}, [form.accountFor]);
-
-useEffect(() => {
-  (async () => {
-    try {
-      const data = await getCompanyAccounts();
-      setReportingAccounts(data);
-    } catch {
-      showApiError("Failed to load reporting accounts");
-    }
-  })();
-}, []);
-
-useEffect(() => {
-  (async () => {
-    try {
-      const data = await getBankAccounts("Currency");
-      setCurrencies(data);
-    } catch {
-      showApiError("Failed to load currencies");
-    }
-  })();
-}, []);
+  const isCompany = form.accountFor === "Company";
 
 
   useEffect(() => {
-    if (form.accountFor?.toLowerCase() === "company") {
+    if (
+      form.accountFor === "Company" &&
+      entities.length === 1 &&
+      !form.name
+    ) {
+      const company = entities[0];
+
       setForm((prev) => ({
         ...prev,
-        currency: "",
+        name: company.label,
+        accountHolder: company.label,
+        accountHolderEdited: false,
+      }));
+    }
+  }, [form.accountFor, entities]);
+
+  useEffect(() => {
+    if (form.accountFor !== "Company") {
+      setForm((prev) => ({
+        ...prev,
+        reportingAccount: "",
       }));
     }
   }, [form.accountFor]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      name: "",
+      accountHolder: "",
+      accountHolderEdited: false,
+      reportingAccount: "",
+      currency: prev.accountFor === "Company" ? "" : prev.currency,
+    }));
+  }, [form.accountFor]);
+
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getBankAccounts("Bank");
+        setBanks(data);
+      } catch {
+        showApiError("Failed to load banks");
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!form.accountFor) return;
+
+    (async () => {
+      try {
+        const data = await getBankAccounts(form.accountFor as AccountType);
+        setEntities(data);
+      } catch {
+        showApiError("Failed to load data");
+      }
+    })();
+  }, [form.accountFor]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getCompanyAccounts();
+        setReportingAccounts(data);
+      } catch {
+        showApiError("Failed to load reporting accounts");
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getBankAccounts("Currency");
+        setCurrencies(data);
+      } catch {
+        showApiError("Failed to load currencies");
+      }
+    })();
+  }, []);
+
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
+
+
+    if (name === "accountHolder") {
+      setForm((prev) => ({
+        ...prev,
+        accountHolder: value,
+        accountHolderEdited: true,
+      }));
+      return;
+    }
+
+
     setForm((prev) => ({
       ...prev,
       [name]: value,
@@ -120,54 +159,55 @@ useEffect(() => {
       isDefault: false,
       isDisabled: false,
       reportingAccount: "",
+      accountHolderEdited: false,
     });
   };
 
-const handleSubmit = async (e: any) => {
-  e.preventDefault();
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
 
-  if (!form.accountFor || !form.bank || !form.accountNumber || !form.name) {
-    showApiError("Please fill required fields");
-    return;
-  }
+    if (!form.accountFor || !form.bank || !form.accountNumber || !form.name) {
+      showApiError("Please fill required fields");
+      return;
+    }
 
-  try {
-    const payload = {
-      accountHolderName: form.accountHolder,
-      accountNo: form.accountNumber,
-      bankName: form.bank,
-      branchAddress: form.address,
-      currency: form.currency,
-      dateAdded: form.dateAdded,
-      sortCode: form.sortCode,
-      iban: form.iban,
-      accountFor: form.accountFor,
-      partyName: form.name,
-      isDefault: form.isDefault ? "1" : "0",
-      // isDisable: form.isDisabled ? "1" : "0",
-      reportingAccount: form.reportingAccount,
-    };
+    try {
+      const payload = {
+        accountHolderName: form.accountHolder,
+        accountNo: form.accountNumber,
+        bankName: form.bank,
+        branchAddress: form.address,
+        currency: form.currency,
+        dateAdded: form.dateAdded,
+        sortCode: form.sortCode,
+        iban: form.iban,
+        accountFor: form.accountFor,
+        partyName: form.name,
+        isDefault: form.isDefault ? "1" : "0",
+        // isDisable: form.isDisabled ? "1" : "0",
+        reportingAccount: form.reportingAccount,
+      };
 
-    const res = await createNewBankAccount(payload);
+      const res = await createNewBankAccount(payload);
 
-    const successMsg =
-      res?.message?.message ||
-      "Bank Account created successfully";
+      const successMsg =
+        res?.message?.message ||
+        "Bank Account created successfully";
 
-    showSuccess(successMsg);
+      showSuccess(successMsg);
 
-    onSubmit?.(payload);
-    handleReset();
-    onClose();
+      onSubmit?.(payload);
+      handleReset();
+      onClose();
 
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message?.message ||
-      "Something went wrong";
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message?.message ||
+        "Something went wrong";
 
-    showApiError(msg);
-  }
-};
+      showApiError(msg);
+    }
+  };
   return {
     form,
     setForm,
@@ -176,8 +216,9 @@ const handleSubmit = async (e: any) => {
     handleSubmit,
     handleReset,
     currencies,
-banks,
-entities,
-reportingAccounts,
+    banks,
+    entities,
+    reportingAccounts,
+    isCompany
   };
 };
