@@ -103,7 +103,7 @@ export interface PurchaseOrderFormData {
   messageHtml: string;
   sendAttachedFiles: boolean;
   sendPrint: boolean;
-
+  referenceNumber: string;
   terms?: {
     buying: TermSection;
   };
@@ -172,8 +172,7 @@ export const emptyPOForm: PurchaseOrderFormData = {
   project: "Project-0001",
   requiredBy: "",
   warehouse: "",
-
-
+  referenceNumber: "",
   addresses: {
     supplierAddress: {
       ...emptyAddress,

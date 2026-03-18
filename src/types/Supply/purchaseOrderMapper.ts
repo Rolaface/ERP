@@ -62,14 +62,13 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       paymentAmount: Number(p.paymentAmount || 0),
     }));
 
-  // Build base payload
+
   const payload: any = {
     supplierId: form.supplierId,
     currency: form.currency,
     status: form.status,
     taxCategory: form.taxCategory,
-
-    // Optional fields
+    referenceNumber: form.referenceNumber,
     ...(form.costCenter && { costCenter: form.costCenter }),
     ...(form.project && { project: form.project }),
     ...(form.shippingRule && { shippingRule: form.shippingRule }),
@@ -87,7 +86,7 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       buying: form.terms?.buying || {},
     },
 
-    items: items, // Already filtered and mapped
+    items: items, 
 
     ...(taxes.length > 0 && { taxes }),
     ...(payments.length > 0 && { payments }),
@@ -225,7 +224,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
     poNumber: api.poId || "",
     date: api.poDate || "",
     taxCategory: api.taxCategory || "",
-
+    referenceNumber: api.referenceNumber || "",
     supplier: api.supplierName || "",
     supplierId: api.supplierId || "",
     supplierCode: api.supplierCode || "",
