@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { showApiError } from "../../utils/alert";
-import { getBankAccounts,getCompanyAccounts } from "../../api/BankAccountApi";
+import { showApiError ,showSuccess} from "../../utils/alert";
+import { getBankAccounts,getCompanyAccounts, createNewBankAccount} from "../../api/BankAccountApi";
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -123,23 +123,51 @@ useEffect(() => {
     });
   };
 
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
+const handleSubmit = async (e: any) => {
+  e.preventDefault();
 
-    if (
-      !form.accountFor ||
-      !form.bank ||
-      !form.accountNumber
-    ) {
-      showApiError("Please fill required fields");
-      return;
-    }
+  if (!form.accountFor || !form.bank || !form.accountNumber || !form.name) {
+    showApiError("Please fill required fields");
+    return;
+  }
 
-    onSubmit(form);
+  try {
+    const payload = {
+      accountHolderName: form.accountHolder,
+      accountNo: form.accountNumber,
+      bankName: form.bank,
+      branchAddress: form.address,
+      currency: form.currency,
+      dateAdded: form.dateAdded,
+      sortCode: form.sortCode,
+      iban: form.iban,
+      accountFor: form.accountFor,
+      partyName: form.name,
+      isDefault: form.isDefault ? "1" : "0",
+      // isDisable: form.isDisabled ? "1" : "0",
+      reportingAccount: form.reportingAccount,
+    };
+
+    const res = await createNewBankAccount(payload);
+
+    const successMsg =
+      res?.message?.message ||
+      "Bank Account created successfully";
+
+    showSuccess(successMsg);
+
+    onSubmit?.(payload);
     handleReset();
     onClose();
-  };
 
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message?.message ||
+      "Something went wrong";
+
+    showApiError(msg);
+  }
+};
   return {
     form,
     setForm,

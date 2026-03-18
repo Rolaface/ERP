@@ -5,6 +5,14 @@ import { API, ERP_BASE } from "../config/api";
 const api = createAxiosInstance(ERP_BASE);
 export const Account = API.Account;
 
+export async function createNewBankAccount(payload: any) {
+  const resp: AxiosResponse = await api.post(
+    Account.createnewBankaccount,
+    payload
+  );
+
+  return resp.data;
+}
 
 export async function getBankAccounts(
   filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency"

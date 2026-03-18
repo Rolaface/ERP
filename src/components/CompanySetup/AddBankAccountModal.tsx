@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Modal from "../ui/modal/modal";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
@@ -8,10 +8,13 @@ import DatePickerInput from "../calendar/DatePickerInput";
 import SearchSelect2 from "../ui/modal/SearchSelect";
 
 
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
+  defaultAccountFor?: AccountType;
+  partyName?: string;
 }
 
 type Option = {
@@ -27,6 +30,8 @@ const AddBankAccountModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onSubmit,
+  defaultAccountFor,
+  partyName,
 }) => {
   const {
     form,
@@ -39,6 +44,26 @@ const AddBankAccountModal: React.FC<Props> = ({
     currencies,
     reportingAccounts
   } = useBankAccLogic({ onSubmit, onClose });
+useEffect(() => {
+  if (defaultAccountFor) {
+    setForm(prev => ({
+      ...prev,
+      accountFor: defaultAccountFor
+    }));
+  }
+
+  if (partyName && entities.length) {
+    const match = entities.find(
+      (e) => e.label.toLowerCase() === partyName.toLowerCase()
+    );
+
+    setForm(prev => ({
+      ...prev,
+      name: match?.label || partyName,
+      currency: match?.meta?.currency || prev.currency
+    }));
+  }
+}, [defaultAccountFor, partyName, entities]);
 
   const footer = (
     <>
@@ -61,7 +86,7 @@ const AddBankAccountModal: React.FC<Props> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Add Bank Account"
-      subtitle="Configure bank accounts for Companies or Parties"
+      subtitle="Configure  bank  account for Companies or parties"
       icon={Building2}
       footer={footer}
       customWidth="60vw"
@@ -96,6 +121,7 @@ const AddBankAccountModal: React.FC<Props> = ({
                 { label: "Company", value: "Company" },
               ]}
               required
+              disabled={!!defaultAccountFor}
             />
 
             <SearchSelect2
@@ -243,7 +269,7 @@ const AddBankAccountModal: React.FC<Props> = ({
               <span className="text-sm text-main">Default Bank Account</span>
             </label>
 
-            <label className="flex items-center gap-2">
+            {/* <label className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={form.isDisabled}
@@ -253,7 +279,7 @@ const AddBankAccountModal: React.FC<Props> = ({
                 className="w-4 h-4 accent-primary"
               />
               <span className="text-sm text-main">Disabled</span>
-            </label>
+            </label> */}
 
 
           </div>

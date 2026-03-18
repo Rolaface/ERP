@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import  { useState } from "react";
 import BankAccountSetup from "./BankAccountSetup";
 import type { BankAccount } from "../../types/company";
 
