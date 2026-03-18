@@ -19,6 +19,16 @@ import {
   getCompanyPayableAccounts,
 } from "../../api/lookupApi";
 
+import { getPurchaseInvoiceById } from "../../api/procurement/PurchaseInvoiceApi";
+import { getCompanyById } from "../../api/companySetupApi";
+import { generatePurchaseInvoicePDF } from "../../components/template/purchaseinvoicetemplete";
+import PurchaseInvoiceDetailModal, {
+  type PurchaseInvoiceDetail,
+} from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
+import { showApiError } from "../../utils/alert";
+
+const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+
 type PayableRecord = {
   report_date: string;
   supplier: string;
@@ -100,6 +110,24 @@ const AccountsPayable = () => {
   const [sortBy, setSortBy] = useState("id");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  // ── Drawer State for Purchase Invoice ──
+  const [company, setCompany] = useState<any | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerData, setDrawerData] = useState<PurchaseInvoiceDetail | null>(
+    null,
+  );
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+  const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+
+  useEffect(() => {
+    getCompanyById(COMPANY_ID)
+      .then((res) => {
+        if (res?.status_code === 200) setCompany(res.data);
+      })
+      .catch(() => console.error("Failed to load company"));
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -171,7 +199,7 @@ const AccountsPayable = () => {
 
         const mappedPayables: Payable[] = backendData.map(
           (row: PayableRecord, index: number) => {
-            const isSummary = !row.voucher_no; // Frappe grouping/total rows lack a voucher_no
+            const isSummary = !row.voucher_no;
 
             const today = new Date();
             let daysLeft = 0;
@@ -199,7 +227,6 @@ const AccountsPayable = () => {
               else if (daysLeft <= 7) priority = "medium";
             }
 
-            // GUARANTEE A UNIQUE ID for React so summary rows don't duplicate/crash
             const uniqueId =
               row.voucher_no ||
               `summary-${index}-${Math.random().toString(36).substring(7)}`;
@@ -248,6 +275,48 @@ const AccountsPayable = () => {
     selectedPayableAccount,
   ]);
 
+  // ── Handlers for View Detail Modal ──
+  const handleViewClick = async (row: Payable, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (row.voucherType === "Purchase Invoice") {
+      setDrawerOpen(true);
+      setDrawerLoading(true);
+      setDrawerData(null);
+      try {
+        const res = await getPurchaseInvoiceById(row.id);
+        if (res?.status === "success") {
+          setDrawerData(res.data as PurchaseInvoiceDetail);
+        }
+      } catch (err) {
+        showApiError(err);
+      } finally {
+        setDrawerLoading(false);
+      }
+    } else {
+      console.log("View detail is only supported for Purchase Invoices.");
+    }
+  };
+
+  const handleDrawerPdf = async (pId: string) => {
+    setDrawerPdfLoading(true);
+    setDrawerPdfUrl(null);
+    try {
+      if (!company) return;
+      const res = await getPurchaseInvoiceById(pId);
+      if (!res || res.status !== "success") return;
+      const blobUrl = await generatePurchaseInvoicePDF(
+        res.data,
+        company,
+        "bloburl",
+      );
+      setDrawerPdfUrl(blobUrl);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setDrawerPdfLoading(false);
+    }
+  };
+
   const handleExportExcel = async () => {
     try {
       setIsExporting(true);
@@ -274,7 +343,10 @@ const AccountsPayable = () => {
       }
 
       const payload = res.message.data;
-      const allData = payload.rows || payload.data || [];
+      const backendData = payload.rows || payload.data || [];
+      const allData = backendData.filter(
+        (row: PayableRecord) => row.voucher_no,
+      );
 
       if (!allData.length) {
         alert("No payables data found to export.");
@@ -372,12 +444,22 @@ const AccountsPayable = () => {
     },
   ];
 
-  // Frontend Status Filter (Search is already handled completely by backend)
   const filteredPayables = payables.filter((payable) => {
-    if (payable.isSummary) return true; // Always keep summary/group rows
+    if (payable.isSummary) return true;
+
+    const vendorName = payable.vendor || "";
+    const recId = payable.id || "";
+    const bNo = payable.billNo || "";
+
+    const matchesSearch =
+      vendorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      recId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bNo.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesFilter =
       filterStatus === "all" || payable.status.toLowerCase() === filterStatus;
-    return matchesFilter;
+
+    return matchesSearch && matchesFilter;
   });
 
   const scheduleData = {
@@ -558,7 +640,10 @@ const AccountsPayable = () => {
       render: (row) =>
         row.isSummary ? null : (
           <div className="flex justify-center gap-2">
-            <button className="text-primary hover:opacity-80 transition-opacity">
+            <button
+              onClick={(e) => handleViewClick(row, e)}
+              className="text-primary hover:opacity-80 transition-opacity"
+            >
               <FaEye />
             </button>
           </div>
@@ -931,6 +1016,30 @@ const AccountsPayable = () => {
           ))}
         </div>
       </div>
+
+      <PurchaseInvoiceDetailModal
+        open={drawerOpen}
+        data={drawerData}
+        loading={drawerLoading}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDrawerData(null);
+          setDrawerPdfUrl(null);
+        }}
+        pdfUrl={drawerPdfUrl}
+        pdfLoading={drawerPdfLoading}
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.pId)}
+        onDownload={() =>
+          drawerData &&
+          company &&
+          generatePurchaseInvoicePDF(drawerData, company, "save")
+        }
+        onClosePdf={() => {
+          if (drawerPdfUrl?.startsWith("blob:"))
+            URL.revokeObjectURL(drawerPdfUrl);
+          setDrawerPdfUrl(null);
+        }}
+      />
     </div>
   );
 };

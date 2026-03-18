@@ -20,6 +20,16 @@ import {
   getCompanyRecievableAccounts,
 } from "../../api/lookupApi";
 
+import { getSalesInvoiceById } from "../../api/salesApi";
+import { getCompanyById } from "../../api/companySetupApi";
+import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
+import InvoiceDetailModal, {
+  type InvoiceDetail,
+} from "../Sales/InvoiceDetailsModal";
+import { showApiError } from "../../utils/alert";
+
+const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+
 type ReceivableRecord = {
   posting_date: string;
   customer: string;
@@ -105,6 +115,21 @@ const AccountsReceivable = () => {
 
   const [sortBy, setSortBy] = useState("id");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const [company, setCompany] = useState<any | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerData, setDrawerData] = useState<InvoiceDetail | null>(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+  const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+
+  useEffect(() => {
+    getCompanyById(COMPANY_ID)
+      .then((res) => {
+        if (res?.status_code === 200) setCompany(res.data);
+      })
+      .catch(() => console.error("Failed to load company"));
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -253,6 +278,47 @@ const AccountsReceivable = () => {
     selectedReceivableAccount,
   ]);
 
+  const handleViewClick = async (row: Receivable, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (row.voucherType === "Sales Invoice") {
+      setDrawerOpen(true);
+      setDrawerLoading(true);
+      setDrawerData(null);
+      try {
+        const res = await getSalesInvoiceById(row.id);
+        if (res?.status_code === 200) {
+          setDrawerData(res.data as InvoiceDetail);
+        }
+      } catch (err) {
+        showApiError(err);
+      } finally {
+        setDrawerLoading(false);
+      }
+    } else {
+      console.log("View detail is only supported for Sales Invoices.");
+    }
+  };
+
+  const handleDrawerPdf = async (invoiceNumber: string) => {
+    setDrawerPdfLoading(true);
+    setDrawerPdfUrl(null);
+    try {
+      if (!company) return;
+      const res = await getSalesInvoiceById(invoiceNumber);
+      if (!res || res.status_code !== 200) return;
+      const blobUrl = await generateInvoicePDF(
+        res.data as any,
+        company,
+        "bloburl",
+      );
+      setDrawerPdfUrl(blobUrl);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setDrawerPdfLoading(false);
+    }
+  };
+
   const handleExportExcel = async () => {
     try {
       setIsExporting(true);
@@ -279,7 +345,10 @@ const AccountsReceivable = () => {
       }
 
       const payload = res.message.data;
-      const allData = payload.rows || payload.data || [];
+      const backendData = payload.rows || payload.data || [];
+      const allData = backendData.filter(
+        (row: ReceivableRecord) => row.voucher_no,
+      );
 
       if (!allData.length) {
         alert("No receivables data found to export.");
@@ -525,7 +594,10 @@ const AccountsReceivable = () => {
       render: (row) =>
         row.isSummary ? null : (
           <div className="flex justify-center gap-2">
-            <button className="text-primary hover:opacity-80 transition-opacity">
+            <button
+              onClick={(e) => handleViewClick(row, e)}
+              className="text-primary hover:opacity-80 transition-opacity"
+            >
               <FaEye />
             </button>
           </div>
@@ -898,6 +970,32 @@ const AccountsReceivable = () => {
           ))}
         </div>
       </div>
+
+      <InvoiceDetailModal
+        open={drawerOpen}
+        data={drawerData}
+        loading={drawerLoading}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDrawerData(null);
+          setDrawerPdfUrl(null);
+        }}
+        pdfUrl={drawerPdfUrl}
+        pdfLoading={drawerPdfLoading}
+        onViewPdf={() =>
+          drawerData && handleDrawerPdf(drawerData.invoiceNumber)
+        }
+        onDownload={() =>
+          drawerData &&
+          company &&
+          generateInvoicePDF(drawerData as any, company, "save")
+        }
+        onClosePdf={() => {
+          if (drawerPdfUrl?.startsWith("blob:"))
+            URL.revokeObjectURL(drawerPdfUrl);
+          setDrawerPdfUrl(null);
+        }}
+      />
     </div>
   );
 };
