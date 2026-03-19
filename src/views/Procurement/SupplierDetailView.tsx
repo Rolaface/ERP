@@ -36,6 +36,7 @@ interface Props {
 ───────────────────────────────────────────── */
 const TABS = [
   { id: "overview", label: "Overview" },
+   { id: "bank-accounts", label: "Bank Accounts" },
   { id: "purchase-orders", label: "Purchase Orders" },
   { id: "bills", label: "Bills" },
   { id: "payments", label: "Payments" },
@@ -487,30 +488,6 @@ const SupplierDetailView: React.FC<Props> = ({
                       <DataRow
                         label="Billing Address"
                         value={formatAddress()}
-                      />
-                    </div>
-                    <h4 className="mt-3 text-[10px] font-black text-muted uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <CreditCard size={11} className="text-primary" /> Bank
-                      Details
-                    </h4>
-                    <div className="space-y-0.5">
-                      <DataRow
-                        label="Account Holder"
-                        value={supplier?.accountHolder}
-                      />
-                      <DataRow
-                        label="Bank Name"
-                        value={supplier?.bankAccount}
-                      />
-                      <DataRow
-                        label="Account Number"
-                        value={supplier?.accountNumber}
-                      />
-                      <DataRow label="SWIFT Code" value={supplier?.swiftCode} />
-                      <DataRow label="Sort/IFSC" value={supplier?.sortCode} />
-                      <DataRow
-                        label="Branch Address"
-                        value={supplier?.branchAddress}
                       />
                     </div>
                   </div>
