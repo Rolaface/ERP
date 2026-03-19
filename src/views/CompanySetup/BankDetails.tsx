@@ -221,17 +221,18 @@ const BankDetails: React.FC = () => {
       )}
 
       {showModal && (
-        <AddBankAccountModal
-          isOpen={showModal}
-          onClose={() => {
-            setShowModal(false);
-            setEditingRow(null);
-          }}
-          onSubmit={() => {
-            fetchAccounts();
-          }}
-          initialData={editingRow}
-        />
+     <AddBankAccountModal
+  isOpen={showModal}
+  onClose={() => {
+    setShowModal(false);
+    setEditingRow(null);
+  }}
+  onSubmit={() => {
+    fetchAccounts();
+  }}
+  initialData={editingRow}
+  defaultAccountFor="Company"   // ✅ ADD THIS
+/>
       )}
     </div>
   );
