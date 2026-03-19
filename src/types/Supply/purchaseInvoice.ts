@@ -63,7 +63,7 @@ export interface PurchaseInvoiceFormData {
   supplierId: string;
   supplierEmail?: string;
   supplierPhone?: string;
-updateStock?: boolean;  
+  updateStock?: boolean;  
 
   supplierCode: string;
   taxCategory: string;
@@ -71,6 +71,7 @@ updateStock?: boolean;
   paymentType: string;
   transactionProgress: string;
   supplierInvoiceNumber: string;
+  supplierInvoiceDate: string;
 
   destnCountryCd: string; // New field for Export country
   shippingRule: string;
@@ -182,6 +183,7 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   incoterm: "EXW",
   taxesChargesTemplate: "",
   supplierInvoiceNumber: "",
+  supplierInvoiceDate: "",
   paymentType: "",
   transactionProgress: "",
   updateStock: true,

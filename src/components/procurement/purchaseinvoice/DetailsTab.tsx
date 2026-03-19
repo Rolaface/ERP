@@ -134,6 +134,18 @@ export const DetailsTab = ({
               required
             />
           </div>
+          <div className="w-[140px] ml-2">
+  <DatePickerInput
+    label="Supplier Invoice Date"
+    name="supplierInvoiceDate"
+    value={form.supplierInvoiceDate || ""}
+    onChange={(name, value) =>
+      onFormChange({
+        target: { name, value },
+      } as any)
+    }
+  />
+</div>
           <div className="w-[128px] ml-2">
             <DatePickerInput
               label="Date"
@@ -147,6 +159,7 @@ export const DetailsTab = ({
               }
             />
           </div>
+          
 
           <div className="w-[130px] ml-4">
             <ModalSelect
