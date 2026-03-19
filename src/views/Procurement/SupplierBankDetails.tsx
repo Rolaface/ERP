@@ -21,7 +21,7 @@ const mask = (val?: string | number | null) => {
 
 interface Props {
   supplierName?: string;
-  onAdd?: () => void;
+  onAdd?: (refresh: () => void) => void;
   onEdit?: (row: BankAccount) => void;
 }
 
@@ -55,11 +55,18 @@ const SupplierBankDetails: React.FC<Props> = ({
             setLoading(false);
         }
     }, [supplierName]);
-
+    const refresh = useCallback(() => {
+  fetchAccounts();
+}, [fetchAccounts]);
 
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
+useEffect(() => {
+  if (onAdd) {
+    onAdd(refresh);
+  }
+}, [onAdd, refresh]);
 
   /* ================= FILTER ================= */
 

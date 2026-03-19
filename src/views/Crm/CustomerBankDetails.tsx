@@ -18,7 +18,7 @@ const mask = (val?: string | number | null) => {
 
 interface Props {
     customerName?: string;
-    onAdd?: () => void;
+    onAdd?: (refresh: () => void) => void;
     onEdit?: (row: BankAccount) => void;
 }
 
@@ -35,8 +35,8 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
             setLoading(true);
 
             const res = await getAllBankAccounts({
-                party_type: "Customer", // ✅ changed
-                party: customerName,    // ✅ changed
+                party_type: "Customer",
+                party: customerName,
             });
 
             setBankAccounts(res.data);
@@ -47,6 +47,9 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
             setLoading(false);
         }
     }, [customerName]);
+    const refresh = useCallback(() => {
+    fetchAccounts();
+}, [fetchAccounts]);
 
     useEffect(() => {
         fetchAccounts();
@@ -115,7 +118,11 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
             header: "Date Added",
             render: (row) =>
                 row.dateAdded
-                    ? new Date(row.dateAdded).toLocaleDateString()
+                    ? new Date(row.dateAdded).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                      })
                     : "—",
         },
         {
@@ -201,22 +208,19 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
     ];
 
     return (
-        <div className="p-8">
+    <div className="max-w-[1400px] mx-auto">
+        <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
             <Table
-                columns={columns}
-                data={filteredData}
-                loading={loading}
-                rowKey={(row) => String(row.id)}
-                showToolbar
-                searchValue={search}
-                onSearch={setSearch}
-            />
-
-            {!loading && filteredData.length === 0 && (
-                <div className="text-center text-gray-500 py-10">
-                    No bank accounts found
-                </div>
-            )}
+                    columns={columns}
+                    data={filteredData}
+                    loading={loading}
+                    rowKey={(row) => String(row.id)}
+                    showToolbar
+                    searchValue={search}
+                    onSearch={setSearch}
+                    emptyMessage="No customer bank accounts found"
+                />
+            </div>
         </div>
     );
 };

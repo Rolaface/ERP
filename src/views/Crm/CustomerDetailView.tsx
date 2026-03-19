@@ -22,6 +22,7 @@ import CustomerInvoices from "./CustomerInvoices";
 import CustomerQuotations from "./CustomerQuotations";
 import CustomerBankDetails from "./CustomerBankDetails";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
+
 import { CreditCard } from "lucide-react";
 interface Props {
   customer: CustomerDetail;
@@ -46,7 +47,8 @@ const CustomerDetailView: React.FC<Props> = ({
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showBankAccountModal, setShowBankAccountModal] = useState(false);
-const [editingRow, setEditingRow] = useState<any>(null);
+  const [refreshBankAccounts, setRefreshBankAccounts] = useState<(() => void) | null>(null);
+   const [editingRow, setEditingRow] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<
     "overview" | "bank" | "quotations" | "invoices" | "payments" | "statement"
   >("overview");
@@ -453,10 +455,11 @@ ${sellingTerms?.liability || ""}
             )}
             {activeTab === "bank" && (
   <div className="p-5 w-full min-w-0 overflow-hidden">
-   <CustomerBankDetails
+ <CustomerBankDetails
   customerName={customer.name}
-  onAdd={() => {
+  onAdd={(refresh) => {
     setEditingRow(null);
+    setRefreshBankAccounts(() => refresh); 
     setShowBankAccountModal(true);
   }}
   onEdit={(row) => {
@@ -534,6 +537,7 @@ ${sellingTerms?.liability || ""}
   }}
   onSubmit={() => {
     setShowBankAccountModal(false);
+    refreshBankAccounts?.();
   }}
   partyName={customer.name}
   defaultAccountFor="Customer"
