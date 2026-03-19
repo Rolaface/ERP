@@ -70,6 +70,12 @@ export const API = {
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
 
+Account:{
+  createnewBankaccount:`${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
+  getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_bank_company_supplier_cutomer`,
+  getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
+  updateStatus: `${ERP_BASE}/api/method/custom_api.api.bank_account.set_bank_account_status`,
+},
 
 accounting:{
   getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,

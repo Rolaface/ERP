@@ -1,18 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  X,
-  Search,
-  FileText,
-  Receipt,
-  Plus,
-  Building2,
-  MapPin,
-  CreditCard,
-  Mail,
-  ChevronLeft,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
+  X, Search, FileText, Plus, CreditCard, Mail, Menu, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import type { Supplier } from "../../types/Supply/supplier";
 import SupplierStatement from "./SupplierStatement";
@@ -21,7 +9,10 @@ import PurchaseOrderModal from "../../components/procurement/PurchaseOrderModal"
 import SupplierPurchaseOrders from "./SupplierPurchaseOrders";
 import SupplierPaymentModal from "../../components/procurement/supply/SupplierPaymentModal";
 import SupplierPurchaseInvoices from "./SupplierPurchaseInvoices";
+import SupplierBankDetails from "./SupplierBankDetails";
 import { getSupplierStatement } from "../../api/statementApi";
+import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
+import type { BankAccount } from "../../types/BankAccount/bank";
 
 interface Props {
   supplier: Supplier;
@@ -31,11 +22,12 @@ interface Props {
   onEdit: (supplier: Supplier) => void;
 }
 
-/* ─────────────────────────────────────────────
+/* 
    TABS config
-───────────────────────────────────────────── */
+ */
 const TABS = [
   { id: "overview", label: "Overview" },
+  { id: "bank-accounts", label: "Bank Accounts" },
   { id: "purchase-orders", label: "Purchase Orders" },
   { id: "bills", label: "Bills" },
   { id: "payments", label: "Payments" },
@@ -44,9 +36,9 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-/* ─────────────────────────────────────────────
+/* 
    MAIN COMPONENT
-───────────────────────────────────────────── */
+ */
 const SupplierDetailView: React.FC<Props> = ({
   supplier,
   suppliers,
@@ -59,9 +51,10 @@ const SupplierDetailView: React.FC<Props> = ({
   const [showPOModal, setShowPOModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showBankAccountModal, setShowBankAccountModal] = useState(false);
   const [statement, setStatement] = useState<any>(null);
   const [statementLoading, setStatementLoading] = useState(false);
-  // sidebar collapsed (desktop) or open (mobile drawer)
+  const [editingRow, setEditingRow] = useState<BankAccount | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileDrawer, setMobileDrawer] = useState(false);
   const terms = supplier?.terms?.buying;
@@ -75,10 +68,10 @@ const SupplierDetailView: React.FC<Props> = ({
   const supplierCode = supplierDetail?.supplierCode;
   const formattedDate = supplier?.dateOfAddition
     ? new Date(supplier.dateOfAddition).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : null;
 
   const filteredSuppliers = suppliers.filter(
@@ -126,6 +119,18 @@ const SupplierDetailView: React.FC<Props> = ({
             className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
           >
             <Plus size={13} /> New Invoice
+          </button>
+        );
+      case "bank-accounts":
+        return (
+          <button
+            onClick={() => {
+              setEditingRow(null);
+              setShowBankAccountModal(true);
+            }}
+            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg"
+          >
+            <Plus size={13} /> Add Bank
           </button>
         );
       case "payments":
@@ -220,31 +225,29 @@ const SupplierDetailView: React.FC<Props> = ({
               style={
                 isActive
                   ? {
-                      background: "var(--primary)",
-                      borderColor: "var(--primary)",
-                      color: "var(--primary-foreground, #fff)",
-                    }
+                    background: "var(--primary)",
+                    borderColor: "var(--primary)",
+                    color: "var(--primary-foreground, #fff)",
+                  }
                   : {}
               }
-              className={`w-full text-left px-2.5 py-2 rounded-xl transition-all duration-150 flex items-center gap-2.5 mb-0.5 border ${
-                isActive
-                  ? "border-[var(--primary)] shadow-sm"
-                  : "bg-transparent border-transparent hover:bg-[var(--row-hover)]"
-              }`}
+              className={`w-full text-left px-2.5 py-2 rounded-xl transition-all duration-150 flex items-center gap-2.5 mb-0.5 border ${isActive
+                ? "border-[var(--primary)] shadow-sm"
+                : "bg-transparent border-transparent hover:bg-[var(--row-hover)]"
+                }`}
             >
               {/* Avatar */}
               <div
                 style={
                   isActive
                     ? {
-                        background: "rgba(255,255,255,0.18)",
-                        color: "var(--primary-foreground, #fff)",
-                      }
+                      background: "rgba(255,255,255,0.18)",
+                      color: "var(--primary-foreground, #fff)",
+                    }
                     : {}
                 }
-                className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-black text-[11px] ${
-                  isActive ? "" : "bg-[var(--primary)]/10 text-[var(--primary)]"
-                }`}
+                className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-black text-[11px] ${isActive ? "" : "bg-[var(--primary)]/10 text-[var(--primary)]"
+                  }`}
               >
                 {(s.supplierName || "?").charAt(0).toUpperCase()}
               </div>
@@ -273,14 +276,13 @@ const SupplierDetailView: React.FC<Props> = ({
                   style={
                     isActive
                       ? {
-                          background: "rgba(255,255,255,0.18)",
-                          color: "var(--primary-foreground, #fff)",
-                        }
+                        background: "rgba(255,255,255,0.18)",
+                        color: "var(--primary-foreground, #fff)",
+                      }
                       : {}
                   }
-                  className={`px-1.5 py-0.5 text-[8px] font-black rounded-full shrink-0 ${
-                    !isActive ? getStatusColor(s.status) : ""
-                  }`}
+                  className={`px-1.5 py-0.5 text-[8px] font-black rounded-full shrink-0 ${!isActive ? getStatusColor(s.status) : ""
+                    }`}
                 >
                   {s.status.toUpperCase()}
                 </span>
@@ -295,7 +297,7 @@ const SupplierDetailView: React.FC<Props> = ({
   /* ═══════════════════ RENDER ═══════════════════ */
   return (
     <div className="flex flex-col bg-app text-main overflow-hidden h-full">
-      {/* ══════════════ HEADER ══════════════ */}
+      {/*  HEADER  */}
       <header className="bg-card px-4 py-2.5 flex items-center justify-between border-b border-[var(--border)] shrink-0 gap-3">
         <div className="flex items-center gap-2 min-w-0">
           {/* Mobile hamburger */}
@@ -362,7 +364,7 @@ const SupplierDetailView: React.FC<Props> = ({
         </div>
       </header>
 
-      {/* ══════════════ BODY ══════════════ */}
+      {/*  BODY  */}
       <div className="flex flex-1 overflow-hidden min-h-0 relative bg-app ">
         {/* ── MOBILE OVERLAY DRAWER ── */}
         {mobileDrawer && (
@@ -394,9 +396,8 @@ const SupplierDetailView: React.FC<Props> = ({
 
         {/* ── DESKTOP SIDEBAR ── */}
         <aside
-          className={`hidden lg:flex flex-col bg-card border border-[var(--border)] rounded-b-2xl  mb-3 transition-all duration-300 shrink-0 overflow-hidden self-start sticky top-0 ${
-            sidebarOpen ? "w-56" : "w-0 border-0"
-          }`}
+          className={`hidden lg:flex flex-col bg-card border border-[var(--border)] rounded-b-2xl  mb-3 transition-all duration-300 shrink-0 overflow-hidden self-start sticky top-0 ${sidebarOpen ? "w-56" : "w-0 border-0"
+            }`}
           style={{ maxHeight: "calc(100vh - 110px)" }}
         >
           {/* Header row */}
@@ -425,11 +426,10 @@ const SupplierDetailView: React.FC<Props> = ({
                 <button
                   key={t.id}
                   onClick={() => setActiveTab(t.id)}
-                  className={`px-3 sm:px-4 py-3 font-bold text-[10px] uppercase tracking-widest border-b-2 transition-all whitespace-nowrap shrink-0 ${
-                    activeTab === t.id
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted hover:text-main"
-                  }`}
+                  className={`px-3 sm:px-4 py-3 font-bold text-[10px] uppercase tracking-widest border-b-2 transition-all whitespace-nowrap shrink-0 ${activeTab === t.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted hover:text-main"
+                    }`}
                 >
                   {t.label}
                 </button>
@@ -487,30 +487,6 @@ const SupplierDetailView: React.FC<Props> = ({
                       <DataRow
                         label="Billing Address"
                         value={formatAddress()}
-                      />
-                    </div>
-                    <h4 className="mt-3 text-[10px] font-black text-muted uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <CreditCard size={11} className="text-primary" /> Bank
-                      Details
-                    </h4>
-                    <div className="space-y-0.5">
-                      <DataRow
-                        label="Account Holder"
-                        value={supplier?.accountHolder}
-                      />
-                      <DataRow
-                        label="Bank Name"
-                        value={supplier?.bankAccount}
-                      />
-                      <DataRow
-                        label="Account Number"
-                        value={supplier?.accountNumber}
-                      />
-                      <DataRow label="SWIFT Code" value={supplier?.swiftCode} />
-                      <DataRow label="Sort/IFSC" value={supplier?.sortCode} />
-                      <DataRow
-                        label="Branch Address"
-                        value={supplier?.branchAddress}
                       />
                     </div>
                   </div>
@@ -573,6 +549,20 @@ const SupplierDetailView: React.FC<Props> = ({
               <SupplierPurchaseInvoices supplierName={supplierName} />
             )}
 
+            {activeTab === "bank-accounts" && (
+              <SupplierBankDetails
+              supplierName={supplierName}
+                onAdd={() => {
+                  setEditingRow(null);
+                  setShowBankAccountModal(true);
+                }}
+                onEdit={(row) => {
+                  setEditingRow(row);
+                  setShowBankAccountModal(true);
+                }}
+              />
+            )}
+
             {/* PAYMENTS */}
             {activeTab === "payments" && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -627,7 +617,7 @@ const SupplierDetailView: React.FC<Props> = ({
         </main>
       </div>
 
-      {/* ══════════════ MODALS ══════════════ */}
+      {/*  MODALS  */}
       <PurchaseOrderModal
         isOpen={showPOModal}
         onClose={() => setShowPOModal(false)}
@@ -640,7 +630,21 @@ const SupplierDetailView: React.FC<Props> = ({
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         supplierName={supplierName}
-        // supplierCode={supplierCode}
+      // supplierCode={supplierCode}
+      />
+
+      <AddBankAccountModal
+        isOpen={showBankAccountModal}
+        onClose={() => {
+          setShowBankAccountModal(false);
+          setEditingRow(null);
+        }}
+        onSubmit={() => {
+          setShowBankAccountModal(false);
+        }}
+        partyName={supplierName}
+        defaultAccountFor="Supplier"
+        initialData={editingRow}
       />
     </div>
   );

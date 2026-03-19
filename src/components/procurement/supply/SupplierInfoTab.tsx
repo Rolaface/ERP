@@ -3,8 +3,9 @@ import {
   taxCategorySelectOptions,
   type SupplierFormData,
 } from "../../../types/Supply/supplier";
-import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
-
+import { CreditDaysInput, ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
+import { currencyOptions } from "../../../types/Supply/supplier";
+import DatePickerInput from "../../calendar/DatePickerInput";
 interface SupplierInfoTabProps {
   form: SupplierFormData;
   onChange: (
@@ -20,9 +21,18 @@ interface SupplierInfoTabProps {
     phoneNo?: string;
     alternateNo?: string;
     emailId?: string;
+    currency?: string;
+    paymentTerms?: string;
+    dateOfAddition?: string;
+    openingBalance?: string;
+
   };
 }
 
+const currencySelectOptions = currencyOptions.map((c) => ({
+  value: c,
+  label: c,
+}));
 
 
 export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
@@ -30,10 +40,6 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
   onChange,
   errors = {},
 }) => {
-
-
-
-
   return (
     <section className="flex-1 overflow-y-auto p-4 space-y-6 bg-app">
       <div className="space-y-6">
@@ -77,6 +83,50 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               error={errors.taxCategory}
             />
           </div>
+        </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <ModalSelect
+            label="Currency"
+            name="currency"
+            value={form.currency}
+            onChange={onChange}
+            options={[...currencySelectOptions]}
+            required
+            error={errors.currency}
+          />
+
+          <ModalInput
+            label="Opening Balance"
+            name="openingBalance"
+            type="number"
+            value={form.openingBalance}
+            onChange={onChange}
+            error={errors.openingBalance}
+            className="no-spinner"
+          />
+
+          <CreditDaysInput
+            name="paymentTerms"
+            value={form.paymentTerms}
+            onChange={onChange}
+            required
+            error={errors.paymentTerms}
+            className="no-spinner"
+          />
+
+          <DatePickerInput
+            label="Date of Addition"
+            name="dateOfAddition"
+            value={form.dateOfAddition}
+              onChange={(name, value) =>
+                onChange({
+                  target: { name, value },
+                } as any)
+              }
+            required
+            // error={errors.dateOfAddition}
+          />
         </div>
 
         {/* Contact Details */}
@@ -202,6 +252,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               error={errors.emailId}
             />
           </div>
+      
         </div>
       </div>
     </section>

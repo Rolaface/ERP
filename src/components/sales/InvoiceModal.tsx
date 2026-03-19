@@ -347,6 +347,24 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   )}
+                  <ModalInput
+                  label="Shipping Charges"
+                  name="shippingCharges"
+                  value={formData.shippingCharges}
+                  onChange={actions.handleInputChange}
+                  placeholder="2000-"
+                  inputMode="numeric"
+                  className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                  />
+                    <ModalInput
+                  label="Insurance Charges"
+                  name="insuranceCharges"
+                  value={formData.insuranceCharges}
+                  onChange={actions.handleInputChange}
+                  placeholder="2000-"
+                  inputMode="numeric"
+                  className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                  />
                 </div>
               </div>
 
@@ -837,6 +855,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           {symbol} {totals.totalTax.toFixed(2)}
                         </span>
                       </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted">Shipping Charges</span>
+                        <span className="font-medium text-main">
+                          {symbol} {formData.shippingCharges}
+                        </span>
+                      </div>
 
                       <div className="mt-2 p-2 bg-primary rounded-lg">
                         <div className="flex justify-between items-center">
@@ -850,6 +874,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       </div>
                     </div>
                   </div>
+                  
                 </div>
               </div>
             </div>

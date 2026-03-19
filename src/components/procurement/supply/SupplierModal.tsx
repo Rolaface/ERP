@@ -1,9 +1,9 @@
-import React from "react";
+import React,{useState} from "react";
 import { Building2, DollarSign, MapPin , FileText } from "lucide-react";
 import Modal from "../../ui/modal/modal";
 import { Button } from "../../ui/modal/formComponent";
 import { SupplierInfoTab } from "./SupplierInfoTab";
-import { PaymentInfoTab } from "./PaymentInfoTab";
+import AddBankAccountModal from "../../../components/CompanySetup/AddBankAccountModal";
 import { useSupplierForm } from "../../../hooks/useSupplierForm";
 import type {
   SupplierTab,
@@ -13,7 +13,8 @@ import type {
 import { AddressTab } from "./AddressTab";
 import TermsAndCondition from "../../TermsAndCondition";
 import type { TermSection } from "../../../types/termsAndCondition";
-
+import { BankAccount } from "../../../types/company";
+import { useEffect } from "react";
 interface SupplierModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -21,13 +22,16 @@ interface SupplierModalProps {
   initialData?: Supplier | null;
   isEditMode?: boolean;
   existingSupplierCodes?: string[]; 
+  bankAccounts?: BankAccount[];
+  setBankAccounts?: React.Dispatch<React.SetStateAction<BankAccount[]>>;
 }
 const tabs: { key: SupplierTab; icon: typeof Building2; label: string }[] = [
   { key: "supplier", icon: Building2, label: "Supplier" },
-  { key: "payment", icon: DollarSign, label: "Payment" },
+  { key: "payment", icon: DollarSign, label: "Bank Details" },
   { key: "address", icon: MapPin, label: "Address" },
   { key: "terms", icon: FileText, label: "Terms" },
 ];
+
 
 const SupplierModal: React.FC<SupplierModalProps> = ({
   isOpen,
@@ -35,8 +39,12 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   onSubmit,
   initialData,
   isEditMode = false,
-  existingSupplierCodes = [] 
+  existingSupplierCodes = [] ,
+  bankAccounts, 
+  setBankAccounts
+
 }) => {
+  const [showModal, setShowModal] = useState(false);
   const {
     form,
     loading,
@@ -54,7 +62,31 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     onSuccess: onSubmit,
     isOpen,
     existingSupplierCodes
+    
+    
   });
+//  useEffect(() => {
+//   if (!isOpen) return;
+
+//   const name = form.supplierName || initialData?.supplierName;
+//   if (!name) return;
+
+//   const fetchAccounts = async () => {
+//     try {
+//       const res = await getBankAccounts({
+//         accountFor: "Supplier",
+//         partyName: name,
+//       });
+
+//       setBankAccounts?.(res.data || []);
+//     } catch (err) {
+//       console.error(err);
+//     }
+//   };
+
+//   fetchAccounts();
+// }, [isOpen]);
+  
 
   const footer = (
     <>
@@ -136,7 +168,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="gap-6  p-4">
+        <div className="gap-6 p-4 flex-1 min-h-0 overflow-hidden">
           {activeTab === "supplier" && (
             <SupplierInfoTab
               form={form}
@@ -144,13 +176,81 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               errors={errors}
             />
           )}
-          {activeTab === "payment" && (
-            <PaymentInfoTab
-              form={form}
-              onChange={handleChange}
-              errors={errors}
-            />
+         {activeTab === "payment" && (
+  <>
+    {/* Add Button */}
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-lg font-semibold">Bank Accounts</h3>
+
+      <Button
+        variant="primary"
+        type="button"
+        onClick={() => setShowModal(true)}
+      >
+        + Add Bank Account
+      </Button>
+    </div>
+
+    {/* Simple List (optional but recommended) */}
+    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+     {(!bankAccounts || bankAccounts.length === 0) && (
+  <p className="text-sm text-muted">No bank accounts added</p>
+)}
+
+      {bankAccounts?.map((acc) => (
+        <div
+          key={acc.id}
+          className="border p-3 rounded-lg flex justify-between items-center"
+        >
+          <div>
+            <p className="font-medium">{acc.bankName}</p>
+            <p className="text-xs text-muted">
+              {acc.accountHolderName} • {acc.accountNo}
+            </p>
+          </div>
+
+          {acc.isdefault && (
+            <span className="text-green-600 text-xs font-semibold">
+              Default
+            </span>
           )}
+        </div>
+      ))}
+    </div>
+
+    {/* Modal */}
+    <AddBankAccountModal
+  isOpen={showModal}
+  onClose={() => setShowModal(false)}
+  defaultAccountFor="Supplier"
+  partyName={form.supplierName}
+  skipApi={true}
+onSubmit={(data) => {
+  const mapped: BankAccount = {
+    id: Date.now().toString(),
+    bankName: data.bank,
+    accountNo: data.accountNumber,
+    accountHolderName: data.accountHolder,
+    
+    sortCode: data.sortCode,
+    currency: data.currency,
+    
+    dateAdded: data.dateAdded,
+    branchAddress: data.address,
+    isdefault: data.isDefault,
+  };
+
+  handleChange({
+  target: {
+    name: "bankAccounts",
+    value: [...(form.bankAccounts || []), mapped],
+  },
+} as any);
+  setShowModal(false);
+}}
+    />
+  </>
+)}
           {activeTab === "address" && (
             <AddressTab form={form} onChange={handleChange} errors={errors} />
           )}

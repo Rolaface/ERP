@@ -7,7 +7,6 @@ export interface SupplierFormData {
   taxCategory: string;
   paymentTerms: string;
   currency?: string;
-  bankAccount?: string;
   contactPerson?: string;
   phoneCode?: string;
   phoneNo?: string;
@@ -16,11 +15,6 @@ export interface SupplierFormData {
   emailId?: string;
   dateOfAddition?: string;
   openingBalance?: string | number;
-  accountNumber?: string;
-  accountHolder?: string;
-  sortCode?: string;
-  swiftCode?: string;
-  branchAddress?: string;
   billingAddressLine1?: string;
   billingAddressLine2?: string;
   billingCity?: string;
@@ -31,8 +25,19 @@ export interface SupplierFormData {
     terms?: {
     buying?: TermSection;
   };
+  bankAccounts: SupplierBankAccount[];
 }
 
+export interface SupplierBankAccount {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  sortCode: string;
+  swiftCode?: string;
+  branchAddress?: string;
+  isDefault?: boolean;
+}
 
 export const emptySupplierForm: SupplierFormData = {
   tpin: "",
@@ -41,7 +46,7 @@ export const emptySupplierForm: SupplierFormData = {
   taxCategory: "",
   paymentTerms: "",
   currency: "",
-  bankAccount: "",
+  bankAccounts: [],
   contactPerson: "",
   phoneCode: "",
   phoneNo: "",
@@ -50,11 +55,6 @@ export const emptySupplierForm: SupplierFormData = {
   emailId: "",
   dateOfAddition: "",
   openingBalance: 0,
-  accountNumber: "",
-  accountHolder: "",
-  sortCode: "",
-  swiftCode: "",
-  branchAddress: "",
   billingAddressLine1: "",
   billingAddressLine2: "",
   billingCity: "",
