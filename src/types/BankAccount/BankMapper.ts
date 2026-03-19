@@ -1,19 +1,37 @@
 import type { BankAccount } from "./bank";
 
-export const mapBankAccounts = (response: any): BankAccount[] => {
-  const raw = response?.message?.data?.data ?? [];
+const validAccountTypes = ["Supplier", "Customer", "Company", "Bank"] as const;
+
+export const mapGetBankAccounts = (data: any): BankAccount[] => {
+  const raw = data?.bank_accounts ?? [];
+
+  if (!Array.isArray(raw)) return [];
 
   return raw.map((item: any, index: number) => ({
-    id: index, 
-    bankName: item.value ?? "",
-    swiftCode: item.description ?? "",
-    accountNo: "",
-    accountHolderName: "",
-    sortCode: "",
-    currency: "",
-    openingBalance: "",
-    dateAdded: "",
-    branchAddress: "",
-    isdefault: false,
+    id: item.name || `row-${index}`,
+
+    bankName: item.bankName || "",
+    accountNo: item.accountNo || "",
+    accountHolderName: item.accountHolderName || "",
+
+    swiftCode: item.swiftCode || "",
+    sortCode: item.sortCode || "",
+
+    currency: item.currency || "",
+    openingBalance: 0,
+
+    dateAdded: item.dateAdded || "",
+    branchAddress: item.branchAddress || "",
+
+    isDefault: Number(item.isDefault) === 1,
+    isDisabled: Number(item.isDisabled) === 1,
+
+    accountFor: validAccountTypes.includes(item.accountFor as any)
+      ? (item.accountFor as BankAccount["accountFor"])
+      : "",
+
+    partyName: item.partyName || "",
+
+    isCompanyAccount: Number(item.is_company_account) === 1,
   }));
 };

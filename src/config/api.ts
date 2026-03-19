@@ -1,3 +1,4 @@
+import { getAllBankAccounts } from "../api/BankAccountApi";
 import { ENV } from "./env";
 
 export const ERP_BASE = "";
@@ -74,6 +75,9 @@ Account:{
   createnewBankaccount:`${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
   getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_bank_company_supplier_cutomer`,
   getReportingAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_company_ledger_accounts`,
+  getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
+  updateStatus: `${ERP_BASE}/api/method/custom_api.api.bank_account.set_bank_account_status`,
+  getLedgerAccounts:`${ERP_BASE}/api/method/custom_api.api.search.get_company_ledger_accounts`
 },
 
 accounting:{
