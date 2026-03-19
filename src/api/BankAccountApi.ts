@@ -1,6 +1,8 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
+import { mapGetBankAccounts } from "../types/BankAccount/BankMapper";
+import type { BankAccount } from "../types/BankAccount/bank";
 
 const api = createAxiosInstance(ERP_BASE);
 export const Account = API.Account;
@@ -30,6 +32,8 @@ type Option = {
   value: string;
   meta?: Record<string, any>;
 };
+
+const validAccountTypes = ["Supplier", "Customer", "Company", "Bank"];
 
 const mapBankResponse = (
   filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency",
@@ -102,4 +106,68 @@ export async function getCompanyAccounts() {
       accountNumber: item.account_number,
     },
   }));
+}
+
+
+
+export async function getAllBankAccounts(
+  onlyCompany = false
+): Promise<BankAccount[]> {
+  const url = onlyCompany
+    ? `${Account.getAllBankAccounts}?company=true`
+    : Account.getAllBankAccounts;
+
+  const resp: AxiosResponse = await api.get(url);
+
+  const uiData = mapGetBankAccounts(resp.data);
+
+  return uiData.map((item) => ({
+    id: item.id,
+    bankName: item.bankName,
+    accountNo: item.accountNo,
+    accountHolderName: item.accountHolderName,
+    swiftCode: "", 
+    sortCode: item.sortCode,
+    currency: item.currency,
+    openingBalance: 0,
+    dateAdded: item.dateAdded,
+    branchAddress: item.branchAddress,
+    isDefault: item.isDefault,
+    isDisabled:item.isDisabled,
+    accountFor: validAccountTypes.includes(item.accountFor)
+    ? (item.accountFor as "Supplier" | "Customer" | "Company" | "Bank")
+    : "",
+  }));
+}
+
+
+type UpdateBankStatusPayload = {
+  bankAccountId: string;
+  isDefault?: 0 | 1;
+  isDisabled?: 0 | 1;
+};
+
+export async function updateBankAccountStatus(
+  payload: UpdateBankStatusPayload
+) {
+  try {
+    const resp: AxiosResponse = await api.put(
+      Account.updateStatus,
+      payload
+    );
+
+    const res = resp?.data?.message;
+
+    if (res?.status_code !== 200) {
+      throw new Error(res?.message || "Failed to update bank status");
+    }
+
+    return res;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message?.message ||
+        error.message ||
+        "Something went wrong"
+    );
+  }
 }

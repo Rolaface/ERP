@@ -1,86 +1,127 @@
-import React, { useState } from "react";
-import type { BankAccount } from "../../types/company";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import type { BankAccount } from "../../types/BankAccount/bank";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
-
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
+import { getAllBankAccounts, updateBankAccountStatus } from "../../api/BankAccountApi";
+import { showApiError } from "../../utils/alert";
 
-interface Props {
-  bankAccounts: BankAccount[];
-  setBankAccounts: React.Dispatch<React.SetStateAction<BankAccount[]>>;
-}
-
-const mask = (val?: string | number) => {
+const mask = (val?: string | number | null) => {
   const str = val ? String(val) : "";
-  if (!str) return "";
+  if (!str) return "—";
   if (str.length <= 4) return "•".repeat(str.length);
   return "•".repeat(str.length - 4) + str.slice(-4);
 };
 
-const BankDetails: React.FC<Props> = ({
-  bankAccounts,
-  setBankAccounts,
-}) => {
+const BankDetails: React.FC = () => {
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingRow, setEditingRow] = useState<BankAccount | null>(null);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  // 🔹 FORM → UI MODEL MAPPER
-  const mapFormToBank = (data: any): BankAccount => ({
-    id: editingRow?.id ?? Date.now(), 
-    bankName: data.bank,
-    accountNo: data.accountNumber,
-    accountHolderName: data.accountHolder,
-    swiftCode: data.swiftCode,
-    sortCode: data.sortCode,
-    currency: data.currency,
-    openingBalance: "",
-    dateAdded: data.dateAdded,
-    branchAddress: data.address,
-    isDefault: data.isDefault,
-  });
+  const fetchAccounts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getAllBankAccounts(true);
 
-  // 🔹 ADD / EDIT (UI ONLY)
-  const handleSubmit = (data: any) => {
-    const mapped = mapFormToBank(data);
+      const safeData = data.map((item) => ({
+        ...item,
+        id: String(item.id),
+      }));
 
-    if (editingRow) {
-      // EDIT
-      setBankAccounts((prev) =>
-        prev.map((b) => (b.id === editingRow.id ? mapped : b))
-      );
-    } else {
-      // ADD
-      setBankAccounts((prev) => [...prev, mapped]);
+      setBankAccounts(safeData);
+    } catch {
+      showApiError("Failed to load bank accounts");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
+
+
+  const filteredData = useMemo(() => {
+    const q = search.toLowerCase();
+
+    return bankAccounts.filter((b) =>
+      [
+        b.bankName || "",
+        b.accountHolderName || "",
+        b.accountNo || "",
+        b.currency || "",
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [bankAccounts, search]);
+
+  const handleSetDefault = useCallback(async (row: BankAccount) => {
+    if (row.isDisabled) {
+      showApiError("Disabled account cannot be default");
+      return;
     }
 
-    setShowModal(false);
-    setEditingRow(null);
-  };
+    try {
+      setActionLoadingId(String(row.id));
 
-  // 🔹 DELETE (UI ONLY)
-  const handleDelete = (id: number | string) => {
-    setBankAccounts((prev) => prev.filter((b) => b.id !== id));
-  };
+      await updateBankAccountStatus({
+        bankAccountId: String(row.id),
+        isDefault: 1,
+        isDisabled: 0,
+      });
 
-  // 🔹 SET DEFAULT (UI ONLY)
-  const handleSetDefault = (id: number | string) => {
-    setBankAccounts((prev) =>
-      prev.map((b) => ({
-        ...b,
-        isDefault: b.id === id,
-      }))
-    );
-  };
+      await fetchAccounts();
+    } catch (err: any) {
+      showApiError(err.message);
+    } finally {
+      setActionLoadingId(null);
+    }
+  }, [fetchAccounts]);
+
+  const handleToggleDisable = useCallback(async (row: BankAccount) => {
+    try {
+      setActionLoadingId(String(row.id));
+
+      await updateBankAccountStatus({
+        bankAccountId: String(row.id),
+        isDisabled: row.isDisabled ? 0 : 1,
+        isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
+      });
+
+      await fetchAccounts();
+    } catch (err: any) {
+      showApiError(err.message);
+    } finally {
+      setActionLoadingId(null);
+    }
+  }, [fetchAccounts]);
 
   const columns: Column<BankAccount>[] = [
     {
+      key: "dateAdded",
+      header: "Date Added",
+      render: (row) =>
+        row.dateAdded
+          ? new Date(row.dateAdded).toLocaleDateString()
+          : "—",
+    },
+    {
       key: "bankName",
       header: "Bank",
+      render: (row) => (
+        <span className="font-semibold">
+          {row.bankName || "—"}
+        </span>
+      ),
     },
     {
       key: "accountNo",
@@ -90,11 +131,7 @@ const BankDetails: React.FC<Props> = ({
     {
       key: "accountHolderName",
       header: "Account Holder",
-    },
-    {
-      key: "swiftCode",
-      header: "SWIFT",
-      render: (row) => <span>{mask(row.swiftCode)}</span>,
+      render: (row) => <span>{row.accountHolderName || "—"}</span>,
     },
     {
       key: "sortCode",
@@ -104,11 +141,11 @@ const BankDetails: React.FC<Props> = ({
     {
       key: "currency",
       header: "Currency",
+      render: (row) => (
+        <span>{row.currency || "—"}</span>
+      ),
     },
-    {
-      key: "dateAdded",
-      header: "Date Added",
-    },
+    
     {
       key: "isDefault",
       header: "Default",
@@ -117,6 +154,16 @@ const BankDetails: React.FC<Props> = ({
           <span className="text-green-600 font-semibold">Yes</span>
         ) : (
           "—"
+        ),
+    },
+    {
+      key: "isDisabled",
+      header: "Status",
+      render: (row) =>
+        row.isDisabled ? (
+          <span className="text-red-500 font-semibold">Disabled</span>
+        ) : (
+          <span className="text-green-600">Active</span>
         ),
     },
     {
@@ -135,14 +182,20 @@ const BankDetails: React.FC<Props> = ({
           />
 
           <ActionMenu
-            onDelete={() => handleDelete(row.id)}
             customActions={[
               {
                 label: "Set Default",
-                onClick: () => handleSetDefault(row.id),
+                onClick: () => handleSetDefault(row),
+                disabled: actionLoadingId === String(row.id),
+              },
+              {
+                label: row.isDisabled ? "Enable" : "Disable",
+                onClick: () => handleToggleDisable(row),
+                disabled: actionLoadingId === String(row.id),
               },
             ]}
           />
+
         </ActionGroup>
       ),
     },
@@ -152,8 +205,9 @@ const BankDetails: React.FC<Props> = ({
     <div className="p-8">
       <Table
         columns={columns}
-        data={bankAccounts}
-        rowKey={(row) => row.id}
+        data={filteredData}
+        loading={loading}
+        rowKey={(row) => String(row.id)}
         showToolbar
         searchValue={search}
         onSearch={setSearch}
@@ -165,6 +219,12 @@ const BankDetails: React.FC<Props> = ({
         }}
       />
 
+      {!loading && filteredData.length === 0 && (
+        <div className="text-center text-gray-500 py-10">
+          No bank accounts found
+        </div>
+      )}
+
       {showModal && (
         <AddBankAccountModal
           isOpen={showModal}
@@ -172,7 +232,9 @@ const BankDetails: React.FC<Props> = ({
             setShowModal(false);
             setEditingRow(null);
           }}
-          onSubmit={handleSubmit}
+          onSubmit={() => {
+            fetchAccounts();
+          }}
           initialData={editingRow}
         />
       )}
