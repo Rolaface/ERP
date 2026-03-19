@@ -1,3 +1,4 @@
+type AccountType = "Supplier" | "Customer" | "Company" | "Bank";
 export interface BankAccount {
   id: number | string;
 
@@ -9,11 +10,16 @@ export interface BankAccount {
   sortCode: string;
 
   currency: string;
-  openingBalance: number | string;
+  openingBalance: number;
 
   dateAdded: string;
   branchAddress: string;
   
 
-  isdefault: boolean;
+  isDefault: boolean;
+  isDisabled: boolean;
+  accountFor: "" | AccountType;
+  partyName?: string;         
+  isCompanyAccount?: boolean; 
 }
+

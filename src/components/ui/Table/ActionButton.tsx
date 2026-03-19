@@ -111,6 +111,7 @@ interface ActionMenuProps {
     danger?: boolean;
     icon?: React.ReactNode;
     divider?: boolean;
+    disabled?: boolean;
   }[];
 }
 
@@ -202,12 +203,16 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
             <button
               key={action.label}
               type="button"
+              disabled={action.disabled} 
               onClick={() => {
+                if (action.disabled) return; 
                 setOpen(false);
                 action.onClick?.();
               }}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 ${action.danger ? "text-red-500" : "text-main"
-                }`}
+              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2
+    ${action.danger ? "text-red-500" : "text-main"}
+    ${action.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-row-hover"}
+  `}
               role="menuitem"
             >
               {action.icon && <span className="w-4 h-4">{action.icon}</span>}

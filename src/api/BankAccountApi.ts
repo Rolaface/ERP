@@ -1,6 +1,8 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
+import { mapGetBankAccounts } from "../types/BankAccount/BankMapper";
+import type { BankAccount } from "../types/BankAccount/bank";
 
 const api = createAxiosInstance(ERP_BASE);
 export const Account = API.Account;
@@ -30,6 +32,19 @@ type Option = {
   value: string;
   meta?: Record<string, any>;
 };
+
+
+type BankAccountFilters = {
+  company?: boolean;
+  party_type?: "Supplier" | "Customer";
+  party?: string;
+  page?:number;
+  page_size?:number;
+};
+
+
+
+const validAccountTypes = ["Supplier", "Customer", "Company", "Bank"];
 
 const mapBankResponse = (
   filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency",
@@ -87,9 +102,7 @@ const mapBankResponse = (
 };
 
 export async function getCompanyAccounts() {
-  const resp: AxiosResponse = await api.get(
-    "/api/method/custom_api.api.search.get_company_ledger_accounts"
-  );
+  const resp: AxiosResponse = await api.get(Account.getLedgerAccounts);
 
   const raw = resp?.data?.message?.data?.data;
 
@@ -102,4 +115,78 @@ export async function getCompanyAccounts() {
       accountNumber: item.account_number,
     },
   }));
+}
+
+
+type BankAccountResponse = {
+  data: BankAccount[];
+  pagination: {
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  };
+};
+
+export async function getAllBankAccounts(
+  filters?: BankAccountFilters
+): Promise<BankAccountResponse> {
+
+  const params = new URLSearchParams();
+
+  if (filters?.page) params.append("page", String(filters.page));
+  if (filters?.page_size) params.append("page_size", String(filters.page_size));
+  if (filters?.company) params.append("company", "true");
+  if (filters?.party_type) params.append("party_type", filters.party_type);
+  if (filters?.party) params.append("party", filters.party);
+
+  const url = params.toString()
+    ? `${Account.getAllBankAccounts}?${params.toString()}`
+    : Account.getAllBankAccounts;
+
+  const resp: AxiosResponse = await api.get(url);
+
+
+  const raw = resp?.data?.message?.data;
+
+  return {
+    data: mapGetBankAccounts(raw), 
+    pagination: raw?.pagination || {
+      total: 0,
+      page: 1,
+      page_size: 10,
+      total_pages: 1,
+    },
+  };
+}
+
+type UpdateBankStatusPayload = {
+  bankAccountId: string;
+  isDefault?: 0 | 1;
+  isDisabled?: 0 | 1;
+};
+
+export async function updateBankAccountStatus(
+  payload: UpdateBankStatusPayload
+) {
+  try {
+    const resp: AxiosResponse = await api.put(
+      Account.updateStatus,
+      payload
+    );
+
+    const res = resp?.data?.message;
+
+    if (res?.status_code !== 200) {
+      throw new Error(res?.message || "Failed to update bank status");
+    }
+
+    return res;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message?.message ||
+        error.message ||
+        "Something went wrong"
+    );
+  }
 }

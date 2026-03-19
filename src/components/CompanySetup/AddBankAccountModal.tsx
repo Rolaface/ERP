@@ -6,7 +6,7 @@ import { Building2 } from "lucide-react";
 import { useBankAccLogic } from "./Usebankacclogic";
 import DatePickerInput from "../calendar/DatePickerInput";
 import SearchSelect2 from "../ui/modal/SearchSelect";
-
+import { BankAccount } from "../../types/BankAccount/bank";
 
 
 interface Props {
@@ -15,6 +15,7 @@ interface Props {
   onSubmit: (data: any) => void;
   defaultAccountFor?: AccountType;
   partyName?: string;
+  initialData?: BankAccount | null;
   skipApi?: boolean;  
 }
 
@@ -300,10 +301,6 @@ const AddBankAccountModal: React.FC<Props> = ({
 
 
           </div>
-
-
-
-
         </div>
       </form>
     </Modal>
