@@ -86,6 +86,7 @@ export const API = {
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
+    getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
   },
 
   /* =========================

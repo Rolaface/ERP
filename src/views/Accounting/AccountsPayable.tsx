@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import {
+  FaPlus,
   FaSearch,
   FaFilter,
   FaDownload,
@@ -27,8 +28,13 @@ import PurchaseInvoiceDetailModal, {
 } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
 import { showApiError } from "../../utils/alert";
 
-const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+import { getPaymentById } from "../../api/CustomerPayment";
+import PaymentEntryDetailModal, {
+  type PaymentEntryDetail,
+} from "../../components/PaymentEntryDetailModal";
 
+const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+type PayableVoucherType = "Purchase Invoice" | "Payment Entry";
 type PayableRecord = {
   report_date: string;
   supplier: string;
@@ -41,6 +47,7 @@ type PayableRecord = {
   bill_date: string | null;
   cost_center: string | null;
   currency: string;
+  status: string;
   amounts: {
     invoiced: number;
     paid: number;
@@ -86,6 +93,13 @@ const AccountsPayable = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [selectedVoucherType, setSelectedVoucherType] = useState<
+    PayableVoucherType | ""
+  >("");
+  const voucherTypeOptions: PayableVoucherType[] = [
+    "Purchase Invoice",
+    "Payment Entry",
+  ];
   const [costCenterOptions, setCostCenterOptions] = useState<string[]>([]);
   const [supplierOptions, setSupplierOptions] = useState<string[]>([]);
   const [payableAccountOptions, setPayableAccountOptions] = useState<string[]>(
@@ -110,7 +124,6 @@ const AccountsPayable = () => {
   const [sortBy, setSortBy] = useState("id");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // ── Drawer State for Purchase Invoice ──
   const [company, setCompany] = useState<any | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<PurchaseInvoiceDetail | null>(
@@ -119,6 +132,11 @@ const AccountsPayable = () => {
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+
+  const [paymentDrawerOpen, setPaymentDrawerOpen] = useState(false);
+  const [paymentDrawerData, setPaymentDrawerData] =
+    useState<PaymentEntryDetail | null>(null);
+  const [paymentDrawerLoading, setPaymentDrawerLoading] = useState(false);
 
   useEffect(() => {
     getCompanyById(COMPANY_ID)
@@ -170,6 +188,7 @@ const AccountsPayable = () => {
     selectedCostCenter,
     selectedSuppliers,
     selectedPayableAccount,
+    selectedVoucherType,
   ]);
 
   const fetchData = async () => {
@@ -179,6 +198,9 @@ const AccountsPayable = () => {
         page,
         page_size: pageSize,
         search: searchTerm,
+        ...(filterStatus && filterStatus !== "all"
+          ? { status: filterStatus }
+          : {}),
         report_date: reportDate || undefined,
         cost_center: selectedCostCenter || undefined,
         party: selectedSuppliers.length
@@ -188,6 +210,7 @@ const AccountsPayable = () => {
         group_by: selectedGroupBy.length
           ? (selectedGroupBy.join(",") as any)
           : undefined,
+        voucher_type: selectedVoucherType || undefined,
       });
 
       if (response?.message?.data) {
@@ -241,7 +264,7 @@ const AccountsPayable = () => {
               paidAmount: row.amounts?.paid || 0,
               outstandingAmount: row.amounts?.outstanding || 0,
               due: dueDisplay,
-              status,
+              status: row.status,
               days: daysLeft,
               priority,
             };
@@ -273,11 +296,12 @@ const AccountsPayable = () => {
     selectedCostCenter,
     selectedSuppliers,
     selectedPayableAccount,
+    selectedVoucherType,
   ]);
 
-  // ── Handlers for View Detail Modal ──
   const handleViewClick = async (row: Payable, e?: React.MouseEvent) => {
     e?.stopPropagation();
+
     if (row.voucherType === "Purchase Invoice") {
       setDrawerOpen(true);
       setDrawerLoading(true);
@@ -292,8 +316,23 @@ const AccountsPayable = () => {
       } finally {
         setDrawerLoading(false);
       }
+    } else if (row.voucherType === "Payment Entry") {
+      setPaymentDrawerOpen(true);
+      setPaymentDrawerLoading(true);
+      setPaymentDrawerData(null);
+      try {
+        const res = (await getPaymentById(row.id))?.message;
+
+        if (res?.status_code === 200 || res?.status === "success") {
+          setPaymentDrawerData(res.data as PaymentEntryDetail);
+        }
+      } catch (err) {
+        showApiError(err);
+      } finally {
+        setPaymentDrawerLoading(false);
+      }
     } else {
-      console.log("View detail is only supported for Purchase Invoices.");
+      console.log(`View detail is not supported for ${row.voucherType}.`);
     }
   };
 
@@ -733,6 +772,58 @@ const AccountsPayable = () => {
             <button
               onClick={() =>
                 setActiveDropdown(
+                  activeDropdown === "voucherType" ? null : "voucherType",
+                )
+              }
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedVoucherType !== ""
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
+            >
+              Voucher Type
+            </button>
+
+            {activeDropdown === "voucherType" && (
+              <div className="absolute top-full left-0 mt-2 bg-card border border-theme rounded-lg z-20 w-56 shadow-xl py-1">
+                <button
+                  onClick={() => {
+                    setSelectedVoucherType("");
+                    setActiveDropdown(null);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                    selectedVoucherType === ""
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                  }`}
+                >
+                  All Types
+                </button>
+
+                {voucherTypeOptions.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => {
+                      setSelectedVoucherType(opt);
+                      setActiveDropdown(null);
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                      selectedVoucherType === opt
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() =>
+                setActiveDropdown(
                   activeDropdown === "groupBy" ? null : "groupBy",
                 )
               }
@@ -934,6 +1025,7 @@ const AccountsPayable = () => {
             selectedCostCenter !== "" ||
             selectedPayableAccount !== "" ||
             selectedGroupBy.length > 0 ||
+            selectedVoucherType !== "" ||
             filterStatus !== "all" ||
             searchTerm !== "" ||
             reportDate !== getTodayDate()) && (
@@ -946,6 +1038,7 @@ const AccountsPayable = () => {
                 setSelectedCostCenter("");
                 setSelectedPayableAccount("");
                 setReportDate(getTodayDate());
+                setSelectedVoucherType("");
                 setActiveDropdown(null);
               }}
               className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
@@ -1038,6 +1131,16 @@ const AccountsPayable = () => {
           if (drawerPdfUrl?.startsWith("blob:"))
             URL.revokeObjectURL(drawerPdfUrl);
           setDrawerPdfUrl(null);
+        }}
+      />
+
+      <PaymentEntryDetailModal
+        open={paymentDrawerOpen}
+        data={paymentDrawerData}
+        loading={paymentDrawerLoading}
+        onClose={() => {
+          setPaymentDrawerOpen(false);
+          setPaymentDrawerData(null);
         }}
       />
     </div>

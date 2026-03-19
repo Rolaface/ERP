@@ -88,6 +88,10 @@ export interface AccountsPayableFilters {
   group_by?: "supplier" | "voucher" | "none";
   search?: any;
 
+  voucher_type?: "Purchase Invoice" | "Payment Entry";
+  // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
+  status?: any;
+
   page?: number;
   page_size?: number;
 }
@@ -119,6 +123,9 @@ export interface AccountsReceivableFilters {
 
   group_by?: "customer" | "voucher" | "none";
   search?: any;
+  voucher_type?: "Sales Invoice" | "Payment Entry";
+  // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
+  status?: any;
 
   page?: number;
   page_size?: number;
