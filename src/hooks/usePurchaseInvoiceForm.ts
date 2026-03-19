@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { showApiError, showSuccess, showValidationError } from "../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showValidationError,
+  showPOConflictDialog,
+} from "../utils/alert";
 import type {
   PurchaseInvoiceFormData,
   POTab,
@@ -83,17 +88,16 @@ export const usePurchaseInvoiceForm = ({
       try {
         const res = await getCompanyById(COMPANY_ID);
 
-        console.log("RAW COMPANY RESPONSE:", res);
-
+       
         const company =
           res?.data?.data || // if wrapped
           res?.data || // if semi wrapped
           res; // fallback
 
-        console.log("FINAL COMPANY:", company);
+       
 
         if (!company?.companyName) {
-          console.log("Company not found");
+         
           return;
         }
 
@@ -220,6 +224,9 @@ export const usePurchaseInvoiceForm = ({
   const validateTab = (tab: POTab): string | null => {
     if (tab === "details") {
       if (!form.supplier) return "Supplier is required";
+      
+      if (usePO && !form.poNumber)
+      return "Purchase Order is required";
 
       if (form.supplier && !form.supplierInvoiceNumber?.trim())
         return "Supplier Invoice No is required";
@@ -312,6 +319,38 @@ export const usePurchaseInvoiceForm = ({
           };
         }),
       );
+     
+const hasExistingItems =
+  form.items &&
+  form.items.length > 0 &&
+  form.items.some((i) => i.itemCode);
+
+let finalItems = enrichedItems;
+
+if (hasExistingItems) {
+  const action = await showPOConflictDialog(
+    form.items.length,
+    data.poId
+  );
+
+  if (action === "cancel") return;
+
+  if (action === "keep") {
+    const existingCodes = new Set(
+      form.items.map((i) => i.itemCode)
+    );
+
+    const newItems = enrichedItems.filter(
+      (item) => !existingCodes.has(item.itemCode)
+    );
+
+    finalItems = [...form.items, ...newItems];
+  }
+
+  if (action === "replace") {
+    finalItems = enrichedItems;
+  }
+}
 
       setForm((prev) => ({
         ...prev,
@@ -346,7 +385,7 @@ export const usePurchaseInvoiceForm = ({
         },
 
         // ITEMS
-        items: enrichedItems,
+        items: finalItems,
 
         // // SUMMARY
         // totalQuantity: data.summary?.totalQuantity || 0,
@@ -448,7 +487,7 @@ export const usePurchaseInvoiceForm = ({
       }));
       setPoLoading(true);
       setPoList([]);
-      setUsePO(false);
+      setUsePO(true);
 
       setForm((prev) => ({
         ...prev,
@@ -641,6 +680,7 @@ export const usePurchaseInvoiceForm = ({
       showValidationError("Tax Category is required");
       return;
     }
+
 
     const errors = validatePI(form);
 
