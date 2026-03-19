@@ -885,5 +885,4 @@ const CustomerModal: React.FC<{
     </Modal>
   );
 };
-
 export default CustomerModal;

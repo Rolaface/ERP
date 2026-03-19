@@ -39,7 +39,7 @@ export interface BankAccount {
   branchAddress: string;
   currency: string;
   dateAdded: string;
-  accountName: string;
+  accountName?: string;
  iban?: string;
   // openingBalance: number;
   isdefault?: boolean;

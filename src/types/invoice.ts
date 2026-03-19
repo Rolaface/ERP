@@ -28,6 +28,8 @@ export interface Invoice {
   industryBases?: string;
   items: InvoiceItem[];
   terms: InvoiceTerms;
+ shippingCharges?:number;
+ insuranceCharges?:number;
 }
 
 export interface InvoiceSummary {

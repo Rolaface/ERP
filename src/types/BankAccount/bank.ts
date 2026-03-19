@@ -14,6 +14,7 @@ export interface BankAccount {
 
   dateAdded: string;
   branchAddress: string;
+  
 
   isDefault: boolean;
   isDisabled: boolean;
