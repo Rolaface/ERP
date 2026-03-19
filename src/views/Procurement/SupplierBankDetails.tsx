@@ -35,28 +35,27 @@ const SupplierBankDetails: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  /* ================= FETCH ================= */
 
   const fetchAccounts = useCallback(async () => {
-    if (!supplierName) return;
+        if (!supplierName) return;
 
-    try {
-      setLoading(true);
+        try {
+            setLoading(true);
 
-      const res = await getAllBankAccounts({
-        party_type: "Supplier",
-        party: supplierName,
-      });
+            const res = await getAllBankAccounts({
+                party_type: "Supplier",
+                party: supplierName,
+            });
 
-      // SAFE MAPPING (handles multiple API shapes)
-      const data = res?.data?.items || res?.data || [];
-      setBankAccounts(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      showApiError(err?.message || "Failed to load bank accounts");
-    } finally {
-      setLoading(false);
-    }
-  }, [supplierName]);
+            setBankAccounts(res.data);
+
+        } catch (err: any) {
+            showApiError(err?.message || "Failed to load bank accounts");
+        } finally {
+            setLoading(false);
+        }
+    }, [supplierName]);
+
 
   useEffect(() => {
     fetchAccounts();
