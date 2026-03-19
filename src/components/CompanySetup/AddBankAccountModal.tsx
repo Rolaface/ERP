@@ -33,6 +33,7 @@ const AddBankAccountModal: React.FC<Props> = ({
   onSubmit,
   defaultAccountFor,
   partyName,
+  initialData,
   skipApi,
 }) => {
   const {
@@ -45,31 +46,31 @@ const AddBankAccountModal: React.FC<Props> = ({
     entities,
     currencies,
     reportingAccounts,
-    isCompany,
-  } = useBankAccLogic({ onSubmit, onClose, skipApi });
+    isCompany
+  } = useBankAccLogic({ onSubmit, onClose, skipApi});
+
   useEffect(() => {
-    if (defaultAccountFor) {
-      setForm((prev) => ({
-        ...prev,
-        accountFor: defaultAccountFor,
-      }));
-    }
+  if (!initialData && defaultAccountFor) {
+    setForm(prev => ({
+      ...prev,
+      accountFor: defaultAccountFor
+    }));
+  }
 
-    if (partyName && entities.length) {
-      const match = entities.find(
-        (e) => e.label.toLowerCase() === partyName.toLowerCase(),
-      );
+  if (partyName && entities.length) {
+    const match = entities.find(
+      (e) => e.label.toLowerCase() === partyName.toLowerCase()
+    );
 
-      setForm((prev) => ({
-        ...prev,
-        name: match?.label || partyName,
-        currency: match?.meta?.currency || prev.currency,
-
-        accountHolder: match?.label || partyName,
-        accountHolderEdited: false,
-      }));
-    }
-  }, [defaultAccountFor, partyName, entities]);
+    setForm(prev => ({
+      ...prev,
+      name: match?.label || partyName,
+      currency: match?.meta?.currency || prev.currency,
+      accountHolder: match?.label || partyName,
+      accountHolderEdited: false,
+    }));
+  }
+}, [defaultAccountFor, partyName, entities, initialData]);
 
   const footer = (
     <>

@@ -6,7 +6,7 @@ const today = () => new Date().toISOString().split("T")[0];
 
 type AccountType = "Supplier" | "Customer" | "Company" | "Bank" | "Currency";
 
-export const useBankAccLogic = ({ onSubmit, onClose,skipApi=false }: any) => {
+export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => {
   const [form, setForm] = useState({
     dateAdded: today(),
     accountFor: "" as AccountType | "",
@@ -45,6 +45,7 @@ export const useBankAccLogic = ({ onSubmit, onClose,skipApi=false }: any) => {
         name: company.label,
         accountHolder: company.label,
         accountHolderEdited: false,
+        currency: company.meta?.currency || prev.currency, 
       }));
     }
   }, [form.accountFor, entities]);
@@ -163,56 +164,56 @@ export const useBankAccLogic = ({ onSubmit, onClose,skipApi=false }: any) => {
     });
   };
 
- const handleSubmit = async (e: any) => {
-  e.preventDefault();
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
 
-  if (!form.accountFor || !form.bank || !form.accountNumber || !form.name) {
-    showApiError("Please fill required fields");
-    return;
-  }
-
-  try {
-    const payload = {
-      accountHolderName: form.accountHolder,
-      accountNo: form.accountNumber,
-      bankName: form.bank,
-      branchAddress: form.address,
-      currency: form.currency,
-      dateAdded: form.dateAdded,
-      sortCode: form.sortCode,
-      iban: form.iban,
-      accountFor: form.accountFor,
-      partyName: form.name,
-      isDefault: form.isDefault ? "1" : "0",
-      reportingAccount: form.reportingAccount,
-    };
-
-  
-    if (skipApi) {
-      onSubmit?.(payload);   
-      handleReset();
-      onClose();
+    if (!form.accountFor || !form.bank || !form.accountNumber || !form.name) {
+      showApiError("Please fill required fields");
       return;
     }
 
+    try {
+      const payload = {
+        accountHolderName: form.accountHolder,
+        accountNo: form.accountNumber,
+        bankName: form.bank,
+        branchAddress: form.address,
+        currency: form.currency,
+        dateAdded: form.dateAdded,
+        sortCode: form.sortCode,
+        iban: form.iban,
+        accountFor: form.accountFor,
+        partyName: form.name,
+        isDefault: form.isDefault ? "1" : "0",
+        reportingAccount: form.reportingAccount,
+      };
 
-    const res = await createNewBankAccount(payload);
 
-    const successMsg =
-      res?.message?.message;
-    showSuccess(successMsg);
+      if (skipApi) {
+        onSubmit?.(payload);
+        handleReset();
+        onClose();
+        return;
+      }
 
-    onSubmit?.(payload);
-    handleReset();
-    onClose();
 
-  } catch (err: any) {
-    const msg =
-      err?.response?.data?.message?.message ;
+      const res = await createNewBankAccount(payload);
 
-    showApiError(msg);
-  }
-};
+      const successMsg =
+        res?.message?.message;
+      showSuccess(successMsg);
+
+      onSubmit?.(payload);
+      handleReset();
+      onClose();
+
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message?.message;
+
+      showApiError(msg);
+    }
+  };
   return {
     form,
     setForm,

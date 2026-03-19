@@ -73,13 +73,18 @@ const mapBankResponse = (
         },
       }));
 
-    case "Company":
-      return [
+case "Company":
+  return raw?.company
+    ? [
         {
-          label: raw,
-          value: raw,
+          label: raw.company,
+          value: raw.company,
+          meta: {
+            currency: raw.currency, 
+          },
         },
-      ];
+      ]
+    : [];
 
     case "Bank":
       return raw.map((item: any) => ({
