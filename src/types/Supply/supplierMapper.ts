@@ -19,20 +19,6 @@ export const mapSupplierApi = (d: any): Supplier => ({
   billingCity: d.billingCity || d.city || "",
   billingCountry: d.billingCountry || d.country || "",
   billingPostalCode: d.billingPostalCode || d.postalCode || "",
-  bankAccounts:
-    d.bankAccounts?.length > 0
-      ? d.bankAccounts
-      : [
-          {
-            bankName: d.bankAccount || "",
-            accountNumber: d.accountNumber || "",
-            accountHolder: d.accountHolder || "",
-            sortCode: d.sortCode || "",
-            swiftCode: d.swiftCode || "",
-            branchAddress: d.branchAddress || "",
-            isDefault: true,
-          },
-        ],
   openingBalance: Number(d.openingBalance || 0),
   paymentTerms: d.paymentTerms || "",
   dateOfAddition: d.dateOfAddition,

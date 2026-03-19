@@ -10,6 +10,7 @@ import { generateSupplierCode } from "../types/Supply/generateSupplierCode";
 import { getCompanyById } from "../api/companySetupApi";
 const companyId = import.meta.env.VITE_COMPANY_ID;
 import type { TermSection } from "../types/termsAndCondition";
+import { createNewBankAccount } from "../api/BankAccountApi";
 
 interface UseSupplierFormProps {
   initialData?: Supplier | null;
@@ -416,30 +417,57 @@ export const useSupplierForm = ({
         formattedForm,
         initialData?.supplierId,
       );
+let res: any;
+if (isEditMode) {
+  res = await updateSupplier(payload);
+} else {
+  res = await createSupplier(payload);
+}
 
-      let res;
+/* Backend failure */
+if (!res || ![200, 201].includes(res.status_code)) {
+  showApiError(res);
+  return;
+}
 
-      if (isEditMode) {
-        res = await updateSupplier(payload);
-      } else {
-        res = await createSupplier(payload);
-      }
+/* Step 2 — Bank accounts (only on create, not edit) */
+if (!isEditMode) {
+  const bankAccounts = form.bankAccounts || [];
 
-      /* Backend failure */
-      if (!res || ![200, 201].includes(res.status_code)) {
-        showApiError(res);
-        return;
-      }
+  if (bankAccounts.length > 0) {
+    const results = await Promise.allSettled(
+      bankAccounts.map((acc) =>
+        createNewBankAccount({
+          accountFor: "Supplier",
+          partyName: form.supplierName,
+          bankName: acc.bankName,
+          accountNo: acc.accountNumber,
+          accountHolderName: acc.accountHolder,
+          sortCode: acc.sortCode,
+          branchAddress: acc.branchAddress || "",
+          isDefault: acc.isDefault ? "1" : "0",
+          currency: form.currency || "",
+          dateAdded: form.dateOfAddition || new Date().toISOString().split("T")[0],
+        })
+      )
+    );
 
-      /* Success */
-      showSuccess(
-        res.message ||
-        (isEditMode
-          ? "Supplier Updated"
-          : "Supplier Created"),
-      );
+   const failed = results.filter((r) => r.status === "rejected");
+if (failed.length > 0) {
+  showApiError(
+    new Error(`Supplier created but ${failed.length} bank account(s) failed to save`)
+  );
+}
+  }
+}
 
-      onSuccess?.(form);
+/* Success */
+showSuccess(
+  res?.message?.message ||
+  res?.message ||
+  (isEditMode ? "Supplier Updated" : "Supplier Created"),
+);
+onSuccess?.(form);
     } catch (err: any) {
       showApiError(err);
     } finally {
@@ -498,7 +526,7 @@ export const useSupplierForm = ({
             sortCode: "",
             swiftCode: "",
             branchAddress: "",
-            isDefault: true, ...emptySupplierForm,
+            isDefault: true, 
           }
         ],
 

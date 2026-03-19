@@ -3,7 +3,7 @@ import { Building2, DollarSign, MapPin , FileText } from "lucide-react";
 import Modal from "../../ui/modal/modal";
 import { Button } from "../../ui/modal/formComponent";
 import { SupplierInfoTab } from "./SupplierInfoTab";
-import AddBankAccountModal from "../../../components/CompanySetup/AddBankAccountModal";
+
 import { useSupplierForm } from "../../../hooks/useSupplierForm";
 import type {
   SupplierTab,
@@ -14,7 +14,8 @@ import { AddressTab } from "./AddressTab";
 import TermsAndCondition from "../../TermsAndCondition";
 import type { TermSection } from "../../../types/termsAndCondition";
 import { BankAccount } from "../../../types/company";
-import { useEffect } from "react";
+
+import { PaymentInfoTab } from "./PaymentInfoTab";
 interface SupplierModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -44,7 +45,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   setBankAccounts
 
 }) => {
-  const [showModal, setShowModal] = useState(false);
+
   const {
     form,
     loading,
@@ -176,80 +177,12 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               errors={errors}
             />
           )}
-         {activeTab === "payment" && (
-  <>
-    {/* Add Button */}
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-lg font-semibold">Bank Accounts</h3>
-
-      <Button
-        variant="primary"
-        type="button"
-        onClick={() => setShowModal(true)}
-      >
-        + Add Bank Account
-      </Button>
-    </div>
-
-    {/* Simple List (optional but recommended) */}
-    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-     {(!bankAccounts || bankAccounts.length === 0) && (
-  <p className="text-sm text-muted">No bank accounts added</p>
-)}
-
-      {bankAccounts?.map((acc) => (
-        <div
-          key={acc.id}
-          className="border p-3 rounded-lg flex justify-between items-center"
-        >
-          <div>
-            <p className="font-medium">{acc.bankName}</p>
-            <p className="text-xs text-muted">
-              {acc.accountHolderName} • {acc.accountNo}
-            </p>
-          </div>
-
-          {acc.isdefault && (
-            <span className="text-green-600 text-xs font-semibold">
-              Default
-            </span>
-          )}
-        </div>
-      ))}
-    </div>
-
-    {/* Modal */}
-    <AddBankAccountModal
-  isOpen={showModal}
-  onClose={() => setShowModal(false)}
-  defaultAccountFor="Supplier"
-  partyName={form.supplierName}
-  skipApi={true}
-onSubmit={(data) => {
-  const mapped: BankAccount = {
-    id: Date.now().toString(),
-    bankName: data.bank,
-    accountNo: data.accountNumber,
-    accountHolderName: data.accountHolder,
-    
-    sortCode: data.sortCode,
-    currency: data.currency,
-    
-    dateAdded: data.dateAdded,
-    branchAddress: data.address,
-    isdefault: data.isDefault,
-  };
-
-  handleChange({
-  target: {
-    name: "bankAccounts",
-    value: [...(form.bankAccounts || []), mapped],
-  },
-} as any);
-  setShowModal(false);
-}}
-    />
-  </>
+{activeTab === "payment" && (
+  <PaymentInfoTab
+    form={form}
+    onChange={handleChange}
+    errors={errors}
+  />
 )}
           {activeTab === "address" && (
             <AddressTab form={form} onChange={handleChange} errors={errors} />
