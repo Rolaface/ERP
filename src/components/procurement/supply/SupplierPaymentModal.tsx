@@ -17,6 +17,7 @@ interface SupplierPaymentModalProps {
   billAmount?: number;
   amountPaid?: number;
   onSubmit?: (data: any) => void;
+  
 }
 
 const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({

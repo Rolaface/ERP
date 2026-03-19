@@ -6,7 +6,7 @@ const today = () => new Date().toISOString().split("T")[0];
 
 type AccountType = "Supplier" | "Customer" | "Company" | "Bank" | "Currency";
 
-export const useBankAccLogic = ({ onSubmit, onClose }: any) => {
+export const useBankAccLogic = ({ onSubmit, onClose,skipApi=false }: any) => {
   const [form, setForm] = useState({
     dateAdded: today(),
     accountFor: "" as AccountType | "",
@@ -163,51 +163,56 @@ export const useBankAccLogic = ({ onSubmit, onClose }: any) => {
     });
   };
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
+ const handleSubmit = async (e: any) => {
+  e.preventDefault();
 
-    if (!form.accountFor || !form.bank || !form.accountNumber || !form.name) {
-      showApiError("Please fill required fields");
+  if (!form.accountFor || !form.bank || !form.accountNumber || !form.name) {
+    showApiError("Please fill required fields");
+    return;
+  }
+
+  try {
+    const payload = {
+      accountHolderName: form.accountHolder,
+      accountNo: form.accountNumber,
+      bankName: form.bank,
+      branchAddress: form.address,
+      currency: form.currency,
+      dateAdded: form.dateAdded,
+      sortCode: form.sortCode,
+      iban: form.iban,
+      accountFor: form.accountFor,
+      partyName: form.name,
+      isDefault: form.isDefault ? "1" : "0",
+      reportingAccount: form.reportingAccount,
+    };
+
+  
+    if (skipApi) {
+      onSubmit?.(payload);   
+      handleReset();
+      onClose();
       return;
     }
 
-    try {
-      const payload = {
-        accountHolderName: form.accountHolder,
-        accountNo: form.accountNumber,
-        bankName: form.bank,
-        branchAddress: form.address,
-        currency: form.currency,
-        dateAdded: form.dateAdded,
-        sortCode: form.sortCode,
-        iban: form.iban,
-        accountFor: form.accountFor,
-        partyName: form.name,
-        isDefault: form.isDefault ? "1" : "0",
-        // isDisable: form.isDisabled ? "1" : "0",
-        reportingAccount: form.reportingAccount,
-      };
 
-      const res = await createNewBankAccount(payload);
+    const res = await createNewBankAccount(payload);
 
-      const successMsg =
-        res?.message?.message ||
-        "Bank Account created successfully";
+    const successMsg =
+      res?.message?.message;
+    showSuccess(successMsg);
 
-      showSuccess(successMsg);
+    onSubmit?.(payload);
+    handleReset();
+    onClose();
 
-      onSubmit?.(payload);
-      handleReset();
-      onClose();
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message?.message ;
 
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.message?.message ||
-        "Something went wrong";
-
-      showApiError(msg);
-    }
-  };
+    showApiError(msg);
+  }
+};
   return {
     form,
     setForm,

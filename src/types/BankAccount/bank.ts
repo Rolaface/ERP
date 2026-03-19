@@ -13,6 +13,7 @@ export interface BankAccount {
 
   dateAdded: string;
   branchAddress: string;
+  
 
   isdefault: boolean;
 }

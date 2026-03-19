@@ -15,6 +15,7 @@ interface Props {
   onSubmit: (data: any) => void;
   defaultAccountFor?: AccountType;
   partyName?: string;
+  skipApi?: boolean;  
 }
 
 type Option = {
@@ -32,6 +33,7 @@ const AddBankAccountModal: React.FC<Props> = ({
   onSubmit,
   defaultAccountFor,
   partyName,
+  skipApi,
 }) => {
   const {
     form,
@@ -44,7 +46,7 @@ const AddBankAccountModal: React.FC<Props> = ({
     currencies,
     reportingAccounts,
     isCompany
-  } = useBankAccLogic({ onSubmit, onClose });
+  } = useBankAccLogic({ onSubmit, onClose, skipApi});
   useEffect(() => {
     if (defaultAccountFor) {
       setForm(prev => ({
@@ -78,9 +80,14 @@ const AddBankAccountModal: React.FC<Props> = ({
         <Button variant="secondary" onClick={handleReset}>
           Reset
         </Button>
-        <Button variant="primary" type="submit" form="bankForm">
-          Save Account
-        </Button>
+       <Button
+  variant="primary"
+  type="button"
+  onClick={handleSubmit}
+>
+  Save Account
+</Button>
+       
       </div>
     </>
   );

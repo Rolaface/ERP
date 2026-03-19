@@ -65,27 +65,27 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     
     
   });
- useEffect(() => {
-  if (!isOpen) return;
+//  useEffect(() => {
+//   if (!isOpen) return;
 
-  const name = form.supplierName || initialData?.supplierName;
-  if (!name) return;
+//   const name = form.supplierName || initialData?.supplierName;
+//   if (!name) return;
 
-  const fetchAccounts = async () => {
-    try {
-      const res = await getBankAccounts({
-        accountFor: "Supplier",
-        partyName: name,
-      });
+//   const fetchAccounts = async () => {
+//     try {
+//       const res = await getBankAccounts({
+//         accountFor: "Supplier",
+//         partyName: name,
+//       });
 
-      setBankAccounts?.(res.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+//       setBankAccounts?.(res.data || []);
+//     } catch (err) {
+//       console.error(err);
+//     }
+//   };
 
-  fetchAccounts();
-}, [isOpen]);
+//   fetchAccounts();
+// }, [isOpen]);
   
 
   const footer = (
@@ -224,45 +224,29 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   onClose={() => setShowModal(false)}
   defaultAccountFor="Supplier"
   partyName={form.supplierName}
-     onSubmit={async (data) => {
-  try {
-    const payload = {
-      accountHolderName: data.accountHolder,
-      accountNo: data.accountNumber,
-      bankName: data.bank,
-      branchAddress: data.address,
-      currency: data.currency,
-      dateAdded: data.dateAdded,
-      sortCode: data.sortCode,
-      iban: data.iban || "",
-      accountFor: "Supplier",
-      partyName: form.supplierName, 
-      isDefault: data.isDefault ? "1" : "0",
-      isDisable: "0",
-    };
+  skipApi={true}
+onSubmit={(data) => {
+  const mapped: BankAccount = {
+    id: Date.now().toString(),
+    bankName: data.bank,
+    accountNo: data.accountNumber,
+    accountHolderName: data.accountHolder,
+    
+    sortCode: data.sortCode,
+    currency: data.currency,
+    
+    dateAdded: data.dateAdded,
+    branchAddress: data.address,
+    isdefault: data.isDefault,
+  };
 
-    const res = await createBankAccount(payload);
-
-    const mapped: BankAccount = {
-      id: res?.id || Date.now().toString(),
-      bankName: payload.bankName,
-      accountNo: payload.accountNo,
-      accountHolderName: payload.accountHolderName,
-      swiftCode: payload.sortCode,
-      sortCode: payload.sortCode,
-      currency: payload.currency,
-      openingBalance: "",
-      dateAdded: payload.dateAdded,
-      branchAddress: payload.branchAddress,
-      isdefault: payload.isDefault === "1",
-    };
-
-   setBankAccounts?.((prev) => [...prev, mapped]);
-
-    setShowModal(false);
-  } catch (err) {
-    console.error(err);
-  }
+  handleChange({
+  target: {
+    name: "bankAccounts",
+    value: [...(form.bankAccounts || []), mapped],
+  },
+} as any);
+  setShowModal(false);
 }}
     />
   </>
