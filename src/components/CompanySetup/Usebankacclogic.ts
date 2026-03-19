@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
 import { showApiError, showSuccess } from "../../utils/alert";
-import { getBankAccounts, getCompanyAccounts, createNewBankAccount } from "../../api/BankAccountApi";
+import { getBankAccounts, createNewBankAccount } from "../../api/BankAccountApi";
 
 const today = () => new Date().toISOString().split("T")[0];
 
 type AccountType = "Supplier" | "Customer" | "Company" | "Bank" | "Currency";
+
+type Option = {
+  label: string;
+  value: string;
+  meta?: Record<string, any>;
+};
 
 export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => {
   const [form, setForm] = useState({
@@ -24,10 +30,10 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
     reportingAccount: "",
     accountHolderEdited: false,
   });
-  const [banks, setBanks] = useState<any[]>([]);
-  const [entities, setEntities] = useState<any[]>([]);
-  const [currencies, setCurrencies] = useState<any[]>([]);
-  const [reportingAccounts, setReportingAccounts] = useState<any[]>([]);
+  const [banks, setBanks] = useState<Option[]>([]);
+  const [entities, setEntities] = useState<Option[]>([]);
+  const [currencies, setCurrencies] = useState<Option[]>([]);
+  const [reportingAccounts, setReportingAccounts] = useState<Option[]>([]);
 
   const isCompany = form.accountFor === "Company";
 
@@ -45,20 +51,10 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
         name: company.label,
         accountHolder: company.label,
         accountHolderEdited: false,
-        currency: company.meta?.currency || prev.currency, 
+        currency: company.meta?.currency || prev.currency,
       }));
     }
-  }, [form.accountFor, entities]);
-
-  useEffect(() => {
-    if (form.accountFor !== "Company") {
-      setForm((prev) => ({
-        ...prev,
-        reportingAccount: "",
-      }));
-    }
-  }, [form.accountFor]);
-
+  }, [form.accountFor, entities, form.name]);
 
   useEffect(() => {
     setForm((prev) => ({
@@ -67,7 +63,7 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
       accountHolder: "",
       accountHolderEdited: false,
       reportingAccount: "",
-      currency: prev.accountFor === "Company" ? "" : prev.currency,
+      currency: form.accountFor === "Company" ? "" : prev.currency,
     }));
   }, [form.accountFor]);
 
@@ -76,7 +72,7 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
     (async () => {
       try {
         const data = await getBankAccounts("Bank");
-        setBanks(data);
+        setBanks(Array.isArray(data) ? data : []);
       } catch {
         showApiError("Failed to load banks");
       }
@@ -89,7 +85,7 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
     (async () => {
       try {
         const data = await getBankAccounts(form.accountFor as AccountType);
-        setEntities(data);
+        setEntities(Array.isArray(data) ? data : []);
       } catch {
         showApiError("Failed to load data");
       }
@@ -97,21 +93,24 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
   }, [form.accountFor]);
 
   useEffect(() => {
+    if (form.accountFor !== "Company") return;
+
     (async () => {
       try {
-        const data = await getCompanyAccounts();
-        setReportingAccounts(data);
+        const data = await getBankAccounts("Account");
+        setReportingAccounts(Array.isArray(data) ? data : []);
       } catch {
         showApiError("Failed to load reporting accounts");
       }
     })();
-  }, []);
+  }, [form.accountFor]);
+
 
   useEffect(() => {
     (async () => {
       try {
         const data = await getBankAccounts("Currency");
-        setCurrencies(data);
+        setCurrencies(Array.isArray(data) ? data : []);
       } catch {
         showApiError("Failed to load currencies");
       }
