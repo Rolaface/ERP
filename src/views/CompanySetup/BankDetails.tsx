@@ -24,19 +24,33 @@ const BankDetails: React.FC = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+      const [page, setPage] = useState(1);
+      const [pageSize, setPageSize] = useState(10);
+      const [totalPages, setTotalPages] = useState(1);
+      const [totalItems, setTotalItems] = useState(0);
+
 
   const fetchAccounts = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getAllBankAccounts({ company: true });
+  
+      const res = await getAllBankAccounts({
+        company: true ,
+        page,
+        page_size: pageSize,
+      });
+  
       setBankAccounts(res.data);
-
+      setTotalPages(res.pagination.total_pages);
+      setTotalItems(res.pagination.total);
+  
     } catch (err: any) {
-      showApiError(err?.message || "Failed to load bank accounts");
-    } finally {
+    showApiError(err?.message || "Failed to load bank accounts");
+  } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, pageSize]);
+  
 
   useEffect(() => {
     fetchAccounts();
@@ -207,6 +221,13 @@ const BankDetails: React.FC = () => {
         searchValue={search}
         onSearch={setSearch}
         enableAdd
+          currentPage={page}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        pageSizeOptions={[10, 25, 50, 100]}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        onPageChange={setPage}
         addLabel="Add Bank Account"
         onAdd={() => {
           setEditingRow(null);
