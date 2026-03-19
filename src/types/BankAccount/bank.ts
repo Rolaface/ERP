@@ -19,21 +19,7 @@ export interface BankAccount {
   isDefault: boolean;
   isDisabled: boolean;
   accountFor: "" | AccountType;
+  partyName?: string;         
+  isCompanyAccount?: boolean; 
 }
 
-export type BankAccountUI = {
-  id: string | number;
-  bankName: string;
-  accountNo: string;
-  accountHolderName: string;
-  sortCode: string;
-  currency: string;
-  dateAdded: string;
-  branchAddress: string;
-  iban: string;
-  isDefault: boolean;
-  isDisabled: boolean;
-  accountType: string;
-  partyName: string;
-  accountFor:string,
-};

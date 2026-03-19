@@ -33,6 +33,17 @@ type Option = {
   meta?: Record<string, any>;
 };
 
+
+type BankAccountFilters = {
+  company?: boolean;
+  party_type?: "Supplier" | "Customer";
+  party?: string;
+  page?:number;
+  page_size?:number;
+};
+
+
+
 const validAccountTypes = ["Supplier", "Customer", "Company", "Bank"];
 
 const mapBankResponse = (
@@ -91,9 +102,7 @@ const mapBankResponse = (
 };
 
 export async function getCompanyAccounts() {
-  const resp: AxiosResponse = await api.get(
-    "/api/method/custom_api.api.search.get_company_ledger_accounts"
-  );
+  const resp: AxiosResponse = await api.get(Account.getLedgerAccounts);
 
   const raw = resp?.data?.message?.data?.data;
 
@@ -109,37 +118,47 @@ export async function getCompanyAccounts() {
 }
 
 
+type BankAccountResponse = {
+  data: BankAccount[];
+  pagination: {
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  };
+};
 
 export async function getAllBankAccounts(
-  onlyCompany = false
-): Promise<BankAccount[]> {
-  const url = onlyCompany
-    ? `${Account.getAllBankAccounts}?company=true`
+  filters?: BankAccountFilters
+): Promise<BankAccountResponse> {
+
+  const params = new URLSearchParams();
+
+  if (filters?.page) params.append("page", String(filters.page));
+  if (filters?.page_size) params.append("page_size", String(filters.page_size));
+  if (filters?.company) params.append("company", "true");
+  if (filters?.party_type) params.append("party_type", filters.party_type);
+  if (filters?.party) params.append("party", filters.party);
+
+  const url = params.toString()
+    ? `${Account.getAllBankAccounts}?${params.toString()}`
     : Account.getAllBankAccounts;
 
   const resp: AxiosResponse = await api.get(url);
 
-  const uiData = mapGetBankAccounts(resp.data);
 
-  return uiData.map((item) => ({
-    id: item.id,
-    bankName: item.bankName,
-    accountNo: item.accountNo,
-    accountHolderName: item.accountHolderName,
-    swiftCode: "", 
-    sortCode: item.sortCode,
-    currency: item.currency,
-    openingBalance: 0,
-    dateAdded: item.dateAdded,
-    branchAddress: item.branchAddress,
-    isDefault: item.isDefault,
-    isDisabled:item.isDisabled,
-    accountFor: validAccountTypes.includes(item.accountFor)
-    ? (item.accountFor as "Supplier" | "Customer" | "Company" | "Bank")
-    : "",
-  }));
+  const raw = resp?.data?.message?.data;
+
+  return {
+    data: mapGetBankAccounts(raw), 
+    pagination: raw?.pagination || {
+      total: 0,
+      page: 1,
+      page_size: 10,
+      total_pages: 1,
+    },
+  };
 }
-
 
 type UpdateBankStatusPayload = {
   bankAccountId: string;

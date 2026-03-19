@@ -28,16 +28,11 @@ const BankDetails: React.FC = () => {
   const fetchAccounts = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getAllBankAccounts(true);
+      const res = await getAllBankAccounts({ company: true });
+      setBankAccounts(res.data);
 
-      const safeData = data.map((item) => ({
-        ...item,
-        id: String(item.id),
-      }));
-
-      setBankAccounts(safeData);
-    } catch {
-      showApiError("Failed to load bank accounts");
+    } catch (err: any) {
+      showApiError(err?.message || "Failed to load bank accounts");
     } finally {
       setLoading(false);
     }
@@ -145,7 +140,7 @@ const BankDetails: React.FC = () => {
         <span>{row.currency || "—"}</span>
       ),
     },
-    
+
     {
       key: "isDefault",
       header: "Default",

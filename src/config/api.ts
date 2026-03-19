@@ -77,6 +77,7 @@ Account:{
   getReportingAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_company_ledger_accounts`,
   getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
   updateStatus: `${ERP_BASE}/api/method/custom_api.api.bank_account.set_bank_account_status`,
+  getLedgerAccounts:`${ERP_BASE}/api/method/custom_api.api.search.get_company_ledger_accounts`
 },
 
 accounting:{
