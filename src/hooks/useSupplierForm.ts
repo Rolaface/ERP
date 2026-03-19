@@ -156,21 +156,7 @@ export const useSupplierForm = ({
       newErrors.openingBalance = "Opening Balance is required";
     }
 
-    if (!form.bankAccounts || form.bankAccounts.length === 0) {
-      newErrors.bankAccount = "At least one bank account is required";
-    } else {
-      const invalid = form.bankAccounts.some(
-        acc =>
-          !acc.bankName ||
-          !acc.accountNumber ||
-          !acc.accountHolder ||
-          !acc.sortCode
-      );
-
-      if (invalid) {
-        newErrors.bankAccount = "Please fill all bank account details";
-      }
-    }
+  
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -249,18 +235,7 @@ export const useSupplierForm = ({
       setForm({
         ...emptySupplierForm,
         dateOfAddition: new Date().toISOString().split("T")[0],
-        bankAccounts: [
-          {
-            id: crypto.randomUUID(),
-            bankName: "",
-            accountNumber: "",
-            accountHolder: "",
-            sortCode: "",
-            swiftCode: "",
-            branchAddress: "",
-            isDefault: true,
-          }
-        ]
+       bankAccounts: []
       });
       setIsCodeEdited(false);
     }
@@ -377,9 +352,7 @@ export const useSupplierForm = ({
       if (!form.paymentTerms) emptyFields.push("Credit Days");
       if (!form.dateOfAddition) emptyFields.push("Date of Addition");
       if (!form.openingBalance && form.openingBalance !== 0) emptyFields.push("Opening Balance");
-      if (!form.bankAccounts || form.bankAccounts.length === 0) {
-        emptyFields.push("Bank Accounts");
-      }
+     
       const message = emptyFields.length > 0
         ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
         : "Please fix validation errors in Payment tab";
@@ -435,7 +408,7 @@ if (!isEditMode) {
   const bankAccounts = form.bankAccounts || [];
 
   if (bankAccounts.length > 0) {
-    const results = await Promise.allSettled(
+    const results = await Promise.all(
       bankAccounts.map((acc) =>
         createNewBankAccount({
           accountFor: "Supplier",
@@ -447,19 +420,26 @@ if (!isEditMode) {
           branchAddress: acc.branchAddress || "",
           isDefault: acc.isDefault ? "1" : "0",
           currency: form.currency || "",
-          dateAdded: form.dateOfAddition || new Date().toISOString().split("T")[0],
+          dateAdded:
+            form.dateOfAddition ||
+            new Date().toISOString().split("T")[0],
         })
       )
     );
 
-   const failed = results.filter((r) => r.status === "rejected");
-if (failed.length > 0) {
-  showApiError(
-    new Error(`Supplier created but ${failed.length} bank account(s) failed to save`)
-  );
-}
+    const failed = results.filter(
+      (res) => !res || ![200, 201].includes(res.status_code)
+    );
+
+    if (failed.length > 0) {
+      console.error("Bank account failures:", failed);
+      throw new Error(
+        `${failed.length} bank account(s) failed to save`
+      );
+    }
   }
 }
+
 
 /* Success */
 showSuccess(

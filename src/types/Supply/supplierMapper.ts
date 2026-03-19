@@ -45,15 +45,7 @@ export const mapSupplierToApi = (
   phoneNo: f.phoneNo,
   alternateNo: f.alternateNo,
   emailId: f.emailId,
-   bankAccounts: (f.bankAccounts || []).map(acc => ({
-    bankName: acc.bankName,
-    accountNumber: acc.accountNumber,
-    accountHolder: acc.accountHolder,
-    sortCode: acc.sortCode,
-    swiftCode: acc.swiftCode,
-    branchAddress: acc.branchAddress,
-    isDefault: acc.isDefault || false,
-  })),
+   
 
   billingAddressLine1: f.billingAddressLine1,
   billingAddressLine2: f.billingAddressLine2,

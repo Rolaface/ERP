@@ -16,7 +16,7 @@ interface Props {
   defaultAccountFor?: AccountType;
   partyName?: string;
   initialData?: BankAccount | null;
-  skipApi?: boolean;  
+
 }
 
 type Option = {
@@ -34,7 +34,7 @@ const AddBankAccountModal: React.FC<Props> = ({
   defaultAccountFor,
   partyName,
   initialData,
-  skipApi,
+ 
 }) => {
   const {
     form,
@@ -47,7 +47,7 @@ const AddBankAccountModal: React.FC<Props> = ({
     currencies,
     reportingAccounts,
     isCompany
-  } = useBankAccLogic({ onSubmit, onClose, skipApi});
+  } = useBankAccLogic({ onSubmit, onClose});
 
   useEffect(() => {
   if (!initialData && defaultAccountFor) {

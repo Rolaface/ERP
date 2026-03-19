@@ -6,7 +6,8 @@ const today = () => new Date().toISOString().split("T")[0];
 
 type AccountType = "Supplier" | "Customer" | "Company" | "Bank" | "Currency";
 
-export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => {
+// ✅ Removed skipApi from props entirely
+export const useBankAccLogic = ({ onSubmit, onClose }: any) => {
   const [form, setForm] = useState({
     dateAdded: today(),
     accountFor: "" as AccountType | "",
@@ -31,35 +32,28 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
 
   const isCompany = form.accountFor === "Company";
 
-
+  // Auto-fill company name when accountFor = Company
   useEffect(() => {
-    if (
-      form.accountFor === "Company" &&
-      entities.length === 1 &&
-      !form.name
-    ) {
+    if (form.accountFor === "Company" && entities.length === 1 && !form.name) {
       const company = entities[0];
-
       setForm((prev) => ({
         ...prev,
         name: company.label,
         accountHolder: company.label,
         accountHolderEdited: false,
-        currency: company.meta?.currency || prev.currency, 
+        currency: company.meta?.currency || prev.currency,
       }));
     }
   }, [form.accountFor, entities]);
 
+  // Clear reportingAccount when not Company
   useEffect(() => {
     if (form.accountFor !== "Company") {
-      setForm((prev) => ({
-        ...prev,
-        reportingAccount: "",
-      }));
+      setForm((prev) => ({ ...prev, reportingAccount: "" }));
     }
   }, [form.accountFor]);
 
-
+  // Reset name/holder/currency when accountFor changes
   useEffect(() => {
     setForm((prev) => ({
       ...prev,
@@ -71,7 +65,7 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
     }));
   }, [form.accountFor]);
 
-
+  // Load banks list
   useEffect(() => {
     (async () => {
       try {
@@ -83,9 +77,9 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
     })();
   }, []);
 
+  // Load entities based on accountFor
   useEffect(() => {
     if (!form.accountFor) return;
-
     (async () => {
       try {
         const data = await getBankAccounts(form.accountFor as AccountType);
@@ -96,17 +90,21 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
     })();
   }, [form.accountFor]);
 
+  // Load reporting accounts — silently fail, not critical
   useEffect(() => {
     (async () => {
       try {
         const data = await getCompanyAccounts();
         setReportingAccounts(data);
       } catch {
-        showApiError("Failed to load reporting accounts");
+        // ✅ Silently ignore — reporting accounts are only needed for Company type
+        // and the API may not be available in all environments
+        setReportingAccounts([]);
       }
     })();
   }, []);
 
+  // Load currencies
   useEffect(() => {
     (async () => {
       try {
@@ -118,28 +116,19 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
     })();
   }, []);
 
-
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
 
-
     if (name === "accountHolder") {
-      setForm((prev) => ({
-        ...prev,
-        accountHolder: value,
-        accountHolderEdited: true,
-      }));
+      setForm((prev) => ({ ...prev, accountHolder: value, accountHolderEdited: true }));
       return;
     }
 
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
+
   const handleDateChange = (name: string, value: string) => {
     setForm((p) => ({ ...p, [name]: value }));
   };
@@ -188,32 +177,17 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
         reportingAccount: form.reportingAccount,
       };
 
-
-      if (skipApi) {
-        onSubmit?.(payload);
-        handleReset();
-        onClose();
-        return;
-      }
-
-
-      const res = await createNewBankAccount(payload);
-
-      const successMsg =
-        res?.message?.message;
-      showSuccess(successMsg);
-
+      // ✅ Always call onSubmit directly — API call is handled by the parent (PaymentInfoTab)
       onSubmit?.(payload);
       handleReset();
       onClose();
 
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message?.message;
-
+      const msg = err?.response?.data?.message?.message;
       showApiError(msg);
     }
   };
+
   return {
     form,
     setForm,
@@ -225,6 +199,6 @@ export const useBankAccLogic = ({ onSubmit, onClose, skipApi = false }: any) => 
     banks,
     entities,
     reportingAccounts,
-    isCompany
+    isCompany,
   };
 };

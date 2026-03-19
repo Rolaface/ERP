@@ -182,6 +182,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     form={form}
     onChange={handleChange}
     errors={errors}
+    isEditMode={isEditMode} 
   />
 )}
           {activeTab === "address" && (
