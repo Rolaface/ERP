@@ -44,7 +44,7 @@ const CustomerDetailView: React.FC<Props> = ({
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "quotations" | "invoices" | "payments" | "statement"
+    "overview" | "bank" | "quotations" | "invoices" | "payments" | "statement"
   >("overview");
 
   const q = searchTerm.trim().toLowerCase();
@@ -80,15 +80,8 @@ const CustomerDetailView: React.FC<Props> = ({
 
   const billingAddress = [bLine1, bLine2, bLine3].filter(Boolean).join("\n");
   const sellingTerms = customer?.terms?.selling;
-  const getPhaseName = (p: any, index: number) => {
-  if (p.name) return p.name;
-
-  const condition = p.condition?.toLowerCase() || "";
-
-  if (condition.includes("advance")) return "Advance";
-  if (condition.includes("delivery")) return "On Delivery";
-
-  return `Phase ${index + 1}`;
+ const getPhaseName = (p: any) => {
+  return p.name || "";
 };
 
 const formatPercentage = (value: any) => {
@@ -252,6 +245,7 @@ ${sellingTerms?.liability || ""}
             <div className="flex">
               {[
                 { id: "overview", label: "Overview", icon: <Globe /> },
+                 { id: "bank", label: "Bank Details", icon: <Building2 /> },
                 { id: "quotations", label: "Quotations", icon: <FileText /> },
                 { id: "invoices", label: "Invoices", icon: <Receipt /> },
                 { id: "payments", label: "Payments", icon: <CreditCard /> },
