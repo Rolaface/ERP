@@ -203,6 +203,11 @@ export const API = {
     editInvoice: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.edit_sales_invoice`,
   },
 
+  analytics: {
+    getSalesAnalytics: `${ERP_BASE}/api/method/custom_api.api.sales_analytics.get_sales_analytics`,
+    getPurchaseAnalytics: `${ERP_BASE}/api/method/custom_api.api.purchase_analytics.get_purchase_analytics`,
+  },
+
   /* =========================
    * STOCK
    * ========================= */
