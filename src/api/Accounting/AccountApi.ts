@@ -2,6 +2,7 @@ import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "../axiosInstance";
 import { API, ERP_BASE } from "../../config/api";
 import type { PLResponse } from "../../types/Accounting/ProfitLoss";
+import type {CFResponse} from "../../types/Accounting/Cashflow"
 const api = createAxiosInstance(ERP_BASE);
 
 export const AccountingAPI = API.accounting;
@@ -138,5 +139,24 @@ export async function getAllReceivables(
     params: filters,
   });
 
+  return resp.data;
+}
+
+
+export interface CashFlowFilters {
+  periodicity?: "Monthly" | "Quarterly" | "Yearly" | "Half-Yearly";
+  from_fiscal_year?: string;
+  to_fiscal_year?: string;
+  from_date?: string;
+  to_date?: string;
+  filter_based_on?: "Fiscal Year" | "Date Range";
+}
+
+ 
+export async function getCashFlow(filters: CashFlowFilters): Promise<CFResponse> {
+  const resp: AxiosResponse<CFResponse> = await api.get(
+    AccountingAPI.getCashFlow,
+    { params: filters }
+  );
   return resp.data;
 }

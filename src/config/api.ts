@@ -5,8 +5,11 @@ export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
 export const API = {
-  loginApi: {
-    login: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
+
+
+  loginApi:{
+    login : `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
+    logout : `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`
   },
 
   /* =========================
@@ -65,15 +68,19 @@ export const API = {
     updateCompanyFiles: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_files`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
-
+  /* =========================
+   * ACCOUNTING
+   * ========================= */
   accounting: {
     getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
     getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
     getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
     getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
+    getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`
     getAllPayables: `${ERP_BASE}/api/method/custom_api.api.accounts_payable.get_accounts_payable`,
     getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
   },
+  
   /* =========================
    * CUSTOMER
    * ========================= */

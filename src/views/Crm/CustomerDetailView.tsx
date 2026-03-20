@@ -80,6 +80,21 @@ const CustomerDetailView: React.FC<Props> = ({
 
   const billingAddress = [bLine1, bLine2, bLine3].filter(Boolean).join("\n");
   const sellingTerms = customer?.terms?.selling;
+  const getPhaseName = (p: any, index: number) => {
+  if (p.name) return p.name;
+
+  const condition = p.condition?.toLowerCase() || "";
+
+  if (condition.includes("advance")) return "Advance";
+  if (condition.includes("delivery")) return "On Delivery";
+
+  return `Phase ${index + 1}`;
+};
+
+const formatPercentage = (value: any) => {
+  if (!value) return "";
+  return value.toString().includes("%") ? value : `${value}%`;
+};
 
   const formattedTerms = `
 PAYMENT TERMS:
@@ -186,8 +201,8 @@ ${sellingTerms?.liability || ""}
 
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* 2. TIGHT SIDEBAR */}
-        <aside className="w-64 bg-card border-r border-theme h-129 ">
-          <div className="p-3 border-b border-theme bg-row-hover/10">
+        <aside className="w-64 bg-card border-r border-theme flex flex-col ">
+          <div className="px-3 h-[42px] flex items-center border-b border-theme bg-row-hover/10 shrink-0">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
               <input
@@ -200,7 +215,7 @@ ${sellingTerms?.liability || ""}
             </div>
           </div>
 
-          <div className=" overflow-y-auto custom-scrollbar h-100 mt-5 ">
+          <div className="overflow-y-auto custom-scrollbar flex-1 p-2">
             {filteredCustomers.map((c) => (
               <button
                 key={c.id}
@@ -318,48 +333,106 @@ ${sellingTerms?.liability || ""}
                     <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
                       <div className="text-xs text-muted space-y-4">
 
-                        {/* PAYMENT TERMS */}
-                        <div>
-                          <h5 className="text-main font-semibold mb-2">Payment Terms</h5>
+                       <div className="text-xs text-muted space-y-4">
 
-                          <ul className="list-disc pl-4 space-y-1">
-                            {sellingTerms?.payment?.phases?.map((p: any) => (
-                              <li key={p.id}>
-                                <span className="font-medium text-main">{p.percentage}</span> - {p.condition}
-                              </li>
-                            ))}
-                          </ul>
+  {/* GENERAL TERMS */}
+  {sellingTerms?.general && (
+    <div>
+      <h5 className="text-main font-semibold mb-1">General</h5>
+      <p>{sellingTerms.general}</p>
+    </div>
+  )}
 
-                          <div className="mt-2 space-y-1">
-                            <p><span className="text-main font-medium">Due Dates:</span> {sellingTerms?.payment?.dueDates}</p>
-                            <p><span className="text-main font-medium">Late Charges:</span> {sellingTerms?.payment?.lateCharges}</p>
-                            <p><span className="text-main font-medium">Notes:</span> {sellingTerms?.payment?.notes}</p>
-                          </div>
-                        </div>
+  {/* PAYMENT TERMS */}
+  <div>
+    <h5 className="text-main font-semibold mb-2">Payment Terms</h5>
 
-                        {/* DELIVERY */}
-                        <div>
-                          <h5 className="text-main font-semibold mb-1">Delivery</h5>
-                          <p>{sellingTerms?.delivery}</p>
-                        </div>
+    <ul className="space-y-2">
+      {sellingTerms?.payment?.phases?.map((p: any, index: number) => {
+        const phaseName = getPhaseName(p, index);
+        const percentage = formatPercentage(p.percentage);
 
-                        {/* CANCELLATION */}
-                        <div>
-                          <h5 className="text-main font-semibold mb-1">Cancellation</h5>
-                          <p>{sellingTerms?.cancellation}</p>
-                        </div>
+        return (
+          <li key={p.id} className="border-b border-theme pb-2 last:border-none">
+            <div className="flex justify-between items-center">
+              <span className="font-medium text-main">{phaseName}</span>
+              <span className="font-semibold text-primary">{percentage}</span>
+            </div>
 
-                        {/* WARRANTY */}
-                        <div>
-                          <h5 className="text-main font-semibold mb-1">Warranty</h5>
-                          <p>{sellingTerms?.warranty}</p>
-                        </div>
+            {p.condition && (
+              <p className="text-[10px] text-muted mt-0.5">
+                {p.condition}
+              </p>
+            )}
+          </li>
+        );
+      })}
+    </ul>
 
-                        {/* LIABILITY */}
-                        <div>
-                          <h5 className="text-main font-semibold mb-1">Liability</h5>
-                          <p>{sellingTerms?.liability}</p>
-                        </div>
+    <div className="mt-3 space-y-1">
+      {sellingTerms?.payment?.dueDates && (
+        <p>
+          <span className="text-main font-medium">Due Dates:</span>{" "}
+          {sellingTerms.payment.dueDates}
+        </p>
+      )}
+
+      {sellingTerms?.payment?.lateCharges && (
+        <p>
+          <span className="text-main font-medium">Late Charges:</span>{" "}
+          {sellingTerms.payment.lateCharges}
+        </p>
+      )}
+
+      {sellingTerms?.payment?.taxes && (
+        <p>
+          <span className="text-main font-medium">Taxes:</span>{" "}
+          {sellingTerms.payment.taxes}
+        </p>
+      )}
+
+      {sellingTerms?.payment?.notes && (
+        <p>
+          <span className="text-main font-medium">Notes:</span>{" "}
+          {sellingTerms.payment.notes}
+        </p>
+      )}
+    </div>
+  </div>
+
+  {/* DELIVERY */}
+  {sellingTerms?.delivery && (
+    <div>
+      <h5 className="text-main font-semibold mb-1">Delivery</h5>
+      <p>{sellingTerms.delivery}</p>
+    </div>
+  )}
+
+  {/* CANCELLATION */}
+  {sellingTerms?.cancellation && (
+    <div>
+      <h5 className="text-main font-semibold mb-1">Cancellation</h5>
+      <p>{sellingTerms.cancellation}</p>
+    </div>
+  )}
+
+  {/* WARRANTY */}
+  {sellingTerms?.warranty && (
+    <div>
+      <h5 className="text-main font-semibold mb-1">Warranty</h5>
+      <p>{sellingTerms.warranty}</p>
+    </div>
+  )}
+
+  {/* LIABILITY */}
+  {sellingTerms?.liability && (
+    <div>
+      <h5 className="text-main font-semibold mb-1">Liability</h5>
+      <p>{sellingTerms.liability}</p>
+    </div>
+  )}
+
+</div>
 
                       </div>
                     </div>

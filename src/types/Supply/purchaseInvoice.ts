@@ -80,6 +80,10 @@ updateStock?: boolean;
   status: string;
   costCenter: string;
   project: string;
+  useSupplierAddress?: boolean;
+useDispatchAddress?: boolean;
+useShippingAddress?: boolean;
+useCompanyBillingAddress?: boolean;
 
   addresses: {
     supplierAddress: AddressBlock;
@@ -174,8 +178,8 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   currency: "",
   status: "Draft",
   destnCountryCd: "",
-  shippingRule: " ",
-  incoterm: " ",
+  shippingRule: "STANDARD",
+  incoterm: "EXW",
   taxesChargesTemplate: "",
   supplierInvoiceNumber: "",
   paymentType: "",
@@ -183,6 +187,10 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   updateStock: true,
   costCenter: "UD-001 - Udvil - RI",
   project: "Project-0001",
+  useSupplierAddress: true,
+useDispatchAddress: true,
+useShippingAddress: true,
+useCompanyBillingAddress: true,
 
   addresses: {
     supplierAddress: {

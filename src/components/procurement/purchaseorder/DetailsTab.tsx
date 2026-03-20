@@ -8,6 +8,7 @@ import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import WarehouseSelect from "../../selects/WarehouseSelect";
+import DatePickerInput from "../../calendar/DatePickerInput";
 
 interface DetailsTabProps {
   form: PurchaseOrderFormData;
@@ -18,9 +19,9 @@ interface DetailsTabProps {
   ) => void;
   onSupplierChange: (s: any) => void;
   onItemChange: (
-  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  idx: number
-) => void;
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    idx: number,
+  ) => void;
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
   getCurrencySymbol: () => string;
@@ -68,15 +69,15 @@ export const DetailsTab = ({
     }
   };
 
-const handleTopWarehouseChange = (
-  e: React.ChangeEvent<HTMLSelectElement>
-) => {
-  onFormChange(e);
+  const handleTopWarehouseChange = (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    onFormChange(e);
 
-  if (onBulkItemChange) {
-    onBulkItemChange("warehouse", e.target.value);
-  }
-};
+    if (onBulkItemChange) {
+      onBulkItemChange("warehouse", e.target.value);
+    }
+  };
   return (
     <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
       {/* TOP FIELDS */}
@@ -91,15 +92,17 @@ const handleTopWarehouseChange = (
             />
           </div>
 
-        
-          <div className="w-[135px]">
-            <ModalInput
+          <div className="w-[142px]">
+            <DatePickerInput
               label="Date"
-              type="date"
               name="date"
               value={form.date}
-              onChange={onFormChange}
               required
+              onChange={(name, value) =>
+                onFormChange({
+                  target: { name, value },
+                } as any)
+              }
             />
           </div>
 
@@ -142,16 +145,18 @@ const handleTopWarehouseChange = (
             />
           </div>
 
-            <div className="w-[135px]">
-            <ModalInput
+          <div className="w-[135px]">
+            <DatePickerInput
               label="Required By"
-              type="date"
               name="requiredBy"
               value={form.requiredBy}
-              onChange={handleTopRequiredByChange}
+              onChange={(name, value) =>
+                handleTopRequiredByChange({
+                  target: { name, value },
+                } as any)
+              }
             />
           </div>
-
 
           {/* Warehouse */}
           <div className="w-[135px]">
@@ -162,7 +167,6 @@ const handleTopWarehouseChange = (
             />
           </div>
         </div>
-
       </div>
 
       {/* Main Body */}
@@ -190,7 +194,7 @@ const handleTopWarehouseChange = (
                     </span>
                   </th>
 
-                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
+                  <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
                     Required By
                   </th>
                   <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
@@ -265,23 +269,27 @@ const handleTopWarehouseChange = (
                       </td>
 
                       <td className="px-2 py-1">
-                        <div style={{ width: "105px" }}>
-                          <ModalInput
-                            label=""
-                            type="date"
+                        <div className="w-[125px]">
+                          <DatePickerInput
                             name="requiredBy"
-                            id={`requiredBy-${i}`}
                             value={it.requiredBy || ""}
-                            onChange={(e) => onItemChange(e, i)}
+                            onChange={(name, value) =>
+                              onItemChange(
+                                {
+                                  target: { name, value },
+                                } as any,
+                                i,
+                              )
+                            }
                           />
                         </div>
                       </td>
                       <td className="px-2 py-1">
-                       <WarehouseSelect
-  compact
-  value={it.warehouse || ""}
-  onChange={(e) => onItemChange(e, i)}
-/>
+                        <WarehouseSelect
+                          compact
+                          value={it.warehouse || ""}
+                          onChange={(e) => onItemChange(e, i)}
+                        />
                       </td>
 
                       <td className="px-2 py-1">
