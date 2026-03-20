@@ -9,7 +9,8 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { getAllBankAccounts , updateBankAccountStatus} from "../../api/BankAccountApi";
-import { showApiError } from "../../utils/alert";
+
+import { showApiError, showSuccess} from "../../utils/alert";
 
 const mask = (val?: string) => {
   if (!val) return "—";
@@ -233,15 +234,16 @@ const handleSetDefault = useCallback(async (row: BankAccount) => {
       )}
 
       {/* MODAL */}
-      {showModal && (
-        <AddBankAccountModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSubmit={() => {
-            fetchAccounts(); 
-          }}
-        />
-      )}
+     {/* MODAL */}
+{showModal && (
+  <AddBankAccountModal
+    isOpen={showModal}
+    onClose={() => setShowModal(false)}
+    onSubmit={() => {
+      fetchAccounts();
+    }}
+  />
+)}
     </div>
   );
 };

@@ -17,7 +17,7 @@ export async function createNewBankAccount(payload: any) {
 }
 
 export async function getBankAccounts(
-  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency"
+  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account"
 ) {
   const resp: AxiosResponse = await api.get(
     `${Account.getBankAccounts}?filter=${filter}`
@@ -47,7 +47,7 @@ type BankAccountFilters = {
 const validAccountTypes = ["Supplier", "Customer", "Company", "Bank"];
 
 const mapBankResponse = (
-  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency",
+  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account",
   response: any
 ): Option[] => {
   const raw = response?.message?.data?.data;
@@ -101,18 +101,7 @@ case "Company":
         value: item.code || item.name,
       }));
 
-    default:
-      return [];
-  }
-};
-
-export async function getCompanyAccounts() {
-  const resp: AxiosResponse = await api.get(Account.getLedgerAccounts);
-
-  const raw = resp?.data?.message?.data?.data;
-
-  if (!raw) return [];
-
+   case "Account":
   return raw.map((item: any) => ({
     label: item.name,
     value: item.name,
@@ -120,7 +109,11 @@ export async function getCompanyAccounts() {
       accountNumber: item.account_number,
     },
   }));
-}
+
+    default:
+      return [];
+  }
+};
 
 
 type BankAccountResponse = {

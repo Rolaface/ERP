@@ -6,14 +6,15 @@ import {
   showSuccess,
   closeSwal,
   showLoading,
-  showValidationError
+  showValidationError,
 } from "../../utils/alert";
 import { getCompanyById } from "../../api/companySetupApi";
 const companyId = import.meta.env.VITE_COMPANY_ID;
 import { Card, Button } from "../ui/modal/formComponent";
 import TermsAndCondition from "../TermsAndCondition";
 import type { TermSection } from "../../types/termsAndCondition";
-import { User, Building2, MapPin, FileText } from "lucide-react";
+import { User, Building2, MapPin, FileText, DollarSign } from "lucide-react";
+import { PaymentInfoTab } from "../../components/procurement/supply/PaymentInfoTab";
 
 import {
   createCustomer,
@@ -29,7 +30,6 @@ const defaultSellingTerms: TermSection = {
   warranty: "",
   liability: "",
   payment: {
-
     dueDates: "",
     lateCharges: "",
     taxes: "",
@@ -73,7 +73,7 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   sameAsBilling: true,
 };
 
-const currencyOptions = ["ZMW", "USD", "INR" , "GHS"];
+const currencyOptions = ["ZMW", "USD", "INR", "GHS"];
 const customerTaxCategoryOptions = ["Export", "Non-Export", "LPO"];
 
 const CustomerModal: React.FC<{
@@ -105,12 +105,12 @@ const CustomerModal: React.FC<{
     billingCountry?: string;
   }>({});
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"details" | "terms" | "address">(
-    "details",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "details" | "address" | "terms" | "bank"
+  >("details");
   const [allowSubmit, setAllowSubmit] = useState(false);
-  const [companySellingTerms, setCompanySellingTerms] = useState<TermSection | null>(null);
-
+  const [companySellingTerms, setCompanySellingTerms] =
+    useState<TermSection | null>(null);
 
   useEffect(() => {
     if (!isOpen || !companyId || isEditMode) return;
@@ -142,26 +142,25 @@ const CustomerModal: React.FC<{
 
   useEffect(() => {
     if (initialData) {
-
       const splitMobile = (mobile?: string) => {
         if (!mobile) return { code: "", number: "" };
 
         const countryCodes = ["+91", "+260", "+1", "+44"]; // add as needed
 
-        const matchedCode = countryCodes.find(code =>
-          mobile.startsWith(code)
+        const matchedCode = countryCodes.find((code) =>
+          mobile.startsWith(code),
         );
 
         if (matchedCode) {
           return {
             code: matchedCode,
-            number: mobile.slice(matchedCode.length)
+            number: mobile.slice(matchedCode.length),
           };
         }
 
         return {
           code: "",
-          number: mobile
+          number: mobile,
         };
       };
 
@@ -219,12 +218,12 @@ const CustomerModal: React.FC<{
   ]);
 
   // for next button
-  const tabs: Array<"details" | "terms" | "address"> = [
+  const tabs: Array<"details" | "bank" | "address" | "terms"> = [
     "details",
+    "bank",
     "address",
     "terms",
   ];
-
   const validateDetailsTab = (): boolean => {
     const newErrors: typeof errors = {};
 
@@ -271,7 +270,6 @@ const CustomerModal: React.FC<{
         newErrors.email = "Invalid email format";
       }
     }
-
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -327,7 +325,6 @@ const CustomerModal: React.FC<{
         if (!form.currency) emptyFields.push("Currency");
         if (!form.email) emptyFields.push("Email");
 
-
         const message =
           emptyFields.length > 0
             ? `Please fill in required fields: ${emptyFields.join(", ")}`
@@ -372,6 +369,10 @@ const CustomerModal: React.FC<{
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
+     if (name === "bankAccounts") {
+    setForm((prev) => ({ ...prev, bankAccounts: value as any }));
+    return;
+  }
 
     setForm((prev) => ({
       ...prev,
@@ -385,7 +386,6 @@ const CustomerModal: React.FC<{
         [name]: undefined,
       }));
     }
-
 
     // 🔹 Email validation
     if (name === "email" && value) {
@@ -429,8 +429,6 @@ const CustomerModal: React.FC<{
 
     setLoading(true);
 
-
-
     const formattedForm = {
       ...form,
       mobile: (() => {
@@ -444,7 +442,6 @@ const CustomerModal: React.FC<{
     const payload: CustomerDetail = {
       ...cleanForm,
     };
-
 
     try {
       //  Loading
@@ -571,28 +568,32 @@ const CustomerModal: React.FC<{
         {/* Tabs - Sticky Header */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
-            {(["details", "address", "terms"] as const).map((tab) => (
+            {(["details", "bank", "address", "terms"] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2
-          ${activeTab === tab
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+          ${
+            activeTab === tab
+              ? "text-primary border-b-[3px] border-primary"
+              : "text-muted border-b-[3px] border-transparent hover:text-main"
+          }`}
               >
                 {/* ICONS KEPT FROM LOGIC 1 */}
                 {tab === "details" && <User className="w-4 h-4" />}
+                {tab === "bank" && <DollarSign className="w-4 h-4" />}
                 {tab === "terms" && <FileText className="w-4 h-4" />}
                 {tab === "address" && <MapPin className="w-4 h-4" />}
 
                 {/* LABELS */}
                 {tab === "details"
                   ? "Details"
-                  : tab === "terms"
-                    ? "Terms"
-                    : "Address"}
+                  : tab === "bank"
+                    ? "Bank Details"
+                    : tab === "address"
+                      ? "Address"
+                      : "Terms"}
               </button>
             ))}
           </div>
@@ -693,10 +694,9 @@ const CustomerModal: React.FC<{
                     { value: "ZMW", label: "ZMW" },
                     { value: "USD", label: "USD" },
                     { value: "INR", label: "INR" },
-                    {value: "GHS", label: "GHS"}
+                    { value: "GHS", label: "GHS" },
                   ]}
                 />
-
 
                 <ModalInput
                   label="Onboard Balance"
@@ -770,21 +770,33 @@ const CustomerModal: React.FC<{
                       />
                     </div>
                     {errors.mobile && (
-                      <span className="text-[10px] text-danger mt-1">{errors.mobile}</span>
+                      <span className="text-[10px] text-danger mt-1">
+                        {errors.mobile}
+                      </span>
                     )}
                   </div>
                 </div>
               </div>
             </Card>
           )}
+          {activeTab === "bank" && (
+            <PaymentInfoTab
+              form={form as any}
+              onChange={handleChange}
+              errors={{ bankAccount: errors.accountNumber }}
+              isEditMode={isEditMode}
+              partyType="Customer"
+              partyName={form.name || initialData?.name || ""}
+            />
+          )}
 
           {activeTab === "terms" && (
             <TermsAndCondition
-              terms={form.terms.selling}
+             terms={form.terms?.selling || defaultSellingTerms}
               setTerms={(updated) =>
                 setForm((p) => ({
                   ...p,
-                  terms: { ...p.terms, selling: updated, },
+                  terms: { ...p.terms, selling: updated },
                 }))
               }
               type="selling"
