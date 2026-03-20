@@ -188,3 +188,145 @@ export async function updateBankAccountStatus(
     );
   }
 }
+
+export async function createModeOfPayment(payload: {
+  name: string;
+  type: string;
+  default_account?: string;
+  enabled?: number;
+}) {
+  try {
+    const resp: AxiosResponse = await api.post(
+      Account.ModeOfPayment,
+      payload
+    );
+
+    const data = resp?.data;
+
+    if (data?.status_code !== 201) {
+      throw new Error(data?.message || "Failed to create mode of payment");
+    }
+
+    return data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error.message ||
+      "Something went wrong"
+    );
+  }
+}
+
+type ModeOfPayment = {
+  id: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+  defaultAccount?: string;
+};
+
+type ModeOfPaymentResponse = {
+  data: ModeOfPayment[];
+  pagination: {
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  };
+};
+
+export async function getAllModeOfPayment(
+  page = 1,
+  page_size = 10
+) {
+  try {
+    const url = `${Account.GetModeOfPayment}?page=${page}&page_size=${page_size}`;
+
+    const resp: AxiosResponse = await api.get(url);
+
+    const res = resp?.data; 
+
+    if (res?.status_code !== 200) {
+      throw new Error(res?.message || "Failed to fetch mode of payment");
+    }
+
+    const raw = res?.data;
+
+    return {
+      data:
+        raw?.modeOfPayments?.map((item: any) => ({
+          id: item.name,
+          name: item.modeOfPayment,
+          type: item.type,
+          enabled: item.enabled === 1,
+          defaultAccount: item.defaultAccount,
+        })) || [],
+      pagination: raw?.pagination || {
+        total: 0,
+        page: 1,
+        page_size: 10,
+        total_pages: 1,
+      },
+    };
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error.message ||
+      "Something went wrong"
+    );
+  }
+}
+
+export async function getDefaultAccounts() {
+  try {
+    const resp: AxiosResponse = await api.get(
+      Account.GetDefaultAccounts
+    );
+
+    const res = resp?.data;
+
+    if (res?.status_code !== 200) {
+      throw new Error(res?.message || "Failed to fetch default accounts");
+    }
+
+    return (
+      res?.data?.map((item: any) => ({
+        label: item.value,
+        value: item.value,
+      })) || []
+    );
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error.message ||
+      "Something went wrong"
+    );
+  }
+}
+
+
+export async function updateModeOfPaymentStatus(payload: {
+  name: string;
+  enabled: 0 | 1;
+}) {
+  try {
+    const resp: AxiosResponse = await api.put(
+      Account.UpdateStatusModeOfPayment,
+      payload
+    );
+
+    const data = resp?.data;
+
+    if (data?.status_code !== 200) {
+      throw new Error(data?.message || "Failed to update mode of payment");
+    }
+
+    return data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error.message ||
+      "Something went wrong"
+    );
+  }
+}
