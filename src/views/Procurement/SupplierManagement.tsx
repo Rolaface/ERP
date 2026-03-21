@@ -41,7 +41,7 @@ const SupplierManagement: React.FC<Props> = () => {
   const supplierCodes = suppliers.map((s) => s.supplierCode || "");
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [setSelectedPI] = useState<any | null>(null);
+  const [selectedPI, setSelectedPI] = useState<any | null>(null);
 
   const normalizeStatus = (status?: string) => {
     if (!status) return "active";
@@ -286,13 +286,23 @@ const SupplierManagement: React.FC<Props> = () => {
         supplierName={paymentSupplier?.supplierName}
         supplierId={paymentSupplier?.supplierId}
       /> */}
-      <PaymentEntryModal
-        isOpen={paymentModalOpen}
-        onClose={() => {
-          setPaymentModalOpen(false);
-          setSelectedPI(null);
-        }}
-      />
+     <PaymentEntryModal
+  isOpen={paymentModalOpen}
+  onClose={() => {
+    setPaymentModalOpen(false);
+    setSelectedPI(null);
+  }}
+  defaultValues={
+    selectedPI
+      ? {
+          paymentType: "Pay", 
+          partyType: "Supplier",
+          partyName: selectedPI.supplierName,
+          partyId: selectedPI.supplierId,
+        }
+      : undefined
+  }
+/>
     </div>
   );
 };

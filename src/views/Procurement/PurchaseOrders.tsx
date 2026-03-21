@@ -31,6 +31,7 @@ import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import PurchaseOrderDetailModal, {
   type PurchaseOrderDetail,
 } from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
+import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 
 interface PurchaseOrder {
   id: string;
@@ -76,6 +77,8 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
   const [company, setCompany] = useState<any | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(null);
 
   // ── PDF preview modal (kept — do not remove)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -147,6 +150,16 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   useEffect(() => {
     fetchOrders();
   }, [page, pageSize, filters]);
+
+  const handleMakePayment = (order: PurchaseOrder) => {
+  if (order.status !== "Approved") {
+    showApiError("Only Approved purchase orders can have payments");
+    return;
+  }
+
+  setSelectedPOForPayment(order);
+  setPaymentModalOpen(true);
+};
 
 
   const handleDrawerPdf = async (poId: string) => {
@@ -409,6 +422,14 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
                 label: "View PDF",
                 onClick: () => handlePreviewPDF(o),
               },
+              ...(o.status === "Approved"
+    ? [
+        {
+          label: "Make Payment",
+          onClick: () => handleMakePayment(o),
+        },
+      ]
+    : []),
               ...(STATUS_TRANSITIONS[o.status as POStatus] ?? []).map(
                 (status) => ({
                   label: `Mark as ${status}`,
@@ -531,6 +552,13 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
           }}
         />
       )}
+      <PaymentEntryModal
+  isOpen={paymentModalOpen}
+  onClose={() => {
+    setPaymentModalOpen(false);
+    setSelectedPOForPayment(null);
+  }}
+/>
     </div>
   );
 };

@@ -69,6 +69,59 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
   }, [selectedMode, paymentType]);
 
+
+const requestRef = React.useRef(0);
+
+useEffect(() => {
+  if (
+    form.partyId &&
+    (form.partyType === "Customer" || form.partyType === "Supplier")
+  ) {
+    const requestId = ++requestRef.current;
+
+    const run = async () => {
+      const [details] = await Promise.all([
+        fetchPartyDetails(form.partyName, form.partyType), 
+        fetchCompanyBanks(),
+        fetchPartyBanks(form.partyType, form.partyName),   
+      ]);
+
+      if (requestId !== requestRef.current) return;
+
+      if (!details) return;
+
+      onFormChange({
+        partyName: details.partyName,
+        companyBankAccount: details.companyBankAccount,
+        partyBankAccount: details.partyBankAccount,
+
+        glFrom:
+          form.paymentType === "Pay"
+            ? details.companyLedgerAccount
+            : details.partyLedgerAccount,
+
+        currencyFrom:
+          form.paymentType === "Pay"
+            ? details.companyLedgerCurrency
+            : details.partyAccountCurrency,
+
+        glTo:
+          form.paymentType === "Pay"
+            ? details.partyLedgerAccount
+            : details.companyLedgerAccount,
+
+        currencyTo:
+          form.paymentType === "Pay"
+            ? details.partyAccountCurrency
+            : details.companyLedgerCurrency,
+      });
+    };
+
+    run();
+  }
+}, [form.partyId, form.partyType, form.paymentType]);
+  
+
   const handlePartyTypeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     onChange(e);
     onFormChange({ ...PARTY_FILLED_FIELDS });
