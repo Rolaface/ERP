@@ -15,6 +15,12 @@ const CompanySetup = lazy(() => import("../views/CompanySetup/CompanySetup"));
 const UserManagement = lazy(() => import("../views/User/UserModule"));
 const FixedAssets = lazy(() => import("../views/FixedAssets/FixedAsset"));
 const BankAccountPage = lazy(() => import("../views/BankAccount/BankAccountPage"))
+const ModeOfPaymentPage = lazy(
+  () => import("../views/Mode of Payment/ModeOfPaymentSetup")
+);
+const PaymentEntry = lazy(
+  () => import("../views/PaymentEntry/PaymentEntry")
+);
 import { Toaster } from "react-hot-toast";
 import ResetPassword from "../ResetPassword";
 
@@ -42,6 +48,8 @@ const AppRoutes: React.FC = () => {
     <Route path="/companySetup" element={<CompanySetup />} />
     <Route path="/userManagement" element={<UserManagement />} />
     <Route path="/bank-account-setup" element={<BankAccountPage />} />
+    <Route path="/mode-of-payment-setup" element={<ModeOfPaymentPage />} />
+    <Route path="/payment-entry" element={<PaymentEntry />} />
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
   </Route>
 </Route>
