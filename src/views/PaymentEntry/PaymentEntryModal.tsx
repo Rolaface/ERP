@@ -163,30 +163,25 @@ useEffect(() => {
           </div>
  
           {/* Persistent summary */}
-          <div className="w-56 flex-shrink-0 border-l border-[var(--border)] bg-card p-4 flex flex-col gap-3 overflow-auto">
+          <div className="w-56 flex-shrink-0 border-l border-[var(--border)] bg-card p-4 flex flex-col gap-3 overflow-auto rounded-lg mt-4">
             <h3 className="text-sm font-semibold text-main">Summary</h3>
  
             <div>
               <p className="text-[11px] text-muted">Party Name</p>
-              <p className="text-xs font-medium text-main truncate">{form?.partyName || "—"}</p>
+              <p className="text-xs font-medium text-main break-words">
+  {form?.partyName
+    ? `${form.partyName}${form?.partyType ? ` (${form.partyType})` : ""}`
+    : "—"}
+</p>
             </div>
-            <div>
-              <p className="text-[11px] text-muted">Party Type</p>
-              <p className="text-xs font-medium text-main truncate">{form?.partyType || "—"}</p>
-            </div>
-            <div>
-              <p className="text-[11px] text-muted">Payment Type</p>
-              <p className="text-xs font-medium text-main">{form?.paymentType || "—"}</p>
-            </div>
-            <div>
-              <p className="text-[11px] text-muted">Date</p>
-              <p className="text-xs font-medium text-main">{form?.date || "—"}</p>
-            </div>
-            <div>
-              <p className="text-[11px] text-muted">Mode</p>
-              <p className="text-xs font-medium text-main">{form?.mode || "—"}</p>
-            </div>
- 
+          <div>
+  <p className="text-[11px] text-muted">Payment Type</p>
+  <p className="text-xs font-medium text-main">
+    {form?.paymentType
+      ? `${form.paymentType}${form?.mode ? ` via ${form.mode}` : ""}`
+      : "—"}
+  </p>
+</div>
             <div className="border-t border-[var(--border)]" />
  
             <div>

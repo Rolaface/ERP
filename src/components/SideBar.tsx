@@ -13,6 +13,8 @@ import {
   FaBars,
   FaChevronDown,
   FaChevronUp,
+    FaExchangeAlt,
+     FaReceipt
 } from "react-icons/fa";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -231,7 +233,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
 {
   to: "/payment-entry",
   label: "Payment Entry",
-  icon: <FaMoneyBillWave />
+  icon: < FaReceipt />
+},
+{
+  to: "/currency-conversion",
+  label: "Currency Conversion",
+  icon: <FaExchangeAlt />
+
 },
                   { to: "/settings", label: "General Settings", icon: <FaCog /> },
                 ].map((sub) => (
