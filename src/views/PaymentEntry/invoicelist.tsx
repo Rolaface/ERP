@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import { getAllSalesInvoices } from "../../api/salesApi";
+import { AlertTriangle } from "lucide-react";
 
 interface Props {
   form: any;
@@ -81,7 +82,6 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
       0
     );
 
-    // Never send `amount` key — that overwrites the payment budget
     onFormChange({
       selectedInvoices,
       allocatedAmount: totalAllocated,
@@ -91,6 +91,9 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
 
   const totalAllocated = Object.values(allocated).reduce((a, b) => a + b, 0);
   const remainingToAllocate = paymentAmount - totalAllocated;
+
+  // Show warning only when: payment is set AND some allocation exists AND there's still remaining
+  const showRemaining = paymentAmount > 0 && totalAllocated > 0 && remainingToAllocate > 0;
 
   const columns: Column<InvoiceRow>[] = [
     { key: "invoiceNumber", header: "Invoice No" },
@@ -149,7 +152,23 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
   ];
 
   return (
-    <Table columns={columns} data={data} loading={loading} showToolbar={false} />
+    <div className="flex flex-col gap-3">
+
+      {/* ✅ Warning banner — only shows when there's unallocated balance */}
+      {showRemaining && (
+        <div className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertTriangle size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-700 leading-relaxed">
+            <span className="font-semibold">₹ {remainingToAllocate.toLocaleString()}</span> is still unallocated.
+            Please allocate it to an invoice, or go to <span className="font-semibold">Details</span> and reduce the payment amount to{" "}
+            <span className="font-semibold">₹ {totalAllocated.toLocaleString()}</span>.
+          </p>
+        </div>
+      )}
+
+      <Table columns={columns} data={data} loading={loading} showToolbar={false} />
+
+    </div>
   );
 };
 

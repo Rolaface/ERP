@@ -13,6 +13,7 @@ interface PaymentDetailsTabProps {
   form: Record<string, any>;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onFormChange: (updates: Record<string, any>) => void;
+  onSettleInvoice?: () => void; // callback to switch to invoices tab
 }
 
 const PARTY_FILLED_FIELDS = {
@@ -29,6 +30,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   form,
   onChange,
   onFormChange,
+  onSettleInvoice,
 }) => {
   const { options: modeOptions, isLoading: modesLoading } = usePaymentModes();
   const { fetchPartyDetails, isLoadingDetails } = usePartyDetails();
@@ -97,19 +99,46 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     onFormChange({ amount: (e as React.ChangeEvent<HTMLInputElement>).target.value });
   };
 
+  const handleSettleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    onFormChange({ settleInvoice: checked });
+    if (checked && onSettleInvoice) {
+      onSettleInvoice(); // switch to invoices tab
+    }
+  };
+
   return (
     <div className="space-y-5">
 
-      {/* Row 1 */}
-      <div className="grid grid-cols-4 gap-4">
-        <ModalSelect label="Payment Type" name="paymentType" value={form.paymentType} onChange={onChange}
-          options={[{ label: "Pay", value: "Pay" }, { label: "Receive", value: "Receive" }, { label: "Internal Transfer", value: "Internal Transfer" }]}
+      {/* Row 1 — 4 cols but max-w constrained */}
+      <div className="grid grid-cols-4 gap-3">
+        <ModalSelect
+          label="Payment Type"
+          name="paymentType"
+          value={form.paymentType}
+          onChange={onChange}
+          options={[
+            { label: "Pay", value: "Pay" },
+            { label: "Receive", value: "Receive" },
+            { label: "Internal Transfer", value: "Internal Transfer" },
+          ]}
         />
-        <ModalSelect label="Party Type" name="partyType" value={form.partyType} onChange={handlePartyTypeChange}
-          options={[{ label: "Supplier", value: "Supplier" }, { label: "Customer", value: "Customer" }, { label: "Shareholder", value: "Shareholder" }, { label: "Employee", value: "Employee" }]}
+        <ModalSelect
+          label="Party Type"
+          name="partyType"
+          value={form.partyType}
+          onChange={handlePartyTypeChange}
+          options={[
+            { label: "Supplier", value: "Supplier" },
+            { label: "Customer", value: "Customer" },
+            { label: "Shareholder", value: "Shareholder" },
+            { label: "Employee", value: "Employee" },
+          ]}
         />
         <SearchSelect2
-          label="Name" value={form.partyName ?? ""} disabled={!partyType || isLoadingParties}
+          label="Name"
+          value={form.partyName ?? ""}
+          disabled={!partyType || isLoadingParties}
           onChange={handlePartyNameSelect}
           fetchOptions={(q): Promise<PartyOption[]> => {
             const query = q.toLowerCase();
@@ -119,9 +148,13 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         <ModalInput label="Date" type="date" name="date" value={form.date} onChange={onChange} />
       </div>
 
-      {/* Row 2 */}
-      <div className="grid grid-cols-3 gap-4">
-        <ModalSelect label="Mode of Payment" name="mode" value={form.mode ?? ""} onChange={onChange}
+      {/* Row 2 — 3 cols */}
+      <div className="grid grid-cols-4 gap-3">
+        <ModalSelect
+          label="Mode of Payment"
+          name="mode"
+          value={form.mode ?? ""}
+          onChange={onChange}
           options={modesLoading ? [{ label: "Loading...", value: "" }] : modeOptions.map((o) => ({ label: o.label, value: o.value }))}
         />
         <ModalInput label="Cheque / Reference No" name="referenceNo" value={form.referenceNo} onChange={onChange} />
@@ -137,10 +170,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           <div className="px-5 py-2.5 text-xs font-semibold text-main">Paid To</div>
         </div>
 
-        {/* Bank Account, Account Paid, Account Currency — two columns */}
+        {/* Two columns */}
         <div className="relative grid grid-cols-2">
 
-          {/* Single arrow pill centered between columns */}
+          {/* Single centered arrow */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10
                           flex items-center justify-center
                           w-8 h-8 rounded-full bg-card border border-[var(--border)] shadow-sm">
@@ -148,23 +181,27 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           </div>
 
           {/* LEFT */}
-          <div className="border-r border-[var(--border)] px-5 py-5 space-y-4">
+          <div className="border-r border-[var(--border)] px-5 py-4 space-y-3">
             <ModalInput label="Bank Account" name="companyBankAccount" value={form.companyBankAccount ?? ""} onChange={onChange} />
             <ModalInput label="Account Paid" name="glFrom" value={form.glFrom ?? ""} onChange={onChange} />
-            <ModalInput label="Account Currency" name="currencyFrom" value={form.currencyFrom ?? ""} onChange={onChange} />
+            <div className="w-40">
+              <ModalInput label="Account Currency" name="currencyFrom" value={form.currencyFrom ?? ""} onChange={onChange} />
+            </div>
           </div>
 
           {/* RIGHT */}
-          <div className="px-5 py-5 space-y-4">
+          <div className="px-5 py-4 space-y-3">
             <ModalInput label="Bank Account" name="partyBankAccount" value={form.partyBankAccount ?? ""} onChange={onChange} />
             <ModalInput label="Account Paid" name="glTo" value={form.glTo ?? ""} onChange={onChange} />
-            <ModalInput label="Account Currency" name="currencyTo" value={form.currencyTo ?? ""} onChange={onChange} />
+            <div className="w-40">
+              <ModalInput label="Account Currency" name="currencyTo" value={form.currencyTo ?? ""} onChange={onChange} />
+            </div>
           </div>
         </div>
 
-        {/* Amount | Exch. Rate | Amount — full width spanning row at bottom */}
+        {/* Amount | Exch. Rate | Amount */}
         <div className="border-t border-[var(--border)] px-5 py-4">
-          <div className="grid grid-cols-[1fr_88px_1fr] items-end gap-x-4">
+          <div className="grid grid-cols-[1fr_80px_1fr] items-end gap-x-4">
             <ModalInput
               label="Amount"
               name="amountFrom"
@@ -195,6 +232,23 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           </div>
         </div>
 
+      </div>
+
+      {/* Settle Invoice toggle — below amount row, right aligned */}
+      <div className="flex justify-end">
+        <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+          <span className="text-xs font-medium text-main">Settle against invoice</span>
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={!!form.settleInvoice}
+              onChange={handleSettleToggle}
+              className="sr-only peer"
+            />
+            <div className="w-8 h-4 rounded-full bg-[var(--border)] peer-checked:bg-primary transition-colors duration-200" />
+            <div className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200 peer-checked:translate-x-4" />
+          </div>
+        </label>
       </div>
 
       {isLoadingDetails && (
