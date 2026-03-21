@@ -787,6 +787,7 @@ const CustomerModal: React.FC<{
               isEditMode={isEditMode}
               partyType="Customer"
               partyName={form.name || initialData?.name || ""}
+              currency={form.currency}
             />
           )}
 

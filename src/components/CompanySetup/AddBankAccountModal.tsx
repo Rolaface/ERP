@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect,useState } from "react";
 import Modal from "../ui/modal/modal";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
@@ -16,6 +16,7 @@ interface Props {
   defaultAccountFor?: AccountType;
   partyName?: string;
   initialData?: BankAccount | null;
+  currency?: string;
 
 }
 
@@ -34,8 +35,10 @@ const AddBankAccountModal: React.FC<Props> = ({
   defaultAccountFor,
   partyName,
   initialData,
+  currency
  
 }) => {
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const {
     form,
     setForm,
@@ -48,6 +51,14 @@ const AddBankAccountModal: React.FC<Props> = ({
     reportingAccounts,
     isCompany
   } = useBankAccLogic({ onSubmit, onClose});
+  useEffect(() => {
+  if (currency) {
+    setForm((prev) => ({
+      ...prev,
+      currency: currency,
+    }));
+  }
+}, [currency]);
 
   useEffect(() => {
   if (!initialData && defaultAccountFor) {
@@ -65,12 +76,32 @@ const AddBankAccountModal: React.FC<Props> = ({
     setForm(prev => ({
       ...prev,
       name: match?.label || partyName,
-      currency: match?.meta?.currency || prev.currency,
+      currency: prev.currency || currency || match?.meta?.currency,
       accountHolder: match?.label || partyName,
       accountHolderEdited: false,
     }));
   }
-}, [defaultAccountFor, partyName, entities, initialData]);
+}, [defaultAccountFor, partyName, entities, initialData, currency]);
+
+const validate = () => {
+  const e: Record<string, string> = {};
+
+  if (!form.accountFor) e.accountFor = "Required";
+  if (!form.name) e.name = "Required";
+  if (!form.bank) e.bank = "Required";
+  if (!form.accountNumber) e.accountNumber = "Required";
+  if (!form.sortCode) e.sortCode = "Required";
+  if (!form.currency) e.currency = "Required";
+
+  setErrors(e);
+  return Object.keys(e).length === 0;
+};
+
+const onSave = (e: any) => {
+  e.preventDefault();
+  if (!validate()) return;
+  handleSubmit(e);
+};
 
   const footer = (
     <>
@@ -81,9 +112,9 @@ const AddBankAccountModal: React.FC<Props> = ({
         <Button variant="secondary" onClick={handleReset}>
           Reset
         </Button>
-        <Button variant="primary" type="button" onClick={handleSubmit}>
-          Save Account
-        </Button>
+       <Button variant="primary" type="button" onClick={onSave}>
+  Save Account
+</Button>
       </div>
     </>
   );
@@ -128,12 +159,13 @@ const AddBankAccountModal: React.FC<Props> = ({
               ]}
               required
               disabled={!!defaultAccountFor}
+              error={errors.accountFor}
             />
 
             <SearchSelect2
               label="Name"
               value={form.name}
-              disabled={!form.accountFor || form.accountFor === "Company"}
+              disabled={!form.accountFor || form.accountFor === "Company" || !!defaultAccountFor}
               onChange={(_, option: Option) =>
                 setForm((prev) => ({
                   ...prev,
@@ -184,6 +216,7 @@ const AddBankAccountModal: React.FC<Props> = ({
             <SearchSelect2
               label="Currency"
               value={form.currency}
+              disabled={!!defaultAccountFor} 
               onChange={(_: string, option: Option) =>
                 setForm((prev) => ({
                   ...prev,
@@ -205,6 +238,7 @@ const AddBankAccountModal: React.FC<Props> = ({
               value={form.accountNumber}
               onChange={handleChange}
               required
+              error={errors.accountNumber}
             />
 
             <ModalInput
@@ -227,6 +261,7 @@ const AddBankAccountModal: React.FC<Props> = ({
               value={form.sortCode}
               onChange={handleChange}
               required
+              error={errors.sortCode}
             />
 
             {/* Row 4 */}
