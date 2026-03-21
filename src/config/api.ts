@@ -72,13 +72,14 @@ export const API = {
 
 Account:{
   createnewBankaccount:`${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
-  getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_bank_company_supplier_cutomer`,
+  getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
   getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
   updateStatus: `${ERP_BASE}/api/method/custom_api.api.bank_account.set_bank_account_status`,
   ModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.create`,
   GetModeOfPayment : `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get`,
   GetDefaultAccounts : `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get_default_accounts`,
-  UpdateStatusModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.update`
+  UpdateStatusModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.update`,
+  GetPartyDetails: "/api/method/custom_api.api.search.get_party_details",
 },
 
 accounting:{

@@ -13,4 +13,5 @@ export const ROUTES = {
   UserManagement: "/userManagement",
   BankAccountPage: "/bank-account-setup",
    ModeOfPaymentSetup: "/mode-of-payment-setup",
+   PaymentEntry : "/payment-entry"
 };

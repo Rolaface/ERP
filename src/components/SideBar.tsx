@@ -228,6 +228,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   label: "Mode of Payment Setup",
   icon: <FaMoneyBillWave />
 },
+{
+  to: "/payment-entry",
+  label: "Payment Entry",
+  icon: <FaMoneyBillWave />
+},
                   { to: "/settings", label: "General Settings", icon: <FaCog /> },
                 ].map((sub) => (
                   <NavLink
