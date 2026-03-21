@@ -72,7 +72,8 @@ const SupplierManagement: React.FC<Props> = () => {
       setTotalPages(res.data?.pagination?.total_pages || 1);
       setTotalItems(res.data?.pagination?.total || 0);
     } catch (err) {
-      console.error("Error loading suppliers:", err);
+      showApiError(err);
+     
     } finally {
       setLoading(false);
     }
