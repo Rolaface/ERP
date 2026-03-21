@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
 import { getChartOfAccounts } from "../../api/Accounting/AccountApi";
-import { AlertCircle, Loader2, RefreshCw, FolderOpen, Folder, BookOpen } from "lucide-react";
+import {
+  AlertCircle, Loader2, RefreshCw, FolderOpen, Folder, BookOpen,
+  MoreHorizontal, Pencil, Trash2, GitBranch, BookMarked, Plus
+} from "lucide-react";
 import NewAccountModal from "../../components/Coa/NewAccountModal";
 import type { COAAccount, COAResponse, COAResponseData } from "../../types/coa";
 
@@ -40,6 +43,81 @@ function coaExpandIcon(
     : <Folder size={13} className="text-muted" />;
 }
 
+// ─── Dropdown Menu Component ───────────────────────────────────────────────
+interface MenuAction {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+  dividerBefore?: boolean;
+}
+
+const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative flex justify-end">
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen((p) => !p); }}
+        className={`
+          w-7 h-7 flex items-center justify-center rounded-md transition
+          opacity-0 group-hover:opacity-100
+          ${open
+            ? "bg-primary/10 text-primary"
+            : "text-muted hover:bg-row-hover hover:text-main"
+          }
+        `}
+      >
+        <MoreHorizontal size={15} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-8 z-50 min-w-[160px] bg-card border border-theme rounded-xl shadow-xl py-1.5 overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {actions.map((action, i) => (
+            <React.Fragment key={i}>
+              {action.dividerBefore && (
+                <div className="border-t border-theme my-1" />
+              )}
+              <button
+                type="button"
+                onClick={() => { action.onClick(); setOpen(false); }}
+                className={`
+                  w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
+                  ${action.danger
+                    ? "text-danger hover:bg-danger/10"
+                    : "text-main hover:bg-row-hover"
+                  }
+                `}
+              >
+                <span className={action.danger ? "text-danger" : "text-muted"}>
+                  {action.icon}
+                </span>
+                {action.label}
+              </button>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Main Component ────────────────────────────────────────────────────────
 const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
   const [coaData, setCoaData] = useState<COAResponseData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -200,42 +278,36 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
       key: "actions",
       header: "",
       align: "right",
-      render: (row: COAAccount) => (
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 justify-end">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); console.log("Edit", row.name); }}
-            className="px-2.5 py-1 text-[10px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded transition"
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); console.log("Delete", row.name); }}
-            className="px-2.5 py-1 text-[10px] font-semibold text-danger bg-danger/10 hover:bg-danger/20 rounded transition"
-          >
-            Delete
-          </button>
-          {row.is_group === 1 && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); handleAddChild(row); }}
-              className="px-2.5 py-1 text-[10px] font-semibold text-main bg-row-hover hover:bg-row-hover/80 rounded transition"
-            >
-              Add Child
-            </button>
-          )}
-          {row.is_group === 0 && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); console.log("View Ledger", row.name); }}
-              className="px-2.5 py-1 text-[10px] font-semibold text-main bg-row-hover hover:bg-row-hover/80 rounded transition"
-            >
-              View Ledger
-            </button>
-          )}
-        </div>
-      ),
+      render: (row: COAAccount) => {
+        const actions: MenuAction[] = [
+          {
+            label: "Edit",
+            icon: <Pencil size={12} />,
+            onClick: () => console.log("Edit", row.name),
+          },
+          ...(row.is_group === 1
+            ? [{
+                label: "Add Child",
+                icon: <GitBranch size={12} />,
+                onClick: () => handleAddChild(row),
+              }]
+            : [{
+                label: "View Ledger",
+                icon: <BookMarked size={12} />,
+                onClick: () => console.log("View Ledger", row.name),
+              }]
+          ),
+          {
+            label: "Delete",
+            icon: <Trash2 size={12} />,
+            onClick: () => console.log("Delete", row.name),
+            danger: true,
+            dividerBefore: true,
+          },
+        ];
+
+        return <RowActionMenu actions={actions} />;
+      },
     },
   ];
 
@@ -270,8 +342,8 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
             onClick={handleNewAccount}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
           >
-            <span className="text-base leading-none">+</span>
-            New
+            <Plus size={13} />
+            New Account
           </button>
         }
       />

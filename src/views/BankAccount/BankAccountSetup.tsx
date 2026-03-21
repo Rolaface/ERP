@@ -39,12 +39,11 @@ const fetchAccounts = useCallback(async () => {
       page_size: pageSize,
     });
 
-    setBankAccounts(res.data);
-    setTotalPages(res.pagination.total_pages);
-    setTotalItems(res.pagination.total);
-
+  setBankAccounts(res.data || []);
+setTotalPages(res.pagination?.total_pages || 1);
+setTotalItems(res.pagination?.total || 0);
   } catch (err: any) {
-  showApiError(err?.message || "Failed to load bank accounts");
+  showApiError(err?.message);
 } finally {
     setLoading(false);
   }
@@ -142,6 +141,13 @@ const handleSetDefault = useCallback(async (row: BankAccount) => {
       key: "sortCode",
       header: "IFSC / Sort Code",
       render: (row) => <span>{mask(row.sortCode)}</span>,
+    },
+    {
+      key: "currency",
+      header: "currency",
+      render: (row) => (
+        <span className="font-semibold">{row.currency}</span>
+      ),
     },
  
    

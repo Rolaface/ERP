@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useMemo } from "react";
 import type { SupplierFormData } from "../../../types/Supply/supplier";
 import { Plus, Trash2 } from "lucide-react";
 import AddBankAccountModal from "../../../components/CompanySetup/AddBankAccountModal";
 import { getAllBankAccounts } from "../../../api/BankAccountApi";
 import { showApiError } from "../../../utils/alert";
+import Table from "../../ui/Table/Table";
+import type { Column } from "../../ui/Table/type";
 
 interface PaymentInfoTabProps {
   form: SupplierFormData;
@@ -12,6 +14,7 @@ interface PaymentInfoTabProps {
   isEditMode?: boolean;
   partyType: "Supplier" | "Customer" | "Company";
   partyName: string;
+  currency?: string;
 }
 
 export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
@@ -21,11 +24,59 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
   isEditMode = false,
   partyType,
   partyName,
+  currency,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const accounts = form.bankAccounts || [];
-
+const columns: Column<any>[] = useMemo(() => [
+  {
+    key: "bankName",
+    header: "Bank",
+    sortable: true,
+  },
+  {
+    key: "accountHolder",
+    header: "Account Holder",
+  },
+  {
+    key: "accountNumber",
+    header: "Account Number",
+  },
+  {
+    key: "sortCode",
+    header: "IFSC",
+  },
+  {
+    key: "isDefault",
+    header: "Default",
+    align: "center",
+    render: (row: any) =>
+      row.isDefault ? (
+        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+          Default
+        </span>
+      ) : (
+        "—"
+      ),
+  },
+  {
+    key: "actions",
+    header: "",
+    align: "right",
+    render: (row: any) => (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDelete(row.id);
+        }}
+        className="text-red-500 hover:text-red-700"
+      >
+        <Trash2 size={14} />
+      </button>
+    ),
+  },
+], [accounts]);
   useEffect(() => {
     if (!isEditMode || !partyName) return;
 
@@ -67,10 +118,10 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
     onChange({ target: { name: "bankAccounts", value: updated } } as any);
   };
 
-  const handleSetDefault = (id: string) => {
-    const updated = accounts.map((a) => ({ ...a, isDefault: a.id === id }));
-    onChange({ target: { name: "bankAccounts", value: updated } } as any);
-  };
+  // const handleSetDefault = (id: string) => {
+  //   const updated = accounts.map((a) => ({ ...a, isDefault: a.id === id }));
+  //   onChange({ target: { name: "bankAccounts", value: updated } } as any);
+  // };
 
   const handleAddAccount = (newAccount: any) => {
     const mapped = {
@@ -158,7 +209,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
                 3
               </div>
               <p className="text-xs text-center text-muted font-medium">
-                Add bank accounts from here
+                Add bank accounts from there 
               </p>
             </div>
           </div>
@@ -166,64 +217,21 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
       )}
 
       {/* ACCOUNTS LIST — edit mode */}
-      {isEditMode && (
-        <div className="space-y-2 overflow-y-auto flex-1">
-          {loadingAccounts && (
-            <p className="text-sm text-muted text-center mt-8">
-              Loading bank accounts...
-            </p>
-          )}
+    {isEditMode && (
+  <div className="flex-1 min-h-0">
+    <Table
+      columns={columns}
+      data={accounts}
+      loading={loadingAccounts}
+      emptyMessage="No bank accounts added yet"
+      rowKey={(row) => row.id}
+      showToolbar
+      
+    
 
-          {!loadingAccounts && accounts.length === 0 && (
-            <p className="text-sm text-muted text-center mt-8">
-              No bank accounts added yet
-            </p>
-          )}
-
-          {!loadingAccounts &&
-            accounts.map((acc) => (
-              <div
-                key={acc.id}
-                className="border border-theme rounded-xl p-4 flex justify-between items-center bg-card"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-main">
-                    {acc.bankName || "—"}
-                  </p>
-                  <p className="text-xs text-muted mt-0.5">
-                    {acc.accountHolder || acc.accountHolderName} •{" "}
-                    {acc.accountNumber}
-                  </p>
-                  {acc.sortCode && (
-                    <p className="text-xs text-muted">IFSC: {acc.sortCode}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  {acc.isDefault ? (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                      Default
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleSetDefault(acc.id!)}
-                      className="text-xs text-primary underline"
-                    >
-                      Set Default
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(acc.id!)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
-            ))}
-        </div>
-      )}
+    />
+  </div>
+)}
 
       {/* MODAL */}
       <AddBankAccountModal
@@ -232,6 +240,7 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
         defaultAccountFor={partyType}
         partyName={partyName}
         onSubmit={handleAddAccount}
+        currency={currency}
       />
     </div>
   );

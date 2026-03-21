@@ -26,7 +26,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import Swal from "sweetalert2";
 import InvoiceModal from "../../components/sales/InvoiceModal";
-import CustomerPaymentModal from "../../components/sales/CustomerPaymentModal";
+import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
@@ -650,6 +650,14 @@ const handleRowStatusChange = async (
           generateInvoicePDF(selectedInvoice, company, "save")
         }
       />
+      <PaymentEntryModal
+  isOpen={paymentOpen}
+  onClose={() => {
+    setPaymentOpen(false);
+    setPaymentInvoice(null);
+  }}
+
+/>
       <InvoiceModal
         isOpen={editOpen}
         onClose={() => {
@@ -688,23 +696,7 @@ const handleRowStatusChange = async (
   }
 }}
       />
-<CustomerPaymentModal
-  mode="invoice"
-  isOpen={paymentOpen}
-  onClose={() => {
-    setPaymentOpen(false);
-    setPaymentInvoice(null);
-  }}
-  invoiceNumber={paymentInvoice?.invoiceNumber}
-  customerName={paymentInvoice?.customerName}
-  customerId={paymentInvoice?.customerId}
-  totalAmount={paymentInvoice?.total}
-  currency={paymentInvoice?.currency}
-  amountPaid={0}
-  onSubmit={() => {
-    fetchInvoices();
-  }}
-/>
+
     </div>
   );
 };

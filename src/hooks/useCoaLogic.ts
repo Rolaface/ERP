@@ -22,7 +22,6 @@ const emptyForm = (): NewAccountForm => ({
 });
 
 export const ACCOUNT_TYPE_OPTIONS = [
-
             "Accumulated Depreciation",
             "Asset Received But Not Billed",
             "Bank",
@@ -54,7 +53,7 @@ export const ACCOUNT_TYPE_OPTIONS = [
             "Service Received But Not Billed",
             "Tax",
             "Temporary",
-        ]
+        ];
 
 export const ROOT_TYPE_OPTIONS = [
   "Asset",
@@ -72,7 +71,7 @@ export const useCoaLogic = (
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<NewAccountErrors>({});
   const [companies, setCompanies] = useState<{ label: string; value: string }[]>([]);
-const [currencies, setCurrencies] = useState<{ label: string; value: string }[]>([]);
+  const [currencies, setCurrencies] = useState<{ label: string; value: string }[]>([]);
 
   // When parentAccount changes, reset form and pre-fill parent
   useEffect(() => {
@@ -87,43 +86,44 @@ const [currencies, setCurrencies] = useState<{ label: string; value: string }[]>
     }
     setErrors({});
   }, [parentAccount]);
+
   // Load company and currency options from API
-useEffect(() => {
-  const loadOptions = async () => {
-    try {
-      const [companyData, currencyData] = await Promise.all([
-        getBankAccounts("Company"),
-        getBankAccounts("Currency"),
-      ]);
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const [companyData, currencyData] = await Promise.all([
+          getBankAccounts("Company"),
+          getBankAccounts("Currency"),
+        ]);
 
-      const companyOptions = companyData.map((c: any) => ({
-        label: c.label,
-        value: c.label,
-      }));
-
-      const currencyOptions = currencyData.map((c: any) => ({
-        label: c.label,
-        value: c.value,
-      }));
-
-      setCompanies(companyOptions);
-      setCurrencies(currencyOptions);
-
-      // Auto-select first company if form company is empty
-      if (companyOptions.length > 0) {
-        setForm(prev => ({
-          ...prev,
-           company: companyOptions[0].value,
+        const companyOptions = companyData.map((c: any) => ({
+          label: c.label,
+          value: c.label,
         }));
+
+        const currencyOptions = currencyData.map((c: any) => ({
+          label: c.label,
+          value: c.value,
+        }));
+
+        setCompanies(companyOptions);
+        setCurrencies(currencyOptions);
+
+        // Auto-select first company if form company is empty
+        if (companyOptions.length > 0) {
+          setForm(prev => ({
+            ...prev,
+            company: companyOptions[0].value,
+          }));
+        }
+
+      } catch (err) {
+        console.error("Failed to load company/currency options", err);
       }
+    };
 
-    } catch (err) {
-      console.error("Failed to load company/currency options", err);
-    }
-  };
-
-  loadOptions();
-}, []);
+    loadOptions();
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -161,28 +161,42 @@ useEffect(() => {
     try {
       setLoading(true);
 
-     const payload: CreateCOAPayload = {
-  doctype: "Account",                                    
-  is_root: "false",                                     
-  account_name: form.accountName.trim(),
-  company: form.company,
-  is_group: form.isGroup ? 1 : 0,
-  account_number: form.accountNumber.trim() || undefined,
-  account_currency: form.currency.trim() || undefined,
-  account_type: form.accountType || undefined,
-  root_type: form.isGroup ? form.rootType : undefined,
-  parent: form.parentAccount || undefined,
-};
+      const payload: CreateCOAPayload = {
+        doctype: "Account",
+        is_root: "false",
+        account_name: form.accountName.trim(),
+        company: form.company,
+        is_group: form.isGroup ? 1 : 0,
+        account_number: form.accountNumber.trim() || undefined,
+        account_currency: form.currency.trim() || undefined,
+        account_type: form.accountType || undefined,
+        root_type: form.isGroup ? form.rootType : undefined,
+        parent: form.parentAccount || undefined,
+      };
 
       const res = await createChartOfAccount(payload);
 
-      if (!res || ![200, 201].includes(res.status_code)) {
-        showApiError(res);
+      
+      const topLevelCode = res?.status_code;
+      const nestedCode = res?.message?.status_code;
+      const isSuccess =
+        [200, 201].includes(topLevelCode) ||
+        [200, 201].includes(nestedCode);
+
+      if (!res || !isSuccess) {
+        // Pass the most descriptive error object available
+        showApiError(res?.message ?? res);
         return;
       }
 
-      showSuccess(res?.message?.message || "Account created successfully");
-      onSuccess?.();
+      // Extract success message from whichever shape is present
+      const successMsg =
+        res?.message?.message ||
+        (typeof res?.message === "string" ? res.message : null) ||
+        "Account created successfully";
+
+      showSuccess(successMsg);
+      onSuccess?.(); 
       reset();
 
     } catch (err: any) {

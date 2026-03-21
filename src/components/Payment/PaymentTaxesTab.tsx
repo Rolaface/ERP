@@ -7,10 +7,21 @@ const PaymentTaxesTab = ({ form, onChange }: any) => {
       {/* Top */}
       <div>
         <h3 className="text-sm font-semibold mb-2">Taxes and Charges</h3>
+       
+      </div>
+
+           <div className="grid grid-cols-2 gap-4">
         <ModalInput
-          label="Sales Taxes and Charges Template"
-          name="taxTemplate"
-          value={form.taxTemplate}
+          label="Project"
+          name="project"
+          value={form.project}
+          onChange={onChange}
+        />
+
+        <ModalInput
+          label="Cost Center"
+          name="costCenter"
+          value={form.costCenter}
           onChange={onChange}
         />
       </div>
@@ -39,21 +50,7 @@ const PaymentTaxesTab = ({ form, onChange }: any) => {
       </div>
 
 
-      <div className="grid grid-cols-2 gap-4">
-        <ModalInput
-          label="Project"
-          name="project"
-          value={form.project}
-          onChange={onChange}
-        />
-
-        <ModalInput
-          label="Cost Center"
-          name="costCenter"
-          value={form.costCenter}
-          onChange={onChange}
-        />
-      </div>
+ 
 
     </div>
   );

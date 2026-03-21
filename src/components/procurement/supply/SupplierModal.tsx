@@ -152,6 +152,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               isEditMode={isEditMode}
               partyType="Supplier"
               partyName={form.supplierName || initialData?.supplierName || ""}
+              currency={form.currency}
             />
           )}
           {activeTab === "address" && (

@@ -70,12 +70,7 @@ const PaymentEntry: React.FC = () => {
         onAdd={() => setShowModal(true)}
       />
 
-      {/* EMPTY */}
-      {data.length === 0 && (
-        <div className="text-center text-gray-500 py-10">
-          No payment entries found
-        </div>
-      )}
+  
 
       {/* MODAL */}
       {showModal && (

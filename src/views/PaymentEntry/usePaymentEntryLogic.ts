@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useCallback } from "react";
 import {
   getAllModeOfPayment,
   getPartyDetails,
   getBankAccounts,
+  getBankAccountOptions,
   type PartyDetails,
+   type BankAccountOption
 } from "../../api/BankAccountApi";
 
 export type ModeOfPaymentOption = {
   label: string;
   value: string;
   defaultAccount: string;
-  currency: string; // ← added: will come from backend
+  currency: string; 
 };
 
 export type PartyOption = {
@@ -37,7 +39,7 @@ type UsePartyDetailsReturn = {
   isLoadingDetails: boolean;
 };
 
-// ── Hook 1: Mode of Payment options ──────────────────────────────────────────
+// ── Hook 1: Mode of Payment options 
 export function usePaymentModes(): UseModeOfPaymentReturn {
   const [options, setOptions] = useState<ModeOfPaymentOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,7 +82,7 @@ export function usePaymentModes(): UseModeOfPaymentReturn {
 }
 
 
-// ── Hook 2: Party options by type ─────────────────────────────────────────────
+// ── Hook 2: Party options by type 
 export function usePartyOptions(
   partyType: "Supplier" | "Customer" | "Company" | "Shareholder" | "Employee" | "" 
 ): UsePartyOptionsReturn {
@@ -120,11 +122,11 @@ export function usePartyOptions(
   return { partyOptions, isLoadingParties };
 }
 
-// ── Hook 3: Fetch party details on demand ─────────────────────────────────────
+// ── Hook 3: Fetch party details on demand 
 export function usePartyDetails(): UsePartyDetailsReturn {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
-  const fetchPartyDetails = async (
+  const fetchPartyDetails = useCallback(async ( 
     party: string,
     partyType: "Supplier" | "Customer"
   ): Promise<PartyDetails | null> => {
@@ -133,12 +135,67 @@ export function usePartyDetails(): UsePartyDetailsReturn {
       const details = await getPartyDetails(party, partyType);
       return details;
     } catch (err) {
-  console.error("Party details fetch failed:", err);
-  return null;
-} finally {
+      console.error("Party details fetch failed:", err);
+      return null;
+    } finally {
       setIsLoadingDetails(false);
     }
-  };
+  }, []); // stable reference
 
   return { fetchPartyDetails, isLoadingDetails };
+}
+
+
+//Hook 4
+export function useCompanyBankAccounts() {
+  const [options, setOptions] = useState<BankAccountOption[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchCompanyBanks = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getBankAccountOptions({ company: true });
+      setOptions(data);
+    } catch {
+      setOptions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // stable reference — no deps
+
+  const clearCompanyBanks = useCallback(() => setOptions([]), []);
+
+  return {
+    companyBankOptions: options,
+    isLoadingCompanyBanks: isLoading,
+    fetchCompanyBanks,
+    clearCompanyBanks,
+  };
+}
+
+// ── Hook 5: Party bank accounts 
+export function usePartyBankAccounts() {
+  const [options, setOptions] = useState<BankAccountOption[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchPartyBanks = useCallback(async (party_type: string, party: string) => {
+    setIsLoading(true);
+    try {
+      const data = await getBankAccountOptions({ party_type, party });
+      setOptions(data);
+    } catch {
+      setOptions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // stable reference — no deps
+
+  const clearPartyBanks = useCallback(() => setOptions([]), []);
+
+  return {
+    partyBankOptions: options,
+    isLoadingPartyBanks: isLoading,
+    fetchPartyBanks,
+    clearPartyBanks,
+  };
 }

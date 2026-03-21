@@ -20,11 +20,11 @@ export interface ExpandableTreeTableProps<T extends Record<string, any>> {
   onSearch?: (q: string) => void;
   toolbarPlaceholder?: string;
   extraFilters?: React.ReactNode;
-  onRefresh?: () => void;            // shows Refresh button if provided
-  showExpandControls?: boolean;      // shows Expand All / Collapse buttons (default true)
+  onRefresh?: () => void;           
+  showExpandControls?: boolean;     
 
   // ── Tree behaviour ──
-  searchTerm?: string;               // internal search if not using toolbar
+  searchTerm?: string;               
   matchNode?: (node: T, term: string) => boolean;
   defaultExpandDepth?: number;
   indentSize?: number;
