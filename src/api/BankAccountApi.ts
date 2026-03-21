@@ -45,9 +45,6 @@ type BankAccountFilters = {
 };
 
 
-
-const validAccountTypes = ["Supplier", "Customer", "Company", "Bank"];
-
 const mapBankResponse = (
    filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account" | "Shareholder" | "Employee",
   response: any
@@ -405,8 +402,44 @@ export async function getPartyDetails(
   }
 }
 
-export async function getPartiesByType(
-  filter: "Supplier" | "Customer"
-): Promise<Option[]> {
-  return getBankAccounts(filter);
+
+
+// ── Add type (exported for use in hooks + component) ─────────────────────────
+export type BankAccountOption = {
+  label: string;
+  value: string;
+  ledgerAccount: string;
+  currency: string;
+};
+
+// ── Add one new function at the bottom ───────────────────────────────────────
+export async function getBankAccountOptions(filters: {
+  company?: boolean;
+  party_type?: string;
+  party?: string;
+}): Promise<BankAccountOption[]> {
+  try {
+    const params = new URLSearchParams();
+    if (filters.company)      params.append("company", "true");
+    if (filters.party_type)   params.append("party_type", filters.party_type);
+    if (filters.party)        params.append("party", filters.party);
+
+    const url = params.toString()
+      ? `${Account.getBankAccountMain}?${params.toString()}`
+      : Account.getBankAccountMain;
+
+    const resp: AxiosResponse = await api.get(url);
+    const raw: any[] = resp?.data?.message?.data?.bank_accounts ?? [];
+
+    return raw
+      .filter((item) => item.isDisabled !== 1)  // exclude disabled accounts
+      .map((item) => ({
+        label: item.name,
+        value: item.name,
+        ledgerAccount: item.ledgerAccount ?? "",
+        currency: item.currency ?? "",
+      }));
+  } catch {
+    return []; // silent fail — dropdowns just show empty
+  }
 }

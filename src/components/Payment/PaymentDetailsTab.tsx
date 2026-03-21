@@ -6,6 +6,8 @@ import {
   usePaymentModes,
   usePartyOptions,
   usePartyDetails,
+  useCompanyBankAccounts,
+  usePartyBankAccounts,
   type PartyOption,
 } from "../../views/PaymentEntry/usePaymentEntryLogic";
 
@@ -13,7 +15,7 @@ interface PaymentDetailsTabProps {
   form: Record<string, any>;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onFormChange: (updates: Record<string, any>) => void;
-  onSettleInvoice?: () => void; // callback to switch to invoices tab
+  onSettleInvoice?: () => void;
 }
 
 const PARTY_FILLED_FIELDS = {
@@ -34,11 +36,25 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 }) => {
   const { options: modeOptions, isLoading: modesLoading } = usePaymentModes();
   const { fetchPartyDetails, isLoadingDetails } = usePartyDetails();
+  const {
+    companyBankOptions,
+    isLoadingCompanyBanks,
+    fetchCompanyBanks,
+    clearCompanyBanks,
+  } = useCompanyBankAccounts();
+  const {
+    partyBankOptions,
+    isLoadingPartyBanks,
+    fetchPartyBanks,
+    clearPartyBanks,
+  } = usePartyBankAccounts();
 
   const paymentType: "Pay" | "Receive" | "Internal Transfer" = form.paymentType || "Pay";
-  const partyType: "Supplier" | "Customer" | "Shareholder" | "Employee" | "" = form.partyType || "";
+  const partyType: "Supplier" | "Customer" | "Shareholder" | "Employee" | "" =
+    form.partyType || "";
   const { partyOptions, isLoadingParties } = usePartyOptions(partyType);
 
+  // ── Mode of payment effect ────────────────────────────────────────────────
   const selectedMode = useMemo(() => {
     if (!form.mode) return null;
     return modeOptions.find((opt) => opt.value === form.mode) ?? null;
@@ -59,58 +75,119 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
   }, [selectedMode, paymentType]);
 
-  const handlePartyTypeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+
+  // ── Party Type change: clear fields + both bank dropdowns ────────────────
+  const handlePartyTypeChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     onChange(e);
     onFormChange({ ...PARTY_FILLED_FIELDS });
+    clearCompanyBanks(); // ← clear company dropdown on party type change
+    clearPartyBanks();
   };
 
+  // ── Party Name selected: fetch everything in parallel ────────────────────
   const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
-    if (!option?.value) { onFormChange({ ...PARTY_FILLED_FIELDS }); return; }
+    if (!option?.value) {
+      onFormChange({ ...PARTY_FILLED_FIELDS });
+      clearCompanyBanks();
+      clearPartyBanks();
+      return;
+    }
+
     onFormChange({ partyName: option.label });
+
     if (partyType !== "Supplier" && partyType !== "Customer") return;
-    const details = await fetchPartyDetails(option.value, partyType);
+
+    const [details] = await Promise.all([
+      fetchPartyDetails(option.value, partyType),
+      fetchCompanyBanks(),
+      fetchPartyBanks(partyType, option.value),
+    ]);
+
     if (!details) return;
+
     if (paymentType === "Pay") {
       onFormChange({
         partyName: details.partyName || option.label,
-        glFrom: details.companyLedgerAccount, currencyFrom: details.companyLedgerCurrency,
-        glTo: details.partyLedgerAccount, currencyTo: details.partyAccountCurrency,
-        companyBankAccount: details.companyBankAccount, partyBankAccount: details.partyBankAccount,
+        glFrom: details.companyLedgerAccount,
+        currencyFrom: details.companyLedgerCurrency,
+        glTo: details.partyLedgerAccount,
+        currencyTo: details.partyAccountCurrency,
+        companyBankAccount: details.companyBankAccount,
+        partyBankAccount: details.partyBankAccount,
       });
     } else if (paymentType === "Receive") {
       onFormChange({
         partyName: details.partyName || option.label,
-        glFrom: details.partyLedgerAccount, currencyFrom: details.partyAccountCurrency,
-        glTo: details.companyLedgerAccount, currencyTo: details.companyLedgerCurrency,
-        companyBankAccount: details.companyBankAccount, partyBankAccount: details.partyBankAccount,
+        glFrom: details.partyLedgerAccount,
+        currencyFrom: details.partyAccountCurrency,
+        glTo: details.companyLedgerAccount,
+        currencyTo: details.companyLedgerCurrency,
+        companyBankAccount: details.companyBankAccount,
+        partyBankAccount: details.partyBankAccount,
       });
     } else {
+      // Internal Transfer
       onFormChange({
         partyName: details.partyName || option.label,
-        glFrom: details.partyLedgerAccount, currencyFrom: details.partyAccountCurrency,
-        glTo: details.companyLedgerAccount, currencyTo: details.companyLedgerCurrency,
-        companyBankAccount: details.companyBankAccount, partyBankAccount: details.partyBankAccount,
+        glFrom: details.partyLedgerAccount,
+        currencyFrom: details.partyAccountCurrency,
+        glTo: details.companyLedgerAccount,
+        currencyTo: details.companyLedgerCurrency,
+        companyBankAccount: details.companyBankAccount,
+        partyBankAccount: details.partyBankAccount,
       });
     }
   };
 
-  const handleAmountToChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    onChange(e);
-    onFormChange({ amount: (e as React.ChangeEvent<HTMLInputElement>).target.value });
+  // ── Company bank selected → overwrite From side 
+  const handleCompanyBankSelect = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const val = (e as React.ChangeEvent<HTMLSelectElement>).target.value;
+    if (!val) {
+      onFormChange({ companyBankAccount: "" });
+      return;
+    }
+    const selected = companyBankOptions.find((o) => o.value === val);
+    if (!selected) return;
+    onFormChange({
+      companyBankAccount: selected.value,
+      glFrom: selected.ledgerAccount,
+      currencyFrom: selected.currency,
+    });
   };
 
+  // ── Party bank selected → overwrite To side 
+  const handlePartyBankSelect = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const val = (e as React.ChangeEvent<HTMLSelectElement>).target.value;
+    if (!val) {
+      onFormChange({ partyBankAccount: "" });
+      return;
+    }
+    const selected = partyBankOptions.find((o) => o.value === val);
+    if (!selected) return;
+    onFormChange({
+      partyBankAccount: selected.value,
+      glTo: selected.ledgerAccount,
+      currencyTo: selected.currency,
+    });
+  };
+
+  // ── Settle Invoice toggle 
   const handleSettleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     onFormChange({ settleInvoice: checked });
-    if (checked && onSettleInvoice) {
-      onSettleInvoice(); // switch to invoices tab
-    }
+    if (checked && onSettleInvoice) onSettleInvoice();
   };
 
   return (
     <div className="space-y-5">
 
-      {/* Row 1 — 4 cols but max-w constrained */}
+      {/* Row 1 */}
       <div className="grid grid-cols-4 gap-3">
         <ModalSelect
           label="Payment Type"
@@ -142,64 +219,130 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           onChange={handlePartyNameSelect}
           fetchOptions={(q): Promise<PartyOption[]> => {
             const query = q.toLowerCase();
-            return Promise.resolve(partyOptions.filter((p) => (p.label || "").toLowerCase().includes(query)));
+            return Promise.resolve(
+              partyOptions.filter((p) => (p.label || "").toLowerCase().includes(query))
+            );
           }}
         />
         <ModalInput label="Date" type="date" name="date" value={form.date} onChange={onChange} />
       </div>
 
-      {/* Row 2 — 3 cols */}
+      {/* Row 2 */}
       <div className="grid grid-cols-4 gap-3">
         <ModalSelect
           label="Mode of Payment"
           name="mode"
           value={form.mode ?? ""}
           onChange={onChange}
-          options={modesLoading ? [{ label: "Loading...", value: "" }] : modeOptions.map((o) => ({ label: o.label, value: o.value }))}
+          options={
+            modesLoading
+              ? [{ label: "Loading...", value: "" }]
+              : modeOptions.map((o) => ({ label: o.label, value: o.value }))
+          }
         />
-        <ModalInput label="Cheque / Reference No" name="referenceNo" value={form.referenceNo} onChange={onChange} />
-        <ModalInput label="Cheque / Reference Date" type="date" name="referenceDate" value={form.referenceDate} onChange={onChange} />
+        <ModalInput
+          label="Cheque / Reference No"
+          name="referenceNo"
+          value={form.referenceNo}
+          onChange={onChange}
+        />
+        <ModalInput
+          label="Cheque / Reference Date"
+          type="date"
+          name="referenceDate"
+          value={form.referenceDate}
+          onChange={onChange}
+        />
       </div>
 
       {/* From / To box */}
       <div className="rounded-xl border border-[var(--border)] overflow-hidden">
 
-        {/* Header */}
         <div className="grid grid-cols-2 bg-[var(--row-hover)] border-b border-[var(--border)]">
-          <div className="px-5 py-2.5 text-xs font-semibold text-main border-r border-[var(--border)]">Paid From</div>
-          <div className="px-5 py-2.5 text-xs font-semibold text-main">Paid To</div>
+          <div className="px-5 py-2.5 text-xs font-semibold text-main border-r border-[var(--border)]">
+            Paid From
+          </div>
+          <div className="px-5 py-2.5 text-xs font-semibold text-main">
+            Paid To
+          </div>
         </div>
 
-        {/* Two columns */}
         <div className="relative grid grid-cols-2">
 
-          {/* Single centered arrow */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10
                           flex items-center justify-center
                           w-8 h-8 rounded-full bg-card border border-[var(--border)] shadow-sm">
             <MoveRight size={14} className="text-primary" />
           </div>
 
-          {/* LEFT */}
+          {/* LEFT — Company side */}
           <div className="border-r border-[var(--border)] px-5 py-4 space-y-3">
-            <ModalInput label="Bank Account" name="companyBankAccount" value={form.companyBankAccount ?? ""} onChange={onChange} />
-            <ModalInput label="Account Paid" name="glFrom" value={form.glFrom ?? ""} onChange={onChange} />
+            <ModalSelect
+              label="Bank Account"
+              name="companyBankAccount"
+              value={form.companyBankAccount ?? ""}
+              onChange={handleCompanyBankSelect}
+              disabled={!form.partyName || isLoadingCompanyBanks}
+              options={
+                isLoadingCompanyBanks
+                  ? [{ label: "Loading...", value: "" }]
+                  : [
+                    { label: "Select", value: "" },
+                    ...companyBankOptions.map((o) => ({ label: o.label, value: o.value })),
+                  ]
+              }
+            />
+            <ModalInput
+              label="Account Paid"
+              name="glFrom"
+              value={form.glFrom ?? ""}
+              onChange={onChange}
+            />
             <div className="w-40">
-              <ModalInput label="Account Currency" name="currencyFrom" value={form.currencyFrom ?? ""} onChange={onChange} />
+              <ModalInput
+                label="Account Currency"
+                name="currencyFrom"
+                value={form.currencyFrom ?? ""}
+                onChange={onChange}
+              />
             </div>
           </div>
 
-          {/* RIGHT */}
+          {/* RIGHT — Party side */}
           <div className="px-5 py-4 space-y-3">
-            <ModalInput label="Bank Account" name="partyBankAccount" value={form.partyBankAccount ?? ""} onChange={onChange} />
-            <ModalInput label="Account Paid" name="glTo" value={form.glTo ?? ""} onChange={onChange} />
+            <ModalSelect
+              label="Bank Account"
+              name="partyBankAccount"
+              value={form.partyBankAccount ?? ""}
+              onChange={handlePartyBankSelect}
+              disabled={!form.partyName || isLoadingPartyBanks}
+              options={
+                isLoadingPartyBanks
+                  ? [{ label: "Loading...", value: "" }]
+                  : [
+                    { label: "Select", value: "" },
+                    ...partyBankOptions.map((o) => ({ label: o.label, value: o.value })),
+                  ]
+              }
+            />
+            <ModalInput
+              label="Account Paid"
+              name="glTo"
+              value={form.glTo ?? ""}
+              onChange={onChange}
+            />
             <div className="w-40">
-              <ModalInput label="Account Currency" name="currencyTo" value={form.currencyTo ?? ""} onChange={onChange} />
+              <ModalInput
+                label="Account Currency"
+                name="currencyTo"
+                value={form.currencyTo ?? ""}
+                onChange={onChange}
+              />
             </div>
           </div>
         </div>
 
-        {/* Amount | Exch. Rate | Amount */}
+        {/* Amount / Exch. Rate / Amount */}
         <div className="border-t border-[var(--border)] px-5 py-4">
           <div className="grid grid-cols-[1fr_80px_1fr] items-end gap-x-4">
             <ModalInput
@@ -218,7 +361,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                 value={form.exchangeRate ?? ""}
                 onChange={onChange as any}
                 placeholder="1"
-                className="w-full px-2 py-[7px] text-xs border border-[var(--border)] rounded bg-card focus:outline-none focus:ring-1 focus:ring-primary text-center no-spinner"
+                className="w-full px-2 py-[7px] text-xs border border-[var(--border)] rounded bg-card
+                           focus:outline-none focus:ring-1 focus:ring-primary text-center no-spinner"
               />
             </div>
             <ModalInput
@@ -226,7 +370,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
               name="amountTo"
               type="number"
               value={form.amountTo ?? ""}
-              onChange={handleAmountToChange}
+              onChange={onChange}
               className="no-spinner"
             />
           </div>
@@ -234,7 +378,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
       </div>
 
-      {/* Settle Invoice toggle — below amount row, right aligned */}
+      {/* Settle Invoice toggle */}
       <div className="flex justify-end">
         <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
           <span className="text-xs font-medium text-main">Settle against invoice</span>
@@ -246,7 +390,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
               className="sr-only peer"
             />
             <div className="w-8 h-4 rounded-full bg-[var(--border)] peer-checked:bg-primary transition-colors duration-200" />
-            <div className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200 peer-checked:translate-x-4" />
+            <div className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow
+                            transition-transform duration-200 peer-checked:translate-x-4" />
           </div>
         </label>
       </div>
@@ -254,6 +399,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       {isLoadingDetails && (
         <p className="text-xs text-muted animate-pulse">Fetching party details...</p>
       )}
+
     </div>
   );
 };

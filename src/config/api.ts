@@ -80,6 +80,7 @@ Account:{
   GetDefaultAccounts : `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get_default_accounts`,
   UpdateStatusModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.update`,
   GetPartyDetails: "/api/method/custom_api.api.search.get_party_details",
+  getBankAccountMain: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`
 },
 
 accounting:{
