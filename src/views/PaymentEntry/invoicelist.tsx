@@ -11,20 +11,30 @@ interface InvoiceRow {
   invoiceNumber: string;
   customerName: string;
   dueDate: string;
-  dueDateRaw: string; // for FIFO sort
+  dueDateRaw: string;
   amount: number;
   outstanding: number;
+}
+
+interface Pagination {
+  page: number;
+  totalPages: number;
+  total: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 const PAGE_SIZE = 10;
 
 const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
-  const [allData, setAllData] = useState<InvoiceRow[]>([]);
+  const [data, setData] = useState<InvoiceRow[]>([]);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [editingRow, setEditingRow] = useState<string | null>(null);
 
+  // Allocation state is kept across pages — keyed by invoiceNumber
   const [allocated, setAllocated] = useState<Record<string, number>>({});
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
 
@@ -34,35 +44,50 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
   const partyNameRef = useRef<string | undefined>(undefined);
   partyNameRef.current = form?.partyName ?? undefined;
 
-  // Track last fifoTrigger to detect new triggers
   const lastFifoTrigger = useRef<number>(0);
 
-  const totalPages = Math.max(1, Math.ceil(allData.length / PAGE_SIZE));
-  const pageData = allData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const paymentAmount = paymentAmountRef.current;
 
-  const fetchInvoices = useCallback(async () => {
+  // ── fetch with backend filters + pagination ───────────────────────────
+  const fetchInvoices = useCallback(async (page: number) => {
     let cancelled = false;
     try {
       setLoading(true);
       setFetchError(null);
-      const res = await getAllSalesInvoices(1, 1000, "", "asc", undefined, partyNameRef.current);
+
+      const res = await getAllSalesInvoices(
+        page,
+        PAGE_SIZE,
+        "dueDate",       // sortBy due date for FIFO display
+        "asc",
+        undefined,
+        partyNameRef.current,  // ✅ filter by customer
+        0.01                   // ✅ minOutstanding — backend excludes paid invoices
+      );
+
       if (cancelled) return;
 
-      const mapped: InvoiceRow[] = (res?.data ?? [])
-        .map((inv: any) => ({
-          invoiceNumber: inv.invoiceNumber,
-          customerName: inv.customerName,
-          dueDate: inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—",
-          dueDateRaw: inv.dueDate ?? "9999-12-31",
-          amount: Number(inv.totalAmount || 0),
-          outstanding: Number(inv.OutStandingAmount ?? inv.outstandingAmount ?? 0),
-        }))
-        .filter((i: InvoiceRow) => i.outstanding > 0)
-        .sort((a: InvoiceRow, b: InvoiceRow) => a.dueDateRaw.localeCompare(b.dueDateRaw)); // FIFO by due date
+      const mapped: InvoiceRow[] = (res?.data ?? []).map((inv: any) => ({
+        invoiceNumber: inv.invoiceNumber,
+        customerName: inv.customerName,
+        dueDate: inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—",
+        dueDateRaw: inv.dueDate ?? "9999-12-31",
+        amount: Number(inv.totalAmount || 0),
+        outstanding: Number(inv.OutStandingAmount ?? inv.outstandingAmount ?? 0),
+      }));
 
-      setAllData(mapped);
-      setCurrentPage(1);
+      setData(mapped);
+
+      const p = res?.pagination;
+      if (p) {
+        setPagination({
+          page: p.page,
+          totalPages: p.total_pages,
+          total: p.total,
+          hasNext: p.has_next,
+          hasPrev: p.has_prev,
+        });
+      }
     } catch {
       if (!cancelled) setFetchError("Failed to load invoices. Please try again.");
     } finally {
@@ -72,46 +97,76 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
   }, []);
 
   useEffect(() => {
-    fetchInvoices();
-  }, [fetchInvoices]);
+    fetchInvoices(currentPage);
+  }, [currentPage, fetchInvoices]);
 
-  // ✅ FIFO auto-allocation — triggered when form.fifoTrigger changes
+  // ── FIFO: fetch ALL outstanding for this customer, then allocate ───────
+  // We can't FIFO across pages, so we fetch all at once only for FIFO trigger
   useEffect(() => {
     const trigger = form?.fifoTrigger;
     if (!trigger || trigger === lastFifoTrigger.current) return;
-    if (allData.length === 0) return;
-
     lastFifoTrigger.current = trigger;
 
-    let budget = paymentAmountRef.current;
+    const budget = paymentAmountRef.current;
     if (budget <= 0) return;
 
-    const newAllocated: Record<string, number> = {};
-    const newInputValues: Record<string, string> = {};
+    const runFifo = async () => {
+      try {
+        // Fetch all outstanding for FIFO — large page, same filters
+        const res = await getAllSalesInvoices(
+          1,
+          1000,
+          "dueDate",
+          "asc",
+          undefined,
+          partyNameRef.current,
+          0.01
+        );
 
-    // Allocate in FIFO order (already sorted by dueDate)
-    for (const inv of allData) {
-      if (budget <= 0) break;
-      const allocate = Math.min(inv.outstanding, budget);
-      if (allocate > 0) {
-        newAllocated[inv.invoiceNumber] = allocate;
-        newInputValues[inv.invoiceNumber] = String(allocate);
-        budget -= allocate;
+        const all: InvoiceRow[] = (res?.data ?? [])
+          .map((inv: any) => ({
+            invoiceNumber: inv.invoiceNumber,
+            customerName: inv.customerName,
+            dueDate: inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—",
+            dueDateRaw: inv.dueDate ?? "9999-12-31",
+            amount: Number(inv.totalAmount || 0),
+            outstanding: Number(inv.OutStandingAmount ?? inv.outstandingAmount ?? 0),
+          }))
+          .filter((i: InvoiceRow) => i.outstanding > 0);
+
+        let remaining = budget;
+        const newAllocated: Record<string, number> = {};
+        const newInputValues: Record<string, string> = {};
+
+        for (const inv of all) {
+          if (remaining <= 0) break;
+          const allocate = Math.min(inv.outstanding, remaining);
+          if (allocate > 0) {
+            newAllocated[inv.invoiceNumber] = allocate;
+            newInputValues[inv.invoiceNumber] = String(allocate);
+            remaining -= allocate;
+          }
+        }
+
+        setAllocated(newAllocated);
+        setInputValues(newInputValues);
+
+        const selectedInvoices = all.filter((d) => newAllocated[d.invoiceNumber] > 0);
+        const totalAllocated = selectedInvoices.reduce((sum, i) => sum + (newAllocated[i.invoiceNumber] || 0), 0);
+        onFormChange({ selectedInvoices, allocatedAmount: totalAllocated, allocations: newAllocated });
+
+        // Refresh page 1 to show allocated rows
+        setCurrentPage(1);
+        fetchInvoices(1);
+      } catch {
+        // silent fail — don't block UX
       }
-    }
+    };
 
-    setAllocated(newAllocated);
-    setInputValues(newInputValues);
+    runFifo();
+  }, [form?.fifoTrigger]);
 
-    const selectedInvoices = allData.filter((d) => newAllocated[d.invoiceNumber] > 0);
-    const totalAllocated = selectedInvoices.reduce((sum, i) => sum + (newAllocated[i.invoiceNumber] || 0), 0);
-    onFormChange({ selectedInvoices, allocatedAmount: totalAllocated, allocations: newAllocated });
-
-    // Jump to page 1 to show first allocated invoices
-    setCurrentPage(1);
-  }, [form?.fifoTrigger, allData]);
-
-  // ── manual allocation handlers ─────────────────────────────────────────
+  // ── manual allocation ──────────────────────────────────────────────────
   const handleInputChange = (invoiceNumber: string, raw: string) => {
     if (!/^\d*\.?\d*$/.test(raw)) return;
     setInputValues((prev) => ({ ...prev, [invoiceNumber]: raw }));
@@ -135,8 +190,12 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
     setAllocated(updated);
     setEditingRow(null);
 
-    const selectedInvoices = allData.filter((d) => updated[d.invoiceNumber] > 0);
-    const totalAllocated = selectedInvoices.reduce((sum, i) => sum + (updated[i.invoiceNumber] || 0), 0);
+    // selectedInvoices is computed from current page data — allocated keys persist across pages
+    const selectedInvoices = Object.entries(updated)
+      .filter(([, v]) => v > 0)
+      .map(([invoiceNumber]) => ({ invoiceNumber }));
+
+    const totalAllocated = Object.values(updated).reduce((a, b) => a + b, 0);
     onFormChange({ selectedInvoices, allocatedAmount: totalAllocated, allocations: updated });
   };
 
@@ -144,6 +203,7 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
   const remainingToAllocate = paymentAmount - totalAllocated;
   const showRemainingWarning = paymentAmount > 0 && totalAllocated > 0 && remainingToAllocate > 0;
 
+  // ── render ─────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16 text-muted gap-2">
@@ -158,12 +218,12 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-red-500">
         <AlertTriangle size={15} />
         <span className="text-sm">{fetchError}</span>
-        <button onClick={fetchInvoices} className="text-xs text-primary underline">Retry</button>
+        <button onClick={() => fetchInvoices(currentPage)} className="text-xs text-primary underline">Retry</button>
       </div>
     );
   }
 
-  if (allData.length === 0) {
+  if (!loading && data.length === 0) {
     return (
       <div className="flex items-center justify-center py-16 text-muted">
         <span className="text-sm">No outstanding invoices found.</span>
@@ -194,12 +254,12 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
               {h}
             </div>
           ))}
-          <div /> {/* edit col */}
+          <div />
         </div>
 
         {/* Rows */}
         <div className="divide-y divide-[var(--border)]">
-          {pageData.map((r) => {
+          {data.map((r) => {
             const paid = r.amount - r.outstanding;
             const isAllocated = (allocated[r.invoiceNumber] ?? 0) > 0;
             const isEditing = editingRow === r.invoiceNumber;
@@ -218,7 +278,6 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
                 <div className="text-right text-xs font-mono text-emerald-600">₹ {paid.toLocaleString()}</div>
                 <div className="text-right text-xs font-mono font-semibold text-amber-600">₹ {r.outstanding.toLocaleString()}</div>
 
-                {/* Allocate cell — shows value or input when editing */}
                 <div className="flex justify-end">
                   {isEditing ? (
                     <input
@@ -238,7 +297,6 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
                   )}
                 </div>
 
-                {/* Edit button */}
                 <div className="flex justify-end">
                   <button
                     onClick={() => {
@@ -259,29 +317,30 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
           })}
         </div>
 
-        {/* Footer */}
+        {/* Footer — total + pagination */}
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)] bg-[var(--row-hover)]">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">Total Allocated</span>
             <span className="text-xs font-bold text-primary font-mono">₹ {totalAllocated.toLocaleString()}</span>
           </div>
 
-          {totalPages > 1 && (
+          {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-muted">
-                Page {currentPage} of {totalPages}
-                <span className="ml-1 text-muted/60">({allData.length} total)</span>
+                Page {pagination.page} of {pagination.totalPages}
+                <span className="ml-1 text-muted/60">({pagination.total} total)</span>
               </span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setCurrentPage((p) => p - 1)}
-                  disabled={currentPage === 1}
+                  disabled={!pagination.hasPrev || loading}
                   className="w-6 h-6 flex items-center justify-center rounded border border-[var(--border)] text-muted hover:text-main hover:bg-card transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={12} />
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+
+                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
                   .reduce<(number | "...")[]>((acc, p, i, arr) => {
                     if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
                     acc.push(p);
@@ -294,6 +353,7 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
                       <button
                         key={p}
                         onClick={() => setCurrentPage(p as number)}
+                        disabled={loading}
                         className={`w-6 h-6 flex items-center justify-center rounded text-[11px] font-medium border transition-colors
                           ${currentPage === p ? "bg-primary text-white border-primary" : "border-[var(--border)] text-muted hover:text-main hover:bg-card"}`}
                       >
@@ -301,9 +361,10 @@ const InvoiceList: React.FC<Props> = ({ form, onFormChange }) => {
                       </button>
                     )
                   )}
+
                 <button
                   onClick={() => setCurrentPage((p) => p + 1)}
-                  disabled={currentPage === totalPages}
+                  disabled={!pagination.hasNext || loading}
                   className="w-6 h-6 flex items-center justify-center rounded border border-[var(--border)] text-muted hover:text-main hover:bg-card transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ChevronRight size={12} />

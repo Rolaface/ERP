@@ -44,7 +44,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-   const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<any | null>(null);
+  const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<any | null>(null);
 
 
   const fetchCustomers = async () => {
@@ -91,10 +91,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     }
   };
 
-const handleMakePayment = (customer: CustomerSummary) => {
-  setSelectedCustomerForPayment(customer);
-  setPaymentModalOpen(true);
-};
+  const handleMakePayment = (customer: CustomerSummary) => {
+    setSelectedCustomerForPayment(customer);
+    setPaymentModalOpen(true);
+  };
+
   const handleDelete = async (
     customerId: string,
     e: React.MouseEvent
@@ -239,11 +240,11 @@ const handleMakePayment = (customer: CustomerSummary) => {
             onEdit={(e) => handleEditCustomer(c.id, e as any)}
             onDelete={(e) => handleDelete(c.id, e as any)}
             customActions={[
-    {
-      label: "Make Payment",
-      onClick: () => handleMakePayment(c),
-    },
-  ]}
+              {
+                label: "Receive Payment",
+                onClick: () => handleMakePayment(c),
+              },
+            ]}
           />
         </ActionGroup>
       ),
@@ -311,12 +312,22 @@ const handleMakePayment = (customer: CustomerSummary) => {
         isEditMode={!!editCustomer}
       />
       <PaymentEntryModal
-  isOpen={paymentModalOpen}
-  onClose={() => {
-    setPaymentModalOpen(false);
-    setSelectedCustomerForPayment(null);
-  }}
-/>
+        isOpen={paymentModalOpen}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setSelectedCustomerForPayment(null);
+        }}
+        defaultValues={
+          selectedCustomerForPayment
+            ? {
+              paymentType: "Receive",
+              partyType: "Customer",
+              partyName: selectedCustomerForPayment.name,
+              partyId: selectedCustomerForPayment.id,
+            }
+            : undefined
+        }
+      />
     </div>
   );
 };

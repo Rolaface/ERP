@@ -10,21 +10,7 @@ const PaymentTaxesTab = ({ form, onChange }: any) => {
        
       </div>
 
-           <div className="grid grid-cols-2 gap-4">
-        <ModalInput
-          label="Project"
-          name="project"
-          value={form.project}
-          onChange={onChange}
-        />
-
-        <ModalInput
-          label="Cost Center"
-          name="costCenter"
-          value={form.costCenter}
-          onChange={onChange}
-        />
-      </div>
+          
 
       {/* Table */}
       <div className="border rounded-xl overflow-hidden">
