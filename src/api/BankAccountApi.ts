@@ -17,15 +17,17 @@ export async function createNewBankAccount(payload: any) {
 }
 
 export async function getBankAccounts(
-  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account"
+  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account" | "Shareholder" | "Employee", // ← added 2 new filters
+  reference_doctype?: string 
 ) {
-  const resp: AxiosResponse = await api.get(
-    `${Account.getBankAccounts}?filter=${filter}`
-  );
+  const url = reference_doctype
+    ? `${Account.getBankAccounts}?filter=${filter}&reference_doctype=${encodeURIComponent(reference_doctype)}`
+    : `${Account.getBankAccounts}?filter=${filter}`;
+
+  const resp: AxiosResponse = await api.get(url);
 
   return mapBankResponse(filter, resp.data);
 }
-
 
 type Option = {
   label: string;
@@ -47,7 +49,7 @@ type BankAccountFilters = {
 const validAccountTypes = ["Supplier", "Customer", "Company", "Bank"];
 
 const mapBankResponse = (
-  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account",
+   filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account" | "Shareholder" | "Employee",
   response: any
 ): Option[] => {
   const raw = response?.message?.data?.data;
@@ -109,6 +111,19 @@ case "Company":
       accountNumber: item.account_number,
     },
   }));
+
+  case "Shareholder":
+      return raw.map((item: any) => ({
+        label: item.shareholder_name || item.name,
+        value: item.name,
+      }));
+
+    case "Employee":
+      return raw.map((item: any) => ({
+        label: item.employee_name || item.name,
+        value: item.name,
+      }));
+
 
     default:
       return [];
@@ -223,6 +238,7 @@ type ModeOfPayment = {
   type: string;
   enabled: boolean;
   defaultAccount?: string;
+  currency?: string;
 };
 
 type ModeOfPaymentResponse = {
@@ -237,14 +253,24 @@ type ModeOfPaymentResponse = {
 
 export async function getAllModeOfPayment(
   page = 1,
-  page_size = 10
+  page_size = 10,
+  enabled?: 0 | 1  
 ) {
   try {
-    const url = `${Account.GetModeOfPayment}?page=${page}&page_size=${page_size}`;
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(page_size),
+    });
+
+    // Only appended when explicitly passed — existing callers unaffected
+    if (enabled !== undefined) {
+      params.append("enabled", String(enabled));
+    }
+
+    const url = `${Account.GetModeOfPayment}?${params.toString()}`;
 
     const resp: AxiosResponse = await api.get(url);
-
-    const res = resp?.data; 
+    const res = resp?.data;
 
     if (res?.status_code !== 200) {
       throw new Error(res?.message || "Failed to fetch mode of payment");
@@ -260,6 +286,7 @@ export async function getAllModeOfPayment(
           type: item.type,
           enabled: item.enabled === 1,
           defaultAccount: item.defaultAccount,
+          currency: item.currency ?? "",
         })) || [],
       pagination: raw?.pagination || {
         total: 0,
@@ -271,8 +298,8 @@ export async function getAllModeOfPayment(
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
-      error.message ||
-      "Something went wrong"
+        error.message ||
+        "Something went wrong"
     );
   }
 }
@@ -329,4 +356,57 @@ export async function updateModeOfPaymentStatus(payload: {
       "Something went wrong"
     );
   }
+}
+
+
+
+export type PartyDetails = {
+  partyLedgerAccount: string;
+  partyName: string;
+  partyAccountCurrency: string;
+  partyBankAccount: string;
+  companyBankAccount: string;
+   companyLedgerAccount: string;      
+  companyLedgerCurrency: string;   
+};
+
+export async function getPartyDetails(
+  party: string,
+  party_type: "Supplier" | "Customer"
+): Promise<PartyDetails> {
+  try {
+    const resp: AxiosResponse = await api.post(
+      Account.GetPartyDetails,
+      { party, party_type }
+    );
+    const res = resp?.data;               
+
+    if (res?.status_code !== 201) {
+      throw new Error(res?.message || "Failed to fetch party details");
+    }
+
+    const d = res?.data;                       
+
+    return {
+      partyLedgerAccount:   d?.party_ledger_account ?? "",
+      partyName:            d?.party_name ?? "",
+      partyAccountCurrency: d?.party_account_currency ?? "",
+      partyBankAccount:     d?.party_bank_account ?? "",
+      companyBankAccount:   d?.company_bank_account ?? "",
+      companyLedgerAccount: d?.company_account_ledger ?? "",
+      companyLedgerCurrency: d?.company_account_ledger_currency ?? "",
+    };
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error.message ||
+        "Something went wrong"
+    );
+  }
+}
+
+export async function getPartiesByType(
+  filter: "Supplier" | "Customer"
+): Promise<Option[]> {
+  return getBankAccounts(filter);
 }
