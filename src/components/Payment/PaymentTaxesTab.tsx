@@ -1,6 +1,8 @@
 import { ModalInput } from "../ui/modal/modalComponent";
 
 const PaymentTaxesTab = ({ form, onChange }: any) => {
+
+  
   return (
     <div className="space-y-6">
 

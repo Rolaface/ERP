@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
 import PaymentTaxesTab from "../../components/Payment/PaymentTaxesTab";
 import InvoiceList from "./invoicelist";
+import type { AllocationResult } from "../../types/paymententryrecord.types";
  
 type TabType = "details" | "invoices" | "taxes";
  
@@ -58,10 +59,13 @@ useEffect(() => {
     []
   );
  
-  const handleFormChange = useCallback((updates: Record<string, any>) => {
+ const handleFormChange = useCallback(
+  (updates: Record<string, unknown> | AllocationResult) => {
     setForm((prev) => ({ ...prev, ...updates }));
     setError(null);
-  }, []);
+  },
+  []
+);
  
   const goToTab = useCallback((tab: TabType) => {
     setActiveTab(tab);
