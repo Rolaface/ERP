@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Table from "../../components/ui/Table/Table";
-import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+import type { Column } from "../../components/ui/Table/type";
 import {FaExchangeAlt } from "react-icons/fa";
 import ActionButton, {
   ActionGroup,
@@ -13,7 +13,7 @@ const CurrencyConversion: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
 
   /* ───────── COLUMNS ───────── */
-  const columns = [
+   const columns: Column<any>[] = [
     {
       key: "name",
       header: "Date",

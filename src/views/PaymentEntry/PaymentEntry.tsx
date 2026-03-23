@@ -6,35 +6,51 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
+import type { Column } from "../../components/ui/Table/type";
+
+type PaymentRow = {
+  id: string;
+  paymentType?: string;
+  partyName?: string;
+  mode?: string;
+  amount?: number;
+  allocatedAmount?: number;
+};
 
 const PaymentEntry: React.FC = () => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<PaymentRow[]>([]);
   const [showModal, setShowModal] = useState(false);
 
-  /* ───────── COLUMNS ───────── */
-  const columns = [
+  
+  const columns: Column<PaymentRow>[] = [
     {
-      key: "name",
+      key: "paymentType",
+      header: "Payment Type",
+      render: (row) => row.paymentType || "—",
+    },
+    {
+      key: "partyName",
+      header: "Party",
+      render: (row) => row.partyName || "—",
+    },
+    {
+      key: "mode",
       header: "Mode",
+      render: (row) => row.mode || "—",
     },
     {
-      key: "type",
-      header: "Type",
+      key: "amount",
+      header: "Amount",
+      render: (row) =>
+        row.amount ? `₹ ${row.amount.toLocaleString()}` : "—",
     },
     {
-      key: "defaultAccount",
-      header: "Default Account",
-      render: (row: any) => row.defaultAccount || "—",
-    },
-    {
-      key: "enabled",
-      header: "Status",
-      render: (row: any) =>
-        row.enabled ? (
-          <span className="text-green-600 font-semibold">Enabled</span>
-        ) : (
-          <span className="text-red-500 font-semibold">Disabled</span>
-        ),
+      key: "allocatedAmount",
+      header: "Allocated",
+      render: (row) =>
+        row.allocatedAmount
+          ? `₹ ${row.allocatedAmount.toLocaleString()}`
+          : "₹ 0",
     },
     {
       key: "actions",
@@ -63,14 +79,12 @@ const PaymentEntry: React.FC = () => {
         columns={columns}
         data={data}
         loading={false}
-        rowKey={(r) => `${r.id}-${r.type}`}
+        rowKey={(r) => r.id}
         showToolbar
         enableAdd
         addLabel="Add Payment Entry"
         onAdd={() => setShowModal(true)}
       />
-
-  
 
       {/* MODAL */}
       {showModal && (

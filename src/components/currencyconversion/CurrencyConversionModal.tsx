@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import {FaCalendarAlt} from "react-icons/fa";
+import { FaCalendarAlt } from "react-icons/fa";
 import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
@@ -18,7 +18,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
   onSave,
 }) => {
   const [form, setForm] = useState({
-    date: null as Date | null,
+    date: "",
     fromCurrency: "",
     toCurrency: "",
     buyRate: "",
@@ -59,8 +59,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
       title="Currency Conversion"
       subtitle="Add exchange rate"
       footer={footer}
-      customWidth="fit-content"
-      height="70vh"
+      customWidth="58vw"
+      height="auto"
     >
       <div className="p-4">
 
@@ -69,22 +69,16 @@ const CurrencyConversionModal: React.FC<Props> = ({
 
           {/* DATE */}
           <div className="flex-1 min-w-[100px] max-w-[140px] relative">
-  <label className="text-xs text-gray-600">Date</label>
+            <DatePickerInput
+              label="Date"
+              name="date"
+              value={form.date}
+              onChange={(name, value) =>
+                setForm((prev) => ({ ...prev, [name]: value }))
+              }
 
-  <DatePickerInput
-    selected={form.date}
-    onChange={(date: Date | null) =>
-      setForm((prev) => ({ ...prev, date }))
-    }
-    dateFormat="dd/MM/yyyy"
-    placeholderText="Select date"
-    className="w-full border border-[var(--border)] rounded-md px-2 pr-8 py-1 mt-1 text-xs"
-    
-  />
-
-  {/* ICON */}
-  <FaCalendarAlt className="absolute right-2 top-[28px] text-gray-400 text-sm pointer-events-none" />
-</div>
+            />
+          </div>
 
           {/* FROM */}
           <div className="flex-1 min-w-[100px] max-w-[140px]">

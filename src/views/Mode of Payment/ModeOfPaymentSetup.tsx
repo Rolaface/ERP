@@ -11,6 +11,8 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
+import type { Column } from "../../components/ui/Table/type";
+
 
 const ModeOfPaymentSetup: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
@@ -66,7 +68,7 @@ const ModeOfPaymentSetup: React.FC = () => {
   };
 
   /* ───────── COLUMNS ───────── */
-  const columns = [
+  const columns: Column<any>[] = [
     {
       key: "name",
       header: "Mode",
@@ -126,7 +128,7 @@ const ModeOfPaymentSetup: React.FC = () => {
         columns={columns}
         data={data}
         loading={loading}
-        rowKey={(r) => `${r.id}-${r.type}`}
+        rowKey={(r) => String(r.id)}
         showToolbar
         enableAdd
         addLabel="Add Mode of Payment"

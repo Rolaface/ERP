@@ -14,7 +14,8 @@ import {
   FaChevronDown,
   FaChevronUp,
     FaExchangeAlt,
-     FaReceipt
+     FaReceipt,
+     FaUsersCog 
 } from "react-icons/fa";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -239,7 +240,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   to: "/currency-conversion",
   label: "Currency Conversion",
   icon: <FaExchangeAlt />
-
+},
+{
+  to: "/customer-group",
+  label: "Customer Group",
+  icon: <FaUsersCog/>
 },
                   { to: "/settings", label: "General Settings", icon: <FaCog /> },
                 ].map((sub) => (

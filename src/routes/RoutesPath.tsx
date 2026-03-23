@@ -15,4 +15,5 @@ export const ROUTES = {
    ModeOfPaymentSetup: "/mode-of-payment-setup",
    PaymentEntry : "/payment-entry",
     CurrencyConversion : "/currency-conversion",
+    CustomerGroup : "/customer-group"
 };

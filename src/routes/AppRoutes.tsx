@@ -24,6 +24,9 @@ const PaymentEntry = lazy(
 const CurrencyConversion = lazy(
   () => import("../views/CurrencyConversion/currencyConversion")
 );
+const CustomerGroup = lazy(
+  () => import("../views/Customergroup/CustomerGroup")
+)
 
 import { Toaster } from "react-hot-toast";
 import ResetPassword from "../ResetPassword";
@@ -55,6 +58,7 @@ const AppRoutes: React.FC = () => {
     <Route path="/mode-of-payment-setup" element={<ModeOfPaymentPage />} />
     <Route path="/payment-entry" element={<PaymentEntry />} />
     <Route path="/currency-conversion" element={<CurrencyConversion />} />
+    <Route path="/customer-group" element={<CustomerGroup/>} />
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
   </Route>
 </Route>
