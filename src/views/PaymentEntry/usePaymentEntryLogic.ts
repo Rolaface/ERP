@@ -82,7 +82,7 @@ export function usePaymentModes(): UseModeOfPaymentReturn {
 }
 
 
-// ── Hook 2: Party options by type 
+
 export function usePartyOptions(
   partyType: "Supplier" | "Customer" | "Company" | "Shareholder" | "Employee" | "" 
 ): UsePartyOptionsReturn {
@@ -100,7 +100,7 @@ export function usePartyOptions(
 
     getBankAccounts(
       partyType as "Supplier" | "Customer" | "Shareholder" | "Employee",
-      "Payment Entry" // ← reference_doctype passed only from payment entry hook
+      "Payment Entry"
     )
       .then((opts) => {
         if (!cancelled) {
@@ -122,7 +122,6 @@ export function usePartyOptions(
   return { partyOptions, isLoadingParties };
 }
 
-// ── Hook 3: Fetch party details on demand 
 export function usePartyDetails(): UsePartyDetailsReturn {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 

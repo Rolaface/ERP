@@ -1,6 +1,7 @@
 import { ModalInput } from "../ui/modal/modalComponent";
 
-const PaymentTaxesTab = ({ form, onChange }: any) => {
+const PaymentTaxesTab = ({  }: any) => {
+
 
   
   return (
