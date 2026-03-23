@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect,useState } from "react";
 import Modal from "../ui/modal/modal";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
@@ -16,7 +16,8 @@ interface Props {
   defaultAccountFor?: AccountType;
   partyName?: string;
   initialData?: BankAccount | null;
-  skipApi?: boolean;  
+  currency?: string;
+
 }
 
 type Option = {
@@ -24,7 +25,6 @@ type Option = {
   value: string;
   meta?: Record<string, any>;
 };
-
 
 type AccountType = "Supplier" | "Customer" | "Company" | "Bank";
 
@@ -35,8 +35,10 @@ const AddBankAccountModal: React.FC<Props> = ({
   defaultAccountFor,
   partyName,
   initialData,
-  skipApi,
+  currency
+ 
 }) => {
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const {
     form,
     setForm,
@@ -48,7 +50,15 @@ const AddBankAccountModal: React.FC<Props> = ({
     currencies,
     reportingAccounts,
     isCompany
-  } = useBankAccLogic({ onSubmit, onClose, skipApi});
+  } = useBankAccLogic({ onSubmit, onClose});
+  useEffect(() => {
+  if (currency) {
+    setForm((prev) => ({
+      ...prev,
+      currency: currency,
+    }));
+  }
+}, [currency]);
 
   useEffect(() => {
   if (!initialData && defaultAccountFor) {
@@ -66,12 +76,32 @@ const AddBankAccountModal: React.FC<Props> = ({
     setForm(prev => ({
       ...prev,
       name: match?.label || partyName,
-      currency: match?.meta?.currency || prev.currency,
+      currency: prev.currency || currency || match?.meta?.currency,
       accountHolder: match?.label || partyName,
       accountHolderEdited: false,
     }));
   }
-}, [defaultAccountFor, partyName, entities, initialData]);
+}, [defaultAccountFor, partyName, entities, initialData, currency]);
+
+const validate = () => {
+  const e: Record<string, string> = {};
+
+  if (!form.accountFor) e.accountFor = "Required";
+  if (!form.name) e.name = "Required";
+  if (!form.bank) e.bank = "Required";
+  if (!form.accountNumber) e.accountNumber = "Required";
+  if (!form.sortCode) e.sortCode = "Required";
+  if (!form.currency) e.currency = "Required";
+
+  setErrors(e);
+  return Object.keys(e).length === 0;
+};
+
+const onSave = (e: any) => {
+  e.preventDefault();
+  if (!validate()) return;
+  handleSubmit(e);
+};
 
   const footer = (
     <>
@@ -82,14 +112,9 @@ const AddBankAccountModal: React.FC<Props> = ({
         <Button variant="secondary" onClick={handleReset}>
           Reset
         </Button>
-       <Button
-  variant="primary"
-  type="button"
-  onClick={handleSubmit}
->
+       <Button variant="primary" type="button" onClick={onSave}>
   Save Account
 </Button>
-       
       </div>
     </>
   );
@@ -112,7 +137,6 @@ const AddBankAccountModal: React.FC<Props> = ({
       >
         <div className="h-full overflow-y-auto p-8">
           <div className="grid grid-cols-3 gap-5">
-
             <div className="w-[110px]">
               <DatePickerInput
                 label="Date of Addition"
@@ -135,12 +159,13 @@ const AddBankAccountModal: React.FC<Props> = ({
               ]}
               required
               disabled={!!defaultAccountFor}
+              error={errors.accountFor}
             />
 
             <SearchSelect2
               label="Name"
               value={form.name}
-              disabled={!form.accountFor || form.accountFor === "Company"}
+              disabled={!form.accountFor || form.accountFor === "Company" || !!defaultAccountFor}
               onChange={(_, option: Option) =>
                 setForm((prev) => ({
                   ...prev,
@@ -156,8 +181,8 @@ const AddBankAccountModal: React.FC<Props> = ({
                 const query = q.toLowerCase();
                 return Promise.resolve(
                   entities.filter((item) =>
-                    item.label.toLowerCase().includes(query)
-                  )
+                    item.label.toLowerCase().includes(query),
+                  ),
                 );
               }}
               required
@@ -176,9 +201,7 @@ const AddBankAccountModal: React.FC<Props> = ({
               fetchOptions={(q): Promise<Option[]> => {
                 const query = q.toLowerCase();
                 return Promise.resolve(
-                  banks.filter((b) =>
-                    b.label.toLowerCase().includes(query)
-                  )
+                  banks.filter((b) => b.label.toLowerCase().includes(query)),
                 );
               }}
               required
@@ -190,10 +213,10 @@ const AddBankAccountModal: React.FC<Props> = ({
               disabled
             />
 
-
             <SearchSelect2
               label="Currency"
               value={form.currency}
+              disabled={!!defaultAccountFor} 
               onChange={(_: string, option: Option) =>
                 setForm((prev) => ({
                   ...prev,
@@ -204,8 +227,8 @@ const AddBankAccountModal: React.FC<Props> = ({
                 const query = q.toLowerCase();
                 return Promise.resolve(
                   currencies.filter((c) =>
-                    c.label.toLowerCase().includes(query)
-                  )
+                    c.label.toLowerCase().includes(query),
+                  ),
                 );
               }}
             />
@@ -215,6 +238,7 @@ const AddBankAccountModal: React.FC<Props> = ({
               value={form.accountNumber}
               onChange={handleChange}
               required
+              error={errors.accountNumber}
             />
 
             <ModalInput
@@ -231,16 +255,14 @@ const AddBankAccountModal: React.FC<Props> = ({
               onChange={handleChange}
             />
 
-
             <ModalInput
               label="IFSC/Sort Code"
               name="sortCode"
               value={form.sortCode}
               onChange={handleChange}
               required
+              error={errors.sortCode}
             />
-
-
 
             {/* Row 4 */}
             <div className="col-span-2 w-full">
@@ -251,7 +273,6 @@ const AddBankAccountModal: React.FC<Props> = ({
                 onChange={handleChange}
               />
             </div>
-
 
             {isCompany && (
               <SearchSelect2
@@ -267,14 +288,12 @@ const AddBankAccountModal: React.FC<Props> = ({
                   const query = q.toLowerCase();
                   return Promise.resolve(
                     reportingAccounts.filter((acc) =>
-                      acc.label.toLowerCase().includes(query)
-                    )
+                      acc.label.toLowerCase().includes(query),
+                    ),
                   );
                 }}
               />
             )}
-
-
 
             <label className="flex items-center gap-2">
               <input
@@ -299,8 +318,6 @@ const AddBankAccountModal: React.FC<Props> = ({
               />
               <span className="text-sm text-main">Disabled</span>
             </label> */}
-
-
           </div>
         </div>
       </form>

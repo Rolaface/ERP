@@ -1,256 +1,247 @@
-import React from "react";
+import React, { useState, useEffect,useMemo } from "react";
 import type { SupplierFormData } from "../../../types/Supply/supplier";
-import { ModalInput } from "../../ui/modal/modalComponent";
-import { Plus, Trash2, Check } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import AddBankAccountModal from "../../../components/CompanySetup/AddBankAccountModal";
+import { getAllBankAccounts } from "../../../api/BankAccountApi";
+import { showApiError } from "../../../utils/alert";
+import Table from "../../ui/Table/Table";
+import type { Column } from "../../ui/Table/type";
 
 interface PaymentInfoTabProps {
   form: SupplierFormData;
-  onChange: (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => void;
-  errors?: {
-    bankAccount?: string;
-  };
+  onChange: (e: React.ChangeEvent<any>) => void;
+  errors?: { bankAccount?: string };
+  isEditMode?: boolean;
+  partyType: "Supplier" | "Customer" | "Company";
+  partyName: string;
+  currency?: string;
 }
 
 export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
   form,
   onChange,
   errors = {},
+  isEditMode = false,
+  partyType,
+  partyName,
+  currency,
 }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
   const accounts = form.bankAccounts || [];
-  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+const columns: Column<any>[] = useMemo(() => [
+  {
+    key: "bankName",
+    header: "Bank",
+    sortable: true,
+  },
+  {
+    key: "accountHolder",
+    header: "Account Holder",
+  },
+  {
+    key: "accountNumber",
+    header: "Account Number",
+  },
+  {
+    key: "sortCode",
+    header: "IFSC",
+  },
+  {
+    key: "isDefault",
+    header: "Default",
+    align: "center",
+    render: (row: any) =>
+      row.isDefault ? (
+        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+          Default
+        </span>
+      ) : (
+        "—"
+      ),
+  },
+  {
+    key: "actions",
+    header: "",
+    align: "right",
+    render: (row: any) => (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDelete(row.id);
+        }}
+        className="text-red-500 hover:text-red-700"
+      >
+        <Trash2 size={14} />
+      </button>
+    ),
+  },
+], [accounts]);
+  useEffect(() => {
+    if (!isEditMode || !partyName) return;
 
-  // auto select first
-  React.useEffect(() => {
-    if (accounts.length && !selectedId) {
-      setSelectedId(accounts[0].id);
-    }
-  }, [accounts]);
+    const fetchAccounts = async () => {
+      setLoadingAccounts(true);
+      try {
+        const res = await getAllBankAccounts({
+           party_type:
+    partyType === "Company" ? undefined : partyType,
+          party: partyName,
+        });
 
-  const selectedAccount = accounts.find(a => a.id === selectedId);
+        const mapped = (res.data || []).map((acc: any) => ({
+          id: acc.id?.toString() || crypto.randomUUID(),
+          bankName: acc.bankName || "",
+          accountNumber: acc.accountNo || acc.accountNumber || "",
+          accountHolder: acc.accountHolderName || acc.accountHolder || "",
+          sortCode: acc.sortCode || "",
+          swiftCode: acc.swiftCode || "",
+          branchAddress: acc.branchAddress || "",
+          isDefault: acc.isDefault === "1" || acc.isDefault === true,
+        }));
 
-  const updateAccount = (field: string, value: string) => {
-    const updated = accounts.map(a =>
-      a.id === selectedId ? { ...a, [field]: value } : a
-    );
+        onChange({
+          target: { name: "bankAccounts", value: mapped },
+        } as any);
+      } catch (err) {
+        showApiError("Failed to load bank accounts");
+      } finally {
+        setLoadingAccounts(false);
+      }
+    };
+
+    fetchAccounts();
+  }, [isEditMode, partyName, partyType]);
+
+  const handleDelete = (id: string) => {
+    const updated = accounts.filter((a) => a.id !== id);
+    onChange({ target: { name: "bankAccounts", value: updated } } as any);
+  };
+
+  // const handleSetDefault = (id: string) => {
+  //   const updated = accounts.map((a) => ({ ...a, isDefault: a.id === id }));
+  //   onChange({ target: { name: "bankAccounts", value: updated } } as any);
+  // };
+
+  const handleAddAccount = (newAccount: any) => {
+    const mapped = {
+      id: newAccount?.bank_account_id || Date.now().toString(),
+      bankName: newAccount.bankName,
+      accountNumber: newAccount.accountNo,
+      accountHolder: newAccount.accountHolderName,
+      sortCode: newAccount.sortCode,
+      swiftCode: newAccount.swiftCode || "",
+      branchAddress: newAccount.branchAddress,
+      isDefault: newAccount.isDefault === "1" || newAccount.isDefault === true,
+    };
 
     onChange({
-      target: { name: "bankAccounts", value: updated },
+      target: {
+        name: "bankAccounts",
+        value: [...accounts, mapped],
+      },
     } as any);
   };
 
   return (
-    <section className="flex gap-4 h-full min-h-0">
+    <div className="flex flex-col gap-4 h-full">
+      {/* HEADER + ADD BUTTON */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-semibold text-main">Bank Accounts</h3>
 
-      {/* LEFT PANEL */}
-      <div className="w-1/3 bg-card border rounded-xl overflow-hidden flex flex-col">
+        <button
+          type="button"
+          onClick={() => isEditMode && setShowModal(true)}
+          disabled={!isEditMode}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all
+            ${
+              isEditMode
+                ? "bg-primary text-white cursor-pointer hover:opacity-90"
+                : "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
+            }`}
+        >
+          <Plus size={14} />
+          Add New Account
+        </button>
+      </div>
 
-        {/* HEADER */}
-        <div className="bg-primary text-white px-4 py-3 text-sm font-semibold">
-          BANK ACCOUNTS
-        </div>
+      {/* ERROR */}
+      {errors.bankAccount && (
+        <p className="text-xs text-red-500">{errors.bankAccount}</p>
+      )}
 
-        <div className="p-3 space-y-3 flex-1 overflow-y-auto min-h-0">
-
-          {/* ERROR */}
-          {errors.bankAccount && (
-            <p className="text-xs text-red-500">{errors.bankAccount}</p>
-          )}
-
-          {/* ADD BUTTON */}
-          <button
-            type="button"
-            onClick={() => {
-              const newAccount = {
-                id: crypto.randomUUID(),
-                bankName: "",
-                accountNumber: "",
-                accountHolder: "",
-                sortCode: "",
-                swiftCode: "",
-                branchAddress: "",
-                isDefault:
-                  !accounts.length ||
-                  !accounts.some(a => a.isDefault),
-              };
-
-              const updated = [...accounts, newAccount];
-
-              onChange({
-                target: { name: "bankAccounts", value: updated },
-              } as any);
-
-              setSelectedId(newAccount.id);
-            }}
-            className="w-full flex items-center justify-center gap-2 bg-primary text-white py-2 rounded-lg text-sm"
-          >
-            <Plus size={14} />
-            Add New Account
-          </button>
-
-          {/* LIST */}
-          {accounts.map(acc => (
-            <div
-              key={acc.id}
-              onClick={() => setSelectedId(acc.id)}
-              className={`p-3 rounded-lg border cursor-pointer transition
-                ${selectedId === acc.id
-                  ? "border-primary bg-primary/10"
-                  : "hover:bg-muted"
-                }`}
-            >
-              <div className="flex justify-between">
-                <div>
-                  <p className="text-sm font-medium">
-                    {acc.bankName || "New Account"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {acc.accountNumber
-                      ? acc.accountNumber
-                      : "----"}
-                  </p>
-                </div>
-
-                {acc.isDefault && (
-                  <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                    Default
-                  </span>
-                )}
+      {/* INFO — create mode */}
+      {!isEditMode && (
+        <div className="flex-1 flex flex-col items-center justify-center px-8">
+          <p className="text-sm font-semibold text-main mb-8">
+            Bank accounts can be added after {partyType.toLowerCase()} creation
+          </p>
+          <div className="w-full max-w-2xl flex items-center justify-between">
+            {/* STEP 1 */}
+            <div className="flex flex-col items-center gap-2 flex-1">
+              <div className="w-8 h-8 rounded-full bg-primary text-white text-sm font-bold flex items-center justify-center">
+                1
               </div>
+              <p className="text-xs text-center text-muted font-medium">
+                Create the supplier first
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* RIGHT PANEL */}
-      <div className="flex-1 bg-card border rounded-xl flex flex-col h-full overflow-hidden">
+            {/* CONNECTOR */}
+            <div className="flex-1 border-t-2 border-dashed border-gray-300 mb-5" />
 
-        {/* HEADER */}
-        <div className="bg-primary text-white px-4 py-3 flex justify-between items-center">
-          <span className="text-sm font-semibold">
-            ACCOUNT DETAILS
-          </span>
-
-          {selectedAccount && (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="text-xs bg-white/20 px-3 py-1 rounded"
-                onClick={() => {
-                  const updated = accounts.map(a => ({
-                    ...a,
-                    isDefault: a.id === selectedAccount.id,
-                  }));
-
-                  onChange({
-                    target: {
-                      name: "bankAccounts",
-                      value: updated,
-                    },
-                  } as any);
-                }}
-              >
-                <Check size={12} className="inline mr-1" />
-                Set Default
-              </button>
-
-              <button
-                type="button"
-                className="text-xs bg-white/20 px-3 py-1 rounded"
-                onClick={() => {
-                  if (accounts.length === 1) {
-                    alert("At least one account is required");
-                    return;
-                  }
-
-                  const updated = accounts.filter(
-                    a => a.id !== selectedAccount.id
-                  );
-
-                  if (!updated.some(a => a.isDefault)) {
-                    updated[0].isDefault = true;
-                  }
-
-                  onChange({
-                    target: {
-                      name: "bankAccounts",
-                      value: updated,
-                    },
-                  } as any);
-
-                  setSelectedId(updated[0]?.id || null);
-                }}
-              >
-                <Trash2 size={12} className="inline mr-1" />
-                Delete
-              </button>
+            {/* STEP 2 */}
+            <div className="flex flex-col items-center gap-2 flex-1">
+              <div className="w-8 h-8 rounded-full bg-primary text-white text-sm font-bold flex items-center justify-center">
+                2
+              </div>
+              <p className="text-xs text-center text-muted font-medium">
+                Open supplier in edit mode
+              </p>
             </div>
-          )}
-        </div>
 
-        {/* BODY */}
-       <div className="p-4 flex-1 overflow-hidden">
-          {!selectedAccount ? (
-            <p className="text-sm text-gray-500">
-              Select an account
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* CONNECTOR */}
+            <div className="flex-1 border-t-2 border-dashed border-gray-300 mb-5" />
 
-              <ModalInput
-                label="Bank Name"
-                value={selectedAccount.bankName}
-                onChange={(e) =>
-                  updateAccount("bankName", e.target.value)
-                }
-                required
-              />
-
-              <ModalInput
-                label="Account Holder"
-                value={selectedAccount.accountHolder}
-                onChange={(e) =>
-                  updateAccount("accountHolder", e.target.value)
-                }
-                required
-              />
-
-              <ModalInput
-                label="Account Number"
-                value={selectedAccount.accountNumber}
-                onChange={(e) =>
-                  updateAccount("accountNumber", e.target.value)
-                }
-                required
-              />
-
-
-              <ModalInput
-                label="IFSC / Sort Code"
-                value={selectedAccount.sortCode}
-                onChange={(e) =>
-                  updateAccount("sortCode", e.target.value)
-                }
-                required
-              />
-
-
-
-              <ModalInput
-                label="Branch Address"
-                value={selectedAccount.branchAddress}
-                onChange={(e) =>
-                  updateAccount("branchAddress", e.target.value)
-                }
-              />
-
+            {/* STEP 3 */}
+            <div className="flex flex-col items-center gap-2 flex-1">
+              <div className="w-8 h-8 rounded-full bg-primary text-white text-sm font-bold flex items-center justify-center">
+                3
+              </div>
+              <p className="text-xs text-center text-muted font-medium">
+                Add bank accounts from there 
+              </p>
             </div>
-          )}
+          </div>
         </div>
-      </div>
-    </section>
+      )}
+
+      {/* ACCOUNTS LIST — edit mode */}
+    {isEditMode && (
+  <div className="flex-1 min-h-0">
+    <Table
+      columns={columns}
+      data={accounts}
+      loading={loadingAccounts}
+      emptyMessage="No bank accounts added yet"
+      rowKey={(row) => row.id}
+      showToolbar
+      
+    
+
+    />
+  </div>
+)}
+
+      {/* MODAL */}
+      <AddBankAccountModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        defaultAccountFor={partyType}
+        partyName={partyName}
+        onSubmit={handleAddAccount}
+        currency={currency}
+      />
+    </div>
   );
 };

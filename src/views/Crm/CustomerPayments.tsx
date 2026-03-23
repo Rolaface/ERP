@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import type { Column } from "../../components/ui/Table/type";
-import CustomerPaymentModal from "../../components/sales/CustomerPaymentModal";
+
+import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 
 import {
   showLoading,
@@ -36,54 +37,51 @@ const Payments: React.FC = () => {
 
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-const [openPaymentModal, setOpenPaymentModal] = useState(false);
-const [initialLoad, setInitialLoad] = useState(true);
+  const [openPaymentModal, setOpenPaymentModal] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
 
-
-const handleAddPayment = () => {
-  setOpenPaymentModal(true);
-};
+  const handleAddPayment = () => {
+    setOpenPaymentModal(true);
+  };
   /**
    * Fetch Payments
    */
 
-const fetchPayments = useCallback(async () => {
-  try {
-    setLoading(true);
+  const fetchPayments = useCallback(async () => {
+    try {
+      setLoading(true);
 
-    const response = await getAllPayments(
-      "Customer",
-      page,
-      pageSize,
-      searchTerm
-    );
+      const response = await getAllPayments(
+        "Customer",
+        page,
+        pageSize,
+        searchTerm,
+      );
 
-    const paymentsList = response?.data?.payments ?? [];
+      const paymentsList = response?.data?.payments ?? [];
 
-    const mapped: PaymentSummary[] = paymentsList.map((p: any) => ({
-      id: p.paymentId ?? "",
-      paymentDate: p.paymentDate ?? "",
-      customerName: p.partyName ?? "",
-      modeOfPayment: p.paymentMode ?? "",
-      referenceNo: p.referenceNumber ?? "-",
-      amount: Number(p.amount ?? 0),
-      status: p.status ?? "Draft",
-    }));
+      const mapped: PaymentSummary[] = paymentsList.map((p: any) => ({
+        id: p.paymentId ?? "",
+        paymentDate: p.paymentDate ?? "",
+        customerName: p.partyName ?? "",
+        modeOfPayment: p.paymentMode ?? "",
+        referenceNo: p.referenceNumber ?? "-",
+        amount: Number(p.amount ?? 0),
+        status: p.status ?? "Draft",
+      }));
 
-    setPayments(mapped);
+      setPayments(mapped);
 
-    setTotalPages(response?.data?.pagination?.totalPages ?? 1);
-    setTotalItems(response?.data?.pagination?.total ?? mapped.length);
-
-  } catch (error) {
-    console.error("Error fetching payments:", error);
-    showApiError(error);
-  } finally {
-    setLoading(false);
-    setInitialLoad(false);
-
-  }
-}, [page, pageSize, searchTerm]);
+      setTotalPages(response?.data?.pagination?.totalPages ?? 1);
+      setTotalItems(response?.data?.pagination?.total ?? mapped.length);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+      showApiError(error);
+    } finally {
+      setLoading(false);
+      setInitialLoad(false);
+    }
+  }, [page, pageSize, searchTerm]);
 
   useEffect(() => {
     fetchPayments();
@@ -177,19 +175,17 @@ const fetchPayments = useCallback(async () => {
       <Table
         columns={columns}
         data={payments}
-        loading={loading||initialLoad}
-        
+        loading={loading || initialLoad}
         showToolbar
         enableColumnSelector
         searchValue={searchTerm}
-         enableAdd
+        enableAdd
         addLabel="Recieve Payment"
         onAdd={handleAddPayment}
         onSearch={(q) => {
-  setSearchTerm(q);
-  setPage(1);
-}}
-
+          setSearchTerm(q);
+          setPage(1);
+        }}
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -197,17 +193,14 @@ const fetchPayments = useCallback(async () => {
         pageSizeOptions={[10, 25, 50, 100]}
         onPageChange={setPage}
         onPageSizeChange={(size) => {
-  setPageSize(size);
-  setPage(1);
-}}
+          setPageSize(size);
+          setPage(1);
+        }}
       />
-  <CustomerPaymentModal
-  isOpen={openPaymentModal}
-  onClose={() => setOpenPaymentModal(false)}
-  onSubmit={() => {
-    fetchPayments();
-  }}
-/>
+      <PaymentEntryModal
+        isOpen={openPaymentModal}
+        onClose={() => setOpenPaymentModal(false)}
+      />
     </div>
   );
 };

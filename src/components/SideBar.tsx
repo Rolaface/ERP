@@ -13,6 +13,9 @@ import {
   FaBars,
   FaChevronDown,
   FaChevronUp,
+    FaExchangeAlt,
+     FaReceipt,
+     FaUsersCog 
 } from "react-icons/fa";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -222,6 +225,26 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   to: "/bank-account-setup",
   label: "Bank Account Setup",
   icon: <FaBars />
+},
+{
+  to: "/mode-of-payment-setup",
+  label: "Mode of Payment Setup",
+  icon: <FaMoneyBillWave />
+},
+{
+  to: "/payment-entry",
+  label: "Payment Entry",
+  icon: < FaReceipt />
+},
+{
+  to: "/currency-conversion",
+  label: "Currency Conversion",
+  icon: <FaExchangeAlt />
+},
+{
+  to: "/customer-group",
+  label: "Customer Group",
+  icon: <FaUsersCog/>
 },
                   { to: "/settings", label: "General Settings", icon: <FaCog /> },
                 ].map((sub) => (

@@ -252,7 +252,7 @@ const BankDetails: React.FC = () => {
     fetchAccounts();
   }}
   initialData={editingRow}
-  defaultAccountFor="Company"   // ✅ ADD THIS
+  defaultAccountFor="Company" 
 />
       )}
     </div>

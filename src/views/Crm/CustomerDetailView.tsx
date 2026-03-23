@@ -20,6 +20,9 @@ import CustomerStatement from "../Crm/CustomerStatement";
 import CustomerPaymentModal from "../../components/sales/CustomerPaymentModal";
 import CustomerInvoices from "./CustomerInvoices";
 import CustomerQuotations from "./CustomerQuotations";
+import CustomerBankDetails from "./CustomerBankDetails";
+import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
+
 import { CreditCard } from "lucide-react";
 interface Props {
   customer: CustomerDetail;
@@ -43,8 +46,11 @@ const CustomerDetailView: React.FC<Props> = ({
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showBankAccountModal, setShowBankAccountModal] = useState(false);
+  const [refreshBankAccounts, setRefreshBankAccounts] = useState<(() => void) | null>(null);
+   const [editingRow, setEditingRow] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "quotations" | "invoices" | "payments" | "statement"
+    "overview" | "bank" | "quotations" | "invoices" | "payments" | "statement"
   >("overview");
 
   const q = searchTerm.trim().toLowerCase();
@@ -80,15 +86,8 @@ const CustomerDetailView: React.FC<Props> = ({
 
   const billingAddress = [bLine1, bLine2, bLine3].filter(Boolean).join("\n");
   const sellingTerms = customer?.terms?.selling;
-  const getPhaseName = (p: any, index: number) => {
-  if (p.name) return p.name;
-
-  const condition = p.condition?.toLowerCase() || "";
-
-  if (condition.includes("advance")) return "Advance";
-  if (condition.includes("delivery")) return "On Delivery";
-
-  return `Phase ${index + 1}`;
+ const getPhaseName = (p: any) => {
+  return p.name || "";
 };
 
 const formatPercentage = (value: any) => {
@@ -162,7 +161,20 @@ ${sellingTerms?.liability || ""}
           >
             <Plus size={14} /> Record Payment
           </button>
+          
         );
+        case "bank":
+  return (
+    <button
+      onClick={() => {
+        setEditingRow(null);
+        setShowBankAccountModal(true);
+      }}
+      className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+    >
+      <Plus size={14} /> Add Bank
+    </button>
+  );
 
       default:
         return null;
@@ -252,6 +264,7 @@ ${sellingTerms?.liability || ""}
             <div className="flex">
               {[
                 { id: "overview", label: "Overview", icon: <Globe /> },
+                 { id: "bank", label: "Bank Details", icon: <Building2 /> },
                 { id: "quotations", label: "Quotations", icon: <FileText /> },
                 { id: "invoices", label: "Invoices", icon: <Receipt /> },
                 { id: "payments", label: "Payments", icon: <CreditCard /> },
@@ -349,7 +362,7 @@ ${sellingTerms?.liability || ""}
 
     <ul className="space-y-2">
       {sellingTerms?.payment?.phases?.map((p: any, index: number) => {
-        const phaseName = getPhaseName(p, index);
+        const phaseName = getPhaseName(p);
         const percentage = formatPercentage(p.percentage);
 
         return (
@@ -440,6 +453,22 @@ ${sellingTerms?.liability || ""}
                 </div>
               </div>
             )}
+            {activeTab === "bank" && (
+  <div className="p-5 w-full min-w-0 overflow-hidden">
+ <CustomerBankDetails
+  customerName={customer.name}
+  onAdd={(refresh) => {
+    setEditingRow(null);
+    setRefreshBankAccounts(() => refresh); 
+    setShowBankAccountModal(true);
+  }}
+  onEdit={(row) => {
+    setEditingRow(row);
+    setShowBankAccountModal(true);
+  }}
+/>
+  </div>
+)}
 
             {activeTab === "statement" && (
               <CustomerStatement customerId={customer.id} />
@@ -499,6 +528,20 @@ ${sellingTerms?.liability || ""}
   invoiceNumber=""
   totalAmount={0}
   amountPaid={0}
+/>
+<AddBankAccountModal
+  isOpen={showBankAccountModal}
+  onClose={() => {
+    setShowBankAccountModal(false);
+    setEditingRow(null);
+  }}
+  onSubmit={() => {
+    setShowBankAccountModal(false);
+    refreshBankAccounts?.();
+  }}
+  partyName={customer.name}
+  defaultAccountFor="Customer"
+  initialData={editingRow}
 />
     </div>
   );

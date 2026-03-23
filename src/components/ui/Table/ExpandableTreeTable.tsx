@@ -20,11 +20,11 @@ export interface ExpandableTreeTableProps<T extends Record<string, any>> {
   onSearch?: (q: string) => void;
   toolbarPlaceholder?: string;
   extraFilters?: React.ReactNode;
-  onRefresh?: () => void;            // shows Refresh button if provided
-  showExpandControls?: boolean;      // shows Expand All / Collapse buttons (default true)
+  onRefresh?: () => void;           
+  showExpandControls?: boolean;     
 
   // ── Tree behaviour ──
-  searchTerm?: string;               // internal search if not using toolbar
+  searchTerm?: string;               
   matchNode?: (node: T, term: string) => boolean;
   defaultExpandDepth?: number;
   indentSize?: number;
@@ -325,51 +325,65 @@ function ExpandableTreeTable<T extends Record<string, any>>({
     <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col shadow-sm transition-all relative z-10 w-full">
 
       {/* ── Toolbar — exact same layout as Table's toolbar ── */}
-      {showToolbar && (
-        <div className="px-5 py-4 border-b border-[var(--border)] bg-card flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 shrink-0">
+     {showToolbar && (
+  <div className="px-5 py-4 border-b border-[var(--border)] bg-card flex flex-col lg:flex-row lg:items-center gap-4 shrink-0">
 
-          {/* Search — identical to Table */}
-          {showSearch && (
-            <div className="relative w-52 group">
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs group-focus-within:text-primary transition-colors" />
-              <input
-                value={searchValue}
-                onChange={(e) => onSearch?.(e.target.value)}
-                placeholder={toolbarPlaceholder}
-                className="w-full pl-10 pr-4 py-2 bg-card border border-[var(--border)] rounded-xl text-xs font-medium text-main focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all"
-              />
-            </div>
-          )}
+    {/* Search — left */}
+    {showSearch && (
+      <div className="relative w-52 group">
+        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs group-focus-within:text-primary transition-colors" />
+        <input
+          value={searchValue}
+          onChange={(e) => onSearch?.(e.target.value)}
+          placeholder={toolbarPlaceholder}
+          className="w-full pl-10 pr-4 py-2 bg-card border border-[var(--border)] rounded-xl text-xs font-medium text-main focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all"
+        />
+      </div>
+    )}
 
-          {/* Extra filters slot */}
-          {extraFilters && (
-            <div className="flex items-center gap-4 shrink-0">{extraFilters}</div>
-          )}
+    {/* Right side — ml-auto pushes everything to the right */}
+    <div className="flex items-center gap-2 ml-auto shrink-0">
 
-          {/* Right side: expand controls + refresh */}
-          <div className="flex items-center gap-2 shrink-0">
-            {showExpandControls && (
-              <>
-                <button
-                  onClick={expandAll}
-                  className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
-                >
-                  <Layers size={11} />
-                  Expand All
-                </button>
-                <button
-                  onClick={collapseAll}
-                  className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
-                >
-                  <ChevronRight size={11} />
-                  Collapse
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+      {/* Expand / Collapse controls */}
+      {showExpandControls && (
+        <>
+          <button
+            onClick={expandAll}
+            className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
+          >
+            <Layers size={11} />
+            Expand All
+          </button>
+          <button
+            onClick={collapseAll}
+            className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
+          >
+            <ChevronRight size={11} />
+            Collapse
+          </button>
+        </>
       )}
 
+      {/* Refresh */}
+      {onRefresh && (
+        <button
+          onClick={onRefresh}
+          className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all"
+        >
+          <RefreshCw size={11} />
+        </button>
+      )}
+
+      {/* extraFilters — + New button yahan aayega, rightmost */}
+      {extraFilters && (
+        <div className="flex items-center gap-2 shrink-0">
+          {extraFilters}
+        </div>
+      )}
+    </div>
+
+  </div>
+)}
       {/* ── Table — exact same scroll wrapper as Table ── */}
       <div
         className="w-full overflow-x-auto custom-scrollbar"

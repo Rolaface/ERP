@@ -58,6 +58,7 @@ const SupplierDetailView: React.FC<Props> = ({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileDrawer, setMobileDrawer] = useState(false);
   const terms = supplier?.terms?.buying;
+  const bankAccountsRefresh = useRef<(() => void) | null>(null);
   /* ── derived ── */
   const supplierDetail = suppliers.find((s) =>
     supplier.supplierId
@@ -552,10 +553,9 @@ const SupplierDetailView: React.FC<Props> = ({
             {activeTab === "bank-accounts" && (
               <SupplierBankDetails
               supplierName={supplierName}
-                onAdd={() => {
-                  setEditingRow(null);
-                  setShowBankAccountModal(true);
-                }}
+  onAdd={(refresh) => {
+  bankAccountsRefresh.current = refresh;
+}}
                 onEdit={(row) => {
                   setEditingRow(row);
                   setShowBankAccountModal(true);
@@ -641,6 +641,7 @@ const SupplierDetailView: React.FC<Props> = ({
         }}
         onSubmit={() => {
           setShowBankAccountModal(false);
+          bankAccountsRefresh.current?.();
         }}
         partyName={supplierName}
         defaultAccountFor="Supplier"

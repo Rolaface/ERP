@@ -25,7 +25,8 @@ export interface SupplierFormData {
     terms?: {
     buying?: TermSection;
   };
-  bankAccounts: SupplierBankAccount[];
+  bankAccounts?: SupplierBankAccount[];
+ 
 }
 
 export interface SupplierBankAccount {
@@ -46,7 +47,7 @@ export const emptySupplierForm: SupplierFormData = {
   taxCategory: "",
   paymentTerms: "",
   currency: "",
-  bankAccounts: [],
+ bankAccounts: [],
   contactPerson: "",
   phoneCode: "",
   phoneNo: "",
