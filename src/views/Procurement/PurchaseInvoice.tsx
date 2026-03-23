@@ -111,10 +111,10 @@ const [selectedPI, setSelectedPI] = useState<any | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
-  const handleMakePayment = async (pId: string) => {
+
+const handleMakePayment = async (pId: string) => {
   try {
     showLoading("Opening payment...");
-
     const res = await getPurchaseInvoiceById(pId);
     closeSwal();
 
@@ -125,13 +125,11 @@ const [selectedPI, setSelectedPI] = useState<any | null>(null);
 
     setSelectedPI(res.data);
     setPaymentModalOpen(true);
-
   } catch (err) {
     closeSwal();
     showApiError(err);
   }
 };
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));
@@ -531,7 +529,7 @@ const [selectedPI, setSelectedPI] = useState<any | null>(null);
         onSubmit={handlePISaved}
       />
 
-      {/* ── View modal — kept, do not remove ── */}
+      {/* ── View modal —   ── */}
       {viewModalOpen && selectedInvoice && (
         <PurchaseInvoiceView
           piData={selectedInvoice}
@@ -543,12 +541,24 @@ const [selectedPI, setSelectedPI] = useState<any | null>(null);
         />
         
       )}
-      <PaymentEntryModal
+<PaymentEntryModal
   isOpen={paymentModalOpen}
   onClose={() => {
     setPaymentModalOpen(false);
     setSelectedPI(null);
   }}
+  defaultValues={
+    selectedPI
+      ? {
+          paymentType:      "Pay",
+          partyType:        "Supplier",
+          partyName:        selectedPI.supplierName,
+          partyId:          selectedPI.supplierId ?? selectedPI.pId,
+          amount:           selectedPI.grandTotal,
+          referenceInvoice: selectedPI.pId,
+        }
+      : undefined
+  }
 />
     </div>
   );

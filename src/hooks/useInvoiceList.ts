@@ -11,23 +11,14 @@ import type {
 
 const PAGE_SIZE = 10;
 
-// ─── Cache key ────────────────────────────────────────────────────────────────
-
-function makeCacheKey(partyType: string, partyName: string, page: number): string {
-  return `${partyType}::${partyName}::${page}`;
+function makeCacheKey(partyType: string, partyName: string, page: number, ref?: string): string {
+  return `${partyType}::${partyName}::${page}::${ref ?? "all"}`;
 }
 
-// ─── FIFO core — pure function, fully testable ────────────────────────────────
-
-export function runFifoAllocation(
-  invoices: NormalizedInvoice[],
-  budget: number
-): AllocationMap {
+export function runFifoAllocation(invoices: NormalizedInvoice[], budget: number): AllocationMap {
   if (budget <= 0) return {};
-
   const result: AllocationMap = {};
   let remaining = budget;
-
   for (const inv of invoices) {
     if (remaining <= 0) break;
     const allocate = Math.min(inv.outstanding, remaining);
@@ -36,25 +27,19 @@ export function runFifoAllocation(
       remaining -= allocate;
     }
   }
-
   return result;
 }
-
-// ─── Build AllocationResult from map ─────────────────────────────────────────
 
 function buildAllocationResult(map: AllocationMap): AllocationResult {
   const selectedInvoices = Object.entries(map)
     .filter(([, amount]) => amount > 0)
     .map(([invoiceNumber, amount]) => ({ invoiceNumber, amount }));
-
   return {
     selectedInvoices,
     allocatedAmount: selectedInvoices.reduce((sum, i) => sum + i.amount, 0),
     allocations: map,
   };
 }
-
-// ─── Hook return type ─────────────────────────────────────────────────────────
 
 export interface UseInvoiceListReturn {
   invoices: NormalizedInvoice[];
@@ -76,19 +61,17 @@ export interface UseInvoiceListReturn {
   retryFetch: () => void;
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-
 export function useInvoiceList(
   partyType: string,
   partyName: string | undefined,
   paymentAmount: number,
   fifoTrigger: number | undefined,
-  onFormChange: (data: AllocationResult) => void
+  onFormChange: (data: AllocationResult) => void,
+  referenceInvoice?: string
 ): UseInvoiceListReturn {
-  const adapter = getInvoiceAdapter(partyType);
+  const adapter     = getInvoiceAdapter(partyType);
   const isSupported = isSupportedPartyType(partyType);
 
-  // ── State ──────────────────────────────────────────────────────────────────
   const [invoices, setInvoices]       = useState<NormalizedInvoice[]>([]);
   const [pagination, setPagination]   = useState<NormalizedPagination | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,24 +81,25 @@ export function useInvoiceList(
   const [allocated, setAllocated]     = useState<AllocationMap>({});
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
 
-  // ── Refs ───────────────────────────────────────────────────────────────────
-  const paymentAmountRef = useRef(paymentAmount);
+  const paymentAmountRef   = useRef(paymentAmount);
   paymentAmountRef.current = paymentAmount;
 
-  const onFormChangeRef = useRef(onFormChange);
-  onFormChangeRef.current = onFormChange;
+  const onFormChangeRef    = useRef(onFormChange);
+  onFormChangeRef.current  = onFormChange;
+
+  const referenceInvoiceRef   = useRef(referenceInvoice);
+  referenceInvoiceRef.current = referenceInvoice;
 
   const lastFifoTrigger = useRef<number>(0);
-  const pageCache = useRef<Map<string, NormalizedPage>>(new Map());
+  const pageCache       = useRef<Map<string, NormalizedPage>>(new Map());
 
   // ── Fetch page ─────────────────────────────────────────────────────────────
   const fetchPage = useCallback(
     async (page: number) => {
       if (!adapter) return;
 
-      const cacheKey = makeCacheKey(partyType, partyName ?? "", page);
-      const cached = pageCache.current.get(cacheKey);
-
+      const cacheKey = makeCacheKey(partyType, partyName ?? "", page, referenceInvoiceRef.current);
+      const cached   = pageCache.current.get(cacheKey);
       if (cached) {
         setInvoices(cached.data);
         setPagination(cached.pagination);
@@ -126,19 +110,26 @@ export function useInvoiceList(
       setFetchError(null);
 
       try {
-        const result = await adapter.fetchPage({
-          page,
-          pageSize: PAGE_SIZE,
-          partyName,
-        });
+        const ref = referenceInvoiceRef.current;
+        let filtered: NormalizedPage;
 
-        pageCache.current.set(cacheKey, result);
-        setInvoices(result.data);
-        setPagination(result.pagination);
+        if (ref) {
+          // Specific invoice — fetch all and filter so page boundary doesn't matter
+          const allData = await adapter.fetchAllForFifo(partyName);
+          const match   = allData.filter((inv) => inv.invoiceNumber === ref);
+          filtered = {
+            data: match,
+            pagination: { page: 1, totalPages: 1, total: match.length, hasNext: false, hasPrev: false },
+          };
+        } else {
+          filtered = await adapter.fetchPage({ page, pageSize: PAGE_SIZE, partyName });
+        }
+
+        pageCache.current.set(cacheKey, filtered);
+        setInvoices(filtered.data);
+        setPagination(filtered.pagination);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to load invoices.";
-        setFetchError(message);
+        setFetchError(err instanceof Error ? err.message : "Failed to load invoices.");
       } finally {
         setLoading(false);
       }
@@ -146,38 +137,44 @@ export function useInvoiceList(
     [adapter, partyType, partyName]
   );
 
-  // ── fetchPageRef — FIFO aur page nav stale closure se bachte hain ──────────
-  const fetchPageRef = useRef(fetchPage);
+  const fetchPageRef   = useRef(fetchPage);
   fetchPageRef.current = fetchPage;
 
-  // ── Effect 1: party change → reset + page 1 fetch ─────────────────────────
-  // Dono ek saath — alag effects mein double fetch hoti thi
+  // ── Effect 1: party / referenceInvoice change → reset + fetch ─────────────
+  // FIX: agar fifoTrigger already pending hai (modal open pe set tha) toh
+  // allocated/inputValues reset mat karo — FIFO effect unhe set karega
+  // Pehle yeh wipe hota tha → FIFO result gayab ho jaata tha (first click issue)
   useEffect(() => {
+    const fifoAlreadyPending =
+      fifoTrigger !== undefined && fifoTrigger !== lastFifoTrigger.current;
+
     setCurrentPage(1);
-    setAllocated({});
-    setInputValues({});
     setInvoices([]);
     setPagination(null);
     setFetchError(null);
     pageCache.current.clear();
 
-    if (isSupported && partyType) {
-      fetchPageRef.current(1);
+    if (!fifoAlreadyPending) {
+      // FIFO pending nahi — safe to reset allocation state
+      setAllocated({});
+      setInputValues({});
     }
-  }, [partyType, partyName]); // eslint-disable-line react-hooks/exhaustive-deps
+    // FIFO pending hai — allocation state wipe mat karo, FIFO set karega
 
-  // ── Effect 2: page navigation — page 1 upar handle ho gaya ───────────────
+    if (isSupported && partyType) fetchPageRef.current(1);
+  }, [partyType, partyName, referenceInvoice]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Effect 2: page navigation ──────────────────────────────────────────────
   useEffect(() => {
     if (currentPage === 1) return;
     if (isSupported && partyType) fetchPageRef.current(currentPage);
   }, [currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Publish allocation to parent ───────────────────────────────────────────
   const publishAllocation = useCallback((map: AllocationMap) => {
     onFormChangeRef.current(buildAllocationResult(map));
   }, []);
 
-  // ── Effect 3: FIFO allocation ──────────────────────────────────────────────
+  // ── Effect 3: FIFO ─────────────────────────────────────────────────────────
   useEffect(() => {
     const trigger = fifoTrigger;
     if (!trigger || trigger === lastFifoTrigger.current || !adapter) return;
@@ -190,12 +187,16 @@ export function useInvoiceList(
 
     const runFifo = async () => {
       try {
-        const allInvoices = await adapter.fetchAllForFifo(partyName);
+        const allData = await adapter.fetchAllForFifo(partyName);
+        const ref         = referenceInvoiceRef.current;
+        const allInvoices = ref
+          ? allData.filter((inv) => inv.invoiceNumber === ref)
+          : allData;
+
         if (cancelled) return;
 
-        const newAllocated = runFifoAllocation(allInvoices, budget);
+        const newAllocated    = runFifoAllocation(allInvoices, budget);
         const newInputValues: Record<string, string> = {};
-
         for (const [num, amount] of Object.entries(newAllocated)) {
           newInputValues[num] = String(amount);
         }
@@ -206,40 +207,32 @@ export function useInvoiceList(
 
         pageCache.current.clear();
         setCurrentPage(1);
-        fetchPageRef.current(1); // ref se — fetchPage deps mein nahi
+        fetchPageRef.current(1);
       } catch {
-        // silent — manual allocation block nahi hogi
+        // silent
       }
     };
 
     runFifo();
     return () => { cancelled = true; };
-  }, [fifoTrigger]); // sirf fifoTrigger — pehle 5 deps the jo double-run karate the
+  }, [fifoTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Manual allocation handlers ─────────────────────────────────────────────
-  const handleInputChange = useCallback(
-    (invoiceNumber: string, raw: string) => {
-      if (!/^\d*\.?\d*$/.test(raw)) return;
-      setInputValues((prev) => ({ ...prev, [invoiceNumber]: raw }));
-    },
-    []
-  );
+  // ── Manual allocation ──────────────────────────────────────────────────────
+  const handleInputChange = useCallback((invoiceNumber: string, raw: string) => {
+    if (!/^\d*\.?\d*$/.test(raw)) return;
+    setInputValues((prev) => ({ ...prev, [invoiceNumber]: raw }));
+  }, []);
 
   const handleInputBlur = useCallback(
     (invoiceNumber: string, outstandingMax: number) => {
       setAllocated((prev) => {
-        const raw = inputValues[invoiceNumber] ?? "";
-        const value = parseFloat(raw) || 0;
-
+        const raw         = inputValues[invoiceNumber] ?? "";
+        const value       = parseFloat(raw) || 0;
         const othersTotal = Object.entries(prev)
           .filter(([k]) => k !== invoiceNumber)
           .reduce((sum, [, v]) => sum + v, 0);
-
         const remainingBudget = paymentAmountRef.current - othersTotal;
-        const safeValue = Math.max(
-          0,
-          Math.min(value, outstandingMax, Math.max(0, remainingBudget))
-        );
+        const safeValue = Math.max(0, Math.min(value, outstandingMax, Math.max(0, remainingBudget)));
 
         setInputValues((iv) => ({
           ...iv,
@@ -248,17 +241,14 @@ export function useInvoiceList(
 
         const next = { ...prev, [invoiceNumber]: safeValue };
         if (safeValue === 0) delete next[invoiceNumber];
-
         publishAllocation(next);
         return next;
       });
-
       setEditingRow(null);
     },
     [inputValues, publishAllocation]
   );
 
-  // ── Derived values ─────────────────────────────────────────────────────────
   const totalAllocated = Object.values(allocated).reduce((a, b) => a + b, 0);
 
   return {
