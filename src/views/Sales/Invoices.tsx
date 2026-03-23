@@ -160,10 +160,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   };
 
 
-  const handleReceivePayment = (inv: InvoiceSummary) => {
-    setPaymentInvoice(inv);
-    setPaymentOpen(true);
-  };
+const handleReceivePayment = (inv: InvoiceSummary) => {
+  setPaymentInvoice(inv);
+  setPaymentOpen(true);
+};
 
   const fetchAllInvoicesForExport = async (): Promise<InvoiceSummary[]> => {
     try {
@@ -650,14 +650,26 @@ const handleRowStatusChange = async (
           generateInvoicePDF(selectedInvoice, company, "save")
         }
       />
-      <PaymentEntryModal
+     <PaymentEntryModal
   isOpen={paymentOpen}
   onClose={() => {
     setPaymentOpen(false);
     setPaymentInvoice(null);
   }}
-
+  defaultValues={
+    paymentInvoice
+      ? {
+          paymentType:      "Receive",
+          partyType:        "Customer",
+          partyName:        paymentInvoice.customerName,
+          partyId:          paymentInvoice.customerId,
+          amount:           paymentInvoice.OutStandingAmount,   
+          referenceInvoice: paymentInvoice.invoiceNumber,       
+        }
+      : undefined
+  }
 />
+ 
       <InvoiceModal
         isOpen={editOpen}
         onClose={() => {

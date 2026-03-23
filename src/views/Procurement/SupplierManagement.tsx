@@ -111,7 +111,7 @@ const SupplierManagement: React.FC<Props> = () => {
       setSelectedSupplier(mapped);
       setViewMode("detail");
     } catch (err) {
-      console.error("Failed to load supplier detail");
+      
     } finally {
       setLoading(false);
     }
@@ -150,6 +150,10 @@ const SupplierManagement: React.FC<Props> = () => {
     setSelectedPI(supplier);
     setPaymentModalOpen(true);
   };
+  const handleMakeadvancePayment = (supplier: Supplier) => {
+  setSelectedPI({ ...supplier, isAdvance: true });
+  setPaymentModalOpen(true);
+};
   const handleDeleteSupplier = async (supplier: Supplier) => {
     if (!supplier.supplierId) return;
     const confirm = window.confirm(
@@ -219,6 +223,7 @@ const SupplierManagement: React.FC<Props> = () => {
             onDelete={() => handleDeleteSupplier(s)}
             customActions={[
               { label: "Make Payment", onClick: () => handleMakePayment(s) },
+              {label:"Make Advance Payment", onClick: () => handleMakeadvancePayment(s)}
             ]}
           />
         </ActionGroup>
@@ -295,10 +300,14 @@ const SupplierManagement: React.FC<Props> = () => {
   defaultValues={
     selectedPI
       ? {
-          paymentType: "Pay", 
+          paymentType: "Pay",
           partyType: "Supplier",
           partyName: selectedPI.supplierName,
           partyId: selectedPI.supplierId,
+         
+          referenceInvoice: selectedPI.isAdvance
+            ? `ADV-${selectedPI.supplierId}`
+            : undefined,
         }
       : undefined
   }

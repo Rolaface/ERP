@@ -425,7 +425,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
               ...(o.status === "Approved"
     ? [
         {
-          label: "Make Payment",
+          label: "Make Advance Payment",
           onClick: () => handleMakePayment(o),
         },
       ]
@@ -552,11 +552,17 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
           }}
         />
       )}
-      <PaymentEntryModal
+<PaymentEntryModal
   isOpen={paymentModalOpen}
   onClose={() => {
     setPaymentModalOpen(false);
     setSelectedPOForPayment(null);
+  }}
+  defaultValues={{
+    paymentType: "Pay",
+    partyType: "Supplier",
+    partyName: selectedPOForPayment?.supplier,
+    referenceInvoice: selectedPOForPayment?.id,
   }}
 />
     </div>
