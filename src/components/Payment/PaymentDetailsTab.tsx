@@ -116,20 +116,29 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     run();
   }, [form.partyId, form.partyName, form.partyType, form.paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handlePartyTypeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    onChange(e);
-    onFormChange({ ...PARTY_FILLED_FIELDS });
+const handlePartyTypeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  onChange(e);
+  onFormChange({
+    ...PARTY_FILLED_FIELDS,
+    allocatedAmount: 0,
+    selectedInvoices: [],
+    allocations: {},
+  });
+  clearCompanyBanks();
+  clearPartyBanks();
+};
+const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
+  if (!option?.value) {
+    onFormChange({
+      ...PARTY_FILLED_FIELDS,
+      allocatedAmount: 0,
+      selectedInvoices: [],
+      allocations: {},
+    });
     clearCompanyBanks();
     clearPartyBanks();
-  };
-
-  const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
-    if (!option?.value) {
-      onFormChange({ ...PARTY_FILLED_FIELDS });
-      clearCompanyBanks();
-      clearPartyBanks();
-      return;
-    }
+    return;
+  }
     onFormChange({ partyName: option.label });
     if (partyType !== "Supplier" && partyType !== "Customer") return;
 
