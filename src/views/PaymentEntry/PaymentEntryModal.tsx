@@ -76,15 +76,27 @@ useEffect(() => {
   const remaining      = Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const { name, value } = e.target;
-      setForm((prev) => ({ ...prev, [name]: value }));
-      setError(null);
-    },
-    []
-  );
+const handleChange = useCallback(
+  (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
 
+    if (name === "partyType" || name === "partyName") {
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+        allocatedAmount: 0,
+        selectedInvoices: [],
+        allocations: {},
+      }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
+    
+    setError(null);
+  },
+  []
+);
   const handleFormChange = useCallback(
     (updates: Record<string, unknown> | AllocationResult) => {
       setForm((prev) => ({ ...prev, ...updates }));
@@ -130,6 +142,7 @@ useEffect(() => {
       <Button variant="primary" onClick={handleSave}>Save</Button>
     </>
   );
+  
 
   return (
     <Modal
