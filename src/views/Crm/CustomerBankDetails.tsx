@@ -27,49 +27,41 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
     const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
 
     const fetchAccounts = useCallback(async () => {
         if (!customerName) return;
 
         try {
             setLoading(true);
-
             const res = await getAllBankAccounts({
                 party_type: "Customer",
                 party: customerName,
+                page,
+                page_size: pageSize,
             });
 
-            setBankAccounts(res.data);
+            setBankAccounts(res.data || []);
+            setTotalPages(res.pagination?.total_pages || 1);
+            setTotalItems(res.pagination?.total || 0);
 
         } catch (err: any) {
             showApiError(err?.message || "Failed to load bank accounts");
         } finally {
             setLoading(false);
         }
-    }, [customerName]);
+    }, [customerName, page, pageSize]);
     const refresh = useCallback(() => {
-    fetchAccounts();
-}, [fetchAccounts]);
+        fetchAccounts();
+    }, [fetchAccounts]);
 
     useEffect(() => {
         fetchAccounts();
     }, [fetchAccounts]);
 
-    const filteredData = useMemo(() => {
-        const q = search.toLowerCase();
-
-        return bankAccounts.filter((b) =>
-            [
-                b.bankName || "",
-                b.accountHolderName || "",
-                b.accountNo || "",
-                b.currency || "",
-            ]
-                .join(" ")
-                .toLowerCase()
-                .includes(q)
-        );
-    }, [bankAccounts, search]);
 
     const handleSetDefault = useCallback(async (row: BankAccount) => {
         if (row.isDisabled) {
@@ -119,10 +111,10 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
             render: (row) =>
                 row.dateAdded
                     ? new Date(row.dateAdded).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                      })
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                    })
                     : "—",
         },
         {
@@ -208,16 +200,23 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
     ];
 
     return (
-    <div className="max-w-[1400px] mx-auto">
-        <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
-            <Table
+        <div className="max-w-[1400px] mx-auto">
+            <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
+                <Table
                     columns={columns}
-                    data={filteredData}
+                    data={bankAccounts}
                     loading={loading}
                     rowKey={(row) => String(row.id)}
                     showToolbar
                     searchValue={search}
                     onSearch={setSearch}
+                    currentPage={page}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                    onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+                    onPageChange={setPage}
                     emptyMessage="No customer bank accounts found"
                 />
             </div>

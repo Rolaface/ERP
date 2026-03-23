@@ -34,60 +34,50 @@ const SupplierBankDetails: React.FC<Props> = ({
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
 
   const fetchAccounts = useCallback(async () => {
-        if (!supplierName) return;
+    if (!supplierName) return;
 
-        try {
-            setLoading(true);
+    try {
+      setLoading(true);
 
-            const res = await getAllBankAccounts({
-                party_type: "Supplier",
-                party: supplierName,
-            });
+      const res = await getAllBankAccounts({
+        party_type: "Supplier",
+        party: supplierName,
+        page,
+        page_size: pageSize,
+      });
+      setBankAccounts(res.data || []);
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total || 0);
+      setBankAccounts(res.data);
 
-            setBankAccounts(res.data);
-
-        } catch (err: any) {
-            showApiError(err?.message || "Failed to load bank accounts");
-        } finally {
-            setLoading(false);
-        }
-    }, [supplierName]);
-    const refresh = useCallback(() => {
-  fetchAccounts();
-}, [fetchAccounts]);
+    } catch (err: any) {
+      showApiError(err?.message || "Failed to load bank accounts");
+    } finally {
+      setLoading(false);
+    }
+  }, [supplierName]);
+  const refresh = useCallback(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
 
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
-useEffect(() => {
-  if (onAdd) {
-    onAdd(refresh);
-  }
-}, [onAdd, refresh]);
+  useEffect(() => {
+    if (onAdd) {
+      onAdd(refresh);
+    }
+  }, [onAdd, refresh]);
 
-  /* ================= FILTER ================= */
 
-  const filteredData = useMemo(() => {
-    const q = search.toLowerCase();
-
-    return bankAccounts.filter((b) =>
-      [
-        b.bankName,
-        b.accountHolderName,
-        b.accountNo,
-        b.currency,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [bankAccounts, search]);
-
-  /* ================= ACTIONS ================= */
+  /*  ACTIONS  */
 
   const handleSetDefault = useCallback(
     async (row: BankAccount) => {
@@ -136,7 +126,7 @@ useEffect(() => {
     [fetchAccounts]
   );
 
-  /* ================= COLUMNS ================= */
+  /*  COLUMNS  */
 
   const columns: Column<BankAccount>[] = [
     {
@@ -221,19 +211,31 @@ useEffect(() => {
     },
   ];
 
-  /* ================= UI ================= */
+  /*  UI  */
 
   return (
     <div className="max-w-[1400px] mx-auto">
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
         <Table
           columns={columns}
-          data={filteredData}
+          data={bankAccounts}
           loading={loading}
           rowKey={(row) => String(row.id)}
           showToolbar
           searchValue={search}
           onSearch={setSearch}
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalItems}
+
+          pageSizeOptions={[10, 25, 50, 100]}
+
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
           emptyMessage="No bank accounts found"
         />
       </div>
