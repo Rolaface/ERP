@@ -56,7 +56,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Currency Conversion"
+      title="Currency Exchange"
       subtitle="Add exchange rate"
       footer={footer}
       customWidth="58vw"
