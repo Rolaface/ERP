@@ -552,10 +552,10 @@ const SupplierDetailView: React.FC<Props> = ({
 
             {activeTab === "bank-accounts" && (
               <SupplierBankDetails
-              supplierName={supplierName}
-  onAdd={(refresh) => {
-  bankAccountsRefresh.current = refresh;
-}}
+                supplierName={supplierName}
+                onAdd={(refresh) => {
+                  bankAccountsRefresh.current = refresh;
+                }}
                 onEdit={(row) => {
                   setEditingRow(row);
                   setShowBankAccountModal(true);

@@ -279,12 +279,12 @@ ${sellingTerms?.liability || ""}
                 </button>
               ))}
             </div>
-            <button
+            {/* <button
               onClick={(e) => onEdit(customer.id, e)}
               className="flex items-center gap-2 px-3 py-1.5 bg-card border border-theme text-muted hover:text-main rounded-lg transition-all font-bold text-[10px] uppercase tracking-widest"
             >
               <Edit size={12} /> Edit Profile
-            </button>
+            </button> */}
           </div>
 
           <div className="flex-1 min-w-0 overflow-hidden">

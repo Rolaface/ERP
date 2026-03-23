@@ -347,7 +347,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   )}
-                  <ModalInput
+                  {/* <ModalInput
                   label="Shipping Charges"
                   name="shippingCharges"
                   value={formData.shippingCharges}
@@ -364,7 +364,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   placeholder="2000-"
                   inputMode="numeric"
                   className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                  />
+                  /> */}
                 </div>
               </div>
 
@@ -855,12 +855,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           {symbol} {totals.totalTax.toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs">
+                      {/* <div className="flex justify-between text-xs">
                         <span className="text-muted">Shipping Charges</span>
                         <span className="font-medium text-main">
                           {symbol} {formData.shippingCharges}
                         </span>
-                      </div>
+                      </div> */}
 
                       <div className="mt-2 p-2 bg-primary rounded-lg">
                         <div className="flex justify-between items-center">
