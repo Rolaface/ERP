@@ -355,7 +355,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
               onChange={handleAmountToChange}
               className="no-spinner"
             />
-            {canAllocate && (
+           {canAllocate && onAllocate && (
               <button
                 type="button" onClick={onAllocate}
                 className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors w-fit"

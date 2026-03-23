@@ -25,6 +25,7 @@ interface Props {
     partyId?: string;
     amount?: number;
     referenceInvoice?: string;
+    date?: string;
   };
 }
 
@@ -42,29 +43,33 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
     ? ALL_TABS.filter((t) => t.key !== "invoices")
     : ALL_TABS;
 
-  useEffect(() => {
-    if (isOpen) {
-      const base = { ...(defaultValues ?? {}) };
+useEffect(() => {
+  if (isOpen) {
+    const base = { ...(defaultValues ?? {}) };
 
-      // amount → amountTo sync (needed by PaymentDetailsTab canAllocate check)
-      if (base.amount != null && (base as any).amountTo == null) {
-        (base as any).amountTo = base.amount;
-      }
-
-      setForm(base);
-      setActiveTab("details");
-      setError(null);
-      setInvoicesMounted(false);
-
-      // For normal invoice flow (not PO advance), mount invoices + trigger FIFO
-      if (!isAdvanceFromPO && defaultValues?.referenceInvoice) {
-        setInvoicesMounted(true);
-        setTimeout(() => {
-          setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
-        }, 200);
-      }
+    // ✅ FIX: set today date if not coming from PO / PI / Invoice
+    if (!base.date) {
+      base.date = new Date().toISOString().split("T")[0];
     }
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // amount → amountTo sync
+    if (base.amount != null && (base as any).amountTo == null) {
+      (base as any).amountTo = base.amount;
+    }
+
+    setForm(base);
+    setActiveTab("details");
+    setError(null);
+    setInvoicesMounted(false);
+
+    if (!isAdvanceFromPO && defaultValues?.referenceInvoice) {
+      setInvoicesMounted(true);
+      setTimeout(() => {
+        setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
+      }, 200);
+    }
+  }
+}, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const paymentAmount  = Number(form?.amount ?? 0);
   const totalAllocated = Number(form?.allocatedAmount ?? 0);
@@ -182,7 +187,7 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
                 // hide "Allocate →" button for PO advance — no invoices to allocate
                 onAllocate={isAdvanceFromPO ? undefined : handleAllocateLink}
                 islocked={Boolean(form?.referenceInvoice)}
-                isPartyLocked={Boolean(form?.partyName && form?.partyType)}
+                isPartyLocked={Boolean(form?.referenceInvoice && form?.partyName && form?.partyType)}
               />
             )}
 
@@ -230,7 +235,7 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
             {/* Show PO reference in sidebar */}
             {isAdvanceFromPO && (
               <div>
-                <p className="text-[11px] text-muted">Against PO</p>
+                <p className="text-[11px] text-muted">Against </p>
                 <p className="text-xs font-medium text-primary">{form?.referenceInvoice}</p>
               </div>
             )}
