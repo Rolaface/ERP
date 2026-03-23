@@ -99,9 +99,12 @@ useEffect(() => {
   }, []);
 
   const handleAllocateLink = useCallback(() => {
-    goToTab("invoices");
+  goToTab("invoices");
+  
+  setTimeout(() => {
     setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
-  }, [goToTab]);
+  }, 50);
+}, [goToTab]);
 
   const handleSave = useCallback(() => {
     if (!paymentAmount || paymentAmount <= 0) {
