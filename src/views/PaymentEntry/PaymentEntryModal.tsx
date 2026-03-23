@@ -210,22 +210,14 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
     : "—"}
 </p>
             </div>
-            <div>
-              <p className="text-[11px] text-muted">Party Type</p>
-              <p className="text-xs font-medium text-main truncate">{form?.partyType || "—"}</p>
-            </div>
-            <div>
-              <p className="text-[11px] text-muted">Payment Type</p>
-              <p className="text-xs font-medium text-main">{form?.paymentType || "—"}</p>
-            </div>
-            <div>
-              <p className="text-[11px] text-muted">Date</p>
-              <p className="text-xs font-medium text-main">{form?.date || "—"}</p>
-            </div>
-            <div>
-              <p className="text-[11px] text-muted">Mode</p>
-              <p className="text-xs font-medium text-main">{form?.mode || "—"}</p>
-            </div>
+           <div>
+  <p className="text-[11px] text-muted">Payment</p>
+  <p className="text-xs font-medium text-main break-words">
+    {form?.paymentType
+      ? `${form.paymentType} via ${form?.mode || "—"}`
+      : "—"}
+  </p>
+</div>
 
             {/* Show PO reference in sidebar */}
             {isAdvanceFromPO && (
