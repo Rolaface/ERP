@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ---- Helpers ----
 const getAbbr = (name: string) =>
@@ -66,6 +67,7 @@ const getFYDates = (country: string) => {
 
 // ---- Component ----
 export default function RegistrationPage() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
 
   const [fullName, setFullName] = useState("");
@@ -174,8 +176,14 @@ export default function RegistrationPage() {
               </div>
 
               <div className="flex justify-between">
-                <button onClick={() => setStep(1)} className="text-gray-600">Back</button>
-                <button className="bg-indigo-600 text-white px-6 py-3 rounded-xl">Continue</button>
+                <button onClick={() => setStep(1)} 
+                className="text-gray-600">Back</button>
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="bg-indigo-600 text-white px-6 py-3 rounded-xl"
+                >
+                  Continue to Dashboard
+                </button>
               </div>
             </div>
           )}

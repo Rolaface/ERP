@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 // Tailwind base expectations:
 // - Font: Inter (include via index.html or @import)
@@ -8,57 +9,72 @@ const Container: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ 
   <div className={`max-w-6xl mx-auto px-6 ${className}`}>{children}</div>
 );
 
-const Navbar = () => (
-  <div className="w-full bg-[#F3F4F6] sticky top-0 z-50">
-    <Container className="h-16 flex items-center justify-between">
-      <div className="text-base font-medium text-gray-800">ERP</div>
-      <div className="flex items-center gap-6">
-        <button className="text-sm text-gray-600 hover:text-gray-900">Login</button>
-        <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm">
-          Create Your Free Account
-        </button>
-      </div>
-    </Container>
-  </div>
-);
+const Navbar = () => {
+  const navigate = useNavigate();
 
-const Hero = () => (
-  <section className="bg-[#F3F4F6] pt-24 pb-16 text-center">
-    <Container>
-      <h1 className="text-4xl md:text-[44px] leading-tight font-semibold text-gray-900">
-        Manage Your Entire
-        <br />
-        Business in One Simple ERP
-      </h1>
-
-      <p className="mt-4 text-[15px] text-gray-600 max-w-2xl mx-auto">
-        Accounting, Sales, HRMS, Suppliers & Customers — all in one place so you can
-        stop switching tools and start focusing on growth.
-      </p>
-
-      <div className="mt-6">
-        <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-medium shadow">
-          Create Your Free Account
-        </button>
-      </div>
-
-      <p className="mt-3 text-[11px] tracking-wide text-gray-500 uppercase">
-        No credit card required • Takes less than 60 seconds
-      </p>
-
-      {/* Dashboard Mock */}
-      <div className="mt-14">
-        <div className="mx-auto max-w-5xl rounded-2xl overflow-hidden shadow-2xl border border-gray-200">
-          <img
-            src="https://unsplash.com/photos/turned-on-monitoring-screen-qwtCeJ5cLYs"
-            className="w-full object-cover"
-            alt="dashboard"
-          />
+  return (
+    <div className="w-full bg-[#F3F4F6] sticky top-0 z-50">
+      <Container className="h-16 flex items-center justify-between">
+        <div className="text-base font-medium text-gray-800">ERP</div>
+        <div className="flex items-center gap-6">
+          <button onClick={() => navigate("/login")} className="text-sm text-gray-600 hover:text-gray-900">
+            Login
+          </button>
+          <button
+            onClick={() => navigate("/signup")}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm"
+          >
+            Create Your Free Account
+          </button>
         </div>
-      </div>
-    </Container>
-  </section>
-);
+      </Container>
+    </div>
+  );
+};
+
+const Hero = () => {
+  const navigate = useNavigate();
+
+  return (
+    <section className="bg-[#F3F4F6] pt-24 pb-16 text-center">
+      <Container>
+        <h1 className="text-4xl md:text-[44px] leading-tight font-semibold text-gray-900">
+          Manage Your Entire
+          <br />
+          Business in One Simple ERP
+        </h1>
+
+        <p className="mt-4 text-[15px] text-gray-600 max-w-2xl mx-auto">
+          Accounting, Sales, HRMS, Suppliers & Customers — all in one place so you can
+          stop switching tools and start focusing on growth.
+        </p>
+
+        <div className="mt-6">
+          <button
+            onClick={() => navigate("/signup")}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-medium shadow"
+          >
+            Create Your Free Account
+          </button>
+        </div>
+
+        <p className="mt-3 text-[11px] tracking-wide text-gray-500 uppercase">
+          No credit card required • Takes less than 60 seconds
+        </p>
+
+        <div className="mt-14">
+          <div className="mx-auto max-w-5xl rounded-2xl overflow-hidden shadow-2xl border border-gray-200">
+            <img
+              src="https://unsplash.com/photos/turned-on-monitoring-screen-qwtCeJ5cLYs"
+              className="w-full object-cover"
+              alt="dashboard"
+            />
+          </div>
+        </div>
+      </Container>
+    </section>
+  );
+};
 
 const ProblemSection = () => (
   <section className="bg-[#EDEFF3] py-24">
@@ -165,20 +181,6 @@ const Differentiation = () => (
         <p className="mt-2 text-sm text-gray-600">
           We stripped away the enterprise bloat. No hidden menus, no complex scripting, just the tools you need to run your business daily.
         </p>
-
-        <div className="mt-6 grid md:grid-cols-2 gap-4 text-sm text-gray-700">
-          {[
-            "No unnecessary complexity",
-            "Designed for daily use",
-            "Scales with your business",
-            "Bank-grade security",
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="text-indigo-600">✔</span>
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
       </div>
     </Container>
   </section>
@@ -202,35 +204,37 @@ const Metrics = () => (
   </section>
 );
 
-const CTA = () => (
-  <section className="bg-[#F3F4F6] py-20 text-center">
-    <Container>
-      <h2 className="text-xl font-semibold text-gray-900">
-        Start Running Your Business Smarter Today
-      </h2>
-      <div className="mt-6">
-        <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-medium shadow">
-          Create Your Free Account
-        </button>
-      </div>
-      <p className="mt-3 text-sm text-gray-500">
-        It takes less than a minute to get started
-      </p>
-    </Container>
-  </section>
-);
+const CTA = () => {
+  const navigate = useNavigate();
+
+  return (
+    <section className="bg-[#F3F4F6] py-20 text-center">
+      <Container>
+        <h2 className="text-xl font-semibold text-gray-900">
+          Start Running Your Business Smarter Today
+        </h2>
+        <div className="mt-6">
+          <button
+            onClick={() => navigate("/signup")}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-medium shadow"
+          >
+            Create Your Free Account
+          </button>
+        </div>
+        <p className="mt-3 text-sm text-gray-500">
+          It takes less than a minute to get started
+        </p>
+      </Container>
+    </section>
+  );
+};
 
 const Footer = () => (
   <footer className="bg-[#F3F4F6] py-10 text-xs text-gray-500">
     <Container className="flex flex-col md:flex-row justify-between items-center gap-4">
       <div>ERP Architectural Ledger</div>
       <div className="flex gap-6">
-        {[
-          "Privacy Policy",
-          "Terms of Service",
-          "Security",
-          "Status",
-        ].map((l, i) => (
+        {["Privacy Policy", "Terms of Service", "Security", "Status"].map((l, i) => (
           <span key={i}>{l}</span>
         ))}
       </div>
