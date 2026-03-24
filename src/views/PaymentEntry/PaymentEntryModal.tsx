@@ -35,68 +35,65 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
   const [error, setError]                     = useState<string | null>(null);
   const [invoicesMounted, setInvoicesMounted] = useState(false);
 
-  // ── true when opened from a PO (advance payment context)
   const isAdvanceFromPO = Boolean(defaultValues?.referenceInvoice);
 
-  // ── hide Invoices tab for advance PO payments (no invoice exists yet)
   const visibleTabs = isAdvanceFromPO
     ? ALL_TABS.filter((t) => t.key !== "invoices")
     : ALL_TABS;
 
-useEffect(() => {
-  if (isOpen) {
-    const base = { ...(defaultValues ?? {}) };
+  useEffect(() => {
+    if (isOpen) {
+      const base = { ...(defaultValues ?? {}) };
 
-    // ✅ FIX: set today date if not coming from PO / PI / Invoice
-    if (!base.date) {
-      base.date = new Date().toISOString().split("T")[0];
+      if (!base.date) {
+        base.date = new Date().toISOString().split("T")[0];
+      }
+
+      if (base.amount != null && (base as any).amountTo == null) {
+        (base as any).amountTo = base.amount;
+      }
+
+      setForm(base);
+      setActiveTab("details");
+      setError(null);
+      setInvoicesMounted(false);
+
+      if (!isAdvanceFromPO && defaultValues?.referenceInvoice) {
+        setInvoicesMounted(true);
+        setTimeout(() => {
+          setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
+        }, 200);
+      }
     }
-
-    // amount → amountTo sync
-    if (base.amount != null && (base as any).amountTo == null) {
-      (base as any).amountTo = base.amount;
-    }
-
-    setForm(base);
-    setActiveTab("details");
-    setError(null);
-    setInvoicesMounted(false);
-
-    if (!isAdvanceFromPO && defaultValues?.referenceInvoice) {
-      setInvoicesMounted(true);
-      setTimeout(() => {
-        setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
-      }, 200);
-    }
-  }
-}, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const paymentAmount  = Number(form?.amount ?? 0);
   const totalAllocated = Number(form?.allocatedAmount ?? 0);
-  const remaining      = Math.max(0, paymentAmount - totalAllocated);
+  // ── CHANGE 1: renamed from `remaining` → `advance` ──────────────────────
+  const advance        = Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
-const handleChange = useCallback(
-  (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const { name, value } = e.target;
 
-    if (name === "partyType" || name === "partyName") {
-      setForm((prev) => ({
-        ...prev,
-        [name]: value,
-        allocatedAmount: 0,
-        selectedInvoices: [],
-        allocations: {},
-      }));
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
-    }
-    
-    setError(null);
-  },
-  []
-);
+      if (name === "partyType" || name === "partyName") {
+        setForm((prev) => ({
+          ...prev,
+          [name]: value,
+          allocatedAmount: 0,
+          selectedInvoices: [],
+          allocations: {},
+        }));
+      } else {
+        setForm((prev) => ({ ...prev, [name]: value }));
+      }
+
+      setError(null);
+    },
+    []
+  );
+
   const handleFormChange = useCallback(
     (updates: Record<string, unknown> | AllocationResult) => {
       setForm((prev) => ({ ...prev, ...updates }));
@@ -111,12 +108,11 @@ const handleChange = useCallback(
   }, []);
 
   const handleAllocateLink = useCallback(() => {
-  goToTab("invoices");
-  
-  setTimeout(() => {
-    setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
-  }, 50);
-}, [goToTab]);
+    goToTab("invoices");
+    setTimeout(() => {
+      setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
+    }, 50);
+  }, [goToTab]);
 
   const handleSave = useCallback(() => {
     if (!paymentAmount || paymentAmount <= 0) {
@@ -125,8 +121,57 @@ const handleChange = useCallback(
       return;
     }
     setError(null);
-    console.log("Saving payment:", form);
-  }, [paymentAmount, form]);
+
+    const referenceDoctype =
+      form?.paymentType === "Pay" ? "Purchase Invoice" : "Sales Invoice";
+
+    const allocations: Record<string, number> = form?.allocations ?? {};
+    const references = Object.entries(allocations)
+      .filter(([, amount]) => amount > 0)
+      .map(([invoiceNumber, allocatedAmount]) => ({
+        reference_doctype: referenceDoctype,
+        reference_name:    invoiceNumber,
+        allocated_amount:  allocatedAmount,
+      }));
+
+    const payload = {
+      doctype:        "Payment Entry",
+      payment_type:   form?.paymentType ?? "",
+      posting_date:   form?.date        ?? new Date().toISOString().split("T")[0],
+      company:        form?.company     ?? "",
+
+      party_type:     form?.partyType  ?? "",
+      party:          form?.partyName  ?? "",
+
+      mode_of_payment:      form?.mode              ?? "",
+      paid_from:            form?.companyBankAccount ?? "",
+      paid_to:              form?.partyBankAccount   ?? "",
+
+      paid_amount:          paymentAmount,
+      received_amount:      Number(form?.amountTo    ?? paymentAmount),
+      source_exchange_rate: Number(form?.exchangeRate ?? 1),
+      target_exchange_rate: Number(form?.exchangeRate ?? 1),
+
+      reference_no:   form?.referenceNo  ?? "",
+      reference_date: form?.referenceDate ?? "",
+
+      ...(isAdvanceFromPO && {
+        purchase_order: form?.referenceInvoice ?? "",
+      }),
+
+      references,
+      total_allocated_amount: isAdvanceFromPO ? 0 : totalAllocated,
+
+      // ── CHANGE 2: advance added to payload ───────────────────────────────
+      unallocated_amount: advance,
+
+      taxes:   form?.taxes   ?? [],
+      remarks: form?.remarks ?? "",
+    };
+
+    console.log("Payment Entry payload:", payload);
+    // TODO: await submitPaymentEntry(payload);
+  }, [paymentAmount, totalAllocated, advance, isAdvanceFromPO, form]);
 
   const invoiceListForm = {
     partyType:        form?.partyType,
@@ -142,7 +187,6 @@ const handleChange = useCallback(
       <Button variant="primary" onClick={handleSave}>Save</Button>
     </>
   );
-  
 
   return (
     <Modal
@@ -200,14 +244,12 @@ const handleChange = useCallback(
                 form={form}
                 onChange={handleChange}
                 onFormChange={handleFormChange}
-                // hide "Allocate →" button for PO advance — no invoices to allocate
                 onAllocate={isAdvanceFromPO ? undefined : handleAllocateLink}
                 islocked={Boolean(form?.referenceInvoice)}
                 isPartyLocked={Boolean(form?.referenceInvoice && form?.partyName && form?.partyType)}
               />
             )}
 
-            {/* Only mounted when NOT in advance PO context */}
             {invoicesMounted && !isAdvanceFromPO && (
               <div className={activeTab === "invoices" ? "block" : "hidden"}>
                 <InvoiceList form={invoiceListForm} onFormChange={handleFormChange} />
@@ -218,32 +260,32 @@ const handleChange = useCallback(
               <PaymentTaxesTab form={form} onChange={handleChange} />
             )}
           </div>
- 
-          {/* Persistent summary */}
+
+          {/* ── Persistent summary ── */}
           <div className="w-56 flex-shrink-0 border-l border-[var(--border)] bg-card p-4 flex flex-col gap-3 overflow-auto rounded-lg mt-4">
             <h3 className="text-sm font-semibold text-main">Summary</h3>
 
             <div>
               <p className="text-[11px] text-muted">Party Name</p>
               <p className="text-xs font-medium text-main break-words">
-  {form?.partyName
-    ? `${form.partyName}${form?.partyType ? ` (${form.partyType})` : ""}`
-    : "—"}
-</p>
+                {form?.partyName
+                  ? `${form.partyName}${form?.partyType ? ` (${form.partyType})` : ""}`
+                  : "—"}
+              </p>
             </div>
-           <div>
-  <p className="text-[11px] text-muted">Payment</p>
-  <p className="text-xs font-medium text-main break-words">
-    {form?.paymentType
-      ? `${form.paymentType} via ${form?.mode || "—"}`
-      : "—"}
-  </p>
-</div>
 
-            {/* Show PO reference in sidebar */}
+            <div>
+              <p className="text-[11px] text-muted">Payment</p>
+              <p className="text-xs font-medium text-main break-words">
+                {form?.paymentType
+                  ? `${form.paymentType} via ${form?.mode || "—"}`
+                  : "—"}
+              </p>
+            </div>
+
             {isAdvanceFromPO && (
               <div>
-                <p className="text-[11px] text-muted">Against </p>
+                <p className="text-[11px] text-muted">Against</p>
                 <p className="text-xs font-medium text-primary">{form?.referenceInvoice}</p>
               </div>
             )}
@@ -254,12 +296,11 @@ const handleChange = useCallback(
               <p className="text-[11px] text-muted">Payment Amount</p>
               <p className="text-sm font-semibold text-main">
                 {paymentAmount > 0
-                  ? `₹ ${paymentAmount.toLocaleString()}`
+                  ? `${paymentAmount.toLocaleString()}`
                   : <span className="text-[11px] font-normal text-muted">Not set</span>}
               </p>
             </div>
 
-            {/* Hide allocation summary for PO advance — not relevant */}
             {!isAdvanceFromPO && (
               <>
                 <div>
@@ -268,16 +309,20 @@ const handleChange = useCallback(
                 </div>
                 <div>
                   <p className="text-[11px] text-muted">Allocated</p>
-                  <p className="text-base font-bold text-primary">₹ {totalAllocated.toLocaleString()}</p>
+                  <p className="text-base font-bold text-primary">{totalAllocated.toLocaleString()}</p>
                 </div>
+
+                {/* ── CHANGE 3: renamed label + logic from remaining → advance ── */}
                 <div>
-                  <p className="text-[11px] text-muted">Remaining</p>
-                  <p className={`text-xs font-semibold ${remaining > 0 && paymentAmount > 0 ? "text-red-500" : "text-emerald-600"}`}>
-                    ₹ {remaining.toLocaleString()}
+                  <p className="text-[11px] text-muted">Advance</p>
+                  <p className={`text-xs font-semibold ${
+                    advance > 0 && paymentAmount > 0 ? "text-amber-500" : "text-emerald-600"
+                  }`}>
+                    {advance.toLocaleString()}
                   </p>
-                  {remaining > 0 && paymentAmount > 0 && (
-                    <p className="text-[10px] text-red-400 mt-0.5 leading-relaxed">
-                      ₹ {remaining.toLocaleString()} unallocated
+                  {advance > 0 && paymentAmount > 0 && (
+                    <p className="text-[10px] text-amber-400 mt-0.5 leading-relaxed">
+                      {advance.toLocaleString()} will be treated as advance
                     </p>
                   )}
                 </div>

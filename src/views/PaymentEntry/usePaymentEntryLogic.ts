@@ -4,6 +4,9 @@ import {
   getPartyDetails,
   getBankAccounts,
   getBankAccountOptions,
+  getLedgerAccount,
+    type LedgerAccountOption,
+
   type PartyDetails,
    type BankAccountOption
 } from "../../api/BankAccountApi";
@@ -197,4 +200,52 @@ export function usePartyBankAccounts() {
     fetchPartyBanks,
     clearPartyBanks,
   };
+}
+// ── Hook 6: Ledger accounts (GL) ──────────────────────────────────────────
+
+export type LedgerOption = {
+  label: string;
+  value: string;
+  currency: string;
+};
+
+export function useLedgerAccounts(
+  payment_type: "Pay" | "Receive" | "",
+  filter: "from" | "to"
+) {
+  const [options, setOptions] = useState<LedgerOption[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!payment_type) {
+      setOptions([]);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+
+    getLedgerAccount(payment_type, filter)
+      .then((data: LedgerAccountOption[]) => {
+        if (!cancelled) {
+          setOptions(
+            data.map((item) => ({
+              label: item.name,
+              value: item.name,
+              currency: item.account_currency,
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setOptions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [payment_type, filter]);
+
+  return { options, isLoading };
 }
