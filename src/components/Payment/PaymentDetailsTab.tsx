@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo,useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import SearchSelect2 from "../ui/modal/SearchSelect";
-import { MoveRight, ArrowRight } from "lucide-react";
+import { MoveRight, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import dayjs from "dayjs";
 import {
   usePaymentModes,
@@ -9,12 +9,12 @@ import {
   usePartyDetails,
   useCompanyBankAccounts,
   usePartyBankAccounts,
-  useLedgerAccounts,
+  useCurrencyOptions,
+  useLedgerOptions,
+  useExchangeRate,
   type PartyOption,
 } from "../../views/PaymentEntry/usePaymentEntryLogic";
 import DatePickerInput from "../calendar/DatePickerInput";
-import { getLedgerAccount } from "../../api/BankAccountApi";
-
 
 interface PaymentDetailsTabProps {
   form: Record<string, any>;
@@ -28,25 +28,21 @@ interface PaymentDetailsTabProps {
 }
 
 const PARTY_FILLED_FIELDS = {
-  partyName: "",
-  glFrom: "",
-  glTo: "",
-  currencyFrom: "",
-  currencyTo: "",
+  partyName:          "",
+  glFrom:             "",
+  glTo:               "",
+  currencyFrom:       "",
+  currencyTo:         "",
   companyBankAccount: "",
-  partyBankAccount: "",
+  partyBankAccount:   "",
 };
-type LedgerOption = {
-  label: string;
-  value: string;
-  currency: string;
-};
+
 const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   form,
   onChange,
   onFormChange,
   onAllocate,
-  islocked = false,
+  islocked      = false,
   isPartyLocked = false,
 }) => {
   const { options: modeOptions, isLoading: modesLoading } = usePaymentModes();
@@ -67,100 +63,91 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   const paymentType =
     (form.paymentType as "Pay" | "Receive" | "Internal Transfer") || "Pay";
   const partyType =
-    (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") ||
-    "";
+    (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") || "";
 
- 
   const { partyOptions, isLoadingParties } = usePartyOptions(partyType);
 
-// ── NEW: Ledger GL accounts ────────────────────────────────────────────────
-const ledgerPaymentType = paymentType === "Internal Transfer" ? "" : paymentType;
-
-
+  // ── selectedMode: needed for mode-of-payment auto-fill ───────────────────
   const selectedMode = useMemo(
     () => modeOptions.find((opt) => opt.value === form.mode) ?? null,
     [form.mode, modeOptions],
   );
 
+  // ── Hook 7: Currency dropdown options ────────────────────────────────────
+  const { currencyOptions } = useCurrencyOptions();
+
+  const buildCurrencyOptions = (currentValue: string) => {
+    if (currencyOptions.length > 0) return currencyOptions;
+    return currentValue
+      ? [{ label: currentValue, value: currentValue }]
+      : [{ label: "Loading...", value: "" }];
+  };
+
+  // ── Hook 8: GL ledger options for From + To ───────────────────────────────
+  const {
+    fromOptions: ledgerFromOptions,
+    toOptions:   ledgerToOptions,
+    isLoadingLedgers,
+  } = useLedgerOptions(paymentType, partyType);
+
+  // Clear GL fields when ledger options reset (partyType / paymentType changed)
+  useEffect(() => {
+    onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
+  }, [paymentType, partyType]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Hook 9: Exchange rate ─────────────────────────────────────────────────
+  const currencyFrom = form.currencyFrom ?? "";
+  const currencyTo   = form.currencyTo   ?? "";
+  const date         = form.date || dayjs().format("YYYY-MM-DD");
+
+  const {
+    rate:             fetchedRate,
+    error:            rateError,
+    isLoadingRate,
+    currenciesDiffer,
+  } = useExchangeRate(currencyFrom, currencyTo, date,form.companyDefaultCurrency);
+
+  // Sync exchange rate result into form state
+  useEffect(() => {
+    if (!currenciesDiffer) {
+      onFormChange({ exchangeRate: null });
+    } else if (fetchedRate !== null) {
+      onFormChange({ exchangeRate: fetchedRate });
+    } else if (rateError) {
+      onFormChange({ exchangeRate: "" });
+    }
+  }, [fetchedRate, rateError, currenciesDiffer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Default date on mount ─────────────────────────────────────────────────
   useEffect(() => {
     if (!form.date) onFormChange({ date: dayjs().format("YYYY-MM-DD") });
-  }, []); 
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Mode of payment → auto-fill glFrom or glTo ───────────────────────────
   useEffect(() => {
     if (!selectedMode) {
-      if (paymentType === "Pay") onFormChange({ glFrom: "", currencyFrom: "" });
+      if (paymentType === "Pay")
+        onFormChange({ glFrom: "", currencyFrom: "" });
       else if (paymentType === "Receive")
         onFormChange({ glTo: "", currencyTo: "" });
       else
-        onFormChange({
-          glFrom: "",
-          currencyFrom: "",
-          glTo: "",
-          currencyTo: "",
-        });
+        onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
       return;
     }
     if (paymentType === "Pay")
-      onFormChange({
-        glFrom: selectedMode.defaultAccount,
-        currencyFrom: selectedMode.currency,
-      });
+      onFormChange({ glFrom: selectedMode.defaultAccount, currencyFrom: selectedMode.currency });
     else if (paymentType === "Receive")
-      onFormChange({
-        glTo: selectedMode.defaultAccount,
-        currencyTo: selectedMode.currency,
-      });
+      onFormChange({ glTo: selectedMode.defaultAccount, currencyTo: selectedMode.currency });
     else
       onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
-  }, [selectedMode, paymentType]); 
- type LedgerOption = {
-  label: string;
-  value: string;
-  currency: string;
-};
-const [ledgerFromOptions, setLedgerFromOptions] = useState<LedgerOption[]>([]);
-const [ledgerToOptions, setLedgerToOptions] = useState<LedgerOption[]>([]);
-useEffect(() => {
-  if (!ledgerPaymentType) return;
+  }, [selectedMode, paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetch = async () => {
-  
-    const from = await getLedgerAccount(ledgerPaymentType, "from");
-    setLedgerFromOptions(
-      from.map((i) => ({
-        label: i.name,
-        value: i.name,
-        currency: i.account_currency
-      }))
-    );
-
-    // 2️⃣ TO call (after FROM completes)
-    const to = await getLedgerAccount(ledgerPaymentType, "to");
-    setLedgerToOptions(
-      to.map(i => ({
-        label: i.name,
-        value: i.name,
-        currency: i.account_currency
-      }))
-    );
-  };
-
-  fetch();
-}, [ledgerPaymentType]);
-
-
-
-  const requestRef = React.useRef(0);
-  
-
+  // ── Party change → auto-fill GL + bank accounts ───────────────────────────
+  const requestRef = useRef(0);
 
   useEffect(() => {
     const partyKey = form.partyId || form.partyName;
-    if (
-      !partyKey ||
-      (form.partyType !== "Customer" && form.partyType !== "Supplier")
-    )
-      return;
+    if (!partyKey || (form.partyType !== "Customer" && form.partyType !== "Supplier")) return;
 
     const requestId = ++requestRef.current;
 
@@ -175,9 +162,9 @@ useEffect(() => {
       if (!details) return;
 
       onFormChange({
-        partyName: details.partyName,
+        partyName:          details.partyName,
         companyBankAccount: details.companyBankAccount,
-        partyBankAccount: details.partyBankAccount,
+        partyBankAccount:   details.partyBankAccount,
         glFrom:
           form.paymentType === "Pay"
             ? details.companyLedgerAccount
@@ -198,31 +185,30 @@ useEffect(() => {
     };
 
     run();
-  }, [form.partyId, form.partyName, form.partyType, form.paymentType]); 
+  }, [form.partyId, form.partyName, form.partyType, form.paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handlePartyTypeChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     onChange(e);
     onFormChange({
       ...PARTY_FILLED_FIELDS,
-      allocatedAmount: 0,
+      allocatedAmount:  0,
       selectedInvoices: [],
-      allocations: {},
+      allocations:      {},
     });
     clearCompanyBanks();
     clearPartyBanks();
   };
-  const handlePartyNameSelect = async (
-    _: string,
-    option: PartyOption | null,
-  ) => {
+
+  const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
     if (!option?.value) {
       onFormChange({
         ...PARTY_FILLED_FIELDS,
-        allocatedAmount: 0,
+        allocatedAmount:  0,
         selectedInvoices: [],
-        allocations: {},
+        allocations:      {},
       });
       clearCompanyBanks();
       clearPartyBanks();
@@ -238,29 +224,27 @@ useEffect(() => {
     ]);
     if (!details) return;
 
-    const base = { partyName: details.partyName || option.label };
+    const base  = { partyName: details.partyName || option.label };
     const banks = {
       companyBankAccount: details.companyBankAccount,
-      partyBankAccount: details.partyBankAccount,
+      partyBankAccount:   details.partyBankAccount,
     };
 
     if (paymentType === "Pay") {
       onFormChange({
-        ...base,
-        ...banks,
-        glFrom: details.companyLedgerAccount,
+        ...base, ...banks,
+        glFrom:       details.companyLedgerAccount,
         currencyFrom: details.companyLedgerCurrency,
-        glTo: details.partyLedgerAccount,
-        currencyTo: details.partyAccountCurrency,
+        glTo:         details.partyLedgerAccount,
+        currencyTo:   details.partyAccountCurrency,
       });
     } else {
       onFormChange({
-        ...base,
-        ...banks,
-        glFrom: details.partyLedgerAccount,
+        ...base, ...banks,
+        glFrom:       details.partyLedgerAccount,
         currencyFrom: details.partyAccountCurrency,
-        glTo: details.companyLedgerAccount,
-        currencyTo: details.companyLedgerCurrency,
+        glTo:         details.companyLedgerAccount,
+        currencyTo:   details.companyLedgerCurrency,
       });
     }
   };
@@ -269,16 +253,13 @@ useEffect(() => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const val = (e as React.ChangeEvent<HTMLSelectElement>).target.value;
-    if (!val) {
-      onFormChange({ companyBankAccount: "" });
-      return;
-    }
+    if (!val) { onFormChange({ companyBankAccount: "" }); return; }
     const selected = companyBankOptions.find((o) => o.value === val);
     if (!selected) return;
     onFormChange({
       companyBankAccount: selected.value,
-      glFrom: selected.ledgerAccount,
-      currencyFrom: selected.currency,
+      glFrom:             selected.ledgerAccount,
+      currencyFrom:       selected.currency,
     });
   };
 
@@ -286,16 +267,13 @@ useEffect(() => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const val = (e as React.ChangeEvent<HTMLSelectElement>).target.value;
-    if (!val) {
-      onFormChange({ partyBankAccount: "" });
-      return;
-    }
+    if (!val) { onFormChange({ partyBankAccount: "" }); return; }
     const selected = partyBankOptions.find((o) => o.value === val);
     if (!selected) return;
     onFormChange({
       partyBankAccount: selected.value,
-      glTo: selected.ledgerAccount,
-      currencyTo: selected.currency,
+      glTo:             selected.ledgerAccount,
+      currencyTo:       selected.currency,
     });
   };
 
@@ -303,17 +281,22 @@ useEffect(() => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     onChange(e);
-    onFormChange({
-      amount: (e as React.ChangeEvent<HTMLInputElement>).target.value,
-    });
+    onFormChange({ amount: (e as React.ChangeEvent<HTMLInputElement>).target.value });
   };
 
-  // canAllocate checks amountTo — now synced from defaultValues.amount on modal open
   const canAllocate = Number(form?.amountTo || 0) > 0 && !!form?.partyName;
+
+  // ── GL dropdown option lists ──────────────────────────────────────────────
+  const glFromSelectOptions = isLoadingLedgers
+    ? [{ label: "Loading...", value: "" }]
+    : ledgerFromOptions.map((o) => ({ label: o.label, value: o.value }));
+
+  const glToSelectOptions = isLoadingLedgers
+    ? [{ label: "Loading...", value: "" }]
+    : ledgerToOptions.map((o) => ({ label: o.label, value: o.value }));
 
   return (
     <div className="space-y-5">
-      {/* islocked — specific invoice se aaya (full lock) */}
       {islocked && (
         <div className="flex items-center gap-2.5 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
           <span className="text-xs text-primary leading-relaxed">
@@ -324,7 +307,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* isPartyLocked — party already selected*/}
       {!islocked && isPartyLocked && (
         <div className="flex items-center gap-2.5 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg">
           <span className="text-xs text-amber-700 leading-relaxed">
@@ -344,8 +326,8 @@ useEffect(() => {
           onChange={onChange}
           disabled={islocked}
           options={[
-            { label: "Pay", value: "Pay" },
-            { label: "Receive", value: "Receive" },
+            { label: "Pay",               value: "Pay"               },
+            { label: "Receive",           value: "Receive"           },
             { label: "Internal Transfer", value: "Internal Transfer" },
           ]}
         />
@@ -356,10 +338,10 @@ useEffect(() => {
           disabled={islocked || isPartyLocked}
           onChange={handlePartyTypeChange}
           options={[
-            { label: "Supplier", value: "Supplier" },
-            { label: "Customer", value: "Customer" },
+            { label: "Supplier",    value: "Supplier"    },
+            { label: "Customer",    value: "Customer"    },
             { label: "Shareholder", value: "Shareholder" },
-            { label: "Employee", value: "Employee" },
+            { label: "Employee",    value: "Employee"    },
           ]}
         />
         <SearchSelect2
@@ -423,14 +405,12 @@ useEffect(() => {
         </div>
 
         <div className="relative grid grid-cols-2">
-          <div
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10
-                          flex items-center justify-center w-8 h-8 rounded-full bg-card border border-[var(--border)] shadow-sm"
-          >
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10
+                          flex items-center justify-center w-8 h-8 rounded-full bg-card border border-[var(--border)] shadow-sm">
             <MoveRight size={14} className="text-primary" />
           </div>
 
-          {/* LEFT */}
+          {/* LEFT — Paid From */}
           <div className="border-r border-[var(--border)] px-5 py-4 space-y-3">
             <ModalSelect
               label="Bank Account"
@@ -441,44 +421,34 @@ useEffect(() => {
               options={
                 isLoadingCompanyBanks
                   ? [{ label: "Loading...", value: "" }]
-                  : [
-                      ...companyBankOptions.map((o) => ({
-                        label: o.label,
-                        value: o.value,
-                      })),
-                    ]
+                  : companyBankOptions.map((o) => ({ label: o.label, value: o.value }))
               }
             />
             <div className="grid grid-cols-[1fr_100px] gap-2">
               <ModalSelect
-  label="Account (GL)"
-  name="glFrom"
-  value={form.glFrom ?? ""}
-  onChange={(e) => {
-    const selected = ledgerFromOptions.find(o => o.value === e.target.value);
-    onFormChange({
-      glFrom:       selected?.value    ?? e.target.value,
-      currencyFrom: selected?.currency ?? form.currencyFrom ?? "",
-    });
-  }}
-  options={
-    ledgerFromOptions.length
-      ? ledgerFromOptions.map(o => ({ label: o.label, value: o.value }))
-      : form.glFrom
-        ? [{ label: form.glFrom, value: form.glFrom }]
-        : [{ label: "—", value: "" }]
-  }
-/>
-              <ModalInput
+                label="Account (GL)"
+                name="glFrom"
+                value={form.glFrom ?? ""}
+                onChange={(e) => {
+                  const selected = ledgerFromOptions.find((o) => o.value === e.target.value);
+                  onFormChange({
+                    glFrom:       selected?.value    ?? e.target.value,
+                    currencyFrom: selected?.currency ?? form.currencyFrom ?? "",
+                  });
+                }}
+                options={glFromSelectOptions}
+              />
+              <ModalSelect
                 label="Currency"
                 name="currencyFrom"
                 value={form.currencyFrom ?? ""}
                 onChange={onChange}
+                options={buildCurrencyOptions(form.currencyFrom ?? "")}
               />
             </div>
           </div>
 
-          {/* RIGHT */}
+          {/* RIGHT — Paid To */}
           <div className="px-5 py-4 space-y-3">
             <ModalSelect
               label="Bank Account"
@@ -489,33 +459,36 @@ useEffect(() => {
               options={
                 isLoadingPartyBanks
                   ? [{ label: "Loading...", value: "" }]
-                  : [
-                      ...partyBankOptions.map((o) => ({
-                        label: o.label,
-                        value: o.value,
-                      })),
-                    ]
+                  : partyBankOptions.map((o) => ({ label: o.label, value: o.value }))
               }
             />
             <div className="grid grid-cols-[1fr_100px] gap-2">
-              <ModalInput
+              <ModalSelect
                 label="Account (GL)"
                 name="glTo"
                 value={form.glTo ?? ""}
-                onChange={onChange}
+                onChange={(e) => {
+                  const selected = ledgerToOptions.find((o) => o.value === e.target.value);
+                  onFormChange({
+                    glTo:       selected?.value    ?? e.target.value,
+                    currencyTo: selected?.currency ?? form.currencyTo ?? "",
+                  });
+                }}
+                options={glToSelectOptions}
               />
-              <ModalInput
+              <ModalSelect
                 label="Currency"
                 name="currencyTo"
                 value={form.currencyTo ?? ""}
                 onChange={onChange}
+                options={buildCurrencyOptions(form.currencyTo ?? "")}
               />
             </div>
           </div>
         </div>
 
         {/* Amount row */}
-        <div className="border-t border-[var(--border)] grid grid-cols-[1fr_80px_1fr]">
+        <div className="border-t border-[var(--border)] grid grid-cols-[1fr_auto_1fr]">
           <div className="border-r border-[var(--border)] px-5 py-4">
             <ModalInput
               label="Amount"
@@ -527,16 +500,44 @@ useEffect(() => {
             />
           </div>
 
-          <div className="flex flex-col items-center justify-end py-4 gap-1">
-            <span className="text-xs text-muted">Exch. Rate</span>
-            <input
-              type="number"
-              name="exchangeRate"
-              value={form.exchangeRate ?? ""}
-              onChange={onChange as any}
-              placeholder="1"
-              className="w-full px-2 py-[7px] text-xs border border-[var(--border)] rounded bg-card focus:outline-none focus:ring-1 focus:ring-primary text-center no-spinner"
-            />
+          <div className="flex flex-col items-center justify-end py-4 gap-1 px-2 min-w-[80px]">
+            <span className="text-xs text-muted whitespace-nowrap">Exch. Rate</span>
+            <div className="relative w-full">
+              <input
+                type="number"
+                name="exchangeRate"
+                value={
+                  !currenciesDiffer
+                    ? ""
+                    : (form.exchangeRate ?? "")
+                }
+                onChange={onChange as any}
+                placeholder="—"
+                disabled={!currenciesDiffer || isLoadingRate}
+                className={[
+                  "w-full px-2 py-[7px] text-xs border rounded focus:outline-none",
+                  "focus:ring-1 focus:ring-primary text-center no-spinner",
+                  !currenciesDiffer
+                    ? "bg-[var(--row-hover)] border-[var(--border)] text-muted cursor-not-allowed opacity-80"
+                    : rateError
+                      ? "border-red-300 focus:ring-red-400 bg-card"
+                      : "border-[var(--border)] bg-card",
+                  isLoadingRate && currenciesDiffer ? "opacity-50 cursor-not-allowed" : "",
+                ].join(" ")}
+              />
+              {isLoadingRate && currenciesDiffer && (
+                <Loader2
+                  size={11}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted animate-spin"
+                />
+              )}
+            </div>
+            {rateError && !isLoadingRate && currenciesDiffer && (
+              <div className="flex items-start gap-1 mt-0.5 w-full max-w-[160px]">
+                <AlertCircle size={10} className="text-red-400 flex-shrink-0 mt-[1px]" />
+                <p className="text-[10px] text-red-500 leading-tight">{rateError}</p>
+              </div>
+            )}
           </div>
 
           <div className="border-l border-[var(--border)] px-5 py-4 flex flex-col gap-1">
@@ -578,9 +579,7 @@ useEffect(() => {
       </div>
 
       {isLoadingDetails && (
-        <p className="text-xs text-muted animate-pulse">
-          Fetching party details...
-        </p>
+        <p className="text-xs text-muted animate-pulse">Fetching party details...</p>
       )}
     </div>
   );

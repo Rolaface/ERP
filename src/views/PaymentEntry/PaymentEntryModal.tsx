@@ -5,6 +5,13 @@ import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
 import PaymentTaxesTab from "../../components/Payment/PaymentTaxesTab";
 import InvoiceList from "./invoicelist";
+import {
+  createPaymentEntry,
+  type CreatePaymentEntryPayload,
+  type PaymentReference,
+  type PaymentTax,
+} from "../../api/BankAccountApi";
+import { showLoading,closeSwal,showSuccess,showApiError } from "../../utils/alert";
 import type { AllocationResult } from "../../types/paymententryrecord.types";
 
 type TabType = "details" | "invoices" | "taxes";
@@ -18,6 +25,7 @@ const ALL_TABS = [
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: (paymentEntryName: string) => void;
   defaultValues?: {
     paymentType?: "Pay" | "Receive" | "Internal Transfer";
     partyType?: string;
@@ -29,11 +37,104 @@ interface Props {
   };
 }
 
-const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) => {
-  const [activeTab, setActiveTab]             = useState<TabType>("details");
-  const [form, setForm]                       = useState<Record<string, any>>({});
-  const [error, setError]                     = useState<string | null>(null);
+
+function buildPayload(
+  form: Record<string, any>,
+  isAdvanceFromPO: boolean
+): CreatePaymentEntryPayload {
+  const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
+  const receivedAmount = Number(form?.amountTo ?? paymentAmount);
+
+  // References (invoice allocations)
+  const referenceDoctype =
+    form?.paymentType === "Pay" ? "Purchase Invoice" : "Sales Invoice";
+
+  const allocations: Record<string, number> = form?.allocations ?? {};
+  const invoiceDueDates: Record<string, string> = form?.invoiceDueDates ?? {}; 
+
+  const references: PaymentReference[] = Object.entries(allocations)
+    .filter(([, amount]) => Number(amount) > 0)
+    .map(([invoiceName, allocatedAmount]) => ({
+      reference_doctype: referenceDoctype,
+      reference_name: invoiceName,
+      allocated_amount: Number(allocatedAmount),
+      ...(invoiceDueDates[invoiceName]
+        ? { due_date: invoiceDueDates[invoiceName] }
+        : {}),
+    }));
+
+  // Taxes
+  const taxes: PaymentTax[] = (form?.taxes ?? []).map((t: any) => ({
+    type: t.type ?? "",
+    account_head: t.account_head ?? "",
+    tax_rate: Number(t.tax_rate ?? 0),
+    amount: Number(t.amount ?? 0),
+    total: Number(t.total ?? 0),
+  }));
+
+  const payload: CreatePaymentEntryPayload = {
+    payment_type: form?.paymentType ?? "Pay",
+    party_type: form?.partyType ?? "",
+    party_id: form?.partyName ?? "",
+    mode_of_payment: form?.mode ?? "",
+    payment_date: form?.date ?? new Date().toISOString().split("T")[0],
+    reference_no: form?.referenceNo ?? "",
+    reference_date: form?.referenceDate ?? "",
+    project: form?.project ?? "",
+    cost_center: form?.costCenter ?? "",
+    exchange_rate: Number(form?.exchangeRate ?? 1),
+
+    // Paid From (left side)
+    paid_from: form?.glFrom ?? "",
+    paid_from_bank_account: form?.companyBankAccount ?? "",
+    paid_from_account_currency: form?.currencyFrom ?? "",
+    paid_from_amount: paymentAmount,
+
+    // Paid To (right side)
+    paid_to: form?.glTo ?? "",
+    paid_to_bank_account: form?.partyBankAccount ?? "",
+    paid_to_account_currency: form?.currencyTo ?? "",
+    paid_to_amount: receivedAmount,
+
+    references,
+    taxes,
+  };
+
+  return payload;
+}
+
+
+// Validation — returns first error string or null
+
+function validateForm(form: Record<string, any>): string | null {
+  if (!form?.paymentType) return "Payment Type is required.";
+  if (!form?.partyType) return "Party Type is required.";
+  if (!form?.partyName) return "Party Name is required.";
+  if (!form?.date) return "Payment Date is required.";
+  if (!form?.mode) return "Mode of Payment is required.";
+  if (!form?.glFrom) return "Account (GL) — Paid From is required.";
+  if (!form?.glTo) return "Account (GL) — Paid To is required.";
+
+  const amount = Number(form?.amountFrom ?? form?.amount ?? 0);
+  if (!amount || amount <= 0) return "Please enter a valid payment amount.";
+
+  return null;
+}
+
+
+// Component
+
+const PaymentEntryModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  defaultValues,
+}) => {
+  const [activeTab, setActiveTab] = useState<TabType>("details");
+  const [form, setForm] = useState<Record<string, any>>({});
+  const [error, setError] = useState<string | null>(null);
   const [invoicesMounted, setInvoicesMounted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isAdvanceFromPO = Boolean(defaultValues?.referenceInvoice);
 
@@ -41,38 +142,43 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
     ? ALL_TABS.filter((t) => t.key !== "invoices")
     : ALL_TABS;
 
+  // ── Reset on open 
   useEffect(() => {
-    if (isOpen) {
-      const base = { ...(defaultValues ?? {}) };
+    if (!isOpen) return;
 
-      if (!base.date) {
-        base.date = new Date().toISOString().split("T")[0];
-      }
+    const base: Record<string, any> = { ...(defaultValues ?? {}) };
 
-      if (base.amount != null && (base as any).amountTo == null) {
-        (base as any).amountTo = base.amount;
-      }
+    if (!base.date) {
+      base.date = new Date().toISOString().split("T")[0];
+    }
 
-      setForm(base);
-      setActiveTab("details");
-      setError(null);
-      setInvoicesMounted(false);
+    // Mirror `amount` → `amountFrom` + `amountTo` if provided
+    if (base.amount != null) {
+      base.amountFrom ??= base.amount;
+      base.amountTo ??= base.amount;
+    }
 
-      if (!isAdvanceFromPO && defaultValues?.referenceInvoice) {
-        setInvoicesMounted(true);
-        setTimeout(() => {
-          setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
-        }, 200);
-      }
+    setForm(base);
+    setActiveTab("details");
+    setError(null);
+    setInvoicesMounted(false);
+    setIsSaving(false);
+
+    if (!isAdvanceFromPO && defaultValues?.referenceInvoice) {
+      setInvoicesMounted(true);
+      setTimeout(() => {
+        setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
+      }, 200);
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const paymentAmount  = Number(form?.amount ?? 0);
+  // ── Derived values 
+  const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
   const totalAllocated = Number(form?.allocatedAmount ?? 0);
-  // ── CHANGE 1: renamed from `remaining` → `advance` ──────────────────────
-  const advance        = Math.max(0, paymentAmount - totalAllocated);
+  const advance = Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
+  // ── Handlers 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
@@ -114,77 +220,54 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
     }, 50);
   }, [goToTab]);
 
-  const handleSave = useCallback(() => {
-    if (!paymentAmount || paymentAmount <= 0) {
-      setError("Please enter a payment amount in the Details tab.");
+  // ── Save 
+  const handleSave = useCallback(async () => {
+    const validationError = validateForm(form);
+    if (validationError) {
+      setError(validationError);
       setActiveTab("details");
       return;
     }
+
     setError(null);
+    setIsSaving(true);
+    showLoading("Creating Payment Entry…");
 
-    const referenceDoctype =
-      form?.paymentType === "Pay" ? "Purchase Invoice" : "Sales Invoice";
+    try {
+      const payload = buildPayload(form, isAdvanceFromPO);
+      const response = await createPaymentEntry(payload);
 
-    const allocations: Record<string, number> = form?.allocations ?? {};
-    const references = Object.entries(allocations)
-      .filter(([, amount]) => amount > 0)
-      .map(([invoiceNumber, allocatedAmount]) => ({
-        reference_doctype: referenceDoctype,
-        reference_name:    invoiceNumber,
-        allocated_amount:  allocatedAmount,
-      }));
+      closeSwal();
 
-    const payload = {
-      doctype:        "Payment Entry",
-      payment_type:   form?.paymentType ?? "",
-      posting_date:   form?.date        ?? new Date().toISOString().split("T")[0],
-      company:        form?.company     ?? "",
+      showSuccess(response.message ?? "Payment Entry created successfully.");
 
-      party_type:     form?.partyType  ?? "",
-      party:          form?.partyName  ?? "",
+      onSuccess?.(response.data?.modeOfPaymentId ?? "");
+      onClose();
+    } catch (err: any) {
+      closeSwal();
+      showApiError(err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [form, isAdvanceFromPO, onClose, onSuccess]);
 
-      mode_of_payment:      form?.mode              ?? "",
-      paid_from:            form?.companyBankAccount ?? "",
-      paid_to:              form?.partyBankAccount   ?? "",
-
-      paid_amount:          paymentAmount,
-      received_amount:      Number(form?.amountTo    ?? paymentAmount),
-      source_exchange_rate: Number(form?.exchangeRate ?? 1),
-      target_exchange_rate: Number(form?.exchangeRate ?? 1),
-
-      reference_no:   form?.referenceNo  ?? "",
-      reference_date: form?.referenceDate ?? "",
-
-      ...(isAdvanceFromPO && {
-        purchase_order: form?.referenceInvoice ?? "",
-      }),
-
-      references,
-      total_allocated_amount: isAdvanceFromPO ? 0 : totalAllocated,
-
-      // ── CHANGE 2: advance added to payload ───────────────────────────────
-      unallocated_amount: advance,
-
-      taxes:   form?.taxes   ?? [],
-      remarks: form?.remarks ?? "",
-    };
-
-    console.log("Payment Entry payload:", payload);
-    // TODO: await submitPaymentEntry(payload);
-  }, [paymentAmount, totalAllocated, advance, isAdvanceFromPO, form]);
 
   const invoiceListForm = {
-    partyType:        form?.partyType,
-    partyName:        form?.partyName,
-    amount:           form?.amount,
-    fifoTrigger:      form?.fifoTrigger,
+    partyType: form?.partyType,
+    partyName: form?.partyName,
+    amount: form?.amountFrom ?? form?.amount,
+    fifoTrigger: form?.fifoTrigger,
     referenceInvoice: form?.referenceInvoice,
   };
 
   const footer = (
     <>
-      <Button variant="secondary" onClick={onClose}>Cancel</Button>
-      <Button variant="primary" onClick={handleSave}>Save</Button>
+      <Button variant="secondary" onClick={onClose} disabled={isSaving}>
+        Cancel
+      </Button>
+      <Button variant="primary" onClick={handleSave} disabled={isSaving}>
+        {isSaving ? "Saving…" : "Save"}
+      </Button>
     </>
   );
 
@@ -225,12 +308,15 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
           </div>
         </div>
 
-        {/* ── Error banner ── */}
+        {/* ── Validation error banner ── */}
         {error && (
           <div className="mx-6 mt-4 flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-lg flex-shrink-0">
             <AlertCircle size={15} className="text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-red-700 flex-1 leading-relaxed">{error}</p>
-            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
+            <button
+              onClick={() => setError(null)}
+              className="text-red-400 hover:text-red-600"
+            >
               <X size={13} />
             </button>
           </div>
@@ -246,22 +332,27 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
                 onFormChange={handleFormChange}
                 onAllocate={isAdvanceFromPO ? undefined : handleAllocateLink}
                 islocked={Boolean(form?.referenceInvoice)}
-                isPartyLocked={Boolean(form?.referenceInvoice && form?.partyName && form?.partyType)}
+                isPartyLocked={Boolean(
+                  form?.referenceInvoice && form?.partyName && form?.partyType
+                )}
               />
             )}
 
             {invoicesMounted && !isAdvanceFromPO && (
               <div className={activeTab === "invoices" ? "block" : "hidden"}>
-                <InvoiceList form={invoiceListForm} onFormChange={handleFormChange} />
+                <InvoiceList
+                  form={invoiceListForm}
+                  onFormChange={handleFormChange}
+                />
               </div>
             )}
 
             {activeTab === "taxes" && (
-              <PaymentTaxesTab form={form} onChange={handleChange} />
+              <PaymentTaxesTab form={form} onFormChange={handleFormChange} />
             )}
           </div>
 
-          {/* ── Persistent summary ── */}
+          {/* ── Persistent summary sidebar ── */}
           <div className="w-56 flex-shrink-0 border-l border-[var(--border)] bg-card p-4 flex flex-col gap-3 overflow-auto rounded-lg mt-4">
             <h3 className="text-sm font-semibold text-main">Summary</h3>
 
@@ -286,7 +377,9 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
             {isAdvanceFromPO && (
               <div>
                 <p className="text-[11px] text-muted">Against</p>
-                <p className="text-xs font-medium text-primary">{form?.referenceInvoice}</p>
+                <p className="text-xs font-medium text-primary">
+                  {form?.referenceInvoice}
+                </p>
               </div>
             )}
 
@@ -295,9 +388,13 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
             <div>
               <p className="text-[11px] text-muted">Payment Amount</p>
               <p className="text-sm font-semibold text-main">
-                {paymentAmount > 0
-                  ? `${paymentAmount.toLocaleString()}`
-                  : <span className="text-[11px] font-normal text-muted">Not set</span>}
+                {paymentAmount > 0 ? (
+                  paymentAmount.toLocaleString()
+                ) : (
+                  <span className="text-[11px] font-normal text-muted">
+                    Not set
+                  </span>
+                )}
               </p>
             </div>
 
@@ -309,15 +406,19 @@ const PaymentEntryModal: React.FC<Props> = ({ isOpen, onClose, defaultValues }) 
                 </div>
                 <div>
                   <p className="text-[11px] text-muted">Allocated</p>
-                  <p className="text-base font-bold text-primary">{totalAllocated.toLocaleString()}</p>
+                  <p className="text-base font-bold text-primary">
+                    {totalAllocated.toLocaleString()}
+                  </p>
                 </div>
-
-                {/* ── CHANGE 3: renamed label + logic from remaining → advance ── */}
                 <div>
                   <p className="text-[11px] text-muted">Advance</p>
-                  <p className={`text-xs font-semibold ${
-                    advance > 0 && paymentAmount > 0 ? "text-amber-500" : "text-emerald-600"
-                  }`}>
+                  <p
+                    className={`text-xs font-semibold ${
+                      advance > 0 && paymentAmount > 0
+                        ? "text-amber-500"
+                        : "text-emerald-600"
+                    }`}
+                  >
                     {advance.toLocaleString()}
                   </p>
                   {advance > 0 && paymentAmount > 0 && (
