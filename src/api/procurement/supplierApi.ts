@@ -56,7 +56,7 @@ export async function deleteSupplier(id: string | number): Promise<any> {
   return resp.data;
 }
 export async function createSupplierPayment(payload: any): Promise<any> {
-  const resp = await api.post(
+  const resp : AxiosResponse= await api.post(
     SupplierAPI.CreatePayment,
     payload
   );

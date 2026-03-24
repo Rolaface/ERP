@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo,useState } from "react";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import SearchSelect2 from "../ui/modal/SearchSelect";
 import { MoveRight, ArrowRight } from "lucide-react";
@@ -9,13 +9,18 @@ import {
   usePartyDetails,
   useCompanyBankAccounts,
   usePartyBankAccounts,
+  useLedgerAccounts,
   type PartyOption,
 } from "../../views/PaymentEntry/usePaymentEntryLogic";
 import DatePickerInput from "../calendar/DatePickerInput";
+import { getLedgerAccount } from "../../api/BankAccountApi";
+
 
 interface PaymentDetailsTabProps {
   form: Record<string, any>;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => void;
   onFormChange: (updates: Record<string, any>) => void;
   onAllocate?: () => void;
   islocked?: boolean;
@@ -31,7 +36,11 @@ const PARTY_FILLED_FIELDS = {
   companyBankAccount: "",
   partyBankAccount: "",
 };
-
+type LedgerOption = {
+  label: string;
+  value: string;
+  currency: string;
+};
 const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   form,
   onChange,
@@ -41,54 +50,117 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   isPartyLocked = false,
 }) => {
   const { options: modeOptions, isLoading: modesLoading } = usePaymentModes();
-  const { fetchPartyDetails, isLoadingDetails }           = usePartyDetails();
+  const { fetchPartyDetails, isLoadingDetails } = usePartyDetails();
   const {
-    companyBankOptions, isLoadingCompanyBanks,
-    fetchCompanyBanks, clearCompanyBanks,
+    companyBankOptions,
+    isLoadingCompanyBanks,
+    fetchCompanyBanks,
+    clearCompanyBanks,
   } = useCompanyBankAccounts();
   const {
-    partyBankOptions, isLoadingPartyBanks,
-    fetchPartyBanks, clearPartyBanks,
+    partyBankOptions,
+    isLoadingPartyBanks,
+    fetchPartyBanks,
+    clearPartyBanks,
   } = usePartyBankAccounts();
 
-  const paymentType = (form.paymentType as "Pay" | "Receive" | "Internal Transfer") || "Pay";
-  const partyType   = (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") || "";
+  const paymentType =
+    (form.paymentType as "Pay" | "Receive" | "Internal Transfer") || "Pay";
+  const partyType =
+    (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") ||
+    "";
 
+ 
   const { partyOptions, isLoadingParties } = usePartyOptions(partyType);
+
+// ── NEW: Ledger GL accounts ────────────────────────────────────────────────
+const ledgerPaymentType = paymentType === "Internal Transfer" ? "" : paymentType;
+
 
   const selectedMode = useMemo(
     () => modeOptions.find((opt) => opt.value === form.mode) ?? null,
-    [form.mode, modeOptions]
+    [form.mode, modeOptions],
   );
 
   useEffect(() => {
     if (!form.date) onFormChange({ date: dayjs().format("YYYY-MM-DD") });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); 
 
   useEffect(() => {
     if (!selectedMode) {
-      if (paymentType === "Pay")                onFormChange({ glFrom: "", currencyFrom: "" });
-      else if (paymentType === "Receive")       onFormChange({ glTo: "", currencyTo: "" });
-      else onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
+      if (paymentType === "Pay") onFormChange({ glFrom: "", currencyFrom: "" });
+      else if (paymentType === "Receive")
+        onFormChange({ glTo: "", currencyTo: "" });
+      else
+        onFormChange({
+          glFrom: "",
+          currencyFrom: "",
+          glTo: "",
+          currencyTo: "",
+        });
       return;
     }
     if (paymentType === "Pay")
-      onFormChange({ glFrom: selectedMode.defaultAccount, currencyFrom: selectedMode.currency });
+      onFormChange({
+        glFrom: selectedMode.defaultAccount,
+        currencyFrom: selectedMode.currency,
+      });
     else if (paymentType === "Receive")
-      onFormChange({ glTo: selectedMode.defaultAccount, currencyTo: selectedMode.currency });
+      onFormChange({
+        glTo: selectedMode.defaultAccount,
+        currencyTo: selectedMode.currency,
+      });
     else
       onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
-  }, [selectedMode, paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedMode, paymentType]); 
+ type LedgerOption = {
+  label: string;
+  value: string;
+  currency: string;
+};
+const [ledgerFromOptions, setLedgerFromOptions] = useState<LedgerOption[]>([]);
+const [ledgerToOptions, setLedgerToOptions] = useState<LedgerOption[]>([]);
+useEffect(() => {
+  if (!ledgerPaymentType) return;
+
+  const fetch = async () => {
+  
+    const from = await getLedgerAccount(ledgerPaymentType, "from");
+    setLedgerFromOptions(
+      from.map((i) => ({
+        label: i.name,
+        value: i.name,
+        currency: i.account_currency
+      }))
+    );
+
+    // 2️⃣ TO call (after FROM completes)
+    const to = await getLedgerAccount(ledgerPaymentType, "to");
+    setLedgerToOptions(
+      to.map(i => ({
+        label: i.name,
+        value: i.name,
+        currency: i.account_currency
+      }))
+    );
+  };
+
+  fetch();
+}, [ledgerPaymentType]);
+
+
 
   const requestRef = React.useRef(0);
+  
 
-  // FIX: partyName added to deps — pehle sirf partyId tha
-  // referenceInvoice flow mein partyId set hota hai defaultValues se
-  // par party details fetch partyName se hoti hai
-  // partyName dep add karne se bank/GL data tab switch ke baad bhi rehta hai
+
   useEffect(() => {
     const partyKey = form.partyId || form.partyName;
-    if (!partyKey || (form.partyType !== "Customer" && form.partyType !== "Supplier")) return;
+    if (
+      !partyKey ||
+      (form.partyType !== "Customer" && form.partyType !== "Supplier")
+    )
+      return;
 
     const requestId = ++requestRef.current;
 
@@ -103,32 +175,35 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       if (!details) return;
 
       onFormChange({
-        partyName:           details.partyName,
-        companyBankAccount:  details.companyBankAccount,
-        partyBankAccount:    details.partyBankAccount,
-        glFrom: form.paymentType === "Pay" ? details.companyLedgerAccount  : details.partyLedgerAccount,
-        currencyFrom: form.paymentType === "Pay" ? details.companyLedgerCurrency : details.partyAccountCurrency,
-        glTo:   form.paymentType === "Pay" ? details.partyLedgerAccount   : details.companyLedgerAccount,
-        currencyTo: form.paymentType === "Pay" ? details.partyAccountCurrency   : details.companyLedgerCurrency,
+        partyName: details.partyName,
+        companyBankAccount: details.companyBankAccount,
+        partyBankAccount: details.partyBankAccount,
+        glFrom:
+          form.paymentType === "Pay"
+            ? details.companyLedgerAccount
+            : details.partyLedgerAccount,
+        currencyFrom:
+          form.paymentType === "Pay"
+            ? details.companyLedgerCurrency
+            : details.partyAccountCurrency,
+        glTo:
+          form.paymentType === "Pay"
+            ? details.partyLedgerAccount
+            : details.companyLedgerAccount,
+        currencyTo:
+          form.paymentType === "Pay"
+            ? details.partyAccountCurrency
+            : details.companyLedgerCurrency,
       });
     };
 
     run();
-  }, [form.partyId, form.partyName, form.partyType, form.paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.partyId, form.partyName, form.partyType, form.paymentType]); 
 
-const handlePartyTypeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-  onChange(e);
-  onFormChange({
-    ...PARTY_FILLED_FIELDS,
-    allocatedAmount: 0,
-    selectedInvoices: [],
-    allocations: {},
-  });
-  clearCompanyBanks();
-  clearPartyBanks();
-};
-const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
-  if (!option?.value) {
+  const handlePartyTypeChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    onChange(e);
     onFormChange({
       ...PARTY_FILLED_FIELDS,
       allocatedAmount: 0,
@@ -137,8 +212,22 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
     });
     clearCompanyBanks();
     clearPartyBanks();
-    return;
-  }
+  };
+  const handlePartyNameSelect = async (
+    _: string,
+    option: PartyOption | null,
+  ) => {
+    if (!option?.value) {
+      onFormChange({
+        ...PARTY_FILLED_FIELDS,
+        allocatedAmount: 0,
+        selectedInvoices: [],
+        allocations: {},
+      });
+      clearCompanyBanks();
+      clearPartyBanks();
+      return;
+    }
     onFormChange({ partyName: option.label });
     if (partyType !== "Supplier" && partyType !== "Customer") return;
 
@@ -149,46 +238,74 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
     ]);
     if (!details) return;
 
-    const base  = { partyName: details.partyName || option.label };
+    const base = { partyName: details.partyName || option.label };
     const banks = {
       companyBankAccount: details.companyBankAccount,
-      partyBankAccount:   details.partyBankAccount,
+      partyBankAccount: details.partyBankAccount,
     };
 
     if (paymentType === "Pay") {
       onFormChange({
-        ...base, ...banks,
-        glFrom: details.companyLedgerAccount, currencyFrom: details.companyLedgerCurrency,
-        glTo:   details.partyLedgerAccount,   currencyTo:   details.partyAccountCurrency,
+        ...base,
+        ...banks,
+        glFrom: details.companyLedgerAccount,
+        currencyFrom: details.companyLedgerCurrency,
+        glTo: details.partyLedgerAccount,
+        currencyTo: details.partyAccountCurrency,
       });
     } else {
       onFormChange({
-        ...base, ...banks,
-        glFrom: details.partyLedgerAccount,   currencyFrom: details.partyAccountCurrency,
-        glTo:   details.companyLedgerAccount, currencyTo:   details.companyLedgerCurrency,
+        ...base,
+        ...banks,
+        glFrom: details.partyLedgerAccount,
+        currencyFrom: details.partyAccountCurrency,
+        glTo: details.companyLedgerAccount,
+        currencyTo: details.companyLedgerCurrency,
       });
     }
   };
 
-  const handleCompanyBankSelect = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleCompanyBankSelect = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const val = (e as React.ChangeEvent<HTMLSelectElement>).target.value;
-    if (!val) { onFormChange({ companyBankAccount: "" }); return; }
+    if (!val) {
+      onFormChange({ companyBankAccount: "" });
+      return;
+    }
     const selected = companyBankOptions.find((o) => o.value === val);
     if (!selected) return;
-    onFormChange({ companyBankAccount: selected.value, glFrom: selected.ledgerAccount, currencyFrom: selected.currency });
+    onFormChange({
+      companyBankAccount: selected.value,
+      glFrom: selected.ledgerAccount,
+      currencyFrom: selected.currency,
+    });
   };
 
-  const handlePartyBankSelect = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handlePartyBankSelect = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const val = (e as React.ChangeEvent<HTMLSelectElement>).target.value;
-    if (!val) { onFormChange({ partyBankAccount: "" }); return; }
+    if (!val) {
+      onFormChange({ partyBankAccount: "" });
+      return;
+    }
     const selected = partyBankOptions.find((o) => o.value === val);
     if (!selected) return;
-    onFormChange({ partyBankAccount: selected.value, glTo: selected.ledgerAccount, currencyTo: selected.currency });
+    onFormChange({
+      partyBankAccount: selected.value,
+      glTo: selected.ledgerAccount,
+      currencyTo: selected.currency,
+    });
   };
 
-  const handleAmountToChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleAmountToChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     onChange(e);
-    onFormChange({ amount: (e as React.ChangeEvent<HTMLInputElement>).target.value });
+    onFormChange({
+      amount: (e as React.ChangeEvent<HTMLInputElement>).target.value,
+    });
   };
 
   // canAllocate checks amountTo — now synced from defaultValues.amount on modal open
@@ -196,25 +313,24 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
 
   return (
     <div className="space-y-5">
-
       {/* islocked — specific invoice se aaya (full lock) */}
       {islocked && (
         <div className="flex items-center gap-2.5 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
           <span className="text-xs text-primary leading-relaxed">
             Party details are pre-filled from invoice{" "}
-            <span className="font-bold">{form?.referenceInvoice}</span>.
-            Payment Type, Party Type and Name cannot be changed.
+            <span className="font-bold">{form?.referenceInvoice}</span>. Payment
+            Type, Party Type and Name cannot be changed.
           </span>
         </div>
       )}
 
-      {/* isPartyLocked — party already selected, tab switch ke baad change nahi */}
+      {/* isPartyLocked — party already selected*/}
       {!islocked && isPartyLocked && (
         <div className="flex items-center gap-2.5 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg">
           <span className="text-xs text-amber-700 leading-relaxed">
             Party is selected. Go to{" "}
-            <span className="font-bold">Invoices tab</span>{" "}
-            to allocate. Party Type and Name cannot be changed now.
+            <span className="font-bold">Invoices tab</span> to allocate. Party
+            Type and Name cannot be changed now.
           </span>
         </div>
       )}
@@ -228,8 +344,8 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
           onChange={onChange}
           disabled={islocked}
           options={[
-            { label: "Pay",               value: "Pay" },
-            { label: "Receive",           value: "Receive" },
+            { label: "Pay", value: "Pay" },
+            { label: "Receive", value: "Receive" },
             { label: "Internal Transfer", value: "Internal Transfer" },
           ]}
         />
@@ -240,10 +356,10 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
           disabled={islocked || isPartyLocked}
           onChange={handlePartyTypeChange}
           options={[
-            { label: "Supplier",    value: "Supplier" },
-            { label: "Customer",    value: "Customer" },
+            { label: "Supplier", value: "Supplier" },
+            { label: "Customer", value: "Customer" },
             { label: "Shareholder", value: "Shareholder" },
-            { label: "Employee",    value: "Employee" },
+            { label: "Employee", value: "Employee" },
           ]}
         />
         <SearchSelect2
@@ -254,7 +370,9 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
           fetchOptions={(q): Promise<PartyOption[]> => {
             const query = q.toLowerCase();
             return Promise.resolve(
-              partyOptions.filter((p) => (p.label || "").toLowerCase().includes(query))
+              partyOptions.filter((p) =>
+                (p.label || "").toLowerCase().includes(query),
+              ),
             );
           }}
         />
@@ -279,7 +397,12 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
               : modeOptions.map((o) => ({ label: o.label, value: o.value }))
           }
         />
-        <ModalInput label="Cheque / Reference No"   name="referenceNo"   value={form.referenceNo}   onChange={onChange} />
+        <ModalInput
+          label="Cheque / Reference No"
+          name="referenceNo"
+          value={form.referenceNo}
+          onChange={onChange}
+        />
         <DatePickerInput
           label="Cheque / Reference Date"
           name="referenceDate"
@@ -291,51 +414,102 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
       {/* From / To box */}
       <div className="rounded-xl border border-[var(--border)] overflow-hidden">
         <div className="grid grid-cols-2 bg-[var(--row-hover)] border-b border-[var(--border)]">
-          <div className="px-5 py-2.5 text-xs font-semibold text-main border-r border-[var(--border)]">Paid From</div>
-          <div className="px-5 py-2.5 text-xs font-semibold text-main">Paid To</div>
+          <div className="px-5 py-2.5 text-xs font-semibold text-main border-r border-[var(--border)]">
+            Paid From
+          </div>
+          <div className="px-5 py-2.5 text-xs font-semibold text-main">
+            Paid To
+          </div>
         </div>
 
         <div className="relative grid grid-cols-2">
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10
-                          flex items-center justify-center w-8 h-8 rounded-full bg-card border border-[var(--border)] shadow-sm">
+          <div
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10
+                          flex items-center justify-center w-8 h-8 rounded-full bg-card border border-[var(--border)] shadow-sm"
+          >
             <MoveRight size={14} className="text-primary" />
           </div>
 
           {/* LEFT */}
           <div className="border-r border-[var(--border)] px-5 py-4 space-y-3">
             <ModalSelect
-              label="Bank Account" name="companyBankAccount"
+              label="Bank Account"
+              name="companyBankAccount"
               value={form.companyBankAccount ?? ""}
               onChange={handleCompanyBankSelect}
               disabled={!form.partyName || isLoadingCompanyBanks}
               options={
                 isLoadingCompanyBanks
                   ? [{ label: "Loading...", value: "" }]
-                  : [{ label: "Select", value: "" }, ...companyBankOptions.map((o) => ({ label: o.label, value: o.value }))]
+                  : [
+                      ...companyBankOptions.map((o) => ({
+                        label: o.label,
+                        value: o.value,
+                      })),
+                    ]
               }
             />
             <div className="grid grid-cols-[1fr_100px] gap-2">
-              <ModalInput label="Account (GL)" name="glFrom"       value={form.glFrom ?? ""}       onChange={onChange} />
-              <ModalInput label="Currency"     name="currencyFrom" value={form.currencyFrom ?? ""} onChange={onChange} />
+              <ModalSelect
+  label="Account (GL)"
+  name="glFrom"
+  value={form.glFrom ?? ""}
+  onChange={(e) => {
+    const selected = ledgerFromOptions.find(o => o.value === e.target.value);
+    onFormChange({
+      glFrom:       selected?.value    ?? e.target.value,
+      currencyFrom: selected?.currency ?? form.currencyFrom ?? "",
+    });
+  }}
+  options={
+    ledgerFromOptions.length
+      ? ledgerFromOptions.map(o => ({ label: o.label, value: o.value }))
+      : form.glFrom
+        ? [{ label: form.glFrom, value: form.glFrom }]
+        : [{ label: "—", value: "" }]
+  }
+/>
+              <ModalInput
+                label="Currency"
+                name="currencyFrom"
+                value={form.currencyFrom ?? ""}
+                onChange={onChange}
+              />
             </div>
           </div>
 
           {/* RIGHT */}
           <div className="px-5 py-4 space-y-3">
             <ModalSelect
-              label="Bank Account" name="partyBankAccount"
+              label="Bank Account"
+              name="partyBankAccount"
               value={form.partyBankAccount ?? ""}
               onChange={handlePartyBankSelect}
               disabled={!form.partyName || isLoadingPartyBanks}
               options={
                 isLoadingPartyBanks
                   ? [{ label: "Loading...", value: "" }]
-                  : [{ label: "Select", value: "" }, ...partyBankOptions.map((o) => ({ label: o.label, value: o.value }))]
+                  : [
+                      ...partyBankOptions.map((o) => ({
+                        label: o.label,
+                        value: o.value,
+                      })),
+                    ]
               }
             />
             <div className="grid grid-cols-[1fr_100px] gap-2">
-              <ModalInput label="Account (GL)" name="glTo"       value={form.glTo ?? ""}       onChange={onChange} />
-              <ModalInput label="Currency"     name="currencyTo" value={form.currencyTo ?? ""} onChange={onChange} />
+              <ModalInput
+                label="Account (GL)"
+                name="glTo"
+                value={form.glTo ?? ""}
+                onChange={onChange}
+              />
+              <ModalInput
+                label="Currency"
+                name="currencyTo"
+                value={form.currencyTo ?? ""}
+                onChange={onChange}
+              />
             </div>
           </div>
         </div>
@@ -343,13 +517,21 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
         {/* Amount row */}
         <div className="border-t border-[var(--border)] grid grid-cols-[1fr_80px_1fr]">
           <div className="border-r border-[var(--border)] px-5 py-4">
-            <ModalInput label="Amount" name="amountFrom" type="number" value={form.amountFrom ?? ""} onChange={onChange} className="no-spinner" />
+            <ModalInput
+              label="Amount"
+              name="amountFrom"
+              type="number"
+              value={form.amountFrom ?? ""}
+              onChange={onChange}
+              className="no-spinner"
+            />
           </div>
 
           <div className="flex flex-col items-center justify-end py-4 gap-1">
             <span className="text-xs text-muted">Exch. Rate</span>
             <input
-              type="number" name="exchangeRate"
+              type="number"
+              name="exchangeRate"
               value={form.exchangeRate ?? ""}
               onChange={onChange as any}
               placeholder="1"
@@ -359,14 +541,17 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
 
           <div className="border-l border-[var(--border)] px-5 py-4 flex flex-col gap-1">
             <ModalInput
-              label="Amount" name="amountTo" type="number"
+              label="Amount"
+              name="amountTo"
+              type="number"
               value={form.amountTo ?? ""}
               onChange={handleAmountToChange}
               className="no-spinner"
             />
-           {canAllocate && onAllocate && (
+            {canAllocate && onAllocate && (
               <button
-                type="button" onClick={onAllocate}
+                type="button"
+                onClick={onAllocate}
                 className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors w-fit"
               >
                 Allocate against invoices <ArrowRight size={11} />
@@ -378,12 +563,24 @@ const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
 
       {/* Project & Cost Centre */}
       <div className="grid grid-cols-2 gap-3">
-        <ModalInput label="Project"     name="project"    value={form.project ?? ""}    onChange={onChange} />
-        <ModalInput label="Cost Centre" name="costCenter" value={form.costCenter ?? ""} onChange={onChange} />
+        <ModalInput
+          label="Project"
+          name="project"
+          value={form.project ?? ""}
+          onChange={onChange}
+        />
+        <ModalInput
+          label="Cost Centre"
+          name="costCenter"
+          value={form.costCenter ?? ""}
+          onChange={onChange}
+        />
       </div>
 
       {isLoadingDetails && (
-        <p className="text-xs text-muted animate-pulse">Fetching party details...</p>
+        <p className="text-xs text-muted animate-pulse">
+          Fetching party details...
+        </p>
       )}
     </div>
   );

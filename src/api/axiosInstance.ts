@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
-
+ 
 export const createAxiosInstance = (
   baseURL: string
 ): AxiosInstance => {
@@ -11,7 +11,7 @@ export const createAxiosInstance = (
       "Content-Type": "application/json",
     },
   });
-
+ 
   // Global 401 handler
   instance.interceptors.response.use(
     (response) => response,
@@ -22,6 +22,7 @@ export const createAxiosInstance = (
       return Promise.reject(error);
     }
   );
-
+ 
   return instance;
 };
+ 
