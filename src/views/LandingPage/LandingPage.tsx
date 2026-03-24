@@ -231,16 +231,17 @@ const CTA = () => {
 const Footer = () => (
     <footer className="bg-[#F3F4F6] py-10 text-xs text-gray-500">
         <Container className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>ERP Architectural Ledger</div>
+            <div>ERP </div>
+            <div>© 2026 ERP All rights reserved.
+            </div>
             <div className="flex gap-6">
                 {["Privacy Policy", "Terms of Service", "Security", "Status"].map((l, i) => (
                     <span key={i}>{l}</span>
                 ))}
             </div>
+
         </Container>
-        <div className="text-center mt-6 text-[10px] text-gray-400">
-            © 2024 ERP Architectural Ledger. All rights reserved.
-        </div>
+
     </footer>
 );
 
