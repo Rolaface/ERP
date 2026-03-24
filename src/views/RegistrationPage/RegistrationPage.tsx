@@ -115,8 +115,8 @@ export default function RegistrationPage() {
     <div className="min-h-screen bg-[#f9f9ff] flex flex-col">
       {/* Navbar */}
       <div className="h-16 flex items-center justify-between px-8 max-w-6xl mx-auto w-full">
-        <div className="font-bold text-lg">Architect Ledger</div>
-        <div className="text-sm text-gray-600">Sign In</div>
+        <div className="font-bold text-lg">ERP</div>
+        <div className="text-sm text-gray-600"><button onClick={() => navigate("/login")}>Sign In</button></div>
       </div>
 
       {/* Main */}
