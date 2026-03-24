@@ -1,23 +1,21 @@
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { ROUTES } from "../routes/RoutesPath";
 
 const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
+  // ✅ Read auth from localStorage
+  const isAuthenticated = localStorage.getItem("isAuthenticated");
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted">Loading...</p>
-        </div>
-      </div>
-    );
+  // Optional: simulate loading if needed (you can remove later)
+  if (isAuthenticated === null) {
+    return <Navigate to="/login" replace />;
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to={ROUTES.LOGIN} replace />;
+  // ✅ Allow access if authenticated
+  return isAuthenticated === "true" ? (
+    <Outlet />
+  ) : (
+    <Navigate to="/login" replace />
+  );
 };
 
 export default ProtectedRoute;
