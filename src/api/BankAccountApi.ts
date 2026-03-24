@@ -443,3 +443,37 @@ export async function getBankAccountOptions(filters: {
     return []; // silent fail — dropdowns just show empty
   }
 }
+
+
+export type LedgerAccountOption = {
+  name: string;
+  account_currency: string;
+  account_number: string;
+};
+export async function getLedgerAccount(
+  payment_type: "Pay" | "Receive",
+  filter: "from" | "to"
+): Promise<LedgerAccountOption[]> {
+  try {
+    const resp: AxiosResponse = await api.get(
+      Account.getLedgerAccount,
+      {
+        params: {
+          payment_type,
+          filter,
+        },
+      }
+    );
+
+    const raw: any[] = resp?.data?.message?.data ?? [];
+
+    return raw.map((item) => ({
+      name: item.name,
+      account_currency: item.account_currency ?? "",
+      account_number: item.account_number ?? "",
+    }));
+  } catch (error) {
+    return [];
+  }
+}
+ 
