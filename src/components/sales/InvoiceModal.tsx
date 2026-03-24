@@ -11,10 +11,11 @@ import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import StockItemSelect from "../selects/StockItemSelect";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import WarehouseSelect from "../selects/WarehouseSelect";
+import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
 import {
   invoiceStatusOptions,
-  currencySymbols,
+  currencySymbols,  
   paymentMethodOptions,
   currencyOptions,
 } from "../../constants/invoice.constants";
@@ -59,9 +60,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     initialData,
   );
   // Removed allowSubmit state, no longer needed.
-  const tabs: Array<"details" | "address" | "terms"> = [
+  const tabs: Array<"details" | "address"|"otherCharges" | "terms"> = [
     "details",
     "address",
+    "otherCharges",
     "terms",
   ];
 
@@ -175,7 +177,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
-            {(["details", "address", "terms"] as const).map((tab) => (
+            {(["details", "address","otherCharges", "terms"] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -189,6 +191,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               >
                 {tab === "details" && "Details"}
                 {tab === "address" && "Additional Details"}
+                {tab === "otherCharges" && "Shipping & Other Charges"}
                 {tab === "terms" && "Terms & Conditions"}
               </button>
             ))}
@@ -880,6 +883,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </div>
           )}
 
+
           {/* TERMS */}
           {ui.activeTab === "terms" && (
             <div className="h-full w-full">
@@ -890,6 +894,16 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               />
             </div>
           )}
+          {ui.activeTab === "otherCharges" && (
+  <InvoiceChargesTab
+    charges={formData.otherCharges || []}
+    currency={formData.currencyCode}
+    totals={totals}
+    onAdd={actions.addOtherCharge}
+    onChange={actions.handleOtherChargeChange}
+    onRemove={actions.removeOtherCharge}
+  />
+)}
 
           {/* ADDRESS */}
           {ui.activeTab === "address" && (

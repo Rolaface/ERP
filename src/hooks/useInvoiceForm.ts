@@ -21,6 +21,7 @@ import {
 const ITEMS_PER_PAGE = 5;
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
+
 const getDefaultBank = (accounts: any[] = []) =>
   accounts.find((a) => (a.default === "1" || a.default === 1) && a.bankName?.trim()) ??
   accounts.find((a) => a.bankName?.trim()) ??
@@ -60,6 +61,11 @@ export const useInvoiceForm = (
   const [formData, setFormData] = useState<Invoice>({
     ...DEFAULT_INVOICE_FORM,
     terms: { ...EMPTY_TERMS },
+    otherCharges: [
+    { name: "Shipping", amount: "" },
+    { name: "Insurance", amount: "" },
+  ],
+    
   });
 
   useEffect(() => {
@@ -90,6 +96,7 @@ export const useInvoiceForm = (
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
   const [page, setPage] = useState(0);
+  const [chargePage, setChargePage] = useState(0); 
   const [activeTab, setActiveTab] = useState<"details" | "terms" | "address">(
     "details",
   );
@@ -646,6 +653,36 @@ const handleBulkItemChange = (
   }));
 };
 
+const addOtherCharge = () => {
+  setFormData((prev: any) => ({
+    ...prev,
+    otherCharges: [...(prev.otherCharges || []), { name: "", amount: "" }],
+  }));
+};
+
+
+const handleOtherChargeChange = (
+  index: number,
+  field: string,
+  value: any
+) => {
+  setFormData((prev: any) => {
+    const updated = [...(prev.otherCharges || [])];
+    updated[index] = { ...updated[index], [field]: value };
+    return { ...prev, otherCharges: updated };
+  });
+};
+
+// ✅ REMOVE OTHER CHARGE
+const removeOtherCharge = (index: number) => {
+  setFormData((prev: any) => ({
+    ...prev,
+    otherCharges: prev.otherCharges.filter(
+      (_: any, i: number) => i !== index
+    ),
+  }));
+};
+
   const addItem = () => {
     setFormData((prev) => {
       const items = [...prev.items];
@@ -767,6 +804,10 @@ const handleBulkItemChange = (
 
         setFormData({
           ...DEFAULT_INVOICE_FORM,
+          otherCharges: [
+    { name: "Shipping Charge", amount: "" },
+    { name: "Insurance", amount: "" },
+  ],
           dateOfInvoice: today,
           dueDate: dueDate,
           exchangeRt: "1",
@@ -865,12 +906,17 @@ const handleBulkItemChange = (
     page * ITEMS_PER_PAGE,
     (page + 1) * ITEMS_PER_PAGE,
   );
+  const paginatedCharges = formData.otherCharges.slice(
+  chargePage * ITEMS_PER_PAGE,
+  (chargePage + 1) * ITEMS_PER_PAGE,
+);
 
   return {
     formData,
     customerDetails,
     customerNameDisplay,
     paginatedItems,
+    paginatedCharges, 
     totals: { subTotal, totalTax, grandTotal },
     ui: {
       page,
@@ -882,6 +928,9 @@ const handleBulkItemChange = (
       isShippingOpen,
       setIsShippingOpen,
       sameAsBilling,
+      chargePage,
+setChargePage,
+chargeCount: formData.otherCharges.length,
       itemCount: formData.items.length,
       isExport:
         String(formData.invoiceType ?? "").trim().toLowerCase() === "export",
@@ -906,7 +955,10 @@ const handleBulkItemChange = (
       handleSubmit,
       setInvoiceFromApi,
       setFormDataFromInvoice,
-      handleBulkItemChange
+      handleBulkItemChange,
+      addOtherCharge,
+  handleOtherChargeChange,
+  removeOtherCharge,
     },
   };
 };
