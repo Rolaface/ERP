@@ -2,6 +2,7 @@ import React, { lazy} from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoutes";
 import Login from "../views/LoginPage";
+import LandingPage from "../views/LandingPage/LandingPage"
 import AppLayout from "../layout/AppLayout";
 const Dashboard = lazy(() => import("../views/DashbBoard"));
 const SalesModule = lazy(() => import("../views/Sales/Sales"));
@@ -36,7 +37,10 @@ const AppRoutes: React.FC = () => {
     <>
       <Toaster position="top-right" />
       <Routes>
+
+        <Route path="/" element={<LandingPage />} />
         {/* Public Routes */}
+
         <Route path="/login" element={<Login />} />
         <Route path="/reset" element={<ResetPassword />} />
 
