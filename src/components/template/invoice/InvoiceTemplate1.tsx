@@ -43,20 +43,19 @@ export const generateInvoicePDF = async (
   resultType: "save" | "bloburl" = "save",
 ) => {
   const doc = new jsPDF("p", "mm", "a4");
-  const W   = doc.internal.pageSize.width;   // 210
-  const H   = doc.internal.pageSize.height;  // 297
+  const W   = doc.internal.pageSize.width;   
+  const H   = doc.internal.pageSize.height;  
   const cur = invoice.currencyCode ?? "INR";
   const M   = 14;
   const MR  = W - M;
 
-  // Column widths (same pattern as Proforma)
+  // Column widths 
   const COL_WIDTHS = [6,16,26, 16, 14, 14, 14, 14, 14, 12, 12, 24];
   const TOTAL_W    = 24;
-  // AMOUNT_COL_X = M + sum of first 10 cols = M + (182 - 24) = M + 158
   const AMOUNT_COL_X = W - M - TOTAL_W;
 
   /* ══════════════════════════════════════════════════════════
-     WATERMARK  (identical to Proforma)
+     WATERMARK  
   ══════════════════════════════════════════════════════════ */
   const drawWatermark = () => {
     const name = (company?.companyName ?? "").toUpperCase();
@@ -71,7 +70,7 @@ export const generateInvoicePDF = async (
   drawWatermark();
 
   /* ══════════════════════════════════════════════════════════
-     ①  LOGO  (identical to Proforma)
+     ①  LOGO  
   ══════════════════════════════════════════════════════════ */
   const LOGO_SZ = 32;
   const LOGO_X  = M;
@@ -110,7 +109,7 @@ export const generateInvoicePDF = async (
   if (company?.contactInfo?.companyEmail)  infoLines.push(`Email: ${company.contactInfo.companyEmail}`);
   infoLines.forEach((l, i) => doc.text(l, TX, infoY + i * 5));
 
-  // ── Rounded-rect badge (same as Proforma) ────────────────
+
   const badgeLabel = invoice.invoiceType === "Export" ? "EXPORT INVOICE" : "TAX INVOICE";
 
   doc.setFont("helvetica", "bold"); doc.setFontSize(10);
@@ -230,7 +229,6 @@ export const generateInvoicePDF = async (
 
   /* ══════════════════════════════════════════════════════════
      ⑤  ITEMS TABLE — blue header, grid theme, white alt rows
-         Columns: # | Item | Batch | Packing | MFG | EXP | Qty | Rate | Disc% | Tax | Amount
   ══════════════════════════════════════════════════════════ */
   doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...INK_PALE);
   doc.text("ITEMS", M, afterMetaY + 7);
@@ -314,8 +312,7 @@ export const generateInvoicePDF = async (
 
   /* ══════════════════════════════════════════════════════════
      ⑥  TOTALS — right-aligned text labels + amount column cells
-         Rows: Sub Total (bold) | Discount (red) | Tax Total | Grand Total (bold black)
-         ── matches Proforma coloring exactly ──
+     +   CIF / Other Charges / FOB table to the left of labels
   ══════════════════════════════════════════════════════════ */
   const SEC_Y = tblEndY;
 
@@ -333,6 +330,101 @@ export const generateInvoicePDF = async (
   const taxTotal    = taxableRaw > 0 ? taxableRaw : 0;
   const grandTotal  = gross - discTotal + taxTotal;
 
+  // ── CIF / Other Charges / FOB ─────────────────────────────
+  const otherCharges = Number(invoice?.otherCharges ?? 0);
+  const cifValue     = grandTotal;               
+  const fobValue     = cifValue - otherCharges;  
+
+
+  const CIF_LBL_W   = 22;
+  const CIF_VAL_W   = 26;
+  const CIF_TABLE_W = CIF_LBL_W + CIF_VAL_W;  
+
+  autoTable(doc, {
+    startY: SEC_Y,
+    head:   [],
+    theme:  "grid",
+    alternateRowStyles: { fillColor: WHITE },
+    body: [
+      ["CIF",            `${fmt2(cifValue)} ${cur}`],
+      ["Other Charges",  `${fmt2(otherCharges)} ${cur}`],
+      ["FOB",            `${fmt2(fobValue)} ${cur}`],
+    ],
+    styles: {
+      fontSize: 8,
+      cellPadding: { top: 1.5, bottom: 1.5, left: 3, right: 3 },
+      lineColor: RULE,
+      lineWidth: 0.15,
+      textColor: [0, 0, 0] as any,
+    },
+    columnStyles: {
+      0: { cellWidth: CIF_LBL_W, halign: "left", fontStyle: "normal", fontSize: 8, textColor: [0, 0, 0] as any },
+      1: { cellWidth: CIF_VAL_W, halign: "center", fontSize: 8 },
+    },
+    didParseCell: (data) => {
+      if (data.row.index === 0) {
+        
+        data.cell.styles.fontStyle = "bold";
+      }
+     
+      if (data.row.index === 2) {
+       
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.textColor = [0, 0, 0] as any;
+      }
+    },
+    margin:     { left: M, right: W - M - CIF_TABLE_W },
+    tableWidth: CIF_TABLE_W,
+  });
+
+  // ── Currency Conversion Row (shown only when currency ≠ INR) 
+  if (cur !== "INR") {
+    const exchangeRate   = Number(invoice?.exchangeRt ?? 0);
+    const fobInINR       = fobValue * exchangeRate;
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY,
+      theme:  "grid",
+      alternateRowStyles: { fillColor: WHITE },
+      head: [[
+        `FOB ${cur}`,
+        `1 USD=INR`,
+        `Total Invoice Value`,
+      ]],
+      body: [[
+        fmt2(fobValue),
+        `${fmt2(exchangeRate)}`,
+        fmt2(fobInINR),
+      ]],
+      styles: {
+        fontSize: 6,
+        cellPadding: { top: 1.5, bottom: 1.5, left: 1.5, right: 1.5},
+        lineColor: RULE,
+        lineWidth: 0.15,
+        textColor: [0, 0, 0] as any,
+        halign: "center",
+      },
+      headStyles: {
+        fillColor: WHITE,      
+  textColor: [0, 0, 0],
+        fontStyle: "bold",
+        halign: "center",
+        fontSize: 6,
+        cellPadding: { top: 1.5, bottom: 1.5, left: 1.5, right: 1.5 },
+      },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 26 },
+        2: { cellWidth: 30 },
+      },
+      margin:     { left: M, right: W - M - CIF_TABLE_W },
+      tableWidth: CIF_TABLE_W,
+    });
+  }
+
+  const cifEndY = (doc as any).lastAutoTable.finalY;
+
+  // ── Existing label text + amount column ───────────────────
   const LABEL_X = AMOUNT_COL_X - 4;
   const ROW_H   = 6;
 
@@ -366,16 +458,13 @@ export const generateInvoicePDF = async (
     columnStyles: { 0: { cellWidth: TOTAL_W } },
     didParseCell: (data) => {
       if (data.row.index === 0) {
-        // Sub Total — bold
         data.cell.styles.fontStyle = "bold";
       }
       if (data.row.index === 2) {
-        // Discount — red tint (matches Proforma)
         data.cell.styles.textColor = [160, 60, 60] as any;
         data.cell.styles.fillColor = [252, 245, 245] as any;
       }
       if (data.row.index === 3) {
-        // Grand Total — bold black (matches Proforma)
         data.cell.styles.textColor = [0, 0, 0] as any;
         data.cell.styles.fontStyle = "bold";
       }
@@ -426,8 +515,8 @@ export const generateInvoicePDF = async (
   tLines.forEach(l => { tH += doc.splitTextToSize(l, termTW).length * 3.5; });
   const tBH = Math.max(SIGN_HDR_H + SIGN_BOX_H + 2, tH + 6);
 
-  // ── Resolve termsY (page-break aware) ────────────────────
-  let termsY = sumEndY;
+  // ── Resolve termsY — must clear BOTH the left CIF block and right totals block
+  let termsY = Math.max(cifEndY, sumEndY);
   if (termsY + tBH > H - 16) {
     doc.addPage(); drawWatermark(); termsY = 16;
   }
