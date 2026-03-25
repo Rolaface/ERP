@@ -1,16 +1,17 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
-
+ 
 import { API, ERP_BASE } from "../config/api";
 const api = createAxiosInstance(ERP_BASE);
 export const CustomerPaymentAPI = API.customer;
-
+ 
 /**
  * Payload for receive payment API
  */
 export interface ReceiveCustomerPaymentPayload {
+ 
   customer_name: string;
-
+ 
   invoice_number: string;
   payment_date: string;
   payment_mode: string;
@@ -23,43 +24,36 @@ export interface ReceiveCustomerPaymentPayload {
  * Receive payment for a customer invoice
  */
 export async function receiveCustomerPayment(
-  payload: ReceiveCustomerPaymentPayload,
+  payload: ReceiveCustomerPaymentPayload
 ): Promise<any> {
+ 
   const resp: AxiosResponse = await api.post(
     CustomerPaymentAPI.receivePayment,
-    payload,
+    payload
   );
-
+ 
   return resp.data;
 }
-
+ 
 export const getAllPayments = async (
-  partyType: "Customer" | "Supplier",
-  page: number,
-  pageSize: number,
+  partyType?: "Customer" | "Supplier",
+  page?: number,
+  pageSize?: number,
   search?: string,
+  partyName?: string  
 ): Promise<any> => {
   const resp: AxiosResponse = await api.get(
     CustomerPaymentAPI.getAllpayements,
     {
-      params: {
-        partyType,
-        page,
-        pageSize,
-        search,
-      },
-    },
+     params: {
+  ...(partyType && { partyType }),
+  ...(page && { page }),
+  ...(pageSize && { pageSize }),
+  ...(search && { search }),
+    ...(partyName && { partyName }),
+},
+    }
   );
-
-  return resp.data;
-};
-
-export const getPaymentById = async (paymentId: string): Promise<any> => {
-  const resp: AxiosResponse = await api.get(CustomerPaymentAPI.getPaymentById, {
-    params: {
-      payment_id: paymentId,
-    },
-  });
-
-  return resp.data;
+ 
+ return resp.data;
 };

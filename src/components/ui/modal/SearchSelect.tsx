@@ -1,15 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-interface Option {
+type Option = {
   label: string;
   value: string;
-}
+  meta?: Record<string, any>;
+};
 
 interface SearchSelectProps {
   label: string;
   value?: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, option: Option) => void;
   fetchOptions: (q: string) => Promise<Option[]>;
   placeholder?: string;
   disabled?: boolean;
@@ -52,7 +53,6 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
     if (!isTyping) return;
 
     if (!search) {
-      setOptions([]);
       return;
     }
 
@@ -111,12 +111,18 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
           onChange={(e) => {
             setIsTyping(true);
             setSearch(e.target.value);
-            onChange("");
+            setOpen(true);
+            onChange("", { label: "", value: "" });
           }}
-          onFocus={() => search && setOpen(true)}
-          className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0, ${
-            error ? "border-danger" : "border-theme"
-          }`}
+          onFocus={async () => {
+            setOpen(true);
+
+            // fetch all options on focus
+            const data = await fetchOptions("");
+            setOptions(data);
+          }}
+          className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0, ${error ? "border-danger" : "border-theme"
+            }`}
         />
         {error && <span className="text-danger text-[10px] mt-1">{error}</span>}
       </div>
@@ -142,7 +148,7 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
                 onClick={() => {
                   setIsTyping(false);
                   setJustSelected(true);
-                  onChange(opt.value);
+                  onChange(opt.value, opt);
                   setSearch(opt.label);
                   setOpen(false);
                 }}

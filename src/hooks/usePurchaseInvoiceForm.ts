@@ -88,17 +88,16 @@ export const usePurchaseInvoiceForm = ({
       try {
         const res = await getCompanyById(COMPANY_ID);
 
-        console.log("RAW COMPANY RESPONSE:", res);
-
+       
         const company =
           res?.data?.data || // if wrapped
           res?.data || // if semi wrapped
           res; // fallback
 
-        console.log("FINAL COMPANY:", company);
+       
 
         if (!company?.companyName) {
-          console.log("Company not found");
+         
           return;
         }
 

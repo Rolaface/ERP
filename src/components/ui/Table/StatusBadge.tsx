@@ -10,7 +10,7 @@ interface StatusBadgeProps {
 // Static — defined once, not recreated on every render
 const VARIANT_MAP: Record<BadgeVariant, string[]> = {
   success: ["active", "paid", "completed", "approved", "delivered", "verified"],
-  warning: ["pending", "processing", "on hold", "under review"],
+  warning: ["pending", "processing", "on hold", "under review","unpaid"],
   danger:  ["inactive", "overdue", "cancelled", "failed", "rejected", "expired"],
   info:    ["sent", "new", "open", "in progress","submitted"],
   draft:   ["draft", "archived"],

@@ -82,7 +82,6 @@ export const DetailsTab = ({
     <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
       {/* TOP FIELDS */}
       <div className="bg-app">
-        {/* Row 1: Supplier | Required By | Date | Status | Cost Center */}
         <div className="flex flex-wrap gap-x-2 gap-y-3 items-end mb-3">
           <div className="w-[240px]">
             <SupplierSelect
@@ -164,6 +163,16 @@ export const DetailsTab = ({
               value={form.warehouse || ""}
               onChange={handleTopWarehouseChange}
               required
+            />
+          </div>
+
+
+          <div className="w-[135px]">
+            <ModalInput
+              label="Reference Number"
+              name="referenceNumber"
+              value={form.referenceNumber}
+              onChange={onFormChange}
             />
           </div>
         </div>

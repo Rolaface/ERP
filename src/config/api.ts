@@ -1,57 +1,60 @@
 import { ENV } from "./env";
-
-export const ERP_BASE = ENV.apiBaseUrl;
+ 
+export const ERP_BASE =ENV.apiBaseUrl;
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
-
+ 
 export const API = {
-  loginApi: {
-    login: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
-    logout: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`,
+ 
+ 
+  loginApi:{
+    login : `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
+    logout : `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`
   },
-
-  /* =========================
+ 
+   /* =========================
    * DASHBOARD
    * ========================= */
   dashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.main.api.summary`,
   },
-
-  /* =========================
+ 
+ 
+   /* =========================
    * SALES DASHBOARD
    * ========================= */
   salesDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.sale.api.summary`,
   },
-
+ 
   /* =========================
    * CUSTOMER DASHBOARD
    * ========================= */
   customerDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.customer.api.summary`,
   },
-
+ 
   /* =========================
    * PROCUREMENT DASHBOARD
    * ========================= */
   procurementDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.procurement.api.summary`,
   },
-
+ 
   /* =========================
    * INVENTORY DASHBOARD
    * ========================= */
   inventoryDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.inventory.api.summary`,
   },
-
+ 
   /* =========================
    * HR DASHBOARD
    * ========================= */
   hrDashboard: {
     summary: `${ERP_BASE}/api/method/hrms.dashboards.main.api.summary`,
   },
-
+ 
   /* =========================
    * COMPANY
    * ========================= */
@@ -66,19 +69,38 @@ export const API = {
     updateCompanyFiles: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_files`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
-  /* =========================
-   * ACCOUNTING
-   * ========================= */
-  accounting: {
-    getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
-    getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
-    getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
-    getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
-    getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`,
-    getAllPayables: `${ERP_BASE}/api/method/custom_api.api.accounts_payable.get_accounts_payable`,
-    getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
-  },
-
+ 
+Account:{
+  createnewBankaccount:`${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
+  getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
+  getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
+  updateStatus: `${ERP_BASE}/api/method/custom_api.api.bank_account.set_bank_account_status`,
+  ModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.create`,
+  GetModeOfPayment : `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get`,
+  GetDefaultAccounts : `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get_default_accounts`,
+  UpdateStatusModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.update`,
+  GetPartyDetails: `${ERP_BASE}/api/method/custom_api.api.search.get_party_details`,
+  getBankAccountMain: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
+  getLedgerAccount:`${ERP_BASE}/api/method/custom_api.api.payment.get_ledger_account`,
+  getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
+  createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`
+},
+ 
+accounting:{
+  createCOA:`${ERP_BASE}/api/method/erpnext.accounts.utils.add_ac`,
+  getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
+  getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
+  getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
+  getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
+  getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`
+},
+CurrencyExchange:{
+  create:`${ERP_BASE} /api/method/custom_api.api.currency_exchange.create_currency_exchange`,
+  getAll:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
+  update:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.update_currency_exchange?`,
+  delete:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.delete_currency_exchange`,
+ 
+},
   /* =========================
    * CUSTOMER
    * ========================= */
@@ -91,9 +113,8 @@ export const API = {
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
-    getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
   },
-
+ 
   /* =========================
    * EMPLOYEE / HRMS
    * ========================= */
@@ -106,8 +127,10 @@ export const API = {
     updateDocuments: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.manage_employee_documents`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
+   
+ 
   },
-
+ 
   /* =========================
    * ITEM
    * ========================= */
@@ -118,7 +141,7 @@ export const API = {
     update: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.update_item_api`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.delete_item_by_id`,
   },
-
+ 
   /* =========================
    * ITEM GROUP
    * ========================= */
@@ -129,7 +152,7 @@ export const API = {
     update: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.update_item_group_api`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.delete_item_group`,
   },
-
+ 
   /* =========================
    * LEAVE / HR
    * ========================= */
@@ -147,14 +170,14 @@ export const API = {
     getBalance: `${ERP_BASE}/api/method/hrms.napsa_client.leave_balance.api.get_employee_leave_balance_report`,
     getHolidays: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.get_holidays`,
   },
-
+ 
   holidays: {
     getAll: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.get_holidays`,
     create: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.create_holiday`,
     update: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.update_holiday`,
     delete: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.delete_holiday`,
   },
-
+ 
   /* =========================
    * MODULES (SYSTEM)
    * ========================= */
@@ -165,7 +188,7 @@ export const API = {
     update: `${ERP_BASE}/api/method/erpnext.zra_client.company-setup.modules.update_module_by_key_api`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.company-setup.modules.delete_module_by_key_api`,
   },
-
+ 
   /* =========================
    * PROFORMA
    * ========================= */
@@ -176,7 +199,7 @@ export const API = {
     updateStatus: `${ERP_BASE}/api/method/erpnext.proforma.api.update_proforma_status`,
     delete: `${ERP_BASE}/api/method/erpnext.proforma.api.delete_proforma`,
   },
-
+ 
   /* =========================
    * QUOTATION
    * ========================= */
@@ -190,7 +213,7 @@ export const API = {
     updateAddress: `${ERP_BASE}/api/method/erpnext.quotation.api.update_quotation_address`,
     delete: `${ERP_BASE}/api/method/erpnext.quotation.api.delete_quotation`,
   },
-
+ 
   /* =========================
    * SALES / INVOICES
    * ========================= */
@@ -198,21 +221,16 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_sales_invoice`,
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_sales_invoice_by_id`,
     create: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_sales_invoice`,
-
+ 
     updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.update_invoice_status`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.delete_sales_invoice`,
     createCreditNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_credit_note_from_sales_invoice`,
     createDebitNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_debit_note_from_invoice`,
     getCreditNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_credit_notes`,
     getDebitNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_debit_notes`,
-    editInvoice: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.edit_sales_invoice`,
+    editInvoice : `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.edit_sales_invoice`,
   },
-
-  analytics: {
-    getSalesAnalytics: `${ERP_BASE}/api/method/custom_api.api.sales_analytics.get_sales_analytics`,
-    getPurchaseAnalytics: `${ERP_BASE}/api/method/custom_api.api.purchase_analytics.get_purchase_analytics`,
-  },
-
+ 
   /* =========================
    * STOCK
    * ========================= */
@@ -221,12 +239,12 @@ export const API = {
     stockReport: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_batch_wise_stock_report`,
     getbyId: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_stock_by_id`,
     //  getAllStockItems:'${ERP_BASE}/api'
-
+ 
     create: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.create_item_stock_api`,
     correct: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.correct_stock`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.delete_stock_entry`,
   },
-
+ 
   /* =========================
    * WAREHOUSE
    * ========================= */
@@ -235,9 +253,9 @@ export const API = {
     create: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.create_warehouse_api`,
     update: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.update_warehouse_api`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.delete_warehouse_api`,
-    getAllWarehouses: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
+    getAllWarehouses : `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
   },
-
+ 
   /* =========================
    * IMPORT
    * ========================= */
@@ -246,30 +264,30 @@ export const API = {
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.item.imports.api.get_import_item_by_id`,
     updateAutomatic: `${ERP_BASE}/api/method/erpnext.zra_client.item.imports.api.update_stock_automatic`,
   },
-
+ 
   /* =========================
    * PURCHASE ORDER
    * ========================= */
   purchaseOrder: {
     getAll: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.get_purchase_orders`,
-
+ 
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.get_purchase_order`,
-
+ 
     create: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.create_purchase_order`,
-
+ 
     update: `${ERP_BASE}/api/method/erpnext.zra_client.update_purchase_order`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.update_po_status.update_purchase_order_status`,
   },
   //purchase invoice
   purchaseIvoice: {
     getAll: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.get_all_purchase_invoices`,
-
+ 
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.get_purchase_invoice_by_id`,
     create: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.create_purchase_invoice`,
-
+ 
     updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.update_purchase_invoices_status`,
   },
-
+ 
   /* =========================
    * SUPPLIER
    * ========================= */
@@ -280,15 +298,16 @@ export const API = {
     update: `${ERP_BASE}/api/method/erpnext.supplier.api.update_supplier`,
     delete: `${ERP_BASE}/api/method/erpnext.supplier.api.delete_supplier`,
     getStatement: `${ERP_BASE}/api/method/erpnext.supplier.statement.api.get_supplier_statement`,
-    CreatePayment: `${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
+    CreatePayment:`${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
+ 
   },
-
+ 
   places: {
     getCountry: `${CODES_BASE}/countries/`,
     getProvinces: `${CODES_BASE}/provinces/`,
     getTown: `${CODES_BASE}/towns/`,
   },
-
+ 
   /* =========================
    * LOOKUPS / CODES
    * ========================= */
@@ -298,7 +317,7 @@ export const API = {
     getUnitOfMeasure: `${CODES_BASE}/unit-of-measure-list/`,
     getItemClasses: `${CODES_BASE}/item-class-list/`,
   },
-
+ 
   /* =========================
    * EXCHANGE RATE
    * ========================= */
@@ -309,11 +328,6 @@ export const API = {
     getUnitOfMeasure: `${ERP_BASE}/api/resource/UOM?limit_start=0&limit_page_length=500`,
     getItemClasses: `${ERP_BASE}/api/item-class-list/`,
     getCountries: `${ERP_BASE}/api/resource/Country?fields=["name","country_name","code"]&limit_page_length=300`,
-    getPackagingUnits: `${ERP_BASE}/api/method/erpnext.packaging_unit.get_all_packaging_units`,
-    getCompanyPayableAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_payable_accounts`,
-    getCompanyRecievableAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_receivable_accounts`,
-    getCompanyCostCenter: `${ERP_BASE}/api/method/custom_api.api.search.get_cost_centers`,
-    getCustomer: `${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
-    getSupplier: `${ERP_BASE}/api/method/custom_api.api.search.get_suppliers`,
+    getPackagingUnits : `${ERP_BASE}/api/method/erpnext.packaging_unit.get_all_packaging_units`
   },
 } as const;

@@ -90,3 +90,17 @@ export async function deleteCompanyBankAccount(
 
   return resp.data;
 }
+export async function getCompanyBankAccounts():Promise<any> {
+  const resp: AxiosResponse = await api.get(
+    CompanyAPI.getBankAccounts,
+  );
+
+  return resp.data;
+}
+export async function getCompanyAccounts():Promise<any> {
+  const resp: AxiosResponse = await api.get(
+    CompanyAPI.getCompanyAccounts,
+  );
+
+  return resp.data;
+}

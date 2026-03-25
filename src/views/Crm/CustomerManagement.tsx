@@ -21,6 +21,7 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import Swal from "sweetalert2";
+import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 
 interface Props {
   onAdd: () => void;
@@ -42,6 +43,8 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [totalItems, setTotalItems] = useState(0);
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<any | null>(null);
 
 
   const fetchCustomers = async () => {
@@ -88,6 +91,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     }
   };
 
+  const handleMakePayment = (customer: CustomerSummary) => {
+    setSelectedCustomerForPayment(customer);
+    setPaymentModalOpen(true);
+  };
 
   const handleDelete = async (
     customerId: string,
@@ -232,6 +239,12 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
           <ActionMenu
             onEdit={(e) => handleEditCustomer(c.id, e as any)}
             onDelete={(e) => handleDelete(c.id, e as any)}
+            customActions={[
+              {
+                label: "Receive Payment",
+                onClick: () => handleMakePayment(c),
+              },
+            ]}
           />
         </ActionGroup>
       ),
@@ -297,6 +310,23 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         onSubmit={handleCustomerSaved}
         initialData={editCustomer}
         isEditMode={!!editCustomer}
+      />
+      <PaymentEntryModal
+        isOpen={paymentModalOpen}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setSelectedCustomerForPayment(null);
+        }}
+        defaultValues={
+          selectedCustomerForPayment
+            ? {
+              paymentType: "Receive",
+              partyType: "Customer",
+              partyName: selectedCustomerForPayment.name,
+              partyId: selectedCustomerForPayment.id,
+            }
+            : undefined
+        }
       />
     </div>
   );

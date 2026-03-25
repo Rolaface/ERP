@@ -1,9 +1,8 @@
 import React from "react";
-import { Building2, DollarSign, MapPin , FileText } from "lucide-react";
+import { Building2, DollarSign, MapPin, FileText } from "lucide-react";
 import Modal from "../../ui/modal/modal";
 import { Button } from "../../ui/modal/formComponent";
 import { SupplierInfoTab } from "./SupplierInfoTab";
-import { PaymentInfoTab } from "./PaymentInfoTab";
 import { useSupplierForm } from "../../../hooks/useSupplierForm";
 import type {
   SupplierTab,
@@ -13,6 +12,7 @@ import type {
 import { AddressTab } from "./AddressTab";
 import TermsAndCondition from "../../TermsAndCondition";
 import type { TermSection } from "../../../types/termsAndCondition";
+import { PaymentInfoTab } from "./PaymentInfoTab";
 
 interface SupplierModalProps {
   isOpen: boolean;
@@ -20,11 +20,12 @@ interface SupplierModalProps {
   onSubmit?: (data: SupplierFormData) => void;
   initialData?: Supplier | null;
   isEditMode?: boolean;
-  existingSupplierCodes?: string[]; 
+  existingSupplierCodes?: string[];
 }
+
 const tabs: { key: SupplierTab; icon: typeof Building2; label: string }[] = [
   { key: "supplier", icon: Building2, label: "Supplier" },
-  { key: "payment", icon: DollarSign, label: "Payment" },
+  { key: "payment", icon: DollarSign, label: "Bank Details" },
   { key: "address", icon: MapPin, label: "Address" },
   { key: "terms", icon: FileText, label: "Terms" },
 ];
@@ -35,7 +36,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   onSubmit,
   initialData,
   isEditMode = false,
-  existingSupplierCodes = [] 
+  existingSupplierCodes = [],
 }) => {
   const {
     form,
@@ -47,13 +48,13 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     reset,
     handleNext,
     errors,
-    handleTermsChange
+    handleTermsChange,
   } = useSupplierForm({
     initialData,
     isEditMode,
     onSuccess: onSubmit,
     isOpen,
-    existingSupplierCodes
+    existingSupplierCodes,
   });
 
   const footer = (
@@ -66,28 +67,28 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
         <Button variant="secondary" onClick={reset} type="button">
           Reset
         </Button>
-       {activeTab !== "terms" ? (
-  <Button
-  variant="primary"
-  type="button"
-  onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleNext();
-  }}
->
-  Next →
-</Button>
-) : (
-  <Button
-    variant="primary"
-    loading={loading}
-    type="submit"
-    form="supplierForm"
-  >
-    {isEditMode ? "Update Supplier" : "Save Supplier"}
-  </Button>
-)}
+        {activeTab !== "terms" ? (
+          <Button
+            variant="primary"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleNext();
+            }}
+          >
+            Next →
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            loading={loading}
+            type="submit"
+            form="supplierForm"
+          >
+            {isEditMode ? "Update Supplier" : "Save Supplier"}
+          </Button>
+        )}
       </div>
     </>
   );
@@ -128,7 +129,6 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               : "text-muted border-b-[3px] border-transparent hover:text-main"
           }`}
               >
-                {/* LABEL */}
                 {label}
               </button>
             ))}
@@ -136,7 +136,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="gap-6  p-4">
+        <div className="gap-6 p-4 flex-1 min-h-0 overflow-hidden">
           {activeTab === "supplier" && (
             <SupplierInfoTab
               form={form}
@@ -149,20 +149,22 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               form={form}
               onChange={handleChange}
               errors={errors}
+              isEditMode={isEditMode}
+              partyType="Supplier"
+              partyName={form.supplierName || initialData?.supplierName || ""}
+              currency={form.currency}
             />
           )}
           {activeTab === "address" && (
             <AddressTab form={form} onChange={handleChange} errors={errors} />
           )}
           {activeTab === "terms" && (
-  <TermsAndCondition
-    terms={form.terms?.buying as TermSection}
-    setTerms={(updated) =>
-      handleTermsChange("buying", updated)
-    }
-    type="buying"
-  />
-)}
+            <TermsAndCondition
+              terms={form.terms?.buying as TermSection}
+              setTerms={(updated) => handleTermsChange("buying", updated)}
+              type="buying"
+            />
+          )}
         </div>
       </form>
     </Modal>

@@ -26,7 +26,7 @@ export async function getAllSalesInvoices(
   page: number = 1,
   page_size: number = 10,
   sortBy: string = "",
-  sortOrder: "asc" | "desc" = "asc",
+  sortOrder: "asc" | "desc" = "asc",   
   search?: string,
   customer?: string,
   minOutstanding?: number,

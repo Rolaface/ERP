@@ -28,6 +28,12 @@ export interface Invoice {
   industryBases?: string;
   items: InvoiceItem[];
   terms: InvoiceTerms;
+ shippingCharges?:number;
+ insuranceCharges?:number;
+  invoiceCharges: {
+    charge_type: string;
+    amount: string;
+  }[];
 }
 
 export interface InvoiceSummary {
@@ -40,7 +46,7 @@ export interface InvoiceSummary {
   dueDate: string | null;
   dateOfInvoice: Date;
   total: number;
-  OutStandingAmount: number;
+  outstandingAmount: number;
   totalDiscount: string;
   totalTax: string;
   invoiceStatus: InvoiceStatus;

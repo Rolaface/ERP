@@ -7,9 +7,31 @@ const api = createAxiosInstance(ERP_BASE);
 
 export const AccountingAPI = API.accounting;
 
+
+export interface CreateCOAPayload {
+  account_name: string;
+  company: string;
+  is_group: 0 | 1;
+  account_number?: string;
+  account_currency?: string;
+  account_type?: string;
+  parent?: string;
+  root_type?: string;
+  // hardcoded fields sent from frontend
+  doctype: "Account";
+  is_root: "false";
+}
+
+export async function createChartOfAccount(payload: CreateCOAPayload): Promise<any> {
+  const resp: AxiosResponse = await api.post(AccountingAPI.createCOA, payload);
+  return resp.data;
+}
+
 /**
  * Get Chart of Accounts
  */
+
+
 export async function getChartOfAccounts(): Promise<any> {
   const resp: AxiosResponse = await api.get(AccountingAPI.getCOA);
 

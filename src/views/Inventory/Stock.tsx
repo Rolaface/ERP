@@ -13,61 +13,63 @@ import {
 } from "../../api/stockApi";
 import { ChevronRight, ChevronDown, Upload } from "lucide-react";
 import StockCorrectionModal from "../../components/inventory/stock/Stockcorrectionmodal";
-import BulkUploadModal      from "../../components/inventory/stock/BulkUploadModal";
-import ViewStockModal       from "../../components/inventory/ViewStockModal";
-import DeleteModal          from "../../components/actionModal/DeleteModal";
-import Table                from "../../components/ui/Table/Table";
-import type { Column }      from "../../components/ui/Table/type";
+import BulkUploadModal from "../../components/inventory/stock/BulkUploadModal";
+import ViewStockModal from "../../components/inventory/ViewStockModal";
+import DeleteModal from "../../components/actionModal/DeleteModal";
+import Table from "../../components/ui/Table/Table";
+import type { Column } from "../../components/ui/Table/type";
 import type { ItemSummary, Item } from "../../types/item";
 
 const Items: React.FC = () => {
-  const [items,       setItems]       = useState<any[]>([]);
-  const [searchTerm,  setSearchTerm]  = useState("");
-  const [loading,     setLoading]     = useState(true);
+  const [items, setItems] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const [page,        setPage]        = useState(1);
-  const [pageSize,    setPageSize]    = useState(10);
-  const [totalPages,  setTotalPages]  = useState(1);
-  const [totalItems,  setTotalItems]  = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
-  const [showBulkModal,    setShowBulkModal]    = useState(false);
-  const [showViewModal,    setShowViewModal]     = useState(false);
-  const [viewStockData,    setViewStockData]     = useState<any>(null);
-  const [initialLoad,      setInitialLoad]       = useState(true);
-  const [deleteModalOpen,  setDeleteModalOpen]   = useState(false);
-  const [itemToDelete,     setItemToDelete]      = useState<ItemSummary | null>(null);
-  const [deleting,         setDeleting]          = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewStockData, setViewStockData] = useState<any>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ItemSummary | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // ── Stock Correction modal state ──────────────────────────────────────────
   const [showStockCorrection, setShowStockCorrection] = useState(false);
-  const [selectedBatch,       setSelectedBatch]       = useState<any>(null);
+  const [selectedBatch, setSelectedBatch] = useState<any>(null);
 
   // ─── FETCH ────────────────────────────────────────────────────────────────
 
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const res  = await getStockReport(page, pageSize, searchTerm);
+      const res = await getStockReport(page, pageSize, searchTerm);
       const list = res?.message?.data || [];
 
       const mapped = list.map((item: any) => ({
-        id:             item.item_code   || "",
-        itemCode:       item.item_code   || "",
-        itemName:       item.item_name   || "",
-        description:    item.description ?? "-",
-        packingUnit:    item.packingUnit  || "-",
-        packingSize:    item.packingSize  || "-",
-        totalQty:       item.total_bal_qty  ?? 0,
-        totalBuyValue:  Number(item.total_buy_value  ?? 0),
+        id: item.item_code || "",
+        itemCode: item.item_code || "",
+        itemName: item.item_name || "",
+        description: item.description ?? "-",
+        packingUnit: item.packingUnit || "-",
+        packingSize: item.packingSize || "-",
+        totalQty: item.total_bal_qty ?? 0,
+        totalBuyValue: Number(item.total_buy_value ?? 0),
         totalSellValue: Number(item.total_sell_value ?? 0),
-        batches:        item.batches || [],
+        buyCurrency: item.buy_currency,
+        sellCurrency: item.sell_currency,
+        batches: item.batches || [],
       }));
 
       setItems(mapped);
       setTotalItems(res?.message?.pagination?.total_records ?? 0);
-      setTotalPages(res?.message?.pagination?.total_pages   ?? 1);
+      setTotalPages(res?.message?.pagination?.total_pages ?? 1);
     } catch (err) {
       console.error(err);
       showApiError("Failed to load stock entries");
@@ -85,11 +87,11 @@ const Items: React.FC = () => {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
 
   /** Opens StockCorrectionModal pre-filled with the batch's data */
-const handleStockCorrection = (batch: any) => {
-  console.log("Opening modal", batch);
-  setSelectedBatch(batch);
-  setShowStockCorrection(true);
-};
+  const handleStockCorrection = (batch: any) => {
+    console.log("Opening modal", batch);
+    setSelectedBatch(batch);
+    setShowStockCorrection(true);
+  };
   const handleBatchDelete = (batch: any) => {
     setItemToDelete({ id: batch.batch_no, ...batch });
     setDeleteModalOpen(true);
@@ -151,7 +153,7 @@ const handleStockCorrection = (batch: any) => {
       render: (row) => (
         <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
           {expandedRows[row.id]
-            ? <ChevronDown  size={16} strokeWidth={2.5} className="text-primary" />
+            ? <ChevronDown size={16} strokeWidth={2.5} className="text-primary" />
             : <ChevronRight size={16} strokeWidth={2.5} />}
         </span>
       ),
@@ -161,16 +163,16 @@ const handleStockCorrection = (batch: any) => {
       header: "Item Code",
       render: (row) => <span className="font-mono text-xs font-medium text-main">{row.itemCode}</span>,
     },
-    { key: "itemName",    header: "Item Name",    render: (row) => row.itemName    },
-    { key: "description", header: "Description",  render: (row) => row.description },
+    { key: "itemName", header: "Item Name", render: (row) => row.itemName },
+    { key: "description", header: "Description", render: (row) => row.description },
     {
       key: "packingUnit",
       header: "Packing Unit",
       render: (row) => `${row.packingUnit ?? "-"} × ${row.packingSize ?? "-"}`,
     },
-    { key: "totalQty",       header: "Qty",             align: "right", render: (row) => row.totalQty },
-    { key: "totalBuyValue",  header: "Total Buy Value",  align: "right", render: (row) => `INR ${row.totalBuyValue.toLocaleString("en-IN")}` },
-    { key: "totalSellValue", header: "Total Sell Value", align: "right", render: (row) => `INR ${row.totalSellValue.toLocaleString("en-IN")}` },
+    { key: "totalQty", header: "Qty", align: "right", render: (row) => row.totalQty },
+    { key: "totalBuyValue", header: "Total Buy Value", align: "right", render: (row) => `${row.buyCurrency} ${row.totalBuyValue.toLocaleString("en-IN")}` },
+    { key: "totalSellValue", header: "Total Sell Value", align: "right", render: (row) => `${row.sellCurrency} ${row.totalSellValue.toLocaleString("en-IN")}` },
   ];
 
   // ─── RENDER ───────────────────────────────────────────────────────────────
@@ -184,14 +186,14 @@ const handleStockCorrection = (batch: any) => {
         onRowClick={(row) => toggleRow(row.id)}
         expandedRowRender={(row) =>
           expandedRows[row.id] ? (
-           <BatchTable
-      batches={row.batches || []}
-      itemCode={row.itemCode}
-      itemName={row.itemName}
-      onEdit={handleStockCorrection}
-      onDelete={handleBatchDelete}
-      onLedger={handleBatchLedger}
-    />
+            <BatchTable
+              batches={row.batches || []}
+              itemCode={row.itemCode}
+              itemName={row.itemName}
+              onEdit={handleStockCorrection}
+              onDelete={handleBatchDelete}
+              onLedger={handleBatchLedger}
+            />
           ) : null
         }
         enableColumnSelector

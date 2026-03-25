@@ -4,7 +4,7 @@ import {
   updateInvoiceStatus,
   getSalesInvoiceById,
   deleteSalesInvoiceById,
-  editSalesInvoice
+  editSalesInvoice,
 } from "../../api/salesApi";
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
@@ -20,14 +20,18 @@ import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { getCompanyById } from "../../api/companySetupApi";
 import type { Company } from "../../types/company";
-import { showApiError, showSuccess, showLoading, closeSwal,  } from "../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
 import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import Swal from "sweetalert2";
 import InvoiceModal from "../../components/sales/InvoiceModal";
-import CustomerPaymentModal from "../../components/sales/CustomerPaymentModal";
-
+import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   Draft: ["Rejected", "Approved"],
@@ -39,15 +43,12 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
 
-
 interface InvoiceTableProps {
   onAddInvoice?: () => void;
   onExportInvoice?: () => void;
 }
 
-
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
-
   // ── Data
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +77,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [totalItems, setTotalItems] = useState(0);
 
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [paymentInvoice, setPaymentInvoice] = useState<InvoiceSummary | null>(null);
+  const [paymentInvoice, setPaymentInvoice] = useState<InvoiceSummary | null>(
+    null,
+  );
 
   // ── Search (server)
   const [searchTerm, setSearchTerm] = useState("");
@@ -85,7 +88,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ── Reset page when search changes
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // ── Fetch company once
   useEffect(() => {
@@ -100,7 +105,13 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      const res = await getAllSalesInvoices(page, pageSize, sortBy, sortOrder, searchTerm);
+      const res = await getAllSalesInvoices(
+        page,
+        pageSize,
+        sortBy,
+        sortOrder,
+        searchTerm,
+      );
       if (!res || res.status_code !== 200) return;
 
       const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
@@ -112,7 +123,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         dueDate: inv.dueDate,
         dateOfInvoice: new Date(inv.dateOfInvoice),
         total: Number(inv.totalAmount),
-         OutStandingAmount: inv.OutStandingAmount ?? 0,
+        outstandingAmount: inv.outstandingAmount ?? 0,
         totalTax: inv.totalTax,
         invoiceStatus: inv.invoiceStatus,
         invoiceTypeParent: inv.invoiceTypeParent,
@@ -131,7 +142,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   useEffect(() => {
     fetchInvoices();
   }, [page, pageSize, sortBy, sortOrder, searchTerm]);
-
 
   const handleSortChange = ({
     sortBy: colKey,
@@ -159,7 +169,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   };
 
-
   const handleReceivePayment = (inv: InvoiceSummary) => {
     setPaymentInvoice(inv);
     setPaymentOpen(true);
@@ -172,7 +181,13 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       let total = 1;
 
       do {
-        const res = await getAllSalesInvoices(current, 100, sortBy, sortOrder, searchTerm);
+        const res = await getAllSalesInvoices(
+          current,
+          100,
+          sortBy,
+          sortOrder,
+          searchTerm,
+        );
 
         if (res?.status_code === 200) {
           const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
@@ -222,7 +237,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
       setEditInvoice(res.data);
       setEditOpen(true);
-
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -247,23 +261,24 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           Type: inv.invoiceType,
           Customer: inv.customerName,
           Date: inv.dateOfInvoice.toLocaleDateString(),
-          "Due Date": inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "",
+          "Due Date": inv.dueDate
+            ? new Date(inv.dueDate).toLocaleDateString()
+            : "",
           Amount: inv.total,
-          OutStanding:inv.OutStandingAmount,
+          OutStanding: inv.outstandingAmount,
           Currency: inv.currency,
           Status: inv.invoiceStatus,
-        }))
+        })),
       );
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Sales Invoices");
 
       saveAs(
-        new Blob(
-          [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-          { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-        ),
-        "Sales_Invoices.xlsx"
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "Sales_Invoices.xlsx",
       );
 
       closeSwal();
@@ -273,7 +288,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       showApiError(error);
     }
   };
-
 
   // ── Drawer: open + fetch (same as proforma handleView)
   const handleView = async (invoiceNumber: string, e?: React.MouseEvent) => {
@@ -297,7 +311,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       if (!company) return;
       const res = await getSalesInvoiceById(invoiceNumber);
       if (!res || res.status_code !== 200) return;
-      const blobUrl = await generateInvoicePDF(res.data as Invoice, company, "bloburl");
+      const blobUrl = await generateInvoicePDF(
+        res.data as Invoice,
+        company,
+        "bloburl",
+      );
       setDrawerPdfUrl(blobUrl);
     } catch (err) {
       showApiError(err);
@@ -307,7 +325,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   };
 
   // ── PDF preview modal (table row action — kept, do not remove)
-  const handlePreviewPDF = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
+  const handlePreviewPDF = async (
+    inv: InvoiceSummary,
+    e?: React.MouseEvent,
+  ) => {
     e?.stopPropagation();
     try {
       showLoading("Preparing invoice preview...");
@@ -325,7 +346,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         return;
       }
 
-      const blobUrl = await generateInvoicePDF(invoiceRes.data, company, "bloburl");
+      const blobUrl = await generateInvoicePDF(
+        invoiceRes.data,
+        company,
+        "bloburl",
+      );
       closeSwal();
       setPdfUrl(blobUrl);
       setSelectedInvoice(invoiceRes.data);
@@ -371,52 +396,51 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setPdfOpen(false);
   };
 
-const handleRowStatusChange = async (
-  invoiceNumber: string,
-  status: InvoiceStatus,
-) => {
+  const handleRowStatusChange = async (
+    invoiceNumber: string,
+    status: InvoiceStatus,
+  ) => {
+    if (CRITICAL_STATUSES.includes(status)) {
+      const result = await Swal.fire({
+        icon: "warning",
+        title: "Confirm Status Change",
+        text: `Mark invoice ${invoiceNumber} as ${status}?`,
+        showCancelButton: true,
+        confirmButtonColor: "#22c55e",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes",
+        cancelButtonText: "Cancel",
+      });
 
-  if (CRITICAL_STATUSES.includes(status)) {
-    const result = await Swal.fire({
-      icon: "warning",
-      title: "Confirm Status Change",
-      text: `Mark invoice ${invoiceNumber} as ${status}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#22c55e",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes",
-      cancelButtonText: "Cancel",
-    });
-
-    if (!result.isConfirmed) return;
-  }
-
-  try {
-    showLoading("Updating invoice status...");
-
-    const res = await updateInvoiceStatus(invoiceNumber, status);
-
-    closeSwal();
-
-    if (!res || res.status_code !== 200) {
-      showApiError(res?.message || "Failed to update invoice status");
-      return;
+      if (!result.isConfirmed) return;
     }
 
-    setInvoices((prev) =>
-      prev.map((inv) =>
-        inv.invoiceNumber === invoiceNumber
-          ? { ...inv, invoiceStatus: status }
-          : inv
-      )
-    );
+    try {
+      showLoading("Updating invoice status...");
 
-    showSuccess(`Invoice marked as ${status}`);
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+      const res = await updateInvoiceStatus(invoiceNumber, status);
+
+      closeSwal();
+
+      if (!res || res.status_code !== 200) {
+        showApiError(res?.message || "Failed to update invoice status");
+        return;
+      }
+
+      setInvoices((prev) =>
+        prev.map((inv) =>
+          inv.invoiceNumber === invoiceNumber
+            ? { ...inv, invoiceStatus: status }
+            : inv,
+        ),
+      );
+
+      showSuccess(`Invoice marked as ${status}`);
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
   const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
@@ -446,7 +470,7 @@ const handleRowStatusChange = async (
 
       closeSwal();
       setInvoices((prev) =>
-        prev.filter((inv) => inv.invoiceNumber !== invoiceNumber)
+        prev.filter((inv) => inv.invoiceNumber !== invoiceNumber),
       );
       showSuccess("Invoice deleted successfully");
     } catch (err) {
@@ -515,20 +539,19 @@ const handleRowStatusChange = async (
           {inv.total.toLocaleString()} {inv.currency}
         </code>
       ),
-
     },
     {
-  key: "OutStandingAmount",
-  header: "OutStanding",
-  align: "right",
-  sortable: true,
-  render: (inv) => (
-    <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
-      {(inv.OutStandingAmount ?? 0).toLocaleString()} {inv.currency}
-    </code>
-  ),
-},
-   
+      key: "outstandingAmount",
+      header: "OutStanding",
+      align: "right",
+      sortable: true,
+      render: (inv) => (
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
+          {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
+        </code>
+      ),
+    },
+
     {
       key: "invoiceStatus",
       header: "Status",
@@ -564,29 +587,31 @@ const handleRowStatusChange = async (
             customActions={[
               ...(inv.invoiceStatus === "Approved"
                 ? [
-                  {
-                    label: "Receive Payment",
-                    onClick: () => handleReceivePayment(inv),
-                  },
-                ]
+                    {
+                      label: "Receive Payment",
+                      onClick: () => handleReceivePayment(inv),
+                    },
+                  ]
                 : []),
 
               {
                 label: "View PDF",
                 onClick: () => handlePreviewPDF(inv),
               },
-              ...((STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
-                label: `Mark as ${status}`,
-                danger: status === "Paid",
-                onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
-              }))),
+              ...(STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
+                (status) => ({
+                  label: `Mark as ${status}`,
+                  danger: status === "Paid",
+                  onClick: () =>
+                    handleRowStatusChange(inv.invoiceNumber, status),
+                }),
+              ),
             ]}
           />
         </ActionGroup>
       ),
     },
   ];
-
 
   return (
     <div className="p-8">
@@ -597,7 +622,10 @@ const handleRowStatusChange = async (
         loading={loading || initialLoad}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         enableAdd
         addLabel="Add Invoice"
         onAdd={onAddInvoice}
@@ -609,14 +637,17 @@ const handleRowStatusChange = async (
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
       />
 
-      {/* ── Drawer modal (same as ProformaDetailModal usage) ── */}
+      {/* ── Drawer modal ── */}
       <InvoiceDetailModal
         open={drawerOpen}
         data={drawerData}
@@ -628,13 +659,17 @@ const handleRowStatusChange = async (
         }}
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
-        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.invoiceNumber)}
+        onViewPdf={() =>
+          drawerData && handleDrawerPdf(drawerData.invoiceNumber)
+        }
         onDownload={() =>
-          drawerData && company &&
+          drawerData &&
+          company &&
           generateInvoicePDF(drawerData as unknown as Invoice, company, "save")
         }
         onClosePdf={() => {
-          if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl);
+          if (drawerPdfUrl?.startsWith("blob:"))
+            URL.revokeObjectURL(drawerPdfUrl);
           setDrawerPdfUrl(null);
         }}
       />
@@ -646,10 +681,31 @@ const handleRowStatusChange = async (
         pdfUrl={pdfUrl}
         onClose={handleClosePdf}
         onDownload={() =>
-          selectedInvoice && company &&
+          selectedInvoice &&
+          company &&
           generateInvoicePDF(selectedInvoice, company, "save")
         }
       />
+      <PaymentEntryModal
+        isOpen={paymentOpen}
+        onClose={() => {
+          setPaymentOpen(false);
+          setPaymentInvoice(null);
+        }}
+        defaultValues={
+          paymentInvoice
+            ? {
+                paymentType: "Receive",
+                partyType: "Customer",
+                partyName: paymentInvoice.customerName,
+                partyId: paymentInvoice.customerId,
+                amount: paymentInvoice.outstandingAmount,
+                referenceInvoice: paymentInvoice.invoiceNumber,
+              }
+            : undefined
+        }
+      />
+
       <InvoiceModal
         isOpen={editOpen}
         onClose={() => {
@@ -659,52 +715,35 @@ const handleRowStatusChange = async (
         mode="edit"
         initialData={editInvoice}
         onSubmit={async (data) => {
-  try {
-    if (!editInvoice?.invoiceNumber) {
-      showApiError("Invalid invoice selected");
-      return;
-    }
+          try {
+            if (!editInvoice?.invoiceNumber) {
+              showApiError("Invalid invoice selected");
+              return;
+            }
 
-    showLoading("Updating invoice...");
+            showLoading("Updating invoice...");
 
-    const res = await editSalesInvoice(editInvoice.invoiceNumber, data);
+            const res = await editSalesInvoice(editInvoice.invoiceNumber, data);
 
-    closeSwal();
+            closeSwal();
 
-    if (!res || res.status_code !== 200) {
-      showApiError(res?.message || "Failed to update invoice");
-      return;
-    }
+            if (!res || res.status_code !== 200) {
+              showApiError(res?.message || "Failed to update invoice");
+              return;
+            }
 
-    showSuccess("Invoice updated successfully");
+            showSuccess("Invoice updated successfully");
 
-    setEditOpen(false);
-    setEditInvoice(null);
+            setEditOpen(false);
+            setEditInvoice(null);
 
-    fetchInvoices();
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-}}
+            fetchInvoices();
+          } catch (err) {
+            closeSwal();
+            showApiError(err);
+          }
+        }}
       />
-<CustomerPaymentModal
-  mode="invoice"
-  isOpen={paymentOpen}
-  onClose={() => {
-    setPaymentOpen(false);
-    setPaymentInvoice(null);
-  }}
-  invoiceNumber={paymentInvoice?.invoiceNumber}
-  customerName={paymentInvoice?.customerName}
-  customerId={paymentInvoice?.customerId}
-  totalAmount={paymentInvoice?.total}
-  currency={paymentInvoice?.currency}
-  amountPaid={0}
-  onSubmit={() => {
-    fetchInvoices();
-  }}
-/>
     </div>
   );
 };
