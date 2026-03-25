@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   X,
   Search,
-  Edit,
   FileText,
   Receipt,
   Plus,
@@ -17,12 +16,12 @@ import CustomerModal from "../../components/crm/CustomerModal";
 import QuotationModal from "../../components/sales/QuotationModal";
 import InvoiceModal from "../../components/sales/InvoiceModal";
 import CustomerStatement from "../Crm/CustomerStatement";
-import CustomerPaymentModal from "../../components/sales/CustomerPaymentModal";
 import CustomerInvoices from "./CustomerInvoices";
 import CustomerQuotations from "./CustomerQuotations";
 import CustomerBankDetails from "./CustomerBankDetails";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
+import CustomerdetailviewPayment from "./CustomerDetailViewPayments";
 
 import { CreditCard } from "lucide-react";
 interface Props {
@@ -49,7 +48,7 @@ const CustomerDetailView: React.FC<Props> = ({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showBankAccountModal, setShowBankAccountModal] = useState(false);
   const [refreshBankAccounts, setRefreshBankAccounts] = useState<(() => void) | null>(null);
-   const [editingRow, setEditingRow] = useState<any>(null);
+  const [editingRow, setEditingRow] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<
     "overview" | "bank" | "quotations" | "invoices" | "payments" | "statement"
   >("overview");
@@ -87,14 +86,14 @@ const CustomerDetailView: React.FC<Props> = ({
 
   const billingAddress = [bLine1, bLine2, bLine3].filter(Boolean).join("\n");
   const sellingTerms = customer?.terms?.selling;
- const getPhaseName = (p: any) => {
-  return p.name || "";
-};
+  const getPhaseName = (p: any) => {
+    return p.name || "";
+  };
 
-const formatPercentage = (value: any) => {
-  if (!value) return "";
-  return value.toString().includes("%") ? value : `${value}%`;
-};
+  const formatPercentage = (value: any) => {
+    if (!value) return "";
+    return value.toString().includes("%") ? value : `${value}%`;
+  };
 
   const formattedTerms = `
 PAYMENT TERMS:
@@ -162,20 +161,20 @@ ${sellingTerms?.liability || ""}
           >
             <Plus size={14} /> Record Payment
           </button>
-          
+
         );
-        case "bank":
-  return (
-    <button
-      onClick={() => {
-        setEditingRow(null);
-        setShowBankAccountModal(true);
-      }}
-      className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
-    >
-      <Plus size={14} /> Add Bank
-    </button>
-  );
+      case "bank":
+        return (
+          <button
+            onClick={() => {
+              setEditingRow(null);
+              setShowBankAccountModal(true);
+            }}
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
+          >
+            <Plus size={14} /> Add Bank
+          </button>
+        );
 
       default:
         return null;
@@ -234,8 +233,8 @@ ${sellingTerms?.liability || ""}
                 key={c.id}
                 onClick={() => onCustomerSelect(c)}
                 className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-3 border ${c.id === customer.id
-                    ? "bg-primary text-white border-primary shadow-sm"
-                    : "bg-transparent border-transparent hover:bg-row-hover"
+                  ? "bg-primary text-white border-primary shadow-sm"
+                  : "bg-transparent border-transparent hover:bg-row-hover"
                   }`}
               >
                 <div
@@ -265,7 +264,7 @@ ${sellingTerms?.liability || ""}
             <div className="flex">
               {[
                 { id: "overview", label: "Overview", icon: <Globe /> },
-                 { id: "bank", label: "Bank Details", icon: <Building2 /> },
+                { id: "bank", label: "Bank Details", icon: <Building2 /> },
                 { id: "quotations", label: "Quotations", icon: <FileText /> },
                 { id: "invoices", label: "Invoices", icon: <Receipt /> },
                 { id: "payments", label: "Payments", icon: <CreditCard /> },
@@ -347,106 +346,106 @@ ${sellingTerms?.liability || ""}
                     <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
                       <div className="text-xs text-muted space-y-4">
 
-                       <div className="text-xs text-muted space-y-4">
+                        <div className="text-xs text-muted space-y-4">
 
-  {/* GENERAL TERMS */}
-  {sellingTerms?.general && (
-    <div>
-      <h5 className="text-main font-semibold mb-1">General</h5>
-      <p>{sellingTerms.general}</p>
-    </div>
-  )}
+                          {/* GENERAL TERMS */}
+                          {sellingTerms?.general && (
+                            <div>
+                              <h5 className="text-main font-semibold mb-1">General</h5>
+                              <p>{sellingTerms.general}</p>
+                            </div>
+                          )}
 
-  {/* PAYMENT TERMS */}
-  <div>
-    <h5 className="text-main font-semibold mb-2">Payment Terms</h5>
+                          {/* PAYMENT TERMS */}
+                          <div>
+                            <h5 className="text-main font-semibold mb-2">Payment Terms</h5>
 
-    <ul className="space-y-2">
-      {sellingTerms?.payment?.phases?.map((p: any, index: number) => {
-        const phaseName = getPhaseName(p);
-        const percentage = formatPercentage(p.percentage);
+                            <ul className="space-y-2">
+                              {sellingTerms?.payment?.phases?.map((p: any, index: number) => {
+                                const phaseName = getPhaseName(p);
+                                const percentage = formatPercentage(p.percentage);
 
-        return (
-          <li key={p.id} className="border-b border-theme pb-2 last:border-none">
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-main">{phaseName}</span>
-              <span className="font-semibold text-primary">{percentage}</span>
-            </div>
+                                return (
+                                  <li key={p.id} className="border-b border-theme pb-2 last:border-none">
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-medium text-main">{phaseName}</span>
+                                      <span className="font-semibold text-primary">{percentage}</span>
+                                    </div>
 
-            {p.condition && (
-              <p className="text-[10px] text-muted mt-0.5">
-                {p.condition}
-              </p>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+                                    {p.condition && (
+                                      <p className="text-[10px] text-muted mt-0.5">
+                                        {p.condition}
+                                      </p>
+                                    )}
+                                  </li>
+                                );
+                              })}
+                            </ul>
 
-    <div className="mt-3 space-y-1">
-      {sellingTerms?.payment?.dueDates && (
-        <p>
-          <span className="text-main font-medium">Due Dates:</span>{" "}
-          {sellingTerms.payment.dueDates}
-        </p>
-      )}
+                            <div className="mt-3 space-y-1">
+                              {sellingTerms?.payment?.dueDates && (
+                                <p>
+                                  <span className="text-main font-medium">Due Dates:</span>{" "}
+                                  {sellingTerms.payment.dueDates}
+                                </p>
+                              )}
 
-      {sellingTerms?.payment?.lateCharges && (
-        <p>
-          <span className="text-main font-medium">Late Charges:</span>{" "}
-          {sellingTerms.payment.lateCharges}
-        </p>
-      )}
+                              {sellingTerms?.payment?.lateCharges && (
+                                <p>
+                                  <span className="text-main font-medium">Late Charges:</span>{" "}
+                                  {sellingTerms.payment.lateCharges}
+                                </p>
+                              )}
 
-      {sellingTerms?.payment?.taxes && (
-        <p>
-          <span className="text-main font-medium">Taxes:</span>{" "}
-          {sellingTerms.payment.taxes}
-        </p>
-      )}
+                              {sellingTerms?.payment?.taxes && (
+                                <p>
+                                  <span className="text-main font-medium">Taxes:</span>{" "}
+                                  {sellingTerms.payment.taxes}
+                                </p>
+                              )}
 
-      {sellingTerms?.payment?.notes && (
-        <p>
-          <span className="text-main font-medium">Notes:</span>{" "}
-          {sellingTerms.payment.notes}
-        </p>
-      )}
-    </div>
-  </div>
+                              {sellingTerms?.payment?.notes && (
+                                <p>
+                                  <span className="text-main font-medium">Notes:</span>{" "}
+                                  {sellingTerms.payment.notes}
+                                </p>
+                              )}
+                            </div>
+                          </div>
 
-  {/* DELIVERY */}
-  {sellingTerms?.delivery && (
-    <div>
-      <h5 className="text-main font-semibold mb-1">Delivery</h5>
-      <p>{sellingTerms.delivery}</p>
-    </div>
-  )}
+                          {/* DELIVERY */}
+                          {sellingTerms?.delivery && (
+                            <div>
+                              <h5 className="text-main font-semibold mb-1">Delivery</h5>
+                              <p>{sellingTerms.delivery}</p>
+                            </div>
+                          )}
 
-  {/* CANCELLATION */}
-  {sellingTerms?.cancellation && (
-    <div>
-      <h5 className="text-main font-semibold mb-1">Cancellation</h5>
-      <p>{sellingTerms.cancellation}</p>
-    </div>
-  )}
+                          {/* CANCELLATION */}
+                          {sellingTerms?.cancellation && (
+                            <div>
+                              <h5 className="text-main font-semibold mb-1">Cancellation</h5>
+                              <p>{sellingTerms.cancellation}</p>
+                            </div>
+                          )}
 
-  {/* WARRANTY */}
-  {sellingTerms?.warranty && (
-    <div>
-      <h5 className="text-main font-semibold mb-1">Warranty</h5>
-      <p>{sellingTerms.warranty}</p>
-    </div>
-  )}
+                          {/* WARRANTY */}
+                          {sellingTerms?.warranty && (
+                            <div>
+                              <h5 className="text-main font-semibold mb-1">Warranty</h5>
+                              <p>{sellingTerms.warranty}</p>
+                            </div>
+                          )}
 
-  {/* LIABILITY */}
-  {sellingTerms?.liability && (
-    <div>
-      <h5 className="text-main font-semibold mb-1">Liability</h5>
-      <p>{sellingTerms.liability}</p>
-    </div>
-  )}
+                          {/* LIABILITY */}
+                          {sellingTerms?.liability && (
+                            <div>
+                              <h5 className="text-main font-semibold mb-1">Liability</h5>
+                              <p>{sellingTerms.liability}</p>
+                            </div>
+                          )}
 
-</div>
+                        </div>
 
                       </div>
                     </div>
@@ -455,52 +454,42 @@ ${sellingTerms?.liability || ""}
               </div>
             )}
             {activeTab === "bank" && (
-  <div className="p-5 w-full min-w-0 overflow-hidden">
- <CustomerBankDetails
-  customerName={customer.name}
-  onAdd={(refresh) => {
-    setEditingRow(null);
-    setRefreshBankAccounts(() => refresh); 
-    setShowBankAccountModal(true);
-  }}
-  onEdit={(row) => {
-    setEditingRow(row);
-    setShowBankAccountModal(true);
-  }}
-/>
-  </div>
-)}
+              <div className="p-5 w-full min-w-0 overflow-hidden">
+                <CustomerBankDetails
+                  customerName={customer.name}
+                  onAdd={(refresh) => {
+                    setEditingRow(null);
+                    setRefreshBankAccounts(() => refresh);
+                    setShowBankAccountModal(true);
+                  }}
+                  onEdit={(row) => {
+                    setEditingRow(row);
+                    setShowBankAccountModal(true);
+                  }}
+                />
+              </div>
+            )}
 
             {activeTab === "statement" && (
               <CustomerStatement customerId={customer.id} />
             )}
 
             {/* Empty States for other tabs */}
-           {activeTab === "quotations" && (
-  <div className="p-5 w-full min-w-0 overflow-hidden">
-    <CustomerQuotations customerId={customer.id} />
-  </div>
-)}
+            {activeTab === "quotations" && (
+              <div className="p-5 w-full min-w-0 overflow-hidden">
+                <CustomerQuotations customerId={customer.id} />
+              </div>
+            )}
 
-{activeTab === "invoices" && (
-  <div className="p-5 w-full min-w-0 overflow-hidden">
-    <CustomerInvoices customerName={customer.name} />
-  </div>
-)}
+            {activeTab === "invoices" && (
+              <div className="p-5 w-full min-w-0 overflow-hidden">
+                <CustomerInvoices customerName={customer.name} />
+              </div>
+            )}
 
             {activeTab === "payments" && (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="p-5 rounded-2xl bg-row-hover text-muted mb-4">
-                  <CreditCard size={32} />
-                </div>
-
-                <h3 className="text-sm font-bold text-main">
-                  No payments recorded
-                </h3>
-
-                <p className="text-[10px] text-muted font-bold uppercase mt-1">
-                  Customer payment history will appear here
-                </p>
+              <div className="p-5 w-full min-w-0 overflow-hidden">
+                <CustomerdetailviewPayment customerName={customer.name} />
               </div>
             )}
           </div>
@@ -520,30 +509,30 @@ ${sellingTerms?.liability || ""}
         onClose={() => setCustomerModalOpen(false)}
         onSubmit={(created: any) => onCustomerSelect(created)}
       />
-     <PaymentEntryModal
-  isOpen={showPaymentModal}
- onClose={() => {
-  setShowPaymentModal(false);
-}}
-  onSuccess={() => {
-    setShowPaymentModal(false);
-  }}
-  
-/>
-<AddBankAccountModal
-  isOpen={showBankAccountModal}
-  onClose={() => {
-    setShowBankAccountModal(false);
-    setEditingRow(null);
-  }}
-  onSubmit={() => {
-    setShowBankAccountModal(false);
-    refreshBankAccounts?.();
-  }}
-  partyName={customer.name}
-  defaultAccountFor="Customer"
-  initialData={editingRow}
-/>
+      <PaymentEntryModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+        }}
+        onSuccess={() => {
+          setShowPaymentModal(false);
+        }}
+
+      />
+      <AddBankAccountModal
+        isOpen={showBankAccountModal}
+        onClose={() => {
+          setShowBankAccountModal(false);
+          setEditingRow(null);
+        }}
+        onSubmit={() => {
+          setShowBankAccountModal(false);
+          refreshBankAccounts?.();
+        }}
+        partyName={customer.name}
+        defaultAccountFor="Customer"
+        initialData={editingRow}
+      />
     </div>
   );
 };

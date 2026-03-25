@@ -7,13 +7,13 @@ import SupplierStatement from "./SupplierStatement";
 import PurchaseInvoiceModal from "../../components/procurement/PurchaseInvoiceModal";
 import PurchaseOrderModal from "../../components/procurement/PurchaseOrderModal";
 import SupplierPurchaseOrders from "./SupplierPurchaseOrders";
-import SupplierPaymentModal from "../../components/procurement/supply/SupplierPaymentModal";
 import SupplierPurchaseInvoices from "./SupplierPurchaseInvoices";
 import SupplierBankDetails from "./SupplierBankDetails";
 import { getSupplierStatement } from "../../api/statementApi";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+import SupplierDetailViewPayments from "./SupplierDetailViewPayment";
 
 interface Props {
   supplier: Supplier;
@@ -565,18 +565,8 @@ const SupplierDetailView: React.FC<Props> = ({
             )}
 
             {/* PAYMENTS */}
-            {activeTab === "payments" && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="p-5 rounded-2xl bg-row-hover text-muted mb-4">
-                  <CreditCard size={28} />
-                </div>
-                <h3 className="text-sm font-bold text-main">
-                  No payments recorded
-                </h3>
-                <p className="text-[10px] text-muted font-bold uppercase mt-1">
-                  Supplier payment history will appear here
-                </p>
-              </div>
+            {activeTab === "payments" && supplierName && (
+              <SupplierDetailViewPayments supplierName={supplierName} />
             )}
 
             {/* STATEMENT — loading */}
@@ -630,7 +620,6 @@ const SupplierDetailView: React.FC<Props> = ({
       <PaymentEntryModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-     
       // supplierCode={supplierCode}
       />
 
