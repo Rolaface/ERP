@@ -64,7 +64,7 @@ export function usePaymentModes(): UseModeOfPaymentReturn {
       setError(null);
 
       try {
-        const result = await getAllModeOfPayment(1, 100, 1);
+       const result = await getAllModeOfPayment(1, 100, undefined, 1);
 
         if (!cancelled) {
           setOptions(
