@@ -67,7 +67,7 @@ const getFYDates = (country: string) => {
 
 // ---- Component ----
 export default function SignupPage() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
 
   const [fullName, setFullName] = useState("");
@@ -144,9 +144,22 @@ export default function SignupPage() {
           {step === 1 && (
             <form onSubmit={handleStep1} className="space-y-4">
               <h2 className="text-xl font-semibold text-center">Create your free account</h2>
-              <input className="w-full border rounded-lg px-4 py-3" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-              <input className="w-full border rounded-lg px-4 py-3" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <input className="w-full border rounded-lg px-4 py-3" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+
+              <div>
+                <label className="text-sm font-medium">Full Name</label>
+                <input className="w-full border rounded-lg px-4 py-3 mt-1" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <input className="w-full border rounded-lg px-4 py-3 mt-1" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Password</label>
+                <input className="w-full border rounded-lg px-4 py-3 mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
+
               <button className="w-full bg-indigo-600 text-white py-3 rounded-xl">Create Account</button>
             </form>
           )}
@@ -157,22 +170,51 @@ export default function SignupPage() {
               <h2 className="text-xl font-semibold text-center">Setup Workspace</h2>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <input className="border rounded-lg px-4 py-3" placeholder="Company Name" value={company} onChange={(e) => setCompany(e.target.value)} />
-                <input className="border rounded-lg px-4 py-3" placeholder="Company Abbreviation" value={abbr} readOnly />
 
-                <select className="border rounded-lg px-4 py-3" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                  {languages.map((l) => <option key={l}>{l}</option>)}
-                </select>
+                <div>
+                  <label className="text-sm font-medium">Company Name</label>
+                  <input className="border rounded-lg px-4 py-3 mt-1 w-full" value={company} onChange={(e) => setCompany(e.target.value)} />
+                </div>
 
-                <select className="border rounded-lg px-4 py-3" value={country} onChange={(e) => setCountry(e.target.value)}>
-                  {countryList.map((c) => <option key={c}>{c}</option>)}
-                </select>
+                <div>
+                  <label className="text-sm font-medium">Company Abbreviation</label>
+                  <input className="border rounded-lg px-4 py-3 mt-1 w-full" value={abbr} readOnly />
+                </div>
 
-                <input className="border rounded-lg px-4 py-3" value={timezone} readOnly />
-                <input className="border rounded-lg px-4 py-3" value={currency} readOnly />
+                <div>
+                  <label className="text-sm font-medium">Language</label>
+                  <select className="border rounded-lg px-4 py-3 mt-1 w-full" value={language} onChange={(e) => setLanguage(e.target.value)}>
+                    {languages.map((l) => <option key={l}>{l}</option>)}
+                  </select>
+                </div>
 
-                <input type="date" className="border rounded-lg px-4 py-3" value={fyStart} onChange={(e) => setFyStart(e.target.value)} />
-                <input type="date" className="border rounded-lg px-4 py-3" value={fyEnd} onChange={(e) => setFyEnd(e.target.value)} />
+                <div>
+                  <label className="text-sm font-medium">Country</label>
+                  <select className="border rounded-lg px-4 py-3 mt-1 w-full" value={country} onChange={(e) => setCountry(e.target.value)}>
+                    {countryList.map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Timezone</label>
+                  <input className="border rounded-lg px-4 py-3 mt-1 w-full" value={timezone} readOnly />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Currency</label>
+                  <input className="border rounded-lg px-4 py-3 mt-1 w-full" value={currency} readOnly />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Financial Year Start</label>
+                  <input type="date" className="border rounded-lg px-4 py-3 mt-1 w-full" value={fyStart} onChange={(e) => setFyStart(e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Financial Year End</label>
+                  <input type="date" className="border rounded-lg px-4 py-3 mt-1 w-full" value={fyEnd} onChange={(e) => setFyEnd(e.target.value)} />
+                </div>
+
               </div>
 
               <div className="flex justify-between">
