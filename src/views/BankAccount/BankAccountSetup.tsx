@@ -36,6 +36,7 @@ const BankAccountSetup: React.FC = () => {
 
       const res = await getAllBankAccounts({
         page,
+        search,
         page_size: pageSize,
       });
 
@@ -47,7 +48,7 @@ const BankAccountSetup: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize]);
+  }, [page, pageSize, search]);
 
 
   useEffect(() => {
@@ -74,21 +75,6 @@ const BankAccountSetup: React.FC = () => {
   }, [fetchAccounts]);
 
 
-  const filteredData = useMemo(() => {
-    const query = search.toLowerCase();
-
-    return bankAccounts.filter((b) =>
-      [
-        b.bankName,
-        b.accountHolderName,
-        b.accountNo,
-        b.currency,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [bankAccounts, search]);
 
 
 
@@ -222,7 +208,7 @@ const BankAccountSetup: React.FC = () => {
       {/* TABLE */}
       <Table
         columns={columns}
-        data={filteredData}
+        data={bankAccounts}
         loading={loading}
         rowKey={(row) => String(row.id)}
         showToolbar
@@ -240,14 +226,7 @@ const BankAccountSetup: React.FC = () => {
         onAdd={() => setShowModal(true)}
       />
 
-      {/* EMPTY STATE */}
-      {!loading && filteredData.length === 0 && (
-        <div className="text-center text-gray-500 py-10">
-          No bank accounts found
-        </div>
-      )}
 
-      {/* MODAL */}
       {/* MODAL */}
       {showModal && (
         <AddBankAccountModal
