@@ -1,6 +1,8 @@
 import React, { lazy} from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoutes";
+import LandingPage from "../views/LandingPage/LandingPage";
+import SignupPage from "../views/SignupPage/SignupPage";
 import Login from "../views/LoginPage";
 import AppLayout from "../layout/AppLayout";
 const Dashboard = lazy(() => import("../views/DashbBoard"));
@@ -37,6 +39,8 @@ const AppRoutes: React.FC = () => {
       <Toaster position="top-right" />
       <Routes>
         {/* Public Routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/reset" element={<ResetPassword />} />
 
