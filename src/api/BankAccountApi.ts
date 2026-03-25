@@ -40,6 +40,7 @@ type BankAccountFilters = {
   company?: boolean;
   party_type?: "Supplier" | "Customer";
   party?: string;
+  search?: string;
   page?:number;
   page_size?:number;
 };
@@ -147,6 +148,7 @@ export async function getAllBankAccounts(
   if (filters?.page) params.append("page", String(filters.page));
   if (filters?.page_size) params.append("page_size", String(filters.page_size));
   if (filters?.company) params.append("company", "true");
+  if (filters?.search) params.append("search", filters.search);
   if (filters?.party_type) params.append("party_type", filters.party_type);
   if (filters?.party) params.append("party", filters.party);
 
