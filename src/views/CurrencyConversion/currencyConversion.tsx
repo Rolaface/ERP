@@ -19,29 +19,30 @@ import {
   showConfirm,
 } from "../../utils/alert";
 
-// ─────────────────────────────────────────────
+
 // Component
-// ─────────────────────────────────────────────
+
 
 const CurrencyConversion: React.FC = () => {
   const {
     data,
     loading,
     pagination,
-    fetchConversions,
+    setPagination,
+    search,
+    setSearch,
     addConversion,
     updateConversion,
     deleteConversion,
   } = useCurrencyConversion();
 
-  const [showModal,  setShowModal]  = useState(false);
-  const [editData,   setEditData]   = useState<CurrencyConversionPayload | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [editData, setEditData] = useState<CurrencyConversionPayload | null>(null);
 
   // ── Handlers ─────────────────────────────────
 
-  const handleAdd   = () => { setEditData(null); setShowModal(true); };
-  const handleEdit  = (row: CurrencyConversionPayload) => { setEditData(row); setShowModal(true); };
+  const handleAdd = () => { setEditData(null); setShowModal(true); };
+  const handleEdit = (row: CurrencyConversionPayload) => { setEditData(row); setShowModal(true); };
   const handleClose = () => { setShowModal(false); setEditData(null); };
 
   const handleSave = async (payload: any) => {
@@ -50,18 +51,27 @@ const CurrencyConversion: React.FC = () => {
   };
 
   const handleSearch = (q: string) => {
-    setSearchTerm(q);
-    fetchConversions(1, pagination.pageSize, q);
+    setSearch(q);
+    setPagination((prev) => ({
+      ...prev,
+      page: 1,
+    }));
   };
 
   const handlePageChange = (page: number) => {
-    fetchConversions(page, pagination.pageSize, searchTerm);
+    setPagination((prev) => ({
+      ...prev,
+      page,
+    }));
   };
 
   const handlePageSizeChange = (size: number) => {
-    fetchConversions(1, size, searchTerm);
+    setPagination((prev) => ({
+      ...prev,
+      page: 1,
+      pageSize: size,
+    }));
   };
-
   // ── Columns ───────────────────────────────────
 
   const columns: Column<CurrencyConversionPayload>[] = [
@@ -71,9 +81,9 @@ const CurrencyConversion: React.FC = () => {
       render: (row) => (
         <span className="text-xs text-muted">
           {new Date(row.date).toLocaleDateString("en-GB", {
-            day:   "2-digit",
+            day: "2-digit",
             month: "short",
-            year:  "numeric",
+            year: "numeric",
           })}
         </span>
       ),
@@ -123,9 +133,9 @@ const CurrencyConversion: React.FC = () => {
         row.createdAt ? (
           <span className="text-xs text-muted">
             {new Date(row.createdAt).toLocaleDateString("en-GB", {
-              day:   "2-digit",
+              day: "2-digit",
               month: "short",
-              year:  "numeric",
+              year: "numeric",
             })}
           </span>
         ) : (
@@ -157,7 +167,7 @@ const CurrencyConversion: React.FC = () => {
                   if (!confirmed) return;
                   try {
                     showLoading("Deleting...");
-                    const res     = await deleteConversion(row.id);
+                    const res = await deleteConversion(row.id);
                     closeSwal();
                     const backend = res?.message;
                     if (
@@ -206,7 +216,7 @@ const CurrencyConversion: React.FC = () => {
         enableAdd
         addLabel="Add Currency Exchange"
         onAdd={handleAdd}
-        searchValue={searchTerm}
+        searchValue={search}
         onSearch={handleSearch}
         currentPage={pagination.page}
         totalPages={pagination.totalPages}

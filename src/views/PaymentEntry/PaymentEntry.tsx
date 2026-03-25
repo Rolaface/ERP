@@ -1,32 +1,110 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
 import PaymentEntryModal from "./PaymentEntryModal";
 import { FaMoneyBillWave } from "react-icons/fa";
-import ActionButton, {
-  ActionGroup,
-  ActionMenu,
-} from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
+
+import { getAllPayments } from "../../api/CustomerPayment";
+import { showApiError } from "../../utils/alert";
+import StatusBadge from "../../components/ui/Table/StatusBadge";
+
+
+// API Response Type
+
+interface PaymentAPI {
+  paymentId: string;
+  paymentDate: string;
+  partyName: string;
+  paymentMode: string;
+  referenceNumber?: string;
+  amount: number;
+  status: string;
+}
+
+// UI Table Type
 
 type PaymentRow = {
   id: string;
+  paymentDate?: string;
   paymentType?: string;
   partyName?: string;
   mode?: string;
   amount?: number;
-  allocatedAmount?: number;
+  status: string;
 };
 
 const PaymentEntry: React.FC = () => {
   const [data, setData] = useState<PaymentRow[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  
+
+  const fetchPayments = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const response = await getAllPayments(
+        undefined,
+        page,
+        pageSize,
+        searchTerm
+      );
+
+      const payments: PaymentAPI[] =
+        response?.data?.payments || [];
+
+      const mapped: PaymentRow[] = payments.map((p) => ({
+        id: p.paymentId,
+        status: p.status || "-",
+        partyName: p.partyName || "—",
+        mode: p.paymentMode || "—",
+        amount: Number(p.amount) || 0,
+        paymentDate: p.paymentDate
+          ? new Date(p.paymentDate).toLocaleDateString("en-IN")
+          : "-",
+      }));
+
+      setData(mapped);
+      setTotalPages(response?.data?.pagination?.totalPages ?? 1);
+      setTotalItems(response?.data?.pagination?.total ?? mapped.length);
+    } catch (error: any) {
+      console.error("Payment fetch error:", error);
+      showApiError(
+        error?.response?.data?.message || "Failed to fetch payments"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, searchTerm]);
+
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      fetchPayments();
+    }, 400);
+
+    return () => clearTimeout(delay);
+  }, [fetchPayments]);
+
+  /**
+   * TABLE COLUMNS
+   */
   const columns: Column<PaymentRow>[] = [
     {
-      key: "paymentType",
-      header: "Payment Type",
-      render: (row) => row.paymentType || "—",
+      key: "id",
+      header: "Id",
+      render: (row) => row.id || "-",
+    },
+    {
+      key: "paymentDate",
+      header: "Payment Date",
+      render: (row) => row.paymentDate || "-"
     },
     {
       key: "partyName",
@@ -35,32 +113,19 @@ const PaymentEntry: React.FC = () => {
     },
     {
       key: "mode",
-      header: "Mode",
+      header: "Mode Of Payment",
       render: (row) => row.mode || "—",
     },
     {
       key: "amount",
       header: "Amount",
       render: (row) =>
-        row.amount ? `₹ ${row.amount.toLocaleString()}` : "—",
+        ` ${row.amount?.toLocaleString("en-IN") || 0}`,
     },
     {
-      key: "allocatedAmount",
-      header: "Allocated",
-      render: (row) =>
-        row.allocatedAmount
-          ? `₹ ${row.allocatedAmount.toLocaleString()}`
-          : "₹ 0",
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: () => (
-        <ActionGroup>
-          <ActionMenu customActions={[]} />
-        </ActionGroup>
-      ),
+      key: "status",
+      header: "Status",
+      render: (row: PaymentRow) => <StatusBadge status={row.status} />,
     },
   ];
 
@@ -78,8 +143,23 @@ const PaymentEntry: React.FC = () => {
       <Table
         columns={columns}
         data={data}
-        loading={false}
+        loading={loading}
         rowKey={(r) => r.id}
+        searchValue={searchTerm}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[10, 25, 50, 100]}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         showToolbar
         enableAdd
         addLabel="Add Payment Entry"

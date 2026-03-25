@@ -36,20 +36,20 @@ export async function receiveCustomerPayment(
 }
 
 export const getAllPayments = async (
-  partyType: "Customer" | "Supplier",
-  page: number,
-  pageSize: number,
+  partyType?: "Customer" | "Supplier",
+  page?: number,
+  pageSize?: number,
   search?: string
 ): Promise<any> => {
   const resp: AxiosResponse = await api.get(
     CustomerPaymentAPI.getAllpayements,
     {
-      params: {
-        partyType,
-        page,
-        pageSize,
-        search,
-      },
+     params: {
+  ...(partyType && { partyType }),
+  ...(page && { page }),
+  ...(pageSize && { pageSize }),
+  ...(search && { search }),
+},
     }
   );
 

@@ -197,7 +197,7 @@ const SupplierManagement: React.FC<Props> = () => {
       align: "left",
       render: (s) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {s.currency || "ZMW"}
+          {s.currency}
         </code>
       ),
     },
