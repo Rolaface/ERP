@@ -100,8 +100,8 @@ const InvoiceChargesTab: React.FC<Props> = ({
 
                     <td className="px-2 py-2">
                       <input
-                        value={charge.name || ""}
-                        onChange={(e) => onChange(actualIndex, "name", e.target.value)}
+                        value={charge.charge_type || ""}
+                        onChange={(e) => onChange(actualIndex, "charge_type", e.target.value)}
                         className="w-full py-1.5 px-2.5 border border-theme rounded-md text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted/50"
                         placeholder="e.g. Shipping"
                       />
