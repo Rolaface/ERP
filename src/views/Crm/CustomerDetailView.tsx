@@ -159,7 +159,7 @@ ${sellingTerms?.liability || ""}
             onClick={() => setShowPaymentModal(true)}
             className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
           >
-            <Plus size={14} /> Record Payment
+            <Plus size={14} /> Receive Payment
           </button>
 
         );
