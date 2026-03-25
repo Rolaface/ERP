@@ -15,7 +15,7 @@ interface InvoiceListProps {
     partyName?: string;
     amount?: number | string;
     fifoTrigger?: number;
-    referenceInvoice?: string;  // ← specific invoice se aaya toh sirf woh dikhao
+    referenceInvoice?: string;  
   };
   onFormChange: (data: AllocationResult) => void;
 }
@@ -25,7 +25,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
   const partyName        = form.partyName;
   const paymentAmount    = Number(form.amount ?? 0);
   const fifoTrigger      = form.fifoTrigger;
-  const referenceInvoice = form.referenceInvoice;  // ← hook ko pass karenge
+  const referenceInvoice = form.referenceInvoice; 
 
   const {
     invoices,
@@ -93,9 +93,9 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
         <div className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
           <AlertTriangle size={14} className="text-amber-500 mt-0.5 flex-shrink-0" />
           <p className="text-xs text-amber-700 leading-relaxed">
-            <span className="font-semibold">₹ {remainingToAllocate.toLocaleString()}</span>{" "}
+            <span className="font-semibold">{remainingToAllocate.toLocaleString()}</span>{" "}
             unallocated. Allocate to an invoice or reduce the payment amount to{" "}
-            <span className="font-semibold">₹ {totalAllocated.toLocaleString()}</span>.
+            <span className="font-semibold">{totalAllocated.toLocaleString()}</span>.
           </p>
         </div>
       )}
@@ -130,9 +130,9 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
                 </div>
 
                 <div className="text-xs text-muted">{inv.dueDate}</div>
-                <div className="text-right text-xs font-mono text-main">₹ {inv.totalAmount.toLocaleString()}</div>
-                <div className="text-right text-xs font-mono text-emerald-600">₹ {inv.paid.toLocaleString()}</div>
-                <div className="text-right text-xs font-mono font-semibold text-amber-600">₹ {inv.outstanding.toLocaleString()}</div>
+                <div className="text-right text-xs font-mono text-main">{inv.totalAmount.toLocaleString()}</div>
+                <div className="text-right text-xs font-mono text-emerald-600">{inv.paid.toLocaleString()}</div>
+                <div className="text-right text-xs font-mono font-semibold text-amber-600">{inv.outstanding.toLocaleString()}</div>
 
                 <div className="flex justify-end">
                   {isEditing ? (
@@ -153,7 +153,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
                     />
                   ) : (
                     <span className={`text-xs font-mono ${isAllocated ? "text-primary font-semibold" : "text-muted"}`}>
-                      {isAllocated ? `₹ ${(allocated[inv.invoiceNumber] ?? 0).toLocaleString()}` : "—"}
+                      {isAllocated ? `${(allocated[inv.invoiceNumber] ?? 0).toLocaleString()}` : "—"}
                     </span>
                   )}
                 </div>
@@ -186,7 +186,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)] bg-[var(--row-hover)]">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">Total Allocated</span>
-            <span className="text-xs font-bold text-primary font-mono">₹ {totalAllocated.toLocaleString()}</span>
+            <span className="text-xs font-bold text-primary font-mono">{totalAllocated.toLocaleString()}</span>
           </div>
           {pagination && (
             <PaginationBar

@@ -443,3 +443,166 @@ export async function getBankAccountOptions(filters: {
     return []; // silent fail — dropdowns just show empty
   }
 }
+
+
+export type LedgerAccountOption = {
+  name: string;
+  account_currency: string;
+  account_number: string;
+};
+export async function getLedgerAccount(
+  paymentType: "Pay" | "Receive",
+  filter: "from" | "to",
+  partyType: "Supplier"|"Customer"|"Employee"|"Shareholder"
+): Promise<LedgerAccountOption[]> {
+  try {
+    const resp: AxiosResponse = await api.get(
+      Account.getLedgerAccount,
+      {
+        params: {
+          paymentType,
+          filter,
+          partyType
+        },
+      }
+    );
+
+    const raw: any[] = resp?.data?.data ?? [];
+
+    return raw.map((item) => ({
+      name: item.name,
+      account_currency: item.account_currency ?? "",
+      account_number: item.account_number ?? "",
+    }));
+  } catch (error) {
+    return [];
+  }
+}
+ 
+
+
+export type ExchangeRateResult =
+  | { rate: number;  error: null   }   // found
+  | { rate: null;    error: string };  // not found — show error, let user type
+ 
+export async function getExchangeRate(
+  from_currency: string,
+  to_currency:   string,
+  transaction_date: string,
+   company_default_currency?: string           
+): Promise<ExchangeRateResult> {
+  try {
+    const resp: AxiosResponse = await api.post(
+      Account.getExchangeRate,       
+      { from_currency, to_currency, transaction_date ,company_default_currency }
+    );
+ 
+    const data = resp?.data;
+    const rate = data?.message;
+ 
+    if (!rate || rate === 0) {
+      let errorMsg = "Exchange rate not found. Please enter manually.";
+      try {
+        const raw: string = data?._server_messages ?? "";
+        if (raw) {
+          const parsed: Array<{ message?: string }> = JSON.parse(raw);
+          const first = parsed?.[0];
+          const inner =
+            typeof first === "string"
+              ? JSON.parse(first)
+              : first;
+          if (inner?.message) errorMsg = inner.message;
+        }
+      } catch {
+      }
+ 
+      return { rate: null, error: errorMsg };
+    }
+ 
+    return { rate: Number(rate), error: null };
+  } catch (error: any) {
+    return {
+      rate:  null,
+      error: error?.response?.data?.message ||
+             error?.message ||
+             "Failed to fetch exchange rate.",
+    };
+  }
+}
+ 
+
+
+export type PaymentReference = {
+  reference_doctype: string;
+  reference_name: string;
+  allocated_amount: number;
+  due_date?: string;
+};
+ 
+/** One row in the taxes & charges array */
+export type PaymentTax = {
+  type: string;
+  account_head: string;
+  tax_rate: number;
+  amount: number;
+  total: number;
+};
+ 
+/** Full payload sent to createPaymentEntry */
+export type CreatePaymentEntryPayload = {
+  payment_type: "Pay" | "Receive" | "Internal Transfer";
+  party_type: string;
+  party_id: string; // ERPNext name field — same as display name for Supplier/Customer
+ 
+  mode_of_payment: string;
+  payment_date: string; // YYYY-MM-DD
+  reference_no?: string;
+  reference_date?: string; // YYYY-MM-DD
+ 
+  project?: string;
+  cost_center?: string;
+ 
+  exchange_rate: number;
+ 
+  paid_from: string; // GL account
+  paid_from_bank_account?: string;
+  paid_from_account_currency: string;
+  paid_from_amount: number;
+ 
+  paid_to: string; // GL account
+  paid_to_bank_account?: string;
+  paid_to_account_currency: string;
+  paid_to_amount: number;
+ 
+  references: PaymentReference[];
+  taxes: PaymentTax[];
+};
+ 
+/** Shape returned by the API on success */
+export type CreatePaymentEntryResponse = {
+  status_code: 201;
+  status: "success";
+  message: string;
+  data: {
+    modeOfPaymentId: string; 
+  };
+};
+ 
+export async function createPaymentEntry(
+  payload: CreatePaymentEntryPayload
+): Promise<CreatePaymentEntryResponse> {
+  const resp: AxiosResponse = await api.post(
+    Account.createPaymentEntry,
+    payload
+  );
+ 
+  const data = resp?.data;
+ 
+  // The API returns 201 on success
+  if (data?.status_code !== 201) {
+    // Throw with the backend message so SweetAlert shows it verbatim
+    throw new Error(data?.message || "Failed to create payment entry.");
+  }
+ 
+  return data as CreatePaymentEntryResponse;
+}

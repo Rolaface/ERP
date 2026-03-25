@@ -1,49 +1,59 @@
 import React, { useState } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
-import {FaExchangeAlt } from "react-icons/fa";
+import { FaExchangeAlt } from "react-icons/fa";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import CurrencyConversionModal from "../../components/currencyconversion/CurrencyConversionModal";
+import {
+  useCurrencyConversion,
+  CurrencyConversionPayload,
+} from "../../hooks/useCurrencyConversion";
 
 const CurrencyConversion: React.FC = () => {
-  const [data, setData] = useState<any[]>([]);
+  const { data, loading, addConversion, deleteConversion } =
+    useCurrencyConversion();
+
   const [showModal, setShowModal] = useState(false);
 
   /* ───────── COLUMNS ───────── */
-   const columns: Column<any>[] = [
+  const columns: Column<CurrencyConversionPayload>[] = [
     {
-      key: "name",
+      key: "date",
       header: "Date",
     },
     {
-      key: "type",
+      key: "fromCurrency",
       header: "From Currency",
     },
     {
-      key: "defaultAccount",
+      key: "toCurrency",
       header: "To Currency",
-      render: (row: any) => row.defaultAccount || "—",
     },
     {
-      key: "enabled",
+      key: "buyRate",
       header: "Buy Rate",
-      render: (row: any) =>
-        row.enabled ? (
-          <span className="text-green-600 font-semibold">Enabled</span>
-        ) : (
-          <span className="text-red-500 font-semibold">Disabled</span>
-        ),
+    },
+    {
+      key: "sellRate",
+      header: "Sell Rate",
     },
     {
       key: "actions",
-      header: "Sell Rate",
+      header: "Actions",
       align: "center",
-      render: () => (
+      render: (row) => (
         <ActionGroup>
-          <ActionMenu customActions={[]} />
+          <ActionMenu
+            customActions={[
+              {
+                label: "Delete",
+                onClick: () => deleteConversion(row.id),
+              },
+            ]}
+          />
         </ActionGroup>
       ),
     },
@@ -63,26 +73,21 @@ const CurrencyConversion: React.FC = () => {
       <Table
         columns={columns}
         data={data}
-        loading={false}
-        rowKey={(r) => `${r.id}-${r.type}`}
+        loading={loading}
+        rowKey={(r) => r.id}
         showToolbar
         enableAdd
         addLabel="Add Currency Exchange"
         onAdd={() => setShowModal(true)}
       />
 
-      {/* EMPTY */}
-      {data.length === 0 && (
-        <div className="text-center text-gray-500 py-10">
-          No Exchnage Rate List Found
-        </div>
-      )}
 
       {/* MODAL */}
       {showModal && (
         <CurrencyConversionModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
+          onSave={addConversion}
         />
       )}
     </div>

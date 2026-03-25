@@ -238,7 +238,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
 },
 {
   to: "/currency-conversion",
-  label: "Currency Conversion",
+  label: "Currency Exchange",
   icon: <FaExchangeAlt />
 },
 {
