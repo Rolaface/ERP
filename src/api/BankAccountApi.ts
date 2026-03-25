@@ -17,7 +17,7 @@ export async function createNewBankAccount(payload: any) {
 }
 
 export async function getBankAccounts(
-  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account" | "Shareholder" | "Employee", // ← added 2 new filters
+  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account" | "Shareholder" | "Employee", 
   reference_doctype?: string 
 ) {
   const url = reference_doctype

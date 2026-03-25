@@ -616,7 +616,7 @@ const handleRowStatusChange = async (
         onSortChange={handleSortChange}
       />
 
-      {/* ── Drawer modal (same as ProformaDetailModal usage) ── */}
+      {/* ── Drawer modal ── */}
       <InvoiceDetailModal
         open={drawerOpen}
         data={drawerData}

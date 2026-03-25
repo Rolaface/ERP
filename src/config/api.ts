@@ -94,6 +94,13 @@ accounting:{
   getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
   getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`
 },
+CurrencyExchange:{
+  create:`${ERP_BASE} /api/method/custom_api.api.currency_exchange.create_currency_exchange`,
+  getAll:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
+  update:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.update_currency_exchange?`,
+  delete:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.delete_currency_exchange`,
+ 
+},
   /* =========================
    * CUSTOMER
    * ========================= */
