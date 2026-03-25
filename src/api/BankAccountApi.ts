@@ -253,18 +253,23 @@ type ModeOfPaymentResponse = {
 export async function getAllModeOfPayment(
   page = 1,
   page_size = 10,
+  search?: string,
   enabled?: 0 | 1
 ) {
   try {
     const params = new URLSearchParams({
       page: String(page),
       page_size: String(page_size),
+      search: search || "",
     });
 
   
     if (enabled !== undefined) {
       params.append("enabled", String(enabled));
     }
+    if (search) {
+  params.append("search", search);
+}
 
     const url = `${Account.GetModeOfPayment}?${params.toString()}`;
 
