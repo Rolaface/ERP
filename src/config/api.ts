@@ -1,4 +1,3 @@
-import { getLedgerAccount } from "../api/BankAccountApi";
 import { ENV } from "./env";
 
 export const ERP_BASE = "";
@@ -82,7 +81,9 @@ Account:{
   UpdateStatusModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.update`,
   GetPartyDetails: `${ERP_BASE}/api/method/custom_api.api.search.get_party_details`,
   getBankAccountMain: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
-  getLedgerAccount:`${ERP_BASE}/api/method/custom_api.api.payment.get_ledger_account?payment_type=Pay&filter=to`
+  getLedgerAccount:`${ERP_BASE}/api/method/custom_api.api.payment.get_ledger_account`,
+  getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
+  createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`
 },
 
 accounting:{

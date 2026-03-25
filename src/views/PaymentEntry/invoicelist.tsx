@@ -15,7 +15,7 @@ interface InvoiceListProps {
     partyName?: string;
     amount?: number | string;
     fifoTrigger?: number;
-    referenceInvoice?: string;  // ← specific invoice se aaya toh sirf woh dikhao
+    referenceInvoice?: string;  
   };
   onFormChange: (data: AllocationResult) => void;
 }
@@ -25,7 +25,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
   const partyName        = form.partyName;
   const paymentAmount    = Number(form.amount ?? 0);
   const fifoTrigger      = form.fifoTrigger;
-  const referenceInvoice = form.referenceInvoice;  // ← hook ko pass karenge
+  const referenceInvoice = form.referenceInvoice; 
 
   const {
     invoices,
