@@ -35,26 +35,33 @@ import PaymentEntryDetailModal, {
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 type PayableVoucherType = "Purchase Invoice" | "Payment Entry";
+
 type PayableRecord = {
-  report_date: string;
-  supplier: string;
-  party_type: string;
-  payable_account: string;
-  voucher_type: string;
-  voucher_no: string;
-  due_date: string | null;
-  bill_no: string | null;
-  bill_date: string | null;
-  cost_center: string | null;
-  currency: string;
-  status: string;
-  amounts: {
+  report_date?: string;
+  supplier?: string;
+  party?: string;
+  supplier_name?: string;
+  party_type?: string;
+  payable_account?: string;
+  voucher_type?: string;
+  voucher_no?: string;
+  due_date?: string | null;
+  bill_no?: string | null;
+  bill_date?: string | null;
+  cost_center?: string | null;
+  currency?: string;
+  status?: string;
+  invoiced?: number;
+  paid?: number;
+  credit_note?: number;
+  outstanding?: number;
+  amounts?: {
     invoiced: number;
     paid: number;
     credit_note: number;
     outstanding: number;
   };
-  age: number;
+  age?: number;
 };
 
 type KPIs = {
@@ -242,8 +249,11 @@ const AccountsPayable = () => {
               }
 
               status = "Pending";
-              if (row.amounts?.outstanding <= 0) status = "Paid";
-              else if (daysLeft < 0) status = "Overdue";
+              if ((row.amounts?.outstanding ?? row.outstanding ?? 0) <= 0) {
+                status = "Paid";
+              } else if (daysLeft < 0) {
+                status = "Overdue";
+              }
 
               priority = "low";
               if (daysLeft < 0) priority = "high";
@@ -258,13 +268,18 @@ const AccountsPayable = () => {
               id: uniqueId,
               isSummary,
               billNo: row.bill_no || "-",
-              vendor: row.supplier || (isSummary ? "" : "Unknown Vendor"),
+              vendor:
+                row.supplier ||
+                row.party ||
+                row.supplier_name ||
+                (isSummary ? "" : "Unknown Vendor"),
               voucherType: row.voucher_type || "-",
-              invoicedAmount: row.amounts?.invoiced || 0,
-              paidAmount: row.amounts?.paid || 0,
-              outstandingAmount: row.amounts?.outstanding || 0,
+              invoicedAmount: row.amounts?.invoiced ?? row.invoiced ?? 0,
+              paidAmount: row.amounts?.paid ?? row.paid ?? 0,
+              outstandingAmount:
+                row.amounts?.outstanding ?? row.outstanding ?? 0,
               due: dueDisplay,
-              status: row.status,
+              status: row.status || status,
               days: daysLeft,
               priority,
             };
@@ -396,15 +411,15 @@ const AccountsPayable = () => {
       const exportData = allData.map((row: PayableRecord) => ({
         "Voucher No": row.voucher_no || "",
         "Bill No": row.bill_no || "",
-        Supplier: row.supplier || "",
+        Supplier: row.supplier || row.party || row.supplier_name || "",
         "Party Type": row.party_type || "",
         "Payable Account": row.payable_account || "",
         "Voucher Type": row.voucher_type || "",
         "Cost Center": row.cost_center || "",
-        "Invoiced Amount": row.amounts?.invoiced || 0,
-        "Paid Amount": row.amounts?.paid || 0,
-        "Credit Note": row.amounts?.credit_note || 0,
-        "Outstanding Amount": row.amounts?.outstanding || 0,
+        "Invoiced Amount": row.amounts?.invoiced ?? row.invoiced ?? 0,
+        "Paid Amount": row.amounts?.paid ?? row.paid ?? 0,
+        "Credit Note": row.amounts?.credit_note ?? row.credit_note ?? 0,
+        "Outstanding Amount": row.amounts?.outstanding ?? row.outstanding ?? 0,
         "Report Date": row.report_date || "",
         "Due Date": row.due_date || "",
         "Age (Days)": row.age || 0,

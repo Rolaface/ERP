@@ -34,25 +34,31 @@ import { showApiError } from "../../utils/alert";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 type ReceivableVoucherType = "Sales Invoice" | "Payment Entry";
+
 type ReceivableRecord = {
-  posting_date: string;
-  customer: string;
-  party_type: string;
-  receivable_account: string;
-  voucher_type: string;
-  voucher_no: string;
-  due_date: string | null;
-  po_no: string | null;
-  cost_center: string | null;
-  currency: string;
-  status: string;
-  amounts: {
+  posting_date?: string;
+  customer?: string;
+  party?: string;
+  party_type?: string;
+  receivable_account?: string;
+  voucher_type?: string;
+  voucher_no?: string;
+  due_date?: string | null;
+  po_no?: string | null;
+  cost_center?: string | null;
+  currency?: string;
+  status?: string;
+  invoiced?: number;
+  paid?: number;
+  credit_note?: number;
+  outstanding?: number;
+  amounts?: {
     invoiced: number;
     paid: number;
     credit_note: number;
     outstanding: number;
   };
-  age: number;
+  age?: number;
 };
 
 type KPIs = {
@@ -245,8 +251,9 @@ const AccountsReceivable = () => {
               }
 
               status = "Pending";
-              if (row.amounts?.outstanding <= 0) status = "Paid";
-              else if (daysLeft < 0) {
+              if ((row.amounts?.outstanding ?? row.outstanding ?? 0) <= 0) {
+                status = "Paid";
+              } else if (daysLeft < 0) {
                 status = "Overdue";
                 overdue = true;
               }
@@ -259,13 +266,17 @@ const AccountsReceivable = () => {
             return {
               id: uniqueId,
               isSummary,
-              customer: row.customer || (isSummary ? "" : "Unknown Customer"),
+              customer:
+                row.customer ||
+                row.party ||
+                (isSummary ? "" : "Unknown Customer"),
               voucherType: row.voucher_type || "-",
-              invoicedAmount: row.amounts?.invoiced || 0,
-              paidAmount: row.amounts?.paid || 0,
-              outstandingAmount: row.amounts?.outstanding || 0,
+              invoicedAmount: row.amounts?.invoiced ?? row.invoiced ?? 0,
+              paidAmount: row.amounts?.paid ?? row.paid ?? 0,
+              outstandingAmount:
+                row.amounts?.outstanding ?? row.outstanding ?? 0,
               due: dueDisplay,
-              status: row.status,
+              status: row.status || status,
               days: daysLeft,
               overdue,
             };
@@ -394,15 +405,15 @@ const AccountsReceivable = () => {
 
       const exportData = allData.map((row: ReceivableRecord) => ({
         "Voucher No": row.voucher_no || "",
-        Customer: row.customer || "",
+        Customer: row.customer || row.party || "",
         "Party Type": row.party_type || "",
         "Receivable Account": row.receivable_account || "",
         "Voucher Type": row.voucher_type || "",
         "Cost Center": row.cost_center || "",
-        "Invoiced Amount": row.amounts?.invoiced || 0,
-        "Paid Amount": row.amounts?.paid || 0,
-        "Credit Note": row.amounts?.credit_note || 0,
-        "Outstanding Amount": row.amounts?.outstanding || 0,
+        "Invoiced Amount": row.amounts?.invoiced ?? row.invoiced ?? 0,
+        "Paid Amount": row.amounts?.paid ?? row.paid ?? 0,
+        "Credit Note": row.amounts?.credit_note ?? row.credit_note ?? 0,
+        "Outstanding Amount": row.amounts?.outstanding ?? row.outstanding ?? 0,
         "Posting Date": row.posting_date || "",
         "Due Date": row.due_date || "",
         "Age (Days)": row.age || 0,
