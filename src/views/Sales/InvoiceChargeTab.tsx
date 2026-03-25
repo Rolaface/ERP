@@ -50,12 +50,12 @@ const InvoiceChargesTab: React.FC<Props> = ({
   );
 
   return (
-    <div className="flex gap-3 w-full items-start p-4">
+    <div className="flex gap-3 w-fit items-start p-3">
 
       {/* LEFT: Table card */}
-      <div className="flex-1 min-w-0 bg-card rounded-lg shadow-sm border border-theme flex flex-col">
+      <div className="w-[480px] min-w-0 bg-card rounded-lg shadow-sm border border-theme flex flex-col">
 
-        <div className="px-4 py-2.5 border-b border-theme">
+        <div className="px-4 py-2.5 border-b bg-primary">
           <h3 className="text-xs font-semibold text-main tracking-wide">
             Shipping & Other Charges
           </h3>
@@ -71,7 +71,7 @@ const InvoiceChargesTab: React.FC<Props> = ({
                 <th className="px-3 py-2 text-left text-muted font-medium text-[11px]">
                   Name
                 </th>
-                <th className="px-3 py-2 text-left text-muted font-medium text-[11px] w-[160px]">
+                <th className="px-3 py-2 text-left text-muted font-medium text-[11px] w-[140px]">
                   Amount{currency ? ` (${currency})` : ""}
                 </th>
                 <th className="w-[44px]" />
@@ -171,9 +171,9 @@ const InvoiceChargesTab: React.FC<Props> = ({
       </div>
 
       {/* RIGHT: Charges Preview */}
-      <div className="w-[200px] shrink-0 bg-card border border-theme rounded-lg shadow-sm overflow-hidden">
+      <div className="w-[168px] shrink-0 bg-card border border-theme rounded-lg shadow-sm overflow-hidden">
 
-        <div className="px-3 py-2.5 border-b border-theme bg-app">
+        <div className="px-3 py-2.5 border-b bg-primary">
           <h3 className="text-[11px] font-semibold text-main tracking-wide">
             Charges Preview
           </h3>
@@ -192,7 +192,7 @@ const InvoiceChargesTab: React.FC<Props> = ({
             if (!amount) return null;
             return (
               <div key={idx} className="flex justify-between items-center gap-1">
-                <span className="text-muted truncate max-w-[100px]">
+                <span className="text-muted truncate max-w-[80px]">
                   − {ch.name || "Charge"}
                 </span>
                 <span className="text-muted shrink-0">
