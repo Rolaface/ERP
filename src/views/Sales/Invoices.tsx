@@ -112,7 +112,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         dueDate: inv.dueDate,
         dateOfInvoice: new Date(inv.dateOfInvoice),
         total: Number(inv.totalAmount),
-         OutStandingAmount: inv.OutStandingAmount ?? 0,
+       outstandingAmount: inv.outstandingAmount ?? 0,
         totalTax: inv.totalTax,
         invoiceStatus: inv.invoiceStatus,
         invoiceTypeParent: inv.invoiceTypeParent,
@@ -249,7 +249,7 @@ const handleReceivePayment = (inv: InvoiceSummary) => {
           Date: inv.dateOfInvoice.toLocaleDateString(),
           "Due Date": inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "",
           Amount: inv.total,
-          OutStanding:inv.OutStandingAmount,
+          OutStanding:inv.outstandingAmount,
           Currency: inv.currency,
           Status: inv.invoiceStatus,
         }))
@@ -518,13 +518,13 @@ const handleRowStatusChange = async (
 
     },
     {
-  key: "OutStandingAmount",
+  key: "outstandingAmount",
   header: "OutStanding",
   align: "right",
   sortable: true,
   render: (inv) => (
     <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
-      {(inv.OutStandingAmount ?? 0).toLocaleString()} {inv.currency}
+      {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
     </code>
   ),
 },
@@ -663,7 +663,7 @@ const handleRowStatusChange = async (
           partyType:        "Customer",
           partyName:        paymentInvoice.customerName,
           partyId:          paymentInvoice.customerId,
-          amount:           paymentInvoice.OutStandingAmount,   
+          amount:          paymentInvoice.outstandingAmount,
           referenceInvoice: paymentInvoice.invoiceNumber,       
         }
       : undefined

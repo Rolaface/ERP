@@ -46,9 +46,17 @@ function buildPayload(
   const receivedAmount = Number(form?.amountTo ?? paymentAmount);
 
   // References (invoice allocations)
-  const referenceDoctype =
-    form?.paymentType === "Pay" ? "Purchase Invoice" : "Sales Invoice";
+const getReferenceDoctype = (partyType: string): string => {
+  switch (partyType) {
+    case "Supplier":   return "Purchase Invoice";
+    case "Customer":   return "Sales Invoice";
+    case "Employee":   return "Journal Entry";
+    case "Shareholder": return "Journal Entry";
+    default:           return "Journal Entry";
+  }
+};
 
+const referenceDoctype = getReferenceDoctype(form?.partyType ?? "");
   const allocations: Record<string, number> = form?.allocations ?? {};
   const invoiceDueDates: Record<string, string> = form?.invoiceDueDates ?? {}; 
 
@@ -136,7 +144,7 @@ const PaymentEntryModal: React.FC<Props> = ({
   const [invoicesMounted, setInvoicesMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const isAdvanceFromPO = Boolean(defaultValues?.referenceInvoice);
+ const isAdvanceFromPO = false;
 
   const visibleTabs = isAdvanceFromPO
     ? ALL_TABS.filter((t) => t.key !== "invoices")
@@ -164,12 +172,14 @@ const PaymentEntryModal: React.FC<Props> = ({
     setInvoicesMounted(false);
     setIsSaving(false);
 
-    if (!isAdvanceFromPO && defaultValues?.referenceInvoice) {
-      setInvoicesMounted(true);
-      setTimeout(() => {
-        setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
-      }, 200);
-    }
+// Auto-allocate reference invoice if opened from invoice table
+if (defaultValues?.referenceInvoice && base.amount) {
+  base.allocations = {
+    [defaultValues.referenceInvoice]: Number(base.amount),
+  };
+  base.allocatedAmount = Number(base.amount);
+  base.selectedInvoices = [defaultValues.referenceInvoice];
+}
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Derived values 
