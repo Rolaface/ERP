@@ -13,6 +13,7 @@ import SupplierBankDetails from "./SupplierBankDetails";
 import { getSupplierStatement } from "../../api/statementApi";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
 import type { BankAccount } from "../../types/BankAccount/bank";
+import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 
 interface Props {
   supplier: Supplier;
@@ -626,10 +627,10 @@ const SupplierDetailView: React.FC<Props> = ({
         isOpen={showInvoiceModal}
         onClose={() => setShowInvoiceModal(false)}
       />
-      <SupplierPaymentModal
+      <PaymentEntryModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        supplierName={supplierName}
+     
       // supplierCode={supplierCode}
       />
 

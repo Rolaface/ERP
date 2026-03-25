@@ -22,6 +22,7 @@ import CustomerInvoices from "./CustomerInvoices";
 import CustomerQuotations from "./CustomerQuotations";
 import CustomerBankDetails from "./CustomerBankDetails";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
+import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
 
 import { CreditCard } from "lucide-react";
 interface Props {
@@ -519,15 +520,15 @@ ${sellingTerms?.liability || ""}
         onClose={() => setCustomerModalOpen(false)}
         onSubmit={(created: any) => onCustomerSelect(created)}
       />
-     <CustomerPaymentModal
+     <PaymentEntryModal
   isOpen={showPaymentModal}
-  onClose={() => setShowPaymentModal(false)}
-  customerId={customer.id}
-  customerName={customer.name}
-  currency={customer.currency}
-  invoiceNumber=""
-  totalAmount={0}
-  amountPaid={0}
+ onClose={() => {
+  setShowPaymentModal(false);
+}}
+  onSuccess={() => {
+    setShowPaymentModal(false);
+  }}
+  
 />
 <AddBankAccountModal
   isOpen={showBankAccountModal}

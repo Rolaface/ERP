@@ -28,13 +28,13 @@ interface PaymentDetailsTabProps {
 }
 
 const PARTY_FILLED_FIELDS = {
-  partyName:          "",
-  glFrom:             "",
-  glTo:               "",
-  currencyFrom:       "",
-  currencyTo:         "",
+  partyName: "",
+  glFrom: "",
+  glTo: "",
+  currencyFrom: "",
+  currencyTo: "",
   companyBankAccount: "",
-  partyBankAccount:   "",
+  partyBankAccount: "",
 };
 
 const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
@@ -42,7 +42,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   onChange,
   onFormChange,
   onAllocate,
-  islocked      = false,
+  islocked = false,
   isPartyLocked = false,
 }) => {
   const { options: modeOptions, isLoading: modesLoading } = usePaymentModes();
@@ -63,7 +63,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   const paymentType =
     (form.paymentType as "Pay" | "Receive" | "Internal Transfer") || "Pay";
   const partyType =
-    (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") || "";
+    (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") ||
+    "";
 
   const { partyOptions, isLoadingParties } = usePartyOptions(partyType);
 
@@ -86,7 +87,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   // ── Hook 8: GL ledger options for From + To ───────────────────────────────
   const {
     fromOptions: ledgerFromOptions,
-    toOptions:   ledgerToOptions,
+    toOptions: ledgerToOptions,
     isLoadingLedgers,
   } = useLedgerOptions(paymentType, partyType);
 
@@ -97,15 +98,20 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   // ── Hook 9: Exchange rate ─────────────────────────────────────────────────
   const currencyFrom = form.currencyFrom ?? "";
-  const currencyTo   = form.currencyTo   ?? "";
-  const date         = form.date || dayjs().format("YYYY-MM-DD");
+  const currencyTo = form.currencyTo ?? "";
+  const date = form.date || dayjs().format("YYYY-MM-DD");
 
   const {
-    rate:             fetchedRate,
-    error:            rateError,
+    rate: fetchedRate,
+    error: rateError,
     isLoadingRate,
     currenciesDiffer,
-  } = useExchangeRate(currencyFrom, currencyTo, date,form.companyDefaultCurrency);
+  } = useExchangeRate(
+    currencyFrom,
+    currencyTo,
+    date,
+    form.companyDefaultCurrency,
+  );
 
   // Sync exchange rate result into form state
   useEffect(() => {
@@ -126,18 +132,28 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   // ── Mode of payment → auto-fill glFrom or glTo ───────────────────────────
   useEffect(() => {
     if (!selectedMode) {
-      if (paymentType === "Pay")
-        onFormChange({ glFrom: "", currencyFrom: "" });
+      if (paymentType === "Pay") onFormChange({ glFrom: "", currencyFrom: "" });
       else if (paymentType === "Receive")
         onFormChange({ glTo: "", currencyTo: "" });
       else
-        onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
+        onFormChange({
+          glFrom: "",
+          currencyFrom: "",
+          glTo: "",
+          currencyTo: "",
+        });
       return;
     }
     if (paymentType === "Pay")
-      onFormChange({ glFrom: selectedMode.defaultAccount, currencyFrom: selectedMode.currency });
+      onFormChange({
+        glFrom: selectedMode.defaultAccount,
+        currencyFrom: selectedMode.currency,
+      });
     else if (paymentType === "Receive")
-      onFormChange({ glTo: selectedMode.defaultAccount, currencyTo: selectedMode.currency });
+      onFormChange({
+        glTo: selectedMode.defaultAccount,
+        currencyTo: selectedMode.currency,
+      });
     else
       onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
   }, [selectedMode, paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -147,7 +163,11 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   useEffect(() => {
     const partyKey = form.partyId || form.partyName;
-    if (!partyKey || (form.partyType !== "Customer" && form.partyType !== "Supplier")) return;
+    if (
+      !partyKey ||
+      (form.partyType !== "Customer" && form.partyType !== "Supplier")
+    )
+      return;
 
     const requestId = ++requestRef.current;
 
@@ -162,9 +182,9 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       if (!details) return;
 
       onFormChange({
-        partyName:          details.partyName,
+        partyName: details.partyName,
         companyBankAccount: details.companyBankAccount,
-        partyBankAccount:   details.partyBankAccount,
+        partyBankAccount: details.partyBankAccount,
         glFrom:
           form.paymentType === "Pay"
             ? details.companyLedgerAccount
@@ -194,21 +214,24 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     onChange(e);
     onFormChange({
       ...PARTY_FILLED_FIELDS,
-      allocatedAmount:  0,
+      allocatedAmount: 0,
       selectedInvoices: [],
-      allocations:      {},
+      allocations: {},
     });
     clearCompanyBanks();
     clearPartyBanks();
   };
 
-  const handlePartyNameSelect = async (_: string, option: PartyOption | null) => {
+  const handlePartyNameSelect = async (
+    _: string,
+    option: PartyOption | null,
+  ) => {
     if (!option?.value) {
       onFormChange({
         ...PARTY_FILLED_FIELDS,
-        allocatedAmount:  0,
+        allocatedAmount: 0,
         selectedInvoices: [],
-        allocations:      {},
+        allocations: {},
       });
       clearCompanyBanks();
       clearPartyBanks();
@@ -224,27 +247,29 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     ]);
     if (!details) return;
 
-    const base  = { partyName: details.partyName || option.label };
+    const base = { partyName: details.partyName || option.label };
     const banks = {
       companyBankAccount: details.companyBankAccount,
-      partyBankAccount:   details.partyBankAccount,
+      partyBankAccount: details.partyBankAccount,
     };
 
     if (paymentType === "Pay") {
       onFormChange({
-        ...base, ...banks,
-        glFrom:       details.companyLedgerAccount,
+        ...base,
+        ...banks,
+        glFrom: details.companyLedgerAccount,
         currencyFrom: details.companyLedgerCurrency,
-        glTo:         details.partyLedgerAccount,
-        currencyTo:   details.partyAccountCurrency,
+        glTo: details.partyLedgerAccount,
+        currencyTo: details.partyAccountCurrency,
       });
     } else {
       onFormChange({
-        ...base, ...banks,
-        glFrom:       details.partyLedgerAccount,
+        ...base,
+        ...banks,
+        glFrom: details.partyLedgerAccount,
         currencyFrom: details.partyAccountCurrency,
-        glTo:         details.companyLedgerAccount,
-        currencyTo:   details.companyLedgerCurrency,
+        glTo: details.companyLedgerAccount,
+        currencyTo: details.companyLedgerCurrency,
       });
     }
   };
@@ -253,13 +278,16 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const val = (e as React.ChangeEvent<HTMLSelectElement>).target.value;
-    if (!val) { onFormChange({ companyBankAccount: "" }); return; }
+    if (!val) {
+      onFormChange({ companyBankAccount: "" });
+      return;
+    }
     const selected = companyBankOptions.find((o) => o.value === val);
     if (!selected) return;
     onFormChange({
       companyBankAccount: selected.value,
-      glFrom:             selected.ledgerAccount,
-      currencyFrom:       selected.currency,
+      glFrom: selected.ledgerAccount,
+      currencyFrom: selected.currency,
     });
   };
 
@@ -267,24 +295,57 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const val = (e as React.ChangeEvent<HTMLSelectElement>).target.value;
-    if (!val) { onFormChange({ partyBankAccount: "" }); return; }
+    if (!val) {
+      onFormChange({ partyBankAccount: "" });
+      return;
+    }
     const selected = partyBankOptions.find((o) => o.value === val);
     if (!selected) return;
     onFormChange({
       partyBankAccount: selected.value,
-      glTo:             selected.ledgerAccount,
-      currencyTo:       selected.currency,
+      glTo: selected.ledgerAccount,
+      currencyTo: selected.currency,
     });
   };
 
   const handleAmountToChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
+    const val =
+      parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value) || 0;
+    const rate = parseFloat(form.exchangeRate) || 1;
     onChange(e);
-    onFormChange({ amount: (e as React.ChangeEvent<HTMLInputElement>).target.value });
+    onFormChange({
+      amount: val ? String(val) : "",
+      amountFrom: val ? String(+(val / rate).toFixed(4)) : "",
+    });
   };
-
-  const canAllocate = Number(form?.amountTo || 0) > 0 && !!form?.partyName;
+  const handleAmountFromChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const val =
+      parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value) || 0;
+    const rate = parseFloat(form.exchangeRate) || 1;
+    onChange(e);
+    onFormChange({
+      amountTo: val ? String(+(val * rate).toFixed(4)) : "",
+      amount: val ? String(+(val * rate).toFixed(4)) : "",
+    });
+  };
+  // ── Auto-recalculate amountTo when exchange rate changes ─────────────────
+  useEffect(() => {
+    const from = parseFloat(form.amountFrom) || 0;
+    const rate = parseFloat(form.exchangeRate) || 1;
+    if (!from) return;
+    onFormChange({
+      amountTo: String(+(from * rate).toFixed(4)),
+      amount: String(+(from * rate).toFixed(4)),
+    });
+  }, [form.exchangeRate]); // eslint-disable-line react-hooks/exhaustive-deps
+  const canAllocate =
+    Number(form?.amountTo || 0) > 0 &&
+    !!form?.partyName &&
+    !form?.referenceInvoice;
 
   // ── GL dropdown option lists ──────────────────────────────────────────────
   const glFromSelectOptions = isLoadingLedgers
@@ -300,7 +361,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       {islocked && (
         <div className="flex items-center gap-2.5 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
           <span className="text-xs text-primary leading-relaxed">
-            Party details are pre-filled from invoice{" "}
+            Party details are pre-filled from{" "}
             <span className="font-bold">{form?.referenceInvoice}</span>. Payment
             Type, Party Type and Name cannot be changed.
           </span>
@@ -326,8 +387,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           onChange={onChange}
           disabled={islocked}
           options={[
-            { label: "Pay",               value: "Pay"               },
-            { label: "Receive",           value: "Receive"           },
+            { label: "Pay", value: "Pay" },
+            { label: "Receive", value: "Receive" },
             { label: "Internal Transfer", value: "Internal Transfer" },
           ]}
         />
@@ -338,10 +399,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           disabled={islocked || isPartyLocked}
           onChange={handlePartyTypeChange}
           options={[
-            { label: "Supplier",    value: "Supplier"    },
-            { label: "Customer",    value: "Customer"    },
+            { label: "Supplier", value: "Supplier" },
+            { label: "Customer", value: "Customer" },
             { label: "Shareholder", value: "Shareholder" },
-            { label: "Employee",    value: "Employee"    },
+            { label: "Employee", value: "Employee" },
           ]}
         />
         <SearchSelect2
@@ -407,8 +468,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         </div>
 
         <div className="relative grid grid-cols-2">
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10
-                          flex items-center justify-center w-8 h-8 rounded-full bg-card border border-[var(--border)] shadow-sm">
+          <div
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10
+                          flex items-center justify-center w-8 h-8 rounded-full bg-card border border-[var(--border)] shadow-sm"
+          >
             <MoveRight size={14} className="text-primary" />
           </div>
 
@@ -423,7 +486,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
               options={
                 isLoadingCompanyBanks
                   ? [{ label: "Loading...", value: "" }]
-                  : companyBankOptions.map((o) => ({ label: o.label, value: o.value }))
+                  : companyBankOptions.map((o) => ({
+                      label: o.label,
+                      value: o.value,
+                    }))
               }
             />
             <div className="grid grid-cols-[1fr_100px] gap-2">
@@ -432,9 +498,11 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                 name="glFrom"
                 value={form.glFrom ?? ""}
                 onChange={(e) => {
-                  const selected = ledgerFromOptions.find((o) => o.value === e.target.value);
+                  const selected = ledgerFromOptions.find(
+                    (o) => o.value === e.target.value,
+                  );
                   onFormChange({
-                    glFrom:       selected?.value    ?? e.target.value,
+                    glFrom: selected?.value ?? e.target.value,
                     currencyFrom: selected?.currency ?? form.currencyFrom ?? "",
                   });
                 }}
@@ -461,7 +529,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
               options={
                 isLoadingPartyBanks
                   ? [{ label: "Loading...", value: "" }]
-                  : partyBankOptions.map((o) => ({ label: o.label, value: o.value }))
+                  : partyBankOptions.map((o) => ({
+                      label: o.label,
+                      value: o.value,
+                    }))
               }
             />
             <div className="grid grid-cols-[1fr_100px] gap-2">
@@ -470,9 +541,11 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                 name="glTo"
                 value={form.glTo ?? ""}
                 onChange={(e) => {
-                  const selected = ledgerToOptions.find((o) => o.value === e.target.value);
+                  const selected = ledgerToOptions.find(
+                    (o) => o.value === e.target.value,
+                  );
                   onFormChange({
-                    glTo:       selected?.value    ?? e.target.value,
+                    glTo: selected?.value ?? e.target.value,
                     currencyTo: selected?.currency ?? form.currencyTo ?? "",
                   });
                 }}
@@ -497,22 +570,20 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
               name="amountFrom"
               type="number"
               value={form.amountFrom ?? ""}
-              onChange={onChange}
+              onChange={handleAmountFromChange}
               className="no-spinner"
             />
           </div>
 
           <div className="flex flex-col items-center justify-end py-4 gap-1 px-2 min-w-[80px]">
-            <span className="text-xs text-muted whitespace-nowrap">Exch. Rate</span>
+            <span className="text-xs text-muted whitespace-nowrap">
+              Exch. Rate
+            </span>
             <div className="relative w-full">
               <input
                 type="number"
                 name="exchangeRate"
-                value={
-                  !currenciesDiffer
-                    ? ""
-                    : (form.exchangeRate ?? "")
-                }
+                value={!currenciesDiffer ? "" : (form.exchangeRate ?? "")}
                 onChange={onChange as any}
                 placeholder="—"
                 disabled={!currenciesDiffer || isLoadingRate}
@@ -524,7 +595,9 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                     : rateError
                       ? "border-red-300 focus:ring-red-400 bg-card"
                       : "border-[var(--border)] bg-card",
-                  isLoadingRate && currenciesDiffer ? "opacity-50 cursor-not-allowed" : "",
+                  isLoadingRate && currenciesDiffer
+                    ? "opacity-50 cursor-not-allowed"
+                    : "",
                 ].join(" ")}
               />
               {isLoadingRate && currenciesDiffer && (
@@ -536,8 +609,13 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
             </div>
             {rateError && !isLoadingRate && currenciesDiffer && (
               <div className="flex items-start gap-1 mt-0.5 w-full max-w-[160px]">
-                <AlertCircle size={10} className="text-red-400 flex-shrink-0 mt-[1px]" />
-                <p className="text-[10px] text-red-500 leading-tight">{rateError}</p>
+                <AlertCircle
+                  size={10}
+                  className="text-red-400 flex-shrink-0 mt-[1px]"
+                />
+                <p className="text-[10px] text-red-500 leading-tight">
+                  {rateError}
+                </p>
               </div>
             )}
           </div>
@@ -581,7 +659,9 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       </div>
 
       {isLoadingDetails && (
-        <p className="text-xs text-muted animate-pulse">Fetching party details...</p>
+        <p className="text-xs text-muted animate-pulse">
+          Fetching party details...
+        </p>
       )}
     </div>
   );
