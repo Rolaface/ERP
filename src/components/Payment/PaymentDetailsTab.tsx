@@ -384,12 +384,14 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           name="referenceNo"
           value={form.referenceNo}
           onChange={onChange}
+          required
         />
         <DatePickerInput
           label="Cheque / Reference Date"
           name="referenceDate"
           value={form.referenceDate}
           onChange={(name, value) => onFormChange({ [name]: value })}
+          required
         />
       </div>
 
