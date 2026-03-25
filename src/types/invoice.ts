@@ -30,6 +30,10 @@ export interface Invoice {
   terms: InvoiceTerms;
  shippingCharges?:number;
  insuranceCharges?:number;
+  invoiceCharges: {
+    charge_type: string;
+    amount: string;
+  }[];
 }
 
 export interface InvoiceSummary {

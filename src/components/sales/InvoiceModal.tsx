@@ -896,7 +896,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           )}
           {ui.activeTab === "otherCharges" && (
   <InvoiceChargesTab
-    charges={formData.otherCharges || []}
+    charges={formData.invoiceCharges || []}
     currency={formData.currencyCode}
     totals={totals}
     onAdd={actions.addOtherCharge}

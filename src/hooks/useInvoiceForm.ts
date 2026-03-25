@@ -61,11 +61,10 @@ export const useInvoiceForm = (
   const [formData, setFormData] = useState<Invoice>({
     ...DEFAULT_INVOICE_FORM,
     terms: { ...EMPTY_TERMS },
-    otherCharges: [
-    { name: "Shipping", amount: "" },
-    { name: "Insurance", amount: "" },
-  ],
-    
+    invoiceCharges: [
+      { charge_type: "Shipping", amount: "" },
+      { charge_type: "Insurance", amount: "" },
+    ],
   });
 
   useEffect(() => {
@@ -656,7 +655,7 @@ const handleBulkItemChange = (
 const addOtherCharge = () => {
   setFormData((prev: any) => ({
     ...prev,
-    otherCharges: [...(prev.otherCharges || []), { name: "", amount: "" }],
+    invoiceCharges: [...(prev.invoiceCharges || []), { charge_type: "", amount: "" }],
   }));
 };
 
@@ -667,9 +666,9 @@ const handleOtherChargeChange = (
   value: any
 ) => {
   setFormData((prev: any) => {
-    const updated = [...(prev.otherCharges || [])];
+    const updated = [...(prev.invoiceCharges || [])];
     updated[index] = { ...updated[index], [field]: value };
-    return { ...prev, otherCharges: updated };
+    return { ...prev, invoiceCharges: updated };
   });
 };
 
@@ -677,7 +676,7 @@ const handleOtherChargeChange = (
 const removeOtherCharge = (index: number) => {
   setFormData((prev: any) => ({
     ...prev,
-    otherCharges: prev.otherCharges.filter(
+    invoiceCharges: prev.invoiceCharges.filter(
       (_: any, i: number) => i !== index
     ),
   }));
@@ -804,9 +803,9 @@ const removeOtherCharge = (index: number) => {
 
         setFormData({
           ...DEFAULT_INVOICE_FORM,
-          otherCharges: [
-    { name: "Shipping Charge", amount: "" },
-    { name: "Insurance", amount: "" },
+          invoiceCharges: [
+    { charge_type: "Shipping Charge", amount: "" },
+    { charge_type: "Insurance", amount: "" },
   ],
           dateOfInvoice: today,
           dueDate: dueDate,
@@ -906,7 +905,7 @@ const removeOtherCharge = (index: number) => {
     page * ITEMS_PER_PAGE,
     (page + 1) * ITEMS_PER_PAGE,
   );
-  const paginatedCharges = formData.otherCharges.slice(
+  const paginatedCharges = formData.invoiceCharges.slice(
   chargePage * ITEMS_PER_PAGE,
   (chargePage + 1) * ITEMS_PER_PAGE,
 );
@@ -930,7 +929,7 @@ const removeOtherCharge = (index: number) => {
       sameAsBilling,
       chargePage,
 setChargePage,
-chargeCount: formData.otherCharges.length,
+chargeCount: formData.invoiceCharges.length,
       itemCount: formData.items.length,
       isExport:
         String(formData.invoiceType ?? "").trim().toLowerCase() === "export",

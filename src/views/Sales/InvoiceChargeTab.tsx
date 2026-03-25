@@ -193,7 +193,7 @@ const InvoiceChargesTab: React.FC<Props> = ({
             return (
               <div key={idx} className="flex justify-between items-center gap-1">
                 <span className="text-muted truncate max-w-[80px]">
-                  − {ch.name || "Charge"}
+                  − {ch.charge_type || "Charge"}
                 </span>
                 <span className="text-muted shrink-0">
                   {symbol} {amount.toFixed(2)}

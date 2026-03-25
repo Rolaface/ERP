@@ -331,7 +331,10 @@ export const generateInvoicePDF = async (
   const grandTotal  = gross - discTotal + taxTotal;
 
   // ── CIF / Other Charges / FOB ─────────────────────────────
-  const otherCharges = Number(invoice?.otherCharges ?? 0);
+  const otherCharges = (invoice?.invoiceCharges || []).reduce(
+  (sum: number, ch: any) => sum + Number(ch.amount ?? 0),
+  0
+);
   const cifValue     = grandTotal;               
   const fobValue     = cifValue - otherCharges;  
 
@@ -346,10 +349,16 @@ export const generateInvoicePDF = async (
     theme:  "grid",
     alternateRowStyles: { fillColor: WHITE },
     body: [
-      ["CIF",            `${fmt2(cifValue)} ${cur}`],
-      ["Other Charges",  `${fmt2(otherCharges)} ${cur}`],
-      ["FOB",            `${fmt2(fobValue)} ${cur}`],
-    ],
+  ["CIF", `${fmt2(cifValue)} ${cur}`],
+
+  // dynamic charges
+  ...(invoice?.invoiceCharges || []).map((ch: any) => [
+    ch.charge_type,
+    `${fmt2(ch.amount)} ${cur}`,
+  ]),
+
+  ["FOB", `${fmt2(fobValue)} ${cur}`],
+],
     styles: {
       fontSize: 8,
       cellPadding: { top: 1.5, bottom: 1.5, left: 3, right: 3 },
