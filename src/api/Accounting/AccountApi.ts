@@ -2,11 +2,10 @@ import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "../axiosInstance";
 import { API, ERP_BASE } from "../../config/api";
 import type { PLResponse } from "../../types/Accounting/ProfitLoss";
-import type {CFResponse} from "../../types/Accounting/Cashflow"
+import type { CFResponse } from "../../types/Accounting/Cashflow";
 const api = createAxiosInstance(ERP_BASE);
 
 export const AccountingAPI = API.accounting;
-
 
 export interface CreateCOAPayload {
   account_name: string;
@@ -22,7 +21,9 @@ export interface CreateCOAPayload {
   is_root: "false";
 }
 
-export async function createChartOfAccount(payload: CreateCOAPayload): Promise<any> {
+export async function createChartOfAccount(
+  payload: CreateCOAPayload,
+): Promise<any> {
   const resp: AxiosResponse = await api.post(AccountingAPI.createCOA, payload);
   return resp.data;
 }
@@ -30,7 +31,6 @@ export async function createChartOfAccount(payload: CreateCOAPayload): Promise<a
 /**
  * Get Chart of Accounts
  */
-
 
 export async function getChartOfAccounts(): Promise<any> {
   const resp: AxiosResponse = await api.get(AccountingAPI.getCOA);
@@ -164,7 +164,6 @@ export async function getAllReceivables(
   return resp.data;
 }
 
-
 export interface CashFlowFilters {
   periodicity?: "Monthly" | "Quarterly" | "Yearly" | "Half-Yearly";
   from_fiscal_year?: string;
@@ -174,11 +173,12 @@ export interface CashFlowFilters {
   filter_based_on?: "Fiscal Year" | "Date Range";
 }
 
- 
-export async function getCashFlow(filters: CashFlowFilters): Promise<CFResponse> {
+export async function getCashFlow(
+  filters: CashFlowFilters,
+): Promise<CFResponse> {
   const resp: AxiosResponse<CFResponse> = await api.get(
     AccountingAPI.getCashFlow,
-    { params: filters }
+    { params: filters },
   );
   return resp.data;
 }
