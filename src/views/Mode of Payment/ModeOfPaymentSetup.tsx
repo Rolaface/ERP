@@ -14,20 +14,12 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 
 
-interface ModeOfPayment {
-  id: string;
-  name: string;
-  type: string;
-  defaultAccount?: string;
-  enabled: boolean;
-}
 
 
 const ModeOfPaymentSetup: React.FC = () => {
-  const [data, setData] = useState<ModeOfPayment[]>([]);
+   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -39,7 +31,7 @@ const ModeOfPaymentSetup: React.FC = () => {
     try {
       setLoading(true);
 
-      const res = await getAllModeOfPayment(page, pageSize,searchTerm);
+      const res = await getAllModeOfPayment(page, pageSize);
 
       setData(Array.isArray(res.data) ? res.data : []);
       setTotalPages(res.pagination.total_pages);
@@ -49,7 +41,7 @@ const ModeOfPaymentSetup: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize,searchTerm]);
+  }, [page, pageSize]);
 
   useEffect(() => {
     fetchData();
@@ -77,7 +69,7 @@ const ModeOfPaymentSetup: React.FC = () => {
   };
 
   /* ───────── COLUMNS ───────── */
-const columns: Column<ModeOfPayment>[] = [
+ const columns: Column<any>[] = [
     {
       key: "name",
       header: "Mode",
@@ -138,11 +130,6 @@ const columns: Column<ModeOfPayment>[] = [
         data={data}
         loading={loading}
         rowKey={(r) => String(r.id)}
-         searchValue={searchTerm}
-        onSearch={(q) => {
-          setSearchTerm(q);
-          setPage(1);
-        }}
         showToolbar
         enableAdd
         addLabel="Add Mode of Payment"
