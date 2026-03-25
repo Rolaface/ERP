@@ -9,36 +9,138 @@ import ActionButton, {
 import CurrencyConversionModal from "../../components/currencyconversion/CurrencyConversionModal";
 import {
   useCurrencyConversion,
-  CurrencyConversionPayload,
+  type CurrencyConversionPayload,
 } from "../../hooks/useCurrencyConversion";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+  showConfirm,
+} from "../../utils/alert";
+
+
+// Component
+
 
 const CurrencyConversion: React.FC = () => {
-  const { data, loading, addConversion, deleteConversion } =
-    useCurrencyConversion();
+  const {
+    data,
+    loading,
+    pagination,
+    setPagination,
+    search,
+    setSearch,
+    addConversion,
+    updateConversion,
+    deleteConversion,
+  } = useCurrencyConversion();
 
   const [showModal, setShowModal] = useState(false);
+  const [editData, setEditData] = useState<CurrencyConversionPayload | null>(null);
 
-  /* ───────── COLUMNS ───────── */
+  // ── Handlers ─────────────────────────────────
+
+  const handleAdd = () => { setEditData(null); setShowModal(true); };
+  const handleEdit = (row: CurrencyConversionPayload) => { setEditData(row); setShowModal(true); };
+  const handleClose = () => { setShowModal(false); setEditData(null); };
+
+  const handleSave = async (payload: any) => {
+    if (payload.id) return await updateConversion(payload);
+    return await addConversion(payload);
+  };
+
+  const handleSearch = (q: string) => {
+    setSearch(q);
+    setPagination((prev) => ({
+      ...prev,
+      page: 1,
+    }));
+  };
+
+  const handlePageChange = (page: number) => {
+    setPagination((prev) => ({
+      ...prev,
+      page,
+    }));
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPagination((prev) => ({
+      ...prev,
+      page: 1,
+      pageSize: size,
+    }));
+  };
+  // ── Columns ───────────────────────────────────
+
   const columns: Column<CurrencyConversionPayload>[] = [
     {
       key: "date",
       header: "Date",
+      render: (row) => (
+        <span className="text-xs text-muted">
+          {new Date(row.date).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })}
+        </span>
+      ),
     },
     {
       key: "fromCurrency",
-      header: "From Currency",
+      header: "Currency Pair",
+      render: (row) => (
+        <div className="flex items-center gap-1.5 font-medium text-sm">
+          <span>{row.fromCurrency}</span>
+          <FaExchangeAlt className="text-primary text-[10px]" />
+          <span>{row.toCurrency}</span>
+        </div>
+      ),
     },
     {
-      key: "toCurrency",
-      header: "To Currency",
+      key: "exchangeRate",
+      header: "Exchange Rate",
+      render: (row) => (
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold">
+          {row.exchangeRate.toLocaleString()}
+        </code>
+      ),
     },
     {
-      key: "buyRate",
-      header: "Buy Rate",
+      key: "isBuying",
+      header: "Purpose",
+      render: (row) => (
+        <div className="flex gap-1">
+          {row.isBuying && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-700 font-medium">
+              Buy
+            </span>
+          )}
+          {row.isSelling && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-700 font-medium">
+              Sell
+            </span>
+          )}
+        </div>
+      ),
     },
     {
-      key: "sellRate",
-      header: "Sell Rate",
+      key: "createdAt",
+      header: "Created At",
+      render: (row) =>
+        row.createdAt ? (
+          <span className="text-xs text-muted">
+            {new Date(row.createdAt).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </span>
+        ) : (
+          "—"
+        ),
     },
     {
       key: "actions",
@@ -46,11 +148,42 @@ const CurrencyConversion: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
+          {/* ── Edit button — inline, outside menu ── */}
+          <ActionButton
+            type="edit"
+            onClick={() => handleEdit(row)}
+            iconOnly
+          />
+
+          {/* ── Delete inside menu ── */}
           <ActionMenu
             customActions={[
               {
                 label: "Delete",
-                onClick: () => deleteConversion(row.id),
+                onClick: async () => {
+                  const confirmed = await showConfirm(
+                    "Do you want to delete this record?",
+                  );
+                  if (!confirmed) return;
+                  try {
+                    showLoading("Deleting...");
+                    const res = await deleteConversion(row.id);
+                    closeSwal();
+                    const backend = res?.message;
+                    if (
+                      !backend ||
+                      backend.status === "error" ||
+                      backend.status_code >= 400
+                    ) {
+                      showApiError(res);
+                      return;
+                    }
+                    showSuccess(backend.message);
+                  } catch (err) {
+                    closeSwal();
+                    showApiError(err);
+                  }
+                },
               },
             ]}
           />
@@ -58,6 +191,10 @@ const CurrencyConversion: React.FC = () => {
       ),
     },
   ];
+
+  // ─────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────
 
   return (
     <div className="p-6">
@@ -78,18 +215,24 @@ const CurrencyConversion: React.FC = () => {
         showToolbar
         enableAdd
         addLabel="Add Currency Exchange"
-        onAdd={() => setShowModal(true)}
+        onAdd={handleAdd}
+        searchValue={search}
+        onSearch={handleSearch}
+        currentPage={pagination.page}
+        totalPages={pagination.totalPages}
+        pageSize={pagination.pageSize}
+        totalItems={pagination.totalItems}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
       />
 
-
       {/* MODAL */}
-      {showModal && (
-        <CurrencyConversionModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSave={addConversion}
-        />
-      )}
+      <CurrencyConversionModal
+        isOpen={showModal}
+        onClose={handleClose}
+        onSave={handleSave}
+        editData={editData}
+      />
     </div>
   );
 };

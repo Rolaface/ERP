@@ -21,7 +21,6 @@ interface PaymentSummary {
   paymentDate: string;
   customerName: string;
   modeOfPayment: string;
-  referenceNo: string;
   amount: number;
   status: string;
 }
@@ -67,7 +66,7 @@ const Payments: React.FC = () => {
         modeOfPayment: p.paymentMode ?? "",
         referenceNo: p.referenceNumber ?? "-",
         amount: Number(p.amount ?? 0),
-        status: p.status ?? "Draft",
+        status: p.status ?? "-",
       }));
 
       setPayments(mapped);
@@ -128,7 +127,7 @@ const Payments: React.FC = () => {
   const columns: Column<PaymentSummary>[] = [
     {
       key: "id",
-      header: "Payment No.",
+      header: "Id",
       align: "left",
     },
     {
@@ -145,12 +144,7 @@ const Payments: React.FC = () => {
       key: "modeOfPayment",
       header: "Mode of Payment",
       align: "left",
-      render: (p: PaymentSummary) => <StatusBadge status={p.modeOfPayment} />,
-    },
-    {
-      key: "referenceNo",
-      header: "Reference No.",
-      align: "left",
+      render: (p) => p.modeOfPayment || "—",
     },
     {
       key: "amount",
