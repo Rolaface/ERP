@@ -251,7 +251,8 @@ type ModeOfPaymentResponse = {
 export async function getAllModeOfPayment(
   page = 1,
   page_size = 10,
-  enabled?: 0 | 1  
+  search?: string,
+  enabled?: 0 | 1
 ) {
   try {
     const params = new URLSearchParams({
@@ -259,7 +260,10 @@ export async function getAllModeOfPayment(
       page_size: String(page_size),
     });
 
-    // Only appended when explicitly passed — existing callers unaffected
+    if (search) {
+      params.append("search", search); 
+    }
+
     if (enabled !== undefined) {
       params.append("enabled", String(enabled));
     }
