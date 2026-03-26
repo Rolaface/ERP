@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-export const ERP_BASE = ENV.apiBaseUrl;
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -325,5 +325,10 @@ export const API = {
     getItemClasses: `${ERP_BASE}/api/item-class-list/`,
     getCountries: `${ERP_BASE}/api/resource/Country?fields=["name","country_name","code"]&limit_page_length=300`,
     getPackagingUnits: `${ERP_BASE}/api/method/erpnext.packaging_unit.get_all_packaging_units`,
+    getCompanyPayableAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_payable_accounts`,
+    getCompanyRecievableAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_receivable_accounts`,
+    getCompanyCostCenter: `${ERP_BASE}/api/method/custom_api.api.search.get_cost_centers`,
+    getCustomer: `${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
+    getSupplier: `${ERP_BASE}/api/method/custom_api.api.search.get_suppliers`,
   },
 } as const;
