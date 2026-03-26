@@ -185,7 +185,7 @@ export const useCoaLogic = (
 
       if (!res || !isSuccess) {
         // Pass the most descriptive error object available
-        showApiError(res?.message ?? res);
+        showSuccess(res?.message ?? res);
         return;
       }
 
