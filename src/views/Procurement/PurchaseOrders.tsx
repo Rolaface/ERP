@@ -40,6 +40,7 @@ interface PurchaseOrder {
   amount: number;
   status: string;
   deliveryDate: string;
+  referenceNumber: string;
 }
 
 interface PurchaseOrdersTableProps {
@@ -137,6 +138,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
         deliveryDate: po.deliveryDate || po.items?.[0]?.requiredBy || "",
         amount: po.grandTotal,
         status: po.status,
+        referenceNumber: po.referenceNumber,
       }));
 
       setOrders(mappedOrders);
@@ -267,6 +269,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
             deliveryDate: po.deliveryDate,
             amount: po.grandTotal,
             status: po.status,
+            referenceNumber: po.referenceNumber,
           }));
 
           allData = [...allData, ...mapped];
@@ -303,10 +306,12 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
         index + 1,
         po.id,
         po.supplier,
+        po.referenceNumber || "-",
         po.date,
         po.deliveryDate,
         `INR ${Number(po.amount || 0).toFixed(2)}`,
         po.status,
+
       ]);
 
       autoTable(doc, {
@@ -373,6 +378,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   // ── Columns
   const columns: Column<PurchaseOrder>[] = [
     { key: "id", header: "PO ID", align: "left" },
+    {key: "referenceNumber", header:"Reference Number", align:"left"},
     { key: "supplier", header: "Supplier", align: "left" },
     { key: "date", header: "Date", align: "left" },
     {
