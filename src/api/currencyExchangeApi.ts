@@ -68,3 +68,13 @@ export async function deleteCurrencyExchange(id: string): Promise<any> {
   return resp.data;
 }
 
+/* ───────── GET EXCHANGE RATE ───────── */
+export async function getExchangeRate(
+  from_currency: string,
+  to_currency: string
+): Promise<any> {
+  const url = `${CurrencyExchangeAPI.get}?from_currency=${encodeURIComponent(from_currency)}&to_currency=${encodeURIComponent(to_currency)}`;
+  const resp: AxiosResponse = await api.get(url);
+  return resp.data;
+}
+
