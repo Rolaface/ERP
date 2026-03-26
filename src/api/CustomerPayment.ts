@@ -9,9 +9,8 @@ export const CustomerPaymentAPI = API.customer;
  * Payload for receive payment API
  */
 export interface ReceiveCustomerPaymentPayload {
-
   customer_name: string;
-  
+
   invoice_number: string;
   payment_date: string;
   payment_mode: string;
@@ -24,12 +23,11 @@ export interface ReceiveCustomerPaymentPayload {
  * Receive payment for a customer invoice
  */
 export async function receiveCustomerPayment(
-  payload: ReceiveCustomerPaymentPayload
+  payload: ReceiveCustomerPaymentPayload,
 ): Promise<any> {
-
   const resp: AxiosResponse = await api.post(
     CustomerPaymentAPI.receivePayment,
-    payload
+    payload,
   );
 
   return resp.data;
@@ -40,20 +38,29 @@ export const getAllPayments = async (
   page?: number,
   pageSize?: number,
   search?: string,
-  partyName?: string   
+  partyName?: string,
 ): Promise<any> => {
   const resp: AxiosResponse = await api.get(
     CustomerPaymentAPI.getAllpayements,
     {
-     params: {
-  ...(partyType && { partyType }),
-  ...(page && { page }),
-  ...(pageSize && { pageSize }),
-  ...(search && { search }),
-    ...(partyName && { partyName }),
-},
-    }
+      params: {
+        ...(partyType && { partyType }),
+        ...(page && { page }),
+        ...(pageSize && { pageSize }),
+        ...(search && { search }),
+        ...(partyName && { partyName }),
+      },
+    },
   );
 
- return resp.data;
+  return resp.data;
+};
+export const getPaymentById = async (paymentId: string): Promise<any> => {
+  const resp: AxiosResponse = await api.get(CustomerPaymentAPI.getPaymentById, {
+    params: {
+      payment_id: paymentId,
+    },
+  });
+
+  return resp.data;
 };
