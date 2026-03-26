@@ -305,6 +305,14 @@ export const API = {
   },
 
   /* =========================
+   * ANALYTICS
+   * ========================= */
+  analytics: {
+    getSalesAnalytics: `${ERP_BASE}/api/method/custom_api.api.sales_analytics.get_sales_analytics`,
+    getPurchaseAnalytics: `${ERP_BASE}/api/method/custom_api.api.purchase_analytics.get_purchase_analytics`,
+  },
+
+  /* =========================
    * LOOKUPS / CODES
    * ========================= */
   lookup: {
