@@ -88,10 +88,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   }, [isOpen]);
 
   const symbol = currencySymbols[formData.currencyCode] || "";
-  const showExchangeRate =
-    String(formData.currencyCode ?? "")
-      .trim()
-      .toUpperCase() !== "INR";
+const showExchangeRate =
+  !!ui.baseCurrency &&
+  !!formData.currencyCode &&
+  formData.currencyCode.trim().toUpperCase() !== ui.baseCurrency.trim().toUpperCase();
   const showExportField = ui.isExport;
   // Remove internal handleFormSubmit. Let parent handle submit.
 
