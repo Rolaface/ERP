@@ -130,7 +130,7 @@ const SupplierPurchaseOrders = ({ supplierName }: Props) => {
       align: "right" as const,
       render: (row: PurchaseOrder) => (
         <span className="text-sm font-black text-primary">
-          ₹{row.grandTotal.toLocaleString()}
+          {row.grandTotal.toLocaleString()}
         </span>
       ),
     },
@@ -160,7 +160,7 @@ const SupplierPurchaseOrders = ({ supplierName }: Props) => {
         <SummaryCard
           icon={<FileText size={14} />}
           label="Total Value"
-          value={`₹${summary.totalValue.toLocaleString()}`}
+          value={`${summary.totalValue.toLocaleString()}`}
         />
       </div>
 

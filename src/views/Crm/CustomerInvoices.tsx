@@ -129,7 +129,7 @@ const CustomerInvoices = ({ customerName }: Props) => {
       align: "right" as const,
       render: (row: SalesInvoice) => (
         <span className="text-sm font-black text-primary">
-          ₹{row.totalAmount?.toLocaleString()}
+          {row.totalAmount?.toLocaleString()}
         </span>
       ),
     },
@@ -139,7 +139,7 @@ const CustomerInvoices = ({ customerName }: Props) => {
       align: "right" as const,
       render: (row: SalesInvoice) => (
         <span className="text-sm font-black text-danger">
-          ₹{row.outstandingAmount?.toLocaleString()}
+          {row.outstandingAmount?.toLocaleString()}
         </span>
       ),
     },
@@ -173,7 +173,7 @@ const CustomerInvoices = ({ customerName }: Props) => {
         <SummaryCard
           icon={<Receipt size={14} />}
           label="Total Value"
-          value={`₹${summary.totalValue.toLocaleString()}`}
+          value={`${summary.totalValue.toLocaleString()}`}
         />
       </div>
 

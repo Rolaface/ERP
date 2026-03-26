@@ -48,7 +48,7 @@ interface Props {
 }
 
 /* ─── HELPERS ─── */
-const fmt = (n: number) => `₹${Math.abs(n).toLocaleString("en-IN")}`;
+const fmt = (n: number) => `${Math.abs(n).toLocaleString("en-IN")}`;
 
 /* ─── MAIN COMPONENT ─── */
 const SupplierStatement = ({
