@@ -377,7 +377,7 @@ const payL: string[] = ([
     tableWidth: CIF_TABLE_W,
   });
 
-  // ── Currency Conversion Row (shown only when currency ≠ INR) 
+
   if (cur !== "INR") {
     const exchangeRate   = Number(invoice?.exchangeRt ?? 0);
     const fobInINR       = fobValue * exchangeRate;

@@ -126,11 +126,13 @@ const showExchangeRate =
                   if (submitting) return;
                   setSubmitting(true);
                   try {
-                    // Create a dummy event to satisfy handleSubmit's required argument
+                   
                     const dummyEvent = {
                       preventDefault: () => {},
                     } as React.FormEvent;
                     const payload = await actions.handleSubmit(dummyEvent);
+                    payload.invoiceCharges = (payload.invoiceCharges || [])
+                   .filter(ch => ch.charge_type?.trim() && Number(ch.amount || 0) > 0);
                     if (!payload) {
                       showValidationError(
                         "Please fill all required fields correctly.",
