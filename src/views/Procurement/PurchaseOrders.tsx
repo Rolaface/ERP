@@ -378,7 +378,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   // ── Columns
   const columns: Column<PurchaseOrder>[] = [
     { key: "id", header: "PO ID", align: "left" },
-    {key: "referenceNumber", header:"Reference Number", align:"left"},
+    {key: "referenceNumber", header:"Reference Code", align:"left"},
     { key: "supplier", header: "Supplier", align: "left" },
     { key: "date", header: "Date", align: "left" },
     {

@@ -169,7 +169,7 @@ export const DetailsTab = ({
 
           <div className="w-[135px]">
             <ModalInput
-              label="Reference Number"
+              label="Reference Code"
               name="referenceNumber"
               value={form.referenceNumber}
               onChange={onFormChange}
