@@ -171,7 +171,7 @@ const CustomerQuotations = ({ customerId }: Props) => {
         <SummaryCard
           icon={<FileText size={14} />}
           label="Total Value"
-          value={`₹${summary.totalValue.toLocaleString()}`}
+          value={`${summary.totalValue.toLocaleString()}`}
         />
       </div>
 
