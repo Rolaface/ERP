@@ -94,7 +94,7 @@ export const API = {
     getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
   },
   CurrencyExchange: {
-    create: `${ERP_BASE} /api/method/custom_api.api.currency_exchange.create_currency_exchange`,
+    create: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.create_currency_exchange`,
     getAll: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
     update: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.update_currency_exchange?`,
     delete: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.delete_currency_exchange`,
