@@ -5,7 +5,7 @@ import type { TermSection } from "../types/termsAndCondition";
 import type { Invoice, InvoiceItem } from "../types/invoice";
 import { getRolaCountryList } from "../api/lookupApi";
 import { getItemByItemCode } from "../api/itemApi";
-import { getExchangeRate } from "../api/exchangeRateApi";
+import {getExchangeRate} from "../api/currencyExchangeApi";
 import {
   showApiError,
   showLoading,
@@ -178,7 +178,7 @@ export const useInvoiceForm = (
     setExchangeRateLoading(true);
     setExchangeRateError(null);
 
-    getExchangeRate(code)
+    getExchangeRate(code, "INR")
       .then((res) => {
         if (cancelled) return;
        const rate = Number(res?.exchange_rate);
