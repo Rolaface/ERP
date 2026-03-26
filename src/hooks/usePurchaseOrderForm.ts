@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { showApiError, showSuccess , showValidationError } from "../utils/alert";
+import {
+  showApiError, showSuccess, showValidationError, showLoading,
+  closeSwal,
+} from "../utils/alert";
 import type {
   PurchaseOrderFormData,
   POTab,
@@ -50,16 +53,16 @@ export const usePurchaseOrderForm = ({
     companyBillingAddress?: any;
     baseCurrency?: string;
   }>({});
-  
-const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
-  setForm((prev) => ({
-    ...prev,
-    items: prev.items.map((item) => ({
-      ...item,
-      [field]: value,
-    })),
-  }));
-};
+
+  const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      items: prev.items.map((item) => ({
+        ...item,
+        [field]: value,
+      })),
+    }));
+  };
   useEffect(() => {
     if (!isOpen) {
       setForm(emptyPOForm);
@@ -126,17 +129,17 @@ const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
   }, [isOpen, poId]);
 
 
-useEffect(() => {
-  if (!form.requiredBy) return;
+  useEffect(() => {
+    if (!form.requiredBy) return;
 
-  setForm((prev) => {
-    const updatedItems = prev.items.map((item) =>
-      item.requiredBy ? item : { ...item, requiredBy: prev.requiredBy }
-    );
+    setForm((prev) => {
+      const updatedItems = prev.items.map((item) =>
+        item.requiredBy ? item : { ...item, requiredBy: prev.requiredBy }
+      );
 
-    return { ...prev, items: updatedItems };
-  });
-}, [form.requiredBy]);
+      return { ...prev, items: updatedItems };
+    });
+  }, [form.requiredBy]);
 
   // Load PO Data in Edit Mode
   useEffect(() => {
@@ -165,45 +168,45 @@ useEffect(() => {
   }, [isOpen, poId]);
 
   // Calculate totals (Items + Taxes + Rounding)
-useEffect(() => {
-  let subTotal = 0;
-  let totalTax = 0;
+  useEffect(() => {
+    let subTotal = 0;
+    let totalTax = 0;
 
-  form.items.forEach((item) => {
-    const qty = Number(item.quantity || 0);
-    const rate = Number(item.rate || 0);
-    const vatRate = Number(item.vatRate || 0);
+    form.items.forEach((item) => {
+      const qty = Number(item.quantity || 0);
+      const rate = Number(item.rate || 0);
+      const vatRate = Number(item.vatRate || 0);
 
-    const lineAmount = qty * rate;
-    const taxAmount = (lineAmount * vatRate) / 100;
+      const lineAmount = qty * rate;
+      const taxAmount = (lineAmount * vatRate) / 100;
 
-    subTotal += lineAmount;
-    totalTax += taxAmount;
-  });
+      subTotal += lineAmount;
+      totalTax += taxAmount;
+    });
 
-  const taxRowTotal = form.taxRows.reduce((sum, t) => {
-    const amount = Number(t.amount || 0);
-    const rate = Number(t.taxRate || 0);
-    return sum + (amount * rate) / 100;
-  }, 0);
+    const taxRowTotal = form.taxRows.reduce((sum, t) => {
+      const amount = Number(t.amount || 0);
+      const rate = Number(t.taxRate || 0);
+      return sum + (amount * rate) / 100;
+    }, 0);
 
-  totalTax += taxRowTotal;
+    totalTax += taxRowTotal;
 
-  const grandTotal = subTotal + totalTax;
+    const grandTotal = subTotal + totalTax;
 
-  const totalQuantity = form.items.reduce(
-    (sum, item) => sum + Number(item.quantity || 0),
-    0
-  );
+    const totalQuantity = form.items.reduce(
+      (sum, item) => sum + Number(item.quantity || 0),
+      0
+    );
 
-  setForm((prev) => ({
-    ...prev,
-    totalQuantity,
-    subTotal,
-    totalTax,
-    grandTotal,
-  }));
-}, [form.items, form.taxRows]);
+    setForm((prev) => ({
+      ...prev,
+      totalQuantity,
+      subTotal,
+      totalTax,
+      grandTotal,
+    }));
+  }, [form.items, form.taxRows]);
   type AddressKey = keyof PurchaseOrderFormData["addresses"];
 
   const updateAddress = (
@@ -288,10 +291,10 @@ useEffect(() => {
     }
   };
 
- const handleItemChange = (
-  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  idx: number
-) => {
+  const handleItemChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    idx: number
+  ) => {
     const { name, value } = e.target;
     const isNum = ["quantity", "rate"].includes(name);
     const items = [...form.items];
@@ -302,19 +305,19 @@ useEffect(() => {
     setForm((p) => ({ ...p, items }));
   };
 
-const addItem = () => {
-  setForm((p) => ({
-    ...p,
-    items: [
-      ...p.items,
-      {
-        ...emptyItem,
-        warehouse: p.warehouse ?? "",
-        requiredBy: p.requiredBy || "",
-      },
-    ],
-  }));
-};
+  const addItem = () => {
+    setForm((p) => ({
+      ...p,
+      items: [
+        ...p.items,
+        {
+          ...emptyItem,
+          warehouse: p.warehouse ?? "",
+          requiredBy: p.requiredBy || "",
+        },
+      ],
+    }));
+  };
 
   const removeItem = (idx: number) => {
     if (form.items.length === 1) {
@@ -418,7 +421,7 @@ const addItem = () => {
         if (!item.rate || item.rate <= 0)
           return `Row ${i + 1}: Rate required`;
         if (!item.warehouse)
-    return `Row ${i + 1}: Warehouse required`;
+          return `Row ${i + 1}: Warehouse required`;
 
         if (!item.vatCd || !item.vatCd.trim())
           return `Row ${i + 1}: Tax Code required`;
@@ -458,20 +461,20 @@ const addItem = () => {
           itemCode: data.id,
           itemName: data.itemName,
           description: data.description,
-        warehouse:
-  items[idx].warehouse ??
-  prev.warehouse ??
-  data.warehouse ??
-  "",
+          warehouse:
+            items[idx].warehouse ??
+            prev.warehouse ??
+            data.warehouse ??
+            "",
 
           rate: Number(data.buyingPrice ?? 0),
           uom: data.unitOfMeasureCd,
           vatRate: Number(data.taxInfo?.taxPerct ?? 0),
           vatCd: data.taxInfo?.taxCode ?? "",
-        requiredBy:
-  items[idx].requiredBy ??
-  prev.requiredBy ??
-  "",
+          requiredBy:
+            items[idx].requiredBy ??
+            prev.requiredBy ??
+            "",
           packingUnit: Number(data.packingUnit || 0),
           packingSize: Number(data.packingSize || 0),
           packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
@@ -487,6 +490,8 @@ const addItem = () => {
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
+    if (saving) return;
+
     if (!form.taxCategory) {
       showValidationError("Tax Category is required");
       return;
@@ -494,13 +499,20 @@ const addItem = () => {
 
     const errors = validatePO(form);
 
-   if (errors.length) {
-  showValidationError([...new Set(errors)].join("\n"));
-  return;
-}
+    if (errors.length) {
+      showValidationError([...new Set(errors)].join("\n"));
+      return;
+    }
 
     try {
       setSaving(true);
+
+
+      showLoading(
+        isEditMode
+          ? "Updating Purchase Order..."
+          : "Saving Purchase Order..."
+      );
 
       const finalForm = {
         ...form,
@@ -508,7 +520,6 @@ const addItem = () => {
           form.shippingRule === "OTHER"
             ? customShippingRule
             : form.shippingRule,
-
         incoterm:
           form.incoterm === "OTHER"
             ? customIncoterm
@@ -525,17 +536,26 @@ const addItem = () => {
         res = await createPurchaseOrder(payload);
       }
 
+
+      closeSwal();
+
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(res);
         return;
       }
 
-      showSuccess(isEditMode ? "Purchase Order Updated" : "Purchase Order Created");
+      showSuccess(
+        isEditMode
+          ? "Purchase Order Updated"
+          : "Purchase Order Created"
+      );
 
       onSuccess?.(res);
       onClose?.();
       reset();
+
     } catch (error: any) {
+      closeSwal();
       showApiError(error);
     } finally {
       setSaving(false);
@@ -594,6 +614,7 @@ const addItem = () => {
     setCustomShippingRule,
     customIncoterm,
     setCustomIncoterm,
-    handleBulkItemChange
+    handleBulkItemChange,
+    saving
   };
 };

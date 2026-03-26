@@ -59,9 +59,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     setCustomShippingRule,
     customIncoterm,
     setCustomIncoterm,
-    handleBulkItemChange
-
-
+    handleBulkItemChange,
+    saving
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
   const footer = (
@@ -73,8 +72,17 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         <Button variant="secondary" onClick={reset}>
           Reset
         </Button>
-        <Button variant="primary" type="submit" form="purchaseInvoiceForm">
-          {activeTab === "terms" ? "Save Purchase Invoice" : "Next"}
+        <Button
+          variant="primary"
+          type="submit"
+          form="purchaseInvoiceForm"
+          disabled={saving}
+        >
+          {saving
+            ? "Saving..."
+            : activeTab === "terms"
+              ? "Save Purchase Invoice"
+              : "Next"}
         </Button>
       </div>
     </>
@@ -91,7 +99,10 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        if (saving) return;
+        onClose();
+      }}
       title={pId ? "Edit Purchase Invoice" : "New Purchase Invoice"}
       subtitle="Create and manage purchase invoice"
       icon={Building2}
@@ -129,8 +140,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
                 type="button"
                 onClick={() => setActiveTab(key)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === key
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  ? "text-primary border-b-[3px] border-primary"
+                  : "text-muted border-b-[3px] border-transparent hover:text-main"
                   }`}
               >
                 {label}
@@ -156,7 +167,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               onPOSelect={handlePOSelect}
               usePO={usePO}
               onTogglePO={handleTogglePO}
-               onBulkItemChange={handleBulkItemChange} 
+              onBulkItemChange={handleBulkItemChange}
 
 
             />
