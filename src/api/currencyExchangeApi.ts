@@ -68,3 +68,30 @@ export async function deleteCurrencyExchange(id: string): Promise<any> {
   return resp.data;
 }
 
+/* ───────── GET EXCHANGE RATE ───────── */
+export async function getExchangeRate(params: {
+  from_currency: string;
+  to_currency: string;
+  transaction_date: string;
+}): Promise<any> {
+  const { from_currency, to_currency, transaction_date } = params;
+
+  const url = `${CurrencyExchangeAPI.get}?from_currency=${encodeURIComponent(from_currency)}&to_currency=${encodeURIComponent(to_currency)}&transaction_date=${encodeURIComponent(transaction_date)}`;
+
+  try {
+    const resp: AxiosResponse = await api.get(url);
+
+    const rate = resp?.data?.message;
+
+    if (!rate || Number(rate) <= 0) {
+      throw new Error("Exchange rate not found");
+    }
+
+    return resp.data;
+  } catch (err: any) {
+    throw new Error(
+      err?.response?.data?.error ||
+      "Please maintain exchange rate for selected date & currency"
+    );
+  }
+}

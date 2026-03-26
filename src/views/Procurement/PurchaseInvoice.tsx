@@ -37,6 +37,7 @@ interface Purchaseinvoice {
   podate: string;
   amount: number;
   grandTotal: number;
+  grandTotalWithTax: number;
   status: string;
   deliveryDate: string;
   registrationType: string;
@@ -171,6 +172,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
         grandTotal: pi.grandTotal,
         status: pi.status,
         registrationType: pi.registrationType,
+        grandTotalWithTax: pi.grandTotalWithTax,
       }));
 
       setOrders(mappedInvoice);
@@ -379,11 +381,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
     { key: "pId", header: "PI ID", align: "left" },
     { key: "supplier", header: "Supplier", align: "left" },
     { key: "podate", header: "PI Date", align: "left" },
-    { key: "registrationType", header: "Registration Type", align: "left" },
+    { key: "deliveryDate", header: "Delivery Date", align: "left" },
+    { key: "registrationType", header: "Type", align: "left" },
     {
       key: "amount",
       header: "Amount w/o Tax",
-      align: "right",
+      align: "left",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {Number(o.amount || 0).toFixed(2)}
@@ -393,10 +396,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
      {
       key: "amount",
       header: "Amount with Tax",
-      align: "right",
+      align: "left",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.grandTotal || 0).toFixed(2)}
+          {Number(o.grandTotalWithTax || 0).toFixed(2)}
         </code>
       ),
     },
@@ -406,7 +409,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
       align: "left",
       render: (o) => <StatusBadge status={o.status} />,
     },
-    { key: "deliveryDate", header: "Delivery Date", align: "left" },
+    
     {
       key: "actions",
       header: "Actions",

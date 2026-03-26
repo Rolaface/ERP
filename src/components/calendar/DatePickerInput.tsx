@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import TextField from "@mui/material/TextField";
+import FormHelperText from "@mui/material/FormHelperText";
 
 interface Props {
   label?: string;
@@ -12,7 +11,7 @@ interface Props {
   required?: boolean;
   disabled?: boolean;
   onChange: (name: string, value: string) => void;
-  sx?: any;
+  sx?: Record<string, unknown>;
 }
 
 const DatePickerInput: React.FC<Props> = ({
@@ -22,90 +21,138 @@ const DatePickerInput: React.FC<Props> = ({
   required,
   disabled,
   onChange,
-  sx
+  sx,
 }) => {
-  const parsed = value ? dayjs(value) : null;
+  // : Sync internal state when the external `value` prop changes (e.g. form reset)
+  const [internalValue, setInternalValue] = useState<Dayjs | null>(
+    value ? dayjs(value) : null
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setInternalValue(value ? dayjs(value) : null);
+  }, [value]);
+
+  const handleChange = (newValue: Dayjs | null) => {
+    //: Allow clearing — don't early-return on null
+    if (!newValue) {
+      setInternalValue(null);
+      setError(null);
+      onChange(name, "");
+      return;
+    }
+
+    // : Validate the date before firing onChange
+    if (!newValue.isValid()) {
+      setInternalValue(newValue);
+      setError("Invalid date");
+      return;
+    }
+
+    setInternalValue(newValue);
+    setError(null);
+    onChange(name, newValue.format("YYYY-MM-DD"));
+  };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div className="flex flex-col text-sm w-full min-w-0">
-        {label && (
-          <span className="block text-[10px] font-medium text-main mb-1">
-            {label}
-            {required && <span className="text-danger">*</span>}
-          </span>
-        )}
+    // : LocalizationProvider removed — should wrap the app root, not each instance.
+    // Wrap your app with:
+    //   <LocalizationProvider dateAdapter={AdapterDayjs}>
+    //     <App />
+    //   </LocalizationProvider>
+    <div className="flex flex-col text-sm w-full min-w-0">
+      {label && (
+        <span className="block text-[10px] font-medium text-main mb-1">
+          {label}
+          {required && <span className="text-danger">*</span>}
+        </span>
+      )}
 
-        <DatePicker
-          value={parsed}
-          format="DD-MMM-YYYY"
-          disabled={disabled}
-          enableAccessibleFieldDOMStructure={false}
-          onChange={(newValue: Dayjs | null) => {
-            if (!newValue) return;
-            onChange(name, newValue.format("YYYY-MM-DD"));
-          }}
-          slots={{
-            textField: TextField,
-          }}
-          slotProps={{
-            textField: {
-              size: "small",
-              required,
-              fullWidth: true,
-              placeholder: "DD-MMM-YYYY",
-              sx: {
-                "& .MuiOutlinedInput-root": {
-                  height: "28px",
-                  fontSize: "11px",
-                  backgroundColor: "var(--card)",
-                  borderRadius: "6px",
-                  paddingRight: "2px",
-
-
-                  display: "flex",
-                  alignItems: "center",
-                },
-
-                "& .MuiOutlinedInput-input": {
-                  padding: "2px 6px",
-                },
-
-          
-                "& .MuiIconButton-root": {
-                  padding: "2px",
-                  marginRight: "2px",
-                },
-
-  
-                "& .MuiSvgIcon-root": {
-                  fontSize: "16px",
-                  display: "block",
-                },
-
-  
-                "& .MuiInputAdornment-root": {
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  margin: 0,
-                },
-
-                "& fieldset": {
-                  borderColor: "var(--border)",
-                },
-
-                "&:hover fieldset": {
-                  borderColor: "rgba(37,99,235,0.4)",
-                },
-
-                ...sx,
-              }
+      <DatePicker
+        value={internalValue}
+        format="DD-MMM-YYYY"
+        disabled={disabled}
+        enableAccessibleFieldDOMStructure={false}
+        onChange={handleChange}
+        // : Hook into MUI's built-in error reporting for invalid dates
+        onError={(reason) => {
+          if (reason === "invalidDate") setError("Invalid date");
+          else if (reason === "disableFuture") setError("Future date not allowed");
+          else if (reason === "disablePast") setError("Past date not allowed");
+          else setError(null);
+        }}
+        slots={{
+          textField: TextField,
+        }}
+        slotProps={{
+          // : Render the calendar popup in a portal at document body
+          // so it never gets clipped by overflow:hidden parents
+          popper: {
+            disablePortal: false,
+            modifiers: [{ name: "preventOverflow", enabled: true }],
+          },
+          // : Pass error state; placeholder works correctly
+          // with enableAccessibleFieldDOMStructure={false}
+          textField: {
+            size: "small",
+            required,
+            fullWidth: true,
+            error: !!error,
+            placeholder: "DD-MMM-YYYY",
+            inputProps: {
+              // : hint to browsers/screen readers about the expected format
+              "aria-label": label ?? "Date",
             },
-          }}
-        />
-      </div>
-    </LocalizationProvider>
+            // : Merge sx safely at the top level — consumer overrides win
+            // without breaking internal fieldset/border styles
+            sx: {
+              "& .MuiOutlinedInput-root": {
+                height: "28px",
+                fontSize: "11px",
+                backgroundColor: "var(--card)",
+                borderRadius: "6px",
+                paddingRight: "2px",
+                display: "flex",
+                alignItems: "center",
+              },
+              "& .MuiOutlinedInput-input": {
+                padding: "2px 6px",
+              },
+              "& .MuiIconButton-root": {
+                padding: "2px",
+                marginRight: "2px",
+              },
+              "& .MuiSvgIcon-root": {
+                fontSize: "16px",
+                display: "block",
+              },
+              "& .MuiInputAdornment-root": {
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                margin: 0,
+              },
+              "& fieldset": {
+                borderColor: "var(--border)",
+              },
+              "&:hover fieldset": {
+                borderColor: "rgba(37,99,235,0.4)",
+              },
+              // FIX 8: sx spread is kept at the same level so consumer keys
+              // (like "& fieldset") deep-override rather than silently losing
+              ...sx,
+            },
+          },
+        }}
+      />
+
+      {/* FIX 2: Show the validation error below the input */}
+      {error && (
+        <FormHelperText error sx={{ margin: "2px 0 0", fontSize: "10px" }}>
+          {error}
+        </FormHelperText>
+      )}
+    </div>
   );
 };
 
