@@ -36,6 +36,7 @@ interface Purchaseinvoice {
   supplier: string;
   podate: string;
   amount: number;
+  grandTotal: number;
   status: string;
   deliveryDate: string;
   registrationType: string;
@@ -167,6 +168,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
         podate: pi.poDate,
         deliveryDate: pi.deliveryDate,
         amount: pi.grandTotal,
+        grandTotal: pi.grandTotal,
         status: pi.status,
         registrationType: pi.registrationType,
       }));
@@ -289,6 +291,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
             podate: pi.poDate,
             deliveryDate: pi.deliveryDate,
             amount: pi.grandTotal,
+            grandTotal: pi.grandTotal,
             status: pi.status,
             registrationType: pi.registrationType,
           }));
@@ -325,6 +328,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
         "Delivery Date": pi.deliveryDate,
         "Registration Type": pi.registrationType,
         Amount: pi.amount,
+        grandTotal:pi.grandTotal,
         Status: pi.status,
       }));
 
@@ -378,11 +382,21 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
     { key: "registrationType", header: "Registration Type", align: "left" },
     {
       key: "amount",
-      header: "Amount",
+      header: "Amount w/o Tax",
       align: "right",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {Number(o.amount || 0).toFixed(2)}
+        </code>
+      ),
+    },
+     {
+      key: "amount",
+      header: "Amount with Tax",
+      align: "right",
+      render: (o) => (
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          {Number(o.grandTotal || 0).toFixed(2)}
         </code>
       ),
     },
