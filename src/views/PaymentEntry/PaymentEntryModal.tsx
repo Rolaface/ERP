@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect ,useRef } from "react";
 import { CreditCard, FileText, AlertCircle, X } from "lucide-react";
 import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
@@ -10,7 +10,7 @@ import {
   type CreatePaymentEntryPayload,
   type PaymentReference,
   type PaymentTax,
-} from "../../api/BankAccountApi";
+} from "../../api/BankAccountApi";  
 import { showLoading,closeSwal,showSuccess,showApiError } from "../../utils/alert";
 import type { AllocationResult } from "../../types/paymententryrecord.types";
 
@@ -143,6 +143,7 @@ const PaymentEntryModal: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [invoicesMounted, setInvoicesMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const lastFetchedPartyKeyRef = useRef<string>("")
 
  const isAdvanceFromPO = false;
 
@@ -155,6 +156,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (!isOpen) return;
 
     const base: Record<string, any> = { ...(defaultValues ?? {}) };
+    lastFetchedPartyKeyRef.current = "";
 
     if (!base.date) {
       base.date = new Date().toISOString().split("T")[0];
@@ -335,18 +337,19 @@ if (defaultValues?.referenceInvoice && base.amount) {
         <div className="flex flex-1 overflow-hidden">
           <div className="flex-1 overflow-auto p-6">
 
-            {activeTab === "details" && (
-              <PaymentDetailsTab
-                form={form}
-                onChange={handleChange}
-                onFormChange={handleFormChange}
-                onAllocate={isAdvanceFromPO ? undefined : handleAllocateLink}
-                islocked={Boolean(form?.referenceInvoice)}
-                isPartyLocked={Boolean(
-                  form?.referenceInvoice && form?.partyName && form?.partyType
-                )}
-              />
-            )}
+             <div className={activeTab === "details" ? "block" : "hidden"}>
+  <PaymentDetailsTab
+    form={form}
+    onChange={handleChange}
+    onFormChange={handleFormChange}
+    onAllocate={isAdvanceFromPO ? undefined : handleAllocateLink}
+    islocked={Boolean(form?.referenceInvoice)}
+    isPartyLocked={Boolean(
+      form?.referenceInvoice && form?.partyName && form?.partyType
+    )}
+    partyFetchKeyRef={lastFetchedPartyKeyRef}
+  />
+</div>
 
             {invoicesMounted && !isAdvanceFromPO && (
               <div className={activeTab === "invoices" ? "block" : "hidden"}>

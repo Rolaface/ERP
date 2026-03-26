@@ -24,6 +24,7 @@ interface PaymentDetailsTabProps {
   onAllocate?: () => void;
   islocked?: boolean;
   isPartyLocked?: boolean;
+  partyFetchKeyRef: React.MutableRefObject<string>;
 }
 
 const PARTY_FILLED_FIELDS = {
@@ -43,6 +44,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   onAllocate,
   islocked = false,
   isPartyLocked = false,
+  partyFetchKeyRef,
 }) => {
   const { options: modeOptions, isLoading: modesLoading, fetchModes } = usePaymentModes();
   const { fetchPartyDetails, isLoadingDetails } = usePartyDetails();
@@ -158,17 +160,21 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   // LOGIC:
   //   Pay:     Paid From = company bank,  Paid To = party bank
   //   Receive: Paid From = party bank,    Paid To = company bank
-  const requestRef = useRef(0);
+const requestRef = useRef(0);
 
-  useEffect(() => {
-    const partyKey = form.partyId || form.partyName;
-    if (
-      !partyKey ||
-      (form.partyType !== "Customer" && form.partyType !== "Supplier")
-    )
-      return;
+useEffect(() => {
+  const partyKey = form.partyId || form.partyName;
+  if (
+    !partyKey ||
+    (form.partyType !== "Customer" && form.partyType !== "Supplier")
+  )
+    return;
+  
+ const stableKey = `${form.partyType}::${partyKey}::${form.paymentType}`;
+  if (partyFetchKeyRef.current === stableKey) return;
+  partyFetchKeyRef.current = stableKey;
 
-    const requestId = ++requestRef.current;
+  const requestId = ++requestRef.current;
 
     const run = async () => {
       const [details] = await Promise.all([
