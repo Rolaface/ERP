@@ -5,6 +5,8 @@ import { Search, Package, ChevronDown, X } from "lucide-react";
 import { showApiError } from "../../utils/alert";
 import { getItemByItemCode } from "../../api/itemApi";
 
+// ─── Type Definitions ────────────────────────────────────────────────────────
+
 interface StockItem {
   id?: string;
   itemCode: string;
@@ -26,7 +28,7 @@ interface StockItem {
   warehouse?: string;
 }
 
-/** Flat row shown in the dropdown */
+// Flat row represents one line in the dropdown — one item+batch combination
 interface FlatRow {
   itemCode: string;
   itemName: string;
@@ -48,35 +50,29 @@ interface FlatRow {
 }
 
 interface StockItemSelectProps {
-  value?: string; // itemCode
-  batchNo?: string; // to restore exact row after tab switch
-  itemName?: string; // fallback display label
+  value?: string;     // currently selected itemCode
+  batchNo?: string;   // used to restore the exact batch row after a tab switch
+  itemName?: string;  // fallback display label when flatRows haven't loaded yet
   onChange: (item: StockItem) => void;
   onClear?: () => void;
   className?: string;
   disabled?: boolean;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Format an ISO date string "YYYY-MM-DD" → "02 May 26" */
 function fmt(date?: string) {
   if (!date) return "—";
-  // "2026-05-02" → "02 May 26"
   const [y, m, d] = date.split("-");
   const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
   return `${d} ${months[parseInt(m) - 1]} ${y.slice(2)}`;
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function StockItemSelect({
   value = "",
@@ -87,21 +83,22 @@ export default function StockItemSelect({
   className = "",
   disabled = false,
 }: StockItemSelectProps) {
-  const [flatRows, setFlatRows] = useState<FlatRow[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [flatRows, setFlatRows] = useState<FlatRow[]>([]);
+  const [loading, setLoading]   = useState(false);
+  const [open, setOpen]         = useState(false);
+  const [search, setSearch]     = useState("");
   const [selected, setSelected] = useState<FlatRow | null>(null);
   const [dropRect, setDropRect] = useState<DOMRect | null>(null);
 
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const triggerRef  = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef    = useRef<HTMLInputElement>(null);
 
-  /* ── Load & flatten ── */
+  // ── Fetch stock data and flatten into one row per item-batch ──────────────
   useEffect(() => {
     let cancelled = false;
+
     const load = async () => {
       setLoading(true);
       try {
@@ -111,114 +108,104 @@ export default function StockItemSelect({
 
         raw.forEach((item: any) => {
           const base = {
-            itemCode: item.item_code,
-            itemName: item.item_name,
+            itemCode:    item.item_code,
+            itemName:    item.item_name,
             description: item.description,
             packingSize: String(item.packingSize ?? ""),
             packingUnit: String(item.packingUnit ?? ""),
           };
 
+          // If the item has batches, push one row per batch
           if (Array.isArray(item.batches) && item.batches.length > 0) {
             item.batches.forEach((b: any) => {
               rows.push({
                 ...base,
-                batchNo: b.batch_no,
-                expiryDate: b.expiry_date,
-                mfgDate: b.manufacturing_date,
-                warehouse: b.warehouse,
-                qty: b.bal_qty,
+                batchNo:     b.batch_no,
+                expiryDate:  b.expiry_date,
+                mfgDate:     b.manufacturing_date,
+                warehouse:   b.warehouse,
+                qty:         b.bal_qty,
                 valuation_rate: b.valuation_rate,
-                sellingPrice: b.sell_value,
-                purchasePrice: b.buy_value,
-                taxCategory: b.taxCategory,
-                taxRate: b.taxRate,
-                taxAmount: b.taxamount,
+                sellingPrice:   b.sell_value,
+                purchasePrice:  b.buy_value,
+                taxCategory:    b.taxCategory,
+                taxRate:        b.taxRate,
+                taxAmount:      b.taxamount,
                 hasBatch: true,
               });
             });
           } else {
+            // Non-batched item — single row, qty shown as "—"
             rows.push({
               ...base,
               valuation_rate: item.valuation_rate,
-              sellingPrice: item.sell_value,
-              purchasePrice: item.buy_value,
-              taxCategory: item.taxCategory,
-              taxRate: item.taxRate,
-              taxAmount: item.taxamount,
+              sellingPrice:   item.sell_value,
+              purchasePrice:  item.buy_value,
+              taxCategory:    item.taxCategory,
+              taxRate:        item.taxRate,
+              taxAmount:      item.taxamount,
               hasBatch: false,
             });
           }
         });
 
-        // Remove zero-qty batch rows
+        // Drop zero-qty batch rows — no point showing stock that can't be sold
         const filtered = rows.filter((r) => !r.hasBatch || (r.qty ?? 0) > 0);
 
-        // Sort: group by item, within each item sort by earliest expiry first
+        // Group by item name, then within each item sort by earliest expiry (FEFO)
         filtered.sort((a, b) => {
-          // First sort by item name so same items are grouped
           const nameCompare = a.itemName.localeCompare(b.itemName);
           if (nameCompare !== 0) return nameCompare;
-          // Within same item, earliest expiry first
           if (!a.expiryDate) return 1;
           if (!b.expiryDate) return -1;
-          return (
-            new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
-          );
+          return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
         });
 
-        // Replace rows reference for setState
-        rows.length = 0;
-        filtered.forEach((r) => rows.push(r));
-
-        if (!cancelled) setFlatRows([...rows]);
+        if (!cancelled) setFlatRows(filtered);
       } catch (err) {
         showApiError(err);
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
+
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  /* ── Close on outside click ── */
+  // ── Close dropdown when clicking outside trigger or dropdown ─────────────
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (triggerRef.current?.contains(t) || dropdownRef.current?.contains(t))
-        return;
+      if (triggerRef.current?.contains(t) || dropdownRef.current?.contains(t)) return;
       setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  /* ── Restore selected from value+batchNo after tab remount ── */
+  // ── Sync selected row when value/batchNo prop changes externally ─────────
   useEffect(() => {
-    if (!value) {
-      setSelected(null);
-      return;
-    }
+    if (!value) { setSelected(null); return; }
     if (flatRows.length === 0) return;
+
+    // Already correct — skip unnecessary state update
     if (
       selected?.itemCode === value &&
       selected?.batchNo === (batchNo ?? selected?.batchNo)
-    )
-      return;
+    ) return;
+
     const match =
-      flatRows.find(
-        (r) => r.itemCode === value && (batchNo ? r.batchNo === batchNo : true),
-      ) ??
+      flatRows.find((r) => r.itemCode === value && (batchNo ? r.batchNo === batchNo : true)) ??
       flatRows.find((r) => r.itemCode === value) ??
       null;
+
     setSelected(match);
   }, [value, batchNo, flatRows]);
 
-  /* ── Filtered rows ── */
+  // ── Filter rows by search query (name, code, or batch number) ────────────
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
     if (!q) return flatRows;
     return flatRows.filter(
       (r) =>
@@ -228,66 +215,52 @@ export default function StockItemSelect({
     );
   }, [flatRows, search]);
 
-  /* ── Open dropdown ── */
+  // ── Open the dropdown and measure trigger position for portal placement ───
   const openDropdown = () => {
     if (disabled) return;
-    if (triggerRef.current)
-      setDropRect(triggerRef.current.getBoundingClientRect());
+    if (triggerRef.current) setDropRect(triggerRef.current.getBoundingClientRect());
     setOpen(true);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  /* ── Select a row ── */
+  // ── Select a row: fire onChange immediately, then enrich with tax data ────
   const handleSelect = async (row: FlatRow) => {
     setSelected(row);
     setOpen(false);
     setSearch("");
 
-    // Step 1: fire immediately with stock data
-    onChange({
-      id: row.itemCode,
-      itemCode: row.itemCode,
-      itemName: row.itemName,
-      description: row.description,
-      packingSize: row.packingSize,
-      packingUnit: row.packingUnit,
-      batchNo: row.batchNo,
-      expiryDate: row.expiryDate,
-      mfgDate: row.mfgDate,
-      qty: row.qty,
+    // Fire at once with all available stock data so the row updates immediately
+    const stockPayload: StockItem = {
+      id:            row.itemCode,
+      itemCode:      row.itemCode,
+      itemName:      row.itemName,
+      description:   row.description,
+      packingSize:   row.packingSize,
+      packingUnit:   row.packingUnit,
+      batchNo:       row.batchNo,
+      expiryDate:    row.expiryDate,
+      mfgDate:       row.mfgDate,
+      qty:           row.qty,
       valuation_rate: row.valuation_rate,
-      sellingPrice: row.sellingPrice,
+      sellingPrice:  row.sellingPrice,
       purchasePrice: row.purchasePrice,
-      taxCategory: row.taxCategory,
-      taxRate: row.taxRate,
-      taxAmount: row.taxAmount,
-      warehouse: row.warehouse,
-    });
+      taxCategory:   row.taxCategory,
+      taxRate:       row.taxRate,
+      taxAmount:     row.taxAmount,
+      warehouse:     row.warehouse,
+    };
+    onChange(stockPayload);
 
-    // Step 2: fetch tax code + rate from item master
+    // Then fetch the item master for the accurate tax code and rate,
+    // and fire a second onChange to patch those fields in
     try {
-      const res = await getItemByItemCode(row.itemCode);
+      const res  = await getItemByItemCode(row.itemCode);
       const item = res?.data;
       if (item?.taxInfo) {
         onChange({
-          id: row.itemCode,
-          itemCode: row.itemCode,
-          itemName: row.itemName,
-          description: row.description,
-          packingSize: row.packingSize,
-          packingUnit: row.packingUnit,
-          batchNo: row.batchNo,
-          expiryDate: row.expiryDate,
-          mfgDate: row.mfgDate,
-          warehouse: row.warehouse,
-          qty: row.qty,
-          valuation_rate: row.valuation_rate,
-          sellingPrice: row.sellingPrice,
-          purchasePrice: row.purchasePrice,
-          taxCategory: row.taxCategory,
+          ...stockPayload,
           taxCode: item.taxInfo.taxCode,
           taxRate: Number(item.taxInfo.taxPerct),
-          taxAmount: row.taxAmount,
         });
       }
     } catch (err) {
@@ -302,29 +275,30 @@ export default function StockItemSelect({
     onClear?.();
   };
 
-  /* ── Dropdown position ── */
+  // ── Compute dropdown position via fixed portal (avoids overflow clipping) ─
   const dropStyle = (() => {
     if (!dropRect) return {};
-    const w = Math.max(dropRect.width, 580);
-    const left = Math.min(
-      dropRect.left,
-      Math.max(8, window.innerWidth - w - 8),
-    );
+    // Minimum width 780 px so all columns are comfortably visible
+    const w    = Math.max(dropRect.width, 780);
+    const left = Math.min(dropRect.left, Math.max(8, window.innerWidth - w - 8));
     const spaceBelow = window.innerHeight - dropRect.bottom - 8;
-    const maxH = Math.min(spaceBelow, 320);
+    const maxH = Math.min(spaceBelow, 360);
     return {
       position: "fixed" as const,
-      top: dropRect.bottom + 3,
+      top:      dropRect.bottom + 3,
       left,
-      width: w,
-      zIndex: 9999,
+      width:    w,
+      zIndex:   9999,
       maxHeight: maxH,
     };
   })();
 
+  // ─── Render ───────────────────────────────────────────────────────────────
+
   return (
     <div className={`w-full ${className}`}>
-      {/* ── Trigger ── */}
+
+      {/* ── Trigger button ── */}
       <div
         ref={triggerRef}
         onClick={openDropdown}
@@ -340,12 +314,15 @@ export default function StockItemSelect({
 
         {selected || (value && itemName) ? (
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span
-              className="truncate font-medium"
-              title={selected?.itemName ?? itemName}
-            >
+            <span className="truncate font-medium" title={selected?.itemName ?? itemName}>
               {selected?.itemName ?? itemName}
             </span>
+            {/* Show batch tag inline so user knows which batch is selected */}
+            {selected?.batchNo && (
+              <span className="shrink-0 text-[9px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary/80">
+                {selected.batchNo}
+              </span>
+            )}
           </div>
         ) : (
           <span className="flex-1 text-muted/40">
@@ -369,141 +346,145 @@ export default function StockItemSelect({
         </div>
       </div>
 
-      {/* ── Dropdown portal ── */}
-      {open &&
-        dropRect &&
-        createPortal(
+      {/* ── Dropdown portal — rendered at body level to escape overflow clipping ── */}
+      {open && dropRect && createPortal(
+        <div
+          ref={dropdownRef}
+          style={dropStyle}
+          className="bg-card border border-theme rounded-lg shadow-2xl overflow-hidden flex flex-col"
+        >
+
+          {/* Search bar */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-theme bg-app">
+            <Search className="w-3.5 h-3.5 text-muted/50 shrink-0" />
+            <input
+              ref={inputRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by item name, code or batch…"
+              className="flex-1 bg-transparent text-[11px] text-main placeholder:text-muted/40 outline-none"
+            />
+            <span className="text-[9px] text-muted/40 shrink-0 tabular-nums">
+              {filtered.length} of {flatRows.length} rows
+            </span>
+          </div>
+
+          {/*
+            Column layout — using px widths that actually fill the 780px minimum:
+            Item Name (flex-1) | Batch No (120) | Expiry (90) | Mfg Date (90) | Warehouse (160) | Qty (56)
+            This gives every column room to breathe without truncation on typical data.
+          */}
           <div
-            ref={dropdownRef}
-            style={dropStyle}
-            className="bg-card border border-theme rounded-lg shadow-2xl overflow-hidden flex flex-col"
+            className="grid px-3 py-1.5 border-b border-theme/40 bg-app/60"
+            style={{ gridTemplateColumns: "1fr 120px 90px 90px 160px 56px" }}
           >
-            {/* Search bar */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-theme bg-app">
-              <Search className="w-3 h-3 text-muted/50 shrink-0" />
-              <input
-                ref={inputRef}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by item name, code or batch…"
-                className="flex-1 bg-transparent text-[11px] text-main placeholder:text-muted/40 outline-none"
-              />
-              <span className="text-[9px] text-muted/40 shrink-0">
-                {filtered.length} rows
+            {[
+              "Item Name / Code",
+              "Batch No",
+              "Expiry",
+              "Mfg Date",
+              "Warehouse",
+              "Qty",
+            ].map((h) => (
+              <span
+                key={h}
+                className="text-[8.5px] font-semibold uppercase tracking-wider text-muted/50"
+              >
+                {h}
               </span>
-            </div>
+            ))}
+          </div>
 
-            {/* Column headers */}
-            <div
-              className="grid gap-2 px-3 py-1.5 border-b border-theme/40 bg-app/60"
-              style={{ gridTemplateColumns: "2fr 1fr 90px 90px 120px 52px" }}
-            >
-              {[
-                "Item Name",
-                "Batch No",
-                "Expiry",
-                "Manufacture",
-                "warehouse",
-                "Qty",
-              ].map((h) => (
-                <span
-                  key={h}
-                  className="text-[8.5px] font-semibold uppercase tracking-wider text-muted/50"
+          {/* Scrollable row list */}
+          <ul className="overflow-y-auto flex-1 divide-y divide-theme/20">
+            {filtered.map((row, i) => {
+              const isSelected =
+                selected?.itemCode === row.itemCode &&
+                selected?.batchNo  === row.batchNo;
+              const qtyOk = (row.qty ?? 0) > 0;
+
+              return (
+                <li
+                  key={`${row.itemCode}-${row.batchNo ?? i}`}
+                  onClick={() => handleSelect(row)}
+                  className={`
+                    grid items-center px-3 py-[7px] cursor-pointer transition-colors
+                    ${isSelected
+                      ? "bg-primary/8 border-l-[3px] border-primary"
+                      : "hover:bg-row-hover border-l-[3px] border-transparent"
+                    }
+                  `}
+                  style={{ gridTemplateColumns: "1fr 120px 90px 90px 160px 56px" }}
                 >
-                  {h}
-                </span>
-              ))}
-            </div>
+                  {/* Item name + code stacked */}
+                  <div className="min-w-0 pr-2">
+                    <p
+                      className={`text-[11px] font-medium truncate leading-tight ${
+                        isSelected ? "text-primary" : "text-main"
+                      }`}
+                      title={row.itemName}
+                    >
+                      {row.itemName}
+                    </p>
+                    <p className="text-[9px] text-muted/50 font-mono leading-tight truncate">
+                      {row.itemCode}
+                    </p>
+                  </div>
 
-            {/* Rows */}
-            <ul className="overflow-y-auto flex-1 divide-y divide-theme/20">
-              {filtered.map((row, i) => {
-                const isSelected =
-                  selected?.itemCode === row.itemCode &&
-                  selected?.batchNo === row.batchNo;
-                const qtyOk = (row.qty ?? 0) > 0;
+                  {/* Batch number — mono for easy scanning */}
+                  <span className="text-[10px] font-mono text-muted truncate pr-2" title={row.batchNo}>
+                    {row.batchNo ?? (
+                      <span className="text-muted/30 italic">no batch</span>
+                    )}
+                  </span>
 
-                return (
-                  <li
-                    key={i}
-                    onClick={() => handleSelect(row)}
-                    className={`
-                      grid gap-2 items-center px-3 py-[7px] cursor-pointer transition-colors
-                      ${
-                        isSelected
-                          ? "bg-primary/8 border-l-[3px] border-primary"
-                          : "hover:bg-row-hover border-l-[3px] border-transparent"
-                      }
-                    `}
-                    style={{
-                      gridTemplateColumns: "2fr 1fr 90px 90px 120px 52px",
-                    }}
+                  {/* Expiry date */}
+                  <span className="text-[10px] text-muted/80 tabular-nums">
+                    {fmt(row.expiryDate)}
+                  </span>
+
+                  {/* Manufacturing date */}
+                  <span className="text-[10px] text-muted/60 tabular-nums">
+                    {fmt(row.mfgDate)}
+                  </span>
+
+                  {/* Warehouse — truncated with title tooltip for long names */}
+                  <span
+                    className="text-[10px] text-muted/70 truncate pr-2"
+                    title={row.warehouse}
                   >
-                    {/* Item name */}
-                    <div className="min-w-0">
-                      <p
-                        className={`text-[11px] font-medium truncate leading-tight ${isSelected ? "text-primary" : "text-main"}`}
-                      >
-                        {row.itemName}
-                      </p>
-                      <p className="text-[9px] text-muted/50 font-mono leading-tight truncate">
-                        {row.itemCode}
-                      </p>
-                    </div>
+                    {row.warehouse ?? (
+                      <span className="text-muted/30 italic">—</span>
+                    )}
+                  </span>
 
-                    {/* Batch no */}
-                    <span className="text-[10px] font-mono text-muted truncate">
-                      {row.batchNo ?? (
-                        <span className="text-muted/30 italic">no batch</span>
-                      )}
-                    </span>
-
-                    {/* Expiry */}
-                    <span className="text-[10px] text-muted/80 tabular-nums">
-                      {fmt(row.expiryDate)}
-                    </span>
-
-                    {/* Manufacture */}
-                    <span className="text-[10px] text-muted/60 tabular-nums">
-                      {fmt(row.mfgDate)}
-                    </span>
-                    <span
-                      className="text-[10px] text-muted/70 truncate"
-                      title={row.warehouse}
-                    >
-                      {row.warehouse ?? (
-                        <span className="text-muted/30 italic">—</span>
-                      )}
-                    </span>
-
-                    {/* Qty */}
-                    <span
-                      className={`
+                  {/* Qty badge — green for available, red for zero, dash for non-batched */}
+                  <span
+                    className={`
                       text-[9.5px] font-bold px-1.5 py-0.5 rounded text-center tabular-nums
-                      ${
-                        row.hasBatch
-                          ? qtyOk
-                            ? "text-emerald-400 bg-emerald-400/10"
-                            : "text-red-400/60 bg-red-400/8"
-                          : "text-muted/50 bg-theme/30"
+                      ${row.hasBatch
+                        ? qtyOk
+                          ? "text-emerald-400 bg-emerald-400/10"
+                          : "text-red-400/60 bg-red-400/8"
+                        : "text-muted/50 bg-theme/30"
                       }
                     `}
-                    >
-                      {row.hasBatch ? (row.qty ?? 0) : "—"}
-                    </span>
-                  </li>
-                );
-              })}
-
-              {filtered.length === 0 && (
-                <li className="px-4 py-6 text-center text-[11px] text-muted/60">
-                  No items match your search
+                  >
+                    {row.hasBatch ? (row.qty ?? 0) : "—"}
+                  </span>
                 </li>
-              )}
-            </ul>
-          </div>,
-          document.body,
-        )}
+              );
+            })}
+
+            {filtered.length === 0 && (
+              <li className="px-4 py-6 text-center text-[11px] text-muted/60">
+                No items match your search
+              </li>
+            )}
+          </ul>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

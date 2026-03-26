@@ -73,13 +73,18 @@ export async function getExchangeRate(params: {
   from_currency: string;
   to_currency: string;
   transaction_date: string;
+  args: "for_selling" | "for_buying";
 }): Promise<any> {
-  const { from_currency, to_currency, transaction_date } = params;
-
-  const url = `${CurrencyExchangeAPI.get}?from_currency=${encodeURIComponent(from_currency)}&to_currency=${encodeURIComponent(to_currency)}&transaction_date=${encodeURIComponent(transaction_date)}`;
-
   try {
-    const resp: AxiosResponse = await api.get(url);
+    const resp: AxiosResponse = await api.post(
+      "/api/method/erpnext.setup.utils.get_exchange_rate",
+      {
+        from_currency: params.from_currency,
+        to_currency: params.to_currency,
+        transaction_date: params.transaction_date,
+        args: params.args,
+      }
+    );
 
     const rate = resp?.data?.message;
 
@@ -89,9 +94,6 @@ export async function getExchangeRate(params: {
 
     return resp.data;
   } catch (err: any) {
-    throw new Error(
-      err?.response?.data?.error ||
-      "Please maintain exchange rate for selected date & currency"
-    );
+    throw err; 
   }
 }

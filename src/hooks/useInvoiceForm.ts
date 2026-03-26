@@ -207,6 +207,7 @@ getExchangeRate({
   from_currency: code,
   to_currency: baseCurrency,
   transaction_date: formData.dateOfInvoice,
+  args:"for_selling"
 })
   .then((res) => {
     const rate = Number(res?.message); 
@@ -227,6 +228,7 @@ getExchangeRate({
     ...prev,
     exchangeRt: "",  
   }));
+  showApiError(err);
 })
       .finally(() => {
         if (cancelled) return;
