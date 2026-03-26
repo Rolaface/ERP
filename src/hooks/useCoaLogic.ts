@@ -176,18 +176,14 @@ export const useCoaLogic = (
 
       const res = await createChartOfAccount(payload);
 
+      const isSuccess = !!res?.message;
       
-      const topLevelCode = res?.status_code;
-      const nestedCode = res?.message?.status_code;
-      const isSuccess =
-        [200, 201].includes(topLevelCode) ||
-        [200, 201].includes(nestedCode);
+  
 
-      if (!res || !isSuccess) {
-        // Pass the most descriptive error object available
-        showSuccess(res?.message ?? res);
-        return;
-      }
+  if (!res || !isSuccess) {
+  showApiError(res?.message ?? res);
+  return;
+}
 
       // Extract success message from whichever shape is present
       const successMsg =
@@ -196,8 +192,9 @@ export const useCoaLogic = (
         "Account created successfully";
 
       showSuccess(successMsg);
+       reset();
       onSuccess?.(); 
-      reset();
+     
 
     } catch (err: any) {
       showApiError(err);
