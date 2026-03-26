@@ -69,12 +69,31 @@ export async function deleteCurrencyExchange(id: string): Promise<any> {
 }
 
 /* ───────── GET EXCHANGE RATE ───────── */
-export async function getExchangeRate(
-  from_currency: string,
-  to_currency: string
-): Promise<any> {
-  const url = `${CurrencyExchangeAPI.get}?from_currency=${encodeURIComponent(from_currency)}&to_currency=${encodeURIComponent(to_currency)}`;
-  const resp: AxiosResponse = await api.get(url);
-  return resp.data;
-}
+export async function getExchangeRate(params: {
+  from_currency: string;
+  to_currency: string;
+  transaction_date: string;
+  args: "for_selling" | "for_buying";
+}): Promise<any> {
+  try {
+    const resp: AxiosResponse = await api.post(
+      "/api/method/erpnext.setup.utils.get_exchange_rate",
+      {
+        from_currency: params.from_currency,
+        to_currency: params.to_currency,
+        transaction_date: params.transaction_date,
+        args: params.args,
+      }
+    );
 
+    const rate = resp?.data?.message;
+
+    if (!rate || Number(rate) <= 0) {
+      throw new Error("Exchange rate not found");
+    }
+
+    return resp.data;
+  } catch (err: any) {
+    throw err; 
+  }
+}

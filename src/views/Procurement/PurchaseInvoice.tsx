@@ -36,6 +36,8 @@ interface Purchaseinvoice {
   supplier: string;
   podate: string;
   amount: number;
+  grandTotal: number;
+  grandTotalWithTax: number;
   status: string;
   deliveryDate: string;
   registrationType: string;
@@ -50,22 +52,19 @@ export type PIStatus =
   | "Return"
   | "Submitted"
   | "Paid"
+  | "Unpaid"
   | "Party Paid"
   | "Cancelled"
   | "Internal Transfer"
   | "Debit Note Issued";
 
 const STATUS_TRANSITIONS: Record<PIStatus, PIStatus[]> = {
-  Draft: [
-    "Submitted",
-    "Cancelled",
-    "Paid",
-    "Party Paid",
-    "Internal Transfer",
-    "Debit Note Issued",
-    "Return",
-  ],
-  Submitted: ["Paid", "Party Paid", "Cancelled", "Return"],
+  Draft: ["Submitted", "Cancelled"],
+
+  Submitted: ["Paid", "Unpaid", "Cancelled", "Return"],
+
+  Unpaid: ["Paid", "Cancelled"],
+
   Paid: ["Debit Note Issued", "Return"],
   "Party Paid": ["Paid", "Debit Note Issued"],
   Return: ["Debit Note Issued"],
@@ -77,6 +76,7 @@ const STATUS_TRANSITIONS: Record<PIStatus, PIStatus[]> = {
 const invoiceStatusOptions = [
   { label: "Draft", value: "Draft" },
   { label: "Submitted", value: "Submitted" },
+  { label: "Unpaid", value: "Unpaid" },
   { label: "Paid", value: "Paid" },
   { label: "Party Paid", value: "Party Paid" },
   { label: "Cancelled", value: "Cancelled" },
@@ -97,8 +97,8 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
   const [company, setCompany] = useState<any | null>(null);
-   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-const [selectedPI, setSelectedPI] = useState<any | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPI, setSelectedPI] = useState<any | null>(null);
 
 
   // ── PDF preview modal (kept — do not remove)
@@ -112,24 +112,24 @@ const [selectedPI, setSelectedPI] = useState<any | null>(null);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
-const handleMakePayment = async (pId: string) => {
-  try {
-    showLoading("Opening payment...");
-    const res = await getPurchaseInvoiceById(pId);
-    closeSwal();
+  const handleMakePayment = async (pId: string) => {
+    try {
+      showLoading("Opening payment...");
+      const res = await getPurchaseInvoiceById(pId);
+      closeSwal();
 
-    if (!res || res.status !== "success") {
-      showApiError("Failed to load invoice");
-      return;
+      if (!res || res.status !== "success") {
+        showApiError("Failed to load invoice");
+        return;
+      }
+
+      setSelectedPI(res.data);
+      setPaymentModalOpen(true);
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
     }
-
-    setSelectedPI(res.data);
-    setPaymentModalOpen(true);
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+  };
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));
@@ -169,8 +169,10 @@ const handleMakePayment = async (pId: string) => {
         podate: pi.poDate,
         deliveryDate: pi.deliveryDate,
         amount: pi.grandTotal,
+        grandTotal: pi.grandTotal,
         status: pi.status,
         registrationType: pi.registrationType,
+        grandTotalWithTax: pi.grandTotalWithTax,
       }));
 
       setOrders(mappedInvoice);
@@ -291,6 +293,7 @@ const handleMakePayment = async (pId: string) => {
             podate: pi.poDate,
             deliveryDate: pi.deliveryDate,
             amount: pi.grandTotal,
+            grandTotal: pi.grandTotal,
             status: pi.status,
             registrationType: pi.registrationType,
           }));
@@ -327,6 +330,7 @@ const handleMakePayment = async (pId: string) => {
         "Delivery Date": pi.deliveryDate,
         "Registration Type": pi.registrationType,
         Amount: pi.amount,
+        grandTotal:pi.grandTotal,
         Status: pi.status,
       }));
 
@@ -352,19 +356,22 @@ const handleMakePayment = async (pId: string) => {
 
   const handleStatusChange = async (pId: string, newStatus: PIStatus) => {
     try {
+      showLoading("Updating status...");
+
       const res = await updatePurchaseinvoiceStatus(pId, newStatus);
+
+      closeSwal();
 
       if (!res || res.status_code !== 200) {
         showApiError({ message: "Failed to update Purchase Invoice status" });
         return;
       }
 
-      setOrders((prev) =>
-        prev.map((o) => (o.pId === pId ? { ...o, status: newStatus } : o))
-      );
+      await fetchInvoice();
 
-      showSuccess(`Purchase Invoice marked as ${newStatus}`);
+      showSuccess(`Purchase Invoice updated`);
     } catch (err) {
+      closeSwal();
       showApiError({ message: "Failed to update Purchase Invoice status" });
     }
   };
@@ -374,14 +381,25 @@ const handleMakePayment = async (pId: string) => {
     { key: "pId", header: "PI ID", align: "left" },
     { key: "supplier", header: "Supplier", align: "left" },
     { key: "podate", header: "PI Date", align: "left" },
-    { key: "registrationType", header: "Registration Type", align: "left" },
+    { key: "deliveryDate", header: "Delivery Date", align: "left" },
+    { key: "registrationType", header: "Type", align: "left" },
     {
       key: "amount",
-      header: "Amount",
-      align: "right",
+      header: "Amount w/o Tax",
+      align: "left",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {Number(o.amount || 0).toFixed(2)}
+        </code>
+      ),
+    },
+     {
+      key: "amount",
+      header: "Amount with Tax",
+      align: "left",
+      render: (o) => (
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          {Number(o.grandTotalWithTax || 0).toFixed(2)}
         </code>
       ),
     },
@@ -391,7 +409,7 @@ const handleMakePayment = async (pId: string) => {
       align: "left",
       render: (o) => <StatusBadge status={o.status} />,
     },
-    { key: "deliveryDate", header: "Delivery Date", align: "left" },
+    
     {
       key: "actions",
       header: "Actions",
@@ -421,7 +439,7 @@ const handleMakePayment = async (pId: string) => {
                 label: "View PDF",
                 onClick: () => handleOpenPDF(o),
               },
-              ...(o.status === "Submitted"
+              ...(o.status === "Unpaid"
                 ? [{ label: "Make Payment", onClick: () => handleMakePayment(o.pId) }]
                 : []),
 
@@ -539,27 +557,27 @@ const handleMakePayment = async (pId: string) => {
             setModalOpen(true);
           }}
         />
-        
+
       )}
-<PaymentEntryModal
-  isOpen={paymentModalOpen}
-  onClose={() => {
-    setPaymentModalOpen(false);
-    setSelectedPI(null);
-  }}
-  defaultValues={
-    selectedPI
-      ? {
-          paymentType:      "Pay",
-          partyType:        "Supplier",
-          partyName:        selectedPI.supplierName,
-          partyId:          selectedPI.supplierId ?? selectedPI.pId,
-          amount:           selectedPI.grandTotal,
-          referenceInvoice: selectedPI.pId,
+      <PaymentEntryModal
+        isOpen={paymentModalOpen}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setSelectedPI(null);
+        }}
+        defaultValues={
+          selectedPI
+            ? {
+              paymentType: "Pay",
+              partyType: "Supplier",
+              partyName: selectedPI.supplierName,
+              partyId: selectedPI.supplierId ?? selectedPI.pId,
+              amount: selectedPI.grandTotal,
+              referenceInvoice: selectedPI.pId,
+            }
+            : undefined
         }
-      : undefined
-  }
-/>
+      />
     </div>
   );
 };

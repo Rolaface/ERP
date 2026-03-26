@@ -135,17 +135,17 @@ export const DetailsTab = ({
             />
           </div>
           <div className="w-[140px] ml-2">
-  <DatePickerInput
-    label="Supplier Invoice Date"
-    name="supplierInvoiceDate"
-    value={form.supplierInvoiceDate || ""}
-    onChange={(name, value) =>
-      onFormChange({
-        target: { name, value },
-      } as any)
-    }
-  />
-</div>
+            <DatePickerInput
+              label="Supplier Invoice Date"
+              name="supplierInvoiceDate"
+              value={form.supplierInvoiceDate || ""}
+              onChange={(name, value) =>
+                onFormChange({
+                  target: { name, value },
+                } as any)
+              }
+            />
+          </div>
           <div className="w-[128px] ml-2">
             <DatePickerInput
               label="Date"
@@ -159,7 +159,7 @@ export const DetailsTab = ({
               }
             />
           </div>
-          
+
 
           <div className="w-[130px] ml-4">
             <ModalSelect
@@ -283,7 +283,7 @@ export const DetailsTab = ({
                     (unit × size)
                   </span>
                 </th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
                   Batch No{" "}
                   {items.some((it) => it.requiresBatch) && (
                     <span className="text-danger">*</span>
@@ -292,14 +292,14 @@ export const DetailsTab = ({
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">
                   Qty
                 </th>
-               <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
-  Mfg Date
-</th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
+                  Mfg Date
+                </th>
 
-<th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
-  Expiry Date
-</th>
-                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
+                  Expiry Date
+                </th>
+                <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px] whitespace-nowrap">
                   Unit Price <span className="text-danger">*</span>
                 </th>
                 <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">
@@ -397,7 +397,7 @@ export const DetailsTab = ({
                         value={it.batchNo || ""}
                         onChange={(e) => onItemChange(e, i)}
                         required={it.requiresBatch}
-                        className="w-[55px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-[85px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </td>
 
@@ -455,7 +455,7 @@ export const DetailsTab = ({
                         name="rate"
                         value={it.rate}
                         onChange={(e) => onItemChange(e, i)}
-                        className="w-[65px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+                        className="w-[56px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                       />
                     </td>
                     {/* WAREHOUSE */}

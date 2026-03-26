@@ -13,33 +13,22 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 
-
-interface ModeOfPayment {
-  id: string;
-  name: string;
-  type: string;
-  defaultAccount?: string;
-  enabled: boolean;
-}
-
-
 const ModeOfPaymentSetup: React.FC = () => {
-  const [data, setData] = useState<ModeOfPayment[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-
+  const [search, setSearch] = useState("");
   /* ───────── FETCH DATA ───────── */
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
 
-      const res = await getAllModeOfPayment(page, pageSize,searchTerm);
+      const res = await getAllModeOfPayment(page, pageSize, search);
 
       setData(Array.isArray(res.data) ? res.data : []);
       setTotalPages(res.pagination.total_pages);
@@ -49,7 +38,7 @@ const ModeOfPaymentSetup: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize,searchTerm]);
+  }, [page, pageSize, search]);
 
   useEffect(() => {
     fetchData();
@@ -77,7 +66,7 @@ const ModeOfPaymentSetup: React.FC = () => {
   };
 
   /* ───────── COLUMNS ───────── */
-const columns: Column<ModeOfPayment>[] = [
+  const columns: Column<any>[] = [
     {
       key: "name",
       header: "Mode",
@@ -107,7 +96,6 @@ const columns: Column<ModeOfPayment>[] = [
       align: "center",
       render: (row: any) => (
         <ActionGroup>
-
           <ActionMenu
             customActions={[
               {
@@ -138,11 +126,6 @@ const columns: Column<ModeOfPayment>[] = [
         data={data}
         loading={loading}
         rowKey={(r) => String(r.id)}
-         searchValue={searchTerm}
-        onSearch={(q) => {
-          setSearchTerm(q);
-          setPage(1);
-        }}
         showToolbar
         enableAdd
         addLabel="Add Mode of Payment"
@@ -153,18 +136,16 @@ const columns: Column<ModeOfPayment>[] = [
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
         onPageChange={setPage}
+        searchValue={search}
+        onSearch={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
         }}
       />
-
-      {/* EMPTY */}
-      {!loading && data.length === 0 && (
-        <div className="text-center text-gray-500 py-10">
-          No mode of payments found
-        </div>
-      )}
 
       {/* MODAL */}
       {showModal && (

@@ -14,6 +14,8 @@ import StatusBadge from "../../components/ui/Table/StatusBadge";
 interface PaymentAPI {
   paymentId: string;
   paymentDate: string;
+  paymentType: string;
+  partyType: string;
   partyName: string;
   paymentMode: string;
   referenceNumber?: string;
@@ -31,6 +33,7 @@ type PaymentRow = {
   mode?: string;
   amount?: number;
   status: string;
+  partyType?: string;
 };
 
 const PaymentEntry: React.FC = () => {
@@ -63,6 +66,7 @@ const PaymentEntry: React.FC = () => {
       const mapped: PaymentRow[] = payments.map((p) => ({
         id: p.paymentId,
         status: p.status || "-",
+        partyType: p.partyType || "—",
         partyName: p.partyName || "—",
         mode: p.paymentMode || "—",
         amount: Number(p.amount) || 0,
@@ -98,13 +102,18 @@ const PaymentEntry: React.FC = () => {
   const columns: Column<PaymentRow>[] = [
     {
       key: "id",
-      header: "Id",
+      header: "P.Id",
       render: (row) => row.id || "-",
     },
     {
       key: "paymentDate",
       header: "Payment Date",
       render: (row) => row.paymentDate || "-"
+    },
+    {
+      key: "partyType",
+      header: "party Type",
+      render: (row) => row.partyType || "—",
     },
     {
       key: "partyName",

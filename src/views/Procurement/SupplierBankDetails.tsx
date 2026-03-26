@@ -147,7 +147,14 @@ const SupplierBankDetails: React.FC<Props> = ({
     {
       key: "accountNo",
       header: "Account No",
-      render: (row) => <span>{mask(row.accountNo)}</span>,
+      render: (row) => (
+        <span
+          title={row.accountNo ? String(row.accountNo) : ""}
+          className="cursor-pointer"
+        >
+          {mask(row.accountNo)}
+        </span>
+      ),
     },
     {
       key: "accountHolderName",
@@ -157,7 +164,14 @@ const SupplierBankDetails: React.FC<Props> = ({
     {
       key: "sortCode",
       header: "IFSC / Sort Code",
-      render: (row) => <span>{mask(row.sortCode)}</span>,
+      render: (row) => (
+        <span
+          title={row.sortCode ? String(row.sortCode) : ""}
+          className="cursor-pointer"
+        >
+          {mask(row.sortCode)}
+        </span>
+      ),
     },
     {
       key: "currency",

@@ -8,9 +8,9 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
-import { getAllBankAccounts , updateBankAccountStatus} from "../../api/BankAccountApi";
+import { getAllBankAccounts, updateBankAccountStatus } from "../../api/BankAccountApi";
 
-import { showApiError, showSuccess} from "../../utils/alert";
+import { showApiError, showSuccess } from "../../utils/alert";
 
 const mask = (val?: string) => {
   if (!val) return "—";
@@ -24,94 +24,80 @@ const BankAccountSetup: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalItems, setTotalItems] = useState(0);
-
-  
-const fetchAccounts = useCallback(async () => {
-  try {
-    setLoading(true);
-
-    const res = await getAllBankAccounts({
-      page,
-      page_size: pageSize,
-    });
-
-  setBankAccounts(res.data || []);
-setTotalPages(res.pagination?.total_pages || 1);
-setTotalItems(res.pagination?.total || 0);
-  } catch (err: any) {
-  showApiError(err?.message);
-} finally {
-    setLoading(false);
-  }
-}, [page, pageSize]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
 
- useEffect(() => {
-  fetchAccounts();
-}, [fetchAccounts]);
+  const fetchAccounts = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const res = await getAllBankAccounts({
+        page,
+        search,
+        page_size: pageSize,
+      });
+
+      setBankAccounts(res.data || []);
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total || 0);
+    } catch (err: any) {
+      showApiError(err?.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, search]);
+
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
 
 
   const handleToggleDisable = useCallback(async (row: BankAccount) => {
-  try {
-    setActionLoadingId(String(row.id));
+    try {
+      setActionLoadingId(String(row.id));
 
-    await updateBankAccountStatus({
-      bankAccountId: String(row.id),
-      isDisabled: row.isDisabled ? 0 : 1,
-      isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
-    });
+      await updateBankAccountStatus({
+        bankAccountId: String(row.id),
+        isDisabled: row.isDisabled ? 0 : 1,
+        isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
+      });
 
-    await fetchAccounts();
-  } catch (err: any) {
-    showApiError(err.message);
-  } finally {
-  setActionLoadingId(null);
-}
-}, [fetchAccounts]);
+      await fetchAccounts();
+    } catch (err: any) {
+      showApiError(err.message);
+    } finally {
+      setActionLoadingId(null);
+    }
+  }, [fetchAccounts]);
 
- 
-  const filteredData = useMemo(() => {
-    const query = search.toLowerCase();
 
-    return bankAccounts.filter((b) =>
-      [
-        b.bankName,
-        b.accountHolderName,
-        b.accountNo,
-        b.currency,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [bankAccounts, search]);
 
- 
 
-const handleSetDefault = useCallback(async (row: BankAccount) => {
-  try {
-    setActionLoadingId(String(row.id));
 
-    await updateBankAccountStatus({
-      bankAccountId: String(row.id),
-      isDefault: 1,
-      isDisabled: 0,
-    });
+  const handleSetDefault = useCallback(async (row: BankAccount) => {
+    try {
+      setActionLoadingId(String(row.id));
 
-    await fetchAccounts(); 
-  } catch (err: any) {
-    showApiError(err.message);
-  } finally {
-  setActionLoadingId(null);
-}
-}, [fetchAccounts]);
+      await updateBankAccountStatus({
+        bankAccountId: String(row.id),
+        isDefault: 1,
+        isDisabled: 0,
+      });
+
+      await fetchAccounts();
+    } catch (err: any) {
+      showApiError(err.message);
+    } finally {
+      setActionLoadingId(null);
+    }
+  }, [fetchAccounts]);
 
   const columns: Column<BankAccount>[] = [
-     {
+    {
       key: "dateAdded",
       header: "Date Added",
       render: (row) => row.dateAdded || "—",
@@ -131,7 +117,11 @@ const handleSetDefault = useCallback(async (row: BankAccount) => {
     {
       key: "accountNo",
       header: "Account No",
-      render: (row) => <span>{mask(row.accountNo)}</span>,
+      render: (row) => (
+        <span title={row.accountNo || ""} className="cursor-pointer">
+          {mask(row.accountNo)}
+        </span>
+      ),
     },
     {
       key: "accountHolderName",
@@ -140,7 +130,11 @@ const handleSetDefault = useCallback(async (row: BankAccount) => {
     {
       key: "sortCode",
       header: "IFSC / Sort Code",
-      render: (row) => <span>{mask(row.sortCode)}</span>,
+      render: (row) => (
+        <span title={row.sortCode || ""} className="cursor-pointer">
+          {mask(row.sortCode)}
+        </span>
+      ),
     },
     {
       key: "currency",
@@ -149,8 +143,8 @@ const handleSetDefault = useCallback(async (row: BankAccount) => {
         <span className="font-semibold">{row.currency}</span>
       ),
     },
- 
-   
+
+
     {
       key: "isDefault",
       header: "Default",
@@ -162,15 +156,15 @@ const handleSetDefault = useCallback(async (row: BankAccount) => {
         ),
     },
     {
-  key: "isDisabled",
-  header: "Status",
-  render: (row) =>
-    row.isDisabled ? (
-      <span className="text-red-500 font-semibold">Disabled</span>
-    ) : (
-      <span className="text-green-600">Active</span>
-    ),
-},
+      key: "isDisabled",
+      header: "Status",
+      render: (row) =>
+        row.isDisabled ? (
+          <span className="text-red-500 font-semibold">Disabled</span>
+        ) : (
+          <span className="text-green-600">Active</span>
+        ),
+    },
     {
       key: "actions",
       header: "Actions",
@@ -183,19 +177,19 @@ const handleSetDefault = useCallback(async (row: BankAccount) => {
             iconOnly
           />
           <ActionMenu
-    customActions={[
-      {
-        label: "Set Default",
-        onClick: () => handleSetDefault(row),
-        disabled: actionLoadingId === String(row.id)
-      },
-      {
-        label: row.isDisabled ? "Enable" : "Disable",
-        onClick: () => handleToggleDisable(row),
-        disabled: actionLoadingId === String(row.id)
-      },
-    ]}
-  />
+            customActions={[
+              {
+                label: "Set Default",
+                onClick: () => handleSetDefault(row),
+                disabled: actionLoadingId === String(row.id)
+              },
+              {
+                label: row.isDisabled ? "Enable" : "Disable",
+                onClick: () => handleToggleDisable(row),
+                disabled: actionLoadingId === String(row.id)
+              },
+            ]}
+          />
         </ActionGroup>
       ),
     },
@@ -214,14 +208,14 @@ const handleSetDefault = useCallback(async (row: BankAccount) => {
       {/* TABLE */}
       <Table
         columns={columns}
-        data={filteredData} 
+        data={bankAccounts}
         loading={loading}
         rowKey={(row) => String(row.id)}
         showToolbar
         searchValue={search}
         onSearch={setSearch}
         enableAdd
-         currentPage={page}
+        currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
@@ -232,24 +226,17 @@ const handleSetDefault = useCallback(async (row: BankAccount) => {
         onAdd={() => setShowModal(true)}
       />
 
-      {/* EMPTY STATE */}
-      {!loading && filteredData.length === 0 && (
-        <div className="text-center text-gray-500 py-10">
-          No bank accounts found
-        </div>
-      )}
 
       {/* MODAL */}
-     {/* MODAL */}
-{showModal && (
-  <AddBankAccountModal
-    isOpen={showModal}
-    onClose={() => setShowModal(false)}
-    onSubmit={() => {
-      fetchAccounts();
-    }}
-  />
-)}
+      {showModal && (
+        <AddBankAccountModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onSubmit={() => {
+            fetchAccounts();
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -24,33 +24,33 @@ const BankDetails: React.FC = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-      const [page, setPage] = useState(1);
-      const [pageSize, setPageSize] = useState(10);
-      const [totalPages, setTotalPages] = useState(1);
-      const [totalItems, setTotalItems] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
 
   const fetchAccounts = useCallback(async () => {
     try {
       setLoading(true);
-  
+
       const res = await getAllBankAccounts({
-        company: true ,
+        company: true,
         page,
         page_size: pageSize,
       });
-  
+
       setBankAccounts(res.data);
       setTotalPages(res.pagination.total_pages);
       setTotalItems(res.pagination.total);
-  
+
     } catch (err: any) {
-    showApiError(err?.message || "Failed to load bank accounts");
-  } finally {
+      showApiError(err?.message || "Failed to load bank accounts");
+    } finally {
       setLoading(false);
     }
   }, [page, pageSize]);
-  
+
 
   useEffect(() => {
     fetchAccounts();
@@ -135,7 +135,11 @@ const BankDetails: React.FC = () => {
     {
       key: "accountNo",
       header: "Account No",
-      render: (row) => <span>{mask(row.accountNo)}</span>,
+      render: (row) => (
+        <span title={row.accountNo ? String(row.accountNo) : ""} className="cursor-pointer">
+          {mask(row.accountNo)}
+        </span>
+      ),
     },
     {
       key: "accountHolderName",
@@ -145,7 +149,11 @@ const BankDetails: React.FC = () => {
     {
       key: "sortCode",
       header: "IFSC / Sort Code",
-      render: (row) => <span>{mask(row.sortCode)}</span>,
+      render: (row) => (
+        <span title={row.sortCode ? String(row.sortCode) : ""} className="cursor-pointer">
+          {mask(row.sortCode)}
+        </span>
+      ),
     },
     {
       key: "currency",
@@ -221,7 +229,7 @@ const BankDetails: React.FC = () => {
         searchValue={search}
         onSearch={setSearch}
         enableAdd
-          currentPage={page}
+        currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
@@ -242,18 +250,18 @@ const BankDetails: React.FC = () => {
       )}
 
       {showModal && (
-     <AddBankAccountModal
-  isOpen={showModal}
-  onClose={() => {
-    setShowModal(false);
-    setEditingRow(null);
-  }}
-  onSubmit={() => {
-    fetchAccounts();
-  }}
-  initialData={editingRow}
-  defaultAccountFor="Company" 
-/>
+        <AddBankAccountModal
+          isOpen={showModal}
+          onClose={() => {
+            setShowModal(false);
+            setEditingRow(null);
+          }}
+          onSubmit={() => {
+            fetchAccounts();
+          }}
+          initialData={editingRow}
+          defaultAccountFor="Company"
+        />
       )}
     </div>
   );
