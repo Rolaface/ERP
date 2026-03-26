@@ -35,20 +35,16 @@ type UseModeOfPaymentReturn = {
   options: ModeOfPaymentOption[];
   isLoading: boolean;
   error: string | null;
+  fetchModes: (search?: string) => Promise<ModeOfPaymentOption[]>;
 };
 
 type UsePartyOptionsReturn = {
   partyOptions: PartyOption[];
   isLoadingParties: boolean;
+  fetchParties: (search?: string) => Promise<PartyOption[]>;
 };
 
-type UsePartyDetailsReturn = {
-  fetchPartyDetails: (
-    party: string,
-    partyType: "Supplier" | "Customer"
-  ) => Promise<PartyDetails | null>;
-  isLoadingDetails: boolean;
-};
+
 
 // ── Hook 1: Mode of Payment options ──────────────────────────────────────────
 export function usePaymentModes(): UseModeOfPaymentReturn {
@@ -56,87 +52,86 @@ export function usePaymentModes(): UseModeOfPaymentReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchModes = useCallback(async (search?: string) => {
+  setIsLoading(true);
+  setError(null);
+  try {
+    const result = await getAllModeOfPayment(1, 100, search, 1);
+    const mapped = result.data.map((item) => ({
+      label: item.name,
+      value: item.id,
+      defaultAccount: item.defaultAccount ?? "",
+      currency: item.currency ?? "",
+    }));
+    setOptions(mapped);
+    return mapped;  // ← return the fresh data
+  } catch (err: any) {
+    setError(err.message || "Failed to load payment modes");
+    return [];
+  } finally {
+    setIsLoading(false);
+  }
+}, []);
+
   useEffect(() => {
-    let cancelled = false;
+    fetchModes(); // initial load on mount
+  }, [fetchModes]);
 
-    const fetchModes = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-       const result = await getAllModeOfPayment(1, 100, undefined, 1);
-
-        if (!cancelled) {
-          setOptions(
-            result.data.map((item) => ({
-              label: item.name,
-              value: item.id,
-              defaultAccount: item.defaultAccount ?? "",
-              currency: item.currency ?? "",
-            }))
-          );
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          setError(err.message || "Failed to load payment modes");
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
-
-    fetchModes();
-    return () => { cancelled = true; };
-  }, []);
-
-  return { options, isLoading, error };
+  return { options, isLoading, error, fetchModes };
 }
 
-// ── Hook 2: Party options ─────────────────────────────────────────────────────
+// ── Hook 2: Party options 
 export function usePartyOptions(
   partyType: "Supplier" | "Customer" | "Company" | "Shareholder" | "Employee" | ""
 ): UsePartyOptionsReturn {
   const [partyOptions, setPartyOptions] = useState<PartyOption[]>([]);
   const [isLoadingParties, setIsLoadingParties] = useState(false);
 
-  useEffect(() => {
-    if (!partyType || partyType === "Company") {
-      setPartyOptions([]);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoadingParties(true);
-
-    getBankAccounts(
+ const fetchParties = useCallback(async (search?: string) => {
+  if (!partyType || partyType === "Company") {
+    setPartyOptions([]);
+    return [];
+  }
+  setIsLoadingParties(true);
+  try {
+    const opts = await getBankAccounts(
       partyType as "Supplier" | "Customer" | "Shareholder" | "Employee",
-      "Payment Entry"
-    )
-      .then((opts) => {
-        if (!cancelled) {
-          setPartyOptions(opts.map((o) => ({ label: o.label, value: o.value })));
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setPartyOptions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingParties(false);
-      });
+      undefined,
+      search
+    );
+    const mapped = opts.map((o) => ({ label: o.label, value: o.value }));
+    setPartyOptions(mapped);
+    return mapped;  // ← return fresh data
+  } catch {
+    setPartyOptions([]);
+    return [];
+  } finally {
+    setIsLoadingParties(false);
+  }
+}, [partyType]);
 
-    return () => { cancelled = true; };
-  }, [partyType]);
+  useEffect(() => {
+    fetchParties(); // initial load when partyType changes
+  }, [fetchParties]);
 
-  return { partyOptions, isLoadingParties };
+  return { partyOptions, isLoadingParties, fetchParties };
 }
 
 // ── Hook 3: Party details ─────────────────────────────────────────────────────
+type UsePartyDetailsReturn = {
+  fetchPartyDetails: (
+    party: string,
+    partyType: "Supplier" | "Customer" | "Employee" | "Shareholder" // EXPAND
+  ) => Promise<PartyDetails | null>;
+  isLoadingDetails: boolean;
+};
+
 export function usePartyDetails(): UsePartyDetailsReturn {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
   const fetchPartyDetails = useCallback(async (
     party: string,
-    partyType: "Supplier" | "Customer"
+    partyType: "Supplier" | "Customer" | "Employee" | "Shareholder" // EXPAND
   ): Promise<PartyDetails | null> => {
     setIsLoadingDetails(true);
     try {
@@ -158,18 +153,19 @@ export function useCompanyBankAccounts() {
   const [options, setOptions] = useState<BankAccountOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchCompanyBanks = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getBankAccountOptions({ company: true });
-      setOptions(data);
-    } catch {
-      setOptions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
+const fetchCompanyBanks = useCallback(async (search?: string) => {
+  setIsLoading(true);
+  try {
+    const data = await getBankAccountOptions({ company: true, search });
+    setOptions(data);
+    return data;  // ← add this
+  } catch {
+    setOptions([]);
+    return [];    // ← add this
+  } finally {
+    setIsLoading(false);
+  }
+}, []);
   const clearCompanyBanks = useCallback(() => setOptions([]), []);
 
   return {
@@ -185,17 +181,19 @@ export function usePartyBankAccounts() {
   const [options, setOptions] = useState<BankAccountOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchPartyBanks = useCallback(async (party_type: string, party: string) => {
-    setIsLoading(true);
-    try {
-      const data = await getBankAccountOptions({ party_type, party });
-      setOptions(data);
-    } catch {
-      setOptions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+const fetchPartyBanks = useCallback(async (party_type: string, party: string, search?: string) => {
+  setIsLoading(true);
+  try {
+    const data = await getBankAccountOptions({ party_type, party, search });
+    setOptions(data);
+    return data;  // ← add this
+  } catch {
+    setOptions([]);
+    return [];    // ← add this
+  } finally {
+    setIsLoading(false);
+  }
+}, []);
 
   const clearPartyBanks = useCallback(() => setOptions([]), []);
 
@@ -254,31 +252,31 @@ export function useLedgerAccounts(
   return { options, isLoading };
 }
 
-// ── Hook 7: Currency options — fetched once, used in currency dropdowns ───────
+// ── Hook 7: Currency options — backend search supported ───────────────────────
 export function useCurrencyOptions() {
   const [currencyOptions, setCurrencyOptions] = useState<{ label: string; value: string }[]>([]);
+  const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    getBankAccounts("Currency")
-      .then((opts) => {
-        if (!cancelled) {
-          setCurrencyOptions(opts.map((o) => ({ label: o.label, value: o.value })));
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setCurrencyOptions([]);
-      });
-
-    return () => { cancelled = true; };
+  const fetchCurrencies = useCallback(async (search?: string) => {
+    setIsLoadingCurrencies(true);
+    try {
+      const opts = await getBankAccounts("Currency", undefined, search);
+      setCurrencyOptions(opts.map((o) => ({ label: o.label, value: o.value })));
+    } catch {
+      setCurrencyOptions([]);
+    } finally {
+      setIsLoadingCurrencies(false);
+    }
   }, []);
 
-  return { currencyOptions };
+  useEffect(() => {
+    fetchCurrencies(); // initial load on mount
+  }, [fetchCurrencies]);
+
+  return { currencyOptions, isLoadingCurrencies, fetchCurrencies };
 }
 
 // ── Hook 8: GL options for both From and To in one call ───────────────────────
-
 export function useLedgerOptions(
   paymentType: "Pay" | "Receive" | "Internal Transfer" | "",
   partyType: "Supplier" | "Customer" | "Shareholder" | "Employee" | "",
@@ -286,6 +284,7 @@ export function useLedgerOptions(
   const [fromOptions, setFromOptions] = useState<LedgerOption[]>([]);
   const [toOptions, setToOptions]     = useState<LedgerOption[]>([]);
   const [isLoading, setIsLoading]     = useState(false);
+
 
   useEffect(() => {
     const fetchableType =
@@ -330,30 +329,67 @@ export function useLedgerOptions(
     return () => { cancelled = true; };
   }, [paymentType, partyType]);
 
-  return { fromOptions, toOptions, isLoadingLedgers: isLoading };
+  const fetchFromOptions = useCallback(async (search?: string) => {
+    const fetchableType =
+      paymentType === "Pay" || paymentType === "Receive" ? paymentType : null;
+    if (!partyType || !fetchableType) return [];
+    try {
+      const data = await getLedgerAccount(fetchableType, "from", partyType, search);
+      const mapped = data.map((i) => ({ label: i.name, value: i.name, currency: i.account_currency }));
+      setFromOptions(mapped);
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, [paymentType, partyType]);
+
+  const fetchToOptions = useCallback(async (search?: string) => {
+    const fetchableType =
+      paymentType === "Pay" || paymentType === "Receive" ? paymentType : null;
+    if (!partyType || !fetchableType) return [];
+    try {
+      const data = await getLedgerAccount(fetchableType, "to", partyType, search);
+      const mapped = data.map((i) => ({ label: i.name, value: i.name, currency: i.account_currency }));
+      setToOptions(mapped);
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, [paymentType, partyType]);
+
+  return { fromOptions, toOptions, isLoadingLedgers: isLoading, fetchFromOptions, fetchToOptions };
 }
 
 // ── Hook 9: Exchange rate — debounced, fires when currencies differ ───────────
-
 export function useExchangeRate(
   currencyFrom: string,
   currencyTo: string,
   date: string,
-  companyDefaultCurrency?: string 
+  companyDefaultCurrency: string // still needed for logic, not for display
 ) {
-  const [rate, setRate]         = useState<number | null>(null);
-  const [error, setError]       = useState<string | null>(null);
+  const [rate, setRate]           = useState<number | null>(null);
+  const [error, setError]         = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const currenciesKnown  = Boolean(currencyFrom && currencyTo);
   const currenciesDiffer = currenciesKnown && currencyFrom !== currencyTo;
+
+  const oneIsDefault =
+    currencyFrom === companyDefaultCurrency ||
+    currencyTo   === companyDefaultCurrency;
+
+  const shouldFetchRate = currenciesDiffer && oneIsDefault;
+
+
+  const nonDefaultCurrency =
+    currencyFrom !== companyDefaultCurrency ? currencyFrom : currencyTo;
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (!currenciesDiffer) {
+    if (!shouldFetchRate) {
       setRate(null);
       setError(null);
       setIsLoading(false);
@@ -365,7 +401,10 @@ export function useExchangeRate(
       setError(null);
 
       const effectiveDate = date || dayjs().format("YYYY-MM-DD");
-      const result: ExchangeRateResult = await getExchangeRate(currencyFrom, currencyTo, effectiveDate,companyDefaultCurrency);
+      const result: ExchangeRateResult = await getExchangeRate(
+        nonDefaultCurrency,  
+        effectiveDate,
+      );
 
       setIsLoading(false);
 
@@ -381,7 +420,7 @@ export function useExchangeRate(
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [currencyFrom, currencyTo, date, companyDefaultCurrency]);
+  }, [currencyFrom, currencyTo, date, companyDefaultCurrency, shouldFetchRate, nonDefaultCurrency]);
 
-  return { rate, error, isLoadingRate: isLoading, currenciesDiffer };
+  return { rate, error, isLoadingRate: isLoading, currenciesDiffer: shouldFetchRate };
 }

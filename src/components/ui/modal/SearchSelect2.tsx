@@ -1,10 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-
-
-
-  type Option = {
+type Option = {
   label: string;
   value: string;
   swiftCode?: string;
@@ -13,9 +10,7 @@ import { createPortal } from "react-dom";
 interface SearchSelectProps {
   label: string;
   value?: string;
-
-
-onChange: (value: string, option: Option) => void;
+  onChange: (value: string, option: Option) => void;
   fetchOptions: (q: string) => Promise<Option[]>;
   placeholder?: string;
   disabled?: boolean;
@@ -23,7 +18,7 @@ onChange: (value: string, option: Option) => void;
   required?: boolean;
 }
 
-const SearchSelect: React.FC<SearchSelectProps> = ({
+const SearchSelect2: React.FC<SearchSelectProps> = ({
   label,
   value,
   onChange,
@@ -43,12 +38,21 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  /*  Fetch Options  */
-
+  // Keep fetchOptions in a ref — prevents it from being a dep in the search effect
+  // This stops the effect re-firing when parent re-renders and passes a new function ref
+  const fetchOptionsRef = useRef(fetchOptions);
   useEffect(() => {
-    setSearch(value || "");
-  }, [value]);
+    fetchOptionsRef.current = fetchOptions;
+  }, [fetchOptions]);
 
+  // Sync external value only when user is NOT actively typing
+  useEffect(() => {
+    if (!isTyping) {
+      setSearch(value || "");
+    }
+  }, [value, isTyping]);
+
+  // Search effect — fetchOptions intentionally excluded via ref pattern
   useEffect(() => {
     if (justSelected) {
       setJustSelected(false);
@@ -57,24 +61,19 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
 
     if (!isTyping) return;
 
-    if (!search) {
-      return;
-    }
-
     const delay = setTimeout(async () => {
-      const data = await fetchOptions(search);
+      const data = await fetchOptionsRef.current(search);
       setOptions(data);
       setOpen(true);
-    }, 400);
+    }, 300);
 
     return () => clearTimeout(delay);
-  }, [search, fetchOptions, justSelected, isTyping]);
+  }, [search, justSelected, isTyping]);
 
-  /*  Position Calculation  */
+  // Dropdown position
   useEffect(() => {
     if (open && wrapperRef.current) {
       const rect = wrapperRef.current.getBoundingClientRect();
-
       setDropdownPos({
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
@@ -83,7 +82,7 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
     }
   }, [open, options]);
 
-  /*  Outside Click  */
+  // Outside click to close
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (
@@ -93,6 +92,7 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
         !dropdownRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
+        setIsTyping(false);
       }
     };
 
@@ -102,8 +102,7 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
 
   return (
     <>
-      {/* Input Wrapper */}
-      <div ref={wrapperRef} className="flex flex-col text- w-full">
+      <div ref={wrapperRef} className="flex flex-col w-full">
         <label className="text-[10px] font-medium mb-1">
           {label}
           {required && <span className="text-danger">*</span>}
@@ -116,23 +115,18 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
           onChange={(e) => {
             setIsTyping(true);
             setSearch(e.target.value);
-            setOpen(true);
-            onChange("", { label: "", value: "" });
           }}
-          onFocus={async () => {
+          onFocus={() => {
+            setIsTyping(true);
             setOpen(true);
-
-            // fetch all options on focus
-            const data = await fetchOptions("");
-            setOptions(data);
           }}
-          className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0, ${error ? "border-danger" : "border-theme"
-            }`}
+          className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0 ${
+            error ? "border-danger" : "border-theme"
+          }`}
         />
         {error && <span className="text-danger text-[10px] mt-1">{error}</span>}
       </div>
 
-      {/* Portal Dropdown */}
       {open &&
         options.length > 0 &&
         createPortal(
@@ -145,14 +139,17 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
               width: dropdownPos.width,
               zIndex: 9999,
             }}
-            className="  bg-white border rounded shadow-lg max-h-48 overflow-auto  "
+            className="bg-white border rounded shadow-lg max-h-48 overflow-auto"
           >
             {options.map((opt) => (
               <div
                 key={opt.value || opt.label}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                }}
                 onClick={() => {
-                  setIsTyping(false);
                   setJustSelected(true);
+                  setIsTyping(false);
                   onChange(opt.value, opt);
                   setSearch(opt.label);
                   setOpen(false);
@@ -169,4 +166,4 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
   );
 };
 
-export default SearchSelect;
+export default SearchSelect2;
