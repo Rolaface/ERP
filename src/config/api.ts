@@ -99,6 +99,7 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
     update: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.update_currency_exchange?`,
     delete: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.delete_currency_exchange`,
+    get:`${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`
   },
   /* =========================
    * CUSTOMER

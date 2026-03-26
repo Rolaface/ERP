@@ -184,8 +184,8 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   taxesChargesTemplate: "",
   supplierInvoiceNumber: "",
   supplierInvoiceDate: "",
-  paymentType: "",
-  transactionProgress: "",
+  paymentType: "Bank transfer",
+  transactionProgress: "APPROVED",
   updateStock: true,
   costCenter: "UD-001 - Udvil - RI",
   project: "Project-0001",
@@ -232,7 +232,7 @@ useCompanyBillingAddress: true,
   items: [{ ...emptyItem }],
   taxRows: [], // Start with empty array, user can add as needed
   paymentRows: [], // Start with empty array, user can add as needed
-
+ warehouse: "Udvell Main Warehouse - UDVELL",
   templateName: "",
   templateType: "",
   subject: "",

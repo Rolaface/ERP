@@ -15,7 +15,7 @@ import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
 import {
   invoiceStatusOptions,
-  currencySymbols,  
+  currencySymbols,
   paymentMethodOptions,
   currencyOptions,
 } from "../../constants/invoice.constants";
@@ -60,7 +60,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     initialData,
   );
   // Removed allowSubmit state, no longer needed.
-  const tabs: Array<"details" | "address"|"otherCharges" | "terms"> = [
+  const tabs: Array<"details" | "address" | "otherCharges" | "terms"> = [
     "details",
     "address",
     "otherCharges",
@@ -89,9 +89,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const symbol = currencySymbols[formData.currencyCode] || "";
   const showExchangeRate =
-    String(formData.currencyCode ?? "")
-      .trim()
-      .toUpperCase() !== "INR";
+    !!ui.baseCurrency &&
+    !!formData.currencyCode &&
+    formData.currencyCode.trim().toUpperCase() !==
+      ui.baseCurrency.trim().toUpperCase();
   const showExportField = ui.isExport;
   // Remove internal handleFormSubmit. Let parent handle submit.
 
@@ -126,11 +127,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   if (submitting) return;
                   setSubmitting(true);
                   try {
-                    // Create a dummy event to satisfy handleSubmit's required argument
+                   
                     const dummyEvent = {
                       preventDefault: () => {},
                     } as React.FormEvent;
                     const payload = await actions.handleSubmit(dummyEvent);
+                    payload.invoiceCharges = (payload.invoiceCharges || [])
+                   .filter(ch => ch.charge_type?.trim() && Number(ch.amount || 0) > 0);
                     if (!payload) {
                       showValidationError(
                         "Please fill all required fields correctly.",
@@ -177,24 +180,26 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
-            {(["details", "address","otherCharges", "terms"] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => ui.setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all 
+            {(["details", "address", "otherCharges", "terms"] as const).map(
+              (tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => ui.setActiveTab(tab)}
+                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all 
               ${
                 ui.activeTab === tab
                   ? "text-primary border-b-[3px] border-primary"
                   : "text-muted border-b-[3px] border-transparent hover:text-main"
               }`}
-              >
-                {tab === "details" && "Details"}
-                {tab === "address" && "Additional Details"}
-                {tab === "otherCharges" && "Shipping & Other Charges"}
-                {tab === "terms" && "Terms & Conditions"}
-              </button>
-            ))}
+                >
+                  {tab === "details" && "Details"}
+                  {tab === "address" && "Additional Details"}
+                  {tab === "otherCharges" && "Shipping & Other Charges"}
+                  {tab === "terms" && "Terms & Conditions"}
+                </button>
+              ),
+            )}
           </div>
         </div>
 
@@ -402,7 +407,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
                             Box
                           </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
+                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[250px] whitespace-nowrap">
                             Batch No
                           </th>
 
@@ -418,7 +423,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">
                             Warehouse
                           </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">
+                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[40px]  whitespace-nowrap">
                             Unit Price <span className="text-danger">*</span>
                           </th>
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
@@ -479,7 +484,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                       expDate: item.expiryDate,
                                       packingUnit: item.packingUnit,
                                       packingSize: item.packingSize,
-                                      
+
                                       vatRate: item.taxRate,
                                       vatCode: item.taxCode,
                                       warehouse: item.warehouse,
@@ -519,6 +524,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     type="number"
                                     name="packingUnit"
                                     value={it.packingUnit || ""}
+                                    disabled
                                     onChange={(e) =>
                                       actions.handleItemChange(i, e)
                                     }
@@ -534,6 +540,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     type="number"
                                     name="packingSize"
                                     value={it.packingSize || ""}
+                                    disabled
                                     onChange={(e) =>
                                       actions.handleItemChange(i, e)
                                     }
@@ -570,12 +577,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                               </td>
 
                               {
-                                <td className="px-0.5 py-1">
+                                <td className="px-0.5 py-1 min-w-[100px]">
                                   <input
                                     type="string"
                                     className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                                     name="batchNo"
                                     value={it.batchNo}
+                                    disabled
                                     onChange={(e) =>
                                       actions.handleItemChange(i, e)
                                     }
@@ -624,6 +632,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     label=""
                                     name="mfgDate"
                                     value={it.mfgDate}
+                                    disabled
                                     onChange={(name, value) =>
                                       actions.handleItemChange(i, {
                                         target: { name, value },
@@ -639,6 +648,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     label=""
                                     name="expDate"
                                     value={it.expDate}
+                                    disabled
                                     onChange={(name, value) =>
                                       actions.handleItemChange(i, {
                                         target: { name, value },
@@ -665,7 +675,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                               <td className="px-0.5 py-1">
                                 <input
                                   type="number"
-                                  className="w-[60px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+                                  className="w-[50px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                   name="price"
                                   value={it.price ?? ""}
                                   onChange={(e) =>
@@ -877,12 +887,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       </div>
                     </div>
                   </div>
-                  
                 </div>
               </div>
             </div>
           )}
-
 
           {/* TERMS */}
           {ui.activeTab === "terms" && (
@@ -895,15 +903,15 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </div>
           )}
           {ui.activeTab === "otherCharges" && (
-  <InvoiceChargesTab
-    charges={formData.invoiceCharges || []}
-    currency={formData.currencyCode}
-    totals={totals}
-    onAdd={actions.addOtherCharge}
-    onChange={actions.handleOtherChargeChange}
-    onRemove={actions.removeOtherCharge}
-  />
-)}
+            <InvoiceChargesTab
+              charges={formData.invoiceCharges || []}
+              currency={formData.currencyCode}
+              totals={totals}
+              onAdd={actions.addOtherCharge}
+              onChange={actions.handleOtherChargeChange}
+              onRemove={actions.removeOtherCharge}
+            />
+          )}
 
           {/* ADDRESS */}
           {ui.activeTab === "address" && (

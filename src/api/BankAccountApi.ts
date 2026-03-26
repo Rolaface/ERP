@@ -17,15 +17,16 @@ export async function createNewBankAccount(payload: any) {
 }
 
 export async function getBankAccounts(
-  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account" | "Shareholder" | "Employee", 
-  reference_doctype?: string 
+  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account" | "Shareholder" | "Employee",
+  reference_doctype?: string,
+  search?: string  
 ) {
-  const url = reference_doctype
-    ? `${Account.getBankAccounts}?filter=${filter}&reference_doctype=${encodeURIComponent(reference_doctype)}`
-    : `${Account.getBankAccounts}?filter=${filter}`;
+
+  let url = `${Account.getBankAccounts}?filter=${filter}`;
+  if (reference_doctype) url += `&reference_doctype=${encodeURIComponent(reference_doctype)}`;
+  if (search?.trim())    url += `&search=${encodeURIComponent(search.trim())}`;
 
   const resp: AxiosResponse = await api.get(url);
-
   return mapBankResponse(filter, resp.data);
 }
 
@@ -41,13 +42,13 @@ type BankAccountFilters = {
   party_type?: "Supplier" | "Customer";
   party?: string;
   search?: string;
-  page?:number;
-  page_size?:number;
+  page?: number;
+  page_size?: number;
 };
 
 
 const mapBankResponse = (
-   filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account" | "Shareholder" | "Employee",
+  filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account" | "Shareholder" | "Employee",
   response: any
 ): Option[] => {
   const raw = response?.message?.data?.data;
@@ -73,18 +74,18 @@ const mapBankResponse = (
         },
       }));
 
-case "Company":
-  return raw?.company
-    ? [
-        {
-          label: raw.company,
-          value: raw.company,
-          meta: {
-            currency: raw.currency, 
+    case "Company":
+      return raw?.company
+        ? [
+          {
+            label: raw.company,
+            value: raw.company,
+            meta: {
+              currency: raw.currency,
+            },
           },
-        },
-      ]
-    : [];
+        ]
+        : [];
 
     case "Bank":
       return raw.map((item: any) => ({
@@ -101,16 +102,16 @@ case "Company":
         value: item.code || item.name,
       }));
 
-   case "Account":
-  return raw.map((item: any) => ({
-    label: item.name,
-    value: item.name,
-    meta: {
-      accountNumber: item.account_number,
-    },
-  }));
+    case "Account":
+      return raw.map((item: any) => ({
+        label: item.name,
+        value: item.name,
+        meta: {
+          accountNumber: item.account_number,
+        },
+      }));
 
-  case "Shareholder":
+    case "Shareholder":
       return raw.map((item: any) => ({
         label: item.shareholder_name || item.name,
         value: item.name,
@@ -162,7 +163,7 @@ export async function getAllBankAccounts(
   const raw = resp?.data?.message?.data;
 
   return {
-    data: mapGetBankAccounts(raw), 
+    data: mapGetBankAccounts(raw),
     pagination: raw?.pagination || {
       total: 0,
       page: 1,
@@ -197,8 +198,8 @@ export async function updateBankAccountStatus(
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message?.message ||
-        error.message ||
-        "Something went wrong"
+      error.message ||
+      "Something went wrong"
     );
   }
 }
@@ -260,16 +261,14 @@ export async function getAllModeOfPayment(
     const params = new URLSearchParams({
       page: String(page),
       page_size: String(page_size),
-      search: search || "",
     });
 
-  
     if (enabled !== undefined) {
       params.append("enabled", String(enabled));
     }
-    if (search) {
-  params.append("search", search);
-}
+    if (search?.trim()) {
+      params.append("search", search.trim());
+    }
 
     const url = `${Account.GetModeOfPayment}?${params.toString()}`;
 
@@ -302,8 +301,8 @@ export async function getAllModeOfPayment(
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
-        error.message ||
-        "Something went wrong"
+      error.message ||
+      "Something went wrong"
     );
   }
 }
@@ -370,35 +369,37 @@ export type PartyDetails = {
   partyAccountCurrency: string;
   partyBankAccount: string;
   companyBankAccount: string;
-   companyLedgerAccount: string;      
-  companyLedgerCurrency: string;   
+  companyLedgerAccount: string;
+  companyLedgerCurrency: string;
+  companyDefaultCurrency: string;
 };
 
 export async function getPartyDetails(
   party: string,
-  party_type: "Supplier" | "Customer"
+ party_type: "Supplier" | "Customer" | "Employee" | "Shareholder"
 ): Promise<PartyDetails> {
   try {
     const resp: AxiosResponse = await api.post(
       Account.GetPartyDetails,
       { party, party_type }
     );
-    const res = resp?.data;               
+    const res = resp?.data;
 
     if (res?.status_code !== 201) {
       throw new Error(res?.message || "Failed to fetch party details");
     }
 
-    const d = res?.data;                       
+    const d = res?.data;
 
     return {
-      partyLedgerAccount:   d?.party_ledger_account ?? "",
-      partyName:            d?.party_name ?? "",
-      partyAccountCurrency: d?.party_account_currency ?? "",
-      partyBankAccount:     d?.party_bank_account ?? "",
-      companyBankAccount:   d?.company_bank_account ?? "",
-      companyLedgerAccount: d?.company_account_ledger ?? "",
+      partyLedgerAccount:    d?.party_ledger_account ?? "",
+      partyName:             d?.party_name ?? "",
+      partyAccountCurrency:  d?.party_account_currency ?? "",
+      partyBankAccount:      d?.party_bank_account ?? "",
+      companyBankAccount:    d?.company_bank_account ?? "",
+      companyLedgerAccount:  d?.company_account_ledger ?? "",
       companyLedgerCurrency: d?.company_account_ledger_currency ?? "",
+      companyDefaultCurrency: d?.company_default_currency ?? "", // NEW
     };
   } catch (error: any) {
     throw new Error(
@@ -419,17 +420,20 @@ export type BankAccountOption = {
   currency: string;
 };
 
-// ── Add one new function at the bottom ───────────────────────────────────────
+
 export async function getBankAccountOptions(filters: {
   company?: boolean;
   party_type?: string;
   party?: string;
+  search?: string;
 }): Promise<BankAccountOption[]> {
   try {
     const params = new URLSearchParams();
-    if (filters.company)      params.append("company", "true");
-    if (filters.party_type)   params.append("party_type", filters.party_type);
-    if (filters.party)        params.append("party", filters.party);
+    if (filters.company) params.append("company", "true");
+    if (filters.party_type) params.append("party_type", filters.party_type);
+    if (filters.party) params.append("party", filters.party);
+    if (filters.search?.trim()) params.append("search", filters.search.trim());
+
 
     const url = params.toString()
       ? `${Account.getBankAccountMain}?${params.toString()}`
@@ -460,7 +464,8 @@ export type LedgerAccountOption = {
 export async function getLedgerAccount(
   paymentType: "Pay" | "Receive",
   filter: "from" | "to",
-  partyType: "Supplier"|"Customer"|"Employee"|"Shareholder"
+  partyType: "Supplier" | "Customer" | "Employee" | "Shareholder",
+  search?: string,
 ): Promise<LedgerAccountOption[]> {
   try {
     const resp: AxiosResponse = await api.get(
@@ -469,7 +474,8 @@ export async function getLedgerAccount(
         params: {
           paymentType,
           filter,
-          partyType
+          partyType,
+          ...(search?.trim() ? { search: search.trim() } : {}),
         },
       }
     );
@@ -485,28 +491,26 @@ export async function getLedgerAccount(
     return [];
   }
 }
- 
+
 
 
 export type ExchangeRateResult =
-  | { rate: number;  error: null   }   // found
-  | { rate: null;    error: string };  // not found — show error, let user type
- 
+  | { rate: number;  error: null   }
+  | { rate: null;    error: string };
+
 export async function getExchangeRate(
-  from_currency: string,
-  to_currency:   string,
-  transaction_date: string,
-   company_default_currency?: string           
+  from_currency: string,    
+  transaction_date: string, 
 ): Promise<ExchangeRateResult> {
   try {
     const resp: AxiosResponse = await api.post(
-      Account.getExchangeRate,       
-      { from_currency, to_currency, transaction_date ,company_default_currency }
+      Account.getExchangeRate,
+      { from_currency, transaction_date } 
     );
- 
+
     const data = resp?.data;
     const rate = data?.message;
- 
+
     if (!rate || rate === 0) {
       let errorMsg = "Exchange rate not found. Please enter manually.";
       try {
@@ -514,18 +518,13 @@ export async function getExchangeRate(
         if (raw) {
           const parsed: Array<{ message?: string }> = JSON.parse(raw);
           const first = parsed?.[0];
-          const inner =
-            typeof first === "string"
-              ? JSON.parse(first)
-              : first;
+          const inner = typeof first === "string" ? JSON.parse(first) : first;
           if (inner?.message) errorMsg = inner.message;
         }
-      } catch {
-      }
- 
+      } catch {}
       return { rate: null, error: errorMsg };
     }
- 
+
     return { rate: Number(rate), error: null };
   } catch (error: any) {
     return {
@@ -536,7 +535,7 @@ export async function getExchangeRate(
     };
   }
 }
- 
+
 
 
 export type PaymentReference = {
@@ -545,7 +544,7 @@ export type PaymentReference = {
   allocated_amount: number;
   due_date?: string;
 };
- 
+
 /** One row in the taxes & charges array */
 export type PaymentTax = {
   type: string;
@@ -554,47 +553,47 @@ export type PaymentTax = {
   amount: number;
   total: number;
 };
- 
+
 /** Full payload sent to createPaymentEntry */
 export type CreatePaymentEntryPayload = {
   payment_type: "Pay" | "Receive" | "Internal Transfer";
   party_type: string;
   party_id: string; // ERPNext name field — same as display name for Supplier/Customer
- 
+
   mode_of_payment: string;
   payment_date: string; // YYYY-MM-DD
   reference_no?: string;
   reference_date?: string; // YYYY-MM-DD
- 
+
   project?: string;
   cost_center?: string;
- 
+
   exchange_rate: number;
- 
+
   paid_from: string; // GL account
   paid_from_bank_account?: string;
   paid_from_account_currency: string;
   paid_from_amount: number;
- 
+
   paid_to: string; // GL account
   paid_to_bank_account?: string;
   paid_to_account_currency: string;
   paid_to_amount: number;
- 
+
   references: PaymentReference[];
   taxes: PaymentTax[];
 };
- 
+
 /** Shape returned by the API on success */
 export type CreatePaymentEntryResponse = {
   status_code: 201;
   status: "success";
   message: string;
   data: {
-    modeOfPaymentId: string; 
+    modeOfPaymentId: string;
   };
 };
- 
+
 export async function createPaymentEntry(
   payload: CreatePaymentEntryPayload
 ): Promise<CreatePaymentEntryResponse> {
@@ -602,14 +601,14 @@ export async function createPaymentEntry(
     Account.createPaymentEntry,
     payload
   );
- 
+
   const data = resp?.data;
- 
+
   // The API returns 201 on success
   if (data?.status_code !== 201) {
     // Throw with the backend message so SweetAlert shows it verbatim
     throw new Error(data?.message || "Failed to create payment entry.");
   }
- 
+
   return data as CreatePaymentEntryResponse;
 }

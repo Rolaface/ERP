@@ -106,6 +106,14 @@ const InvoiceDetailModal: React.FC<Props> = ({
   const totalDisc  = items.reduce((s, it) => s + (it.discount ?? 0), 0);
   const grandTotal = subtotal - totalDisc;
   const currency   = data?.currencyCode ?? "USD";
+  const invoiceCharges = (data as any)?.invoiceCharges || [];
+
+const totalCharges = invoiceCharges.reduce(
+  (sum: number, ch: any) => sum + (Number(ch.amount) || 0),
+  0
+);
+
+const fobTotal = grandTotal - totalCharges;
   const statusCls  = STATUS_MAP[data?.invoiceStatus ?? "Draft"] ?? "bg-draft";
   const phases =
     data?.terms?.selling?.payment?.phases
@@ -307,10 +315,26 @@ const InvoiceDetailModal: React.FC<Props> = ({
               {/* Totals */}
               <div style={{ background: "var(--bg)", borderTop: "2px solid var(--border)", padding: "7px 10px", display: "flex", flexDirection: "column", gap: 3 }}>
                 {[
-                  { label: "Subtotal",    val: fmt(subtotal, currency),     big: false, red: false },
-                  ...(totalDisc > 0 ? [{ label: "Discount", val: `- ${fmt(totalDisc, currency)}`, big: false, red: true }] : []),
-                  { label: "Grand Total", val: fmt(grandTotal, currency),   big: true,  red: false },
-                ].map(({ label, val, big, red }) => (
+  { label: "Subtotal", val: fmt(subtotal, currency), big: false, red: false },
+
+  ...(totalDisc > 0
+    ? [{ label: "Discount", val: `${fmt(totalDisc, currency)}`, big: false, red: true }]
+    : []),
+
+  { label: "Grand Total(CIF)", val: fmt(grandTotal, currency), big: true, red: false },
+
+
+  ...(invoiceCharges || []).map((ch: any) => ({
+    label: ch.charge_type,
+    val: `${fmt(ch.amount, currency)}`,
+    big: false,
+    red: false,
+  })),
+
+
+  { label: "FOB", val: fmt(fobTotal, currency), big: true, red: false },
+
+].map(({ label, val, big, red }) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</span>
                     <span style={{ fontSize: big ? 14 : 12, fontWeight: big ? 800 : 500, color: red ? "var(--danger)" : "var(--text)", fontVariantNumeric: "tabular-nums" }}>{val}</span>

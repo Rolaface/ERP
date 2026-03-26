@@ -58,7 +58,8 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     setCustomShippingRule,
     customIncoterm,
     setCustomIncoterm,
-    handleBulkItemChange
+    handleBulkItemChange,
+    saving
   } = usePurchaseOrderForm({ isOpen, onSuccess: onSubmit, onClose, poId });
 
   const footer = (
@@ -70,8 +71,17 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
         <Button variant="secondary" onClick={reset}>
           Reset
         </Button>
-        <Button variant="primary" type="submit" form="purchaseOrderForm">
-          {activeTab === "terms" ? "Save Purchase Order" : "Next"}
+        <Button
+          variant="primary"
+          type="submit"
+          form="purchaseOrderForm"
+          disabled={saving}
+        >
+          {saving
+            ? "Saving..."
+            : activeTab === "terms"
+              ? "Save Purchase Order"
+              : "Next"}
         </Button>
       </div>
     </>
@@ -87,7 +97,10 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        if (saving) return;
+        onClose();
+      }}
       title={poId ? "Edit Purchase Order" : "New Purchase Order"}
       subtitle="Create and manage purchase order"
       icon={Building2}

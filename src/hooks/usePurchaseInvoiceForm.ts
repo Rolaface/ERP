@@ -4,6 +4,8 @@ import {
   showSuccess,
   showValidationError,
   showPOConflictDialog,
+  showLoading,
+  closeSwal,
 } from "../utils/alert";
 import type {
   PurchaseInvoiceFormData,
@@ -88,16 +90,16 @@ export const usePurchaseInvoiceForm = ({
       try {
         const res = await getCompanyById(COMPANY_ID);
 
-       
+
         const company =
           res?.data?.data || // if wrapped
           res?.data || // if semi wrapped
           res; // fallback
 
-       
+
 
         if (!company?.companyName) {
-         
+
           return;
         }
 
@@ -224,9 +226,9 @@ export const usePurchaseInvoiceForm = ({
   const validateTab = (tab: POTab): string | null => {
     if (tab === "details") {
       if (!form.supplier) return "Supplier is required";
-      
+
       if (usePO && !form.poNumber)
-      return "Purchase Order is required";
+        return "Purchase Order is required";
 
       if (form.supplier && !form.supplierInvoiceNumber?.trim())
         return "Supplier Invoice No is required";
@@ -296,7 +298,7 @@ export const usePurchaseInvoiceForm = ({
             if (itemRes?.status_code === 200) {
               description = itemRes.data?.description || "";
             }
-          } catch {}
+          } catch { }
 
           return {
             itemCode: item.item_code,
@@ -319,38 +321,38 @@ export const usePurchaseInvoiceForm = ({
           };
         }),
       );
-     
-const hasExistingItems =
-  form.items &&
-  form.items.length > 0 &&
-  form.items.some((i) => i.itemCode);
 
-let finalItems = enrichedItems;
+      const hasExistingItems =
+        form.items &&
+        form.items.length > 0 &&
+        form.items.some((i) => i.itemCode);
 
-if (hasExistingItems) {
-  const action = await showPOConflictDialog(
-    form.items.length,
-    data.poId
-  );
+      let finalItems = enrichedItems;
 
-  if (action === "cancel") return;
+      if (hasExistingItems) {
+        const action = await showPOConflictDialog(
+          form.items.length,
+          data.poId
+        );
 
-  if (action === "keep") {
-    const existingCodes = new Set(
-      form.items.map((i) => i.itemCode)
-    );
+        if (action === "cancel") return;
 
-    const newItems = enrichedItems.filter(
-      (item) => !existingCodes.has(item.itemCode)
-    );
+        if (action === "keep") {
+          const existingCodes = new Set(
+            form.items.map((i) => i.itemCode)
+          );
 
-    finalItems = [...form.items, ...newItems];
-  }
+          const newItems = enrichedItems.filter(
+            (item) => !existingCodes.has(item.itemCode)
+          );
 
-  if (action === "replace") {
-    finalItems = enrichedItems;
-  }
-}
+          finalItems = [...form.items, ...newItems];
+        }
+
+        if (action === "replace") {
+          finalItems = enrichedItems;
+        }
+      }
 
       setForm((prev) => ({
         ...prev,
@@ -676,24 +678,29 @@ if (hasExistingItems) {
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
+    if (saving) return;
     if (!form.taxCategory) {
       showValidationError("Tax Category is required");
       return;
     }
 
-
     const errors = validatePI(form);
 
     if (errors.length) {
       const uniqueErrors = [...new Set(errors)];
-
       showValidationError(uniqueErrors.join("\n"));
-
       return;
     }
 
     try {
       setSaving(true);
+
+
+      showLoading(
+        isEditMode
+          ? "Updating Purchase Invoice..."
+          : "Saving Purchase Invoice..."
+      );
 
       const finalForm = {
         ...form,
@@ -701,8 +708,8 @@ if (hasExistingItems) {
           form.shippingRule === "OTHER"
             ? customShippingRule
             : form.shippingRule,
-
-        incoterm: form.incoterm === "OTHER" ? customIncoterm : form.incoterm,
+        incoterm:
+          form.incoterm === "OTHER" ? customIncoterm : form.incoterm,
       };
 
       const payload = mapUIToCreatePI(finalForm);
@@ -715,19 +722,26 @@ if (hasExistingItems) {
         res = await createPurchaseInvoice(payload);
       }
 
+
+      closeSwal();
+
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(res);
         return;
       }
 
       showSuccess(
-        isEditMode ? "Purchase Invoice Updated" : "Purchase Invoice Created",
+        isEditMode
+          ? "Purchase Invoice Updated"
+          : "Purchase Invoice Created"
       );
 
       onSuccess?.(res);
       onClose?.();
       reset();
+
     } catch (error: any) {
+      closeSwal();
       showApiError(error);
     } finally {
       setSaving(false);
@@ -792,5 +806,6 @@ if (hasExistingItems) {
     usePO,
     handleTogglePO,
     handleBulkItemChange,
+    saving
   };
 };

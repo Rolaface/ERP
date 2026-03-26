@@ -110,7 +110,7 @@ export const generateInvoicePDF = async (
   infoLines.forEach((l, i) => doc.text(l, TX, infoY + i * 5));
 
 
-  const badgeLabel = invoice.invoiceType === "Export" ? "EXPORT INVOICE" : "TAX INVOICE";
+  const badgeLabel = "INVOICE";
 
   doc.setFont("helvetica", "bold"); doc.setFontSize(10);
   const badgeTextW = doc.getTextWidth(badgeLabel);
@@ -133,8 +133,6 @@ export const generateInvoicePDF = async (
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...INK_SOFT);
   [
     `Invoice Date: ${fmtDate(invoice.dateOfInvoice)}`,
-    `Payment Method: ${getPaymentMethodLabel(invoice?.paymentInformation?.paymentMethod) ?? "-"}`,
-    `Status: ${invoice.invoiceStatus ?? "-"}`,
   ].forEach((l, i) => doc.text(l, MR, 26 + i * 4, { align: "right" }));
 
   /* ══════════════════════════════════════════════════════════
@@ -152,15 +150,20 @@ export const generateInvoicePDF = async (
   if (invoice?.billingAddress?.email) billL.push(`Email: ${invoice.billingAddress.email}`);
   if (invoice?.billingAddress?.phone) billL.push(`Phone: ${invoice.billingAddress.phone}`);
 
-  const payL: string[] = ([
-    `Method: ${getPaymentMethodLabel(invoice?.paymentInformation?.paymentMethod) ?? "-"}`,
-    `Terms: ${invoice?.paymentInformation?.paymentTerms ?? "-"}`,
-    `Bank: ${invoice?.paymentInformation?.bankName ?? "-"}`,
-    invoice?.paymentInformation?.accountNumber
-      ? `A/C: ${invoice.paymentInformation.accountNumber}` : null,
-    invoice?.paymentInformation?.swiftCode
-      ? `SWIFT: ${invoice.paymentInformation.swiftCode}` : null,
-  ] as (string | null)[]).filter(Boolean) as string[];
+const payL: string[] = ([
+  `Bank: ${invoice?.paymentInformation?.bankName ?? "-"}`,
+
+  invoice?.paymentInformation?.accountNumber
+    ? `A/C: ${invoice.paymentInformation.accountNumber}`
+    : null,
+  invoice?.paymentInformation?.routingNumber
+    ? `Sort Code: ${invoice.paymentInformation.routingNumber}`
+    : null,
+     invoice?.paymentInformation?.swiftCode
+    ? `SWIFT: ${invoice.paymentInformation.swiftCode}`
+    : null,
+  `Payment Terms: ${invoice?.paymentInformation?.paymentTerms ?? "-"}`,
+] as (string | null)[]).filter(Boolean) as string[];
 
   const calcBH = (lines: string[], hasBold = false) => {
     let h = BH + PAD * 2 + LH;
@@ -351,7 +354,7 @@ export const generateInvoicePDF = async (
     body: [
   ["CIF", `${fmt2(cifValue)} ${cur}`],
 
-  // dynamic charges
+ 
   ...(invoice?.invoiceCharges || []).map((ch: any) => [
     ch.charge_type,
     `${fmt2(ch.amount)} ${cur}`,
@@ -370,23 +373,11 @@ export const generateInvoicePDF = async (
       0: { cellWidth: CIF_LBL_W, halign: "left", fontStyle: "normal", fontSize: 8, textColor: [0, 0, 0] as any },
       1: { cellWidth: CIF_VAL_W, halign: "center", fontSize: 8 },
     },
-    didParseCell: (data) => {
-      if (data.row.index === 0) {
-        
-        data.cell.styles.fontStyle = "bold";
-      }
-     
-      if (data.row.index === 2) {
-       
-        data.cell.styles.fontStyle = "bold";
-        data.cell.styles.textColor = [0, 0, 0] as any;
-      }
-    },
     margin:     { left: M, right: W - M - CIF_TABLE_W },
     tableWidth: CIF_TABLE_W,
   });
 
-  // ── Currency Conversion Row (shown only when currency ≠ INR) 
+
   if (cur !== "INR") {
     const exchangeRate   = Number(invoice?.exchangeRt ?? 0);
     const fobInINR       = fobValue * exchangeRate;

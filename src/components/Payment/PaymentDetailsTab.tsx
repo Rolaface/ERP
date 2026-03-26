@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useCallback } from "react";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
-import SearchSelect2 from "../ui/modal/SearchSelect";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { MoveRight, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import dayjs from "dayjs";
 import {
@@ -9,7 +9,6 @@ import {
   usePartyDetails,
   useCompanyBankAccounts,
   usePartyBankAccounts,
-  useCurrencyOptions,
   useLedgerOptions,
   useExchangeRate,
   type PartyOption,
@@ -45,7 +44,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   islocked = false,
   isPartyLocked = false,
 }) => {
-  const { options: modeOptions, isLoading: modesLoading } = usePaymentModes();
+  const { options: modeOptions, isLoading: modesLoading, fetchModes } = usePaymentModes();
   const { fetchPartyDetails, isLoadingDetails } = usePartyDetails();
   const {
     companyBankOptions,
@@ -63,38 +62,41 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   const paymentType =
     (form.paymentType as "Pay" | "Receive" | "Internal Transfer") || "Pay";
   const partyType =
-    (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") ||
-    "";
+    (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") || "";
 
-  const { partyOptions, isLoadingParties } = usePartyOptions(partyType);
+  const { partyOptions, isLoadingParties, fetchParties } = usePartyOptions(partyType);
 
-  // ── selectedMode: needed for mode-of-payment auto-fill ───────────────────
+  // ── selectedMode: find full option object for auto-fill ──────────────────
   const selectedMode = useMemo(
     () => modeOptions.find((opt) => opt.value === form.mode) ?? null,
     [form.mode, modeOptions],
   );
 
-  // ── Hook 7: Currency dropdown options ────────────────────────────────────
-  const { currencyOptions } = useCurrencyOptions();
 
-  const buildCurrencyOptions = (currentValue: string) => {
-    if (currencyOptions.length > 0) return currencyOptions;
-    return currentValue
-      ? [{ label: currentValue, value: currentValue }]
-      : [{ label: "Loading...", value: "" }];
-  };
 
   // ── Hook 8: GL ledger options for From + To ───────────────────────────────
   const {
     fromOptions: ledgerFromOptions,
     toOptions: ledgerToOptions,
     isLoadingLedgers,
+    fetchFromOptions,
+    fetchToOptions,
   } = useLedgerOptions(paymentType, partyType);
 
-  // Clear GL fields when ledger options reset (partyType / paymentType changed)
-  useEffect(() => {
-    onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
-  }, [paymentType, partyType]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ── Clear GL + mode when paymentType or partyType changes ─────────────────
+  // mode is also reset so stale auto-fill doesn't persist across party changes
+useEffect(() => {
+  // only reset if values actually exist
+  if (form.glFrom || form.glTo || form.mode) {
+    onFormChange({
+      glFrom: "",
+      currencyFrom: "",
+      glTo: "",
+      currencyTo: "",
+      mode: "",
+    });
+  }
+}, [paymentType, partyType]);
 
   // ── Hook 9: Exchange rate ─────────────────────────────────────────────────
   const currencyFrom = form.currencyFrom ?? "";
@@ -110,7 +112,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     currencyFrom,
     currencyTo,
     date,
-    form.companyDefaultCurrency,
+    form.companyDefaultCurrency ?? "",
   );
 
   // Sync exchange rate result into form state
@@ -129,33 +131,37 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     if (!form.date) onFormChange({ date: dayjs().format("YYYY-MM-DD") });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Mode of payment → auto-fill glFrom or glTo ───────────────────────────
+  // ── Mode of payment → auto-fill glFrom (Pay) or glTo (Receive) ───────────
+  // defaultAccount from API is set directly — if it doesn't exist in the
+  // ledger dropdown, the dropdown will show empty but form value is preserved.
+  // User can override by selecting from the dropdown manually.
   useEffect(() => {
     if (!selectedMode) {
-      if (paymentType === "Pay") onFormChange({ glFrom: "", currencyFrom: "" });
+      if (paymentType === "Pay")
+        onFormChange({ glFrom: "", currencyFrom: "" });
       else if (paymentType === "Receive")
         onFormChange({ glTo: "", currencyTo: "" });
       else
-        onFormChange({
-          glFrom: "",
-          currencyFrom: "",
-          glTo: "",
-          currencyTo: "",
-        });
+        onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
       return;
     }
-    if (paymentType === "Pay")
+
+    if (paymentType === "Pay") {
+      // Pay → defaultAccount goes into Paid From
       onFormChange({
-        glFrom: selectedMode.defaultAccount,
-        currencyFrom: selectedMode.currency,
+        glFrom: selectedMode.defaultAccount ?? "",
+        currencyFrom: selectedMode.currency ?? "",
       });
-    else if (paymentType === "Receive")
+    } else if (paymentType === "Receive") {
+      // Receive → defaultAccount goes into Paid To
       onFormChange({
-        glTo: selectedMode.defaultAccount,
-        currencyTo: selectedMode.currency,
+        glTo: selectedMode.defaultAccount ?? "",
+        currencyTo: selectedMode.currency ?? "",
       });
-    else
+    } else {
+      // Internal Transfer — no auto-fill
       onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
+    }
   }, [selectedMode, paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Party change → auto-fill GL + bank accounts ───────────────────────────
@@ -173,7 +179,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
     const run = async () => {
       const [details] = await Promise.all([
-        fetchPartyDetails(form.partyName, form.partyType),
+        fetchPartyDetails(
+          form.partyName,
+          form.partyType as "Supplier" | "Customer" | "Employee" | "Shareholder"
+        ),
         fetchCompanyBanks(),
         fetchPartyBanks(form.partyType, form.partyName),
       ]);
@@ -184,6 +193,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       onFormChange({
         partyName: details.partyName,
         companyBankAccount: details.companyBankAccount,
+        companyDefaultCurrency: details.companyDefaultCurrency,
         partyBankAccount: details.partyBankAccount,
         glFrom:
           form.paymentType === "Pay"
@@ -222,58 +232,71 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     clearPartyBanks();
   };
 
-  const handlePartyNameSelect = async (
-    _: string,
-    option: PartyOption | null,
-  ) => {
-    if (!option?.value) {
-      onFormChange({
-        ...PARTY_FILLED_FIELDS,
-        allocatedAmount: 0,
-        selectedInvoices: [],
-        allocations: {},
-      });
-      clearCompanyBanks();
-      clearPartyBanks();
-      return;
-    }
-    onFormChange({ partyName: option.label });
-    if (partyType !== "Supplier" && partyType !== "Customer") return;
+  const handlePartyNameSelect = useCallback(async (
+  _: string,
+  option: PartyOption | null,
+) => {
+  if (!option?.value) {
+    onFormChange({
+      ...PARTY_FILLED_FIELDS,
+      allocatedAmount: 0,
+      selectedInvoices: [],
+      allocations: {},
+    });
+    clearCompanyBanks();
+    clearPartyBanks();
+    return;
+  }
 
-    const [details] = await Promise.all([
-      fetchPartyDetails(option.value, partyType),
-      fetchCompanyBanks(),
-      fetchPartyBanks(partyType, option.value),
-    ]);
-    if (!details) return;
+  onFormChange({ partyName: option.label });
 
-    const base = { partyName: details.partyName || option.label };
-    const banks = {
-      companyBankAccount: details.companyBankAccount,
-      partyBankAccount: details.partyBankAccount,
-    };
+  if (partyType !== "Supplier" && partyType !== "Customer") return;
 
-    if (paymentType === "Pay") {
-      onFormChange({
-        ...base,
-        ...banks,
-        glFrom: details.companyLedgerAccount,
-        currencyFrom: details.companyLedgerCurrency,
-        glTo: details.partyLedgerAccount,
-        currencyTo: details.partyAccountCurrency,
-      });
-    } else {
-      onFormChange({
-        ...base,
-        ...banks,
-        glFrom: details.partyLedgerAccount,
-        currencyFrom: details.partyAccountCurrency,
-        glTo: details.companyLedgerAccount,
-        currencyTo: details.companyLedgerCurrency,
-      });
-    }
+  const [details] = await Promise.all([
+    fetchPartyDetails(option.value, partyType),
+    fetchCompanyBanks(),
+    fetchPartyBanks(partyType, option.value),
+  ]);
+
+  if (!details) return;
+
+  const base = { partyName: details.partyName || option.label };
+  const banks = {
+    companyBankAccount: details.companyBankAccount,
+    partyBankAccount: details.partyBankAccount,
   };
 
+  if (paymentType === "Pay") {
+    onFormChange({
+      ...base,
+      ...banks,
+      glFrom: details.companyLedgerAccount,
+      currencyFrom: details.companyLedgerCurrency,
+      glTo: details.partyLedgerAccount,
+      currencyTo: details.partyAccountCurrency,
+      companyDefaultCurrency: details.companyDefaultCurrency,
+    });
+  } else {
+    onFormChange({
+      ...base,
+      ...banks,
+      glFrom: details.partyLedgerAccount,
+      currencyFrom: details.partyAccountCurrency,
+      glTo: details.companyLedgerAccount,
+      currencyTo: details.companyLedgerCurrency,
+      companyDefaultCurrency: details.companyDefaultCurrency,
+    });
+  }
+}, [
+  onFormChange,
+  partyType,
+  paymentType,
+  fetchPartyDetails,
+  fetchCompanyBanks,
+  fetchPartyBanks,
+  clearCompanyBanks,
+  clearPartyBanks,
+]);
   const handleCompanyBankSelect = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -320,6 +343,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       amountFrom: val ? String(+(val / rate).toFixed(4)) : "",
     });
   };
+
   const handleAmountFromChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -332,6 +356,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       amount: val ? String(+(val * rate).toFixed(4)) : "",
     });
   };
+
   // ── Auto-recalculate amountTo when exchange rate changes ─────────────────
   useEffect(() => {
     const from = parseFloat(form.amountFrom) || 0;
@@ -342,19 +367,114 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       amount: String(+(from * rate).toFixed(4)),
     });
   }, [form.exchangeRate]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const canAllocate =
     Number(form?.amountTo || 0) > 0 &&
     !!form?.partyName &&
     !form?.referenceInvoice;
 
-  // ── GL dropdown option lists ──────────────────────────────────────────────
-  const glFromSelectOptions = isLoadingLedgers
-    ? [{ label: "Loading...", value: "" }]
-    : ledgerFromOptions.map((o) => ({ label: o.label, value: o.value }));
+  // ── Mode of Payment ────────────────────────
+const handleModeFetchOptions = useCallback(
+  async (q: string) => {
+    const fresh = await fetchModes(q || undefined);
+    return fresh.map((o) => ({ label: o.label, value: o.value }));
+  },
+  [fetchModes],  
+);
 
-  const glToSelectOptions = isLoadingLedgers
-    ? [{ label: "Loading...", value: "" }]
-    : ledgerToOptions.map((o) => ({ label: o.label, value: o.value }));
+  // ── Party Name ───────────────────────────
+ const handlePartyFetchOptions = useCallback(
+  async (q: string): Promise<PartyOption[]> => {
+    const fresh = await fetchParties(q || undefined);
+    return fresh; 
+  },
+  [fetchParties],  
+);
+
+const handleCompanyBankFetchOptions = useCallback(
+  async (q: string) => {
+    const fresh = await fetchCompanyBanks(q || undefined);
+    return (fresh ?? []).map((o) => ({ label: o.label, value: o.value }));
+  },
+  [fetchCompanyBanks],
+);
+
+const handlePartyBankFetchOptions = useCallback(
+  async (q: string) => {
+    if (!form.partyType || !form.partyName) return [];
+    const fresh = await fetchPartyBanks(form.partyType, form.partyName, q || undefined);
+    return (fresh ?? []).map((o) => ({ label: o.label, value: o.value }));
+  },
+  [fetchPartyBanks, form.partyType, form.partyName],
+);
+
+  const handleGlFromFetchOptions = useCallback(
+    async (q: string) => {
+      const results = await fetchFromOptions(q || undefined);
+      return results.map((o) => ({ label: o.label, value: o.value }));
+    },
+    [fetchFromOptions],
+  );
+
+  const handleCompanyBankChange = useCallback((_: string, option: any) => {
+  if (!option?.value) {
+    onFormChange({ companyBankAccount: "" });
+    return;
+  }
+
+  const selected = companyBankOptions.find((o) => o.value === option.value);
+  if (!selected) return;
+
+  onFormChange({
+    companyBankAccount: selected.value,
+    glFrom: selected.ledgerAccount,
+    currencyFrom: selected.currency,
+  });
+}, [onFormChange, companyBankOptions]);
+
+  const handleGlToFetchOptions = useCallback(
+    async (q: string) => {
+      const results = await fetchToOptions(q || undefined);
+      return results.map((o) => ({ label: o.label, value: o.value }));
+    },
+    [fetchToOptions],
+  );
+const handleGlFromChange = useCallback((_: string, option: any) => {
+  const selected = ledgerFromOptions.find((o) => o.value === option.value);
+
+  onFormChange({
+    glFrom: option.value ?? "",
+    currencyFrom: selected?.currency ?? "",
+  });
+}, [onFormChange, ledgerFromOptions]);
+  const handlePartyBankChange = useCallback((_: string, option: any) => {
+  if (!option?.value) {
+    onFormChange({ partyBankAccount: "" });
+    return;
+  }
+
+  const selected = partyBankOptions.find((o) => o.value === option.value);
+  if (!selected) return;
+
+  onFormChange({
+    partyBankAccount: selected.value,
+    glTo: selected.ledgerAccount,
+    currencyTo: selected.currency,
+  });
+}, [onFormChange, partyBankOptions]);
+
+const handleGlToChange = useCallback((_: string, option: any) => {
+  const selected = ledgerToOptions.find((o) => o.value === option.value);
+
+  onFormChange({
+    glTo: option.value ?? "",
+    currencyTo: selected?.currency ?? "",
+  });
+}, [onFormChange, ledgerToOptions]);
+
+const handleModeChange = useCallback((_: string, option: any) => {
+  onFormChange({ mode: option?.value ?? "" });
+}, [onFormChange]);
 
   return (
     <div className="space-y-5">
@@ -405,19 +525,13 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
             { label: "Employee", value: "Employee" },
           ]}
         />
+        {/* Party Name — backend search */}
         <SearchSelect2
           label="Name"
           value={form.partyName ?? ""}
           disabled={islocked || isPartyLocked || !partyType || isLoadingParties}
           onChange={handlePartyNameSelect}
-          fetchOptions={(q): Promise<PartyOption[]> => {
-            const query = q.toLowerCase();
-            return Promise.resolve(
-              partyOptions.filter((p) =>
-                (p.label || "").toLowerCase().includes(query),
-              ),
-            );
-          }}
+          fetchOptions={handlePartyFetchOptions}
         />
         <DatePickerInput
           label="Date"
@@ -429,16 +543,13 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
       {/* Row 2 */}
       <div className="grid grid-cols-3 gap-3">
-        <ModalSelect
+        {/* Mode of Payment — backend search */}
+        <SearchSelect2
           label="Mode of Payment"
-          name="mode"
           value={form.mode ?? ""}
-          onChange={onChange}
-          options={
-            modesLoading
-              ? [{ label: "Loading...", value: "" }]
-              : modeOptions.map((o) => ({ label: o.label, value: o.value }))
-          }
+          disabled={modesLoading}
+          onChange={handleModeChange}
+          fetchOptions={handleModeFetchOptions}
         />
         <ModalInput
           label="Cheque / Reference No"
@@ -470,93 +581,60 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         <div className="relative grid grid-cols-2">
           <div
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10
-                          flex items-center justify-center w-8 h-8 rounded-full bg-card border border-[var(--border)] shadow-sm"
+                        flex items-center justify-center w-8 h-8 rounded-full bg-card border border-[var(--border)] shadow-sm"
           >
             <MoveRight size={14} className="text-primary" />
           </div>
 
           {/* LEFT — Paid From */}
           <div className="border-r border-[var(--border)] px-5 py-4 space-y-3">
-            <ModalSelect
+            <SearchSelect2
               label="Bank Account"
-              name="companyBankAccount"
               value={form.companyBankAccount ?? ""}
-              onChange={handleCompanyBankSelect}
               disabled={!form.partyName || isLoadingCompanyBanks}
-              options={
-                isLoadingCompanyBanks
-                  ? [{ label: "Loading...", value: "" }]
-                  : companyBankOptions.map((o) => ({
-                      label: o.label,
-                      value: o.value,
-                    }))
-              }
+            onChange={handleCompanyBankChange}
+              fetchOptions={handleCompanyBankFetchOptions}
             />
             <div className="grid grid-cols-[1fr_100px] gap-2">
-              <ModalSelect
+              <SearchSelect2
                 label="Account (GL)"
-                name="glFrom"
                 value={form.glFrom ?? ""}
-                onChange={(e) => {
-                  const selected = ledgerFromOptions.find(
-                    (o) => o.value === e.target.value,
-                  );
-                  onFormChange({
-                    glFrom: selected?.value ?? e.target.value,
-                    currencyFrom: selected?.currency ?? form.currencyFrom ?? "",
-                  });
-                }}
-                options={glFromSelectOptions}
+                onChange={handleGlFromChange}
+                fetchOptions={handleGlFromFetchOptions}
               />
-              <ModalSelect
+              <ModalInput
                 label="Currency"
                 name="currencyFrom"
                 value={form.currencyFrom ?? ""}
-                onChange={onChange}
-                options={buildCurrencyOptions(form.currencyFrom ?? "")}
+                onChange={() => { }}
+                disabled
               />
             </div>
           </div>
 
           {/* RIGHT — Paid To */}
           <div className="px-5 py-4 space-y-3">
-            <ModalSelect
+            <SearchSelect2
               label="Bank Account"
-              name="partyBankAccount"
               value={form.partyBankAccount ?? ""}
-              onChange={handlePartyBankSelect}
               disabled={!form.partyName || isLoadingPartyBanks}
-              options={
-                isLoadingPartyBanks
-                  ? [{ label: "Loading...", value: "" }]
-                  : partyBankOptions.map((o) => ({
-                      label: o.label,
-                      value: o.value,
-                    }))
-              }
+              onChange={handlePartyBankChange}
+              fetchOptions={handlePartyBankFetchOptions}
             />
             <div className="grid grid-cols-[1fr_100px] gap-2">
-              <ModalSelect
+              <SearchSelect2
                 label="Account (GL)"
-                name="glTo"
                 value={form.glTo ?? ""}
-                onChange={(e) => {
-                  const selected = ledgerToOptions.find(
-                    (o) => o.value === e.target.value,
-                  );
-                  onFormChange({
-                    glTo: selected?.value ?? e.target.value,
-                    currencyTo: selected?.currency ?? form.currencyTo ?? "",
-                  });
-                }}
-                options={glToSelectOptions}
+                onChange={handleGlToChange}
+                fetchOptions={handleGlToFetchOptions}
               />
-              <ModalSelect
+
+              <ModalInput
                 label="Currency"
                 name="currencyTo"
                 value={form.currencyTo ?? ""}
-                onChange={onChange}
-                options={buildCurrencyOptions(form.currencyTo ?? "")}
+                onChange={() => { }}
+                disabled
               />
             </div>
           </div>
