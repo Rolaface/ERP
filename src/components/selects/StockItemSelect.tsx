@@ -313,16 +313,10 @@ export default function StockItemSelect({
         <Package className="w-3 h-3 text-muted/40 shrink-0" />
 
         {selected || (value && itemName) ? (
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center flex-1 min-w-0">
             <span className="truncate font-medium" title={selected?.itemName ?? itemName}>
               {selected?.itemName ?? itemName}
             </span>
-            {/* Show batch tag inline so user knows which batch is selected */}
-            {selected?.batchNo && (
-              <span className="shrink-0 text-[9px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary/80">
-                {selected.batchNo}
-              </span>
-            )}
           </div>
         ) : (
           <span className="flex-1 text-muted/40">

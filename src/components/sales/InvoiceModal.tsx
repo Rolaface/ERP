@@ -418,7 +418,7 @@ const showExchangeRate =
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">
                             Warehouse
                           </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">
+                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[40px]  whitespace-nowrap">
                             Unit Price <span className="text-danger">*</span>
                           </th>
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
@@ -519,6 +519,7 @@ const showExchangeRate =
                                     type="number"
                                     name="packingUnit"
                                     value={it.packingUnit || ""}
+                                    disabled
                                     onChange={(e) =>
                                       actions.handleItemChange(i, e)
                                     }
@@ -534,6 +535,7 @@ const showExchangeRate =
                                     type="number"
                                     name="packingSize"
                                     value={it.packingSize || ""}
+                                    disabled
                                     onChange={(e) =>
                                       actions.handleItemChange(i, e)
                                     }
@@ -624,6 +626,7 @@ const showExchangeRate =
                                     label=""
                                     name="mfgDate"
                                     value={it.mfgDate}
+                                    disabled
                                     onChange={(name, value) =>
                                       actions.handleItemChange(i, {
                                         target: { name, value },
@@ -639,6 +642,7 @@ const showExchangeRate =
                                     label=""
                                     name="expDate"
                                     value={it.expDate}
+                                    disabled
                                     onChange={(name, value) =>
                                       actions.handleItemChange(i, {
                                         target: { name, value },
@@ -665,7 +669,7 @@ const showExchangeRate =
                               <td className="px-0.5 py-1">
                                 <input
                                   type="number"
-                                  className="w-[60px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+                                  className="w-[50px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                   name="price"
                                   value={it.price ?? ""}
                                   onChange={(e) =>
