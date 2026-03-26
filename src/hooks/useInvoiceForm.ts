@@ -86,8 +86,6 @@ export const useInvoiceForm = (
     }));
   }, [isOpen]);
 
-
-
   useEffect(() => {
     const terms = formData.paymentInformation?.paymentTerms;
 
@@ -105,9 +103,9 @@ export const useInvoiceForm = (
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
   const [page, setPage] = useState(0);
   const [chargePage, setChargePage] = useState(0);
-  const [activeTab, setActiveTab] = useState<"details" | "terms" | "address">(
-    "details",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "details" | "address" | "otherCharges" | "terms"
+  >("details");
   const [taxCategory, setTaxCategory] = useState<string | undefined>("");
   const [isShippingOpen, setIsShippingOpen] = useState(false);
   const [sameAsBilling, setSameAsBilling] = useState(true);
@@ -137,7 +135,7 @@ export const useInvoiceForm = (
         const companyRes = await getCompanyById(COMPANY_ID);
         const company = companyRes?.data;
         const base = company?.financialConfig?.baseCurrency ?? "";
-        setBaseCurrency(base);        
+        setBaseCurrency(base);
         setBaseCurrency(base);
         lastCurrencyRef.current = base;
 
@@ -198,38 +196,36 @@ export const useInvoiceForm = (
     let cancelled = false;
     setExchangeRateLoading(true);
     setFormData((prev) => ({
-  ...prev,
-  exchangeRt: "",  
-}));
+      ...prev,
+      exchangeRt: "",
+    }));
     setExchangeRateError(null);
 
-getExchangeRate({
-  from_currency: code,
-  to_currency: baseCurrency,
-  transaction_date: formData.dateOfInvoice,
-  args:"for_selling"
-})
-  .then((res) => {
-    const rate = Number(res?.message); 
+    getExchangeRate({
+      from_currency: code,
+      to_currency: baseCurrency,
+      transaction_date: formData.dateOfInvoice,
+      args: "for_selling",
+    })
+      .then((res) => {
+        const rate = Number(res?.message);
 
-    setFormData((prev) => ({
-      ...prev,
-      exchangeRt: Number.isFinite(rate) && rate > 0 ? String(rate) : "1",
-    }));
-  })
-     .catch((err) => {
-  if (cancelled) return;
+        setFormData((prev) => ({
+          ...prev,
+          exchangeRt: Number.isFinite(rate) && rate > 0 ? String(rate) : "1",
+        }));
+      })
+      .catch((err) => {
+        if (cancelled) return;
 
-  setExchangeRateError(
-    err?.message || "Exchange rate not found"
-  );
+        setExchangeRateError(err?.message || "Exchange rate not found");
 
-  setFormData((prev) => ({
-    ...prev,
-    exchangeRt: "",  
-  }));
-  showApiError(err);
-})
+        setFormData((prev) => ({
+          ...prev,
+          exchangeRt: "",
+        }));
+        showApiError(err);
+      })
       .finally(() => {
         if (cancelled) return;
         setExchangeRateLoading(false);
@@ -238,9 +234,14 @@ getExchangeRate({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, formData.currencyCode, formData.dateOfInvoice,  
-  formData.customerId,  enableExchange, baseCurrency]);
-
+  }, [
+    isOpen,
+    formData.currencyCode,
+    formData.dateOfInvoice,
+    formData.customerId,
+    enableExchange,
+    baseCurrency,
+  ]);
 
   const setInvoiceFromApi = (invoice: any) => {
     setFormData((prev: any) => ({
@@ -809,7 +810,7 @@ getExchangeRate({
           ],
           dateOfInvoice: today,
           dueDate: dueDate,
-          exchangeRt: "1",
+          exchangeRt: "",
           warehouse: "",
           updateStock: true,
 
@@ -931,7 +932,7 @@ getExchangeRate({
       chargePage,
       setChargePage,
       baseCurrency,
-      
+
       chargeCount: formData.invoiceCharges.length,
       itemCount: formData.items.length,
       isExport:
@@ -968,7 +969,6 @@ getExchangeRate({
       addOtherCharge,
       handleOtherChargeChange,
       removeOtherCharge,
-     
     },
   };
 };

@@ -15,7 +15,7 @@ import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
 import {
   invoiceStatusOptions,
-  currencySymbols,  
+  currencySymbols,
   paymentMethodOptions,
   currencyOptions,
 } from "../../constants/invoice.constants";
@@ -60,7 +60,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     initialData,
   );
   // Removed allowSubmit state, no longer needed.
-  const tabs: Array<"details" | "address"|"otherCharges" | "terms"> = [
+  const tabs: Array<"details" | "address" | "otherCharges" | "terms"> = [
     "details",
     "address",
     "otherCharges",
@@ -88,10 +88,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   }, [isOpen]);
 
   const symbol = currencySymbols[formData.currencyCode] || "";
-const showExchangeRate =
-  !!ui.baseCurrency &&
-  !!formData.currencyCode &&
-  formData.currencyCode.trim().toUpperCase() !== ui.baseCurrency.trim().toUpperCase();
+  const showExchangeRate =
+    !!ui.baseCurrency &&
+    !!formData.currencyCode &&
+    formData.currencyCode.trim().toUpperCase() !==
+      ui.baseCurrency.trim().toUpperCase();
   const showExportField = ui.isExport;
   // Remove internal handleFormSubmit. Let parent handle submit.
 
@@ -177,24 +178,26 @@ const showExchangeRate =
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
-            {(["details", "address","otherCharges", "terms"] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => ui.setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all 
+            {(["details", "address", "otherCharges", "terms"] as const).map(
+              (tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => ui.setActiveTab(tab)}
+                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all 
               ${
                 ui.activeTab === tab
                   ? "text-primary border-b-[3px] border-primary"
                   : "text-muted border-b-[3px] border-transparent hover:text-main"
               }`}
-              >
-                {tab === "details" && "Details"}
-                {tab === "address" && "Additional Details"}
-                {tab === "otherCharges" && "Shipping & Other Charges"}
-                {tab === "terms" && "Terms & Conditions"}
-              </button>
-            ))}
+                >
+                  {tab === "details" && "Details"}
+                  {tab === "address" && "Additional Details"}
+                  {tab === "otherCharges" && "Shipping & Other Charges"}
+                  {tab === "terms" && "Terms & Conditions"}
+                </button>
+              ),
+            )}
           </div>
         </div>
 
@@ -402,7 +405,7 @@ const showExchangeRate =
                           <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
                             Box
                           </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
+                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[250px] whitespace-nowrap">
                             Batch No
                           </th>
 
@@ -479,7 +482,7 @@ const showExchangeRate =
                                       expDate: item.expiryDate,
                                       packingUnit: item.packingUnit,
                                       packingSize: item.packingSize,
-                                      
+
                                       vatRate: item.taxRate,
                                       vatCode: item.taxCode,
                                       warehouse: item.warehouse,
@@ -572,12 +575,13 @@ const showExchangeRate =
                               </td>
 
                               {
-                                <td className="px-0.5 py-1">
+                                <td className="px-0.5 py-1 min-w-[100px]">
                                   <input
                                     type="string"
                                     className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                                     name="batchNo"
                                     value={it.batchNo}
+                                    disabled
                                     onChange={(e) =>
                                       actions.handleItemChange(i, e)
                                     }
@@ -881,12 +885,10 @@ const showExchangeRate =
                       </div>
                     </div>
                   </div>
-                  
                 </div>
               </div>
             </div>
           )}
-
 
           {/* TERMS */}
           {ui.activeTab === "terms" && (
@@ -899,15 +901,15 @@ const showExchangeRate =
             </div>
           )}
           {ui.activeTab === "otherCharges" && (
-  <InvoiceChargesTab
-    charges={formData.invoiceCharges || []}
-    currency={formData.currencyCode}
-    totals={totals}
-    onAdd={actions.addOtherCharge}
-    onChange={actions.handleOtherChargeChange}
-    onRemove={actions.removeOtherCharge}
-  />
-)}
+            <InvoiceChargesTab
+              charges={formData.invoiceCharges || []}
+              currency={formData.currencyCode}
+              totals={totals}
+              onAdd={actions.addOtherCharge}
+              onChange={actions.handleOtherChargeChange}
+              onRemove={actions.removeOtherCharge}
+            />
+          )}
 
           {/* ADDRESS */}
           {ui.activeTab === "address" && (
