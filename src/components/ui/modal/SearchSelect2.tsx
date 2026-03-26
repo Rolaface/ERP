@@ -18,7 +18,10 @@ interface SearchSelectProps {
   required?: boolean;
 }
 
-const SearchSelect2: React.FC<SearchSelectProps> = ({
+const DEBOUNCE_DELAY = 400;
+const MIN_SEARCH_LENGTH = 2;
+
+const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
   label,
   value,
   onChange,
@@ -29,48 +32,61 @@ const SearchSelect2: React.FC<SearchSelectProps> = ({
   required,
 }) => {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [options, setOptions] = useState<Option[]>([]);
   const [open, setOpen] = useState(false);
-  const [justSelected, setJustSelected] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPos, setDropdownPos] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
+  const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
 
-  // Keep fetchOptions in a ref — prevents it from being a dep in the search effect
-  // This stops the effect re-firing when parent re-renders and passes a new function ref
+  // stable fetch ref
   const fetchOptionsRef = useRef(fetchOptions);
   useEffect(() => {
     fetchOptionsRef.current = fetchOptions;
   }, [fetchOptions]);
 
-  // Sync external value only when user is NOT actively typing
-  useEffect(() => {
-    if (!isTyping) {
-      setSearch(value || "");
-    }
-  }, [value, isTyping]);
 
-  // Search effect — fetchOptions intentionally excluded via ref pattern
   useEffect(() => {
-    if (justSelected) {
-      setJustSelected(false);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, DEBOUNCE_DELAY);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+
+  useEffect(() => {
+    if (!open) return;
+
+
+    if (!debouncedSearch) {
+      fetchOptionsRef.current("").then(setOptions);
       return;
     }
 
-    if (!isTyping) return;
+    if (debouncedSearch.length < MIN_SEARCH_LENGTH) return;
 
-    const delay = setTimeout(async () => {
-      const data = await fetchOptionsRef.current(search);
+    const id = ++requestIdRef.current;
+
+    const run = async () => {
+      const data = await fetchOptionsRef.current(debouncedSearch);
+
+      if (id !== requestIdRef.current) return;
+
       setOptions(data);
-      setOpen(true);
-    }, 300);
+    };
 
-    return () => clearTimeout(delay);
-  }, [search, justSelected, isTyping]);
+    run();
+  }, [debouncedSearch, open]);
 
-  // Dropdown position
+
   useEffect(() => {
     if (open && wrapperRef.current) {
       const rect = wrapperRef.current.getBoundingClientRect();
@@ -80,25 +96,39 @@ const SearchSelect2: React.FC<SearchSelectProps> = ({
         width: rect.width,
       });
     }
-  }, [open, options]);
+  }, [open]);
 
-  // Outside click to close
+
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+
       if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target as Node) &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
+        !wrapperRef.current?.contains(target) &&
+        !dropdownRef.current?.contains(target)
       ) {
         setOpen(false);
-        setIsTyping(false);
       }
     };
 
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
   }, []);
+
+  useEffect(() => {
+    // only sync when dropdown closed (user not typing)
+    if (!open && value) {
+      setSearch(value);
+    }
+  }, [value, open]);
+
+  useEffect(() => {
+    if (open && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [options]);
+
+
 
   return (
     <>
@@ -109,29 +139,36 @@ const SearchSelect2: React.FC<SearchSelectProps> = ({
         </label>
 
         <input
-          value={search}
+          ref={inputRef}
           placeholder={placeholder}
+          value={search}
           disabled={disabled}
           onChange={(e) => {
-            setIsTyping(true);
-            setSearch(e.target.value);
+            const val = e.target.value;
+            setSearch(val);
+            if (!open) setOpen(true);
           }}
-          onFocus={() => {
-            setIsTyping(true);
-            setOpen(true);
+          onFocus={async () => {
+            if (!open) {
+              setOpen(true);
+              const data = await fetchOptionsRef.current("");
+              setOptions(data);
+            }
           }}
-          className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0 ${
-            error ? "border-danger" : "border-theme"
-          }`}
+          className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0 ${error ? "border-danger" : "border-theme"
+            }`}
         />
-        {error && <span className="text-danger text-[10px] mt-1">{error}</span>}
+
+        {error && (
+          <span className="text-danger text-[10px] mt-1">{error}</span>
+        )}
       </div>
 
-      {open &&
-        options.length > 0 &&
+      {open && options.length > 0 &&
         createPortal(
           <div
             ref={dropdownRef}
+            onMouseDown={(e) => e.preventDefault()} // prevent blur
             style={{
               position: "absolute",
               top: dropdownPos.top,
@@ -141,29 +178,35 @@ const SearchSelect2: React.FC<SearchSelectProps> = ({
             }}
             className="bg-white border rounded shadow-lg max-h-48 overflow-auto"
           >
-            {options.map((opt) => (
-              <div
-                key={opt.value || opt.label}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                }}
-                onClick={() => {
-                  setJustSelected(true);
-                  setIsTyping(false);
-                  onChange(opt.value, opt);
-                  setSearch(opt.label);
-                  setOpen(false);
-                }}
-                className="px-3 py-2 cursor-pointer text-[13px] hover:bg-gray-100"
-              >
-                {opt.label}
-              </div>
-            ))}
+            {options.length > 0 ? (
+              options.map((opt) => (
+                <div
+                  key={opt.value || opt.label}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    onChange(opt.value, opt);
+                    setSearch(opt.label);
+                    setOpen(false);
+                  }}
+                  className="px-3 py-2 cursor-pointer text-[13px] hover:bg-gray-100"
+                >
+                  {opt.label}
+                </div>
+              ))
+            ) : (
+              <>
+              </>
+              // <div className="px-3 py-2 text-xs text-gray-400">
+              //   {debouncedSearch.length < MIN_SEARCH_LENGTH
+              //     ? "Type at least 2 characters..."
+              //     : "No results"}
+              // </div>
+            )}
           </div>,
-          document.body,
+          document.body
         )}
     </>
   );
-};
+});
 
 export default SearchSelect2;

@@ -210,13 +210,13 @@ if (defaultValues?.referenceInvoice && base.amount) {
     []
   );
 
-  const handleFormChange = useCallback(
-    (updates: Record<string, unknown> | AllocationResult) => {
-      setForm((prev) => ({ ...prev, ...updates }));
-      setError(null);
-    },
-    []
-  );
+ const handleFormChange = useCallback(
+  (updates: Record<string, unknown> | AllocationResult) => {
+    setForm((prev) => ({ ...prev, ...updates }));
+    setError((prev) => (prev ? null : prev));
+  },
+  []
+);
 
   const goToTab = useCallback((tab: TabType) => {
     setActiveTab(tab);
