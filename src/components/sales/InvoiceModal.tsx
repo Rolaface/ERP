@@ -133,7 +133,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     } as React.FormEvent;
                     const payload = await actions.handleSubmit(dummyEvent);
                     payload.invoiceCharges = (payload.invoiceCharges || [])
-                   .filter(ch => ch.charge_type?.trim() && Number(ch.amount || 0) > 0);
+                   .filter(ch => ch.charge_type?.trim());
                     if (!payload) {
                       showValidationError(
                         "Please fill all required fields correctly.",
