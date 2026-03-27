@@ -194,7 +194,7 @@ const GLView: React.FC = () => {
     fetchGL(appliedFilters, 1);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleRun = () => {
+  const handleApplyFilters = () => {
     const f = { account, fromDate, toDate };
     setAppliedFilters(f);
     setPage(1);
@@ -346,7 +346,7 @@ const GLView: React.FC = () => {
 
         {/* Run Button */}
         <button
-          onClick={handleRun}
+          onClick={handleApplyFilters}
           disabled={loading || !account.trim()}
           className="flex items-center gap-2 px-5 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -355,15 +355,7 @@ const GLView: React.FC = () => {
           ) : (
             <BookOpen size={12} />
           )}
-          Run
-        </button>
-
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 border border-[var(--border)] bg-card text-main text-xs font-bold rounded-lg hover:bg-row-hover transition-all disabled:opacity-50"
-        >
-          <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+          Apply
         </button>
       </div>
 
