@@ -213,7 +213,10 @@ ${sellingTerms?.liability || ""}
 
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* 2. TIGHT SIDEBAR */}
-        <aside className="w-64 bg-card border-r border-theme flex flex-col ">
+        <aside
+  className="hidden lg:flex flex-col bg-card border border-theme rounded-b-2xl mb-3 transition-all shrink-0 overflow-hidden self-start sticky top-0 w-64"
+  style={{ maxHeight: "calc(100vh - 110px)" }}
+>
           <div className="px-3 h-[42px] flex items-center border-b border-theme bg-row-hover/10 shrink-0">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
@@ -227,7 +230,7 @@ ${sellingTerms?.liability || ""}
             </div>
           </div>
 
-          <div className="overflow-y-auto custom-scrollbar flex-1 p-2">
+          <div className="overflow-y-auto custom-scrollbar flex-1 p-2 ">
             {filteredCustomers.map((c) => (
               <button
                 key={c.id}
