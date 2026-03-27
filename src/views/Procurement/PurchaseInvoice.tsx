@@ -409,7 +409,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
     },
     {
      key: "outstanding_amount",
-     header: "Outstanding Amount",
+     header: "Outstanding",
      align: "left",
      render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
