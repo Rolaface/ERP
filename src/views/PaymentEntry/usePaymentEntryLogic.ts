@@ -57,7 +57,7 @@ export function usePaymentModes(): UseModeOfPaymentReturn {
   setError(null);
   try {
     const result = await getAllModeOfPayment(1, 100, search, 1);
-    const mapped = result.data.map((item) => ({
+    const mapped = result.data.map((item: any) => ({
       label: item.name,
       value: item.id,
       defaultAccount: item.defaultAccount ?? "",
@@ -121,7 +121,7 @@ export function usePartyOptions(
 type UsePartyDetailsReturn = {
   fetchPartyDetails: (
     party: string,
-    partyType: "Supplier" | "Customer" | "Employee" | "Shareholder" // EXPAND
+    partyType: "Supplier" | "Customer" | "Employee" | "Shareholder"
   ) => Promise<PartyDetails | null>;
   isLoadingDetails: boolean;
 };
@@ -131,7 +131,7 @@ export function usePartyDetails(): UsePartyDetailsReturn {
 
   const fetchPartyDetails = useCallback(async (
     party: string,
-    partyType: "Supplier" | "Customer" | "Employee" | "Shareholder" // EXPAND
+    partyType: "Supplier" | "Customer" | "Employee" | "Shareholder" 
   ): Promise<PartyDetails | null> => {
     setIsLoadingDetails(true);
     try {
@@ -186,10 +186,10 @@ const fetchPartyBanks = useCallback(async (party_type: string, party: string, se
   try {
     const data = await getBankAccountOptions({ party_type, party, search });
     setOptions(data);
-    return data;  // ← add this
+    return data;  
   } catch {
     setOptions([]);
-    return [];    // ← add this
+    return [];   
   } finally {
     setIsLoading(false);
   }

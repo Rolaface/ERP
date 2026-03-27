@@ -372,6 +372,7 @@ export type PartyDetails = {
   companyLedgerAccount: string;
   companyLedgerCurrency: string;
   companyDefaultCurrency: string;
+  total_outstanding_amount?: number;
 };
 
 export async function getPartyDetails(
@@ -400,6 +401,7 @@ export async function getPartyDetails(
       companyLedgerAccount:  d?.company_account_ledger ?? "",
       companyLedgerCurrency: d?.company_account_ledger_currency ?? "",
       companyDefaultCurrency: d?.company_default_currency ?? "", // NEW
+       total_outstanding_amount: d?.total_outstanding_amount ?? null,  
     };
   } catch (error: any) {
     throw new Error(

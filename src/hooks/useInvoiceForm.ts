@@ -734,6 +734,17 @@ export const useInvoiceForm = (
       billingAddress: invoice.billingAddress ?? prev.billingAddress,
       shippingAddress: invoice.shippingAddress ?? prev.shippingAddress,
       paymentInformation: invoice.paymentInformation ?? prev.paymentInformation,
+      invoiceCharges:
+        Array.isArray(invoice.invoiceCharges) &&
+        invoice.invoiceCharges.length > 0
+          ? invoice.invoiceCharges.map((ch: any) => ({
+              charge_type: ch.charge_type ?? "",
+              amount: String(ch.amount ?? ""),
+            }))
+          : [
+              { charge_type: "Shipping", amount: "" },
+              { charge_type: "Insurance", amount: "" },
+            ],
       terms: invoice.terms ?? prev.terms,
       items: (invoice.items || []).map((it: any) => {
         const quantity = Number(it.quantity);
@@ -766,7 +777,6 @@ export const useInvoiceForm = (
           boxEnd: Number(it.boxEnd) || "",
           mfgDate: it.mfgDate ?? "",
           expDate: it.expDate ?? "",
-          _fromInvoice: true,
           warehouse: it.warehouse ?? "",
         };
       }),
@@ -858,7 +868,7 @@ export const useInvoiceForm = (
         ...formData,
         subTotal,
         totalTax,
-        grandTotal,
+
         items: formData.items
           .filter((it) => it.itemCode)
           .map((item) => ({

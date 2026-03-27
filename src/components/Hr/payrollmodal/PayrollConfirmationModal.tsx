@@ -64,7 +64,7 @@ export const PayrollConfirmationModal: React.FC<PayrollConfirmationModalProps> =
                 <p className="text-xs text-muted font-medium">Gross Total</p>
               </div>
               <p className="text-2xl font-bold text-muted">
-                ₹{(totalGross / 1000).toFixed(0)}K
+                {(totalGross / 1000).toFixed(0)}
               </p>
             </div>
 
@@ -74,7 +74,7 @@ export const PayrollConfirmationModal: React.FC<PayrollConfirmationModalProps> =
                 <p className="text-xs text-muted font-medium">Deductions</p>
               </div>
               <p className="text-2xl font-bold text-muted">
-                ₹{(totalDeductions / 1000).toFixed(0)}K
+                {(totalDeductions / 1000).toFixed(0)}
               </p>
             </div>
 
@@ -84,7 +84,7 @@ export const PayrollConfirmationModal: React.FC<PayrollConfirmationModalProps> =
                 <p className="text-xs text-muted font-medium">Net Payout</p>
               </div>
               <p className="text-2xl font-bold text-muted">
-                ₹{(totalNet / 1000).toFixed(0)}K
+                {(totalNet / 1000).toFixed(0)}
               </p>
             </div>
           </div>
@@ -134,13 +134,13 @@ export const PayrollConfirmationModal: React.FC<PayrollConfirmationModalProps> =
                       {record.department}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-main text-sm">
-                      ₹{record.grossPay.toLocaleString()}
+                      {record.grossPay.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-danger text-sm">
-                      ₹{record.totalDeductions.toLocaleString()}
+                      {record.totalDeductions.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-right font-bold text-success text-sm">
-                      ₹{record.netPay.toLocaleString()}
+                      {record.netPay.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="px-3 py-1 bg-warning text-muted text-xs font-semibold rounded-full">
@@ -163,7 +163,7 @@ export const PayrollConfirmationModal: React.FC<PayrollConfirmationModalProps> =
                 </p>
                 <p className="text-xs opacity-90">
                   This action will process payroll for {records.length}{" "}
-                  employees with a total payout of ₹
+                  employees with a total payout of 
                   {totalNet.toLocaleString()}. Once confirmed, payments will be
                   initiated and salary slips will be generated.
                 </p>

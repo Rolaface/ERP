@@ -406,7 +406,7 @@ export const usePurchaseInvoiceForm = ({
       setForm((prev) => ({
         ...prev,
         poNumber: "",
-        items: [{ ...emptyItem }],
+       // items: [{ ...emptyItem }],
         totalQuantity: 0,
         grandTotal: 0,
         roundingAdjustment: 0,

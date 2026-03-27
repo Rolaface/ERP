@@ -118,7 +118,7 @@ const SupplierDetailViewPayments = ({ supplierName }: Props) => {
       align: "right" as const,
       render: (row: Payment) => (
         <span className="text-sm font-black text-primary">
-          ₹ {row.amount.toLocaleString()}
+           {row.amount.toLocaleString()}
         </span>
       ),
     },

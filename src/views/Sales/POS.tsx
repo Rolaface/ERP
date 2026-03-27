@@ -90,7 +90,7 @@ const POS: React.FC = () => {
   const handleCheckoutConfirm = (checkoutData: any) => {
     // Example: save transaction, print receipt, etc. (use checkoutData as needed)
     const invoice = "INV-" + Math.floor(Math.random() * 100000);
-    alert(`✅ Invoice ${invoice} created! Total: ₹${totalRevenue}`);
+    alert(` Invoice ${invoice} created! Total: ${totalRevenue}`);
     setProducts(
       products.map((p) => {
         const item = cart.find((c) => c.id === p.id);
@@ -112,7 +112,7 @@ const POS: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-5 rounded-2xl shadow-md border border-gray-100">
           <h2 className="text-sm text-gray-500">Today's Revenue</h2>
-          <p className="text-2xl font-bold text-green-600">₹{totalRevenue}</p>
+          <p className="text-2xl font-bold text-green-600">{totalRevenue}</p>
         </div>
         <div className="bg-white p-5 rounded-2xl shadow-md border border-gray-100">
           <h2 className="text-sm text-gray-500">Items in Cart</h2>
@@ -129,7 +129,7 @@ const POS: React.FC = () => {
         <div>
           <input
             type="text"
-            placeholder="🔍 Search finance module..."
+            placeholder=" Search finance module..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-4"
@@ -148,7 +148,7 @@ const POS: React.FC = () => {
                     {product.category}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600">₹{product.price}</p>
+                <p className="text-sm text-gray-600">{product.price}</p>
                 <p className="text-xs text-gray-500 mb-3">
                   Stock: {product.stock}
                 </p>
@@ -185,7 +185,7 @@ const POS: React.FC = () => {
                 >
                   <div>
                     <h3 className="font-medium text-gray-800">{item.name}</h3>
-                    <p className="text-xs text-gray-500">₹{item.price}</p>
+                    <p className="text-xs text-gray-500">{item.price}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -210,7 +210,7 @@ const POS: React.FC = () => {
 
               <div className="flex justify-between mt-4 text-lg font-semibold text-gray-800">
                 <span>Total:</span>
-                <span>₹{totalRevenue}</span>
+                <span>{totalRevenue}</span>
               </div>
 
               <div className="flex justify-end gap-4 mt-6">

@@ -92,7 +92,7 @@ export const QuickCreateModal: React.FC<QuickCreateModalProps> = ({
                   <p className="text-[11px] text-muted">{emp.id} · {emp.designation}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-extrabold text-main tabular-nums">₹{gross.toLocaleString("en-IN")}</p>
+                  <p className="text-sm font-extrabold text-main tabular-nums">{gross.toLocaleString("en-IN")}</p>
                   <p className="text-[10px] text-muted">Gross/month</p>
                 </div>
               </div>

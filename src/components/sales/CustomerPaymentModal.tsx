@@ -150,7 +150,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
   const balance = Math.max(amountDue - payAmt, 0);
   const overpaid = payAmt > amountDue && amountDue > 0;
   const currency =
-    selectedInvoice?.currency || selected?.currency || propCurrency || "₹";
+    selectedInvoice?.currency || selected?.currency || propCurrency || "-";
   const isInvoiceMode = mode === "invoice" && !!propInvoiceNo;
   // ── Reset on open ──
   useEffect(() => {
@@ -175,7 +175,7 @@ const CustomerPaymentModal: React.FC<PaymentModalProps> = ({
         name: propCustomerName,
         email: "",
         mobile: "",
-        currency: propCurrency || "₹",
+        currency: propCurrency || "",
         onboardingBalance: 0,
       });
 

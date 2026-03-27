@@ -41,10 +41,10 @@ export async function correctStock(payload: any): Promise<any> {
 }
 
 // Fetch all import items
-export async function getAllImportItems(): Promise<any> {
-  const resp: AxiosResponse = await api.get(API.import.getAll);
-  return resp.data?.data || [];
-}
+// export async function getAllImportItems(): Promise<any> {
+//   const resp: AxiosResponse = await api.get(API.import.getAll);
+//   return resp.data?.data || [];
+// }
 
 // Fetch import item by ID
 export async function getImportItemById(id: string): Promise<any> {
