@@ -402,7 +402,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   const handleFromBankFetchOptions = useCallback(
     async (q: string) => {
-      if (paymentType === "Internal Transfer") return [];
+     
       if (paymentType === "Pay") {
         // Paid From = company bank
         const fresh = await fetchCompanyBanks(q || undefined);
@@ -435,7 +435,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   const handleToBankFetchOptions = useCallback(
     async (q: string) => {
-      if (paymentType === "Internal Transfer") return [];
+     
       if (paymentType === "Pay") {
         // Paid To = party bank
         if (!form.partyType || !form.partyName) return [];
@@ -637,7 +637,7 @@ value: o.value
           options={[
             { label: "Pay", value: "Pay" },
             { label: "Receive", value: "Receive" },
-            { label: "Internal Transfer", value: "Internal Transfer" },
+           
           ]}
         />
         <ModalSelect
@@ -718,7 +718,7 @@ value: o.value
               label="Bank Account"
               value={fromBankValue}
               disabled={
-                paymentType === "Internal Transfer" ||
+                
                 !form.partyName ||
                 isFromBankLoading
               }
@@ -748,7 +748,7 @@ value: o.value
               label="Bank Account"
               value={toBankValue}
               disabled={
-                paymentType === "Internal Transfer" ||
+               
                 !form.partyName ||
                 isToBankLoading
               }
