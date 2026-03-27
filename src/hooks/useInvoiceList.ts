@@ -62,7 +62,10 @@ export function useInvoiceList(
   paymentAmount: number,
   fifoTrigger: number | undefined,
   onFormChange: (data: AllocationResult) => void,
-  referenceInvoice?: string
+  referenceInvoice?: string,
+   initialAllocated?: Record<string, number>  
+
+  
 ): UseInvoiceListReturn {
   const adapter     = getInvoiceAdapter(partyType);
   const isSupported = isSupportedPartyType(partyType);
@@ -73,8 +76,12 @@ export function useInvoiceList(
   const [loading, setLoading]         = useState(false);
   const [fetchError, setFetchError]   = useState<string | null>(null);
   const [editingRow, setEditingRow]   = useState<string | null>(null);
-  const [allocated, setAllocated]     = useState<AllocationMap>({});
-  const [inputValues, setInputValues] = useState<Record<string, string>>({});
+const [allocated, setAllocated] = useState<AllocationMap>(initialAllocated ?? {});
+const [inputValues, setInputValues] = useState<Record<string, string>>(
+  Object.fromEntries(
+    Object.entries(initialAllocated ?? {}).map(([k, v]) => [k, String(v)])
+  )
+);
 
   const paymentAmountRef      = useRef(paymentAmount);
   paymentAmountRef.current    = paymentAmount;
