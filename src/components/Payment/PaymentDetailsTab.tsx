@@ -46,6 +46,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   isPartyLocked = false,
   partyFetchKeyRef,
 }) => {
+  const isMountedRef = useRef(false);
   const { options: modeOptions, isLoading: modesLoading, fetchModes } = usePaymentModes();
   const { fetchPartyDetails, isLoadingDetails } = usePartyDetails();
   const {
@@ -84,18 +85,26 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   } = useLedgerOptions(paymentType, partyType);
 
   // ── Clear GL + mode when paymentType or partyType changes ─────────────────
-  useEffect(() => {
-    if (form.glFrom || form.glTo || form.mode) {
-      onFormChange({
-        glFrom: "",
-        currencyFrom: "",
-        glTo: "",
-        currencyTo: "",
-        mode: "",
-      });
-    }
-  }, [paymentType, partyType]); // eslint-disable-line react-hooks/exhaustive-deps
+const prevRef = useRef({ paymentType, partyType });
 
+useEffect(() => {
+  const prev = prevRef.current;
+
+  if (
+    prev.paymentType !== paymentType ||
+    prev.partyType !== partyType
+  ) {
+    onFormChange({
+      glFrom: "",
+      currencyFrom: "",
+      glTo: "",
+      currencyTo: "",
+      mode: "",
+    });
+  }
+
+  prevRef.current = { paymentType, partyType };
+}, [paymentType, partyType]);
   // ── Hook 9: Exchange rate ─────────────────────────────────────────────────
   const currencyFrom = form.currencyFrom ?? "";
   const currencyTo = form.currencyTo ?? "";
@@ -130,31 +139,40 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Mode of payment → auto-fill glFrom (Pay) or glTo (Receive) ───────────
-  useEffect(() => {
-    if (!selectedMode) {
-      if (paymentType === "Pay")
-        onFormChange({ glFrom: "", currencyFrom: "" });
-      else if (paymentType === "Receive")
-        onFormChange({ glTo: "", currencyTo: "" });
-      else
-        onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
-      return;
-    }
-
+ useEffect(() => {
+  // reset ONLY when user clears mode manually
+  if (!form.mode) {
     if (paymentType === "Pay") {
-      onFormChange({
-        glFrom: selectedMode.defaultAccount ?? "",
-        currencyFrom: selectedMode.currency ?? "",
-      });
+      onFormChange({ glFrom: "", currencyFrom: "" });
     } else if (paymentType === "Receive") {
-      onFormChange({
-        glTo: selectedMode.defaultAccount ?? "",
-        currencyTo: selectedMode.currency ?? "",
-      });
+      onFormChange({ glTo: "", currencyTo: "" });
     } else {
-      onFormChange({ glFrom: "", currencyFrom: "", glTo: "", currencyTo: "" });
+      onFormChange({
+        glFrom: "",
+        currencyFrom: "",
+        glTo: "",
+        currencyTo: "",
+      });
     }
-  }, [selectedMode, paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
+    return;
+  }
+
+  // ignore temporary null (loading case)
+  if (!selectedMode) return;
+
+  // normal autofill
+  if (paymentType === "Pay") {
+    onFormChange({
+      glFrom: selectedMode.defaultAccount ?? "",
+      currencyFrom: selectedMode.currency ?? "",
+    });
+  } else if (paymentType === "Receive") {
+    onFormChange({
+      glTo: selectedMode.defaultAccount ?? "",
+      currencyTo: selectedMode.currency ?? "",
+    });
+  }
+}, [selectedMode, paymentType, form.mode]);// eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Party change → auto-fill GL + bank accounts ───────────────────────────
   // LOGIC:
@@ -171,7 +189,11 @@ useEffect(() => {
     return;
   
  const stableKey = `${form.partyType}::${partyKey}::${form.paymentType}`;
-  if (partyFetchKeyRef.current === stableKey) return;
+  if (
+  partyFetchKeyRef.current === stableKey &&
+  form.glFrom &&
+  form.glTo
+) return;
   partyFetchKeyRef.current = stableKey;
 
   const requestId = ++requestRef.current;
@@ -188,6 +210,7 @@ useEffect(() => {
 
       if (requestId !== requestRef.current) return;
       if (!details) return;
+      if (form.glFrom && form.glTo) return;
 
       if (form.paymentType === "Pay") {
         // Pay: Paid From = company, Paid To = party

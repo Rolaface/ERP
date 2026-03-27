@@ -57,7 +57,7 @@ export function usePaymentModes(): UseModeOfPaymentReturn {
   setError(null);
   try {
     const result = await getAllModeOfPayment(1, 100, search, 1);
-    const mapped = result.data.map((item) => ({
+    const mapped = result.data.map((item: any) => ({
       label: item.name,
       value: item.id,
       defaultAccount: item.defaultAccount ?? "",

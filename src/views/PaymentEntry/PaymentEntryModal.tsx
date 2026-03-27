@@ -11,7 +11,12 @@ import {
   type PaymentReference,
   type PaymentTax,
 } from "../../api/BankAccountApi";
-import { showLoading, closeSwal, showSuccess, showApiError } from "../../utils/alert";
+import {
+  showLoading,
+  closeSwal,
+  showSuccess,
+  showApiError,
+} from "../../utils/alert";
 import type { AllocationResult } from "../../types/paymententryrecord.types";
 
 type TabType = "details" | "invoices" | "taxes";
@@ -39,18 +44,23 @@ interface Props {
 
 function buildPayload(
   form: Record<string, any>,
-  isAdvanceFromPO: boolean
+  isAdvanceFromPO: boolean,
 ): CreatePaymentEntryPayload {
   const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
   const receivedAmount = Number(form?.amountTo ?? paymentAmount);
 
   const getReferenceDoctype = (partyType: string): string => {
     switch (partyType) {
-      case "Supplier":    return "Purchase Invoice";
-      case "Customer":    return "Sales Invoice";
-      case "Employee":    return "Journal Entry";
-      case "Shareholder": return "Journal Entry";
-      default:            return "Journal Entry";
+      case "Supplier":
+        return "Purchase Invoice";
+      case "Customer":
+        return "Sales Invoice";
+      case "Employee":
+        return "Journal Entry";
+      case "Shareholder":
+        return "Journal Entry";
+      default:
+        return "Journal Entry";
     }
   };
 
@@ -108,12 +118,12 @@ function buildPayload(
 
 function validateForm(form: Record<string, any>): string | null {
   if (!form?.paymentType) return "Payment Type is required.";
-  if (!form?.partyType)   return "Party Type is required.";
-  if (!form?.partyName)   return "Party Name is required.";
-  if (!form?.date)        return "Payment Date is required.";
-  if (!form?.mode)        return "Mode of Payment is required.";
-  if (!form?.glFrom)      return "Account (GL) — Paid From is required.";
-  if (!form?.glTo)        return "Account (GL) — Paid To is required.";
+  if (!form?.partyType) return "Party Type is required.";
+  if (!form?.partyName) return "Party Name is required.";
+  if (!form?.date) return "Payment Date is required.";
+  if (!form?.mode) return "Mode of Payment is required.";
+  if (!form?.glFrom) return "Account (GL) — Paid From is required.";
+  if (!form?.glTo) return "Account (GL) — Paid To is required.";
 
   const amount = Number(form?.amountFrom ?? form?.amount ?? 0);
   if (!amount || amount <= 0) return "Please enter a valid payment amount.";
@@ -155,12 +165,14 @@ const PaymentEntryModal: React.FC<Props> = ({
 
     if (base.amount != null) {
       base.amountFrom ??= base.amount;
-      base.amountTo   ??= base.amount;
+      base.amountTo ??= base.amount;
     }
 
     // Auto-allocate reference invoice if opened from invoice table
     if (defaultValues?.referenceInvoice && base.amount) {
-      base.allocations    = { [defaultValues.referenceInvoice]: Number(base.amount) };
+      base.allocations = {
+        [defaultValues.referenceInvoice]: Number(base.amount),
+      };
       base.allocatedAmount = Number(base.amount);
       base.selectedInvoices = [defaultValues.referenceInvoice];
     }
@@ -175,9 +187,9 @@ const PaymentEntryModal: React.FC<Props> = ({
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Derived values ─────────────────────────────────────────────────────────
-  const paymentAmount  = Number(form?.amountFrom ?? form?.amount ?? 0);
+  const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
   const totalAllocated = Number(form?.allocatedAmount ?? 0);
-  const advance        = Math.max(0, paymentAmount - totalAllocated);
+  const advance = Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -199,7 +211,7 @@ const PaymentEntryModal: React.FC<Props> = ({
 
       setError(null);
     },
-    []
+    [],
   );
 
   const handleFormChange = useCallback(
@@ -207,14 +219,14 @@ const PaymentEntryModal: React.FC<Props> = ({
       setForm((prev) => ({ ...prev, ...updates }));
       setError((prev) => (prev ? null : prev));
     },
-    []
+    [],
   );
 
   const goToTab = useCallback((tab: TabType) => {
     setActiveTab(tab);
     // FIX: mount each tab once, on first visit — then keep alive via block/hidden
     if (tab === "invoices") setInvoicesMounted(true);
-    if (tab === "taxes")    setTaxesMounted(true);
+    if (tab === "taxes") setTaxesMounted(true);
   }, []);
 
   const handleAllocateLink = useCallback(() => {
@@ -254,12 +266,12 @@ const PaymentEntryModal: React.FC<Props> = ({
   }, [form, isAdvanceFromPO, onClose, onSuccess]);
 
   const invoiceListForm = {
-    partyType:        form?.partyType,
-    partyName:        form?.partyName,
-    amount:           form?.amountFrom ?? form?.amount,
-    fifoTrigger:      form?.fifoTrigger,
+    partyType: form?.partyType,
+    partyName: form?.partyName,
+    amount: form?.amountFrom ?? form?.amount,
+    fifoTrigger: form?.fifoTrigger,
     referenceInvoice: form?.referenceInvoice,
-    allocations:      form?.allocations ?? {}, 
+    allocations: form?.allocations ?? {},
   };
 
   const footer = (
@@ -289,7 +301,6 @@ const PaymentEntryModal: React.FC<Props> = ({
       height="95vh"
     >
       <div className="flex flex-col h-full">
-
         {/* ── Tabs ── */}
         <div className="border-b px-6 flex-shrink-0">
           <div className="flex gap-6">
@@ -313,8 +324,13 @@ const PaymentEntryModal: React.FC<Props> = ({
         {/* ── Validation error banner ── */}
         {error && (
           <div className="mx-6 mt-4 flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-lg flex-shrink-0">
-            <AlertCircle size={15} className="text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-red-700 flex-1 leading-relaxed">{error}</p>
+            <AlertCircle
+              size={15}
+              className="text-red-500 flex-shrink-0 mt-0.5"
+            />
+            <p className="text-xs text-red-700 flex-1 leading-relaxed">
+              {error}
+            </p>
             <button
               onClick={() => setError(null)}
               className="text-red-400 hover:text-red-600"
@@ -326,7 +342,6 @@ const PaymentEntryModal: React.FC<Props> = ({
 
         <div className="flex flex-1 overflow-hidden">
           <div className="flex-1 overflow-auto p-6">
-
             {/* ── Details tab — always mounted, shown/hidden via CSS ── */}
             <div className={activeTab === "details" ? "block" : "hidden"}>
               <PaymentDetailsTab
@@ -336,7 +351,7 @@ const PaymentEntryModal: React.FC<Props> = ({
                 onAllocate={isAdvanceFromPO ? undefined : handleAllocateLink}
                 islocked={Boolean(form?.referenceInvoice)}
                 isPartyLocked={Boolean(
-                  form?.referenceInvoice && form?.partyName && form?.partyType
+                  form?.referenceInvoice && form?.partyName && form?.partyType,
                 )}
                 partyFetchKeyRef={lastFetchedPartyKeyRef}
               />
@@ -363,7 +378,6 @@ const PaymentEntryModal: React.FC<Props> = ({
                 <PaymentTaxesTab form={form} onFormChange={handleFormChange} />
               </div>
             )}
-
           </div>
 
           {/* ── Persistent summary sidebar ── */}
@@ -405,7 +419,9 @@ const PaymentEntryModal: React.FC<Props> = ({
                 {paymentAmount > 0 ? (
                   paymentAmount.toLocaleString()
                 ) : (
-                  <span className="text-[11px] font-normal text-muted">Not set</span>
+                  <span className="text-[11px] font-normal text-muted">
+                    Not set
+                  </span>
                 )}
               </p>
             </div>
@@ -414,7 +430,9 @@ const PaymentEntryModal: React.FC<Props> = ({
               <>
                 <div>
                   <p className="text-[11px] text-muted">Invoices Settled</p>
-                  <p className="text-xs font-medium text-main">{selectedCount}</p>
+                  <p className="text-xs font-medium text-main">
+                    {selectedCount}
+                  </p>
                 </div>
                 <div>
                   <p className="text-[11px] text-muted">Allocated</p>

@@ -145,10 +145,15 @@ const [inputValues, setInputValues] = useState<Record<string, string>>(
     setPagination(null);
     setFetchError(null);
 
-    if (!fifoAlreadyPending) {
-      setAllocated({});
-      setInputValues({});
-    }
+  if (!fifoAlreadyPending) {
+  const seedAllocated = initialAllocated && Object.keys(initialAllocated).length > 0
+    ? initialAllocated
+    : {};
+  setAllocated(seedAllocated);
+  setInputValues(
+    Object.fromEntries(Object.entries(seedAllocated).map(([k, v]) => [k, String(v)]))
+  );
+}
 
     if (isSupported && partyType) fetchPageRef.current(1);
   }, [partyType, partyName, referenceInvoice]); // eslint-disable-line react-hooks/exhaustive-deps
