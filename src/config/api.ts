@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-export const ERP_BASE = ENV.apiBaseUrl;
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -83,7 +83,9 @@ Account:{
   getBankAccountMain: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
   getLedgerAccount:`${ERP_BASE}/api/method/custom_api.api.payment.get_ledger_account`,
   getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
-  createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`
+  createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
+ 
+
 },
 
 accounting:{
@@ -92,7 +94,8 @@ accounting:{
   getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
   getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
   getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
-  getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`
+  getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`,
+  getLedger: `${ERP_BASE}api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
 },
 CurrencyExchange:{
   create:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.create_currency_exchange`,

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
 import { getChartOfAccounts } from "../../api/Accounting/AccountApi";
+import GLView from "./glview";
+import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   Loader2,
@@ -147,6 +149,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
   const [error, setError] = useState<string | null>(null);
   const [showNewAccount, setShowNewAccount] = useState(false);
   const [selectedParent, setSelectedParent] = useState<COAAccount | null>(null);
+  const navigate = useNavigate();
 
   const fetchCOA = useCallback(async () => {
     setLoading(true);
@@ -331,7 +334,13 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
                 {
                   label: "View Ledger",
                   icon: <BookMarked size={12} />,
-                  onClick: () => console.log("View Ledger", row.name),
+                  onClick: () =>
+                    navigate("/ledger", {
+                      state: {
+                        account: row.name,
+                        currency: row.account_currency,
+                      },
+                    }),
                 },
               ]),
           {

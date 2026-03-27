@@ -5,6 +5,7 @@ import LandingPage from "../views/LandingPage/LandingPage";
 import SignupPage from "../views/SignupPage/SignupPage";
 import Login from "../views/LoginPage";
 import AppLayout from "../layout/AppLayout";
+import GLView from "../views/Accounting/glview";
 const Dashboard = lazy(() => import("../views/DashbBoard"));
 const SalesModule = lazy(() => import("../views/Sales/Sales"));
 const ProcurementModule = lazy(() => import("../views/Procurement/Procurement"));
@@ -64,6 +65,7 @@ const AppRoutes: React.FC = () => {
     <Route path="/currency-conversion" element={<CurrencyConversion />} />
     <Route path="/customer-group" element={<CustomerGroup/>} />
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/ledger" element={<GLView />} />
   </Route>
 </Route>
 

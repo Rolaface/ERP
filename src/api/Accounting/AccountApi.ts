@@ -117,3 +117,26 @@ export async function getCashFlow(filters: CashFlowFilters): Promise<CFResponse>
   );
   return resp.data;
 }
+
+// ───────── Ledger (GL) Filters ─────────
+export interface LedgerFilters {
+  account: string;
+  from_date: string;
+  to_date: string;
+  page?: number;
+  page_size?: number;
+}
+
+// ───────── Ledger API ─────────
+export async function getLedgerDetails(
+  filters: LedgerFilters
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(
+    AccountingAPI.getLedger, 
+    {
+      params: filters,
+    }
+  );
+
+  return resp.data;
+}
