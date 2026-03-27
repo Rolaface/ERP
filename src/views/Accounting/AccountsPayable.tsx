@@ -31,10 +31,10 @@ const AccountsPayable = () => {
   /* -------------------- DATA -------------------- */
 
   const stats = [
-    { label: "Total Payables", value: "₹8,75,000" },
-    { label: "Due This Week", value: "₹2,15,000" },
+    { label: "Total Payables", value: "8,75,000" },
+    { label: "Due This Week", value: "2,15,000" },
     { label: "Avg Payment Days", value: "38 days" },
-    { label: "Current Month Expenses", value: "₹6,25,000" },
+    { label: "Current Month Expenses", value: "6,25,000" },
   ];
 
   const bills: Bill[] = [
@@ -125,7 +125,7 @@ const AccountsPayable = () => {
     {
       key: "amount",
       header: "Amount",
-      render: (row) => `₹${row.amount.toLocaleString()}`,
+      render: (row) => `${row.amount.toLocaleString()}`,
     },
     {
       key: "due",
@@ -293,7 +293,7 @@ const AccountsPayable = () => {
               className="text-center p-4 bg-app rounded-lg border border-theme"
             >
               <p className="text-xs text-muted mb-1">{label}</p>
-              <p className="text-xl font-bold text-main">₹—</p>
+              <p className="text-xl font-bold text-main">—</p>
               <p className="text-xs text-muted mt-1">— bills</p>
             </div>
           ))}

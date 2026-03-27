@@ -34,8 +34,8 @@ const FixedAssets = () => {
   /*  DATA  */
 
   const stats = [
-    { label: "Total Asset Value", value: "₹45,00,000" },
-    { label: "Monthly Depreciation", value: "₹75,000" },
+    { label: "Total Asset Value", value: "45,00,000" },
+    { label: "Monthly Depreciation", value: "75,000" },
     { label: "Active Assets", value: "156" },
     { label: "In Maintenance", value: "12" },
   ];
@@ -135,7 +135,7 @@ const FixedAssets = () => {
     {
       key: "value",
       header: "Value",
-      render: (row) => `₹${row.value.toLocaleString()}`,
+      render: (row) => `${row.value.toLocaleString()}`,
     },
     {
       key: "depreciation",
@@ -144,7 +144,7 @@ const FixedAssets = () => {
         <div className="flex items-center gap-1">
           <FaChartLine className="text-danger text-xs" />
           <span className="text-xs font-medium text-danger">
-            ₹{row.depreciation.toLocaleString()}/mo
+            {row.depreciation.toLocaleString()}/mo
           </span>
         </div>
       ),

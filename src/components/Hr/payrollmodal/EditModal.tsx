@@ -139,7 +139,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-muted uppercase tracking-wider block mb-1">Amount (₹)</label>
+                    <label className="text-[10px] font-bold text-muted uppercase tracking-wider block mb-1">Amount </label>
                     <input
                       type="number"
                       placeholder="0"
@@ -168,7 +168,7 @@ export const EditModal: React.FC<EditModalProps> = ({
                       <p className="text-xs font-bold text-main truncate">{b.label}</p>
                       <p className="text-[10px] text-muted">{b.bonusType}</p>
                     </div>
-                    <span className="text-sm font-extrabold text-primary font-mono">₹{b.amount.toLocaleString("en-IN")}</span>
+                    <span className="text-sm font-extrabold text-primary font-mono">{b.amount.toLocaleString("en-IN")}</span>
                     <button onClick={() => handleRemoveBonus(b.id)} className="p-1.5 rounded-lg text-danger hover:bg-danger/10 transition">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -185,7 +185,7 @@ export const EditModal: React.FC<EditModalProps> = ({
               <p className="text-[11px] text-muted mt-0.5">After approximate deductions (~24%)</p>
             </div>
             <p className="text-2xl font-extrabold text-primary tabular-nums font-mono">
-              ₹{Math.max(0, estimatedNet).toLocaleString("en-IN")}
+              {Math.max(0, estimatedNet).toLocaleString("en-IN")}
             </p>
           </div>
         </div>

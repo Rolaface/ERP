@@ -316,7 +316,7 @@ const POSModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave }) => {
                       min={0}
                       value={discount}
                       onChange={(e) => setDiscount(Number(e.target.value))}
-                      placeholder="Discount (₹)"
+                      placeholder="Discount ()"
                     />
                   </div>
                   <div>
@@ -337,15 +337,15 @@ const POSModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave }) => {
                 <div className="bg-gray-100 rounded px-6 py-4 text-lg font-medium text-gray-700 w-72">
                   <div className="mb-1 flex justify-between">
                     <span>Subtotal:</span>
-                    <span>₹{subtotal}</span>
+                    <span>{subtotal}</span>
                   </div>
                   <div className="mb-1 flex justify-between">
                     <span>Discount:</span>
-                    <span>₹{discountVal}</span>
+                    <span>{discountVal}</span>
                   </div>
                   <div className="flex justify-between text-indigo-800 font-bold border-t pt-2 mt-2 text-xl">
                     <span>Grand Total:</span>
-                    <span>₹{grandTotal}</span>
+                    <span>{grandTotal}</span>
                   </div>
                 </div>
               </div>

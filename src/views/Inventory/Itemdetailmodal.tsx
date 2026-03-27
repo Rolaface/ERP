@@ -87,7 +87,7 @@ export interface ItemDetailViewProps {
 
 const fmtRupee = (n?: number | string): string =>
   n !== undefined && n !== null && n !== "" && !isNaN(Number(n))
-    ? `₹${Number(n).toLocaleString("en-IN")}`
+    ? `${Number(n).toLocaleString("en-IN")}`
     : "—";
 
 const fmtDate = (iso: string): string => {

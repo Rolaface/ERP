@@ -133,7 +133,7 @@ const Payments: React.FC = () => {
       align: "right",
       render: (p: PaymentSummary) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          ₹ {p.amount}
+           {p.amount}
         </code>
       ),
     },

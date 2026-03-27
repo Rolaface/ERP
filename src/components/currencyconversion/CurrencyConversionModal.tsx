@@ -4,7 +4,6 @@ import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { getBankAccounts } from "../../api/BankAccountApi";
-import SearchSelect from "../ui/modal/SearchSelect2";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import {
   showValidationError,
@@ -13,6 +12,8 @@ import {
   showLoading,
   closeSwal,
 } from "../../utils/alert"; 
+import { fetchCurrencyOptions } from "../../utils/currencyOptions";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
 
 // ─────────────────────────────────────────────
 // Types
@@ -252,28 +253,28 @@ onClose();
 
           {/* FROM CURRENCY */}
           <div className="flex-1 min-w-[140px] flex flex-col gap-1">
-            <SearchSelect
-              label="From Currency"
-              value={form.fromCurrency}
-              onChange={handleCurrencyChange("fromCurrency")}
-              fetchOptions={fetchCurrencies}
-              placeholder="Search e.g. USD"
-              error={errors.fromCurrency}
-              required
-            />
+          <SearchSelect2
+  label="From Currency"
+  value={form.fromCurrency}
+  onChange={handleCurrencyChange("fromCurrency")}
+  fetchOptions={fetchCurrencyOptions}  // ← was fetchCurrencies
+  placeholder="Search currency...."
+  error={errors.fromCurrency}
+  required
+/>
           </div>
 
           {/* TO CURRENCY */}
           <div className="flex-1 min-w-[140px] flex flex-col gap-1">
-            <SearchSelect
-              label="To Currency"
-              value={form.toCurrency}
-              onChange={handleCurrencyChange("toCurrency")}
-              fetchOptions={fetchCurrencies}
-              placeholder="Search e.g. INR"
-              error={errors.toCurrency}
-              required
-            />
+          <SearchSelect2
+  label="To Currency"
+  value={form.toCurrency}
+  onChange={handleCurrencyChange("toCurrency")}
+  fetchOptions={fetchCurrencyOptions}  // ← was fetchCurrencies
+  placeholder="Search currency...."
+  error={errors.toCurrency}
+  required
+/>
           </div>
 
           {/* EXCHANGE RATE */}

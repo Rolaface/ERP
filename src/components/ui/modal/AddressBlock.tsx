@@ -111,6 +111,7 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
             onChange={onChange}
             disabled={isDisabled}
             error={errors?.city}
+            required
           />
           <ModalInput
             label="State / Province"
@@ -119,6 +120,7 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
             onChange={onChange}
             disabled={isDisabled}
             error={errors?.state}
+            required
           />
         </div>
 

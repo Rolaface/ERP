@@ -32,10 +32,10 @@ const AccountsReceivable = () => {
   /* -------------------- DATA -------------------- */
 
   const stats = [
-    { label: "Total Outstanding", value: "₹12,45,000" },
-    { label: "Overdue Amount", value: "₹3,25,000" },
+    { label: "Total Outstanding", value: "12,45,000" },
+    { label: "Overdue Amount", value: "3,25,000" },
     { label: "Avg Collection Days", value: "45 days" },
-    { label: "Current Month Revenue", value: "₹8,50,000" },
+    { label: "Current Month Revenue", value: "8,50,000" },
   ];
 
   const invoices: Invoice[] = [
@@ -108,7 +108,7 @@ const AccountsReceivable = () => {
     {
       key: "amount",
       header: "Amount",
-      render: (row) => `₹${row.amount.toLocaleString()}`,
+      render: (row) => `${row.amount.toLocaleString()}`,
     },
     {
       key: "due",
@@ -248,7 +248,7 @@ const AccountsReceivable = () => {
               className="text-center p-4 bg-app rounded-lg border border-theme"
             >
               <p className="text-xs text-muted mb-1">{label}</p>
-              <p className="text-xl font-bold text-main">₹—</p>
+              <p className="text-xl font-bold text-main">—</p>
             </div>
           ))}
         </div>
