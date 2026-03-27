@@ -92,7 +92,7 @@ export const API = {
     getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`,
     getAllPayables: `${ERP_BASE}/api/method/custom_api.api.accounts_payable.get_accounts_payable`,
     getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
-    getLedger: `${ERP_BASE}api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
+    getLedger: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
   },
   CurrencyExchange: {
     create: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.create_currency_exchange`,
