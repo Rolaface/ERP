@@ -345,22 +345,33 @@ const payL: string[] = ([
   const CIF_LBL_W   = 22;
   const CIF_VAL_W   = 26;
   const CIF_TABLE_W = CIF_LBL_W + CIF_VAL_W;  
+  // ── Bottom-alignment: pre-calculate each table's height ──
+  const ROW_H_8      = 8 * 0.3528 + 3;   // fontSize-8 + padding ≈ 5.82 mm/row
+  const ROW_H_6      = 6 * 0.3528 + 3;   // fontSize-6 + padding ≈ 5.12 mm/row
+  const cifRows      = 2 + (invoice?.invoiceCharges?.length ?? 0); // FOB + charges + CIF
+  const cifH         = cifRows  * ROW_H_8;
+  const exH          = 2        * ROW_H_6;  // 1 header + 1 body row
+  const totalsH      = 4        * ROW_H_8;  // SubTotal, Tax, Disc, Grand
+  const maxH         = Math.max(cifH, cur !== "INR" ? exH : 0, totalsH);
+  const cifStartY    = SEC_Y + (maxH - cifH);
+  const exStartY     = SEC_Y + (maxH - exH);
+  const totalsStartY = SEC_Y + (maxH - totalsH);
 
   autoTable(doc, {
-    startY: SEC_Y,
+    startY: cifStartY,
     head:   [],
     theme:  "grid",
     alternateRowStyles: { fillColor: WHITE },
     body: [
-  ["CIF", `${fmt2(cifValue)} ${cur}`],
-
+  
+ ["FOB", `${fmt2(fobValue)} ${cur}`],
  
   ...(invoice?.invoiceCharges || []).map((ch: any) => [
     ch.charge_type,
     `${fmt2(ch.amount)} ${cur}`,
   ]),
-
-  ["FOB", `${fmt2(fobValue)} ${cur}`],
+  ["CIF", `${fmt2(cifValue)} ${cur}`],
+ 
 ],
     styles: {
       fontSize: 8,
@@ -380,45 +391,50 @@ const payL: string[] = ([
 
   if (cur !== "INR") {
     const exchangeRate   = Number(invoice?.exchangeRt ?? 0);
-    const fobInINR       = fobValue * exchangeRate;
+    const cifInINR       = cifValue * exchangeRate;
+
+    const EX_GAP     = 4;                         // gap between CIF table and exchange table
+    const EX_LEFT    = M + CIF_TABLE_W + EX_GAP;  // starts just right of the CIF/FOB table
+    const EX_COL_W   = [22, 26, 30] as const;
+    const EX_TABLE_W = EX_COL_W.reduce((a, b) => a + b, 0); // 78 mm
 
     autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY,
+       startY: exStartY,                        // ← same Y as the FOB/CIF table (not below it)
       theme:  "grid",
       alternateRowStyles: { fillColor: WHITE },
       head: [[
-        `FOB ${cur}`,
-        `1 USD=INR`,
-        `Total Invoice Value`,
+        `CIF ${cur}`,
+        `1 ${cur}=INR`,
+        `Total Invoice Value(INR)`,
       ]],
       body: [[
-        fmt2(fobValue),
+        fmt2(cifValue),
         `${fmt2(exchangeRate)}`,
-        fmt2(fobInINR),
+        fmt2(cifInINR),
       ]],
       styles: {
         fontSize: 6,
-        cellPadding: { top: 1.5, bottom: 1.5, left: 1.5, right: 1.5},
+        cellPadding: { top: 1.5, bottom: 1.5, left: 1.5, right: 1.5 },
         lineColor: RULE,
         lineWidth: 0.15,
         textColor: [0, 0, 0] as any,
         halign: "center",
       },
       headStyles: {
-        fillColor: WHITE,      
-  textColor: [0, 0, 0],
+        fillColor: WHITE,
+        textColor: [0, 0, 0],
         fontStyle: "bold",
         halign: "center",
         fontSize: 6,
         cellPadding: { top: 1.5, bottom: 1.5, left: 1.5, right: 1.5 },
       },
       columnStyles: {
-        0: { cellWidth: 22 },
-        1: { cellWidth: 26 },
-        2: { cellWidth: 30 },
+        0: { cellWidth: EX_COL_W[0] },
+        1: { cellWidth: EX_COL_W[1] },
+        2: { cellWidth: EX_COL_W[2] },
       },
-      margin:     { left: M, right: W - M - CIF_TABLE_W },
-      tableWidth: CIF_TABLE_W,
+      margin:     { left: EX_LEFT, right: W - EX_LEFT - EX_TABLE_W },
+      tableWidth: EX_TABLE_W,
     });
   }
 
@@ -430,15 +446,15 @@ const payL: string[] = ([
 
   doc.setFontSize(8); doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "bold");
-  doc.text("Sub Total",   LABEL_X, SEC_Y + ROW_H * 0.7, { align: "right" });
+  doc.text("Sub Total",   LABEL_X, totalsStartY + ROW_H * 0.7, { align: "right" });
   doc.setFont("helvetica", "normal");
-  doc.text("Tax Total",   LABEL_X, SEC_Y + ROW_H * 1.7, { align: "right" });
-  doc.text("Discount",    LABEL_X, SEC_Y + ROW_H * 2.7, { align: "right" });
+  doc.text("Tax Total",   LABEL_X, totalsStartY + ROW_H * 1.7, { align: "right" });
+  doc.text("Discount",    LABEL_X, totalsStartY + ROW_H * 2.7, { align: "right" });
   doc.setFont("helvetica", "bold");
-  doc.text("Grand Total", LABEL_X, SEC_Y + ROW_H * 3.7, { align: "right" });
+  doc.text("Grand Total", LABEL_X, totalsStartY + ROW_H * 3.7, { align: "right" });
 
   autoTable(doc, {
-    startY: SEC_Y,
+    startY: totalsStartY,
     head:   [],
     theme:  "grid",
     alternateRowStyles: { fillColor: WHITE },
