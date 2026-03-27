@@ -41,6 +41,7 @@ interface Purchaseinvoice {
   status: string;
   deliveryDate: string;
   registrationType: string;
+  outstanding_amount:number;
 }
 
 interface PurchaseinvoicesTableProps {
@@ -173,6 +174,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
         status: pi.status,
         registrationType: pi.registrationType,
         grandTotalWithTax: pi.grandTotalWithTax,
+        outstanding_amount: pi.outstanding_amount,
       }));
 
       setOrders(mappedInvoice);
@@ -296,6 +298,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
             grandTotal: pi.grandTotal,
             status: pi.status,
             registrationType: pi.registrationType,
+            outstanding_amount: pi.outstanding_amount
           }));
           allData = [...allData, ...mapped];
           totalPagesLocal = res.pagination?.total_pages || 1;
@@ -332,6 +335,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
         Amount: pi.amount,
         grandTotal:pi.grandTotal,
         Status: pi.status,
+        outstanding_amount:pi.outstanding_amount
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(formattedData);
@@ -400,6 +404,16 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {Number(o.grandTotalWithTax || 0).toFixed(2)}
+        </code>
+      ),
+    },
+    {
+     key: "outstanding_amount",
+     header: "Outstanding Amount",
+     align: "left",
+     render: (o) => (
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          {Number(o.outstanding_amount || 0).toFixed(2)}
         </code>
       ),
     },
