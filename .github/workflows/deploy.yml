@@ -1,4 +1,5 @@
 name: Deploy ERP Frontend
+run-name: 🚀 Deploy Frontend → ${{ github.ref_name }}
 
 on:
   push:

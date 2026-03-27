@@ -1,26 +1,24 @@
 import { ENV } from "./env";
 
-export const ERP_BASE = "";
+export const ERP_BASE = ENV.apiBaseUrl;
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
 export const API = {
-
-
-  loginApi:{
-    login : `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
-    logout : `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`
+  loginApi: {
+    login: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
+    logout: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`,
   },
 
-   /* =========================
+  /* =========================
    * DASHBOARD
    * ========================= */
   dashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.main.api.summary`,
   },
 
-  
-   /* =========================
+  /* =========================
    * SALES DASHBOARD
    * ========================= */
   salesDashboard: {
@@ -69,42 +67,40 @@ export const API = {
     updateCompanyFiles: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_files`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
+  Account: {
+    createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
+    getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
+    getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.bank_account.set_bank_account_status`,
+    ModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.create`,
+    GetModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get`,
+    GetDefaultAccounts: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get_default_accounts`,
+    UpdateStatusModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.update`,
+    GetPartyDetails: `${ERP_BASE}/api/method/custom_api.api.search.get_party_details`,
+    getBankAccountMain: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
+    getLedgerAccount: `${ERP_BASE}/api/method/custom_api.api.payment.get_ledger_account`,
+    getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
+    createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
+  },
 
-Account:{
-  createnewBankaccount:`${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
-  getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
-  getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
-  updateStatus: `${ERP_BASE}/api/method/custom_api.api.bank_account.set_bank_account_status`,
-  ModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.create`,
-  GetModeOfPayment : `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get`,
-  GetDefaultAccounts : `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get_default_accounts`,
-  UpdateStatusModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.update`,
-  GetPartyDetails: `${ERP_BASE}/api/method/custom_api.api.search.get_party_details`,
-  getBankAccountMain: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
-  getLedgerAccount:`${ERP_BASE}/api/method/custom_api.api.payment.get_ledger_account`,
-  getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
-  createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
- 
-
-},
-
-accounting:{
-  createCOA:`${ERP_BASE}/api/method/erpnext.accounts.utils.add_ac`,
-  getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
-  getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
-  getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
-  getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
-  getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`,
-  getLedger: `${ERP_BASE}api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
-},
-CurrencyExchange:{
-  create:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.create_currency_exchange`,
-  getAll:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
-  update:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.update_currency_exchange?`,
-  delete:`${ERP_BASE}/api/method/custom_api.api.currency_exchange.delete_currency_exchange`,
-  get:`${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`
- 
-},
+  accounting: {
+    createCOA: `${ERP_BASE}/api/method/erpnext.accounts.utils.add_ac`,
+    getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
+    getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
+    getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
+    getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
+    getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`,
+    getAllPayables: `${ERP_BASE}/api/method/custom_api.api.accounts_payable.get_accounts_payable`,
+    getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
+    getLedger: `${ERP_BASE}api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
+  },
+  CurrencyExchange: {
+    create: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.create_currency_exchange`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
+    update: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.update_currency_exchange?`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.delete_currency_exchange`,
+    get:`${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`
+  },
   /* =========================
    * CUSTOMER
    * ========================= */
@@ -117,6 +113,7 @@ CurrencyExchange:{
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
+    getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
   },
 
   /* =========================
@@ -131,8 +128,6 @@ CurrencyExchange:{
     updateDocuments: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.manage_employee_documents`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
-    
-
   },
 
   /* =========================
@@ -232,7 +227,7 @@ CurrencyExchange:{
     createDebitNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_debit_note_from_invoice`,
     getCreditNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_credit_notes`,
     getDebitNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_debit_notes`,
-    editInvoice : `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.edit_sales_invoice`,
+    editInvoice: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.edit_sales_invoice`,
   },
 
   /* =========================
@@ -257,7 +252,7 @@ CurrencyExchange:{
     create: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.create_warehouse_api`,
     update: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.update_warehouse_api`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.delete_warehouse_api`,
-    getAllWarehouses : `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
+    getAllWarehouses: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
   },
 
   /* =========================
@@ -302,14 +297,21 @@ CurrencyExchange:{
     update: `${ERP_BASE}/api/method/erpnext.supplier.api.update_supplier`,
     delete: `${ERP_BASE}/api/method/erpnext.supplier.api.delete_supplier`,
     getStatement: `${ERP_BASE}/api/method/erpnext.supplier.statement.api.get_supplier_statement`,
-    CreatePayment:`${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
-
+    CreatePayment: `${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
   },
 
   places: {
     getCountry: `${CODES_BASE}/countries/`,
     getProvinces: `${CODES_BASE}/provinces/`,
     getTown: `${CODES_BASE}/towns/`,
+  },
+
+  /* =========================
+   * ANALYTICS
+   * ========================= */
+  analytics: {
+    getSalesAnalytics: `${ERP_BASE}/api/method/custom_api.api.sales_analytics.get_sales_analytics`,
+    getPurchaseAnalytics: `${ERP_BASE}/api/method/custom_api.api.purchase_analytics.get_purchase_analytics`,
   },
 
   /* =========================
@@ -324,7 +326,7 @@ CurrencyExchange:{
 
   /* =========================
    * EXCHANGE RATE
-   * ========================= */ 
+   * ========================= */
   exchangeRate: {
     get: `${CODES_BASE}/exchange/`,
   },
@@ -332,6 +334,11 @@ CurrencyExchange:{
     getUnitOfMeasure: `${ERP_BASE}/api/resource/UOM?limit_start=0&limit_page_length=500`,
     getItemClasses: `${ERP_BASE}/api/item-class-list/`,
     getCountries: `${ERP_BASE}/api/resource/Country?fields=["name","country_name","code"]&limit_page_length=300`,
-    getPackagingUnits : `${ERP_BASE}/api/method/erpnext.packaging_unit.get_all_packaging_units`
+    getPackagingUnits: `${ERP_BASE}/api/method/erpnext.packaging_unit.get_all_packaging_units`,
+    getCompanyPayableAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_payable_accounts`,
+    getCompanyRecievableAccounts: `${ERP_BASE}/api/method/custom_api.api.search.get_receivable_accounts`,
+    getCompanyCostCenter: `${ERP_BASE}/api/method/custom_api.api.search.get_cost_centers`,
+    getCustomer: `${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
+    getSupplier: `${ERP_BASE}/api/method/custom_api.api.search.get_suppliers`,
   },
 } as const;
