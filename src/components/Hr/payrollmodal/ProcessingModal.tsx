@@ -62,7 +62,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({
                 Gross Amount
               </p>
               <p className="text-2xl font-bold text-emerald-800">
-                ₹{totalGross.toLocaleString()}
+                {totalGross.toLocaleString()}
               </p>
             </div>
             <div className="bg-teal-50 rounded-xl p-5 border border-teal-200">
@@ -70,7 +70,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({
                 Net Payout
               </p>
               <p className="text-2xl font-bold text-teal-800">
-                ₹{totalNet.toLocaleString()}
+                {totalNet.toLocaleString()}
               </p>
             </div>
           </div>
@@ -94,7 +94,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({
                     </div>
                   </div>
                   <p className="font-semibold text-slate-800">
-                    ₹{emp.netPay.toLocaleString()}
+                    {emp.netPay.toLocaleString()}
                   </p>
                 </div>
               ))}

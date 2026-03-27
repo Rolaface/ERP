@@ -171,7 +171,7 @@ export const emptyPOForm: PurchaseOrderFormData = {
   costCenter: "UD-001 - Udvil - RI",
   project: "Project-0001",
   requiredBy: "",
-  warehouse: "",
+  warehouse: "Udvell Main Warehouse - UDVELL",
   referenceNumber: "",
   addresses: {
     supplierAddress: {

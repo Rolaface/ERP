@@ -67,7 +67,6 @@ export const API = {
     updateCompanyFiles: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_files`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
-
   Account: {
     createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
     getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
@@ -93,6 +92,7 @@ export const API = {
     getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`,
     getAllPayables: `${ERP_BASE}/api/method/custom_api.api.accounts_payable.get_accounts_payable`,
     getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
+    getLedger: `${ERP_BASE}api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
   },
   CurrencyExchange: {
     create: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.create_currency_exchange`,

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
 import { getChartOfAccounts } from "../../api/Accounting/AccountApi";
+import GLView from "./glview";
+import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   Loader2,
@@ -37,7 +39,7 @@ function normalizeAccounts(accounts: COAAccount[]): COAAccount[] {
 function matchCOANode(node: COAAccount, term: string): boolean {
   const t = term.toLowerCase();
   return (
-    node.account_name.toLowerCase().includes(t) ||
+    node.name.toLowerCase().includes(t) ||
     node.name.toLowerCase().includes(t) ||
     (node.account_type || "").toLowerCase().includes(t) ||
     node.root_type.toLowerCase().includes(t)
@@ -147,6 +149,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
   const [error, setError] = useState<string | null>(null);
   const [showNewAccount, setShowNewAccount] = useState(false);
   const [selectedParent, setSelectedParent] = useState<COAAccount | null>(null);
+  const navigate = useNavigate();
 
   const fetchCOA = useCallback(async () => {
     setLoading(true);
@@ -218,7 +221,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
 
   const coaColumns: Column<COAAccount>[] = [
     {
-      key: "account_name",
+      key: "name",
       header: "Account Name",
       align: "left",
       render: (row: COAAccount) => (
@@ -227,7 +230,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
             row.is_group ? "font-semibold text-main" : "font-normal text-main"
           }
         >
-          {row.account_name}
+          {row.name}
           {row.disabled === 1 && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-draft text-gray-300 ml-2">
               Disabled
@@ -331,7 +334,13 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
                 {
                   label: "View Ledger",
                   icon: <BookMarked size={12} />,
-                  onClick: () => console.log("View Ledger", row.name),
+                  onClick: () =>
+                    navigate("/ledger", {
+                      state: {
+                        account: row.name,
+                        currency: row.account_currency,
+                      },
+                    }),
                 },
               ]),
           {

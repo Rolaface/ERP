@@ -126,7 +126,7 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
                 <div className="rounded-xl border-2 border-slate-200 overflow-hidden">
                   <div className="px-4 py-3 border-b border-slate-200" style={{ background: "#f0faf5" }}>
                     <p className="text-[9px] text-slate-500 uppercase tracking-wide mb-1">Net Pay</p>
-                    <p className="text-xl font-extrabold text-slate-900 font-mono">₹{fmtINR(record.netPay)}</p>
+                    <p className="text-xl font-extrabold text-slate-900 font-mono">{fmtINR(record.netPay)}</p>
                   </div>
                   <div className="px-4 py-2.5 space-y-1.5 bg-white">
                     {[
@@ -179,9 +179,9 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
                 {/* Totals row */}
                 <tr style={{ background: "#f1f5f9", fontWeight: 700 }}>
                   <td className="px-3 py-2.5 text-slate-800" style={{ border: "1px solid #cbd5e1" }}>Gross Earnings</td>
-                  <td className="px-3 py-2.5 text-right font-mono text-slate-900" style={{ border: "1px solid #cbd5e1" }}>₹{fmt(record.grossPay)}</td>
+                  <td className="px-3 py-2.5 text-right font-mono text-slate-900" style={{ border: "1px solid #cbd5e1" }}>{fmt(record.grossPay)}</td>
                   <td className="px-3 py-2.5 text-slate-800" style={{ border: "1px solid #cbd5e1" }}>Total Deductions</td>
-                  <td className="px-3 py-2.5 text-right font-mono text-slate-900" style={{ border: "1px solid #cbd5e1" }}>₹{fmt(totalDed)}</td>
+                  <td className="px-3 py-2.5 text-right font-mono text-slate-900" style={{ border: "1px solid #cbd5e1" }}>{fmt(totalDed)}</td>
                 </tr>
               </tbody>
             </table>
@@ -192,7 +192,7 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
                 <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-700">Total Net Payable</p>
                 <p className="text-[9px] text-slate-400">Gross Earnings − Total Deductions</p>
               </div>
-              <p className="text-sm font-extrabold font-mono text-slate-900">₹{fmt(record.netPay)}</p>
+              <p className="text-sm font-extrabold font-mono text-slate-900">{fmt(record.netPay)}</p>
             </div>
 
             <p className="text-right text-[10px] text-slate-500 mb-5">

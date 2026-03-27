@@ -179,10 +179,16 @@ const PaymentEntry: React.FC = () => {
       {showModal && (
        <PaymentEntryModal
     isOpen={showModal}
+    onSuccess={() => {
+      fetchPayments();
+      setShowModal(false)
+    }}
+    
     onClose={() => {
       setShowModal(false);
-      fetchPayments(); 
+    
     }}
+    
   />
       )}
     </div>

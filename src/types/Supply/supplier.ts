@@ -68,8 +68,7 @@ export const emptySupplierForm: SupplierFormData = {
 },
 };
 
-export const currencyOptions = ["ZMW", "USD", "INR" , "GHS"] as const;
-export type Currency = typeof currencyOptions[number];
+
 
 export type SupplierTab =
   | "supplier"
@@ -96,10 +95,7 @@ export interface Supplierr {
 }
 
 
-export const currencySelectOptions = currencyOptions.map(c => ({
-  value: c,
-  label: c,
-}));
+
 
 
 export const taxCategoryOptions = ["Export", "Non-Export", "LPO"] as const;

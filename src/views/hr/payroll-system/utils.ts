@@ -242,7 +242,7 @@ export const runPayrollValidation = (records: PayrollRecord[]): ValidationResult
         employeeId: r.employeeId, employeeName: r.employeeName, department: r.department,
         category: "compliance", severity: "warning", code: "COMP-002",
         title: "ESI Number Missing (ESI Eligible Employee)",
-        description: `${r.employeeName} earns ₹${r.grossPay.toLocaleString()} (≤ ₹21,000) and is ESI eligible, but ESI registration is missing.`,
+        description: `${r.employeeName} earns ${r.grossPay.toLocaleString()} (≤ 21,000) and is ESI eligible, but ESI registration is missing.`,
         field: "esiNumber", suggestedAction: "Register employee with ESIC portal.",
         canProceed: true,
       });
@@ -298,7 +298,7 @@ export const runPayrollValidation = (records: PayrollRecord[]): ValidationResult
         employeeId: r.employeeId, employeeName: r.employeeName, department: r.department,
         category: "salary", severity: "error", code: "SAL-001",
         title: "Negative / Zero Net Pay",
-        description: `Calculated net pay for ${r.employeeName} is ₹${r.netPay.toLocaleString()}. Deductions exceed gross pay.`,
+        description: `Calculated net pay for ${r.employeeName} is ${r.netPay.toLocaleString()}. Deductions exceed gross pay.`,
         suggestedAction: "Review deductions — loan/advance deductions may be excessive this month.",
         canProceed: false,
       });
@@ -309,7 +309,7 @@ export const runPayrollValidation = (records: PayrollRecord[]): ValidationResult
         employeeId: r.employeeId, employeeName: r.employeeName, department: r.department,
         category: "salary", severity: "error", code: "SAL-002",
         title: "Zero Basic Salary",
-        description: `Basic salary is ₹0 for ${r.employeeName}. Salary structure may be missing.`,
+        description: `Basic salary is 0 for ${r.employeeName}. Salary structure may be missing.`,
         suggestedAction: "Assign a salary structure to this employee in the system.",
         canProceed: false,
       });
@@ -320,7 +320,7 @@ export const runPayrollValidation = (records: PayrollRecord[]): ValidationResult
         employeeId: r.employeeId, employeeName: r.employeeName, department: r.department,
         category: "salary", severity: "info", code: "SAL-003",
         title: "High Gross Pay — Review Recommended",
-        description: `${r.employeeName}'s gross pay of ₹${r.grossPay.toLocaleString()} is unusually high. This may include arrears/bonuses.`,
+        description: `${r.employeeName}'s gross pay of ${r.grossPay.toLocaleString()} is unusually high. This may include arrears/bonuses.`,
         suggestedAction: "Verify bonuses and arrears are correctly approved.",
         canProceed: true,
       });

@@ -1,4 +1,3 @@
-// components/modals/CustomerModal.tsx
 import React, { useState, useEffect } from "react";
 import Modal from "../ui/modal/modal";
 import {
@@ -11,11 +10,12 @@ import {
 import { getCompanyById } from "../../api/companySetupApi";
 const companyId = import.meta.env.VITE_COMPANY_ID;
 import { Card, Button } from "../ui/modal/formComponent";
+import { fetchCurrencyOptions } from "../../utils/currencyOptions";
 import TermsAndCondition from "../TermsAndCondition";
 import type { TermSection } from "../../types/termsAndCondition";
 import { User, Building2, MapPin, FileText, DollarSign } from "lucide-react";
 import { PaymentInfoTab } from "../../components/procurement/supply/PaymentInfoTab";
-
+import SearchSelect2 from "../ui/modal/SearchSelect2";
 import {
   createCustomer,
   updateCustomerByCustomerCode,
@@ -73,7 +73,7 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   sameAsBilling: true,
 };
 
-const currencyOptions = ["ZMW", "USD", "INR", "GHS"];
+
 const customerTaxCategoryOptions = ["Export", "Non-Export", "LPO"];
 
 const CustomerModal: React.FC<{
@@ -216,6 +216,8 @@ const CustomerModal: React.FC<{
     form.billingState,
     form.billingCountry,
   ]);
+
+
 
   // for next button
   const tabs: Array<"details" | "bank" | "address" | "terms"> = [
@@ -683,20 +685,19 @@ const CustomerModal: React.FC<{
                   ]}
                 />
 
-                <ModalSelect
-                  label="Currency"
-                  name="currency"
-                  value={form.currency}
-                  onChange={handleChange}
-                  required
-                  error={errors.currency}
-                  options={[
-                    { value: "ZMW", label: "ZMW" },
-                    { value: "USD", label: "USD" },
-                    { value: "INR", label: "INR" },
-                    { value: "GHS", label: "GHS" },
-                  ]}
-                />
+               <SearchSelect2
+  label="Currency"
+  value={form.currency}
+  onChange={(value) =>
+    handleChange({
+      target: { name: "currency", value },
+    } as React.ChangeEvent<HTMLSelectElement>)
+  }
+  fetchOptions={fetchCurrencyOptions}
+  placeholder="Search currency..."
+  required
+  error={errors.currency}
+/>
 
                 <ModalInput
                   label="Onboard Balance"
