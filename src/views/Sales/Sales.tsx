@@ -11,11 +11,12 @@ import QuotationModal from "../../components/sales/QuotationModal";
 import InvoiceModal from "../../components/sales/InvoiceModal";
 import ProformaInvoiceModal from "../../components/sales/ProformaInvoiceModal";
 import PosModal from "../../components/sales/PosModal";
-import { showApiError,showSuccess } from "../../utils/alert";
+import { showApiError, showSuccess } from "../../utils/alert";
 import { createSalesInvoice } from "../../api/salesApi";
 import { createQuotation } from "../../api/quotationApi";
 import CreditNotesTable from "./CreditNotesTable";
 import DebitNotesTable from "./DebitNotesTable";
+import SalesAnalytics from "./SalesAnalytics";
 
 import {
   FaMoneyBillWave,
@@ -42,6 +43,7 @@ const salesTabs = [
 
   // { id: "pos", name: "POS", icon: <FaCashRegister /> },
   { id: "reports", name: "Reports", icon: <FaChartBar /> },
+  { id: "salesAnalytics", name: "Sales Analytics", icon: <FaChartBar /> },
 ];
 
 const SalesModule: React.FC = () => {
@@ -78,17 +80,17 @@ const SalesModule: React.FC = () => {
         />
       ),
     },
-   invoices: {
-  component: (
-    <InvoiceTable
-      key={refreshKey}  
-      onAddInvoice={() => setOpenModal("invoice")}
-      onExportInvoice={() => {
-        console.log("Export invoices");
-      }}
-    />
-  ),
-},
+    invoices: {
+      component: (
+        <InvoiceTable
+          key={refreshKey}
+          onAddInvoice={() => setOpenModal("invoice")}
+          onExportInvoice={() => {
+            console.log("Export invoices");
+          }}
+        />
+      ),
+    },
 
     pos: {
       component: <POS />,
@@ -105,51 +107,44 @@ const SalesModule: React.FC = () => {
     reports: {
       component: <ReportTable />,
     },
+    salesAnalytics: {
+      component: <SalesAnalytics />,
+    },
   };
 
-const handleInvoiceSubmit = async (payload: any) => {
-  console.log('[Sales] handleInvoiceSubmit called');
-  try {
-    const response = await createSalesInvoice(payload);
+  const handleInvoiceSubmit = async (payload: any) => {
+    console.log("[Sales] handleInvoiceSubmit called");
+    try {
+      const response = await createSalesInvoice(payload);
 
-    if (
-      !response ||
-      ![200, 201].includes(response.status_code)
-    ) {
-      showApiError(response);
-      return;
+      if (!response || ![200, 201].includes(response.status_code)) {
+        showApiError(response);
+        return;
+      }
+
+      showSuccess(response.message || "Invoice created successfully");
+
+      setOpenModal(null); // Ensure modal closes immediately after success
+      setRefreshKey((prev) => prev + 1);
+    } catch (error: any) {
+      showApiError(error);
     }
-
-    showSuccess(
-      response.message || "Invoice created successfully"
-    );
-
-    setOpenModal(null); // Ensure modal closes immediately after success
-    setRefreshKey((prev) => prev + 1);
-
-  } catch (error: any) {
-    showApiError(error);
-  }
-};
-
-
+  };
 
   const handleQuotationSubmit = async (payload: any) => {
-  try {
-    const response = await createQuotation(payload);
+    try {
+      const response = await createQuotation(payload);
 
-    if (!response || ![200, 201].includes(response.status_code)) {
-      throw response;
+      if (!response || ![200, 201].includes(response.status_code)) {
+        throw response;
+      }
+
+      setRefreshKey((prev) => prev + 1);
+      setOpenModal(null);
+    } catch (error: any) {
+      throw error;
     }
-
-    setRefreshKey((prev) => prev + 1);
-    setOpenModal(null);
-
-  } catch (error: any) {
-    throw error;
-  }
-};
-
+  };
 
   const handleProformaCreated = () => {
     setRefreshKey((prev) => prev + 1);
@@ -175,7 +170,7 @@ const handleInvoiceSubmit = async (payload: any) => {
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors ${
               activeTab === tab.id
-                 ? "text-primary border-b-2 border-current"
+                ? "text-primary border-b-2 border-current"
                 : "text-muted hover:text-main"
             }`}
           >

@@ -30,9 +30,8 @@ export async function getCountryList(): Promise<any> {
 // ROLAFACE LOOKUPS
 export async function getRolaUnitOfMeasureList(
   limitStart: number = 0,
-  limitLength: number = 500
+  limitLength: number = 500,
 ): Promise<any[]> {
-
   const resp = await api.get(API.rolaLookup.getUnitOfMeasure, {
     params: {
       limit_start: limitStart,
@@ -42,7 +41,6 @@ export async function getRolaUnitOfMeasureList(
 
   return resp.data?.data || [];
 }
-
 
 export async function getRolaItemClassList(): Promise<any> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getItemClasses);
@@ -57,4 +55,29 @@ export async function getRolaPackagingUnitCodes(): Promise<any[]> {
 export async function getRolaCountryList(): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getCountries);
   return resp.data?.data || [];
+}
+
+export async function getCompanyPayableAccounts(): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(
+    RolaLookupAPI.getCompanyPayableAccounts,
+  );
+  return resp.data.message.data.data || [];
+}
+export async function getCompanyRecievableAccounts(): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(
+    RolaLookupAPI.getCompanyRecievableAccounts,
+  );
+  return resp.data.message.data.data || [];
+}
+export async function getCompanyCostCenters(): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(RolaLookupAPI.getCompanyCostCenter);
+  return resp.data.message.data.data || [];
+}
+export async function getCustomerList(): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(RolaLookupAPI.getCustomer);
+  return resp.data.message.data.data || [];
+}
+export async function getSupplierList(): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(RolaLookupAPI.getSupplier);
+  return resp.data.message.data.data || [];
 }
