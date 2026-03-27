@@ -3,8 +3,18 @@ import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
 import { getChartOfAccounts } from "../../api/Accounting/AccountApi";
 import {
-  AlertCircle, Loader2, RefreshCw, FolderOpen, Folder, BookOpen,
-  MoreHorizontal, Pencil, Trash2, GitBranch, BookMarked, Plus
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+  FolderOpen,
+  Folder,
+  BookOpen,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  GitBranch,
+  BookMarked,
+  Plus,
 } from "lucide-react";
 import NewAccountModal from "../../components/Coa/NewAccountModal";
 import type { COAAccount, COAResponse, COAResponseData } from "../../types/coa";
@@ -18,7 +28,9 @@ function normalizeAccounts(accounts: COAAccount[]): COAAccount[] {
   return accounts.map((acc) => ({
     ...acc,
     balance_in_account_currency: acc.balance_in_account_currency ?? acc.balance,
-    children: Array.isArray(acc.children) ? normalizeAccounts(acc.children) : [],
+    children: Array.isArray(acc.children)
+      ? normalizeAccounts(acc.children)
+      : [],
   }));
 }
 
@@ -35,12 +47,15 @@ function matchCOANode(node: COAAccount, term: string): boolean {
 function coaExpandIcon(
   _node: COAAccount,
   isExpanded: boolean,
-  hasChildren: boolean
+  hasChildren: boolean,
 ): React.ReactNode {
-  if (!hasChildren) return <BookOpen size={12} className="text-muted opacity-50" />;
-  return isExpanded
-    ? <FolderOpen size={13} className="text-muted" />
-    : <Folder size={13} className="text-muted" />;
+  if (!hasChildren)
+    return <BookOpen size={12} className="text-muted opacity-50" />;
+  return isExpanded ? (
+    <FolderOpen size={13} className="text-muted" />
+  ) : (
+    <Folder size={13} className="text-muted" />
+  );
 }
 
 // ─── Dropdown Menu Component ───────────────────────────────────────────────
@@ -70,13 +85,17 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
     <div ref={ref} className="relative flex justify-end">
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen((p) => !p); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((p) => !p);
+        }}
         className={`
           w-7 h-7 flex items-center justify-center rounded-md transition
           opacity-0 group-hover:opacity-100
-          ${open
-            ? "bg-primary/10 text-primary"
-            : "text-muted hover:bg-row-hover hover:text-main"
+          ${
+            open
+              ? "bg-primary/10 text-primary"
+              : "text-muted hover:bg-row-hover hover:text-main"
           }
         `}
       >
@@ -95,12 +114,16 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
               )}
               <button
                 type="button"
-                onClick={() => { action.onClick(); setOpen(false); }}
+                onClick={() => {
+                  action.onClick();
+                  setOpen(false);
+                }}
                 className={`
                   w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
-                  ${action.danger
-                    ? "text-danger hover:bg-danger/10"
-                    : "text-main hover:bg-row-hover"
+                  ${
+                    action.danger
+                      ? "text-danger hover:bg-danger/10"
+                      : "text-main hover:bg-row-hover"
                   }
                 `}
               >
@@ -137,7 +160,9 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
         setError(res?.message?.message || "Failed to load chart of accounts.");
       }
     } catch (err: any) {
-      setError(err?.message || "An error occurred while fetching chart of accounts.");
+      setError(
+        err?.message || "An error occurred while fetching chart of accounts.",
+      );
     } finally {
       setLoading(false);
     }
@@ -177,7 +202,9 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
     return (
       <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col items-center justify-center py-24 gap-4 shadow-sm">
         <AlertCircle size={28} className="text-danger" />
-        <p className="text-xs font-bold text-danger uppercase tracking-widest">{error}</p>
+        <p className="text-xs font-bold text-danger uppercase tracking-widest">
+          {error}
+        </p>
         <button
           onClick={fetchCOA}
           className="flex items-center gap-2 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest bg-primary rounded-xl transition-all hover:opacity-90"
@@ -195,7 +222,11 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
       header: "Account Name",
       align: "left",
       render: (row: COAAccount) => (
-        <span className={row.is_group ? "font-semibold text-main" : "font-normal text-main"}>
+        <span
+          className={
+            row.is_group ? "font-semibold text-main" : "font-normal text-main"
+          }
+        >
           {row.account_name}
           {row.disabled === 1 && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-draft text-gray-300 ml-2">
@@ -227,7 +258,9 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
         };
         const badge = badgeClass[row.root_type] ?? "bg-info text-info";
         return row.root_type ? (
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${badge}`}>
+          <span
+            className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${badge}`}
+          >
             {row.root_type}
           </span>
         ) : (
@@ -256,7 +289,8 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
         if (row.is_group) return <span className="text-muted text-xs">—</span>;
         return (
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-success">
-            {row.account_currency} {row.balance_in_account_currency ?? row.balance}
+            {row.account_currency}{" "}
+            {row.balance_in_account_currency ?? row.balance}
           </code>
         );
       },
@@ -286,17 +320,20 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
             onClick: () => console.log("Edit", row.name),
           },
           ...(row.is_group === 1
-            ? [{
-                label: "Add Child",
-                icon: <GitBranch size={12} />,
-                onClick: () => handleAddChild(row),
-              }]
-            : [{
-                label: "View Ledger",
-                icon: <BookMarked size={12} />,
-                onClick: () => console.log("View Ledger", row.name),
-              }]
-          ),
+            ? [
+                {
+                  label: "Add Child",
+                  icon: <GitBranch size={12} />,
+                  onClick: () => handleAddChild(row),
+                },
+              ]
+            : [
+                {
+                  label: "View Ledger",
+                  icon: <BookMarked size={12} />,
+                  onClick: () => console.log("View Ledger", row.name),
+                },
+              ]),
           {
             label: "Delete",
             icon: <Trash2 size={12} />,

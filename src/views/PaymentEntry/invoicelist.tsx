@@ -16,6 +16,7 @@ interface InvoiceListProps {
     amount?: number | string;
     fifoTrigger?: number;
     referenceInvoice?: string;  
+     allocations?: Record<string, number>; 
   };
   onFormChange: (data: AllocationResult) => void;
 }
@@ -26,6 +27,8 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
   const paymentAmount    = Number(form.amount ?? 0);
   const fifoTrigger      = form.fifoTrigger;
   const referenceInvoice = form.referenceInvoice; 
+  const initialAllocations = form.allocations ?? {};
+ 
 
   const {
     invoices,
@@ -51,7 +54,8 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
     paymentAmount,
     fifoTrigger,
     onFormChange,
-    referenceInvoice   // ← pass karo
+    referenceInvoice,
+    initialAllocations
   );
 
   if (!partyType) {

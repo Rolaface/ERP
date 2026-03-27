@@ -103,10 +103,13 @@ const BankAccountSetup: React.FC = () => {
       render: (row) => row.dateAdded || "—",
     },
     {
-      key: "accountFor",
-      header: "Account For",
-      render: (row) => row.accountFor,
-    },
+  key: "accountFor",
+  header: "Account For",
+  render: (row) =>
+    Number(row.isCompanyAccount) === 1
+      ? "Company"
+      : row.accountFor || "—",
+},
     {
       key: "bankName",
       header: "Bank",

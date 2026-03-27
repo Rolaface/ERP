@@ -143,7 +143,7 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
       render: (row: LedgerEntry) =>
         row.debit ? (
           <span className="text-xs font-bold text-warning">
-            ₹{row.debit.toLocaleString()}
+            {row.debit.toLocaleString()}
           </span>
         ) : (
           <span className="text-muted text-xs">—</span>
@@ -156,7 +156,7 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
       render: (row: LedgerEntry) =>
         row.credit ? (
           <span className="text-xs font-bold text-success">
-            ₹{row.credit.toLocaleString()}
+            {row.credit.toLocaleString()}
           </span>
         ) : (
           <span className="text-muted text-xs">—</span>
@@ -168,7 +168,7 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
       align: "right" as const,
       render: (row: LedgerEntry) => (
         <span className="text-sm font-black text-primary">
-          ₹{row.balance.toLocaleString()}
+          {row.balance.toLocaleString()}
         </span>
       ),
     },
@@ -300,7 +300,7 @@ const AgingCell = ({
         compact ? "text-sm" : "text-base"
       } ${active ? "text-primary" : "text-main"}`}
     >
-      ₹{value.toLocaleString()}
+      {value.toLocaleString()}
     </p>
   </div>
 );
@@ -319,7 +319,7 @@ const SummaryCard = ({
       {label}
     </p>
     <p className={`text-lg font-black ${className}`}>
-      ₹{value.toLocaleString()}
+      {value.toLocaleString()}
     </p>
   </div>
 );
