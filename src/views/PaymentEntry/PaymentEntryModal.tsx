@@ -393,6 +393,28 @@ const PaymentEntryModal: React.FC<Props> = ({
               </p>
             </div>
 
+            {/* ── Total Outstanding — shown only after party is selected ── */}
+            {form?.partyName && (
+              <div>
+                <p className="text-[11px] text-muted">Total Outstanding</p>
+                {form?.totalOutstanding == null ? (
+                  <p className="text-[11px] text-muted animate-pulse">
+                    Loading…
+                  </p>
+                ) : (
+                  <p
+                    className={`text-sm font-semibold ${
+                      Number(form.totalOutstanding) > 0
+                        ? "text-amber-500"
+                        : "text-emerald-600"
+                    }`}
+                  >
+                    {Number(form.totalOutstanding).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div>
               <p className="text-[11px] text-muted">Payment</p>
               <p className="text-xs font-medium text-main break-words">

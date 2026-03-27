@@ -35,6 +35,7 @@ const PARTY_FILLED_FIELDS = {
   currencyTo: "",
   companyBankAccount: "",
   partyBankAccount: "",
+  totalOutstanding: null,  
 };
 
 const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
@@ -216,6 +217,7 @@ useEffect(() => {
         // Pay: Paid From = company, Paid To = party
         onFormChange({
           partyName: details.partyName,
+          totalOutstanding: details.total_outstanding_amount ?? null,
           companyBankAccount: details.companyBankAccount,  // → Paid From bank
           partyBankAccount: details.partyBankAccount,      // → Paid To bank
           companyDefaultCurrency: details.companyDefaultCurrency,
@@ -228,6 +230,7 @@ useEffect(() => {
         // Receive: Paid From = party, Paid To = company
         onFormChange({
           partyName: details.partyName,
+          totalOutstanding: details.total_outstanding_amount ?? null, 
           companyBankAccount: details.companyBankAccount,  // stored for reference
           partyBankAccount: details.partyBankAccount,      // stored for reference
           companyDefaultCurrency: details.companyDefaultCurrency,
@@ -293,6 +296,7 @@ useEffect(() => {
       onFormChange({
         ...base,
         ...companyDefaultCurrency,
+        totalOutstanding: details.total_outstanding_amount ?? null,
         companyBankAccount: details.companyBankAccount,  // → Paid From bank
         partyBankAccount: details.partyBankAccount,      // → Paid To bank
         glFrom: details.companyLedgerAccount,
@@ -305,6 +309,7 @@ useEffect(() => {
       onFormChange({
         ...base,
         ...companyDefaultCurrency,
+         totalOutstanding: details.total_outstanding_amount ?? null,
         companyBankAccount: details.companyBankAccount,  // stored for reference
         partyBankAccount: details.partyBankAccount,      // stored for reference
         glFrom: details.partyLedgerAccount,
