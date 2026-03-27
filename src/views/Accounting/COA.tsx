@@ -37,7 +37,7 @@ function normalizeAccounts(accounts: COAAccount[]): COAAccount[] {
 function matchCOANode(node: COAAccount, term: string): boolean {
   const t = term.toLowerCase();
   return (
-    node.account_name.toLowerCase().includes(t) ||
+    node.name.toLowerCase().includes(t) ||
     node.name.toLowerCase().includes(t) ||
     (node.account_type || "").toLowerCase().includes(t) ||
     node.root_type.toLowerCase().includes(t)
@@ -218,7 +218,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
 
   const coaColumns: Column<COAAccount>[] = [
     {
-      key: "account_name",
+      key: "name",
       header: "Account Name",
       align: "left",
       render: (row: COAAccount) => (
@@ -227,7 +227,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
             row.is_group ? "font-semibold text-main" : "font-normal text-main"
           }
         >
-          {row.account_name}
+          {row.name}
           {row.disabled === 1 && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-draft text-gray-300 ml-2">
               Disabled
