@@ -68,7 +68,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   } = usePartyBankAccounts();
 
   const paymentType =
-    (form.paymentType as "Pay" | "Receive" | "Internal Transfer") || "Pay";
+    (form.paymentType as "Pay" | "Receive" ) || "Pay";
   const partyType =
     (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") ||
     "";
