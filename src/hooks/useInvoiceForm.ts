@@ -126,7 +126,21 @@ export const useInvoiceForm = (
       setFormDataFromInvoice(initialData);
     }
   }, [isOpen, initialData, mode]);
+useEffect(() => {
+  if (!isOpen || mode !== "edit") return;
 
+  const loadBaseCurrency = async () => {
+    try {
+      const companyRes = await getCompanyById(COMPANY_ID);
+      const base = companyRes?.data?.financialConfig?.baseCurrency ?? "";
+      setBaseCurrency(base);
+    } catch (err) {
+      console.error("Failed to load base currency", err);
+    }
+  };
+
+  loadBaseCurrency();
+}, [isOpen, mode]);
   useEffect(() => {
     if (!isOpen || initialData) return;
 
@@ -188,11 +202,16 @@ export const useInvoiceForm = (
       .toUpperCase();
     const base = baseCurrency.trim().toUpperCase();
     if (!code || !base || code === base) {
-      setExchangeRateLoading(false);
-      setExchangeRateError(null);
-      setFormData((prev) => ({ ...prev, exchangeRt: "" }));
-      return;
-    }
+  setExchangeRateLoading(false);
+  setExchangeRateError(null);
+
+ 
+  if (mode !== "edit") {
+    setFormData((prev) => ({ ...prev, exchangeRt: "" }));
+  }
+
+  return;
+}
     let cancelled = false;
     setExchangeRateLoading(true);
     setFormData((prev) => ({
@@ -729,6 +748,7 @@ export const useInvoiceForm = (
       invoiceStatus: invoice.invoiceStatus ?? "",
       currencyCode: invoice.currencyCode,
       dateOfInvoice: invoice.dateOfInvoice,
+      exchangeRt: invoice.exchangeRt ?? "",
       dueDate: invoice.dueDate,
       destnCountryCd: invoice.destnCountryCd ?? "",
       billingAddress: invoice.billingAddress ?? prev.billingAddress,

@@ -118,8 +118,12 @@ function buildPayload(
 
 function validateForm(form: Record<string, any>): string | null {
   if (!form?.paymentType) return "Payment Type is required.";
-  if (!form?.partyType) return "Party Type is required.";
-  if (!form?.partyName) return "Party Name is required.";
+
+  const isInternalTransfer = form.paymentType === "Internal Transfer";
+
+  if (!isInternalTransfer && !form?.partyType) return "Party Type is required.";
+  if (!isInternalTransfer && !form?.partyName) return "Party Name is required.";
+
   if (!form?.date) return "Payment Date is required.";
   if (!form?.mode) return "Mode of Payment is required.";
   if (!form?.glFrom) return "Account (GL) — Paid From is required.";
@@ -141,16 +145,18 @@ const PaymentEntryModal: React.FC<Props> = ({
   const [form, setForm] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);
   const [invoicesMounted, setInvoicesMounted] = useState(false);
-  // FIX: track taxes tab mount separately, same pattern as invoices
   const [taxesMounted, setTaxesMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const lastFetchedPartyKeyRef = useRef<string>("");
 
   const isAdvanceFromPO = false;
 
-  const visibleTabs = isAdvanceFromPO
-    ? ALL_TABS.filter((t) => t.key !== "invoices")
-    : ALL_TABS;
+  const isInternalTransfer = form?.paymentType === "Internal Transfer";
+
+  const visibleTabs =
+    isAdvanceFromPO || isInternalTransfer
+      ? ALL_TABS.filter((t) => t.key !== "invoices")
+      : ALL_TABS;
 
   // ── Reset on open ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -168,7 +174,6 @@ const PaymentEntryModal: React.FC<Props> = ({
       base.amountTo ??= base.amount;
     }
 
-    // Auto-allocate reference invoice if opened from invoice table
     if (defaultValues?.referenceInvoice && base.amount) {
       base.allocations = {
         [defaultValues.referenceInvoice]: Number(base.amount),
@@ -180,7 +185,6 @@ const PaymentEntryModal: React.FC<Props> = ({
     setForm(base);
     setActiveTab("details");
     setError(null);
-    // FIX: reset both mount flags so tabs re-initialize cleanly on reopen
     setInvoicesMounted(false);
     setTaxesMounted(false);
     setIsSaving(false);
@@ -224,7 +228,6 @@ const PaymentEntryModal: React.FC<Props> = ({
 
   const goToTab = useCallback((tab: TabType) => {
     setActiveTab(tab);
-    // FIX: mount each tab once, on first visit — then keep alive via block/hidden
     if (tab === "invoices") setInvoicesMounted(true);
     if (tab === "taxes") setTaxesMounted(true);
   }, []);
@@ -342,7 +345,7 @@ const PaymentEntryModal: React.FC<Props> = ({
 
         <div className="flex flex-1 overflow-hidden">
           <div className="flex-1 overflow-auto p-6">
-            {/* ── Details tab — always mounted, shown/hidden via CSS ── */}
+            {/* ── Details tab ── */}
             <div className={activeTab === "details" ? "block" : "hidden"}>
               <PaymentDetailsTab
                 form={form}
@@ -357,8 +360,8 @@ const PaymentEntryModal: React.FC<Props> = ({
               />
             </div>
 
-            {/* ── Invoices tab — lazy-mounted once, then shown/hidden via CSS ── */}
-            {invoicesMounted && !isAdvanceFromPO && (
+            {/* ── Invoices tab ── */}
+            {invoicesMounted && !isAdvanceFromPO && !isInternalTransfer && (
               <div className={activeTab === "invoices" ? "block" : "hidden"}>
                 <InvoiceList
                   form={invoiceListForm}
@@ -367,12 +370,7 @@ const PaymentEntryModal: React.FC<Props> = ({
               </div>
             )}
 
-            {/*
-              FIX: Taxes tab — was using conditional rendering {activeTab === "taxes" && ...}
-              which UNMOUNTS the component every time you leave, losing any pending
-              unsaved input. Now follows the same lazy-mount + block/hidden pattern
-              as Details and Invoices tabs.
-            */}
+            {/* ── Taxes tab ── */}
             {taxesMounted && (
               <div className={activeTab === "taxes" ? "block" : "hidden"}>
                 <PaymentTaxesTab form={form} onFormChange={handleFormChange} />
@@ -380,7 +378,7 @@ const PaymentEntryModal: React.FC<Props> = ({
             )}
           </div>
 
-          {/* ── Persistent summary sidebar ── */}
+          {/* ── Summary sidebar ── */}
           <div className="w-56 flex-shrink-0 border-l border-[var(--border)] bg-card p-4 flex flex-col gap-3 overflow-auto rounded-lg mt-4">
             <h3 className="text-sm font-semibold text-main">Summary</h3>
 
@@ -393,7 +391,7 @@ const PaymentEntryModal: React.FC<Props> = ({
               </p>
             </div>
 
-            {/* ── Total Outstanding — shown only after party is selected ── */}
+            {/* Total Outstanding — only when party is selected */}
             {form?.partyName && (
               <div>
                 <p className="text-[11px] text-muted">Total Outstanding</p>
@@ -448,7 +446,8 @@ const PaymentEntryModal: React.FC<Props> = ({
               </p>
             </div>
 
-            {!isAdvanceFromPO && (
+            {/* ✅ FIX: Hide Invoices Settled / Allocated / Advance for Internal Transfer */}
+            {!isAdvanceFromPO && !isInternalTransfer && (
               <>
                 <div>
                   <p className="text-[11px] text-muted">Invoices Settled</p>
@@ -487,6 +486,8 @@ const PaymentEntryModal: React.FC<Props> = ({
             <p className="text-[10px] text-muted leading-relaxed">
               {isAdvanceFromPO
                 ? "This is an advance payment against the selected Purchase Order."
+                : isInternalTransfer
+                ? "This is an internal transfer between accounts."
                 : `Use "Allocate →" on the amount field to auto-settle invoices in FIFO order.`}
             </p>
           </div>

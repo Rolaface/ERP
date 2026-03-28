@@ -16,7 +16,7 @@ import SubscribedModules from "./subscribedmodule";
 import BankDetails from "./BankDetails";
 import Upload from "./upload";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID as string;
-
+import Templates from "./Templates";
 import type {
   CompanyDocuments,
   AccountingSetup,
@@ -197,7 +197,9 @@ const CompanySetup: React.FC = () => {
           <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
         )}
         {tab === "subscribed" && <SubscribedModules />}
-        {/* {tab === "Templates" && <Templates templates={companyTemplates} />} */}
+        {tab === "Templates" && (
+  <Templates templates={companytemplates} />
+)}
         {tab === "logo" && (
           <Upload
             COMPANY_ID={COMPANY_ID}
