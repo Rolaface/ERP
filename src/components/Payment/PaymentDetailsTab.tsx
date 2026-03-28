@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useCallback } from "react";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { MoveRight, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
+import { useCompanyStore } from "../../store/companyStore";
 import dayjs from "dayjs";
 import {
   usePaymentModes,
@@ -67,11 +68,16 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     clearPartyBanks,
   } = usePartyBankAccounts();
 
+
   const paymentType =
-    (form.paymentType as "Pay" | "Receive" ) || "Pay";
+    (form.paymentType as "Pay" | "Receive" | "Internal Transfer") || "Pay";
   const partyType =
     (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") ||
     "";
+  const isInternalTransfer = paymentType === "Internal Transfer";
+
+  
+const companyBaseCurrency = useCompanyStore((s) => s.baseCurrency);
 
   const { partyOptions, isLoadingParties, fetchParties } =
     usePartyOptions(partyType);
@@ -104,6 +110,9 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         glTo: "",
         currencyTo: "",
         mode: "",
+        ...(paymentType === "Internal Transfer"
+          ? { partyType: "", partyName: "", partyId: "", allocations: {}, selectedInvoices: [], allocatedAmount: 0 }
+          : {}),
       });
     }
 
@@ -123,7 +132,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     currencyFrom,
     currencyTo,
     date,
-    form.companyDefaultCurrency ?? "",
+     companyBaseCurrency,
   );
 
   // Sync exchange rate result into form state
@@ -144,7 +153,6 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   // ── Mode of payment → auto-fill glFrom (Pay) or glTo (Receive) ───────────
   useEffect(() => {
-    // reset ONLY when user clears mode manually
     if (!form.mode) {
       if (paymentType === "Pay") {
         onFormChange({ glFrom: "", currencyFrom: "" });
@@ -165,18 +173,25 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     if (!selectedMode) return;
 
     // normal autofill
-    if (paymentType === "Pay") {
-      onFormChange({
-        glFrom: selectedMode.defaultAccount ?? "",
-        currencyFrom: selectedMode.currency ?? "",
-      });
-    } else if (paymentType === "Receive") {
-      onFormChange({
-        glTo: selectedMode.defaultAccount ?? "",
-        currencyTo: selectedMode.currency ?? "",
-      });
-    }
-  }, [selectedMode, paymentType, form.mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (paymentType === "Pay") {
+  onFormChange({
+    glFrom: selectedMode.defaultAccount ?? "",
+    currencyFrom: selectedMode.currency ?? "",
+  });
+} else if (paymentType === "Receive") {
+  onFormChange({
+    glTo: selectedMode.defaultAccount ?? "",
+    currencyTo: selectedMode.currency ?? "",
+  });
+} else if (paymentType === "Internal Transfer") {
+  // Internal Transfer: defaultAccount → Paid From (glFrom) only
+  // glTo user manually select karega
+  onFormChange({
+    glFrom: selectedMode.defaultAccount ?? "",
+    currencyFrom: selectedMode.currency ?? "",
+  });
+}
+  }, [selectedMode, paymentType, form.mode]); 
 
   // ── Party change → auto-fill GL + bank accounts ───────────────────────────
   // LOGIC:
@@ -204,10 +219,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         fetchPartyDetails(
           form.partyName,
           form.partyType as
-            | "Supplier"
-            | "Customer"
-            | "Employee"
-            | "Shareholder",
+          | "Supplier"
+          | "Customer"
+          | "Employee"
+          | "Shareholder",
         ),
         fetchCompanyBanks(),
         fetchPartyBanks(form.partyType, form.partyName),
@@ -402,14 +417,14 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   const handleFromBankFetchOptions = useCallback(
     async (q: string) => {
-     
+
       if (paymentType === "Pay") {
         // Paid From = company bank
         const fresh = await fetchCompanyBanks(q || undefined);
         return (fresh ?? []).map((o) => ({
-  label: `${o.label} (${o.currency ?? ""})`,
-  value: o.value,
-}));
+          label: `${o.label} (${o.currency ?? ""})`,
+          value: o.value,
+        }));
       } else {
         // Receive: Paid From = party bank
         if (!form.partyType || !form.partyName) return [];
@@ -418,10 +433,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           form.partyName,
           q || undefined,
         );
-       return (fresh ?? []).map((o) => ({
-  label: `${o.label} (${o.currency ?? ""})`,
-  value: o.value,
-}));
+        return (fresh ?? []).map((o) => ({
+          label: `${o.label} (${o.currency ?? ""})`,
+          value: o.value,
+        }));
       }
     },
     [
@@ -435,7 +450,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   const handleToBankFetchOptions = useCallback(
     async (q: string) => {
-     
+
       if (paymentType === "Pay") {
         // Paid To = party bank
         if (!form.partyType || !form.partyName) return [];
@@ -444,17 +459,17 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           form.partyName,
           q || undefined,
         );
-       return (fresh ?? []).map((o) => ({
-  label: `${o.label} (${o.currency ?? ""})`,
-  value: o.value,
-}));
+        return (fresh ?? []).map((o) => ({
+          label: `${o.label} (${o.currency ?? ""})`,
+          value: o.value,
+        }));
       } else {
         // Receive: Paid To = company bank
         const fresh = await fetchCompanyBanks(q || undefined);
         return (fresh ?? []).map((o) => ({
-label: `${o.label} (${o.currency ?? ""})`,
-value: o.value
-}));
+          label: `${o.label} (${o.currency ?? ""})`,
+          value: o.value
+        }));
       }
     },
     [
@@ -637,14 +652,14 @@ value: o.value
           options={[
             { label: "Pay", value: "Pay" },
             { label: "Receive", value: "Receive" },
-           
+            {label: "Internal Transfer", value: "Internal Transfer"}
           ]}
         />
         <ModalSelect
           label="Party Type"
           name="partyType"
           value={form.partyType}
-          disabled={islocked || isPartyLocked}
+          disabled={islocked || isPartyLocked || isInternalTransfer}
           onChange={handlePartyTypeChange}
           options={[
             { label: "Supplier", value: "Supplier" },
@@ -656,7 +671,7 @@ value: o.value
         <SearchSelect2
           label="Name"
           value={form.partyName ?? ""}
-          disabled={islocked || isPartyLocked || !partyType || isLoadingParties}
+          disabled={islocked || isPartyLocked || !partyType || isLoadingParties || isInternalTransfer}
           onChange={handlePartyNameSelect}
           fetchOptions={handlePartyFetchOptions}
         />
@@ -714,17 +729,20 @@ value: o.value
 
           {/* LEFT — Paid From */}
           <div className="border-r border-[var(--border)] px-5 py-4 space-y-3">
-            <SearchSelect2
-              label="Bank Account"
-              value={fromBankValue}
-              disabled={
-                
-                !form.partyName ||
-                isFromBankLoading
-              }
-              onChange={handleFromBankChange}
-              fetchOptions={handleFromBankFetchOptions}
-            />
+
+            {!isInternalTransfer && (
+              <SearchSelect2
+                label="Bank Account"
+                value={fromBankValue}
+                disabled={
+
+                  !form.partyName ||
+                  isFromBankLoading
+                }
+                onChange={handleFromBankChange}
+                fetchOptions={handleFromBankFetchOptions}
+              />
+            )}
             <div className="grid grid-cols-[1fr_100px] gap-2">
               <SearchSelect2
                 label="Account (GL)"
@@ -736,7 +754,7 @@ value: o.value
                 label="Currency"
                 name="currencyFrom"
                 value={form.currencyFrom ?? ""}
-                onChange={() => {}}
+                onChange={() => { }}
                 disabled
               />
             </div>
@@ -744,17 +762,19 @@ value: o.value
 
           {/* RIGHT — Paid To */}
           <div className="px-5 py-4 space-y-3">
-            <SearchSelect2
-              label="Bank Account"
-              value={toBankValue}
-              disabled={
-               
-                !form.partyName ||
-                isToBankLoading
-              }
-              onChange={handleToBankChange}
-              fetchOptions={handleToBankFetchOptions}
-            />
+            {!isInternalTransfer && (
+              <SearchSelect2
+                label="Bank Account"
+                value={toBankValue}
+                disabled={
+
+                  !form.partyName ||
+                  isToBankLoading
+                }
+                onChange={handleToBankChange}
+                fetchOptions={handleToBankFetchOptions}
+              />
+            )}
             <div className="grid grid-cols-[1fr_100px] gap-2">
               <SearchSelect2
                 label="Account (GL)"
@@ -766,7 +786,7 @@ value: o.value
                 label="Currency"
                 name="currencyTo"
                 value={form.currencyTo ?? ""}
-                onChange={() => {}}
+                onChange={() => { }}
                 disabled
               />
             </div>

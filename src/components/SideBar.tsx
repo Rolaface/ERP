@@ -22,7 +22,7 @@ import { ERP_BASE } from "../config/api";
 import { useAuth } from "../context/AuthContext";
 import { FaSignOutAlt } from "react-icons/fa";
 import LogoutConfirmModal from "./LogoutConfirmModal";
-
+import { useCompanyStore } from "../store/companyStore";
 
 
 const menuItems = [
@@ -43,6 +43,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const setCompanyInfo = useCompanyStore((s) => s.setCompanyInfo); 
   const location = useLocation();
   const [company, setCompany] = useState<{
     name: string;
@@ -70,6 +71,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             ? `${ERP_BASE}${data.documents.companyLogoUrl}`
             : undefined,
         });
+         setCompanyInfo(
+      data?.companyName ?? "",
+      data?.financialConfig?.baseCurrency ?? ""
+    );
       } catch (err) {
         console.error("Failed to load company:", err);
       }
