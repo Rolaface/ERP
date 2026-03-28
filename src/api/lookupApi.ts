@@ -61,23 +61,27 @@ export async function getCompanyPayableAccounts(): Promise<any[]> {
   const resp: AxiosResponse = await api.get(
     RolaLookupAPI.getCompanyPayableAccounts,
   );
-  return resp.data.message.data.data || [];
+  return resp.data.message.data || [];
 }
 export async function getCompanyRecievableAccounts(): Promise<any[]> {
   const resp: AxiosResponse = await api.get(
     RolaLookupAPI.getCompanyRecievableAccounts,
   );
-  return resp.data.message.data.data || [];
+  return resp.data.message.data || [];
 }
 export async function getCompanyCostCenters(): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getCompanyCostCenter);
-  return resp.data.message.data.data || [];
+  return resp.data.message.data || [];
 }
 export async function getCustomerList(): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getCustomer);
-  return resp.data.message.data.data || [];
+  return resp.data.message.data || [];
 }
 export async function getSupplierList(): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getSupplier);
-  return resp.data.message.data.data || [];
+  return resp.data.message.data || [];
+}
+export async function getCurrencyList(): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(RolaLookupAPI.getCurrency);
+  return resp.data.message.data || [];
 }
