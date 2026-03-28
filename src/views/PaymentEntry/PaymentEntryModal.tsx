@@ -145,7 +145,6 @@ const PaymentEntryModal: React.FC<Props> = ({
   const [form, setForm] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);
   const [invoicesMounted, setInvoicesMounted] = useState(false);
-  // FIX: track taxes tab mount separately, same pattern as invoices
   const [taxesMounted, setTaxesMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const lastFetchedPartyKeyRef = useRef<string>("");
@@ -175,7 +174,6 @@ const PaymentEntryModal: React.FC<Props> = ({
       base.amountTo ??= base.amount;
     }
 
-    // Auto-allocate reference invoice if opened from invoice table
     if (defaultValues?.referenceInvoice && base.amount) {
       base.allocations = {
         [defaultValues.referenceInvoice]: Number(base.amount),
@@ -187,7 +185,6 @@ const PaymentEntryModal: React.FC<Props> = ({
     setForm(base);
     setActiveTab("details");
     setError(null);
-    // FIX: reset both mount flags so tabs re-initialize cleanly on reopen
     setInvoicesMounted(false);
     setTaxesMounted(false);
     setIsSaving(false);
@@ -231,7 +228,6 @@ const PaymentEntryModal: React.FC<Props> = ({
 
   const goToTab = useCallback((tab: TabType) => {
     setActiveTab(tab);
-    // FIX: mount each tab once, on first visit — then keep alive via block/hidden
     if (tab === "invoices") setInvoicesMounted(true);
     if (tab === "taxes") setTaxesMounted(true);
   }, []);
@@ -315,10 +311,11 @@ const PaymentEntryModal: React.FC<Props> = ({
               <button
                 key={t.key}
                 onClick={() => goToTab(t.key)}
-                className={`py-3 text-sm font-medium flex items-center gap-2 transition-colors ${activeTab === t.key
+                className={`py-3 text-sm font-medium flex items-center gap-2 transition-colors ${
+                  activeTab === t.key
                     ? "text-primary border-b-2 border-primary"
                     : "text-muted hover:text-main"
-                  }`}
+                }`}
               >
                 <t.icon size={15} />
                 {t.label}
@@ -348,7 +345,7 @@ const PaymentEntryModal: React.FC<Props> = ({
 
         <div className="flex flex-1 overflow-hidden">
           <div className="flex-1 overflow-auto p-6">
-            {/* ── Details tab — always mounted, shown/hidden via CSS ── */}
+            {/* ── Details tab ── */}
             <div className={activeTab === "details" ? "block" : "hidden"}>
               <PaymentDetailsTab
                 form={form}
@@ -363,23 +360,17 @@ const PaymentEntryModal: React.FC<Props> = ({
               />
             </div>
 
-            {/* ── Invoices tab — lazy-mounted once, then shown/hidden via CSS ── */}
+            {/* ── Invoices tab ── */}
             {invoicesMounted && !isAdvanceFromPO && !isInternalTransfer && (
               <div className={activeTab === "invoices" ? "block" : "hidden"}>
                 <InvoiceList
-
                   form={invoiceListForm}
                   onFormChange={handleFormChange}
                 />
               </div>
             )}
 
-            {/*
-              FIX: Taxes tab — was using conditional rendering {activeTab === "taxes" && ...}
-              which UNMOUNTS the component every time you leave, losing any pending
-              unsaved input. Now follows the same lazy-mount + block/hidden pattern
-              as Details and Invoices tabs.
-            */}
+            {/* ── Taxes tab ── */}
             {taxesMounted && (
               <div className={activeTab === "taxes" ? "block" : "hidden"}>
                 <PaymentTaxesTab form={form} onFormChange={handleFormChange} />
@@ -387,7 +378,7 @@ const PaymentEntryModal: React.FC<Props> = ({
             )}
           </div>
 
-          {/* ── Persistent summary sidebar ── */}
+          {/* ── Summary sidebar ── */}
           <div className="w-56 flex-shrink-0 border-l border-[var(--border)] bg-card p-4 flex flex-col gap-3 overflow-auto rounded-lg mt-4">
             <h3 className="text-sm font-semibold text-main">Summary</h3>
 
@@ -400,7 +391,7 @@ const PaymentEntryModal: React.FC<Props> = ({
               </p>
             </div>
 
-            {/* ── Total Outstanding — shown only after party is selected ── */}
+            {/* Total Outstanding — only when party is selected */}
             {form?.partyName && (
               <div>
                 <p className="text-[11px] text-muted">Total Outstanding</p>
@@ -410,10 +401,11 @@ const PaymentEntryModal: React.FC<Props> = ({
                   </p>
                 ) : (
                   <p
-                    className={`text-sm font-semibold ${Number(form.totalOutstanding) > 0
+                    className={`text-sm font-semibold ${
+                      Number(form.totalOutstanding) > 0
                         ? "text-amber-500"
                         : "text-emerald-600"
-                      }`}
+                    }`}
                   >
                     {Number(form.totalOutstanding).toLocaleString()}
                   </p>
@@ -454,7 +446,8 @@ const PaymentEntryModal: React.FC<Props> = ({
               </p>
             </div>
 
-            {!isAdvanceFromPO && (
+            {/* ✅ FIX: Hide Invoices Settled / Allocated / Advance for Internal Transfer */}
+            {!isAdvanceFromPO && !isInternalTransfer && (
               <>
                 <div>
                   <p className="text-[11px] text-muted">Invoices Settled</p>
@@ -471,10 +464,11 @@ const PaymentEntryModal: React.FC<Props> = ({
                 <div>
                   <p className="text-[11px] text-muted">Advance</p>
                   <p
-                    className={`text-xs font-semibold ${advance > 0 && paymentAmount > 0
+                    className={`text-xs font-semibold ${
+                      advance > 0 && paymentAmount > 0
                         ? "text-amber-500"
                         : "text-emerald-600"
-                      }`}
+                    }`}
                   >
                     {advance.toLocaleString()}
                   </p>
@@ -492,6 +486,8 @@ const PaymentEntryModal: React.FC<Props> = ({
             <p className="text-[10px] text-muted leading-relaxed">
               {isAdvanceFromPO
                 ? "This is an advance payment against the selected Purchase Order."
+                : isInternalTransfer
+                ? "This is an internal transfer between accounts."
                 : `Use "Allocate →" on the amount field to auto-settle invoices in FIFO order.`}
             </p>
           </div>
