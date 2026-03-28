@@ -1,6 +1,5 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { getPaymentMethodLabel } from "../../../constants/invoice.constants";
 import { ERP_BASE } from "../../../config/api";
 
 // ── Palette — IDENTICAL to Proforma Invoice ──────────────────────────────────
