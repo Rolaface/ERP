@@ -219,15 +219,17 @@
    ========================================== */
 
 .shadow-primary-lg {
-  box-shadow: 0 8px 16px rgba(153, 101, 230, 0.3);
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 .shadow-primary-xl {
-  box-shadow: 0 10px 25px -5px rgba(153, 101, 230, 0.25);
+  box-shadow: 0 10px 25px -5px
+    color-mix(in srgb, var(--primary) 25%, transparent);
 }
 
 .shadow-primary-2xl {
-  box-shadow: 0 15px 30px -5px rgba(153, 101, 230, 0.35);
+  box-shadow: 0 15px 30px -5px
+    color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
 /* ==========================================
@@ -245,4 +247,42 @@
 /* Arrow translate on button hover */
 .group:hover .group-hover-translate-x {
   transform: translateX(0.25rem);
+}
+
+/* ==========================================
+   THEME INTEGRATION
+   ========================================== */
+
+.login-container {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+.login-card {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-md);
+}
+
+.login-title {
+  font-family: var(--font-heading);
+}
+
+.login-input {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.login-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.login-button {
+  background: var(--primary);
+  color: white;
 }
