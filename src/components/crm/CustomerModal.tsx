@@ -723,35 +723,69 @@ const CustomerModal: React.FC<{
                 </Tooltip>
 
                 {/* Email + Mobile - span full width as a separate row */}
-                <div className="col-span-4 grid grid-cols-4 gap-5">
-                  <Tooltip content={form.email || "email@example.com"}>
-                    <ModalInput
-                      label="Email"
-                      name="email"
-                      type="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      required
-                      placeholder="email@example.com"
-                      error={errors.email}
-                    />
-                  </Tooltip>
+               <div className="col-span-4 grid grid-cols-4 gap-5">
 
-                  {/* Mobile with code - matches ModalInput styling exactly */}
+  {/* Col 1: Email */}
+  <ModalInput
+    label="Email"
+    name="email"
+    type="email"
+    value={form.email}
+    onChange={handleChange}
+    required
+    placeholder="email@example.com"
+    error={errors.email}
+  />
 
-                  <div className="flex flex-col min-w-0">
-                    <span className="block text-[10px] font-medium text-main mb-1">
-                      Mobile <span className="text-danger">*</span>
-                    </span>
-                  </div>
-                  <ModalInput
-                    label="Customer Group"
-                    name="customerGroup"
-                    value={form.customerGroup}
-                    onChange={handleChange}
-                    placeholder="Enter customer group"
-                  />
-                </div>
+  {/* Col 2: Mobile */}
+  <div className="flex flex-col min-w-0">
+    <span className="block text-[10px] font-medium text-main mb-1">
+      Mobile <span className="text-danger">*</span>
+    </span>
+    <div className="flex">
+      <input
+        name="mobileCode"
+        value={form.mobileCode}
+        onChange={handleChange}
+        placeholder="+"
+        className={[
+          "w-[50px] py-1 px-2 border rounded-l text-[11px] text-main bg-card transition-all",
+          errors.mobile
+            ? "border-danger"
+            : "border-[var(--border)] hover:border-primary/40",
+        ].join(" ")}
+      />
+      <input
+        name="mobile"
+        type="tel"
+        value={form.mobile}
+        onChange={handleChange}
+        placeholder="Enter mobile number"
+        className={[
+          "flex-1 py-1 px-2 border-t border-b border-r rounded-r text-[11px] text-main bg-card transition-all",
+          errors.mobile
+            ? "border-danger"
+            : "border-[var(--border)] hover:border-primary/40",
+        ].join(" ")}
+      />
+    </div>
+    {errors.mobile && (
+      <span className="text-[10px] text-danger mt-1">{errors.mobile}</span>
+    )}
+  </div>
+
+  {/* Col 3: Customer Group */}
+  <ModalInput
+    label="Customer Group"
+    name="customerGroup"
+    value={form.customerGroup}
+    onChange={handleChange}
+    placeholder="Enter customer group"
+  />
+
+  {/* Col 4: Empty or future field */}
+
+</div>
               </div>
             </Card>
           )}
