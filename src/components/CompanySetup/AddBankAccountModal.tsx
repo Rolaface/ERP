@@ -1,4 +1,4 @@
-import React, { useEffect,useState } from "react";
+import React, { useEffect, useState } from "react";
 import Modal from "../ui/modal/modal";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
@@ -7,6 +7,7 @@ import { useBankAccLogic } from "./Usebankacclogic";
 import DatePickerInput from "../calendar/DatePickerInput";
 import SearchSelect2 from "../ui/modal/SearchSelect";
 import { BankAccount } from "../../types/BankAccount/bank";
+import { fetchCurrencyOptions } from "../../utils/currencyOptions";
 
 
 interface Props {
@@ -36,7 +37,7 @@ const AddBankAccountModal: React.FC<Props> = ({
   partyName,
   initialData,
   currency
- 
+
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const {
@@ -47,7 +48,6 @@ const AddBankAccountModal: React.FC<Props> = ({
     handleReset,
     banks,
     entities,
-    currencies,
     reportingAccounts,
     isCompany
   } = useBankAccLogic({ onSubmit, onClose});
@@ -216,22 +216,13 @@ const onSave = (e: any) => {
             <SearchSelect2
               label="Currency"
               value={form.currency}
-              disabled={!!defaultAccountFor} 
+              disabled={!!defaultAccountFor}
               onChange={(_: string, option: Option) =>
-                setForm((prev) => ({
-                  ...prev,
-                  currency: option?.value || "",
-                }))
+                setForm((prev) => ({ ...prev, currency: option?.value || "" }))
               }
-              fetchOptions={(q): Promise<Option[]> => {
-                const query = q.toLowerCase();
-                return Promise.resolve(
-                  currencies.filter((c) =>
-                    c.label.toLowerCase().includes(query),
-                  ),
-                );
-              }}
+              fetchOptions={fetchCurrencyOptions}
             />
+            
             <ModalInput
               label="Account Number"
               name="accountNumber"

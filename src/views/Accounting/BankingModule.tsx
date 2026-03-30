@@ -59,9 +59,9 @@ const Banking = () => {
   ];
 
   const stats = [
-    { label: "Total Balance", value: "₹46,50,000" },
-    { label: "Total Inflow (MTD)", value: "₹18,25,000" },
-    { label: "Total Outflow (MTD)", value: "₹12,40,000" },
+    { label: "Total Balance", value: "46,50,000" },
+    { label: "Total Inflow (MTD)", value: "18,25,000" },
+    { label: "Total Outflow (MTD)", value: "12,40,000" },
     { label: "Pending Reconciliation", value: "23" },
   ];
 
@@ -179,7 +179,7 @@ const Banking = () => {
             row.type === "Credit" ? "text-success" : "text-danger"
           }`}
         >
-          {row.type === "Debit" ? "-" : "+"}₹
+          {row.type === "Debit" ? "-" : "+"}
           {row.amount.toLocaleString()}
         </span>
       ),
@@ -227,7 +227,7 @@ const Banking = () => {
             <p className="font-semibold text-main">{acc.name}</p>
             <p className="text-xs text-muted font-mono">{acc.number}</p>
             <p className="text-xl font-bold text-main mt-3">
-              ₹{acc.balance.toLocaleString()}
+              {acc.balance.toLocaleString()}
             </p>
           </div>
         ))}
@@ -322,15 +322,15 @@ const Banking = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-success rounded-lg p-4 text-center">
             <p className="text-xs">Total Inflow</p>
-            <p className="text-xl font-bold">₹18.25L</p>
+            <p className="text-xl font-bold">18.25L</p>
           </div>
           <div className="bg-danger rounded-lg p-4 text-center">
             <p className="text-xs">Total Outflow</p>
-            <p className="text-xl font-bold">₹12.40L</p>
+            <p className="text-xl font-bold">12.40L</p>
           </div>
           <div className="bg-info rounded-lg p-4 text-center">
             <p className="text-xs">Net Cash Flow</p>
-            <p className="text-xl font-bold">₹5.85L</p>
+            <p className="text-xl font-bold">5.85L</p>
           </div>
         </div>
       </div>

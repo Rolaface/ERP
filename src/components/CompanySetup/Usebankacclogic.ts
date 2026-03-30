@@ -36,7 +36,6 @@ export const useBankAccLogic = ({ onSubmit,onClose  }: any) => {
 
   const [banks, setBanks] = useState<Option[]>([]);
   const [entities, setEntities] = useState<Option[]>([]);
-  const [currencies, setCurrencies] = useState<Option[]>([]);
   const [reportingAccounts, setReportingAccounts] = useState<Option[]>([]);
 
   const isCompany = form.accountFor === "Company";
@@ -105,17 +104,7 @@ export const useBankAccLogic = ({ onSubmit,onClose  }: any) => {
     })();
   }, [form.accountFor]);
 
-  // Load currencies dropdown
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getBankAccounts("Currency");
-        setCurrencies(Array.isArray(data) ? data : []);
-      } catch {
-        showApiError("Failed to load currencies");
-      }
-    })();
-  }, []);
+
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -221,7 +210,6 @@ export const useBankAccLogic = ({ onSubmit,onClose  }: any) => {
     handleDateChange,
     handleSubmit,
     handleReset,
-    currencies,
     banks,
     entities,
     reportingAccounts,

@@ -206,7 +206,7 @@ const CustomerGroupModal: React.FC<Props> = ({
 
                 <input
                   className="form-input no-spinner"
-                  placeholder="₹ 0.00"
+                  placeholder=" 0.00"
                   value={row.limit}
                   onChange={(e) =>
                     updateCredit(i, "limit", e.target.value)

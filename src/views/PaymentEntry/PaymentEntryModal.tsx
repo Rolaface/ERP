@@ -118,8 +118,12 @@ function buildPayload(
 
 function validateForm(form: Record<string, any>): string | null {
   if (!form?.paymentType) return "Payment Type is required.";
-  if (!form?.partyType) return "Party Type is required.";
-  if (!form?.partyName) return "Party Name is required.";
+
+  const isInternalTransfer = form.paymentType === "Internal Transfer";
+
+  if (!isInternalTransfer && !form?.partyType) return "Party Type is required.";
+  if (!isInternalTransfer && !form?.partyName) return "Party Name is required.";
+
   if (!form?.date) return "Payment Date is required.";
   if (!form?.mode) return "Mode of Payment is required.";
   if (!form?.glFrom) return "Account (GL) — Paid From is required.";
@@ -148,9 +152,12 @@ const PaymentEntryModal: React.FC<Props> = ({
 
   const isAdvanceFromPO = false;
 
-  const visibleTabs = isAdvanceFromPO
-    ? ALL_TABS.filter((t) => t.key !== "invoices")
-    : ALL_TABS;
+  const isInternalTransfer = form?.paymentType === "Internal Transfer";
+
+  const visibleTabs =
+    isAdvanceFromPO || isInternalTransfer
+      ? ALL_TABS.filter((t) => t.key !== "invoices")
+      : ALL_TABS;
 
   // ── Reset on open ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -308,11 +315,10 @@ const PaymentEntryModal: React.FC<Props> = ({
               <button
                 key={t.key}
                 onClick={() => goToTab(t.key)}
-                className={`py-3 text-sm font-medium flex items-center gap-2 transition-colors ${
-                  activeTab === t.key
+                className={`py-3 text-sm font-medium flex items-center gap-2 transition-colors ${activeTab === t.key
                     ? "text-primary border-b-2 border-primary"
                     : "text-muted hover:text-main"
-                }`}
+                  }`}
               >
                 <t.icon size={15} />
                 {t.label}
@@ -358,9 +364,10 @@ const PaymentEntryModal: React.FC<Props> = ({
             </div>
 
             {/* ── Invoices tab — lazy-mounted once, then shown/hidden via CSS ── */}
-            {invoicesMounted && !isAdvanceFromPO && (
+            {invoicesMounted && !isAdvanceFromPO && !isInternalTransfer && (
               <div className={activeTab === "invoices" ? "block" : "hidden"}>
                 <InvoiceList
+
                   form={invoiceListForm}
                   onFormChange={handleFormChange}
                 />
@@ -392,6 +399,27 @@ const PaymentEntryModal: React.FC<Props> = ({
                   : "—"}
               </p>
             </div>
+
+            {/* ── Total Outstanding — shown only after party is selected ── */}
+            {form?.partyName && (
+              <div>
+                <p className="text-[11px] text-muted">Total Outstanding</p>
+                {form?.totalOutstanding == null ? (
+                  <p className="text-[11px] text-muted animate-pulse">
+                    Loading…
+                  </p>
+                ) : (
+                  <p
+                    className={`text-sm font-semibold ${Number(form.totalOutstanding) > 0
+                        ? "text-amber-500"
+                        : "text-emerald-600"
+                      }`}
+                  >
+                    {Number(form.totalOutstanding).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div>
               <p className="text-[11px] text-muted">Payment</p>
@@ -443,11 +471,10 @@ const PaymentEntryModal: React.FC<Props> = ({
                 <div>
                   <p className="text-[11px] text-muted">Advance</p>
                   <p
-                    className={`text-xs font-semibold ${
-                      advance > 0 && paymentAmount > 0
+                    className={`text-xs font-semibold ${advance > 0 && paymentAmount > 0
                         ? "text-amber-500"
                         : "text-emerald-600"
-                    }`}
+                      }`}
                   >
                     {advance.toLocaleString()}
                   </p>

@@ -354,7 +354,7 @@ const handleSubmit = async () => {
             className="text-main"
             style={{ fontSize: 15, fontWeight: 700, margin: "0 0 14px" }}
           >
-            ₹{amountDue.toLocaleString("en-IN")}
+            {amountDue.toLocaleString("en-IN")}
           </p>
 
           {/* Payment Amount */}
@@ -365,7 +365,7 @@ const handleSubmit = async () => {
             className="text-main"
             style={{ fontSize: 15, fontWeight: 700, margin: "0 0 14px" }}
           >
-            ₹{Number(form.amount || 0).toLocaleString("en-IN")}
+            {Number(form.amount || 0).toLocaleString("en-IN")}
           </p>
 
           <div className="border-t border-theme" style={{ marginBottom: 14 }} />
@@ -396,7 +396,7 @@ const handleSubmit = async () => {
                 letterSpacing: "-.01em",
               }}
             >
-              ₹{balanceAfterPayment.toLocaleString("en-IN")}
+              {balanceAfterPayment.toLocaleString("en-IN")}
             </p>
           </div>
         </div>

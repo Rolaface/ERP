@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useCallback } from "react";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { MoveRight, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
+import { useCompanyStore } from "../../store/companyStore";
 import dayjs from "dayjs";
 import {
   usePaymentModes,
@@ -35,6 +36,7 @@ const PARTY_FILLED_FIELDS = {
   currencyTo: "",
   companyBankAccount: "",
   partyBankAccount: "",
+  totalOutstanding: null,
 };
 
 const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
@@ -47,7 +49,11 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   partyFetchKeyRef,
 }) => {
   const isMountedRef = useRef(false);
-  const { options: modeOptions, isLoading: modesLoading, fetchModes } = usePaymentModes();
+  const {
+    options: modeOptions,
+    isLoading: modesLoading,
+    fetchModes,
+  } = usePaymentModes();
   const { fetchPartyDetails, isLoadingDetails } = usePartyDetails();
   const {
     companyBankOptions,
@@ -62,12 +68,19 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     clearPartyBanks,
   } = usePartyBankAccounts();
 
+
   const paymentType =
     (form.paymentType as "Pay" | "Receive" | "Internal Transfer") || "Pay";
   const partyType =
-    (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") || "";
+    (form.partyType as "Supplier" | "Customer" | "Shareholder" | "Employee") ||
+    "";
+  const isInternalTransfer = paymentType === "Internal Transfer";
 
-  const { partyOptions, isLoadingParties, fetchParties } = usePartyOptions(partyType);
+  
+const companyBaseCurrency = useCompanyStore((s) => s.baseCurrency);
+
+  const { partyOptions, isLoadingParties, fetchParties } =
+    usePartyOptions(partyType);
 
   // ── selectedMode: find full option object for auto-fill ──────────────────
   const selectedMode = useMemo(
@@ -85,26 +98,26 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   } = useLedgerOptions(paymentType, partyType);
 
   // ── Clear GL + mode when paymentType or partyType changes ─────────────────
-const prevRef = useRef({ paymentType, partyType });
+  const prevRef = useRef({ paymentType, partyType });
 
-useEffect(() => {
-  const prev = prevRef.current;
+  useEffect(() => {
+    const prev = prevRef.current;
 
-  if (
-    prev.paymentType !== paymentType ||
-    prev.partyType !== partyType
-  ) {
-    onFormChange({
-      glFrom: "",
-      currencyFrom: "",
-      glTo: "",
-      currencyTo: "",
-      mode: "",
-    });
-  }
+    if (prev.paymentType !== paymentType || prev.partyType !== partyType) {
+      onFormChange({
+        glFrom: "",
+        currencyFrom: "",
+        glTo: "",
+        currencyTo: "",
+        mode: "",
+        ...(paymentType === "Internal Transfer"
+          ? { partyType: "", partyName: "", partyId: "", allocations: {}, selectedInvoices: [], allocatedAmount: 0 }
+          : {}),
+      });
+    }
 
-  prevRef.current = { paymentType, partyType };
-}, [paymentType, partyType]);
+    prevRef.current = { paymentType, partyType };
+  }, [paymentType, partyType]);
   // ── Hook 9: Exchange rate ─────────────────────────────────────────────────
   const currencyFrom = form.currencyFrom ?? "";
   const currencyTo = form.currencyTo ?? "";
@@ -119,7 +132,7 @@ useEffect(() => {
     currencyFrom,
     currencyTo,
     date,
-    form.companyDefaultCurrency ?? "",
+     companyBaseCurrency,
   );
 
   // Sync exchange rate result into form state
@@ -139,70 +152,77 @@ useEffect(() => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Mode of payment → auto-fill glFrom (Pay) or glTo (Receive) ───────────
- useEffect(() => {
-  // reset ONLY when user clears mode manually
-  if (!form.mode) {
-    if (paymentType === "Pay") {
-      onFormChange({ glFrom: "", currencyFrom: "" });
-    } else if (paymentType === "Receive") {
-      onFormChange({ glTo: "", currencyTo: "" });
-    } else {
-      onFormChange({
-        glFrom: "",
-        currencyFrom: "",
-        glTo: "",
-        currencyTo: "",
-      });
+  useEffect(() => {
+    if (!form.mode) {
+      if (paymentType === "Pay") {
+        onFormChange({ glFrom: "", currencyFrom: "" });
+      } else if (paymentType === "Receive") {
+        onFormChange({ glTo: "", currencyTo: "" });
+      } else {
+        onFormChange({
+          glFrom: "",
+          currencyFrom: "",
+          glTo: "",
+          currencyTo: "",
+        });
+      }
+      return;
     }
-    return;
-  }
 
-  // ignore temporary null (loading case)
-  if (!selectedMode) return;
+    // ignore temporary null (loading case)
+    if (!selectedMode) return;
 
-  // normal autofill
+    // normal autofill
   if (paymentType === "Pay") {
-    onFormChange({
-      glFrom: selectedMode.defaultAccount ?? "",
-      currencyFrom: selectedMode.currency ?? "",
-    });
-  } else if (paymentType === "Receive") {
-    onFormChange({
-      glTo: selectedMode.defaultAccount ?? "",
-      currencyTo: selectedMode.currency ?? "",
-    });
-  }
-}, [selectedMode, paymentType, form.mode]);// eslint-disable-line react-hooks/exhaustive-deps
+  onFormChange({
+    glFrom: selectedMode.defaultAccount ?? "",
+    currencyFrom: selectedMode.currency ?? "",
+  });
+} else if (paymentType === "Receive") {
+  onFormChange({
+    glTo: selectedMode.defaultAccount ?? "",
+    currencyTo: selectedMode.currency ?? "",
+  });
+} else if (paymentType === "Internal Transfer") {
+  // Internal Transfer: defaultAccount → Paid From (glFrom) only
+  // glTo user manually select karega
+  onFormChange({
+    glFrom: selectedMode.defaultAccount ?? "",
+    currencyFrom: selectedMode.currency ?? "",
+  });
+}
+  }, [selectedMode, paymentType, form.mode]); 
 
   // ── Party change → auto-fill GL + bank accounts ───────────────────────────
   // LOGIC:
   //   Pay:     Paid From = company bank,  Paid To = party bank
   //   Receive: Paid From = party bank,    Paid To = company bank
-const requestRef = useRef(0);
+  const requestRef = useRef(0);
 
-useEffect(() => {
-  const partyKey = form.partyId || form.partyName;
-  if (
-    !partyKey ||
-    (form.partyType !== "Customer" && form.partyType !== "Supplier")
-  )
-    return;
-  
- const stableKey = `${form.partyType}::${partyKey}::${form.paymentType}`;
-  if (
-  partyFetchKeyRef.current === stableKey &&
-  form.glFrom &&
-  form.glTo
-) return;
-  partyFetchKeyRef.current = stableKey;
+  useEffect(() => {
+    const partyKey = form.partyId || form.partyName;
+    if (
+      !partyKey ||
+      (form.partyType !== "Customer" && form.partyType !== "Supplier")
+    )
+      return;
 
-  const requestId = ++requestRef.current;
+    const stableKey = `${form.partyType}::${partyKey}::${form.paymentType}`;
+    if (partyFetchKeyRef.current === stableKey && form.glFrom && form.glTo)
+      return;
+    partyFetchKeyRef.current = stableKey;
+
+    const requestId = ++requestRef.current;
 
     const run = async () => {
       const [details] = await Promise.all([
         fetchPartyDetails(
           form.partyName,
-          form.partyType as "Supplier" | "Customer" | "Employee" | "Shareholder"
+          form.partyType as
+          | "Supplier"
+          | "Customer"
+          | "Employee"
+          | "Shareholder",
         ),
         fetchCompanyBanks(),
         fetchPartyBanks(form.partyType, form.partyName),
@@ -216,8 +236,9 @@ useEffect(() => {
         // Pay: Paid From = company, Paid To = party
         onFormChange({
           partyName: details.partyName,
-          companyBankAccount: details.companyBankAccount,  // → Paid From bank
-          partyBankAccount: details.partyBankAccount,      // → Paid To bank
+          totalOutstanding: details.total_outstanding_amount ?? null,
+          companyBankAccount: details.companyBankAccount, // → Paid From bank
+          partyBankAccount: details.partyBankAccount, // → Paid To bank
           companyDefaultCurrency: details.companyDefaultCurrency,
           glFrom: details.companyLedgerAccount,
           currencyFrom: details.companyLedgerCurrency,
@@ -228,8 +249,9 @@ useEffect(() => {
         // Receive: Paid From = party, Paid To = company
         onFormChange({
           partyName: details.partyName,
-          companyBankAccount: details.companyBankAccount,  // stored for reference
-          partyBankAccount: details.partyBankAccount,      // stored for reference
+          totalOutstanding: details.total_outstanding_amount ?? null,
+          companyBankAccount: details.companyBankAccount, // stored for reference
+          partyBankAccount: details.partyBankAccount, // stored for reference
           companyDefaultCurrency: details.companyDefaultCurrency,
           glFrom: details.partyLedgerAccount,
           currencyFrom: details.partyAccountCurrency,
@@ -257,72 +279,76 @@ useEffect(() => {
     clearPartyBanks();
   };
 
-  const handlePartyNameSelect = useCallback(async (
-    _: string,
-    option: PartyOption | null,
-  ) => {
-    if (!option?.value) {
-      onFormChange({
-        ...PARTY_FILLED_FIELDS,
-        allocatedAmount: 0,
-        selectedInvoices: [],
-        allocations: {},
-      });
-      clearCompanyBanks();
-      clearPartyBanks();
-      return;
-    }
+  const handlePartyNameSelect = useCallback(
+    async (_: string, option: PartyOption | null) => {
+      if (!option?.value) {
+        onFormChange({
+          ...PARTY_FILLED_FIELDS,
+          allocatedAmount: 0,
+          selectedInvoices: [],
+          allocations: {},
+        });
+        clearCompanyBanks();
+        clearPartyBanks();
+        return;
+      }
 
-    onFormChange({ partyName: option.label });
+      onFormChange({ partyName: option.label });
 
-    if (partyType !== "Supplier" && partyType !== "Customer") return;
+      if (partyType !== "Supplier" && partyType !== "Customer") return;
 
-    const [details] = await Promise.all([
-      fetchPartyDetails(option.value, partyType),
-      fetchCompanyBanks(),
-      fetchPartyBanks(partyType, option.value),
-    ]);
+      const [details] = await Promise.all([
+        fetchPartyDetails(option.value, partyType),
+        fetchCompanyBanks(),
+        fetchPartyBanks(partyType, option.value),
+      ]);
 
-    if (!details) return;
+      if (!details) return;
 
-    const base = { partyName: details.partyName || option.label };
-    const companyDefaultCurrency = { companyDefaultCurrency: details.companyDefaultCurrency };
+      const base = { partyName: details.partyName || option.label };
+      const companyDefaultCurrency = {
+        companyDefaultCurrency: details.companyDefaultCurrency,
+      };
 
-    if (paymentType === "Pay") {
-      // Pay: Paid From = company bank, Paid To = party bank
-      onFormChange({
-        ...base,
-        ...companyDefaultCurrency,
-        companyBankAccount: details.companyBankAccount,  // → Paid From bank
-        partyBankAccount: details.partyBankAccount,      // → Paid To bank
-        glFrom: details.companyLedgerAccount,
-        currencyFrom: details.companyLedgerCurrency,
-        glTo: details.partyLedgerAccount,
-        currencyTo: details.partyAccountCurrency,
-      });
-    } else {
-      // Receive: Paid From = party bank, Paid To = company bank
-      onFormChange({
-        ...base,
-        ...companyDefaultCurrency,
-        companyBankAccount: details.companyBankAccount,  // stored for reference
-        partyBankAccount: details.partyBankAccount,      // stored for reference
-        glFrom: details.partyLedgerAccount,
-        currencyFrom: details.partyAccountCurrency,
-        glTo: details.companyLedgerAccount,
-        currencyTo: details.companyLedgerCurrency,
-      });
-    }
-  }, [
-    onFormChange,
-    partyType,
-    paymentType,
-    fetchPartyDetails,
-    fetchCompanyBanks,
-    fetchPartyBanks,
-    clearCompanyBanks,
-    clearPartyBanks,
-  ]);
+      if (paymentType === "Pay") {
+        // Pay: Paid From = company bank, Paid To = party bank
+        onFormChange({
+          ...base,
+          ...companyDefaultCurrency,
+          totalOutstanding: details.total_outstanding_amount ?? null,
+          companyBankAccount: details.companyBankAccount, // → Paid From bank
+          partyBankAccount: details.partyBankAccount, // → Paid To bank
+          glFrom: details.companyLedgerAccount,
+          currencyFrom: details.companyLedgerCurrency,
+          glTo: details.partyLedgerAccount,
+          currencyTo: details.partyAccountCurrency,
+        });
+      } else {
+        // Receive: Paid From = party bank, Paid To = company bank
+        onFormChange({
+          ...base,
+          ...companyDefaultCurrency,
+          totalOutstanding: details.total_outstanding_amount ?? null,
+          companyBankAccount: details.companyBankAccount, // stored for reference
+          partyBankAccount: details.partyBankAccount, // stored for reference
+          glFrom: details.partyLedgerAccount,
+          currencyFrom: details.partyAccountCurrency,
+          glTo: details.companyLedgerAccount,
+          currencyTo: details.companyLedgerCurrency,
+        });
+      }
+    },
+    [
+      onFormChange,
+      partyType,
+      paymentType,
+      fetchPartyDetails,
+      fetchCompanyBanks,
+      fetchPartyBanks,
+      clearCompanyBanks,
+      clearPartyBanks,
+    ],
+  );
 
   const handleAmountToChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -391,36 +417,68 @@ useEffect(() => {
 
   const handleFromBankFetchOptions = useCallback(
     async (q: string) => {
-      if (paymentType === "Internal Transfer") return [];
+
       if (paymentType === "Pay") {
         // Paid From = company bank
         const fresh = await fetchCompanyBanks(q || undefined);
-        return (fresh ?? []).map((o) => ({ label: o.label, value: o.value }));
+        return (fresh ?? []).map((o) => ({
+          label: `${o.label} (${o.currency ?? ""})`,
+          value: o.value,
+        }));
       } else {
         // Receive: Paid From = party bank
         if (!form.partyType || !form.partyName) return [];
-        const fresh = await fetchPartyBanks(form.partyType, form.partyName, q || undefined);
-        return (fresh ?? []).map((o) => ({ label: o.label, value: o.value }));
+        const fresh = await fetchPartyBanks(
+          form.partyType,
+          form.partyName,
+          q || undefined,
+        );
+        return (fresh ?? []).map((o) => ({
+          label: `${o.label} (${o.currency ?? ""})`,
+          value: o.value,
+        }));
       }
     },
-    [paymentType, fetchCompanyBanks, fetchPartyBanks, form.partyType, form.partyName],
+    [
+      paymentType,
+      fetchCompanyBanks,
+      fetchPartyBanks,
+      form.partyType,
+      form.partyName,
+    ],
   );
 
   const handleToBankFetchOptions = useCallback(
     async (q: string) => {
-      if (paymentType === "Internal Transfer") return [];
+
       if (paymentType === "Pay") {
         // Paid To = party bank
         if (!form.partyType || !form.partyName) return [];
-        const fresh = await fetchPartyBanks(form.partyType, form.partyName, q || undefined);
-        return (fresh ?? []).map((o) => ({ label: o.label, value: o.value }));
+        const fresh = await fetchPartyBanks(
+          form.partyType,
+          form.partyName,
+          q || undefined,
+        );
+        return (fresh ?? []).map((o) => ({
+          label: `${o.label} (${o.currency ?? ""})`,
+          value: o.value,
+        }));
       } else {
         // Receive: Paid To = company bank
         const fresh = await fetchCompanyBanks(q || undefined);
-        return (fresh ?? []).map((o) => ({ label: o.label, value: o.value }));
+        return (fresh ?? []).map((o) => ({
+          label: `${o.label} (${o.currency ?? ""})`,
+          value: o.value
+        }));
       }
     },
-    [paymentType, fetchCompanyBanks, fetchPartyBanks, form.partyType, form.partyName],
+    [
+      paymentType,
+      fetchCompanyBanks,
+      fetchPartyBanks,
+      form.partyType,
+      form.partyName,
+    ],
   );
 
   // ── Bank account selection handlers — swapped based on paymentType ─────────
@@ -429,63 +487,73 @@ useEffect(() => {
   // Receive: From bank selection updates partyBankAccount + glFrom + currencyFrom
   //          To bank selection updates companyBankAccount + glTo + currencyTo
 
-  const handleFromBankChange = useCallback((_: string, option: any) => {
-    if (!option?.value) {
-      if (paymentType === "Pay") {
-        onFormChange({ companyBankAccount: "" });
-      } else {
-        onFormChange({ partyBankAccount: "" });
+  const handleFromBankChange = useCallback(
+    (_: string, option: any) => {
+      if (!option?.value) {
+        if (paymentType === "Pay") {
+          onFormChange({ companyBankAccount: "" });
+        } else {
+          onFormChange({ partyBankAccount: "" });
+        }
+        return;
       }
-      return;
-    }
 
-    if (paymentType === "Pay") {
-      // From = company bank pool
-      const selected = companyBankOptions.find((o) => o.value === option.value);
-      onFormChange({
-        companyBankAccount: option.value,
-        glFrom: selected?.ledgerAccount ?? "",
-        currencyFrom: selected?.currency ?? "",
-      });
-    } else {
-      // Receive: From = party bank pool
-      const selected = partyBankOptions.find((o) => o.value === option.value);
-      onFormChange({
-        partyBankAccount: option.value,
-        glFrom: selected?.ledgerAccount ?? "",
-        currencyFrom: selected?.currency ?? "",
-      });
-    }
-  }, [paymentType, onFormChange, companyBankOptions, partyBankOptions]);
-
-  const handleToBankChange = useCallback((_: string, option: any) => {
-    if (!option?.value) {
       if (paymentType === "Pay") {
-        onFormChange({ partyBankAccount: "" });
+        // From = company bank pool
+        const selected = companyBankOptions.find(
+          (o) => o.value === option.value,
+        );
+        onFormChange({
+          companyBankAccount: option.value,
+          glFrom: selected?.ledgerAccount ?? "",
+          currencyFrom: selected?.currency ?? "",
+        });
       } else {
-        onFormChange({ companyBankAccount: "" });
+        // Receive: From = party bank pool
+        const selected = partyBankOptions.find((o) => o.value === option.value);
+        onFormChange({
+          partyBankAccount: option.value,
+          glFrom: selected?.ledgerAccount ?? "",
+          currencyFrom: selected?.currency ?? "",
+        });
       }
-      return;
-    }
+    },
+    [paymentType, onFormChange, companyBankOptions, partyBankOptions],
+  );
 
-    if (paymentType === "Pay") {
-      // To = party bank pool
-      const selected = partyBankOptions.find((o) => o.value === option.value);
-      onFormChange({
-        partyBankAccount: option.value,
-        glTo: selected?.ledgerAccount ?? "",
-        currencyTo: selected?.currency ?? "",
-      });
-    } else {
-      // Receive: To = company bank pool
-      const selected = companyBankOptions.find((o) => o.value === option.value);
-      onFormChange({
-        companyBankAccount: option.value,
-        glTo: selected?.ledgerAccount ?? "",
-        currencyTo: selected?.currency ?? "",
-      });
-    }
-  }, [paymentType, onFormChange, companyBankOptions, partyBankOptions]);
+  const handleToBankChange = useCallback(
+    (_: string, option: any) => {
+      if (!option?.value) {
+        if (paymentType === "Pay") {
+          onFormChange({ partyBankAccount: "" });
+        } else {
+          onFormChange({ companyBankAccount: "" });
+        }
+        return;
+      }
+
+      if (paymentType === "Pay") {
+        // To = party bank pool
+        const selected = partyBankOptions.find((o) => o.value === option.value);
+        onFormChange({
+          partyBankAccount: option.value,
+          glTo: selected?.ledgerAccount ?? "",
+          currencyTo: selected?.currency ?? "",
+        });
+      } else {
+        // Receive: To = company bank pool
+        const selected = companyBankOptions.find(
+          (o) => o.value === option.value,
+        );
+        onFormChange({
+          companyBankAccount: option.value,
+          glTo: selected?.ledgerAccount ?? "",
+          currencyTo: selected?.currency ?? "",
+        });
+      }
+    },
+    [paymentType, onFormChange, companyBankOptions, partyBankOptions],
+  );
 
   // ── GL account handlers ───────────────────────────────────────────────────
   const handleGlFromFetchOptions = useCallback(
@@ -504,39 +572,52 @@ useEffect(() => {
     [fetchToOptions],
   );
 
-  const handleGlFromChange = useCallback((_: string, option: any) => {
-    const selected = ledgerFromOptions.find((o) => o.value === option.value);
-    onFormChange({
-      glFrom: option.value ?? "",
-      currencyFrom: selected?.currency ?? "",
-    });
-  }, [onFormChange, ledgerFromOptions]);
+  const handleGlFromChange = useCallback(
+    (_: string, option: any) => {
+      const selected = ledgerFromOptions.find((o) => o.value === option.value);
+      onFormChange({
+        glFrom: option.value ?? "",
+        currencyFrom: selected?.currency ?? "",
+      });
+    },
+    [onFormChange, ledgerFromOptions],
+  );
 
-  const handleGlToChange = useCallback((_: string, option: any) => {
-    const selected = ledgerToOptions.find((o) => o.value === option.value);
-    onFormChange({
-      glTo: option.value ?? "",
-      currencyTo: selected?.currency ?? "",
-    });
-  }, [onFormChange, ledgerToOptions]);
+  const handleGlToChange = useCallback(
+    (_: string, option: any) => {
+      const selected = ledgerToOptions.find((o) => o.value === option.value);
+      onFormChange({
+        glTo: option.value ?? "",
+        currencyTo: selected?.currency ?? "",
+      });
+    },
+    [onFormChange, ledgerToOptions],
+  );
 
-  const handleModeChange = useCallback((_: string, option: any) => {
-    onFormChange({ mode: option?.value ?? "" });
-  }, [onFormChange]);
+  const handleModeChange = useCallback(
+    (_: string, option: any) => {
+      onFormChange({ mode: option?.value ?? "" });
+    },
+    [onFormChange],
+  );
 
   // ── Derive which form field maps to which side for bank account display ───
   // Pay:     Paid From bank = companyBankAccount, Paid To bank = partyBankAccount
   // Receive: Paid From bank = partyBankAccount,   Paid To bank = companyBankAccount
-  const fromBankValue = paymentType === "Receive"
-    ? (form.partyBankAccount ?? "")
-    : (form.companyBankAccount ?? "");
+  const fromBankValue =
+    paymentType === "Receive"
+      ? (form.partyBankAccount ?? "")
+      : (form.companyBankAccount ?? "");
 
-  const toBankValue = paymentType === "Receive"
-    ? (form.companyBankAccount ?? "")
-    : (form.partyBankAccount ?? "");
+  const toBankValue =
+    paymentType === "Receive"
+      ? (form.companyBankAccount ?? "")
+      : (form.partyBankAccount ?? "");
 
-  const isFromBankLoading = paymentType === "Receive" ? isLoadingPartyBanks : isLoadingCompanyBanks;
-  const isToBankLoading   = paymentType === "Receive" ? isLoadingCompanyBanks : isLoadingPartyBanks;
+  const isFromBankLoading =
+    paymentType === "Receive" ? isLoadingPartyBanks : isLoadingCompanyBanks;
+  const isToBankLoading =
+    paymentType === "Receive" ? isLoadingCompanyBanks : isLoadingPartyBanks;
 
   return (
     <div className="space-y-5">
@@ -571,14 +652,14 @@ useEffect(() => {
           options={[
             { label: "Pay", value: "Pay" },
             { label: "Receive", value: "Receive" },
-            { label: "Internal Transfer", value: "Internal Transfer" },
+            {label: "Internal Transfer", value: "Internal Transfer"}
           ]}
         />
         <ModalSelect
           label="Party Type"
           name="partyType"
           value={form.partyType}
-          disabled={islocked || isPartyLocked}
+          disabled={islocked || isPartyLocked || isInternalTransfer}
           onChange={handlePartyTypeChange}
           options={[
             { label: "Supplier", value: "Supplier" },
@@ -590,7 +671,7 @@ useEffect(() => {
         <SearchSelect2
           label="Name"
           value={form.partyName ?? ""}
-          disabled={islocked || isPartyLocked || !partyType || isLoadingParties}
+          disabled={islocked || isPartyLocked || !partyType || isLoadingParties || isInternalTransfer}
           onChange={handlePartyNameSelect}
           fetchOptions={handlePartyFetchOptions}
         />
@@ -648,17 +729,20 @@ useEffect(() => {
 
           {/* LEFT — Paid From */}
           <div className="border-r border-[var(--border)] px-5 py-4 space-y-3">
-            <SearchSelect2
-              label="Bank Account"
-              value={fromBankValue}
-              disabled={
-                paymentType === "Internal Transfer" ||
-                !form.partyName ||
-                isFromBankLoading
-              }
-              onChange={handleFromBankChange}
-              fetchOptions={handleFromBankFetchOptions}
-            />
+
+            {!isInternalTransfer && (
+              <SearchSelect2
+                label="Bank Account"
+                value={fromBankValue}
+                disabled={
+
+                  !form.partyName ||
+                  isFromBankLoading
+                }
+                onChange={handleFromBankChange}
+                fetchOptions={handleFromBankFetchOptions}
+              />
+            )}
             <div className="grid grid-cols-[1fr_100px] gap-2">
               <SearchSelect2
                 label="Account (GL)"
@@ -678,17 +762,19 @@ useEffect(() => {
 
           {/* RIGHT — Paid To */}
           <div className="px-5 py-4 space-y-3">
-            <SearchSelect2
-              label="Bank Account"
-              value={toBankValue}
-              disabled={
-                paymentType === "Internal Transfer" ||
-                !form.partyName ||
-                isToBankLoading
-              }
-              onChange={handleToBankChange}
-              fetchOptions={handleToBankFetchOptions}
-            />
+            {!isInternalTransfer && (
+              <SearchSelect2
+                label="Bank Account"
+                value={toBankValue}
+                disabled={
+
+                  !form.partyName ||
+                  isToBankLoading
+                }
+                onChange={handleToBankChange}
+                fetchOptions={handleToBankFetchOptions}
+              />
+            )}
             <div className="grid grid-cols-[1fr_100px] gap-2">
               <SearchSelect2
                 label="Account (GL)"

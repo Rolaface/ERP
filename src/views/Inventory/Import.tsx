@@ -6,7 +6,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { getAllImportItems } from "../../api/importApi";
+// import { getAllImportItems } from "../../api/importApi";
 
 import ViewImportModal from "../../components/inventory/ViewImportModal";
 import DeleteModal from "../../components/actionModal/DeleteModal";
@@ -33,13 +33,14 @@ interface ImportItemSummary {
 const Items: React.FC = () => {
   const [items, setItems] = useState<ImportItemSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+const [initialLoad, setInitialLoad] = useState(false);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [initialLoad, setInitialLoad] = useState(true);
+ 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ImportItemSummary | null>(
     null,
@@ -48,43 +49,43 @@ const Items: React.FC = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedImportId, setSelectedImportId] = useState<string | null>(null);
 
-  const fetchItems = async () => {
-    try {
-      setLoading(true);
-      const apiData = await getAllImportItems();
-      // Map API data to ImportItemSummary[]
-      const mapped = Array.isArray(apiData)
-        ? apiData.map((entry: any) => ({
-            id: entry.id || "",
-            itemName: entry.itemName || entry.item_name || "",
-            quantity: entry.quantity || "0",
-            originCountryCode:
-              entry.originCountryCode || entry.origin_country_code || "",
-            exportCountryCode:
-              entry.exportCountryCode || entry.export_country_code || "",
-            invoiceAmount: entry.invoiceAmount || entry.invoice_amount || 0,
-            invoiceCurrency:
-              entry.invoiceCurrency || entry.invoice_currency || "",
-            invoiceExchangeRate:
-              entry.invoiceExchangeRate || entry.invoice_exchange_rate || 0,
-          }))
-        : [];
-      setItems(mapped);
-      // Calculate pagination
-      setTotalItems(mapped.length);
-      setTotalPages(Math.ceil(mapped.length / pageSize));
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load import items");
-    } finally {
-      setLoading(false);
-      setInitialLoad(false);
-    }
-  };
+  // const fetchItems = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const apiData = await getAllImportItems();
+     
+  //     const mapped = Array.isArray(apiData)
+  //       ? apiData.map((entry: any) => ({
+  //           id: entry.id || "",
+  //           itemName: entry.itemName || entry.item_name || "",
+  //           quantity: entry.quantity || "0",
+  //           originCountryCode:
+  //             entry.originCountryCode || entry.origin_country_code || "",
+  //           exportCountryCode:
+  //             entry.exportCountryCode || entry.export_country_code || "",
+  //           invoiceAmount: entry.invoiceAmount || entry.invoice_amount || 0,
+  //           invoiceCurrency:
+  //             entry.invoiceCurrency || entry.invoice_currency || "",
+  //           invoiceExchangeRate:
+  //             entry.invoiceExchangeRate || entry.invoice_exchange_rate || 0,
+  //         }))
+  //       : [];
+  //     setItems(mapped);
+  //     // Calculate pagination
+  //     setTotalItems(mapped.length);
+  //     setTotalPages(Math.ceil(mapped.length / pageSize));
+  //   } catch (err) {
+  //     console.error(err);
+  //     toast.error("Failed to load import items");
+  //   } finally {
+  //     setLoading(false);
+  //     setInitialLoad(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
+  // useEffect(() => {
+  //   fetchItems();
+  // }, []);
 
   /*      HANDLERS
    */
@@ -123,6 +124,7 @@ const Items: React.FC = () => {
       setItemToDelete(null);
     }
   };
+  
 
   // const handleSaved = async () => {
   //   const wasEdit = !!editItem;
@@ -193,11 +195,27 @@ const Items: React.FC = () => {
   /*      RENDER
    */
 
+if (items.length === 0) {
+  return (
+    <div className="p-8 flex items-center justify-center h-[400px]">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold text-gray-700">
+          Coming Soon 🚧
+        </h2>
+        <p className="text-gray-500 mt-2">
+          Import items feature will be available soon.
+        </p>
+      </div>
+    </div>
+  );
+}
+
   return (
     <div className="p-8">
+      
       <Table
         loading={loading || initialLoad}
-        serverSide={false}
+        // serverSide={false}
         columns={columns}
         data={filteredItems}
         showToolbar
@@ -213,6 +231,7 @@ const Items: React.FC = () => {
           setPage(1);
         }}
         onPageChange={setPage}
+        
       />
 
       {/* VIEW MODAL */}
@@ -224,7 +243,7 @@ const Items: React.FC = () => {
             setSelectedImportId(null);
           }}
           importId={selectedImportId}
-          onSuccess={fetchItems}
+          // onSuccess={fetchItems}
         />
       )}
 

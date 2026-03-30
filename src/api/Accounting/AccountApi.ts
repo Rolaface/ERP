@@ -2,11 +2,10 @@ import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "../axiosInstance";
 import { API, ERP_BASE } from "../../config/api";
 import type { PLResponse } from "../../types/Accounting/ProfitLoss";
-import type {CFResponse} from "../../types/Accounting/Cashflow"
+import type { CFResponse } from "../../types/Accounting/Cashflow";
 const api = createAxiosInstance(ERP_BASE);
 
 export const AccountingAPI = API.accounting;
-
 
 export interface CreateCOAPayload {
   account_name: string;
@@ -22,7 +21,9 @@ export interface CreateCOAPayload {
   is_root: "false";
 }
 
-export async function createChartOfAccount(payload: CreateCOAPayload): Promise<any> {
+export async function createChartOfAccount(
+  payload: CreateCOAPayload,
+): Promise<any> {
   const resp: AxiosResponse = await api.post(AccountingAPI.createCOA, payload);
   return resp.data;
 }
@@ -30,7 +31,6 @@ export async function createChartOfAccount(payload: CreateCOAPayload): Promise<a
 /**
  * Get Chart of Accounts
  */
-
 
 export async function getChartOfAccounts(): Promise<any> {
   const resp: AxiosResponse = await api.get(AccountingAPI.getCOA);
@@ -48,7 +48,7 @@ export interface TrialBalanceFilters {
 }
 
 export async function getTrialBalance(
-  filters: TrialBalanceFilters
+  filters: TrialBalanceFilters,
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(AccountingAPI.getTB, {
     params: filters,
@@ -66,17 +66,13 @@ export interface BalanceSheetFilters {
   filter_based_on?: "Fiscal Year" | "Date Range";
 }
 export async function getBalanceSheet(
-  filters: BalanceSheetFilters
+  filters: BalanceSheetFilters,
 ): Promise<any> {
-  const resp: AxiosResponse = await api.get(
-    AccountingAPI.getBalanceSheet,
-    {
-      params: filters,
-    }
-  );
+  const resp: AxiosResponse = await api.get(AccountingAPI.getBalanceSheet, {
+    params: filters,
+  });
   return resp.data;
 }
-
 
 export interface ProfitLossFilters {
   mode?: "Fiscal Year" | "Date Range";
@@ -87,18 +83,86 @@ export interface ProfitLossFilters {
   to_fiscal_year?: number;
 }
 
-
 export async function getProfitAndLoss(
-  filters: ProfitLossFilters
+  filters: ProfitLossFilters,
 ): Promise<PLResponse> {
-  const resp: AxiosResponse<PLResponse> = await api.get(
-    AccountingAPI.getPL,
-    { params: filters }
-  );
+  const resp: AxiosResponse<PLResponse> = await api.get(AccountingAPI.getPL, {
+    params: filters,
+  });
 
   return resp.data;
 }
 
+export interface AccountsPayableFilters {
+  company?: string;
+  report_date?: string;
+
+  cost_center?: string;
+  payable_account?: string;
+
+  party_type?: string;
+  party?: string;
+  supplier_group?: string;
+
+  ageing_based_on?: "Due Date" | "Posting Date";
+  calculate_ageing_with?: "Report Date" | "Today Date";
+  range?: string;
+
+  group_by?: "supplier" | "voucher" | "none";
+  search?: any;
+
+  voucher_type?: "Purchase Invoice" | "Payment Entry";
+  // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
+  status?: any;
+
+  page?: number;
+  page_size?: number;
+}
+
+export async function getAllPayables(
+  filters: AccountsPayableFilters,
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(AccountingAPI.getAllPayables, {
+    params: filters,
+  });
+
+  return resp.data;
+}
+
+export interface AccountsReceivableFilters {
+  company?: string;
+  report_date?: string;
+
+  cost_center?: string;
+  receivable_account?: string;
+
+  party_type?: string;
+  party?: string;
+  customer_group?: string;
+
+  ageing_based_on?: "Due Date" | "Posting Date";
+  calculate_ageing_with?: "Report Date" | "Today Date";
+  range?: string;
+
+  group_by?: "customer" | "voucher" | "none";
+  search?: any;
+  voucher_type?: "Sales Invoice" | "Payment Entry";
+  // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
+  status?: any;
+
+  page?: number;
+  page_size?: number;
+}
+
+export async function getAllReceivables(
+  filters: AccountsReceivableFilters,
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(AccountingAPI.getAllReceivable, {
+    params: filters,
+  });
+
+  return resp.data;
+}
 
 export interface CashFlowFilters {
   periodicity?: "Monthly" | "Quarterly" | "Yearly" | "Half-Yearly";
@@ -109,11 +173,35 @@ export interface CashFlowFilters {
   filter_based_on?: "Fiscal Year" | "Date Range";
 }
 
- 
-export async function getCashFlow(filters: CashFlowFilters): Promise<CFResponse> {
+export async function getCashFlow(
+  filters: CashFlowFilters,
+): Promise<CFResponse> {
   const resp: AxiosResponse<CFResponse> = await api.get(
     AccountingAPI.getCashFlow,
-    { params: filters }
+    { params: filters },
   );
+  return resp.data;
+}
+
+// ───────── Ledger (GL) Filters ─────────
+export interface LedgerFilters {
+  account: string;
+  from_date: string;
+  to_date: string;
+  page?: number;
+  page_size?: number;
+}
+
+// ───────── Ledger API ─────────
+export async function getLedgerDetails(
+  filters: LedgerFilters
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(
+    AccountingAPI.getLedger, 
+    {
+      params: filters,
+    }
+  );
+
   return resp.data;
 }

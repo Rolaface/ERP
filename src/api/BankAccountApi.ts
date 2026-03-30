@@ -19,12 +19,12 @@ export async function createNewBankAccount(payload: any) {
 export async function getBankAccounts(
   filter: "Supplier" | "Customer" | "Company" | "Bank" | "Currency" | "Account" | "Shareholder" | "Employee",
   reference_doctype?: string,
-  search?: string  
+  search?: string
 ) {
 
   let url = `${Account.getBankAccounts}?filter=${filter}`;
   if (reference_doctype) url += `&reference_doctype=${encodeURIComponent(reference_doctype)}`;
-  if (search?.trim())    url += `&search=${encodeURIComponent(search.trim())}`;
+  if (search?.trim()) url += `&search=${encodeURIComponent(search.trim())}`;
 
   const resp: AxiosResponse = await api.get(url);
   return mapBankResponse(filter, resp.data);
@@ -372,11 +372,12 @@ export type PartyDetails = {
   companyLedgerAccount: string;
   companyLedgerCurrency: string;
   companyDefaultCurrency: string;
+  total_outstanding_amount?: number;
 };
 
 export async function getPartyDetails(
   party: string,
- party_type: "Supplier" | "Customer" | "Employee" | "Shareholder"
+  party_type: "Supplier" | "Customer" | "Employee" | "Shareholder"
 ): Promise<PartyDetails> {
   try {
     const resp: AxiosResponse = await api.post(
@@ -392,20 +393,21 @@ export async function getPartyDetails(
     const d = res?.data;
 
     return {
-      partyLedgerAccount:    d?.party_ledger_account ?? "",
-      partyName:             d?.party_name ?? "",
-      partyAccountCurrency:  d?.party_account_currency ?? "",
-      partyBankAccount:      d?.party_bank_account ?? "",
-      companyBankAccount:    d?.company_bank_account ?? "",
-      companyLedgerAccount:  d?.company_account_ledger ?? "",
+      partyLedgerAccount: d?.party_ledger_account ?? "",
+      partyName: d?.party_name ?? "",
+      partyAccountCurrency: d?.party_account_currency ?? "",
+      partyBankAccount: d?.party_bank_account ?? "",
+      companyBankAccount: d?.company_bank_account ?? "",
+      companyLedgerAccount: d?.company_account_ledger ?? "",
       companyLedgerCurrency: d?.company_account_ledger_currency ?? "",
       companyDefaultCurrency: d?.company_default_currency ?? "", // NEW
+      total_outstanding_amount: d?.total_outstanding_amount ?? null,
     };
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
-        error.message ||
-        "Something went wrong"
+      error.message ||
+      "Something went wrong"
     );
   }
 }
@@ -451,7 +453,7 @@ export async function getBankAccountOptions(filters: {
         currency: item.currency ?? "",
       }));
   } catch {
-    return []; // silent fail — dropdowns just show empty
+    return [];
   }
 }
 
@@ -461,10 +463,12 @@ export type LedgerAccountOption = {
   account_currency: string;
   account_number: string;
 };
+
+
 export async function getLedgerAccount(
-  paymentType: "Pay" | "Receive",
+  paymentType: "Pay" | "Receive" | "Internal Transfer",
   filter: "from" | "to",
-  partyType: "Supplier" | "Customer" | "Employee" | "Shareholder",
+  partyType: "Supplier" | "Customer" | "Employee" | "Shareholder" | "",
   search?: string,
 ): Promise<LedgerAccountOption[]> {
   try {
@@ -474,7 +478,7 @@ export async function getLedgerAccount(
         params: {
           paymentType,
           filter,
-          partyType,
+          ...(partyType ? { partyType } : {}),
           ...(search?.trim() ? { search: search.trim() } : {}),
         },
       }
@@ -495,17 +499,17 @@ export async function getLedgerAccount(
 
 
 export type ExchangeRateResult =
-  | { rate: number;  error: null   }
-  | { rate: null;    error: string };
+  | { rate: number; error: null }
+  | { rate: null; error: string };
 
 export async function getExchangeRate(
-  from_currency: string,    
-  transaction_date: string, 
+  from_currency: string,
+  transaction_date: string,
 ): Promise<ExchangeRateResult> {
   try {
     const resp: AxiosResponse = await api.post(
       Account.getExchangeRate,
-      { from_currency, transaction_date } 
+      { from_currency, transaction_date }
     );
 
     const data = resp?.data;
@@ -521,17 +525,17 @@ export async function getExchangeRate(
           const inner = typeof first === "string" ? JSON.parse(first) : first;
           if (inner?.message) errorMsg = inner.message;
         }
-      } catch {}
+      } catch { }
       return { rate: null, error: errorMsg };
     }
 
     return { rate: Number(rate), error: null };
   } catch (error: any) {
     return {
-      rate:  null,
+      rate: null,
       error: error?.response?.data?.message ||
-             error?.message ||
-             "Failed to fetch exchange rate.",
+        error?.message ||
+        "Failed to fetch exchange rate.",
     };
   }
 }

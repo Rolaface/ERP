@@ -130,7 +130,7 @@ export const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-slate-800">
-                          ₹{salary.toLocaleString()}
+                          {salary.toLocaleString()}
                         </p>
                         <p className="text-xs text-slate-500">Gross salary</p>
                       </div>

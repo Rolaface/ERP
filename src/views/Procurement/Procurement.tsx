@@ -12,12 +12,13 @@ import {
   FaFileSignature,
   FaTruckLoading,
   FaLandmark,
-  FaCreditCard
+  FaCreditCard,
 } from "react-icons/fa";
 import SupplierManagement from "./SupplierManagement";
 import SupplierModal from "../../components/procurement/supply/SupplierModal";
 import PurchaseInvoiceTable from "./PurchaseInvoice";
 import Payments from "./SupplierPayment";
+import PurchaseAnalytics from "./PurchaseAnalytics";
 
 const procurement = {
   name: "Procurement",
@@ -40,6 +41,11 @@ const procurement = {
     //   icon: <FaFileInvoiceDollar />,
     // },
     { id: "purchase", name: "Purchase Invoice", icon: <FaTruckLoading /> },
+    {
+      id: "purchaseAnalytics",
+      name: "Purchase Analytics",
+      icon: <FaTruckLoading />,
+    },
   ],
 };
 
@@ -74,7 +80,7 @@ const Procurement: React.FC = () => {
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors ${
               activeTab === tab.id
-            ? "text-primary border-b-2 border-current"
+                ? "text-primary border-b-2 border-current"
                 : "text-muted hover:text-main"
             }`}
           >
@@ -92,6 +98,7 @@ const Procurement: React.FC = () => {
         {activeTab === "purchase" && <PurchaseInvoiceTable onAdd={handleAdd} />}
         {activeTab === "procurementdashboard" && <Dashboard />}
         {activeTab === "payments" && <Payments />}
+        {activeTab === "purchaseAnalytics" && <PurchaseAnalytics />}
       </div>
 
       {/* Modals */}
