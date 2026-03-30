@@ -270,7 +270,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                             : "Exchange Rate"
                         }
                         name="exchangeRt"
-                        value={formData.exchangeRt}
+                        value={formData.exchangeRt || "1"}
                         onChange={actions.handleInputChange}
                         className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                       />
