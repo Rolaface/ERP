@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-export const ERP_BASE = ENV.apiBaseUrl;
+export const ERP_BASE = "";
 // export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
@@ -52,6 +52,12 @@ export const API = {
   hrDashboard: {
     summary: `${ERP_BASE}/api/method/hrms.dashboards.main.api.summary`,
   },
+
+
+  Get:{
+    getAll:`${ERP_BASE}/api/method/frappe.desk.search.search_link`
+  },
+
 
   /* =========================
    * COMPANY
