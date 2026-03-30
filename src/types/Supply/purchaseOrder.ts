@@ -168,10 +168,10 @@ export const emptyPOForm: PurchaseOrderFormData = {
   shippingRule: "STANDARD",
   incoterm: "EXW",
   taxesChargesTemplate: "",
-  costCenter: "UD-001 - Udvil - RI",
-  project: "Project-0001",
+  costCenter: "",
+  project: "",
   requiredBy: "",
-  warehouse: "Udvell Main Warehouse - UDVELL",
+  warehouse: "",
   referenceNumber: "",
   addresses: {
     supplierAddress: {

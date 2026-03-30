@@ -15,7 +15,7 @@ interface Props {
   onSubmit: (payload: CustomerGroupPayload) => void;
 }
 
-// ─── Toggle constants — change these two numbers to resize the toggle ─────────
+
 const TOGGLE_W = 156; // total width  (px)
 const TOGGLE_H = 28;  // total height (px)
 const PILL_PAD = 3;   // padding around the sliding pill (px)
@@ -218,7 +218,7 @@ const CustomerGroupModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
                             <button
                               type="button"
                               onClick={() => removeRestrictedItem(item.id)}
-                              className="text-red-200 hover:text-red-400 transition-colors"
+                              className="text-red-400 hover:text-red-400 transition-colors"
                               aria-label={`Remove ${item.itemName}`}
                             >
                               <Trash2 size={14} />
