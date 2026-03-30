@@ -9,6 +9,8 @@ import POItemSelect from "../../selects/procurement/POItemSelect";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import WarehouseSelect from "../../selects/WarehouseSelect";
 import DatePickerInput from "../../calendar/DatePickerInput";
+import CostCenterSelect from "../../selects/CostCenterSelect";
+
 
 interface DetailsTabProps {
   form: PurchaseInvoiceFormData;
@@ -182,11 +184,13 @@ export const DetailsTab = ({
           </div>
 
           <div className="w-[100px] ml-3">
-            <ModalInput
-              label="Cost Center"
-              name="costCenter"
+            <CostCenterSelect
               value={form.costCenter}
-              disabled
+              onChange={(val) =>
+                onFormChange({
+                  target: { name: "costCenter", value: val },
+                } as React.ChangeEvent<HTMLInputElement>)
+              }
             />
           </div>
 
