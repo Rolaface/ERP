@@ -76,9 +76,6 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   sameAsBilling: true,
 };
 
-
-
-
 const CustomerModal: React.FC<{
   isOpen: boolean;
 
@@ -253,7 +250,6 @@ const CustomerModal: React.FC<{
     if (!form.mobileCode || !form.mobile) {
       newErrors.mobile = "Mobile number is required";
     }
-    
 
     // Validate Tax Category
     if (!form.customerTaxCategory || form.customerTaxCategory === "") {
@@ -373,10 +369,10 @@ const CustomerModal: React.FC<{
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-     if (name === "bankAccounts") {
-    setForm((prev) => ({ ...prev, bankAccounts: value as any }));
-    return;
-  }
+    if (name === "bankAccounts") {
+      setForm((prev) => ({ ...prev, bankAccounts: value as any }));
+      return;
+    }
 
     setForm((prev) => ({
       ...prev,
@@ -683,7 +679,9 @@ const CustomerModal: React.FC<{
                   />
                 </Tooltip>
 
-                <Tooltip content={form.customerTaxCategory || "Select Tax Category"}>
+                <Tooltip
+                  content={form.customerTaxCategory || "Select Tax Category"}
+                >
                   <TaxCategorySelect
                     value={form.customerTaxCategory}
                     onChange={(val) =>
@@ -740,23 +738,19 @@ const CustomerModal: React.FC<{
                   </Tooltip>
 
                   {/* Mobile with code - matches ModalInput styling exactly */}
-                  <Tooltip content={`${form.mobileCode || ""}${form.mobile || ""}` || "Enter mobile number"}>
-                    <div className="flex flex-col min-w-0">
-                      <span className="block text-[10px] font-medium text-main mb-1">
-                        Mobile <span className="text-danger">*</span>
-                      </span>
-                    )}
- 
-                    
-                    
+
+                  <div className="flex flex-col min-w-0">
+                    <span className="block text-[10px] font-medium text-main mb-1">
+                      Mobile <span className="text-danger">*</span>
+                    </span>
                   </div>
-                              <ModalInput
-  label="Customer Group"
-  name="customerGroup"
-  value={form.customerGroup}
-  onChange={handleChange}
-  placeholder="Enter customer group"
-/>
+                  <ModalInput
+                    label="Customer Group"
+                    name="customerGroup"
+                    value={form.customerGroup}
+                    onChange={handleChange}
+                    placeholder="Enter customer group"
+                  />
                 </div>
               </div>
             </Card>
@@ -775,7 +769,7 @@ const CustomerModal: React.FC<{
 
           {activeTab === "terms" && (
             <TermsAndCondition
-             terms={form.terms?.selling || defaultSellingTerms}
+              terms={form.terms?.selling || defaultSellingTerms}
               setTerms={(updated) =>
                 setForm((p) => ({
                   ...p,
@@ -789,56 +783,62 @@ const CustomerModal: React.FC<{
           {activeTab === "address" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Billing Address */}
-               
-                <AddressBlock
-                  type="billing"
-                  title="Billing Address"
-                  subtitle="Invoice and payment details"
-                  data={{
-                    line1: form.billingAddressLine1 ?? "",
-                    line2: form.billingAddressLine2 ?? "",
-                    postalCode: form.billingPostalCode ?? "",
-                    city: form.billingCity ?? "",
-                    state: form.billingState ?? "",
-                    country: form.billingCountry ?? "",
-                  }}
-                  errors={{
-                    line1: errors.billingAddressLine1,
-                    postalCode: errors.billingPostalCode,
-                    city: errors.billingCity,
-                    state: errors.billingState,
-                    country: errors.billingCountry,
-                  }}
-                  onChange={(e) => {
-                    const { name, value } = e.target;
 
-                    const map: Record<string, keyof typeof form> = {
-                      line1: "billingAddressLine1",
-                      line2: "billingAddressLine2",
-                      postalCode: "billingPostalCode",
-                      city: "billingCity",
-                      state: "billingState",
-                      country: "billingCountry",
-                    };
+              <AddressBlock
+                type="billing"
+                title="Billing Address"
+                subtitle="Invoice and payment details"
+                data={{
+                  line1: form.billingAddressLine1 ?? "",
+                  line2: form.billingAddressLine2 ?? "",
+                  postalCode: form.billingPostalCode ?? "",
+                  city: form.billingCity ?? "",
+                  state: form.billingState ?? "",
+                  country: form.billingCountry ?? "",
+                }}
+                errors={{
+                  line1: errors.billingAddressLine1,
+                  postalCode: errors.billingPostalCode,
+                  city: errors.billingCity,
+                  state: errors.billingState,
+                  country: errors.billingCountry,
+                }}
+                onChange={(e) => {
+                  const { name, value } = e.target;
 
-                    setForm((prev) => ({
+                  const map: Record<string, keyof typeof form> = {
+                    line1: "billingAddressLine1",
+                    line2: "billingAddressLine2",
+                    postalCode: "billingPostalCode",
+                    city: "billingCity",
+                    state: "billingState",
+                    country: "billingCountry",
+                  };
+
+                  setForm((prev) => ({
+                    ...prev,
+                    [map[name]]: value,
+                  }));
+
+                  // Clear error when user types
+                  if (errors[map[name] as keyof typeof errors]) {
+                    setErrors((prev) => ({
                       ...prev,
-                      [map[name]]: value,
+                      [map[name]]: undefined,
                     }));
-
-                    // Clear error when user types
-                    if (errors[map[name] as keyof typeof errors]) {
-                      setErrors((prev) => ({
-                        ...prev,
-                        [map[name]]: undefined,
-                      }));
-                    }
-                  }}
-                />
-              
+                  }
+                }}
+              />
 
               {/* Shipping Address */}
-              <Tooltip content={form.shippingAddressLine1 || form.shippingCity || form.shippingCountry || "Shipping Address"}>
+              <Tooltip
+                content={
+                  form.shippingAddressLine1 ||
+                  form.shippingCity ||
+                  form.shippingCountry ||
+                  "Shipping Address"
+                }
+              >
                 <AddressBlock
                   type="shipping"
                   title="Shipping Address"
@@ -885,4 +885,3 @@ const CustomerModal: React.FC<{
   );
 };
 export default CustomerModal;
-  
