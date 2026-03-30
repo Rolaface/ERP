@@ -100,6 +100,7 @@ useCompanyBillingAddress?: boolean;
   grandTotal: number;
   totalTax: number;
 subTotal: number;
+totalDiscount?: number;
 
   roundedTotal: number;
   items: ItemRow[];
@@ -187,8 +188,8 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   paymentType: "Bank transfer",
   transactionProgress: "APPROVED",
   updateStock: true,
-  costCenter: "UD-001 - Udvil - RI",
-  project: "Project-0001",
+  costCenter: "",
+  project: "",
   useSupplierAddress: true,
 useDispatchAddress: true,
 useShippingAddress: true,
@@ -232,7 +233,7 @@ useCompanyBillingAddress: true,
   items: [{ ...emptyItem }],
   taxRows: [], // Start with empty array, user can add as needed
   paymentRows: [], // Start with empty array, user can add as needed
- warehouse: "Udvell Main Warehouse - UDVELL",
+ warehouse: "",
   templateName: "",
   templateType: "",
   subject: "",

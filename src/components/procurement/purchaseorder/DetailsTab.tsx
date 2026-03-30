@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, User, Mail, Phone } from "lucide-react";
+import { Plus, Trash2, User, Mail, Phone, ToolCase } from "lucide-react";
 import type {
   ItemRow,
   PurchaseOrderFormData,
@@ -10,6 +10,8 @@ import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import WarehouseSelect from "../../selects/WarehouseSelect";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import CostCenterSelect from "../../selects/CostCenterSelect";
+import ProjectSelect from "../../selects/ProjectSelect";
+import Tooltip from "../../Tooltip";
 
 interface DetailsTabProps {
   form: PurchaseOrderFormData;
@@ -85,11 +87,13 @@ export const DetailsTab = ({
       <div className="bg-app">
         <div className="flex flex-wrap gap-x-2 gap-y-3 items-end mb-3">
           <div className="w-[240px]">
+            <Tooltip content = {form.supplier ? `Supplier: ${form.supplier}` : 'Select a supplier'}>
             <SupplierSelect
               className="w-full"
               selectedId={form.supplierId}
               onChange={onSupplierChange}
             />
+            </Tooltip>
           </div>
 
           <div className="w-[142px]">
@@ -127,6 +131,7 @@ export const DetailsTab = ({
           </div>
 
           <div className="w-[135px]">
+            <Tooltip content={form.costCenter ? `Cost Center: ${form.costCenter}` : 'Select a cost center'}>
             <CostCenterSelect
               value={form.costCenter}
               onChange={(val) =>
@@ -135,16 +140,21 @@ export const DetailsTab = ({
                 } as React.ChangeEvent<HTMLInputElement>)
               }
             />
+            </Tooltip>
           </div>
 
           {/* Project */}
           <div className="w-[130px]">
-            <ModalInput
-              label="Project"
-              name="project"
+            <Tooltip content={form.project ? `Project: ${form.project}` : 'Select a project'}>
+            <ProjectSelect
               value={form.project}
-              disabled
+              onChange={(val) =>
+                onFormChange({
+                  target: { name: "project", value: val },
+                } as React.ChangeEvent<HTMLInputElement>)
+              }
             />
+            </Tooltip>
           </div>
 
           <div className="w-[135px]">
@@ -162,21 +172,25 @@ export const DetailsTab = ({
 
           {/* Warehouse */}
           <div className="w-[135px]">
+            <Tooltip content={form.warehouse ? `Warehouse: ${form.warehouse}` : 'Select a warehouse'}>
             <WarehouseSelect
               value={form.warehouse || ""}
               onChange={handleTopWarehouseChange}
               required
             />
+            </Tooltip>
           </div>
 
 
           <div className="w-[135px]">
+           <Tooltip content={form.referenceNumber ? `Reference Code: ${form.referenceNumber}` : 'Enter a reference code'}>
             <ModalInput
               label="Reference Code"
               name="referenceNumber"
               value={form.referenceNumber}
               onChange={onFormChange}
             />
+            </Tooltip>
           </div>
         </div>
       </div>
@@ -250,16 +264,19 @@ export const DetailsTab = ({
 
                       <td className="px-2 py-1">
                         <div className="w-[153px]">
+                          <Tooltip content={it.itemName ? `Item: ${it.itemName}` : 'Select an item'}>
                           <POItemSelect
                             value={it.itemName}
                             selectedId={it.itemCode}
                             onChange={(item: any) => onItemSelect(item.id, i)}
                           />
+                          </Tooltip>
                         </div>
                       </td>
 
                       <td className="px-2 py-1">
                         <div className="flex items-center justify-center gap-1">
+                          <Tooltip content={`Packing Unit: ${it.packingUnit || 'N/A'}, Packing Size: ${it.packingSize || 'N/A'}`}>
                           <input
                             type="number"
                             name="packingUnit"
@@ -267,9 +284,11 @@ export const DetailsTab = ({
                             onChange={(e) => onItemChange(e, i)}
                             className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
                           />
+                          </Tooltip>
                           <span className="text-muted text-[10px] font-bold">
                             ×
                           </span>
+                          <Tooltip content={`Packing Size: ${it.packingSize || 'N/A'}`}>
                           <input
                             type="number"
                             name="packingSize"
@@ -277,11 +296,13 @@ export const DetailsTab = ({
                             onChange={(e) => onItemChange(e, i)}
                             className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
                           />
+                          </Tooltip>
                         </div>
                       </td>
 
                       <td className="px-2 py-1">
                         <div className="w-[125px]">
+                          <Tooltip content={it.requiredBy ? `Required By: ${it.requiredBy}` : 'Select a required by date'}>
                           <DatePickerInput
                             name="requiredBy"
                             value={it.requiredBy || ""}
@@ -294,17 +315,21 @@ export const DetailsTab = ({
                               )
                             }
                           />
+                          </Tooltip>
                         </div>
                       </td>
                       <td className="px-2 py-1">
+                        <Tooltip content={it.warehouse ? `Warehouse: ${it.warehouse}` : 'Select a warehouse'}>
                         <WarehouseSelect
                           compact
                           value={it.warehouse || ""}
                           onChange={(e) => onItemChange(e, i)}
                         />
+                        </Tooltip>
                       </td>
 
                       <td className="px-2 py-1">
+                        <Tooltip content={it.quantity ? `Quantity: ${it.quantity}` : 'Enter quantity'}>
                         <input
                           type="number"
                           className="w-[80px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
@@ -312,9 +337,12 @@ export const DetailsTab = ({
                           value={it.quantity}
                           onChange={(e) => onItemChange(e, i)}
                         />
+                        </Tooltip>
                       </td>
 
                       <td className="px-2 py-1">
+                        <Tooltip content={it.uom ? `Unit of Measure: ${it.uom}` : 'Enter unit of measure'}>
+
                         <input
                           className="w-[60px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                           name="uom"
@@ -322,9 +350,12 @@ export const DetailsTab = ({
                           onChange={(e) => onItemChange(e, i)}
                           disabled
                         />
+                        </Tooltip>
                       </td>
 
                       <td className="px-2 py-1">
+                        <Tooltip content={it.rate ? `Rate: ${symbol} ${it.rate}` : 'Enter rate'}>
+
                         <input
                           type="number"
                           className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
@@ -332,9 +363,12 @@ export const DetailsTab = ({
                           value={it.rate}
                           onChange={(e) => onItemChange(e, i)}
                         />
+                        </Tooltip>
                       </td>
 
                       <td className="px-2 py-1">
+                        <Tooltip content={`VAT Rate: ${it.vatRate || 'N/A'}`}>
+
                         <input
                           type="number"
                           className="w-[54px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
@@ -342,15 +376,19 @@ export const DetailsTab = ({
                           value={it.vatRate}
                           onChange={(e) => onItemChange(e, i)}
                         />
+                        </Tooltip>
                       </td>
 
                       <td className="px-2 py-1">
+                        <Tooltip content={`VAT Code: ${it.vatCd || 'N/A'}`}>
+
                         <input
                           className="w-[46px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                           name="vatCd"
                           value={it.vatCd || ""}
                           onChange={(e) => onItemChange(e, i)}
                         />
+                        </Tooltip>
                       </td>
 
                       <td className="px-2 py-1 text-right">

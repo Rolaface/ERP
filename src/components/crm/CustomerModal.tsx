@@ -52,6 +52,7 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   contactPerson: "",
   displayName: "",
   email: "",
+  customerGroup: "",
   accountNumber: "",
   status: "Active",
   customerTaxCategory: "",
@@ -75,9 +76,6 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   sameAsBilling: true,
 };
 
-
-
-
 const CustomerModal: React.FC<{
   isOpen: boolean;
 
@@ -95,6 +93,7 @@ const CustomerModal: React.FC<{
     tpin?: string;
     mobile?: string;
     email?: string;
+    customerGroup?: string;
     currency?: string;
     displayName?: string;
     contactPerson?: string;
@@ -219,9 +218,6 @@ const CustomerModal: React.FC<{
     form.billingCountry,
   ]);
 
-
-
-  // for next button
   const tabs: Array<"details" | "bank" | "address" | "terms"> = [
     "details",
     "bank",
@@ -373,10 +369,10 @@ const CustomerModal: React.FC<{
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-     if (name === "bankAccounts") {
-    setForm((prev) => ({ ...prev, bankAccounts: value as any }));
-    return;
-  }
+    if (name === "bankAccounts") {
+      setForm((prev) => ({ ...prev, bankAccounts: value as any }));
+      return;
+    }
 
     setForm((prev) => ({
       ...prev,
@@ -683,7 +679,9 @@ const CustomerModal: React.FC<{
                   />
                 </Tooltip>
 
-                <Tooltip content={form.customerTaxCategory || "Select Tax Category"}>
+                <Tooltip
+                  content={form.customerTaxCategory || "Select Tax Category"}
+                >
                   <TaxCategorySelect
                     value={form.customerTaxCategory}
                     onChange={(val) =>
@@ -725,77 +723,69 @@ const CustomerModal: React.FC<{
                 </Tooltip>
 
                 {/* Email + Mobile - span full width as a separate row */}
-                <div className="col-span-4 grid grid-cols-4 gap-5">
-                  <Tooltip content={form.email || "email@example.com"}>
-                    <ModalInput
-                      label="Email"
-                      name="email"
-                      type="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      required
-                      placeholder="email@example.com"
-                      error={errors.email}
-                    />
-                  </Tooltip>
+               <div className="col-span-4 grid grid-cols-4 gap-5">
 
-                  {/* Mobile with code - matches ModalInput styling exactly */}
-                  <Tooltip content={`${form.mobileCode || ""}${form.mobile || ""}` || "Enter mobile number"}>
-                    <div className="flex flex-col min-w-0">
-                      <span className="block text-[10px] font-medium text-main mb-1">
-                        Mobile <span className="text-danger">*</span>
-                      </span>
-                      <div className="flex gap-0">
-                        <input
-                          name="mobileCode"
-                          value={form.mobileCode}
-                          onChange={handleChange}
-                          placeholder="+"
-                          className={[
-                            "w-[50px] py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
-                            errors.mobile
-                              ? "border-danger focus:border-danger"
-                              : "border-[var(--border)] hover:border-primary/40",
-                          ].join(" ")}
-                          onFocus={(e) => {
-                            e.currentTarget.style.boxShadow = errors.mobile
-                              ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
-                              : "0 0 0 3px rgba(37, 99, 235, 0.16)";
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.boxShadow = "";
-                          }}
-                        />
-                        <input
-                          name="mobile"
-                          type="tel"
-                          value={form.mobile}
-                          onChange={handleChange}
-                          placeholder="Enter mobile number"
-                          className={[
-                            "flex-1 py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
-                            errors.mobile
-                              ? "border-danger focus:border-danger"
-                              : "border-[var(--border)] hover:border-primary/40",
-                          ].join(" ")}
-                          onFocus={(e) => {
-                            e.currentTarget.style.boxShadow = errors.mobile
-                              ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
-                              : "0 0 0 3px rgba(37, 99, 235, 0.16)";
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.boxShadow = "";
-                          }}
-                        />
-                      </div>
-                      {errors.mobile && (
-                        <span className="text-[10px] text-danger mt-1">
-                          {errors.mobile}
-                        </span>
-                      )}
-                    </div>
-                  </Tooltip>
-                </div>
+  {/* Col 1: Email */}
+  <ModalInput
+    label="Email"
+    name="email"
+    type="email"
+    value={form.email}
+    onChange={handleChange}
+    required
+    placeholder="email@example.com"
+    error={errors.email}
+  />
+
+  {/* Col 2: Mobile */}
+  <div className="flex flex-col min-w-0">
+    <span className="block text-[10px] font-medium text-main mb-1">
+      Mobile <span className="text-danger">*</span>
+    </span>
+    <div className="flex">
+      <input
+        name="mobileCode"
+        value={form.mobileCode}
+        onChange={handleChange}
+        placeholder="+"
+        className={[
+          "w-[50px] py-1 px-2 border rounded-l text-[11px] text-main bg-card transition-all",
+          errors.mobile
+            ? "border-danger"
+            : "border-[var(--border)] hover:border-primary/40",
+        ].join(" ")}
+      />
+      <input
+        name="mobile"
+        type="tel"
+        value={form.mobile}
+        onChange={handleChange}
+        placeholder="Enter mobile number"
+        className={[
+          "flex-1 py-1 px-2 border-t border-b border-r rounded-r text-[11px] text-main bg-card transition-all",
+          errors.mobile
+            ? "border-danger"
+            : "border-[var(--border)] hover:border-primary/40",
+        ].join(" ")}
+      />
+    </div>
+    {errors.mobile && (
+      <span className="text-[10px] text-danger mt-1">{errors.mobile}</span>
+    )}
+  </div>
+
+  {/* Col 3: Customer Group */}
+  <ModalInput
+    label="Customer Group"
+    name="customerGroup"
+    value={form.customerGroup}
+    onChange={handleChange}
+    placeholder="Enter customer group"
+  />
+
+  {/* Col 4: Empty or future field */}
+
+</div>
               </div>
             </Card>
           )}
@@ -813,7 +803,7 @@ const CustomerModal: React.FC<{
 
           {activeTab === "terms" && (
             <TermsAndCondition
-             terms={form.terms?.selling || defaultSellingTerms}
+              terms={form.terms?.selling || defaultSellingTerms}
               setTerms={(updated) =>
                 setForm((p) => ({
                   ...p,
@@ -827,56 +817,62 @@ const CustomerModal: React.FC<{
           {activeTab === "address" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Billing Address */}
-               
-                <AddressBlock
-                  type="billing"
-                  title="Billing Address"
-                  subtitle="Invoice and payment details"
-                  data={{
-                    line1: form.billingAddressLine1 ?? "",
-                    line2: form.billingAddressLine2 ?? "",
-                    postalCode: form.billingPostalCode ?? "",
-                    city: form.billingCity ?? "",
-                    state: form.billingState ?? "",
-                    country: form.billingCountry ?? "",
-                  }}
-                  errors={{
-                    line1: errors.billingAddressLine1,
-                    postalCode: errors.billingPostalCode,
-                    city: errors.billingCity,
-                    state: errors.billingState,
-                    country: errors.billingCountry,
-                  }}
-                  onChange={(e) => {
-                    const { name, value } = e.target;
 
-                    const map: Record<string, keyof typeof form> = {
-                      line1: "billingAddressLine1",
-                      line2: "billingAddressLine2",
-                      postalCode: "billingPostalCode",
-                      city: "billingCity",
-                      state: "billingState",
-                      country: "billingCountry",
-                    };
+              <AddressBlock
+                type="billing"
+                title="Billing Address"
+                subtitle="Invoice and payment details"
+                data={{
+                  line1: form.billingAddressLine1 ?? "",
+                  line2: form.billingAddressLine2 ?? "",
+                  postalCode: form.billingPostalCode ?? "",
+                  city: form.billingCity ?? "",
+                  state: form.billingState ?? "",
+                  country: form.billingCountry ?? "",
+                }}
+                errors={{
+                  line1: errors.billingAddressLine1,
+                  postalCode: errors.billingPostalCode,
+                  city: errors.billingCity,
+                  state: errors.billingState,
+                  country: errors.billingCountry,
+                }}
+                onChange={(e) => {
+                  const { name, value } = e.target;
 
-                    setForm((prev) => ({
+                  const map: Record<string, keyof typeof form> = {
+                    line1: "billingAddressLine1",
+                    line2: "billingAddressLine2",
+                    postalCode: "billingPostalCode",
+                    city: "billingCity",
+                    state: "billingState",
+                    country: "billingCountry",
+                  };
+
+                  setForm((prev) => ({
+                    ...prev,
+                    [map[name]]: value,
+                  }));
+
+                  // Clear error when user types
+                  if (errors[map[name] as keyof typeof errors]) {
+                    setErrors((prev) => ({
                       ...prev,
-                      [map[name]]: value,
+                      [map[name]]: undefined,
                     }));
-
-                    // Clear error when user types
-                    if (errors[map[name] as keyof typeof errors]) {
-                      setErrors((prev) => ({
-                        ...prev,
-                        [map[name]]: undefined,
-                      }));
-                    }
-                  }}
-                />
-              
+                  }
+                }}
+              />
 
               {/* Shipping Address */}
-              <Tooltip content={form.shippingAddressLine1 || form.shippingCity || form.shippingCountry || "Shipping Address"}>
+              <Tooltip
+                content={
+                  form.shippingAddressLine1 ||
+                  form.shippingCity ||
+                  form.shippingCountry ||
+                  "Shipping Address"
+                }
+              >
                 <AddressBlock
                   type="shipping"
                   title="Shipping Address"

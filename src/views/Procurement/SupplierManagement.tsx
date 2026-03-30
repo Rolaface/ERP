@@ -19,6 +19,7 @@ import type { Supplier } from "../../types/Supply/supplier";
 import type { SupplierFilters } from "../../api/procurement/supplierApi";
 import { showApiError, showSuccess } from "../../utils/alert";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
+import Tooltip from "../../components/Tooltip";
 
 interface Props {}
 
@@ -174,33 +175,81 @@ const SupplierManagement: React.FC<Props> = () => {
   };
 
   const columns: Column<Supplier>[] = [
-    { key: "supplierCode", header: "Code", align: "left" },
-    { key: "supplierName", header: "Supplier Name", align: "left" },
-    { key: "taxCategory", header: "Tax Category", align: "left" },
-    { key: "phoneNo", header: "Phone", align: "left" },
+    {
+  key: "supplierCode",
+  header: "Code",
+  align: "left",
+  render: (s) => (
+    <Tooltip content={s.supplierCode}>
+      <span className="truncate max-w-[120px] block">
+        {s.supplierCode || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
+    {
+  key: "supplierName",
+  header: "Supplier Name",
+  align: "left",
+  render: (s) => (
+    <Tooltip content={s.supplierName}>
+      <span className="truncate max-w-[160px] block">
+        {s.supplierName || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
+    {
+  key: "taxCategory",
+  header: "Tax Category",
+  align: "left",
+  render: (s) => (
+    <Tooltip content={s.taxCategory}>
+      <span className="truncate max-w-[140px] block">
+        {s.taxCategory || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
+   {
+  key: "phoneNo",
+  header: "Phone",
+  align: "left",
+  render: (s) => (
+    <Tooltip content={s.phoneNo}>
+      <span className="truncate max-w-[140px] block">
+        {s.phoneNo || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
     {
       key: "tpin",
       header: "TPIN",
       align: "left",
       render: (s) =>
         s.tpin ? (
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {s.tpin}
-          </code>
+          <Tooltip content={s.tpin}>
+            <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+              {s.tpin}
+            </code>
+          </Tooltip>
         ) : (
           <span className="text-muted">—</span>
         ),
     },
-    {
-      key: "currency",
-      header: "Currency",
-      align: "left",
-      render: (s) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {s.currency}
-        </code>
-      ),
-    },
+{
+  key: "currency",
+  header: "Currency",
+  align: "left",
+  render: (s) => (
+    <Tooltip content={s.currency}>
+      <span className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        {s.currency || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
     {
       key: "status",
       header: "Status",

@@ -11,6 +11,7 @@ export interface CustomerSummary {
   mobile: string;
   type: "" | "Company" | "Individual";
   email: string;
+  customerGroup: string;
   accountNumber: string;
   currency: string;
   onboardingBalance: number;

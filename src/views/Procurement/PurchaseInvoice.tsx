@@ -29,6 +29,7 @@ const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import PurchaseInvoiceDetailModal, { type PurchaseInvoiceDetail } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
+import Tooltip from "../../components/Tooltip";
 
 
 interface Purchaseinvoice {
@@ -392,9 +393,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
       header: "Amount",
       align: "left",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.amount || 0).toFixed(2)}
-        </code>
+        <Tooltip content={Number(o.amount || 0).toFixed(2)}>
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {Number(o.amount || 0).toFixed(2)}
+          </code>
+        </Tooltip>
       ),
     },
      {
@@ -402,9 +405,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
       header: "Amount with Tax",
       align: "left",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.grandTotalWithTax || 0).toFixed(2)}
-        </code>
+        <Tooltip content={Number(o.grandTotalWithTax || 0).toFixed(2)}>
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {Number(o.grandTotalWithTax || 0).toFixed(2)}
+          </code>
+        </Tooltip>
       ),
     },
     {
@@ -412,9 +417,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
      header: "Outstanding",
      align: "left",
      render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.outstanding_amount || 0).toFixed(2)}
-        </code>
+        <Tooltip content={Number(o.outstanding_amount || 0).toFixed(2)}>
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {Number(o.outstanding_amount || 0).toFixed(2)}
+          </code>
+        </Tooltip>
       ),
     },
     {

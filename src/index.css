@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "./login.css";
-
+ 
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -9,11 +9,11 @@
     background-position: 200% 0;
   }
 }
-
+ 
 .animate-shimmer {
   animation: shimmer 2s infinite linear;
 }
-
+ 
 @layer base {
   /* UNIVERSAL DEFAULTS  */
   :root {
@@ -25,7 +25,7 @@
     --nav-active-text: #ffffff;
     --table-head-text: #ffffff;
   }
-
+ 
   /* 2. CLASSIC & BASIC THEMES */
   :root[data-theme="gold"],
   :root {
@@ -77,7 +77,7 @@
     --border: rgba(255, 255, 255, 0.1);
     --row-hover: rgba(255, 255, 255, 0.05);
   }
-
+ 
   /* 3. PROFESSIONAL & CORPORATE */
   :root[data-theme="corporate"] {
     --primary: #3b82f6;
@@ -113,7 +113,7 @@
     --sidebar-text: #0f172a;
     --table-head: #1a202c;
   }
-
+ 
   /* 4. PASTEL & MODERN SaaS */
   :root[data-theme="sunset"] {
     --primary: #ea580c;
@@ -173,7 +173,7 @@
     --sidebar-text: #f1f5f9;
     --table-head: #e2e8f0;
   }
-
+ 
   /* 5. INTERACTIVE & PREMIUM */
   :root[data-theme="cyber"] {
     --primary: #00f2ff;
@@ -210,8 +210,31 @@
     --table-head: #121418;
     --table-head-text: var(--primary);
   }
-}
+    /* Clinical */
+  :root[data-theme="clinical-sanctuary"] {
+    --primary: #204385;
+    --primary-600: #3b5b9e;
 
+    --bg: #f8f9fa;
+    --card: #ffffff;
+
+    --text: #191c1d;
+    --muted: #434650;
+
+    --sidebar-bg: #ffffff;
+    --sidebar-text: #191c1d;
+
+    --table-head: #204385;
+    --table-head-text: #ffffff;
+
+    --border: #c4c6d2;
+    --row-hover: #f3f4f5;
+
+    --font-heading: "Plus Jakarta Sans", sans-serif;
+    --font-body: "Manrope", sans-serif;
+  }
+}
+ 
 @layer utilities {
   .bg-app {
     background: var(--bg) !important;
@@ -247,32 +270,32 @@
   .row-hover:hover {
     background: var(--row-hover) !important;
   }
-
-  /* OVERRIDES 
+ 
+  /* OVERRIDES
   .bg-white { background: var(--card) !important; }
   .text-gray-900, .text-slate-900 { color: var(--text) !important; }
   .text-gray-500, .text-slate-500 { color: var(--muted) !important; }
   .border-gray-200, .border-slate-200 { border-color: var(--border) !important; }
-  
-
+ 
+ 
 }
-
+ 
 @layer components {
   .nav-link { @apply flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative; color: inherit; }
   .nav-link:hover { background: var(--row-hover); }
   .nav-link.active { background: var(--primary-600); color: #ffffff; }
   .filter-input-refined {
-  @apply w-full bg-app border border-[var(--border)] rounded-xl px-3 py-2 
-         text-[11px] font-semibold text-main outline-none transition-all 
+  @apply w-full bg-app border border-[var(--border)] rounded-xl px-3 py-2
+         text-[11px] font-semibold text-main outline-none transition-all
          placeholder:text-muted/40 placeholder:font-normal;
 }
-
+ 
 .filter-input-refined:focus {
   @apply border-primary ring-2 ring-primary/10;
 }
-
-
-
+ 
+ 
+ 
   /* Specific Interactive Effects */
   [data-theme="glass"] .bg-card {
     backdrop-filter: blur(12px);
@@ -287,7 +310,7 @@
     font-weight: 800;
   }
 }
-
+ 
 /* TEXT COLORS (Keep as is — already solid) */
 .text-success {
   color: var(--success) !important;
@@ -301,27 +324,27 @@
 .text-info {
   color: #3b82f6 !important;
 }
-
+ 
 /* DARK BACKGROUND VARIANTS */
-
+ 
 /* SUCCESS */
 .bg-success {
   background: #24b35b !important; /* dark green */
   color: #dcfce7 !important;
 }
-
+ 
 /* DANGER */
 .bg-danger {
   background: #d74343 !important; /* dark red */
   color: #fee2e2 !important;
 }
-
+ 
 /* WARNING */
 .bg-warning {
   background: #f59e0b !important; /* dark amber */
   color: #fef3c7 !important;
 }
-
+ 
 /* INFO */
 .bg-info {
   background: #4780db !important; /* dark blue */
@@ -333,7 +356,7 @@ input[type=number]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 } */
-
+ 
 /* input[type=number] {
   -moz-appearance: textfield;
 } */
@@ -341,9 +364,9 @@ input[type=number]::-webkit-inner-spin-button {
   background: #6b7280 !important;
   color: #f3f4f6 !important;
 }
-
+ 
 /* form-field.css */
-
+ 
 .form-label {
   font-size: 11px;
   font-weight: 500;
@@ -351,7 +374,7 @@ input[type=number]::-webkit-inner-spin-button {
   letter-spacing: 0.04em;
   color: var(--text-muted);
 }
-
+ 
 .form-input {
   height: 32px;
   font-size: 14px;
@@ -360,20 +383,20 @@ input[type=number]::-webkit-inner-spin-button {
   border: 1px solid var(--border);
   background: var(--card);
 }
-
+ 
 .form-input:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 1px var(--primary);
 }
-
+ 
 /* Chrome, Safari, Edge */
 .no-spinner::-webkit-outer-spin-button,
 .no-spinner::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-
+ 
 /* Firefox */
 .no-spinner {
   -moz-appearance: textfield;

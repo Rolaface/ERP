@@ -69,10 +69,7 @@ export const useInvoiceForm = (
   const [formData, setFormData] = useState<Invoice>({
     ...DEFAULT_INVOICE_FORM,
     terms: { ...EMPTY_TERMS },
-    invoiceCharges: [
-      { charge_type: "Shipping", amount: "" },
-      { charge_type: "Insurance", amount: "" },
-    ],
+    invoiceCharges: [],
   });
 
   useEffect(() => {
@@ -126,21 +123,21 @@ export const useInvoiceForm = (
       setFormDataFromInvoice(initialData);
     }
   }, [isOpen, initialData, mode]);
-useEffect(() => {
-  if (!isOpen || mode !== "edit") return;
+  useEffect(() => {
+    if (!isOpen || mode !== "edit") return;
 
-  const loadBaseCurrency = async () => {
-    try {
-      const companyRes = await getCompanyById(COMPANY_ID);
-      const base = companyRes?.data?.financialConfig?.baseCurrency ?? "";
-      setBaseCurrency(base);
-    } catch (err) {
-      console.error("Failed to load base currency", err);
-    }
-  };
+    const loadBaseCurrency = async () => {
+      try {
+        const companyRes = await getCompanyById(COMPANY_ID);
+        const base = companyRes?.data?.financialConfig?.baseCurrency ?? "";
+        setBaseCurrency(base);
+      } catch (err) {
+        console.error("Failed to load base currency", err);
+      }
+    };
 
-  loadBaseCurrency();
-}, [isOpen, mode]);
+    loadBaseCurrency();
+  }, [isOpen, mode]);
   useEffect(() => {
     if (!isOpen || initialData) return;
 
@@ -202,16 +199,15 @@ useEffect(() => {
       .toUpperCase();
     const base = baseCurrency.trim().toUpperCase();
     if (!code || !base || code === base) {
-  setExchangeRateLoading(false);
-  setExchangeRateError(null);
+      setExchangeRateLoading(false);
+      setExchangeRateError(null);
 
- 
-  if (mode !== "edit") {
-    setFormData((prev) => ({ ...prev, exchangeRt: "" }));
-  }
+      if (mode !== "edit") {
+        setFormData((prev) => ({ ...prev, exchangeRt: "1" }));
+      }
 
-  return;
-}
+      return;
+    }
     let cancelled = false;
     setExchangeRateLoading(true);
     setFormData((prev) => ({
@@ -748,7 +744,10 @@ useEffect(() => {
       invoiceStatus: invoice.invoiceStatus ?? "",
       currencyCode: invoice.currencyCode,
       dateOfInvoice: invoice.dateOfInvoice,
-      exchangeRt: invoice.exchangeRt ?? "",
+      exchangeRt:
+        invoice.exchangeRt && Number(invoice.exchangeRt) > 0
+          ? String(invoice.exchangeRt)
+          : "1",
       dueDate: invoice.dueDate,
       destnCountryCd: invoice.destnCountryCd ?? "",
       billingAddress: invoice.billingAddress ?? prev.billingAddress,
@@ -761,10 +760,7 @@ useEffect(() => {
               charge_type: ch.charge_type ?? "",
               amount: String(ch.amount ?? ""),
             }))
-          : [
-              { charge_type: "Shipping", amount: "" },
-              { charge_type: "Insurance", amount: "" },
-            ],
+          : [],
       terms: invoice.terms ?? prev.terms,
       items: (invoice.items || []).map((it: any) => {
         const quantity = Number(it.quantity);
@@ -834,10 +830,8 @@ useEffect(() => {
 
         setFormData({
           ...DEFAULT_INVOICE_FORM,
-          invoiceCharges: [
-            { charge_type: "Shipping Charge", amount: "" },
-            { charge_type: "Insurance", amount: "" },
-          ],
+          invoiceCharges: [],
+
           dateOfInvoice: today,
           dueDate: dueDate,
           exchangeRt: "1",
@@ -886,6 +880,12 @@ useEffect(() => {
 
       const payload = {
         ...formData,
+        invoiceCharges: (formData.invoiceCharges || []).filter(
+          (ch) =>
+            ch.charge_type?.trim() && String(ch.amount ?? "").trim() !== "",
+        ),
+        exchangeRt:
+          Number(formData.exchangeRt) > 0 ? String(formData.exchangeRt) : "1",
         subTotal,
         totalTax,
 

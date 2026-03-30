@@ -17,7 +17,6 @@ import CustomerModal from "../../components/crm/CustomerModal";
 import type { CustomerSummary, CustomerDetail } from "../../types/customer";
 
 import Table from "../../components/ui/Table/Table";
-import StatusBadge from "../../components/ui/Table/StatusBadge";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
