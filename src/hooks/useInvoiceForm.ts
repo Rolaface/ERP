@@ -216,7 +216,7 @@ useEffect(() => {
     setExchangeRateLoading(true);
     setFormData((prev) => ({
       ...prev,
-      exchangeRt: "",
+      exchangeRt: "1",
     }));
     setExchangeRateError(null);
 
@@ -241,7 +241,7 @@ useEffect(() => {
 
         setFormData((prev) => ({
           ...prev,
-          exchangeRt: "",
+          exchangeRt: "1",
         }));
         showApiError(err);
       })
@@ -840,7 +840,7 @@ useEffect(() => {
           ],
           dateOfInvoice: today,
           dueDate: dueDate,
-          exchangeRt: "",
+          exchangeRt: "1",
           warehouse: "",
           updateStock: true,
 
