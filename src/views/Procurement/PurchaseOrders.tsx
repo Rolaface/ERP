@@ -378,10 +378,52 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
 
   // ── Columns
   const columns: Column<PurchaseOrder>[] = [
-    { key: "id", header: "PO ID", align: "left" },
-    {key: "referenceNumber", header:"Reference Code", align:"left"},
-    { key: "supplier", header: "Supplier", align: "left" },
-    { key: "date", header: "Date", align: "left" },
+    {
+  key: "id",
+  header: "PO ID",
+  align: "left",
+  render: (o) => (
+    <Tooltip content={o.id}>
+      <span className="truncate max-w-[120px] block">
+        {o.id || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
+    {
+  key: "referenceNumber",
+  header: "Reference Code",
+  align: "left",
+  render: (o) => (
+    <Tooltip content={o.referenceNumber}>
+      <span className="truncate max-w-[140px] block">
+        {o.referenceNumber || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
+   {
+  key: "supplier",
+  header: "Supplier",
+  align: "left",
+  render: (o) => (
+    <Tooltip content={o.supplier}>
+      <span className="truncate max-w-[160px] block">
+        {o.supplier || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
+  {
+  key: "date",
+  header: "Date",
+  align: "left",
+  render: (o) => (
+    <Tooltip content={o.date}>
+      <span>{o.date || "—"}</span>
+    </Tooltip>
+  ),
+},
     {
       key: "amount",
       header: "Amount",
@@ -400,7 +442,16 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
       align: "left",
       render: (o) => <StatusBadge status={o.status} />,
     },
-    { key: "deliveryDate", header: "Delivery Date", align: "left" },
+   {
+  key: "deliveryDate",
+  header: "Delivery Date",
+  align: "left",
+  render: (o) => (
+    <Tooltip content={o.deliveryDate}>
+      <span>{o.deliveryDate || "—"}</span>
+    </Tooltip>
+  ),
+},
     {
       key: "actions",
       header: "Actions",
