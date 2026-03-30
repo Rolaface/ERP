@@ -31,6 +31,9 @@ import { getCompanyById } from "../api/companySetupApi";
 import { mapSupplierToAddress } from "../types/Supply/purchaseInvoiceMapper";
 import type { AddressBlock } from "../types/Supply/purchaseInvoice";
 import { getItemByItemCode } from "../api/itemApi";
+import { useFieldDefault } from "./useFieldDefault";
+import { fetchCostCenters, fetchProjects } from "../api/getAllApi";
+import { getAllWarehouses } from "../api/WarehouseApi";
 import {
   getPurchaseOrderById,
   getPurchaseOrders,
@@ -185,7 +188,7 @@ export const usePurchaseInvoiceForm = ({
 
       const taxAmount = netAmount * (vatRate / 100);
 
-      sub += netAmount;
+      sub += lineAmount;
       tax += taxAmount;
     });
 
@@ -204,6 +207,31 @@ export const usePurchaseInvoiceForm = ({
       grandTotal,
     }));
   }, [form.items]);
+
+
+  useFieldDefault(
+  isOpen,
+  form.costCenter,
+  fetchCostCenters,
+  (val) => setForm((prev) => ({ ...prev, costCenter: val }))
+);
+
+useFieldDefault(
+  isOpen,
+  form.project,
+  fetchProjects,
+  (val) => setForm((prev) => ({ ...prev, project: val }))
+);
+
+useFieldDefault(
+  isOpen,
+  form.warehouse,
+  () => getAllWarehouses().then((list: string[]) =>
+    list.map((w) => ({ value: w, label: w }))
+  ),
+  (val) => setForm((prev) => ({ ...prev, warehouse: val }))
+);
+
   type AddressKey = keyof PurchaseInvoiceFormData["addresses"];
 
   const updateAddress = (
@@ -407,10 +435,6 @@ export const usePurchaseInvoiceForm = ({
         ...prev,
         poNumber: "",
        // items: [{ ...emptyItem }],
-        totalQuantity: 0,
-        grandTotal: 0,
-        roundingAdjustment: 0,
-        roundedTotal: 0,
       }));
     }
   };

@@ -52,6 +52,7 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   contactPerson: "",
   displayName: "",
   email: "",
+  customerGroup: "",
   accountNumber: "",
   status: "Active",
   customerTaxCategory: "",
@@ -95,6 +96,7 @@ const CustomerModal: React.FC<{
     tpin?: string;
     mobile?: string;
     email?: string;
+    customerGroup?: string;
     currency?: string;
     displayName?: string;
     contactPerson?: string;
@@ -219,9 +221,6 @@ const CustomerModal: React.FC<{
     form.billingCountry,
   ]);
 
-
-
-  // for next button
   const tabs: Array<"details" | "bank" | "address" | "terms"> = [
     "details",
     "bank",
@@ -254,6 +253,7 @@ const CustomerModal: React.FC<{
     if (!form.mobileCode || !form.mobile) {
       newErrors.mobile = "Mobile number is required";
     }
+    
 
     // Validate Tax Category
     if (!form.customerTaxCategory || form.customerTaxCategory === "") {
@@ -745,56 +745,18 @@ const CustomerModal: React.FC<{
                       <span className="block text-[10px] font-medium text-main mb-1">
                         Mobile <span className="text-danger">*</span>
                       </span>
-                      <div className="flex gap-0">
-                        <input
-                          name="mobileCode"
-                          value={form.mobileCode}
-                          onChange={handleChange}
-                          placeholder="+"
-                          className={[
-                            "w-[50px] py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
-                            errors.mobile
-                              ? "border-danger focus:border-danger"
-                              : "border-[var(--border)] hover:border-primary/40",
-                          ].join(" ")}
-                          onFocus={(e) => {
-                            e.currentTarget.style.boxShadow = errors.mobile
-                              ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
-                              : "0 0 0 3px rgba(37, 99, 235, 0.16)";
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.boxShadow = "";
-                          }}
-                        />
-                        <input
-                          name="mobile"
-                          type="tel"
-                          value={form.mobile}
-                          onChange={handleChange}
-                          placeholder="Enter mobile number"
-                          className={[
-                            "flex-1 py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
-                            errors.mobile
-                              ? "border-danger focus:border-danger"
-                              : "border-[var(--border)] hover:border-primary/40",
-                          ].join(" ")}
-                          onFocus={(e) => {
-                            e.currentTarget.style.boxShadow = errors.mobile
-                              ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
-                              : "0 0 0 3px rgba(37, 99, 235, 0.16)";
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.boxShadow = "";
-                          }}
-                        />
-                      </div>
-                      {errors.mobile && (
-                        <span className="text-[10px] text-danger mt-1">
-                          {errors.mobile}
-                        </span>
-                      )}
-                    </div>
-                  </Tooltip>
+                    )}
+ 
+                    
+                    
+                  </div>
+                              <ModalInput
+  label="Customer Group"
+  name="customerGroup"
+  value={form.customerGroup}
+  onChange={handleChange}
+  placeholder="Enter customer group"
+/>
                 </div>
               </div>
             </Card>
@@ -923,3 +885,4 @@ const CustomerModal: React.FC<{
   );
 };
 export default CustomerModal;
+  

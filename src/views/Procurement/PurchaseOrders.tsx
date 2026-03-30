@@ -32,6 +32,7 @@ import PurchaseOrderDetailModal, {
   type PurchaseOrderDetail,
 } from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+import Tooltip from "../../components/Tooltip";
 
 interface PurchaseOrder {
   id: string;
@@ -377,18 +378,62 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
 
   // ── Columns
   const columns: Column<PurchaseOrder>[] = [
-    { key: "id", header: "PO ID", align: "left" },
-    {key: "referenceNumber", header:"Reference Code", align:"left"},
-    { key: "supplier", header: "Supplier", align: "left" },
-    { key: "date", header: "Date", align: "left" },
+    {
+  key: "id",
+  header: "PO ID",
+  align: "left",
+  render: (o) => (
+    <Tooltip content={o.id}>
+      <span className="truncate max-w-[120px] block">
+        {o.id || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
+    {
+  key: "referenceNumber",
+  header: "Reference Code",
+  align: "left",
+  render: (o) => (
+    <Tooltip content={o.referenceNumber}>
+      <span className="truncate max-w-[140px] block">
+        {o.referenceNumber || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
+   {
+  key: "supplier",
+  header: "Supplier",
+  align: "left",
+  render: (o) => (
+    <Tooltip content={o.supplier}>
+      <span className="truncate max-w-[160px] block">
+        {o.supplier || "—"}
+      </span>
+    </Tooltip>
+  ),
+},
+  {
+  key: "date",
+  header: "Date",
+  align: "left",
+  render: (o) => (
+    <Tooltip content={o.date}>
+      <span>{o.date || "—"}</span>
+    </Tooltip>
+  ),
+},
     {
       key: "amount",
       header: "Amount",
       align: "right",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.amount || 0).toFixed(2)}
-        </code>
+        <Tooltip content={Number(o.amount || 0).toFixed(2)}>
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {Number(o.amount || 0).toFixed(2)}
+          </code>
+        </Tooltip>
       ),
     },
     {
@@ -397,7 +442,16 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
       align: "left",
       render: (o) => <StatusBadge status={o.status} />,
     },
-    { key: "deliveryDate", header: "Delivery Date", align: "left" },
+   {
+  key: "deliveryDate",
+  header: "Delivery Date",
+  align: "left",
+  render: (o) => (
+    <Tooltip content={o.deliveryDate}>
+      <span>{o.deliveryDate || "—"}</span>
+    </Tooltip>
+  ),
+},
     {
       key: "actions",
       header: "Actions",

@@ -10,7 +10,8 @@ import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import WarehouseSelect from "../../selects/WarehouseSelect";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import CostCenterSelect from "../../selects/CostCenterSelect";
-
+import ProjectSelect from "../../selects/ProjectSelect";
+import  Tooltip from "../../Tooltip";
 
 interface DetailsTabProps {
   form: PurchaseInvoiceFormData;
@@ -79,10 +80,12 @@ export const DetailsTab = ({
       <div className="bg-app">
         <div className="flex flex-wrap gap-x-3 gap-y-3 items-end">
           <div className="w-[250px]">
+            <Tooltip content={form.supplier ? `Supplier: ${form.supplier}` : 'Select a supplier'}>
             <SupplierSelect
               selectedId={form.supplierId}
               onChange={onSupplierChange}
             />
+            </Tooltip>
           </div>
 
           {/* PO Number Logic: Checkbox + Conditional Field */}
@@ -96,6 +99,7 @@ export const DetailsTab = ({
 
             <div className="flex-1">
               {usePO ? (
+                <Tooltip content={form.poNumber ? `PO Number: ${form.poNumber}` : 'Select a PO'}>
                 <ModalSelect
                   label=""
                   name="poNumber"
@@ -114,7 +118,9 @@ export const DetailsTab = ({
                     if (selected) onPOSelect(selected);
                   }}
                 />
+                </Tooltip>
               ) : (
+                <Tooltip content={form.poNumber ? `PO Number: ${form.poNumber}` : 'Enter PO number manually'}>
                 <ModalInput
                   label=""
                   name="poNumber"
@@ -122,12 +128,14 @@ export const DetailsTab = ({
                   value={form.poNumber}
                   onChange={onFormChange}
                 />
+                </Tooltip>
               )}
             </div>
           </div>
 
           <div className="w-[135px] ml-2">
             <span className="block h-5"></span> {/* Spacer for alignment */}
+            <Tooltip content={form.supplierInvoiceNumber ? `Supplier Invoice No: ${form.supplierInvoiceNumber}` : 'Enter supplier invoice number'}>
             <ModalInput
               label="Supplier Invoice No"
               name="supplierInvoiceNumber"
@@ -135,8 +143,10 @@ export const DetailsTab = ({
               onChange={onFormChange}
               required
             />
+            </Tooltip>
           </div>
           <div className="w-[140px] ml-2">
+            <Tooltip content={form.supplierInvoiceDate ? `Supplier Invoice Date: ${form.supplierInvoiceDate}` : 'Enter supplier invoice date'}>
             <DatePickerInput
               label="Supplier Invoice Date"
               name="supplierInvoiceDate"
@@ -147,8 +157,10 @@ export const DetailsTab = ({
                 } as any)
               }
             />
+            </Tooltip>
           </div>
           <div className="w-[128px] ml-2">
+            <Tooltip content={form.date ? `Date: ${form.date}` : 'Enter date'}>
             <DatePickerInput
               label="Date"
               name="date"
@@ -160,10 +172,12 @@ export const DetailsTab = ({
                 } as any)
               }
             />
+            </Tooltip>
           </div>
 
 
           <div className="w-[130px] ml-4">
+            <Tooltip content={form.status ? `Status: ${form.status}` : 'Select a status'}>
             <ModalSelect
               label="Status"
               name="status"
@@ -181,9 +195,11 @@ export const DetailsTab = ({
                 { value: "Party Paid", label: "Party Paid" },
               ]}
             />
+            </Tooltip>
           </div>
 
           <div className="w-[100px] ml-3">
+            <Tooltip content={form.costCenter ? `Cost Center: ${form.costCenter}` : 'Select a cost center'}>
             <CostCenterSelect
               value={form.costCenter}
               onChange={(val) =>
@@ -192,18 +208,25 @@ export const DetailsTab = ({
                 } as React.ChangeEvent<HTMLInputElement>)
               }
             />
+            </Tooltip>
           </div>
 
           <div className="w-[100px] ml-3">
-            <ModalInput
-              label="Project"
-              name="project"
+            <Tooltip content={form.project ? `Project: ${form.project}` : 'Select a project'}>
+
+            <ProjectSelect
               value={form.project}
-              disabled
+              onChange={(val) =>
+                onFormChange({
+                  target: { name: "project", value: val },
+                } as React.ChangeEvent<HTMLInputElement>)
+              }
             />
+            </Tooltip>
           </div>
 
           <div className="w-[110px] ml-3">
+            <Tooltip content={form.transactionProgress ? `Transaction Progress: ${form.transactionProgress}` : 'Select transaction progress'}>
             <ModalSelect
               label="Transaction Progress"
               name="transactionProgress"
@@ -217,9 +240,12 @@ export const DetailsTab = ({
                 { value: "REJECTED", label: "Rejected" },
               ]}
             />
+            </Tooltip>
           </div>
 
           <div className="w-[110px] ml-2">
+            <Tooltip content={form.paymentType ? `Payment Type: ${form.paymentType}` : 'Select payment type'}>
+
             <ModalSelect
               label="Payment Type"
               name="paymentType"
@@ -237,8 +263,10 @@ export const DetailsTab = ({
                 { value: "OTHER", label: "Other" },
               ]}
             />
+            </Tooltip>
           </div>
           <div className="w-[110px]">
+              <Tooltip content={form.warehouse ? `Warehouse: ${form.warehouse}` : 'Select a warehouse'}>
             <WarehouseSelect
               name="warehouse"
               value={form.warehouse || ""}
@@ -246,8 +274,10 @@ export const DetailsTab = ({
               required={form.updateStock}
               disabled={!form.updateStock}
             />
+            </Tooltip>
           </div>
           <div className="flex items-center gap-2 mt-1">
+            <Tooltip content={form.updateStock ? 'Update Stock: Yes' : 'Update Stock: No'}>
             <input
               type="checkbox"
               name="updateStock"
@@ -255,6 +285,7 @@ export const DetailsTab = ({
               onChange={onFormChange}
               className="w-3.5 h-3.5 accent-primary"
             />
+            </Tooltip>
 
             <span className="text-xs text-main">Update Stock</span>
           </div>
@@ -351,22 +382,26 @@ export const DetailsTab = ({
                     {/* ITEM */}
                     <td className="px-2 py-1">
                       <div className="w-[125px]">
+                          <Tooltip content={it.itemName ? `Item: ${it.itemName}` : 'Select an item'}>
                         <POItemSelect
                           value={it.itemName}
                           selectedId={it.itemCode}
                           onChange={(item: any) => onItemSelect(item.id, i)}
                         />
+                        </Tooltip>
                       </div>
                     </td>
 
                     {/* DESCRIPTION */}
                     <td className="px-2 py-1">
+                      <Tooltip content={it.description || 'Enter item description'}>
                       <input
                         name="description"
                         value={it.description || ""}
                         onChange={(e) => onItemChange(e, i)}
                         className="w-[70px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
                       />
+                      </Tooltip>
                     </td>
 
                     {/* PACKING */}
@@ -645,7 +680,6 @@ export const DetailsTab = ({
                   {symbol} {form.subTotal?.toFixed(2) || "0.00"}
                 </span>
               </div>
-
               <div className="flex justify-between text-xs">
                 <span className="text-muted">Total Tax</span>
                 <span className="font-medium text-main">

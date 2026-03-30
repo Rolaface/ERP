@@ -24,9 +24,6 @@ import AddressBlock from "../ui/modal/AddressBlock";
 import { formatDate } from "../../utils/dateFormatter";
 import Tooltip from "../Tooltip";
 
-// import ModalInput from "../ui/ModalInput";
-// import ModalSelect from "../ui/ModalSelect";
-
 interface InvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -133,8 +130,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       preventDefault: () => {},
                     } as React.FormEvent;
                     const payload = await actions.handleSubmit(dummyEvent);
-                    payload.invoiceCharges = (payload.invoiceCharges || [])
-                   .filter(ch => ch.charge_type?.trim());
+                  payload.invoiceCharges = (payload.invoiceCharges || [])
+  .filter(ch => ch.charge_type?.trim() && Number(ch.amount) > 0);
                     if (!payload) {
                       showValidationError(
                         "Please fill all required fields correctly.",
@@ -270,7 +267,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                             : "Exchange Rate"
                         }
                         name="exchangeRt"
-                        value={formData.exchangeRt}
+                        value={formData.exchangeRt || "1"}
                         onChange={actions.handleInputChange}
                         className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                       />
@@ -305,21 +302,23 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
-                  <div className="flex items-end gap-4 min-w-[220px]">
+                  <div className="flex items-end gap-4 min-w-[120px]">
                     <Tooltip content={`Select Warehouse for the Invoice. Current selection: ${formData.warehouse || "N/A"}`}>
-                    <WarehouseSelect
-            
-                      className="w-[200px]"
-                      name="warehouse"
-                      value={formData.warehouse || ""}
-                      onChange={(e) => {
-                        actions.handleBulkItemChange(
-                          "warehouse",
-                          e.target.value,
-                        );
-                      }}
-                      label="Warehouse"
-                    />
+                 <WarehouseSelect
+  className="w-[150px]"
+  name="warehouse"
+  value={formData.warehouse || ""}
+  onChange={(e) => {
+    actions.handleBulkItemChange("warehouse", e.target.value);
+  }}
+  label="Warehouse"
+
+  onDefaultLoad={(firstWarehouse) => {
+    if (!formData.warehouse) {
+      actions.handleBulkItemChange("warehouse", firstWarehouse);
+    }
+  }}
+/>
                     </Tooltip>
 
                     <label className="flex items-center gap-2 pb-1">
@@ -336,16 +335,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     </label>
                   </div>
 
-                  {ui.isExport && (
-                    <ModalInput
-                      label="Customer Country"
-                      name="destnCountryCd"
-                      type="text"
-                      value={formData.destnCountryCd}
-                      onChange={actions.handleInputChange}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  )}
+               
 
                   {ui.isLocal && (
                     <ModalInput
@@ -359,6 +349,16 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   )}
+                     {/* {ui.isExport && (
+                    <ModalInput
+                      label="Customer Country"
+                      name="destnCountryCd"
+                      type="text"
+                      value={formData.destnCountryCd}
+                      onChange={actions.handleInputChange}
+                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                    />
+                  )} */}
                   {/* <ModalInput
                   label="Shipping Charges"
                   name="shippingCharges"
@@ -831,7 +831,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Phone size={12} />
-                        {customerDetails?.mobile_no ?? "+123 4567890"}
+                        {customerDetails?.mobile_no ?? ""}
                       </div>
                       {customerDetails && (
                         <div className="bg-card rounded-lg ">

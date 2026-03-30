@@ -7,6 +7,7 @@ import { fetchCurrencyOptions } from "../../../utils/currencyOptions";
 import TaxCategorySelect from "../../selects/TaxCategorySelect";
 import { CreditDaysInput, ModalInput} from "../../ui/modal/modalComponent";
 import DatePickerInput from "../../calendar/DatePickerInput";
+import Tooltip from "../../Tooltip";
 interface SupplierInfoTabProps {
   form: SupplierFormData;
   onChange: (
@@ -47,6 +48,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
             Supplier Details
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+            <Tooltip content={form.tpin || 'Enter Tax Id / TPIN'}>
             <ModalInput
               label="Tax Id / TPIN"
               name="tpin"
@@ -56,6 +58,8 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               error={errors.tpin}
               required
             />
+            </Tooltip>
+            <Tooltip content={form.supplierName || 'Supplier name is required'}>
             <ModalInput
               label="Supplier Name"
               name="supplierName"
@@ -64,13 +68,18 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               required
               error={errors.supplierName}
             />
+            </Tooltip>
+            <Tooltip content={form.supplierCode || 'Supplier code is auto generated'}>
             <ModalInput
               label="Supplier Code"
               name="supplierCode"
               value={form.supplierCode}
               onChange={onChange}
               placeholder="Auto generated"
+            
             />
+            </Tooltip>
+            <Tooltip content={form.taxCategory ? `Tax Category: ${form.taxCategory}` : 'Select a tax category'}>
             <TaxCategorySelect
               value={form.taxCategory}
               onChange={(val) =>
@@ -81,10 +90,12 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               error={errors.taxCategory}
               required
             />
+            </Tooltip>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <Tooltip content={form.currency ? `Currency: ${form.currency}` : 'Select a currency'}>
           <SearchSelect2
             label="Currency"
             value={form.currency}
@@ -98,7 +109,9 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
             required
             error={errors.currency}
           />
-
+          </Tooltip>
+      
+         <Tooltip content={form.openingBalance ? `Opening Balance: ${form.openingBalance}` : 'Enter opening balance'}>
           <ModalInput
             label="Opening Balance"
             name="openingBalance"
@@ -108,7 +121,9 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
             error={errors.openingBalance}
             className="no-spinner"
           />
+          </Tooltip>
 
+          <Tooltip content={form.paymentTerms ? `Payment Terms: ${form.paymentTerms}` : 'Enter payment terms'}>
           <CreditDaysInput
             name="paymentTerms"
             value={form.paymentTerms}
@@ -117,6 +132,9 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
             error={errors.paymentTerms}
             className="no-spinner"
           />
+          </Tooltip>
+
+           <Tooltip content={form.dateOfAddition ? `Date of Addition: ${form.dateOfAddition}` : 'Select date of addition'}>
 
           <DatePickerInput
             label="Date of Addition"
@@ -130,6 +148,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
             required
           // error={errors.dateOfAddition}
           />
+          </Tooltip>
         </div>
 
         {/* Contact Details */}
@@ -170,6 +189,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                   }}
                   onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
                 />
+                <Tooltip content={form.phoneNo || 'Enter mobile number'}>
                 <input
                   name="phoneNo"
                   type="tel"
@@ -189,6 +209,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                   }}
                   onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
                 />
+                </Tooltip>
               </div>
               <div className="min-h-[14px] mt-1">
                 {errors.phoneNo && (
@@ -203,6 +224,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                 Alternate No
               </span>
               <div className="flex gap-0">
+                <Tooltip content={form.alternateNo || 'Enter alternate mobile number'}>
                 <input
                   name="alternateCode"
                   value={form.alternateCode}
@@ -221,6 +243,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                   }}
                   onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
                 />
+                </Tooltip>
                 <input
                   name="alternateNo"
                   type="tel"
@@ -245,6 +268,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                 <span className="text-[10px] text-danger mt-1">{errors.alternateNo}</span>
               )}
             </div>
+            <Tooltip content={form.emailId || 'Enter email address'}>
             <ModalInput
               label="Email Id"
               name="emailId"
@@ -254,6 +278,8 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               required
               error={errors.emailId}
             />
+            </Tooltip>
+     
           </div>
 
         </div>
