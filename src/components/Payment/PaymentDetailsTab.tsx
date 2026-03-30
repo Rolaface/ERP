@@ -16,6 +16,7 @@ import {
 } from "../../views/PaymentEntry/usePaymentEntryLogic";
 import DatePickerInput from "../calendar/DatePickerInput";
 import CostCenterSelect from "../selects/CostCenterSelect";
+import ProjectSelect from "../selects/ProjectSelect";
 
 interface PaymentDetailsTabProps {
   form: Record<string, any>;
@@ -876,12 +877,14 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
       {/* Project & Cost Centre */}
       <div className="grid grid-cols-2 gap-3">
-        <ModalInput
-          label="Project"
-          name="project"
-          value={form.project ?? ""}
-          onChange={onChange}
-        />
+        <ProjectSelect
+    value={form.project ?? ""}
+    onChange={(val) =>
+      onChange({
+        target: { name: "project", value: val },
+      } as React.ChangeEvent<HTMLInputElement>)
+    }
+  />
         <CostCenterSelect
           value={form.costCenter ?? ""}
           onChange={(val) =>

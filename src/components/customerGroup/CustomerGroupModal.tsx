@@ -15,7 +15,7 @@ interface Props {
   onSubmit: (payload: CustomerGroupPayload) => void;
 }
 
-// ─── Toggle constants — change these two numbers to resize the toggle ─────────
+
 const TOGGLE_W = 156; // total width  (px)
 const TOGGLE_H = 28;  // total height (px)
 const PILL_PAD = 3;   // padding around the sliding pill (px)

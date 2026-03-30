@@ -18,6 +18,7 @@ import {
   showApiError,
 } from "../../utils/alert";
 import type { AllocationResult } from "../../types/paymententryrecord.types";
+import { fetchCostCenters, fetchProjects } from "../../api/getAllApi";
 
 type TabType = "details" | "invoices" | "taxes";
 
@@ -188,7 +189,39 @@ const PaymentEntryModal: React.FC<Props> = ({
     setInvoicesMounted(false);
     setTaxesMounted(false);
     setIsSaving(false);
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen]); 
+
+  useEffect(() => {
+  if (!isOpen) return;
+
+  let cancelled = false;
+
+  const applyDefault = async (
+    fetcher: () => Promise<{ value: string }[]>,
+    field: string
+  ) => {
+    try {
+      const options = await fetcher();
+      if (cancelled) return;
+      if (options.length > 0) {
+        setForm((prev) => {
+          // Only set if still empty — don't overwrite defaultValues
+          if (prev[field]?.trim()) return prev;
+          return { ...prev, [field]: options[0].value };
+        });
+      }
+    } catch {
+      // silent fail — user picks manually
+    }
+  };
+
+  applyDefault(fetchCostCenters, "costCenter");
+  applyDefault(fetchProjects, "project");
+
+  return () => {
+    cancelled = true;
+  };
+}, [isOpen]);
 
   // ── Derived values ─────────────────────────────────────────────────────────
   const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
