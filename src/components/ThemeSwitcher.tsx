@@ -18,6 +18,8 @@ const themes: { value: Theme; label: string }[] = [
   { value: "dark", label: "🌙 Classic Dark" },
   { value: "gold", label: "🏆 Classic Gold" },
   { value: "cyber", label: "🚀 Cyber Neon" },
+
+  { value: "clinical-sanctuary", label: "🧪 Clinical Sanctuary"},
 ];
 
 export function ThemeSwitcher() {

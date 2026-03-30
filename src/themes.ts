@@ -13,7 +13,8 @@ export type Theme =
   | "nordic"
   | "cyber"
   | "glass"
-  | "luxury";
+  | "luxury"
+  | "clinical-sanctuary";
 
 const THEME_KEY = "erp-theme";
 
