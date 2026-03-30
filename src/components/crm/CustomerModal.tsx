@@ -219,9 +219,6 @@ const CustomerModal: React.FC<{
     form.billingCountry,
   ]);
 
-
-
-  // for next button
   const tabs: Array<"details" | "bank" | "address" | "terms"> = [
     "details",
     "bank",

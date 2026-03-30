@@ -641,7 +641,6 @@ export const DetailsTab = ({
                   {symbol} {form.subTotal?.toFixed(2) || "0.00"}
                 </span>
               </div>
-
               <div className="flex justify-between text-xs">
                 <span className="text-muted">Total Tax</span>
                 <span className="font-medium text-main">
