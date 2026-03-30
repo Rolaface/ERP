@@ -3,132 +3,156 @@ import { Star } from "lucide-react";
 
 const testimonials = [
   {
-    text: "Earlier we were managing everything in Excel. Payments were always confusing. Now everything is clear in one place.",
-    name: "Pharma Distributor",
-    role: "Delhi",
-    icon: "PD",
+    text: "Earlier, we were managing everything in Excel and WhatsApp. Payments were always confusing. Now everything is crystal clear in one place.",
+    name: "Amit Sharma",
+    role: "Pharma Distributor · Delhi",
+    icon: "AS",
   },
   {
-    text: "This ERP saved our accounting team hours every week.",
-    name: "Trading Business Owner",
-    role: "",
-    icon: "TB",
+    text: "This ERP saved our accounting team 10+ hours every week. Reconciliation is no longer a headache.",
+    name: "Neha Gupta",
+    role: "Trading Business Owner",
+    icon: "NG",
   },
   {
-    text: "Very simple UI. My team learned it in one day.",
-    name: "Operations Manager",
-    role: "",
-    icon: "OM",
+    text: "The UI is so simple that my team got comfortable within a day. No training needed.",
+    name: "Rohit Jain",
+    role: "Operations Manager",
+    icon: "RJ",
   },
   {
-    text: "Inventory and accounting finally feel connected. Huge time saver.",
-    name: "Distributor",
-    role: "",
-    icon: "DS",
+    text: "Inventory and accounting finally feel connected. We make faster decisions now.",
+    name: "Vikas Agarwal",
+    role: "Distributor",
+    icon: "VA",
   },
 ];
 
 const Card = ({ t }: any) => (
-  <div className="w-[320px] md:w-[360px] flex-shrink-0 bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 hover:shadow-xl transition-all">
+  <div className="w-[300px] md:w-[340px] flex-shrink-0 bg-card border border-theme rounded-[calc(var(--density-radius)*1.5)] p-[calc(var(--density-gap)*2)] transition-all duration-300 hover:shadow-md hover:-translate-y-1 hover:scale-[1.02]">
+
     {/* Stars */}
-    <div className="flex mb-4 text-amber-500">
+    <div className="flex mb-4 text-[var(--primary)]">
       {[...Array(5)].map((_, i) => (
-        <Star key={i} size={16} fill="currentColor" />
+        <Star key={i} size={14} fill="currentColor" />
       ))}
     </div>
 
     {/* Text */}
-    <p className="text-gray-700 text-base md:text-lg leading-relaxed mb-6">
+    <p className="text-[14px] text-main leading-relaxed mb-6">
       “{t.text}”
     </p>
 
     {/* User */}
-    <div className="flex items-center gap-4">
-      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-300 flex items-center justify-center text-white font-bold text-sm">
+    <div className="flex items-center gap-3">
+
+      {/* Avatar */}
+      <div className="w-9 h-9 rounded-full bg-[var(--row-hover)] flex items-center justify-center text-[12px] font-semibold text-main">
         {t.icon}
       </div>
+
+      {/* Info */}
       <div>
-        <p className="font-semibold text-gray-900 text-sm md:text-base">
+        <p className="text-[13px] font-semibold text-main">
           {t.name}
         </p>
-        {t.role && (
-          <p className="text-xs text-gray-500">{t.role}</p>
-        )}
+        <p className="text-[12px] text-muted">
+          {t.role}
+        </p>
       </div>
+
     </div>
   </div>
 );
 
 const Testimonials: React.FC = () => {
   return (
-    <section className="relative py-28 bg-gradient-to-b from-white to-gray-50 overflow-hidden">
+    <section className="section section-default overflow-hidden">
 
-      {/* HEADER */}
-      <div className="text-center max-w-3xl mx-auto mb-20 px-6">
-        
+      <div className="container-app">
 
-        <h2 className="text-4xl md:text-5xl font-extrabold mt-4 leading-tight">
-          Trusted by{" "}
-          <span className="bg-gradient-to-r from-amber-600 to-amber-400 bg-clip-text text-transparent">
-            growing businesses
-          </span>
-        </h2>
+        {/* HEADER */}
+        <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
 
-        <p className="mt-6 text-lg text-gray-500">
-          Real stories from businesses simplifying operations
-        </p>
+          <h2 className="text-[30px] md:text-[36px] font-semibold text-main leading-snug">
+            Trusted by{" "}
+            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
+              growing businesses
+            </span>
+          </h2>
+
+          <p className="text-body text-muted">
+            Real stories from businesses simplifying their operations every day.
+          </p>
+
+        </div>
+
       </div>
 
       {/* GRADIENT EDGES */}
-      <div className="pointer-events-none absolute left-0 top-0 h-full w-24 bg-gradient-to-r from-white to-transparent z-10" />
-      <div className="pointer-events-none absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-white to-transparent z-10" />
+      <div className="pointer-events-none absolute left-0 top-0 h-full w-24 bg-gradient-to-r from-[var(--bg)] to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-[var(--bg)] to-transparent z-10" />
 
-      {/* ROW 1 (LEFT → RIGHT) */}
-      <div className="overflow-hidden mb-8">
-        <div className="flex gap-6 w-max animate-marquee-fast hover:[animation-play-state:paused]">
+      {/* ROW 1 */}
+      <div className="overflow-hidden mt-[calc(var(--density-gap)*4)]">
+        <div className="flex gap-[var(--density-gap)] w-max animate-marquee-fast hover:[animation-play-state:paused]">
           {[...testimonials, ...testimonials].map((t, i) => (
             <Card key={i} t={t} />
           ))}
         </div>
       </div>
 
-      {/* ROW 2 (RIGHT → LEFT) */}
-      <div className="overflow-hidden">
-        <div className="flex gap-6 w-max animate-marquee-slow hover:[animation-play-state:paused]">
+      {/* ROW 2 */}
+      <div className="overflow-hidden mt-[var(--density-gap)]">
+        <div className="flex gap-[var(--density-gap)] w-max animate-marquee-slow hover:[animation-play-state:paused]">
           {[...testimonials, ...testimonials].map((t, i) => (
             <Card key={i} t={t} />
           ))}
         </div>
+      </div>
+
+      {/* TRUST LINE */}
+      <div className="text-center mt-[calc(var(--density-gap)*4)] animate-fade-in">
+        <p className="text-[13px] text-muted">
+          Join 500+ businesses already running smarter operations
+        </p>
       </div>
 
       {/* ANIMATIONS */}
-      <style jsx>{`
-        @keyframes marquee-fast {
-          0% {
-            transform: translateX(0%);
+      <style>
+        {`
+          .animate-fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s ease forwards;
           }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
 
-        @keyframes marquee-slow {
-          0% {
-            transform: translateX(-50%);
+          @keyframes fadeIn {
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
-          100% {
-            transform: translateX(0%);
+
+          @keyframes marquee-fast {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
           }
-        }
 
-        .animate-marquee-fast {
-          animation: marquee-fast 20s linear infinite;
-        }
+          @keyframes marquee-slow {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0%); }
+          }
 
-        .animate-marquee-slow {
-          animation: marquee-slow 28s linear infinite;
-        }
-      `}</style>
+          .animate-marquee-fast {
+            animation: marquee-fast 22s linear infinite;
+          }
+
+          .animate-marquee-slow {
+            animation: marquee-slow 30s linear infinite;
+          }
+        `}
+      </style>
     </section>
   );
 };

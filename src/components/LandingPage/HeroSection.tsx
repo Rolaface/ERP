@@ -4,20 +4,20 @@ const HeroSection: React.FC = () => {
   const imageRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // ✅ Parallax Effect
+  // Subtle Parallax
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!imageRef.current) return;
 
       const { innerWidth, innerHeight } = window;
-      const x = (e.clientX - innerWidth / 2) / 25;
-      const y = (e.clientY - innerHeight / 2) / 25;
+      const x = (e.clientX - innerWidth / 2) / 50;
+      const y = (e.clientY - innerHeight / 2) / 50;
 
       imageRef.current.style.transform = `
         perspective(1200px)
-        rotateY(${x * 0.5}deg)
-        rotateX(${-y * 0.5}deg)
-        scale(1.05)
+        rotateY(${x * 0.25}deg)
+        rotateX(${-y * 0.25}deg)
+        scale(1.02)
       `;
     };
 
@@ -25,7 +25,7 @@ const HeroSection: React.FC = () => {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  // ✅ Magnetic Button
+  // Magnetic CTA
   useEffect(() => {
     const btn = buttonRef.current;
     if (!btn) return;
@@ -35,7 +35,7 @@ const HeroSection: React.FC = () => {
       const x = e.clientX - rect.left - rect.width / 2;
       const y = e.clientY - rect.top - rect.height / 2;
 
-      btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
+      btn.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px)`;
     };
 
     const reset = () => {
@@ -52,74 +52,76 @@ const HeroSection: React.FC = () => {
   }, []);
 
   return (
-    <section className="relative w-full bg-[#f8f6f3] pt-28 pb-20 overflow-hidden">
+    <section className="section section-default overflow-hidden">
+      <div className="container-app">
 
-      <div className="relative max-w-7xl mx-auto px-6">
-
-        <div className="grid lg:grid-cols-[1fr_1.25fr] items-center gap-10 lg:gap-14">
+        {/* ⚖️ BALANCED GRID */}
+        <div className="grid lg:grid-cols-2 items-center gap-[calc(var(--density-gap)*2.5)]">
 
           {/* LEFT */}
-          <div className="max-w-[600px]">
+          <div className="max-w-[600px] stack-md">
 
-            <h1 className="text-[36px] md:text-[48px] font-medium leading-[1.0] tracking-[-0.02em] text-gray-900">
-              Run Your Entire Business
+            <div className="badge">
+              Trusted by 500+ growing businesses
+            </div>
+
+            {/* Balanced Headline */}
+            <h1 className="leading-tight font-semibold text-[30px] md:text-[38px] lg:text-[44px] tracking-tight">
+              Run your entire business
               <br />
-              in One Place
+              from one dashboard —
               <br />
-              <span className="bg-gradient-to-r from-[#c58b45] to-[#e0b97a] bg-clip-text text-transparent">
-                Without the Chaos
+              <span className="text-primary">
+                without chaos or spreadsheets
               </span>
             </h1>
 
-            <p className="mt-3 text-lg text-gray-600">
-              Manage sales, inventory, purchases, and payments seamlessly.
+            <p className="text-[15px] text-muted leading-relaxed">
+              Manage inventory, sales, accounting, and operations in one simple system.
+              Built for businesses that want clarity, speed, and control.
             </p>
 
-            <div className="mt-5 flex items-center gap-4">
+            <div className="flex items-center gap-[var(--density-gap)] flex-wrap">
 
-              {/* Magnetic CTA */}
               <button
                 ref={buttonRef}
-                className="relative bg-[#c58b45] text-white px-7 py-3.5 rounded-xl shadow-lg transition-all duration-300"
+                className="btn btn-primary shadow-sm hover:shadow-md"
               >
-                Get Your Free Demo
+                Start Free — No Setup Needed
               </button>
 
+              <button className="btn btn-outline">
+                See Live Demo
+              </button>
             </div>
+
+            <p className="text-[12px] text-muted">
+              No credit card required • Setup in under 5 minutes
+            </p>
 
           </div>
 
           {/* RIGHT */}
-          <div className="relative">
+          <div className="relative flex justify-center lg:justify-end">
 
-
-
-            {/* Parallax Image */}
             <div
               ref={imageRef}
-              className="transition-transform duration-200"
+              className="transition-transform duration-200 w-full max-w-[540px]"
             >
               <img
                 src="/dashboard.png"
                 alt="ERP Dashboard"
-                className="w-full rounded-2xl shadow-2xl"
+                className="w-full rounded-[calc(var(--density-radius)*2)] shadow-xl border border-theme"
               />
             </div>
+
+            {/* Soft Glow */}
+            <div className="absolute -z-10 w-[80%] h-[80%] blur-3xl opacity-10 bg-primary rounded-full"></div>
 
           </div>
 
         </div>
       </div>
-
-      {/* Animations */}
-      <style>
-        {`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-          }
-        `}
-      </style>
     </section>
   );
 };

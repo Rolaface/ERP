@@ -1,136 +1,153 @@
 import React from "react";
-import { motion } from "framer-motion";
-import {
-  Building2,
-  Receipt,
-  BarChart3,
-  ShieldCheck,
-} from "lucide-react";
+import { Building2, Receipt, BarChart3, ShieldCheck } from "lucide-react";
 
 const steps = [
   {
     id: "01",
     icon: Building2,
-    title: "Setup your business",
-    desc: "Add company, users, and accounts to personalize your workspace environment.",
+    title: "Set up your business in minutes",
+    desc: "Add your company, team, and accounts to get started — no complex setup required.",
   },
   {
     id: "02",
     icon: Receipt,
     title: "Start recording transactions",
-    desc: "Easily log sales, purchases, and payments with our intuitive ledger-style interface.",
+    desc: "Log sales, purchases, and payments in a clean, intuitive workflow.",
   },
   {
     id: "03",
     icon: BarChart3,
     title: "Track everything in real-time",
-    desc: "Your dashboard and financial reports update instantly as data flows through the system.",
+    desc: "Your dashboard updates instantly, giving you complete visibility into operations.",
   },
   {
     id: "04",
     icon: ShieldCheck,
-    title: "Stay in control",
-    desc: "Know your cash flow, outstanding dues, and net profits at any moment.",
+    title: "Stay in control at all times",
+    desc: "Monitor cash flow, dues, and profits without chasing data across tools.",
   },
 ];
 
 const HowItWorks: React.FC = () => {
   return (
-    <section className="relative py-28 bg-[#f9f9f9] overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(197,139,69,0.08)_0%,transparent_70%)] pointer-events-none" />
+    <section className="section section-default overflow-hidden">
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center max-w-3xl mx-auto mb-20"
-        >
-          <span className="text-xs font-bold tracking-[0.2em] text-[#845411] uppercase">
-            How It Works
-          </span>
+      <div className="container-app">
 
-          <h2 className="mt-4 text-4xl md:text-5xl font-extrabold leading-tight tracking-tight text-[#1a1c1c]">
+        {/* HEADER */}
+        <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
+
+        
+
+          <h2 className="text-[30px] md:text-[36px] font-semibold leading-snug text-main">
             Get started in minutes,{" "}
-            <span className="text-[#c58b45]">not weeks</span>
+            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
+              not weeks
+            </span>
           </h2>
 
-          <p className="mt-6 text-lg text-[#514538] opacity-80">
-            A simple 4-step process to run your entire business
+          <p className="text-body text-muted">
+            A simple step-by-step flow to run your entire business without chaos.
           </p>
-        </motion.div>
 
-        {/* Steps */}
-        <div className="relative grid grid-cols-1 md:grid-cols-4 gap-10 lg:gap-12">
-          {/* Connector Line */}
-          <div className="hidden md:block absolute top-10 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#d5c3b3] to-transparent opacity-40" />
+        </div>
+
+        {/* STEPS */}
+        <div className="relative mt-[calc(var(--density-gap)*4)] grid md:grid-cols-4 gap-[calc(var(--density-gap)*2)]">
+
+          {/* Connector line */}
+          <div className="hidden md:block absolute top-8 left-0 w-full h-px bg-[var(--border)]" />
 
           {steps.map((step, index) => {
             const Icon = step.icon;
 
             return (
-              <motion.div
+              <div
                 key={step.id}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.15 }}
-                viewport={{ once: true }}
-                className="group flex flex-col items-center md:items-start text-center md:text-left"
+                className="relative flex flex-col items-center text-center md:text-left md:items-start animate-fade-up"
+                style={{ animationDelay: `${index * 0.12}s` }}
               >
-                {/* Icon */}
-                <div className="mb-6 relative">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="w-14 h-14 rounded-xl bg-white flex items-center justify-center shadow-[0px_20px_40px_rgba(81,69,56,0.08)] group-hover:bg-[#845411] transition-all duration-300"
-                  >
-                    <Icon
-                      size={26}
-                      className="text-[#845411] group-hover:text-white transition-colors"
-                    />
-                  </motion.div>
 
-                  {/* Step Number */}
-                  <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-[#cfe6f2] text-[#354a53] text-xs font-bold flex items-center justify-center">
+                {/* ICON */}
+                <div className="relative mb-4">
+
+                  <div className="w-12 h-12 rounded-[var(--density-radius)] bg-card border border-theme flex items-center justify-center transition-all duration-300 hover:scale-105">
+                    <Icon size={20} className="text-primary" />
+                  </div>
+
+                  {/* STEP NUMBER */}
+                  <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-white text-[10px] font-semibold flex items-center justify-center">
                     {step.id}
                   </div>
+
                 </div>
 
-                {/* Card */}
-                <motion.div
-                  whileHover={{ y: -6 }}
-                  className="p-6 bg-white rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.04)] border border-[#d5c3b3]/20 w-full transition-all duration-300"
-                >
-                  <h3 className="text-lg font-bold text-[#1a1c1c] mb-3">
+                {/* CONTENT */}
+                <div className="stack-sm max-w-[220px]">
+
+                  <h3 className="text-[15px] font-semibold text-main">
                     {step.title}
                   </h3>
-                  <p className="text-sm text-[#514538] leading-relaxed opacity-80">
+
+                  <p className="text-[13px] text-muted leading-relaxed">
                     {step.desc}
                   </p>
-                </motion.div>
-              </motion.div>
+
+                </div>
+
+              </div>
             );
           })}
+
         </div>
 
-        {/* Bottom Trust Line */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          viewport={{ once: true }}
-          className="mt-24 text-center"
-        >
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-white rounded-full border border-[#d5c3b3]/20 shadow-sm">
-            <ShieldCheck size={16} className="text-[#845411]" />
-            <p className="text-sm text-[#514538] font-medium">
-              No technical setup. Your team can start instantly.
+        {/* BOTTOM TRUST LINE */}
+        <div className="mt-[calc(var(--density-gap)*4)] text-center animate-fade-in">
+
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-theme rounded-full">
+
+            <ShieldCheck size={14} className="text-primary" />
+
+            <p className="text-[13px] text-muted">
+              No technical setup required — your team can start instantly
             </p>
+
           </div>
-        </motion.div>
+
+        </div>
+
       </div>
+
+      {/* ANIMATIONS */}
+      <style>
+        {`
+          .animate-fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s ease forwards;
+          }
+
+          .animate-fade-up {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 0.7s ease forwards;
+          }
+
+          @keyframes fadeIn {
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @keyframes fadeUp {
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}
+      </style>
     </section>
   );
 };
