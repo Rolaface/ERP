@@ -15,6 +15,7 @@ import {
   type PartyOption,
 } from "../../views/PaymentEntry/usePaymentEntryLogic";
 import DatePickerInput from "../calendar/DatePickerInput";
+import CostCenterSelect from "../selects/CostCenterSelect";
 
 interface PaymentDetailsTabProps {
   form: Record<string, any>;
@@ -76,8 +77,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     "";
   const isInternalTransfer = paymentType === "Internal Transfer";
 
-  
-const companyBaseCurrency = useCompanyStore((s) => s.baseCurrency);
+
+  const companyBaseCurrency = useCompanyStore((s) => s.baseCurrency);
 
   const { partyOptions, isLoadingParties, fetchParties } =
     usePartyOptions(partyType);
@@ -132,7 +133,7 @@ const companyBaseCurrency = useCompanyStore((s) => s.baseCurrency);
     currencyFrom,
     currencyTo,
     date,
-     companyBaseCurrency,
+    companyBaseCurrency,
   );
 
   // Sync exchange rate result into form state
@@ -173,25 +174,25 @@ const companyBaseCurrency = useCompanyStore((s) => s.baseCurrency);
     if (!selectedMode) return;
 
     // normal autofill
-  if (paymentType === "Pay") {
-  onFormChange({
-    glFrom: selectedMode.defaultAccount ?? "",
-    currencyFrom: selectedMode.currency ?? "",
-  });
-} else if (paymentType === "Receive") {
-  onFormChange({
-    glTo: selectedMode.defaultAccount ?? "",
-    currencyTo: selectedMode.currency ?? "",
-  });
-} else if (paymentType === "Internal Transfer") {
-  // Internal Transfer: defaultAccount → Paid From (glFrom) only
-  // glTo user manually select karega
-  onFormChange({
-    glFrom: selectedMode.defaultAccount ?? "",
-    currencyFrom: selectedMode.currency ?? "",
-  });
-}
-  }, [selectedMode, paymentType, form.mode]); 
+    if (paymentType === "Pay") {
+      onFormChange({
+        glFrom: selectedMode.defaultAccount ?? "",
+        currencyFrom: selectedMode.currency ?? "",
+      });
+    } else if (paymentType === "Receive") {
+      onFormChange({
+        glTo: selectedMode.defaultAccount ?? "",
+        currencyTo: selectedMode.currency ?? "",
+      });
+    } else if (paymentType === "Internal Transfer") {
+      // Internal Transfer: defaultAccount → Paid From (glFrom) only
+      // glTo user manually select karega
+      onFormChange({
+        glFrom: selectedMode.defaultAccount ?? "",
+        currencyFrom: selectedMode.currency ?? "",
+      });
+    }
+  }, [selectedMode, paymentType, form.mode]);
 
   // ── Party change → auto-fill GL + bank accounts ───────────────────────────
   // LOGIC:
@@ -652,7 +653,7 @@ const companyBaseCurrency = useCompanyStore((s) => s.baseCurrency);
           options={[
             { label: "Pay", value: "Pay" },
             { label: "Receive", value: "Receive" },
-            {label: "Internal Transfer", value: "Internal Transfer"}
+            { label: "Internal Transfer", value: "Internal Transfer" }
           ]}
         />
         <ModalSelect
@@ -881,11 +882,13 @@ const companyBaseCurrency = useCompanyStore((s) => s.baseCurrency);
           value={form.project ?? ""}
           onChange={onChange}
         />
-        <ModalInput
-          label="Cost Centre"
-          name="costCenter"
+        <CostCenterSelect
           value={form.costCenter ?? ""}
-          onChange={onChange}
+          onChange={(val) =>
+            onChange({
+              target: { name: "costCenter", value: val },
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
         />
       </div>
 
