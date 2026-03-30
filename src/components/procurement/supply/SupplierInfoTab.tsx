@@ -1,11 +1,11 @@
 import React from "react";
 import {
-  taxCategorySelectOptions,
   type SupplierFormData,
 } from "../../../types/Supply/supplier";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import { fetchCurrencyOptions } from "../../../utils/currencyOptions";
-import { CreditDaysInput, ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
+import TaxCategorySelect from "../../selects/TaxCategorySelect";
+import { CreditDaysInput, ModalInput} from "../../ui/modal/modalComponent";
 import DatePickerInput from "../../calendar/DatePickerInput";
 interface SupplierInfoTabProps {
   form: SupplierFormData;
@@ -71,32 +71,33 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               onChange={onChange}
               placeholder="Auto generated"
             />
-            <ModalSelect
-              label="Tax Category"
-              name="taxCategory"
+            <TaxCategorySelect
               value={form.taxCategory}
-              onChange={onChange}
-              options={[...taxCategorySelectOptions]}
-              required
+              onChange={(val) =>
+                onChange({
+                  target: { name: "taxCategory", value: val },
+                } as React.ChangeEvent<HTMLSelectElement>)
+              }
               error={errors.taxCategory}
+              required
             />
           </div>
         </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-        <SearchSelect2
-  label="Currency"
-  value={form.currency}
-  onChange={(value) =>
-    onChange({
-      target: { name: "currency", value },
-    } as React.ChangeEvent<HTMLSelectElement>)
-  }
-  fetchOptions={fetchCurrencyOptions}
-  placeholder="Search currency..."
-  required
-  error={errors.currency}
-/>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <SearchSelect2
+            label="Currency"
+            value={form.currency}
+            onChange={(value) =>
+              onChange({
+                target: { name: "currency", value },
+              } as React.ChangeEvent<HTMLSelectElement>)
+            }
+            fetchOptions={fetchCurrencyOptions}
+            placeholder="Search currency..."
+            required
+            error={errors.currency}
+          />
 
           <ModalInput
             label="Opening Balance"
@@ -121,13 +122,13 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
             label="Date of Addition"
             name="dateOfAddition"
             value={form.dateOfAddition}
-              onChange={(name, value) =>
-                onChange({
-                  target: { name, value },
-                } as any)
-              }
+            onChange={(name, value) =>
+              onChange({
+                target: { name, value },
+              } as any)
+            }
             required
-            // error={errors.dateOfAddition}
+          // error={errors.dateOfAddition}
           />
         </div>
 
@@ -190,10 +191,10 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                 />
               </div>
               <div className="min-h-[14px] mt-1">
-  {errors.phoneNo && (
-    <span className="text-[10px] text-danger">{errors.phoneNo}</span>
-  )}
-</div>
+                {errors.phoneNo && (
+                  <span className="text-[10px] text-danger">{errors.phoneNo}</span>
+                )}
+              </div>
             </div>
 
             {/* Alternate No */}
@@ -254,7 +255,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               error={errors.emailId}
             />
           </div>
-      
+
         </div>
       </div>
     </section>
