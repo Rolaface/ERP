@@ -9,6 +9,8 @@ export interface InvoiceDetail {
   customerName: string;
   customerTpin?: string;
   currencyCode: string;
+  OutStandingAmount?: number;
+  taxTotal?: number;
   exchangeRt?: string;
   dateOfInvoice: string;
   dueDate: string;
@@ -67,7 +69,7 @@ interface Props {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (n?: number, currency = "USD") =>
+const fmt = (n?: number, currency = "-") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2 }).format(n ?? 0);
 
 const fmtDate = (d?: string) =>
@@ -104,9 +106,9 @@ const InvoiceDetailModal: React.FC<Props> = ({
 
   const items      = data?.items ?? [];
   const subtotal   = items.reduce((s, it) => s + (it.price ?? 0) * (it.quantity ?? 0), 0);
-  const totalDisc  = items.reduce((s, it) => s + (it.discount ?? 0), 0);
-  const grandTotal = subtotal - totalDisc;
-  const currency   = data?.currencyCode ?? "USD";
+  const taxTotal   = data?.taxTotal ?? 0;
+  const grandTotal = data?.OutStandingAmount ?? 0;
+  const currency   = data?.currencyCode ?? "-";
   const invoiceCharges = (data as any)?.invoiceCharges || [];
 
 const totalCharges = invoiceCharges.reduce(
@@ -272,7 +274,7 @@ const fobTotal = grandTotal - totalCharges;
                 <span style={{ textAlign: "right" }}>Total</span>
               </div>
               {items.map((it, i) => {
-                const rowTotal = (it.price ?? 0) * (it.quantity ?? 0) - (it.discount ?? 0);
+                const rowTotal = (it.price ?? 0) * (it.quantity ?? 0) ;
                 return (
                   <div key={i} className="idm-irow" style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 60px 88px 72px 96px", padding: "7px 10px", gap: 4, borderTop: "1px solid var(--border)", alignItems: "center" }}>
                     <div style={{ minWidth: 0 }}>
@@ -314,9 +316,11 @@ const fobTotal = grandTotal - totalCharges;
                     <Tooltip content={`Price: ${fmt(it.price, currency)}`}>
                       <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(it.price, currency)}</p>
                     </Tooltip>
-                    <Tooltip content={it.discount ? `Discount: ${fmt(it.discount, currency)}` : "No discount"}>
-                      <p style={{ fontSize: 12, textAlign: "right", color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{it.discount ? fmt(it.discount, currency) : "—"}</p>
+                    <Tooltip content={ "No discount"}>
+                      {/* <p style={{ fontSize: 12, textAlign: "right", color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{it.discount ? fmt(it.discount, currency) : "—"}</p> */}
+                    <p></p>
                     </Tooltip>
+
                     <Tooltip content={`Total: ${fmt(rowTotal, currency)}`}>
                       <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(rowTotal, currency)}</p>
                     </Tooltip>
@@ -327,10 +331,11 @@ const fobTotal = grandTotal - totalCharges;
               <div style={{ background: "var(--bg)", borderTop: "2px solid var(--border)", padding: "7px 10px", display: "flex", flexDirection: "column", gap: 3 }}>
                 {[
   { label: "Subtotal", val: fmt(subtotal, currency), big: false, red: false },
+   { label: "Taxes", val: fmt(taxTotal, currency), big: false, red: false },
 
-  ...(totalDisc > 0
-    ? [{ label: "Discount", val: `${fmt(totalDisc, currency)}`, big: false, red: true }]
-    : []),
+  // ...(totalDisc > 0
+  //   ? [{ label: "Discount", val: `${fmt(totalDisc, currency)}`, big: false, red: true }]
+  //   : []),
 
   { label: "Grand Total(CIF)", val: fmt(grandTotal, currency), big: true, red: false },
 

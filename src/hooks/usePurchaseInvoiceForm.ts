@@ -188,7 +188,7 @@ export const usePurchaseInvoiceForm = ({
 
       const taxAmount = netAmount * (vatRate / 100);
 
-      sub += netAmount;
+      sub += lineAmount;
       tax += taxAmount;
     });
 
@@ -435,10 +435,6 @@ useFieldDefault(
         ...prev,
         poNumber: "",
        // items: [{ ...emptyItem }],
-        totalQuantity: 0,
-        grandTotal: 0,
-        roundingAdjustment: 0,
-        roundedTotal: 0,
       }));
     }
   };

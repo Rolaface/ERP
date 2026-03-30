@@ -100,6 +100,7 @@ useCompanyBillingAddress?: boolean;
   grandTotal: number;
   totalTax: number;
 subTotal: number;
+totalDiscount?: number;
 
   roundedTotal: number;
   items: ItemRow[];
