@@ -1,4 +1,5 @@
 import React from "react";
+import Tooltip from "../../components/Tooltip";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface InvoiceDetail {
@@ -275,9 +276,11 @@ const fobTotal = grandTotal - totalCharges;
                 return (
                   <div key={i} className="idm-irow" style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 60px 88px 72px 96px", padding: "7px 10px", gap: 4, borderTop: "1px solid var(--border)", alignItems: "center" }}>
                     <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {it.description || it.itemCode}
-                      </p>
+                      <Tooltip content={it.description || it.itemCode || ""}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {it.description || it.itemCode}
+                        </p>
+                      </Tooltip>
                       {it.description && it.itemCode && (
                         <p style={{ fontSize: 9, color: "var(--muted)", fontFamily: "monospace" }}>{it.itemCode}</p>
                       )}
@@ -305,10 +308,18 @@ const fobTotal = grandTotal - totalCharges;
                         )}
                       </div>
                     </div>
-                    <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{(it.quantity ?? 0).toLocaleString()}</p>
-                    <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(it.price, currency)}</p>
-                    <p style={{ fontSize: 12, textAlign: "right", color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{it.discount ? fmt(it.discount, currency) : "—"}</p>
-                    <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(rowTotal, currency)}</p>
+                    <Tooltip content={`Quantity: ${(it.quantity ?? 0).toLocaleString()}`}>
+                      <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{(it.quantity ?? 0).toLocaleString()}</p>
+                    </Tooltip>
+                    <Tooltip content={`Price: ${fmt(it.price, currency)}`}>
+                      <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(it.price, currency)}</p>
+                    </Tooltip>
+                    <Tooltip content={it.discount ? `Discount: ${fmt(it.discount, currency)}` : "No discount"}>
+                      <p style={{ fontSize: 12, textAlign: "right", color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{it.discount ? fmt(it.discount, currency) : "—"}</p>
+                    </Tooltip>
+                    <Tooltip content={`Total: ${fmt(rowTotal, currency)}`}>
+                      <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(rowTotal, currency)}</p>
+                    </Tooltip>
                   </div>
                 );
               })}

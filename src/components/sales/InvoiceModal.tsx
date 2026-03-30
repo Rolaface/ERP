@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, ToolCase, Trash2 } from "lucide-react";
 import { FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import { showApiError, showValidationError } from "../../utils/alert";
@@ -22,6 +22,7 @@ import {
 import PaymentInfoBlock from "./PaymentInfoBlock";
 import AddressBlock from "../ui/modal/AddressBlock";
 import { formatDate } from "../../utils/dateFormatter";
+import Tooltip from "../Tooltip";
 
 // import ModalInput from "../ui/ModalInput";
 // import ModalSelect from "../ui/ModalSelect";
@@ -305,7 +306,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
                   <div className="flex items-end gap-4 min-w-[220px]">
+                    <Tooltip content={`Select Warehouse for the Invoice. Current selection: ${formData.warehouse || "N/A"}`}>
                     <WarehouseSelect
+            
                       className="w-[200px]"
                       name="warehouse"
                       value={formData.warehouse || ""}
@@ -317,6 +320,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       }}
                       label="Warehouse"
                     />
+                    </Tooltip>
 
                     <label className="flex items-center gap-2 pb-1">
                       <input
@@ -508,18 +512,21 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                               </td>
 
                               <td className="px-0.5 py-1">
-                                <input
-                                  className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                  name="description"
-                                  value={it.description}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                />
+                                <Tooltip content={it.description || "No description"}>
+                                  <input
+                                    className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+                                    name="description"
+                                    value={it.description}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
+                                  />
+                                </Tooltip>
                               </td>
                               <td className="px-0.5 py-1">
                                 <div className="flex items-center gap-1">
                                   {/* PACKING UNIT */}
+                                  <Tooltip content={`Unit: ${it.packingUnit}`}>
                                   <input
                                     type="number"
                                     name="packingUnit"
@@ -530,12 +537,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     }
                                     className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
                                   />
+                                  </Tooltip>
 
                                   <span className="text-[10px] text-muted font-semibold">
                                     ×
                                   </span>
 
                                   {/* PACKING SIZE */}
+                                  <Tooltip content={`Size: ${it.packingSize}`}> 
                                   <input
                                     type="number"
                                     name="packingSize"
@@ -546,12 +555,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     }
                                     className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
                                   />
+                                  </Tooltip>
                                 </div>
                               </td>
 
                               {/* BOX COLUMN */}
                               <td className="px-0.5 py-1">
                                 <div className="flex items-center gap-1">
+                                  <Tooltip content={`Box Start: ${it.boxStart}`}> 
                                   <input
                                     name="boxStart"
                                     value={it.boxStart || ""}
@@ -561,9 +572,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     placeholder="Start"
                                     className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
                                   />
+                                  </Tooltip>
                                   <span className="text-[10px] text-muted">
                                     -
                                   </span>
+                                  <Tooltip content={`Box End: ${it.boxEnd}`}>
                                   <input
                                     name="boxEnd"
                                     value={it.boxEnd || ""}
@@ -573,11 +586,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     placeholder="End"
                                     className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
                                   />
+                                  </Tooltip>
                                 </div>
                               </td>
 
                               {
                                 <td className="px-0.5 py-1 min-w-[100px]">
+                                  <Tooltip content={`Batch No: ${it.batchNo}`}>
                                   <input
                                     type="string"
                                     className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
@@ -588,43 +603,46 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                       actions.handleItemChange(i, e)
                                     }
                                   />
+                                  </Tooltip>
                                 </td>
                               }
 
                               <td className="px-0.5 py-1">
-                                <input
-                                  type="number"
-                                  className="w-[75px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                  name="quantity"
-                                  value={it.quantity ?? ""}
-                                  onChange={(e) => {
-                                    const qty = Number(e.target.value);
-                                    const available =
-                                      it.availableQty ?? it.qty ?? 0;
+                                <Tooltip content={`Quantity: ${it.quantity ?? 0}`}>
+                                  <input
+                                    type="number"
+                                    className="w-[75px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+                                    name="quantity"
+                                    value={it.quantity ?? ""}
+                                    onChange={(e) => {
+                                      const qty = Number(e.target.value);
+                                      const available =
+                                        it.availableQty ?? it.qty ?? 0;
 
-                                    const usedQty = formData.items
-                                      .filter(
-                                        (x, idx) =>
-                                          x.batchNo === it.batchNo && idx !== i,
-                                      )
-                                      .reduce(
-                                        (sum, x) =>
-                                          sum + Number(x.quantity || 0),
-                                        0,
-                                      );
+                                      const usedQty = formData.items
+                                        .filter(
+                                          (x, idx) =>
+                                            x.batchNo === it.batchNo && idx !== i,
+                                        )
+                                        .reduce(
+                                          (sum, x) =>
+                                            sum + Number(x.quantity || 0),
+                                          0,
+                                        );
 
-                                    const remaining = available - usedQty;
+                                      const remaining = available - usedQty;
 
-                                    if (qty > remaining) {
-                                      showValidationError(
-                                        `Only ${remaining} items remaining in batch ${it.batchNo}`,
-                                      );
-                                      return;
-                                    }
+                                      if (qty > remaining) {
+                                        showValidationError(
+                                          `Only ${remaining} items remaining in batch ${it.batchNo}`,
+                                        );
+                                        return;
+                                      }
 
-                                    actions.handleItemChange(i, e);
-                                  }}
-                                />
+                                      actions.handleItemChange(i, e);
+                                    }}
+                                  />
+                                </Tooltip>
                               </td>
                               <td className="px-0.5 py-1">
                                 <div style={{ width: "130px" }}>
@@ -658,6 +676,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                 </div>
                               </td>
                               <td className="px-0.5 py-1">
+                                <Tooltip content={it.warehouse || "No warehouse selected"}>
                                 <WarehouseSelect
                                   compact
                                   value={(it as any).warehouse || ""}
@@ -670,18 +689,21 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     } as any)
                                   }
                                 />
+                                </Tooltip>
                               </td>
 
                               <td className="px-0.5 py-1">
-                                <input
-                                  type="number"
-                                  className="w-[50px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                  name="price"
-                                  value={it.price ?? ""}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                />
+                                <Tooltip content={`Price: ${symbol} ${(it.price ?? 0).toFixed(2)}`}>
+                                  <input
+                                    type="number"
+                                    className="w-[50px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+                                    name="price"
+                                    value={it.price ?? ""}
+                                    onChange={(e) =>
+                                      actions.handleItemChange(i, e)
+                                    }
+                                  />
+                                </Tooltip>
                               </td>
                               <td className="px-0.5 py-1">
                                 <input
@@ -706,6 +728,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                 />
                               </td>
                               <td className="px-0.5 py-1">
+                                <Tooltip content={it.vatCode || "No tax code"}>
                                 <input
                                   type="string"
                                   className="w-[45px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
@@ -715,11 +738,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                     actions.handleItemChange(i, e)
                                   }
                                 />
+                                </Tooltip>
                               </td>
                               <td className="px-0.5 py-1">
-                                <span className="w-[110px] text-[10px] font-medium text-main">
-                                  {symbol} {amount.toFixed(2)}
-                                </span>
+                                <Tooltip content={`Amount: ${symbol} ${amount.toFixed(2)}`}>
+                                  <span className="w-[110px] text-[10px] font-medium text-main">
+                                    {symbol} {amount.toFixed(2)}
+                                  </span>
+                                </Tooltip>
                               </td>
 
                               <td className="px-0.5 py-1">

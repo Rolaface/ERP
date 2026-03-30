@@ -16,7 +16,7 @@ import ItemDetailView, {
   type PurchaseInvoice,
   type StockRow,
 } from "../../views/Inventory/Itemdetailmodal";
-
+import Tooltip from "../../components/Tooltip";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -264,21 +264,68 @@ const Items: React.FC = () => {
 
   /* ── Table columns ── */
   const columns: Column<ItemSummary>[] = [
-    { key: "id",           header: "Item Code",    align: "left" },
-    { key: "itemName",     header: "Name",         align: "left" },
-    { key: "itemGroup",    header: "Category",     align: "left" },
-    { key: "taxCategory",  header: "Tax Category", align: "left" },
+    { 
+      key: "id",           
+      header: "Item Code",    
+      align: "left",
+      render: (i) => (
+        <Tooltip content={i.id} position="top">
+          <span className="truncate block max-w-[120px]">{i.id}</span>
+        </Tooltip>
+      )
+    },
+    { 
+      key: "itemName",     
+      header: "Name",         
+      align: "left",
+      render: (i) => (
+        <Tooltip content={i.itemName} position="top">
+          <span className="truncate block max-w-[150px]">{i.itemName}</span>
+        </Tooltip>
+      )
+    },
+    { 
+      key: "itemGroup",    
+      header: "Category",     
+      align: "left",
+      render: (i) => (
+        <Tooltip content={i.itemGroup} position="top">
+          <span className="truncate block max-w-[120px]">{i.itemGroup}</span>
+        </Tooltip>
+      )
+    },
+    { 
+      key: "taxCategory",  
+      header: "Tax Category", 
+      align: "left",
+      render: (i) => (
+        <Tooltip content={i.taxCategory} position="top">
+          <span className="truncate block max-w-[100px]">{i.taxCategory}</span>
+        </Tooltip>
+      )
+    },
     { key: "minStockLevel",header: "Min Stock",    align: "right" },
     { key: "maxStockLevel",header: "Max Stock",    align: "right" },
-    { key: "preferredVendor", header: "Supplier",  align: "left" },
+    { 
+      key: "preferredVendor", 
+      header: "Supplier",  
+      align: "left",
+      render: (i) => (
+        <Tooltip content={i.preferredVendor} position="top">
+          <span className="truncate block max-w-[130px]">{i.preferredVendor}</span>
+        </Tooltip>
+      )
+    },
     {
       key: "sellingPrice",
       header: "Price",
       align: "right",
       render: (i) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {i.sellingPrice}
-        </code>
+        <Tooltip content={i.sellingPrice} position="top">
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {i.sellingPrice}
+          </code>
+        </Tooltip>
       ),
     },
    {

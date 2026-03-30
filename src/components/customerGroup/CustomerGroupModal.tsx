@@ -1,240 +1,273 @@
-import React, { useState } from "react";
+import React from "react";
+import { Trash2 } from "lucide-react";
 import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
+import { useCustomerGroupModal } from "../../hooks/useCustomerGroupModal";
+import type { CustomerGroupPayload } from "../../hooks/useCustomerGroupModal";
+import ItemRestrictionSelect from "../selects/customer group/ItemRescritionSelect";
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (payload: CustomerGroupPayload) => void;
 }
 
-const CustomerGroupModal: React.FC<Props> = ({
-  isOpen,
-  onClose,
-  onSubmit,
-}) => {
-  const [form, setForm] = useState({
-    name: "",
-    isGroup: false,
-    defaultPriceList: "",
-    defaultPaymentTerms: "",
-  });
+// ─── Toggle constants — change these two numbers to resize the toggle ─────────
+const TOGGLE_W = 156; // total width  (px)
+const TOGGLE_H = 28;  // total height (px)
+const PILL_PAD = 3;   // padding around the sliding pill (px)
 
-  /* ✅ DYNAMIC ROWS */
-  const [accounts, setAccounts] = useState([
-    { company: "", account: "" },
-  ]);
+// ─── Component ────────────────────────────────────────────────────────────────
 
-  const [credits, setCredits] = useState([
-    { company: "", limit: "", bypass: false },
-  ]);
+const CustomerGroupModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
+  const {
+    form,
+    restrictionMode,
+    restrictedItems,
+    isValid,
+    handleFormChange,
+    toggleRestrictionMode,
+    addRestrictedItem,
+    removeRestrictedItem,
+    resetModal,
+    buildPayload,
+    page,
+    paginatedItems,
+    totalPages,
+    hasPagination,
+    goToPrevPage,
+    goToNextPage,
+    ITEMS_PER_PAGE,
+  } = useCustomerGroupModal();
 
-  const handleChange = (e: any) => {
-    const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
-  };
-
-  /* ADD ROW */
-  const addAccountRow = () => {
-    setAccounts((prev) => [...prev, { company: "", account: "" }]);
-  };
-
-  const addCreditRow = () => {
-    setCredits((prev) => [
-      ...prev,
-      { company: "", limit: "", bypass: false },
-    ]);
-  };
-
-  /* UPDATE */
-  const updateAccount = (i: number, field: string, value: any) => {
-    const updated = [...accounts];
-    updated[i][field] = value;
-    setAccounts(updated);
-  };
-
-  const updateCredit = (i: number, field: string, value: any) => {
-    const updated = [...credits];
-    updated[i][field] = value;
-    setCredits(updated);
-  };
+  const handleClose = () => { resetModal(); onClose(); };
+  const handleSave  = () => { if (!isValid) return; onSubmit(buildPayload()); resetModal(); onClose(); };
 
   const footer = (
     <div className="flex justify-between w-full">
-      <Button variant="secondary" onClick={onClose}>
-        Cancel
-      </Button>
-      <Button variant="primary" onClick={onSubmit}>
-        Save
-      </Button>
+      <Button variant="secondary" onClick={handleClose}>Cancel</Button>
+      <Button variant="primary"   onClick={handleSave}  disabled={!isValid}>Save</Button>
     </div>
   );
+
+  const selectedIds = restrictedItems.map((x) => x.id);
+  const isAllowed   = restrictionMode === "allowed";
+
+  // Pill slides exactly half the toggle width
+  const pillW        = TOGGLE_W / 2 - PILL_PAD;       // width of each half minus one pad
+  const pillSlide    = TOGGLE_W / 2;                   // how far to slide right
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Customer Group"
-      subtitle="Manage customer group details"
+      subtitle="Manage customer groups"
       footer={footer}
-      customWidth="70vw"
-      height="87vh"
+      customWidth="50vw"
+      height="82vh"
     >
       <div className="p-6 space-y-8 bg-app">
 
-        {/* TOP FORM */}
+        {/* ── Top form row ── */}
         <div className="grid grid-cols-3 gap-6">
           <ModalInput
             label="Customer Group Name"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
+            name="customerGroupName"
+            value={form.customerGroupName}
+            onChange={handleFormChange}
+            placeholder="e.g. Retail Customers"
           />
-
           <ModalInput
             label="Default Price List"
             name="defaultPriceList"
             value={form.defaultPriceList}
-            onChange={handleChange}
+            onChange={handleFormChange}
+            placeholder="e.g. Standard Selling"
           />
-
           <ModalInput
             label="Default Payment Terms Template"
             name="defaultPaymentTerms"
             value={form.defaultPaymentTerms}
-            onChange={handleChange}
+            onChange={handleFormChange}
+            placeholder="e.g. Net 30"
+          />
+        </div>
+
+        {/* ── Item Restriction Section ── */}
+        <div className="space-y-3">
+
+          {/* Section header + toggle */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-main">Item Restrictions</h3>
+
+            {/* ── Pill toggle  ── */}
+            <button
+              type="button"
+              onClick={toggleRestrictionMode}
+              aria-label="Toggle restriction mode"
+              style={{
+                width:  TOGGLE_W,
+                height: TOGGLE_H,
+                padding: PILL_PAD,
+                borderRadius: TOGGLE_H / 2,
+                backgroundColor: isAllowed ? "#bbf7d0" : "#fecaca",
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                border: "none",
+                cursor: "pointer",
+                transition: "background-color 0.25s ease",
+                outline: "none",
+              }}
+            >
+              {/* Sliding white pill */}
+              <span
+                style={{
+                  position:     "absolute",
+                  top:          PILL_PAD,
+                  left:         PILL_PAD,
+                  width:        pillW,
+                  height:       TOGGLE_H - PILL_PAD * 2,
+                  borderRadius: (TOGGLE_H - PILL_PAD * 2) / 2,
+                  backgroundColor: "#ffffff",
+                  boxShadow:    "0 1px 3px rgba(0,0,0,0.18)",
+                  transform:    isAllowed ? "translateX(0)" : `translateX(${pillSlide}px)`,
+                  transition:   "transform 0.25s ease",
+                  zIndex:       1,
+                }}
+              />
+
+              {/* "Allowed" label */}
+              <span
+                style={{
+                  position:   "relative",
+                  zIndex:     2,
+                  flex:       1,
+                  textAlign:  "center",
+                  fontSize:   11,
+                  fontWeight: 600,
+                  color: isAllowed ? "#15803d" : "rgba(0,0,0,0.6)",
+                  transition: "color 0.25s ease",
+                  userSelect: "none",
+                }}
+              >
+                Allowed
+              </span>
+
+              {/* "Disallowed" label */}
+              <span
+                style={{
+                  position:   "relative",
+                  zIndex:     2,
+                  flex:       1,
+                  textAlign:  "center",
+                  fontSize:   11,
+                  fontWeight: 600,
+                  color: !isAllowed ? "#b91c1c" : "rgba(0,0,0,0.6)",
+                  transition: "color 0.25s ease",
+                  userSelect: "none",
+                }}
+              >
+                Disallowed
+              </span>
+            </button>
+          </div>
+
+          {/* Mode hint */}
+          <p className="text-xs text-muted">
+            {isAllowed
+              ? "Only the items listed below will be available for this customer group."
+              : "The items listed below will NOT be available for this customer group."}
+          </p>
+
+          {/* Search / add input */}
+          <ItemRestrictionSelect
+            selectedIds={selectedIds}
+            onSelect={addRestrictedItem}
           />
 
-          <div className="col-span-3 flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={form.isGroup}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, isGroup: e.target.checked }))
-              }
-            />
-            <span className="text-sm text-main">Is Group</span>
-          </div>
-        </div>
-
-        {/* DEFAULT ACCOUNTS */}
-        <div>
-          <h2 className="text-sm font-semibold text-main mb-2">
-            Default Accounts
-          </h2>
-
-          <div className="border border-theme rounded-xl bg-card">
-            {/* HEADER */}
-            <div className="grid grid-cols-[60px_1fr_1fr] px-4 py-2 text-sm font-medium border-b border-theme bg-gray-50">
-              <div>No.</div>
-              <div>Company</div>
-              <div>Default Account</div>
-            </div>
-
-            {/* ROWS */}
-            {accounts.map((row, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-[60px_1fr_1fr] px-4 py-3 items-center gap-3"
-              >
-                <div className="text-sm">{i + 1}</div>
-
-                <input
-                  className="form-input"
-                  placeholder="Company"
-                  value={row.company}
-                  onChange={(e) =>
-                    updateAccount(i, "company", e.target.value)
-                  }
-                />
-
-                <input
-                  className="form-input"
-                  placeholder="Default Account"
-                  value={row.account}
-                  onChange={(e) =>
-                    updateAccount(i, "account", e.target.value)
-                  }
-                />
+          {/* Restriction table */}
+          {restrictedItems.length > 0 ? (
+            <>
+              <div className="border border-theme rounded overflow-hidden">
+                <table className="w-full text-[12px]">
+                  <thead>
+                    <tr className="bg-row-hover border-b border-theme">
+                      <th className="text-left px-4 py-2 text-muted font-semibold w-[30px]">#</th>
+                      <th className="text-left px-4 py-2 text-muted font-semibold w-[200px]">Item ID</th>
+                      <th className="text-left px-4 py-2 text-muted font-semibold">Item Name</th>
+                      <th className="w-10" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedItems.map((item, idx) => {
+                      const globalIdx = page * ITEMS_PER_PAGE + idx;
+                      return (
+                        <tr
+                          key={item.id}
+                          className={`border-b border-theme last:border-0 ${globalIdx % 2 === 0 ? "bg-card" : "bg-app"}`}
+                        >
+                          <td className="px-4 py-2 text-muted text-[11px]">{globalIdx + 1}</td>
+                          <td className="px-4 py-2 text-muted font-mono">{item.id}</td>
+                          <td className="px-4 py-2 text-main font-medium">{item.itemName}</td>
+                          <td className="px-2 py-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => removeRestrictedItem(item.id)}
+                              className="text-red-400 hover:text-red-400 transition-colors"
+                              aria-label={`Remove ${item.itemName}`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            ))}
 
-            {/* ADD ROW */}
-            <div className="px-4 py-2">
-              <span
-                className="text-primary cursor-pointer text-sm"
-                onClick={addAccountRow}
-              >
-                + Add Row
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* CREDIT LIMITS */}
-        <div>
-          <h2 className="text-sm font-semibold text-main mb-2">
-            Credit Limits
-          </h2>
-
-          <div className="border border-theme rounded-xl bg-card">
-            {/* HEADER */}
-            <div className="grid grid-cols-[60px_1fr_1fr_1fr] px-4 py-2 text-sm font-medium border-b border-theme bg-gray-50">
-              <div>No.</div>
-              <div>Company</div>
-              <div>Credit Limit</div>
-              <div>Bypass Credit Limit</div>
-            </div>
-
-            {/* ROWS */}
-            {credits.map((row, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-[60px_1fr_1fr_1fr] px-4 py-3 items-center gap-3"
-              >
-                <div className="text-sm">{i + 1}</div>
-
-                <input
-                  className="form-input"
-                  placeholder="Company"
-                  value={row.company}
-                  onChange={(e) =>
-                    updateCredit(i, "company", e.target.value)
-                  }
-                />
-
-                <input
-                  className="form-input no-spinner"
-                  placeholder=" 0.00"
-                  value={row.limit}
-                  onChange={(e) =>
-                    updateCredit(i, "limit", e.target.value)
-                  }
-                />
-
-                <div className="flex justify-center">
-                  <input
-                    type="checkbox"
-                    checked={row.bypass}
-                    onChange={(e) =>
-                      updateCredit(i, "bypass", e.target.checked)
-                    }
-                  />
+              {/* Pagination */}
+              {hasPagination && (
+                <div className="flex justify-end">
+                  <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
+                    <div className="text-[11px] text-muted whitespace-nowrap">
+                      Showing {page * ITEMS_PER_PAGE + 1} to{" "}
+                      {Math.min((page + 1) * ITEMS_PER_PAGE, restrictedItems.length)} of{" "}
+                      {restrictedItems.length} items
+                    </div>
+                    <div className="flex gap-1.5 items-center">
+                      <button
+                        type="button"
+                        onClick={goToPrevPage}
+                        disabled={page === 0}
+                        className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px] disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goToNextPage}
+                        disabled={page >= totalPages - 1}
+                        className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px] disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-
-            {/* ADD ROW */}
-            <div className="px-4 py-2">
-              <span
-                className="text-primary cursor-pointer text-sm"
-                onClick={addCreditRow}
-              >
-                + Add Row
-              </span>
+              )}
+            </>
+          ) : (
+            <div className="border border-dashed border-theme rounded py-8 text-center text-muted text-xs">
+              No items added yet. Search above to add items to the restriction list.
             </div>
-          </div>
+          )}
+
         </div>
       </div>
     </Modal>

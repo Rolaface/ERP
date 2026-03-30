@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface TooltipProps {
   content: React.ReactNode;
@@ -12,30 +13,74 @@ const Tooltip: React.FC<TooltipProps> = ({
   position = "top",
 }) => {
   const [visible, setVisible] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLDivElement>(null);
 
-  const posClass =
-    position === "top"
-      ? "bottom-full mb-1"
-      : "top-full mt-1";
+  const updatePosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+
+    if (position === "top") {
+      setCoords({
+        top: rect.top + scrollY - 8,   // 8px gap above
+        left: rect.left + scrollX + rect.width / 2,
+      });
+    } else {
+      setCoords({
+        top: rect.bottom + scrollY + 8, // 8px gap below
+        left: rect.left + scrollX + rect.width / 2,
+      });
+    }
+  };
+
+  const handleMouseEnter = () => {
+    updatePosition();
+    setVisible(true);
+  };
+
+  // Recompute if window scrolls while tooltip is visible
+  useEffect(() => {
+    if (!visible) return;
+    const onScroll = () => updatePosition();
+    window.addEventListener("scroll", onScroll, true);
+    return () => window.removeEventListener("scroll", onScroll, true);
+  }, [visible]);
+
+  const transformY = position === "top" ? "-100%" : "0%";
 
   return (
-    <div
-      className="relative inline-block"
-      onMouseEnter={() => setVisible(true)}
-      onMouseLeave={() => setVisible(false)}
-    >
-      {children}
+    <>
+      <div
+        ref={triggerRef}
+        className="relative inline-block"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={() => setVisible(false)}
+      >
+        {children}
+      </div>
 
-      {visible && (
-        <div
-          className={`absolute left-1/2 -translate-x-1/2 ${posClass}
-          whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg z-50`}
-        >
-          {content}
-        </div>
-      )}
-    </div>
+      {visible &&
+        createPortal(
+          <div
+            style={{
+              position: "absolute",
+              top: coords.top,
+              left: coords.left,
+              transform: `translateX(-50%) translateY(${transformY})`,
+              zIndex: 99999,
+              pointerEvents: "none",
+            }}
+          >
+            <div className="whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg">
+              {content}
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 };
 
-export default Tooltip;
+export default Tooltip;9

@@ -4,4 +4,5 @@ export interface Column<T> {
   render?: (item: T) => React.ReactNode;
   align?: "left" | "center" | "right";
   sortable?: boolean;
+  tooltip?: (item: T) => React.ReactNode;
 }
