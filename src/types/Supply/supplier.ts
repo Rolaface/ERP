@@ -98,15 +98,4 @@ export interface Supplierr {
 
 
 
-export const taxCategoryOptions = ["Export", "Non-Export", "LPO"] as const;
-export type TaxCategory = typeof taxCategoryOptions[number];
 
-export const taxCategorySelectOptions = taxCategoryOptions.map(t => ({
-  value: t,
-  label:
-    t === "Non-Export"
-      ? "Non-Export"
-      : t === "Export"
-        ? "Export"
-        : "LPO",
-}));
