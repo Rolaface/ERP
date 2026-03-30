@@ -29,7 +29,8 @@ const Tooltip: React.FC<TooltipProps> = ({
       {visible && (
         <div
           className={`absolute left-1/2 -translate-x-1/2 ${posClass}
-          whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg z-50`}
+          whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg`}
+          style={{ zIndex: 9999 }}
         >
           {content}
         </div>

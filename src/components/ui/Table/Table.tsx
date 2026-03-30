@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import type { Column } from "./type";
 import ColumnSelector from "./ColumnSelector";
 import Pagination from "../../Pagination";
+import Tooltip from "../../Tooltip";
 import {
   FaSearch,
   FaSort,
@@ -308,10 +309,18 @@ function Table<T extends Record<string, any>>({
                             key={column.key}
                             className={`px-3 sm:px-5 py-3.5 text-xs font-medium text-main border-b border-[var(--border)]/20 ${getAlignment(column.align)}`}
                           >
-                            {column.render
-                              ? column.render(item)
-                              : <span className="opacity-90">{item[column.key]}</span>
-                            }
+                            {column.tooltip ? (
+                              <Tooltip content={column.tooltip(item)}>
+                                {column.render
+                                  ? column.render(item)
+                                  : <span className="opacity-90">{item[column.key]}</span>
+                                }
+                              </Tooltip>
+                            ) : (
+                              column.render
+                                ? column.render(item)
+                                : <span className="opacity-90">{item[column.key]}</span>
+                            )}
                           </td>
                         ))}
                       </tr>
