@@ -18,16 +18,6 @@ const CustomerGroup: React.FC = () => {
       header: "Customer Group Name",
     },
     {
-      key: "isGroup",
-      header: "Is Group",
-      render: (row: any) =>
-        row.isGroup ? (
-          <span className="text-primary font-semibold">Yes</span>
-        ) : (
-          <span className="text-muted">No</span>
-        ),
-    },
-    {
       key: "defaultPriceList",
       header: "Default Price List",
       render: (row: any) => row.defaultPriceList || "—",
