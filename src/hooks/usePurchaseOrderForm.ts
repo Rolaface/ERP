@@ -26,6 +26,9 @@ import { getCompanyById } from "../api/companySetupApi";
 import { mapSupplierToAddress } from "../types/Supply/purchaseOrderMapper";
 import type { AddressBlock } from "../types/Supply/purchaseOrder";
 import { getItemByItemCode } from "../api/itemApi";
+import { useFieldDefault } from "./useFieldDefault";
+import { fetchCostCenters, fetchProjects } from "../api/getAllApi";
+import { getAllWarehouses } from "../api/WarehouseApi";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
@@ -207,6 +210,38 @@ export const usePurchaseOrderForm = ({
       grandTotal,
     }));
   }, [form.items, form.taxRows]);
+
+  useFieldDefault(
+  isOpen,
+  form.costCenter,
+  fetchCostCenters,
+  (val) => setForm((prev) => ({ ...prev, costCenter: val }))
+);
+
+useFieldDefault(
+  isOpen,
+  form.project,
+  fetchProjects,
+  (val) => setForm((prev) => ({ ...prev, project: val }))
+);
+
+useFieldDefault(
+  isOpen,
+  form.warehouse,
+  () => getAllWarehouses().then((list: string[]) =>
+    list.map((w) => ({ value: w, label: w }))
+  ),
+  (val) =>
+    setForm((prev) => ({
+      ...prev,
+      warehouse: val,
+      items: prev.items.map((item) => ({
+        ...item,
+        warehouse: item.warehouse?.trim() ? item.warehouse : val,
+      })),
+    }))
+);
+
   type AddressKey = keyof PurchaseOrderFormData["addresses"];
 
   const updateAddress = (

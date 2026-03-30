@@ -32,6 +32,7 @@ import PurchaseOrderDetailModal, {
   type PurchaseOrderDetail,
 } from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+import Tooltip from "../../components/Tooltip";
 
 interface PurchaseOrder {
   id: string;
@@ -386,9 +387,11 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
       header: "Amount",
       align: "right",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.amount || 0).toFixed(2)}
-        </code>
+        <Tooltip content={Number(o.amount || 0).toFixed(2)}>
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {Number(o.amount || 0).toFixed(2)}
+          </code>
+        </Tooltip>
       ),
     },
     {

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../ui/modal/modal";
+import TaxCategorySelect from "../selects/TaxCategorySelect";
+import Tooltip from "../Tooltip";
 import {
   showApiError,
   showSuccess,
@@ -75,7 +77,7 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
 };
 
 
-const customerTaxCategoryOptions = ["Export", "Non-Export", "LPO"];
+
 
 const CustomerModal: React.FC<{
   isOpen: boolean;
@@ -610,169 +612,138 @@ const CustomerModal: React.FC<{
               icon={<User className="w-5 h-5 text-primary" />}
             >
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                <ModalSelect
-                  label="Type"
-                  name="type"
-                  value={form.type || ""}
-                  onChange={handleChange}
-                  required
-                  error={errors.type}
-                  placeholder="Select Customer Type"
-                >
-                  <option value="Individual">Individual</option>
-                  <option value="Company">Company</option>
-                </ModalSelect>
-                <ModalInput
-                  label="Customer Name"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter full name"
-                  error={errors.name}
-                />
+                <Tooltip content={form.type || "Select Customer Type"}>
+                  <ModalSelect
+                    label="Type"
+                    name="type"
+                    value={form.type || ""}
+                    onChange={handleChange}
+                    required
+                    error={errors.type}
+                    placeholder="Select Customer Type"
+                  >
+                    <option value="Individual">Individual</option>
+                    <option value="Company">Company</option>
+                  </ModalSelect>
+                </Tooltip>
+                <Tooltip content={form.name || "Enter full name"}>
+                  <ModalInput
+                    label="Customer Name"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                    placeholder="Enter full name"
+                    error={errors.name}
+                  />
+                </Tooltip>
 
-                <ModalInput
-                  label="Contact Person Name"
-                  name="contactPerson"
-                  value={form.contactPerson}
-                  onChange={handleChange}
-                  required
-                  placeholder="Primary contact"
-                  error={errors.contactPerson}
-                />
+                <Tooltip content={form.contactPerson || "Primary contact"}>
+                  <ModalInput
+                    label="Contact Person Name"
+                    name="contactPerson"
+                    value={form.contactPerson}
+                    onChange={handleChange}
+                    required
+                    placeholder="Primary contact"
+                    error={errors.contactPerson}
+                  />
+                </Tooltip>
 
-                <ModalSelect
-                  label="Display Name"
-                  name="displayName"
-                  value={form.displayName}
-                  onChange={handleChange}
-                  required
-                  options={[
-                    { value: "", label: "Select Display Name" },
-                    {
-                      value: form.name,
-                      label: form.name || "Customer Name",
-                    },
-                    {
-                      value: form.contactPerson,
-                      label: form.contactPerson || "Contact Person",
-                    },
-                  ].filter((o) => o.value)} 
-                />
+                <Tooltip content={form.displayName || "Select Display Name"}>
+                  <ModalSelect
+                    label="Display Name"
+                    name="displayName"
+                    value={form.displayName}
+                    onChange={handleChange}
+                    required
+                    options={[
+                      { value: "", label: "Select Display Name" },
+                      {
+                        value: form.name,
+                        label: form.name || "Customer Name",
+                      },
+                      {
+                        value: form.contactPerson,
+                        label: form.contactPerson || "Contact Person",
+                      },
+                    ].filter((o) => o.value)} // removes empty invalid options
+                  />
+                </Tooltip>
 
-                <ModalInput
-                  label="TPIN"
-                  name="tpin"
-                  value={form.tpin}
-                  onChange={handleChange}
-                  required
-                  error={errors.tpin}
-                  placeholder="Tax identification"
-                />
+                <Tooltip content={form.tpin || "Tax identification"}>
+                  <ModalInput
+                    label="TPIN"
+                    name="tpin"
+                    value={form.tpin}
+                    onChange={handleChange}
+                    required
+                    error={errors.tpin}
+                    placeholder="Tax identification"
+                  />
+                </Tooltip>
 
-                <ModalSelect
-                  label="Tax Category"
-                  name="customerTaxCategory"
-                  value={form.customerTaxCategory}
-                  onChange={handleChange}
-                  required
-                  error={errors.customerTaxCategory}
-                  options={[
-                    { value: "Export", label: "Export" },
-                    { value: "Non-Export", label: "Non-Export" },
-                    { value: "LPO", label: "LPO" },
-                  ]}
-                />
+                <Tooltip content={form.customerTaxCategory || "Select Tax Category"}>
+                  <TaxCategorySelect
+                    value={form.customerTaxCategory}
+                    onChange={(val) =>
+                      handleChange({
+                        target: { name: "customerTaxCategory", value: val },
+                      } as React.ChangeEvent<HTMLSelectElement>)
+                    }
+                    error={errors.customerTaxCategory}
+                    required
+                  />
+                </Tooltip>
 
-               <SearchSelect2
-  label="Currency"
-  value={form.currency}
-  onChange={(value) =>
-    handleChange({
-      target: { name: "currency", value },
-    } as React.ChangeEvent<HTMLSelectElement>)
-  }
-  fetchOptions={fetchCurrencyOptions}
-  placeholder="Search currency..."
-  required
-  error={errors.currency}
-/>
+                <Tooltip content={form.currency || "Search currency..."}>
+                  <SearchSelect2
+                    label="Currency"
+                    value={form.currency}
+                    onChange={(value) =>
+                      handleChange({
+                        target: { name: "currency", value },
+                      } as React.ChangeEvent<HTMLSelectElement>)
+                    }
+                    fetchOptions={fetchCurrencyOptions}
+                    placeholder="Search currency..."
+                    required
+                    error={errors.currency}
+                  />
+                </Tooltip>
 
-                <ModalInput
-                  label="Onboard Balance"
-                  name="onboardingBalance"
-                  type="number"
-                  value={form.onboardingBalance}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  className="no-spinner"
-                />
+                <Tooltip content={form.onboardingBalance || "0.00"}>
+                  <ModalInput
+                    label="Onboard Balance"
+                    name="onboardingBalance"
+                    type="number"
+                    value={form.onboardingBalance}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    className="no-spinner"
+                  />
+                </Tooltip>
 
                 {/* Email + Mobile - span full width as a separate row */}
                 <div className="col-span-4 grid grid-cols-4 gap-5">
-                  <ModalInput
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    required
-                    placeholder="email@example.com"
-                    error={errors.email}
-                  />
+                  <Tooltip content={form.email || "email@example.com"}>
+                    <ModalInput
+                      label="Email"
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      required
+                      placeholder="email@example.com"
+                      error={errors.email}
+                    />
+                  </Tooltip>
 
                   {/* Mobile with code - matches ModalInput styling exactly */}
-                  <div className="flex flex-col min-w-0">
-                    <span className="block text-[10px] font-medium text-main mb-1">
-                      Mobile <span className="text-danger">*</span>
-                    </span>
-                    <div className="flex gap-0">
-                      <input
-                        name="mobileCode"
-                        value={form.mobileCode}
-                        onChange={handleChange}
-                        placeholder="+"
-                        className={[
-                          "w-[50px] py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
-                          errors.mobile
-                            ? "border-danger focus:border-danger"
-                            : "border-[var(--border)] hover:border-primary/40",
-                        ].join(" ")}
-                        onFocus={(e) => {
-                          e.currentTarget.style.boxShadow = errors.mobile
-                            ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
-                            : "0 0 0 3px rgba(37, 99, 235, 0.16)";
-                        }}
-                        onBlur={(e) => {
-                          e.currentTarget.style.boxShadow = "";
-                        }}
-                      />
-                      <input
-                        name="mobile"
-                        type="tel"
-                        value={form.mobile}
-                        onChange={handleChange}
-                        placeholder="Enter mobile number"
-                        className={[
-                          "flex-1 py-1 px-2 border rounded text-[11px] text-main bg-card transition-all min-w-0",
-                          errors.mobile
-                            ? "border-danger focus:border-danger"
-                            : "border-[var(--border)] hover:border-primary/40",
-                        ].join(" ")}
-                        onFocus={(e) => {
-                          e.currentTarget.style.boxShadow = errors.mobile
-                            ? "0 0 0 3px rgba(239, 68, 68, 0.18)"
-                            : "0 0 0 3px rgba(37, 99, 235, 0.16)";
-                        }}
-                        onBlur={(e) => {
-                          e.currentTarget.style.boxShadow = "";
-                        }}
-                      />
-                    </div>
-                    {errors.mobile && (
-                      <span className="text-[10px] text-danger mt-1">
-                        {errors.mobile}
+                  <Tooltip content={`${form.mobileCode || ""}${form.mobile || ""}` || "Enter mobile number"}>
+                    <div className="flex flex-col min-w-0">
+                      <span className="block text-[10px] font-medium text-main mb-1">
+                        Mobile <span className="text-danger">*</span>
                       </span>
                     )}
  
@@ -818,90 +789,94 @@ const CustomerModal: React.FC<{
           {activeTab === "address" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Billing Address */}
-              <AddressBlock
-                type="billing"
-                title="Billing Address"
-                subtitle="Invoice and payment details"
-                data={{
-                  line1: form.billingAddressLine1 ?? "",
-                  line2: form.billingAddressLine2 ?? "",
-                  postalCode: form.billingPostalCode ?? "",
-                  city: form.billingCity ?? "",
-                  state: form.billingState ?? "",
-                  country: form.billingCountry ?? "",
-                }}
-                errors={{
-                  line1: errors.billingAddressLine1,
-                  postalCode: errors.billingPostalCode,
-                  city: errors.billingCity,
-                  state: errors.billingState,
-                  country: errors.billingCountry,
-                }}
-                onChange={(e) => {
-                  const { name, value } = e.target;
+               
+                <AddressBlock
+                  type="billing"
+                  title="Billing Address"
+                  subtitle="Invoice and payment details"
+                  data={{
+                    line1: form.billingAddressLine1 ?? "",
+                    line2: form.billingAddressLine2 ?? "",
+                    postalCode: form.billingPostalCode ?? "",
+                    city: form.billingCity ?? "",
+                    state: form.billingState ?? "",
+                    country: form.billingCountry ?? "",
+                  }}
+                  errors={{
+                    line1: errors.billingAddressLine1,
+                    postalCode: errors.billingPostalCode,
+                    city: errors.billingCity,
+                    state: errors.billingState,
+                    country: errors.billingCountry,
+                  }}
+                  onChange={(e) => {
+                    const { name, value } = e.target;
 
-                  const map: Record<string, keyof typeof form> = {
-                    line1: "billingAddressLine1",
-                    line2: "billingAddressLine2",
-                    postalCode: "billingPostalCode",
-                    city: "billingCity",
-                    state: "billingState",
-                    country: "billingCountry",
-                  };
+                    const map: Record<string, keyof typeof form> = {
+                      line1: "billingAddressLine1",
+                      line2: "billingAddressLine2",
+                      postalCode: "billingPostalCode",
+                      city: "billingCity",
+                      state: "billingState",
+                      country: "billingCountry",
+                    };
 
-                  setForm((prev) => ({
-                    ...prev,
-                    [map[name]]: value,
-                  }));
-
-                  // Clear error when user types
-                  if (errors[map[name] as keyof typeof errors]) {
-                    setErrors((prev) => ({
+                    setForm((prev) => ({
                       ...prev,
-                      [map[name]]: undefined,
+                      [map[name]]: value,
                     }));
-                  }
-                }}
-              />
+
+                    // Clear error when user types
+                    if (errors[map[name] as keyof typeof errors]) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        [map[name]]: undefined,
+                      }));
+                    }
+                  }}
+                />
+              
 
               {/* Shipping Address */}
-              <AddressBlock
-                type="shipping"
-                title="Shipping Address"
-                subtitle="Delivery location"
-                data={{
-                  line1: form.shippingAddressLine1 ?? "",
-                  line2: form.shippingAddressLine2 ?? "",
-                  postalCode: form.shippingPostalCode ?? "",
-                  city: form.shippingCity ?? "",
-                  state: form.shippingState ?? "",
-                  country: form.shippingCountry ?? "",
-                }}
-                sameAsBilling={form.sameAsBilling}
-                onSameAsBillingChange={(checked) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    sameAsBilling: checked,
-                  }))
-                }
-                onChange={(e) => {
-                  const { name, value } = e.target;
+              <Tooltip content={form.shippingAddressLine1 || form.shippingCity || form.shippingCountry || "Shipping Address"}>
+                <AddressBlock
+                  type="shipping"
+                  title="Shipping Address"
+                  subtitle="Delivery location"
+                  data={{
+                    line1: form.shippingAddressLine1 ?? "",
+                    line2: form.shippingAddressLine2 ?? "",
+                    postalCode: form.shippingPostalCode ?? "",
+                    city: form.shippingCity ?? "",
+                    state: form.shippingState ?? "",
+                    country: form.shippingCountry ?? "",
+                  }}
+                  sameAsBilling={form.sameAsBilling}
+                  onSameAsBillingChange={(checked) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      sameAsBilling: checked,
+                    }))
+                  }
+                  onChange={(e) => {
+                    const { name, value } = e.target;
 
-                  const map: Record<string, keyof typeof form> = {
-                    line1: "shippingAddressLine1",
-                    line2: "shippingAddressLine2",
-                    postalCode: "shippingPostalCode",
-                    city: "shippingCity",
-                    state: "shippingState",
-                    country: "shippingCountry",
-                  };
+                    const map: Record<string, keyof typeof form> = {
+                      line1: "shippingAddressLine1",
+                      line2: "shippingAddressLine2",
+                      postalCode: "shippingPostalCode",
+                      city: "shippingCity",
+                      state: "shippingState",
+                      country: "shippingCountry",
+                    };
 
-                  setForm((prev) => ({
-                    ...prev,
-                    [map[name]]: value,
-                  }));
-                }}
-              />
+                    setForm((prev) => ({
+                      ...prev,
+                      [map[name]]: value,
+                    }));
+                  }}
+                />
+              </Tooltip>
             </div>
           )}
         </div>

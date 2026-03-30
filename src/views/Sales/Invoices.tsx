@@ -488,6 +488,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       render: (inv) => (
         <span className="font-semibold text-main">{inv.invoiceNumber}</span>
       ),
+      tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
     },
     {
       key: "invoiceType",
@@ -507,6 +508,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       render: (inv) => (
         <span className="text-sm text-main">{inv.customerName}</span>
       ),
+      tooltip: (inv) => `Customer: ${inv.customerName}`,
     },
     {
       key: "dateOfInvoice",
@@ -539,6 +541,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           {inv.total.toLocaleString()} {inv.currency}
         </code>
       ),
+      tooltip: (inv) => `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
     },
     {
       key: "outstandingAmount",
@@ -550,6 +553,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
         </code>
       ),
+      tooltip: (inv) => `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency}`,
     },
 
     {

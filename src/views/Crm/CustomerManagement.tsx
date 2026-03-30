@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import CustomerDetailView from "./CustomerDetailView";
-import { showLoading, showApiError, showSuccess, closeSwal } from "../../utils/alert";
+import {
+  showLoading,
+  showApiError,
+  showSuccess,
+  closeSwal,
+} from "../../utils/alert";
 import {
   getAllCustomers,
   deleteCustomerById,
@@ -21,6 +26,7 @@ import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import Swal from "sweetalert2";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+import Tooltip from "../../components/Tooltip";
 
 interface Props {
   onAdd: () => void;
@@ -43,8 +49,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<any | null>(null);
-
+  const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<
+    any | null
+  >(null);
 
   const fetchCustomers = async () => {
     try {
@@ -53,13 +60,12 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       const response = await getAllCustomers(
         page,
         pageSize,
-        taxCategory || undefined
+        taxCategory || undefined,
       );
 
       setCustomers(response.data);
       setTotalPages(response.pagination?.total_pages || 1);
       setTotalItems(response.pagination?.total || 1);
-
     } catch (error) {
       console.error("Error loading customers:", error);
       showApiError(error);
@@ -69,11 +75,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     }
   };
 
-
   useEffect(() => {
     fetchCustomers();
   }, [page, pageSize, taxCategory]);
-
 
   const fetchAllCustomers = async () => {
     try {
@@ -95,10 +99,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     setPaymentModalOpen(true);
   };
 
-  const handleDelete = async (
-    customerId: string,
-    e: React.MouseEvent
-  ) => {
+  const handleDelete = async (customerId: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
     const confirm = await Swal.fire({
@@ -120,18 +121,14 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
       closeSwal();
 
-      setCustomers((prev) =>
-        prev.filter((c) => c.id !== customerId)
-      );
+      setCustomers((prev) => prev.filter((c) => c.id !== customerId));
 
       showSuccess("Customer deleted successfully.");
-
     } catch (error) {
       closeSwal();
       showApiError(error);
     }
   };
-
 
   const handleAddCustomer = () => {
     setEditCustomer(null);
@@ -178,7 +175,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     }
   };
 
-
   const handleBack = () => {
     setViewMode("table");
     setSelectedCustomer(null);
@@ -186,23 +182,35 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   // columns definition for Table component
   const columns: Column<CustomerSummary>[] = [
-    { key: "id", header: "Customer ID", align: "left" },
-    { key: "name", header: "Name", align: "left" },
 
-    {key:"customerGroup",
-       header:"Customer Group",
-       align:"center",
-        render: (c: CustomerSummary) =>(
-          <span>{c.customerGroup ?? "—"}</span>
-        )
-
-    },
+    {
+  key: "id",
+  header: "Customer ID",
+  align: "left",
+  render: (c: CustomerSummary) => (
+    <Tooltip content={c.id}>
+      <span className="cursor-pointer">{c.id}</span>
+    </Tooltip>
+  ),
+},
+{
+  key: "name",
+  header: "Name",
+  align: "left",
+  render: (c: CustomerSummary) => (
+    <Tooltip content={c.name}>
+      <span className="cursor-pointer">{c.name}</span>
+    </Tooltip>
+  ),
+},
     {
       key: "type",
       header: "Type",
       align: "left",
       render: (c: CustomerSummary) => (
-        <span>{c.type ?? "—"}</span>
+        <Tooltip content={c.type ?? "—"}>
+          <span>{c.type ?? "—"}</span>
+        </Tooltip>
       ),
     },
     {
@@ -210,7 +218,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "TaxCategory",
       align: "left",
       render: (c: CustomerSummary) => (
-        <span>{c.customerTaxCategory ?? "—"}</span>
+        <Tooltip content={c.customerTaxCategory ?? "—"}>
+          <span>{c.customerTaxCategory ?? "—"}</span>
+        </Tooltip>
       ),
     },
     {
@@ -218,9 +228,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Currency",
       align: "left",
       render: (c: CustomerSummary) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {c.currency}
-        </code>
+        <Tooltip content={c.currency}>
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {c.currency}
+          </code>
+        </Tooltip>
       ),
     },
     {
@@ -228,9 +240,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Onboard Balance",
       align: "right",
       render: (c: CustomerSummary) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {c.onboardingBalance}
-        </code>
+        <Tooltip content={c.onboardingBalance}>
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {c.onboardingBalance}
+          </code>
+        </Tooltip>
       ),
     },
     {
@@ -291,7 +305,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
                   }}
                   options={[
                     { label: "Non-Export", value: "Non-Export" },
-                    { label: "Export", value: "Export" }
+                    { label: "Export", value: "Export" },
                   ]}
                 />
               </div>
@@ -328,11 +342,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         defaultValues={
           selectedCustomerForPayment
             ? {
-              paymentType: "Receive",
-              partyType: "Customer",
-              partyName: selectedCustomerForPayment.name,
-              partyId: selectedCustomerForPayment.id,
-            }
+                paymentType: "Receive",
+                partyType: "Customer",
+                partyName: selectedCustomerForPayment.name,
+                partyId: selectedCustomerForPayment.id,
+              }
             : undefined
         }
       />

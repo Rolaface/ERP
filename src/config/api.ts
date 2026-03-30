@@ -53,6 +53,12 @@ export const API = {
     summary: `${ERP_BASE}/api/method/hrms.dashboards.main.api.summary`,
   },
 
+
+  Get:{
+    getAll:`${ERP_BASE}/api/method/frappe.desk.search.search_link`
+  },
+
+
   /* =========================
    * COMPANY
    * ========================= */

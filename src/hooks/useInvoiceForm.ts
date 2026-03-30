@@ -207,7 +207,7 @@ useEffect(() => {
 
  
   if (mode !== "edit") {
-    setFormData((prev) => ({ ...prev, exchangeRt: "" }));
+    setFormData((prev) => ({ ...prev, exchangeRt: "1" }));
   }
 
   return;
@@ -216,7 +216,7 @@ useEffect(() => {
     setExchangeRateLoading(true);
     setFormData((prev) => ({
       ...prev,
-      exchangeRt: "",
+      exchangeRt: "1",
     }));
     setExchangeRateError(null);
 
@@ -241,7 +241,7 @@ useEffect(() => {
 
         setFormData((prev) => ({
           ...prev,
-          exchangeRt: "",
+          exchangeRt: "1",
         }));
         showApiError(err);
       })
@@ -748,7 +748,10 @@ useEffect(() => {
       invoiceStatus: invoice.invoiceStatus ?? "",
       currencyCode: invoice.currencyCode,
       dateOfInvoice: invoice.dateOfInvoice,
-      exchangeRt: invoice.exchangeRt ?? "",
+      exchangeRt:
+  invoice.exchangeRt && Number(invoice.exchangeRt) > 0
+    ? String(invoice.exchangeRt)
+    : "1",
       dueDate: invoice.dueDate,
       destnCountryCd: invoice.destnCountryCd ?? "",
       billingAddress: invoice.billingAddress ?? prev.billingAddress,
@@ -840,7 +843,7 @@ useEffect(() => {
           ],
           dateOfInvoice: today,
           dueDate: dueDate,
-          exchangeRt: "",
+          exchangeRt: "1",
           warehouse: "",
           updateStock: true,
 
@@ -886,6 +889,10 @@ useEffect(() => {
 
       const payload = {
         ...formData,
+         exchangeRt:
+    Number(formData.exchangeRt) > 0
+      ? String(formData.exchangeRt)
+      : "1",
         subTotal,
         totalTax,
 
