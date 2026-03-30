@@ -50,6 +50,7 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
   contactPerson: "",
   displayName: "",
   email: "",
+  customerGroup: "",
   accountNumber: "",
   status: "Active",
   customerTaxCategory: "",
@@ -93,6 +94,7 @@ const CustomerModal: React.FC<{
     tpin?: string;
     mobile?: string;
     email?: string;
+    customerGroup?: string;
     currency?: string;
     displayName?: string;
     contactPerson?: string;
@@ -252,6 +254,7 @@ const CustomerModal: React.FC<{
     if (!form.mobileCode || !form.mobile) {
       newErrors.mobile = "Mobile number is required";
     }
+    
 
     // Validate Tax Category
     if (!form.customerTaxCategory || form.customerTaxCategory === "") {
@@ -658,7 +661,7 @@ const CustomerModal: React.FC<{
                       value: form.contactPerson,
                       label: form.contactPerson || "Contact Person",
                     },
-                  ].filter((o) => o.value)} // removes empty invalid options
+                  ].filter((o) => o.value)} 
                 />
 
                 <ModalInput
@@ -775,7 +778,17 @@ const CustomerModal: React.FC<{
                         {errors.mobile}
                       </span>
                     )}
+ 
+                    
+                    
                   </div>
+                              <ModalInput
+  label="Customer Group"
+  name="customerGroup"
+  value={form.customerGroup}
+  onChange={handleChange}
+  placeholder="Enter customer group"
+/>
                 </div>
               </div>
             </Card>
@@ -900,3 +913,4 @@ const CustomerModal: React.FC<{
   );
 };
 export default CustomerModal;
+  

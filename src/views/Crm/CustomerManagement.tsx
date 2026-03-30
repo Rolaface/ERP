@@ -12,7 +12,6 @@ import CustomerModal from "../../components/crm/CustomerModal";
 import type { CustomerSummary, CustomerDetail } from "../../types/customer";
 
 import Table from "../../components/ui/Table/Table";
-import StatusBadge from "../../components/ui/Table/StatusBadge";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -189,6 +188,15 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const columns: Column<CustomerSummary>[] = [
     { key: "id", header: "Customer ID", align: "left" },
     { key: "name", header: "Name", align: "left" },
+
+    {key:"customerGroup",
+       header:"Customer Group",
+       align:"center",
+        render: (c: CustomerSummary) =>(
+          <span>{c.customerGroup ?? "—"}</span>
+        )
+
+    },
     {
       key: "type",
       header: "Type",
