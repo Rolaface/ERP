@@ -693,7 +693,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                               </td>
 
                               <td className="px-0.5 py-1">
-                                <Tooltip content={`Price: ${symbol} ${(it.price ?? 0).toFixed(2)}`}>
+                                <Tooltip content={`Price: ${symbol} ${Number(it.price || 0).toFixed(2)}`}>
                                   <input
                                     type="number"
                                     className="w-[50px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"

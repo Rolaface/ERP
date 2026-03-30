@@ -827,7 +827,7 @@ const CustomerModal: React.FC<{
           {activeTab === "address" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Billing Address */}
-              <Tooltip content={form.billingAddressLine1 || form.billingCity || form.billingCountry || "Billing Address"}>
+               
                 <AddressBlock
                   type="billing"
                   title="Billing Address"
@@ -873,7 +873,7 @@ const CustomerModal: React.FC<{
                     }
                   }}
                 />
-              </Tooltip>
+              
 
               {/* Shipping Address */}
               <Tooltip content={form.shippingAddressLine1 || form.shippingCity || form.shippingCountry || "Shipping Address"}>
