@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 
 interface TooltipProps {
@@ -6,6 +6,7 @@ interface TooltipProps {
   children: React.ReactNode;
   position?: "top" | "bottom";
   showOnlyWhenFilled?: boolean;
+  delay?: number; // ms before showing, default 300
 }
 
 const Tooltip: React.FC<TooltipProps> = ({
@@ -13,53 +14,86 @@ const Tooltip: React.FC<TooltipProps> = ({
   children,
   position = "top",
   showOnlyWhenFilled = false,
+  delay = 300,
 }) => {
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const [ready, setReady] = useState(false); // drives CSS fade-in
   const triggerRef = useRef<HTMLSpanElement>(null);
+  const showTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const shouldShow = showOnlyWhenFilled ? Boolean(content) : true;
 
-  const updatePosition = () => {
+  const clearTimer = () => {
+    if (showTimer.current) clearTimeout(showTimer.current);
+  };
+
+  // ── Viewport-aware positioning ──────────────────────────────────────
+  const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const GAP = 8;
+    const TOOLTIP_WIDTH = 220; // matches max-width below
+    const rawLeft = rect.left + window.scrollX + rect.width / 2;
+
+    // Clamp so tooltip never bleeds outside the viewport
+    const clampedLeft = Math.min(
+      Math.max(rawLeft, TOOLTIP_WIDTH / 2 + 8),
+      window.innerWidth + window.scrollX - TOOLTIP_WIDTH / 2 - 8
+    );
 
     setCoords({
-      // TOP: sit right above the element's top edge (not bottom)
       top:
         position === "top"
-          ? rect.top + window.scrollY - GAP      // above the element
-          : rect.bottom + window.scrollY + GAP,  // below the element
-      left: rect.left + window.scrollX + rect.width / 2,
+          ? rect.top + window.scrollY - GAP
+          : rect.bottom + window.scrollY + GAP,
+      left: clampedLeft,
     });
-  };
+  }, [position]);
 
-  const handleMouseEnter = () => {
+  // ── Show with delay ─────────────────────────────────────────────────
+  const show = useCallback(() => {
     if (!shouldShow) return;
-    updatePosition();
-    setVisible(true);
-  };
+    clearTimer();
+    showTimer.current = setTimeout(() => {
+      updatePosition();
+      setVisible(true);
+      // Tiny rAF gap so the element is in the DOM before opacity animates
+      requestAnimationFrame(() => setReady(true));
+    }, delay);
+  }, [shouldShow, delay, updatePosition]);
 
+  // ── Hide immediately ────────────────────────────────────────────────
+  const hide = useCallback(() => {
+    clearTimer();
+    setReady(false);
+    // Wait for CSS fade-out to finish before unmounting
+    setTimeout(() => setVisible(false), 150);
+  }, []);
+
+  // ── Reposition on scroll ────────────────────────────────────────────
   useEffect(() => {
     if (!visible) return;
     const onScroll = () => updatePosition();
     window.addEventListener("scroll", onScroll, true);
     return () => window.removeEventListener("scroll", onScroll, true);
-  }, [visible]);
+  }, [visible, updatePosition]);
+
+  // ── Cleanup on unmount ──────────────────────────────────────────────
+  useEffect(() => () => clearTimer(), []);
 
   return (
     <>
-      {/*
-        Key fix: use an INLINE span as the ref anchor, not a block div.
-        This way getBoundingClientRect() measures only the content itself
-        (the text, the input, etc.) — not the full row/cell height.
-      */}
       <span
         ref={triggerRef}
         className="inline-block w-full"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setVisible(false)}
+        // Hover
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        // Keyboard / focus — show on focus, hide when user starts typing
+        onFocus={show}
+        onBlur={hide}
+        onKeyDown={hide} // typing dismisses the tooltip immediately
       >
         {children}
       </span>
@@ -68,24 +102,46 @@ const Tooltip: React.FC<TooltipProps> = ({
         shouldShow &&
         createPortal(
           <div
+            role="tooltip"
             style={{
               position: "absolute",
               top: coords.top,
               left: coords.left,
-              // translate up by 100% so bottom of tooltip aligns with top of trigger
               transform:
                 position === "top"
-                  ? "translateX(-50%) translateY(-100%)"
+                  ? `translateX(-50%) translateY(calc(-100% - 2px))`
                   : "translateX(-50%)",
               zIndex: 99999,
               pointerEvents: "none",
+              // ── Fade + slide animation ──
+              opacity: ready ? 1 : 0,
+              translate: ready
+                ? "0 0"
+                : position === "top"
+                ? "0 4px"
+                : "0 -4px",
+              transition: "opacity 150ms ease, translate 150ms ease",
+              maxWidth: 220,
             }}
           >
-            <div className="whitespace-nowrap rounded bg-gray-900 px-2.5 py-1 text-xs text-white shadow-lg">
+            <div
+              style={{
+                background: "rgba(17,24,39,0.92)",
+                backdropFilter: "blur(4px)",
+                color: "#fff",
+                fontSize: 12,
+                lineHeight: 1.5,
+                borderRadius: 6,
+                padding: "5px 10px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                wordBreak: "break-word",
+                whiteSpace: "normal", // allow wrapping — no more overflow
+              }}
+            >
               {content}
             </div>
 
-            {/* Arrow pointing DOWN toward the element */}
+            {/* Arrow */}
             <div
               style={{
                 position: "absolute",
@@ -98,18 +154,18 @@ const Tooltip: React.FC<TooltipProps> = ({
                       bottom: -5,
                       borderLeft: "5px solid transparent",
                       borderRight: "5px solid transparent",
-                      borderTop: "5px solid #111827",
+                      borderTop: "5px solid rgba(17,24,39,0.92)",
                     }
                   : {
                       top: -5,
                       borderLeft: "5px solid transparent",
                       borderRight: "5px solid transparent",
-                      borderBottom: "5px solid #111827",
+                      borderBottom: "5px solid rgba(17,24,39,0.92)",
                     }),
               }}
             />
           </div>,
-          document.body,
+          document.body
         )}
     </>
   );
