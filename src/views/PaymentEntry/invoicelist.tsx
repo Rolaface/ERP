@@ -21,9 +21,11 @@ interface InvoiceListProps {
   onFormChange: (data: AllocationResult) => void;
   /** Called when user clicks "Modify INV Allocation" — parent switches to invoices tab */
   onModifyAllocation?: () => void;
+  /** Called when loading state changes — parent can show loading indicator */
+  onLoadingChange?: (loading: boolean) => void;
 }
 
-const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange, onModifyAllocation }) => {
+const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange, onModifyAllocation, onLoadingChange }) => {
   const partyType          = form.partyType ?? "";
   const partyName          = form.partyName;
   const paymentAmount      = Number(form.amount ?? 0);
@@ -56,6 +58,11 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange, onModifyA
     referenceInvoice,
     initialAllocations,
   );
+
+  // Notify parent when loading state changes
+  React.useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
 
   if (!partyType) {
     return <EmptyMessage text="Select a party type in the Details tab first." />;

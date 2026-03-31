@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { CreditCard, FileText, AlertCircle, X } from "lucide-react";
+import { CreditCard, FileText, AlertCircle, X, Loader2 } from "lucide-react";
 import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
@@ -146,9 +146,9 @@ const PaymentEntryModal: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<TabType>("details");
   const [form, setForm] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);
-  const [invoicesMounted, setInvoicesMounted] = useState(false);
   const [taxesMounted, setTaxesMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAllocating, setIsAllocating] = useState(false);
   const lastFetchedPartyKeyRef = useRef<string>("");
 
   const isAdvanceFromPO = Boolean(defaultValues?.referenceInvoice);
@@ -200,7 +200,6 @@ if (defaultValues?.partyId) {
     setForm(base);
     setActiveTab("details");
     setError(null);
-    setInvoicesMounted(false);
     setTaxesMounted(false);
     setIsSaving(false);
   }, [isOpen]); 
@@ -275,7 +274,6 @@ if (defaultValues?.partyId) {
 
   const goToTab = useCallback((tab: TabType) => {
     setActiveTab(tab);
-    if (tab === "invoices") setInvoicesMounted(true);
     if (tab === "taxes") setTaxesMounted(true);
   }, []);
 
@@ -285,6 +283,10 @@ if (defaultValues?.partyId) {
       setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
     }, 50);
   }, [goToTab]);
+
+  const handleAllocationLoadingChange = useCallback((loading: boolean) => {
+    setIsAllocating(loading);
+  }, []);
 
   // ── Save ───────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
@@ -408,11 +410,12 @@ if (defaultValues?.partyId) {
             </div>
 
             {/* ── Invoices tab ── */}
-            {invoicesMounted && !isAdvanceFromPO && !isInternalTransfer && (
+            {!isAdvanceFromPO && !isInternalTransfer && (
               <div className={activeTab === "invoices" ? "block" : "hidden"}>
                 <InvoiceList
                   form={invoiceListForm}
                   onFormChange={handleFormChange}
+                  onLoadingChange={handleAllocationLoadingChange}
                 />
               </div>
             )}
@@ -493,6 +496,14 @@ if (defaultValues?.partyId) {
               </p>
             </div>
 
+            {/* Allocation loading indicator */}
+            {isAllocating && !isAdvanceFromPO && !isInternalTransfer && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg">
+                <Loader2 size={14} className="animate-spin text-primary" />
+                <p className="text-[11px] text-primary font-medium">Allocating invoices…</p>
+              </div>
+            )}
+
             {/* ✅ FIX: Hide Invoices Settled / Allocated / Advance for Internal Transfer */}
             {!isAdvanceFromPO && !isInternalTransfer && (
               <>
@@ -535,7 +546,8 @@ if (defaultValues?.partyId) {
                 ? "This is an advance payment against the selected Purchase Order."
                 : isInternalTransfer
                 ? "This is an internal transfer between accounts."
-                : `Use "Allocate →" on the amount field to auto-settle invoices in FIFO order.`}
+                : ""
+              }
             </p>
           </div>
         </div>
