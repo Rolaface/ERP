@@ -29,6 +29,7 @@ export interface PurchaseInvoiceRaw {
   syncStatus: string | null;
   shippingRule: string;
   outstanding_amount:number
+  paidAmount:number
 }
 
 export interface ApiPagination {
