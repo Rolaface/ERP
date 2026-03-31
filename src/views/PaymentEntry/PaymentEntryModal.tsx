@@ -293,6 +293,10 @@ useEffect(() => {
       const { name, value } = e.target;
       setError(null);
 
+      if (name === "amount" || name === "amountFrom") {
+        setIsAllocating(true);
+      }
+
       setForm((prev) => {
         if (name === "partyType" || name === "partyName") {
           return { ...prev, ...getResetPartyState(name, value) };
@@ -311,6 +315,15 @@ useEffect(() => {
       setForm((prev) => {
         const currentAmount = Number(prev.amountFrom ?? prev.amount ?? 0);
         
+        if (
+          currentAmount > 0 &&
+          updates.allocatedAmount === 0 &&
+          (!updates.allocations || Object.keys(updates.allocations).length === 0)
+        ) {
+          const { allocatedAmount, allocations, selectedInvoices, ...safeUpdates } = updates;
+          return Object.keys(safeUpdates).length ? { ...prev, ...safeUpdates } : prev;
+        }
+
         if (
           currentAmount === 0 &&
           (updates.allocatedAmount !== undefined || updates.allocations !== undefined)
@@ -558,14 +571,13 @@ useEffect(() => {
 
             {/* Allocation loading indicator */}
             {isAllocating && !isAdvanceFromPO && !isInternalTransfer && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg">
-                <Loader2 size={14} className="animate-spin text-primary" />
-                <p className="text-[11px] text-primary font-medium">Allocating invoices…</p>
+              <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg mt-2">
+                <Loader2 size={14} className="animate-spin text-primary flex-shrink-0" />
+                <p className="text-[11px] text-primary font-medium">Calculating allocation…</p>
               </div>
             )}
 
-            {/* ✅ FIX: Hide Invoices Settled / Allocated / Advance for Internal Transfer */}
-            {!isAdvanceFromPO && !isInternalTransfer && (
+            {!isAllocating && !isAdvanceFromPO && !isInternalTransfer && (
               <>
                 <div>
                   <p className="text-[11px] text-muted">Invoices Settled</p>
@@ -598,17 +610,6 @@ useEffect(() => {
                 </div>
               </>
             )}
-
-            <div className="border-t border-[var(--border)]" />
-
-            <p className="text-[10px] text-muted leading-relaxed">
-              {isAdvanceFromPO
-                ? "This is an advance payment against the selected Purchase Order."
-                : isInternalTransfer
-                ? "This is an internal transfer between accounts."
-                : ""
-              }
-            </p>
           </div>
         </div>
       </div>
