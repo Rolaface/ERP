@@ -242,31 +242,104 @@ if (defaultValues?.partyId) {
   const advance = Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
+const getResetPartyState = (name: string, value: string) => ({
+  [name]: value,
+  allocatedAmount: 0,
+  selectedInvoices: [],
+  allocations: {},
+});
+
+const getOptimisticAmountState = (prev: Record<string, any>, name: string, value: string) => {
+  const numericValue = Number(value) || 0;
+  
+  if (numericValue === 0) {
+    return { 
+      [name]: value, 
+      fifoTrigger: Date.now(), 
+      allocatedAmount: 0, 
+      allocations: {}, 
+      selectedInvoices: [] 
+    };
+  }
+
+  const isRef = Boolean(prev.referenceInvoice);
+  const outstanding = Number(prev.totalOutstanding || 0);
+
+  return {
+    [name]: value,
+    allocatedAmount: isRef ? numericValue : Math.min(numericValue, outstanding),
+    ...(isRef && {
+      allocations: { ...prev.allocations, [prev.referenceInvoice]: numericValue },
+      selectedInvoices: Array.from(new Set([...(prev.selectedInvoices || []), prev.referenceInvoice])),
+    }),
+  };
+};
+
+useEffect(() => {
+    const amount = Number(form?.amountFrom ?? form?.amount ?? 0);
+    
+    if (amount === 0 || form?.referenceInvoice) return;
+
+    const timeoutId = setTimeout(() => {
+      setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [form?.amount, form?.amountFrom, form?.referenceInvoice]);
+
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
+      setError(null);
 
-      if (name === "partyType" || name === "partyName") {
-        setForm((prev) => ({
-          ...prev,
-          [name]: value,
-          allocatedAmount: 0,
-          selectedInvoices: [],
-          allocations: {},
-        }));
-      } else {
-        setForm((prev) => ({ ...prev, [name]: value }));
+      if (name === "amount" || name === "amountFrom") {
+        setIsAllocating(true);
       }
 
-      setError(null);
+      setForm((prev) => {
+        if (name === "partyType" || name === "partyName") {
+          return { ...prev, ...getResetPartyState(name, value) };
+        }
+        if (name === "amount" || name === "amountFrom") {
+          return { ...prev, ...getOptimisticAmountState(prev, name, value) };
+        }
+        return { ...prev, [name]: value };
+      });
     },
-    [],
+    []
   );
 
   const handleFormChange = useCallback(
-    (updates: Record<string, unknown> | AllocationResult) => {
-      setForm((prev) => ({ ...prev, ...updates }));
+    (updates: Record<string, any>) => {
+      setForm((prev) => {
+        const currentAmount = Number(prev.amountFrom ?? prev.amount ?? 0);
+        
+        if (
+          currentAmount > 0 &&
+          updates.allocatedAmount === 0 &&
+          (!updates.allocations || Object.keys(updates.allocations).length === 0)
+        ) {
+          const { allocatedAmount, allocations, selectedInvoices, ...safeUpdates } = updates;
+          return Object.keys(safeUpdates).length ? { ...prev, ...safeUpdates } : prev;
+        }
+
+        if (
+          currentAmount === 0 &&
+          (updates.allocatedAmount !== undefined || updates.allocations !== undefined)
+        ) {
+          return prev;
+        }
+
+        if (
+          updates.allocatedAmount !== undefined && 
+          Number(updates.allocatedAmount) > currentAmount
+        ) {
+          return prev;
+        }
+
+        return { ...prev, ...updates };
+      });
       setError((prev) => (prev ? null : prev));
     },
     [],
@@ -498,14 +571,13 @@ if (defaultValues?.partyId) {
 
             {/* Allocation loading indicator */}
             {isAllocating && !isAdvanceFromPO && !isInternalTransfer && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg">
-                <Loader2 size={14} className="animate-spin text-primary" />
-                <p className="text-[11px] text-primary font-medium">Allocating invoices…</p>
+              <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg mt-2">
+                <Loader2 size={14} className="animate-spin text-primary flex-shrink-0" />
+                <p className="text-[11px] text-primary font-medium">Calculating allocation…</p>
               </div>
             )}
 
-            {/* ✅ FIX: Hide Invoices Settled / Allocated / Advance for Internal Transfer */}
-            {!isAdvanceFromPO && !isInternalTransfer && (
+            {!isAllocating && !isAdvanceFromPO && !isInternalTransfer && (
               <>
                 <div>
                   <p className="text-[11px] text-muted">Invoices Settled</p>
@@ -538,17 +610,6 @@ if (defaultValues?.partyId) {
                 </div>
               </>
             )}
-
-            <div className="border-t border-[var(--border)]" />
-
-            <p className="text-[10px] text-muted leading-relaxed">
-              {isAdvanceFromPO
-                ? "This is an advance payment against the selected Purchase Order."
-                : isInternalTransfer
-                ? "This is an internal transfer between accounts."
-                : ""
-              }
-            </p>
           </div>
         </div>
       </div>
