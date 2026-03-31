@@ -50,20 +50,21 @@ function buildPayload(
   const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
   const receivedAmount = Number(form?.amountTo ?? paymentAmount);
 
-  const getReferenceDoctype = (partyType: string): string => {
-    switch (partyType) {
-      case "Supplier":
-        return "Purchase Invoice";
-      case "Customer":
-        return "Sales Invoice";
-      case "Employee":
-        return "Journal Entry";
-      case "Shareholder":
-        return "Journal Entry";
-      default:
-        return "Journal Entry";
-    }
-  };
+const getReferenceDoctype = (partyType: string): string => {
+  if (isAdvanceFromPO) return "Purchase Order";  
+  switch (partyType) {
+    case "Supplier":
+      return "Purchase Invoice";
+    case "Customer":
+      return "Sales Invoice";
+    case "Employee":
+      return "Journal Entry";
+    case "Shareholder":
+      return "Journal Entry";
+    default:
+      return "Journal Entry";
+  }
+};
 
   const referenceDoctype = getReferenceDoctype(form?.partyType ?? "");
   const allocations: Record<string, number> = form?.allocations ?? {};
@@ -91,7 +92,7 @@ function buildPayload(
   const payload: CreatePaymentEntryPayload = {
     payment_type: form?.paymentType ?? "Pay",
     party_type: form?.partyType ?? "",
-    party_id: form?.partyName ?? "",
+    party_id: form?.partyId ?? form?.partyName ?? "",
     mode_of_payment: form?.mode ?? "",
     payment_date: form?.date ?? new Date().toISOString().split("T")[0],
     reference_no: form?.referenceNo ?? "",
@@ -150,7 +151,7 @@ const PaymentEntryModal: React.FC<Props> = ({
   const [isSaving, setIsSaving] = useState(false);
   const lastFetchedPartyKeyRef = useRef<string>("");
 
-  const isAdvanceFromPO = false;
+  const isAdvanceFromPO = Boolean(defaultValues?.referenceInvoice);
 
   const isInternalTransfer = form?.paymentType === "Internal Transfer";
 
@@ -164,8 +165,9 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (!isOpen) return;
 
     const base: Record<string, any> = { ...(defaultValues ?? {}) };
-    lastFetchedPartyKeyRef.current = "";
-
+    if (!defaultValues?.partyName) {
+  lastFetchedPartyKeyRef.current = "";
+}
     const today = new Date().toISOString().split("T")[0];
 
     if (!base.date) {
@@ -177,10 +179,15 @@ const PaymentEntryModal: React.FC<Props> = ({
     }
 
 
-    if (base.amount != null) {
-      base.amountFrom ??= base.amount;
-      base.amountTo ??= base.amount;
-    }
+if (base.amount != null) {
+  base.amountFrom ??= base.amount;
+  base.amountTo ??= base.amount;
+}
+
+
+if (defaultValues?.partyId) {
+  base.partyId = defaultValues.partyId;
+}
 
     if (defaultValues?.referenceInvoice && base.amount) {
       base.allocations = {
@@ -293,7 +300,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     showLoading("Creating Payment Entry…");
 
     try {
-      const payload = buildPayload(form, isAdvanceFromPO);
+     const payload = buildPayload(form, isAdvanceFromPO);
       const response = await createPaymentEntry(payload);
 
       closeSwal();

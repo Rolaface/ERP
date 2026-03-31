@@ -111,7 +111,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         currencyFrom: "",
         glTo: "",
         currencyTo: "",
-        mode: "",
+        
         ...(paymentType === "Internal Transfer"
           ? { partyType: "", partyName: "", partyId: "", allocations: {}, selectedInvoices: [], allocatedAmount: 0 }
           : {}),
