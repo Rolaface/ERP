@@ -28,7 +28,7 @@ export interface PurchaseInvoiceRaw {
   registrationType: string;
   syncStatus: string | null;
   shippingRule: string;
-  // outstandingAmount is NOT in the response — derived from status
+  outstanding_amount:number
 }
 
 export interface ApiPagination {

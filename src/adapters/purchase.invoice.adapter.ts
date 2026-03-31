@@ -32,7 +32,7 @@ function formatDate(iso: string | null | undefined): string {
 function normalizePurchaseInvoice(raw: PurchaseInvoiceRaw): NormalizedInvoice {
   const totalAmount = Number(raw.grandTotal ?? 0);
   const isPaid = PAID_STATUSES.has(raw.status);
-  const outstanding = isPaid ? 0 : totalAmount;
+  const outstanding = Number(raw.outstanding_amount ?? 0);
 
   // deliveryDate is the only date usable for FIFO — no actual dueDate in API
   const dueDateRaw = raw.deliveryDate ?? raw.poDate ?? "9999-12-31";
