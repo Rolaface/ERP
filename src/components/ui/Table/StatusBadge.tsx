@@ -11,8 +11,8 @@ interface StatusBadgeProps {
 const VARIANT_MAP: Record<BadgeVariant, string[]> = {
   success: ["active", "paid", "completed", "approved", "delivered", "verified"],
   warning: ["pending", "processing", "on hold", "under review","unpaid"],
-  danger:  ["inactive", "overdue", "cancelled", "failed", "rejected", "expired"],
-  info:    ["sent", "new", "open", "in progress","submitted"],
+  danger:  ["inactive", "overdue", "cancelled", "failed", "rejected", "expired","partly paid"],
+  info:    ["sent", "new", "open", "in progress","submitted", ],
   draft:   ["draft", "archived"],
   default: ["unknown"],
 };
