@@ -695,6 +695,14 @@ export const DetailsTab = ({
                   {symbol} {form.grandTotal?.toFixed(2) || "0.00"}
                 </span>
               </div>
+              <div className="border-t border-theme my-1"></div>
+              
+              <div className="flex justify-between text-sm font-semibold">
+                <span className="text-main">Advance amount  </span>
+                <span className="text-main">
+                  {symbol} {form.advanceAmount?.toFixed(2) || "0.00"}
+                </span>
+              </div>
             </div>
           </div>
         </div>

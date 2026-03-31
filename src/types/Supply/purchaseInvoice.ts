@@ -56,6 +56,7 @@ export type AddressBlock = {
 };
 
 export interface PurchaseInvoiceFormData {
+  advanceAmount?: number;
   warehouse?: string;
   poNumber: string;
   date: string;
