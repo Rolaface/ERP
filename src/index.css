@@ -252,6 +252,82 @@
   --font-body: "Manrope", sans-serif;
 }
 
+@layer utilities {
+  .bg-app {
+    background: var(--bg) !important;
+  }
+  .bg-card {
+    background: var(--card) !important;
+    color: var(--text) !important;
+  }
+  .bg-sidebar {
+    background: var(--sidebar-bg) !important;
+    color: var(--sidebar-text) !important;
+  }
+  .text-main {
+    color: var(--text) !important;
+  }
+  .text-muted {
+    color: var(--muted) !important;
+  }
+  .border-theme {
+    border-color: var(--border) !important;
+  }
+  .bg-primary {
+    background: var(--primary) !important;
+    color: white !important;
+  }
+  .text-primary {
+    color: var(--primary) !important;
+  }
+  .table-head {
+    background: var(--table-head) !important;
+    color: var(--table-head-text) !important;
+  }
+  .row-hover:hover {
+    background: var(--row-hover) !important;
+  }
+ 
+  /* OVERRIDES
+  .bg-white { background: var(--card) !important; }
+  .text-gray-900, .text-slate-900 { color: var(--text) !important; }
+  .text-gray-500, .text-slate-500 { color: var(--muted) !important; }
+  .border-gray-200, .border-slate-200 { border-color: var(--border) !important; }
+ 
+ 
+}
+ 
+@layer components {
+  .nav-link { @apply flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative; color: inherit; }
+  .nav-link:hover { background: var(--row-hover); }
+  .nav-link.active { background: var(--primary-600); color: #ffffff; }
+  .filter-input-refined {
+  @apply w-full bg-app border border-[var(--border)] rounded-xl px-3 py-2
+         text-[11px] font-semibold text-main outline-none transition-all
+         placeholder:text-muted/40 placeholder:font-normal;
+}
+ 
+.filter-input-refined:focus {
+  @apply border-primary ring-2 ring-primary/10;
+}
+ 
+ 
+ 
+  /* Specific Interactive Effects */
+  [data-theme="glass"] .bg-card {
+    backdrop-filter: blur(12px);
+  }
+  [data-theme="cyber"] .bg-card {
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
+    border: 1px solid var(--primary);
+  }
+  [data-theme="luxury"] .bg-primary {
+    background: linear-gradient(135deg, #d4af37, #996515) !important;
+    color: black !important;
+    font-weight: 800;
+  }
+}
+
 /* =========================================
    DENSITY MODES
 ========================================= */
