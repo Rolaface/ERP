@@ -868,7 +868,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                 onClick={onAllocate}
                 className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors w-fit"
               >
-                Modify INV Allocation <ArrowRight size={11} />
+                Modify Allocation Order <ArrowRight size={11} />
               </button>
             )}
           </div>

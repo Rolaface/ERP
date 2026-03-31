@@ -10,7 +10,7 @@ export const purchaseinvoiceapi = API.purchaseIvoice;
 
 export interface PurchaseInvoiceFilters {
   search?: string;
-  status?: string;
+  status?: string | string[];
   from_date?: string;
   to_date?: string;
   supplier?: string;
@@ -21,13 +21,22 @@ export async function getPurchaseInvoices(
   pageSize = 10,
   filters?: PurchaseInvoiceFilters
 ) {
-  const resp = await api.get(purchaseinvoiceapi.getAll, {
-    params: {
-      page,
-      page_size: pageSize,
-      ...filters,
-    },
-  });
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("page_size", String(pageSize));
+
+  if (filters) {
+    const { status, ...rest } = filters;
+    Object.entries(rest).forEach(([k, v]) => {
+      if (v != null) params.set(k, String(v));
+    });
+    if (status) {
+      const statuses = Array.isArray(status) ? status : [status];
+      statuses.forEach((s) => params.append("status", s));
+    }
+  }
+
+  const resp = await api.get(purchaseinvoiceapi.getAll, { params });
 
   return resp.data;
 }

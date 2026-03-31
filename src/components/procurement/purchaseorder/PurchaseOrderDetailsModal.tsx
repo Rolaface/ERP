@@ -880,7 +880,7 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                       red: false,
                     },
                     {
-                      label: `Tax (${data.tax?.taxRate ?? ""})`,
+                      label: `Tax`,
                       val: fmt(taxTotal, currency),
                       big: false,
                       red: false,
