@@ -2,12 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { ERP_BASE } from "../../config/api";
 
-// ── Palette (matches purchase order exactly) ──────────────────────────────────
 const ERP_BLUE: [number, number, number] = [46, 109, 197];
-const HDR_DARK: [number, number, number] = ERP_BLUE;
-const HDR_MED: [number, number, number] = ERP_BLUE;
-const BADGE_BG: [number, number, number] = [120, 180, 235];
-const STRIP_BG: [number, number, number] = [150, 200, 245];
 const BOX_TITLE: [number, number, number] = ERP_BLUE;
 
 const RULE: [number, number, number] = [200, 220, 240];
@@ -16,7 +11,6 @@ const INK: [number, number, number] = [25, 45, 75];
 const INK_SOFT: [number, number, number] = [70, 95, 130];
 const INK_PALE: [number, number, number] = [130, 150, 180];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const px = (path: string): string => {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
@@ -25,7 +19,6 @@ const px = (path: string): string => {
 
 const fmt2 = (n: any) => Number(n ?? 0).toFixed(2);
 
-// PO-style address block (addressLine1/addressLine2)
 const addrBlock = (a: any): string[] => {
   if (!a) return [];
   return [
@@ -42,35 +35,43 @@ const fmtDate = (dateStr: any) => {
   const day = String(d.getDate()).padStart(2, "0");
 
   const months = [
-    "JAN","FEB","MAR","APR","MAY","JUN",
-    "JUL","AUG","SEP","OCT","NOV","DEC",
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
   ];
 
   const month = months[d.getMonth()];
-  const year = String(d.getFullYear()).slice(-2); // 👈 last 2 digits
+  const year = String(d.getFullYear()).slice(-2);
 
   return `${day}-${month}-${year}`;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 export const generatePurchaseInvoicePDF = async (
   pi: any,
   company: any,
   resultType: "save" | "bloburl" = "save",
 ) => {
   const doc = new jsPDF("p", "mm", "a4");
-  const W = doc.internal.pageSize.width;   // 210
-  const H = doc.internal.pageSize.height;  // 297
+  const W = doc.internal.pageSize.width;
+  const H = doc.internal.pageSize.height;
   const cur = pi.currency ?? "INR";
   const M = 14;
   const MR = W - M;
-const LOGO_Y = 5;
-  const LOGO_SZ = 32; // ← bigger: was 24, now 32
+  const LOGO_Y = 5;
+  const LOGO_SZ = 32;
   const LOGO_X = M;
 
   if (company?.documents?.companyLogoUrl) {
     try {
-      // No box, no frosted rect — just draw image directly
       doc.addImage(
         px(company.documents.companyLogoUrl),
         "PNG",
@@ -79,11 +80,8 @@ const LOGO_Y = 5;
         LOGO_SZ,
         LOGO_SZ,
       );
-    } catch {
-      /* ignore */
-    }
+    } catch {}
   } else {
-    // Fallback: clean text initials, no box
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(...WHITE);
@@ -94,38 +92,14 @@ const LOGO_Y = 5;
       { align: "center" },
     );
   }
-  /* ══════════════════════════════════════════════════════════
-     WATERMARK — auto-shrink font so full name always fits
-  ══════════════════════════════════════════════════════════ */
-  const drawWatermark = () => {
-    const name = (company?.companyName ?? "").toUpperCase();
-    doc.setFont("helvetica", "bold");
-    let fontSize = 20;
-    doc.setFontSize(fontSize);
-    while (doc.getTextWidth(name) > W - 20 && fontSize > 8) {
-      fontSize -= 1;
-      doc.setFontSize(fontSize);
-    }
-    doc.setTextColor(...HDR_DARK);
-    doc.setGState(doc.GState({ opacity: 0.07 }));
-    doc.text(name, W / 2, H - 48, { align: "center" });
-    doc.setGState(doc.GState({ opacity: 1 }));
-  };
-  drawWatermark();
 
-  /* ══════════════════════════════════════════════════════════
-     ①  HEADER — clean white bg | company left | doc info right
-        (matches PO layout exactly — no dark band, no logo strip)
-  ══════════════════════════════════════════════════════════ */
-const TX = LOGO_X + LOGO_SZ + 6;
+  const TX = LOGO_X + LOGO_SZ + 6;
 
-  // Company name
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
   doc.setTextColor(...INK);
   doc.text((company?.companyName ?? "").toUpperCase(), TX, 14);
 
-  // Tagline
   if (company?.tagline) {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(7.5);
@@ -133,7 +107,6 @@ const TX = LOGO_X + LOGO_SZ + 6;
     doc.text(company.tagline.toUpperCase(), TX, 20);
   }
 
-  // Contact info lines
   const infoY = company?.tagline ? 26 : 22;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
@@ -146,34 +119,32 @@ const TX = LOGO_X + LOGO_SZ + 6;
     infoLines.push(`Email: ${company.contactInfo.companyEmail}`);
   infoLines.forEach((l, i) => doc.text(l, TX, infoY + i * 5));
 
-// BEFORE
-doc.setFont("helvetica", "bold");
-doc.setFontSize(10);
-doc.setTextColor(...INK);
-doc.text("PURCHASE INVOICE", MR, 14, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...INK);
+  doc.text("PURCHASE INVOICE", MR, 14, { align: "right" });
 
-// Invoice ID
-doc.setFontSize(10);
-doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
+  doc.setFontSize(10);
+  doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
 
-// AFTER
-const badgeLabel = "PURCHASE INVOICE";
-doc.setFont("helvetica", "bold");
-doc.setFontSize(10);
-const badgeTextW = doc.getTextWidth(badgeLabel);
-const badgePadX  = 2;
-const badgeH     = 8;
-const badgeW     = badgeTextW + badgePadX * 2;
-const badgeX     = MR - badgeW;
-const badgeY     = 8;
-doc.setFillColor(...ERP_BLUE);
-doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.5, 1.5, "F");
-doc.setTextColor(...WHITE);
-doc.text(badgeLabel, badgeX + badgeW - badgePadX, badgeY + badgeH / 2 + 1.5, { align: "right" });
-doc.setTextColor(...INK);
-doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
+  const badgeLabel = "PURCHASE INVOICE";
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  const badgeTextW = doc.getTextWidth(badgeLabel);
+  const badgePadX = 2;
+  const badgeH = 8;
+  const badgeW = badgeTextW + badgePadX * 2;
+  const badgeX = MR - badgeW;
+  const badgeY = 8;
+  doc.setFillColor(...ERP_BLUE);
+  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.5, 1.5, "F");
+  doc.setTextColor(...WHITE);
+  doc.text(badgeLabel, badgeX + badgeW - badgePadX, badgeY + badgeH / 2 + 1.5, {
+    align: "right",
+  });
+  doc.setTextColor(...INK);
+  doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
 
-  // Meta info — right aligned (matches PO meta block)
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...INK_SOFT);
@@ -185,10 +156,7 @@ doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
   metaLines.forEach((line, i) => {
     doc.text(line, MR, 26 + i * 4, { align: "right" });
   });
-  /* ══════════════════════════════════════════════════════════
-     ③  ADDRESS BOXES — Supplier | Dispatch | Ship To
-        Left-aligned title text & content (matches PO drawBox)
-  ══════════════════════════════════════════════════════════ */
+
   const AY = 40;
   const BOX_HDR = 7;
   const LH = 4.5;
@@ -218,8 +186,6 @@ doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
     calcBoxH(dispatchL),
     calcBoxH(shippingL),
   );
-
-  // PO-style drawBox: left-aligned title, left-aligned content, black text
   const drawBox = (
     bx: number,
     title: string,
@@ -260,75 +226,72 @@ doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
   drawBox(M + colW + gap, "Dispatch Address", dispatchL);
   drawBox(M + (colW + gap) * 2, "Ship To", shippingL);
 
-  /* ══════════════════════════════════════════════════════════
-     ④  META ROW — LPO / Project / Cost Center / Incoterm / Tax
-  ══════════════════════════════════════════════════════════ */
   const afterBoxY = AY + boxH + 4;
   autoTable(doc, {
-  startY: afterBoxY,
+    startY: afterBoxY,
 
-  head: [
-    ["LPO No", "Supplier Invoice", "Tax Category", "Incoterm", "Shipping Rule"],
-  ],
-
-  body: [
-    [
-      pi?.lpoNumber ?? "-",
-      pi?.spplrInvcNo ?? "-",
-      pi?.taxCategory ?? "-",
-      pi?.incoterm ?? "-",
-      pi?.shippingRule ?? "-" // not in API yet
+    head: [
+      [
+        "PO No",
+        "Supplier Invoice",
+        "Tax Category",
+        "Incoterm",
+        "Shipping Rule",
+      ],
     ],
-  ],
 
-  styles: {
-    fontSize: 7.5,
-    textColor: [0,0,0],
-    halign: "left",
-    cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
-    lineColor: RULE,
-    lineWidth: 0.2,
-  },
+    body: [
+      [
+        pi?.lpoNumber ?? "-",
+        pi?.spplrInvcNo ?? "-",
+        pi?.taxCategory ?? "-",
+        pi?.incoterm ?? "-",
+        pi?.shippingRule ?? "-",
+      ],
+    ],
 
-  headStyles: {
-    fillColor: ERP_BLUE,
-    textColor: [255,255,255],
-    fontStyle: "bold",
-    halign: "left",
-  },
+    styles: {
+      fontSize: 7.5,
+      textColor: [0, 0, 0],
+      halign: "left",
+      cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
+      lineColor: RULE,
+      lineWidth: 0.2,
+    },
 
-  columnStyles: {
-    0: { cellWidth: (W - M*2)/5 },
-    1: { cellWidth: (W - M*2)/5 },
-    2: { cellWidth: (W - M*2)/5 },
-    3: { cellWidth: (W - M*2)/5 },
-    4: { cellWidth: (W - M*2)/5 },
-  },
+    headStyles: {
+      fillColor: ERP_BLUE,
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      halign: "left",
+    },
 
-  margin: { left: M, right: M },
-  tableWidth: W - M * 2,
-});
+    columnStyles: {
+      0: { cellWidth: (W - M * 2) / 5 },
+      1: { cellWidth: (W - M * 2) / 5 },
+      2: { cellWidth: (W - M * 2) / 5 },
+      3: { cellWidth: (W - M * 2) / 5 },
+      4: { cellWidth: (W - M * 2) / 5 },
+    },
+
+    margin: { left: M, right: M },
+    tableWidth: W - M * 2,
+  });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(...INK_SOFT);
 
-  
-
-  /* ══════════════════════════════════════════════════════════
-     ⑤  ITEMS TABLE — ERP_BLUE header, white rows, black text
-        (matches PO table style)
-  ══════════════════════════════════════════════════════════ */
   doc.setFont("helvetica");
   doc.setFontSize(7);
   doc.setTextColor(...INK_PALE);
- const metaEndY = (doc as any).lastAutoTable.finalY;
+  const metaEndY = (doc as any).lastAutoTable.finalY;
 
-doc.text("ITEMS", M, metaEndY + 6);
+  doc.text("ITEMS", M, metaEndY + 6);
 
   const TOTAL_W = 24;
 
   autoTable(doc, {
-   startY: metaEndY + 8,
+    startY: metaEndY + 8,
     head: [
       [
         "#",
@@ -379,43 +342,37 @@ doc.text("ITEMS", M, metaEndY + 6);
     },
     alternateRowStyles: { fillColor: WHITE },
     columnStyles: {
-  0: { halign: "center" },
-  1: { halign: "left" },
-  2: { halign: "center" },
-  3: { halign: "center" },
-  4: { halign: "center" },
-  5: { halign: "center" },
-  6: { halign: "center" },
-  7: { halign: "center" },
-  8: { halign: "center" },
-  9: { halign: "right" },
-  10: { halign: "center" },
-  11: { halign: "right" }
-},
+      0: { halign: "center" },
+      1: { halign: "left" },
+      2: { halign: "center" },
+      3: { halign: "center" },
+      4: { halign: "center" },
+      5: { halign: "center" },
+      6: { halign: "center" },
+      7: { halign: "center" },
+      8: { halign: "center" },
+      9: { halign: "right" },
+      10: { halign: "center" },
+      11: { halign: "right", cellWidth: TOTAL_W },
+    },
     margin: { left: M, right: M },
     tableWidth: W - M * 2,
   });
 
   const tblY = (doc as any).lastAutoTable.finalY;
 
-  /* ══════════════════════════════════════════════════════════
-     ⑥  TOTALS (right) — labels before amount column, single-
-        column amount table — matches PO totals block exactly
-  ══════════════════════════════════════════════════════════ */
   const SEC_Y = tblY;
   const ROW_H = 6;
 
-  // Column widths must sum to W - M*2 (same as items table)
-const AMOUNT_COL_X = W - M - TOTAL_W;
+  const AMOUNT_COL_X = W - M - TOTAL_W;
 
-  // Label position just before the amount column
   const LABEL_X = AMOUNT_COL_X - 4;
 
-  const subTotal  = Number(pi?.summary?.subTotal          ?? 0);
-  const taxTotal  = Number(pi?.summary?.taxTotal           ?? 0);
-  const grandTotal = Number(pi?.summary?.grandTotal        ?? 0);
-  const rounding  = Number(pi?.summary?.roundingAdjustment ?? 0);
-  const taxRate   = pi?.tax?.taxRate ?? "-";
+  const subTotal = Number(pi?.summary?.subTotal ?? 0);
+  const taxTotal = Number(pi?.summary?.taxTotal ?? 0);
+  const grandTotal = Number(pi?.summary?.grandTotal ?? 0);
+  const rounding = Number(pi?.summary?.roundingAdjustment ?? 0);
+  const taxRate = pi?.tax?.taxRate ?? "-";
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
@@ -460,30 +417,28 @@ const AMOUNT_COL_X = W - M - TOTAL_W;
   const sumEndY = (doc as any).lastAutoTable.finalY;
   const SIG_Y = sumEndY;
 
-  /* ══════════════════════════════════════════════════════════
-     ⑦  PRE-CALCULATE TERMS height so signature box can match it
-  ══════════════════════════════════════════════════════════ */
   const LABEL_W = 28;
   const SIGN_X = AMOUNT_COL_X - LABEL_W;
   const SIGN_W = LABEL_W + TOTAL_W;
 
   let termsY = SIG_Y;
   const buying = pi?.terms?.terms?.buying;
-  const termW  = SIGN_X - M;
+  const termW = SIGN_X - M;
   const termTW = termW - 14;
   const tLines: string[] = [];
 
   if (buying) {
-    if (buying.general)      tLines.push(`General: ${buying.general}`);
-    if (buying.delivery)     tLines.push(`Delivery: ${buying.delivery}`);
-    if (buying.cancellation) tLines.push(`Cancellation: ${buying.cancellation}`);
-    if (buying.warranty)     tLines.push(`Warranty: ${buying.warranty}`);
-    if (buying.liability)    tLines.push(`Liability: ${buying.liability}`);
+    if (buying.general) tLines.push(`General: ${buying.general}`);
+    if (buying.delivery) tLines.push(`Delivery: ${buying.delivery}`);
+    if (buying.cancellation)
+      tLines.push(`Cancellation: ${buying.cancellation}`);
+    if (buying.warranty) tLines.push(`Warranty: ${buying.warranty}`);
+    if (buying.liability) tLines.push(`Liability: ${buying.liability}`);
     if (buying.payment) {
       const p = buying.payment;
-      if (p.dueDates)    tLines.push(`Payment Due: ${p.dueDates}`);
+      if (p.dueDates) tLines.push(`Payment Due: ${p.dueDates}`);
       if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
-      if (p.notes)       tLines.push(`Notes: ${p.notes}`);
+      if (p.notes) tLines.push(`Notes: ${p.notes}`);
       p.phases?.forEach((ph: any, i: number) => {
         const phaseName = ph.phaseName ?? ph.name ?? `Phase ${i + 1}`;
         const percent = ph.percentage ?? 0;
@@ -494,79 +449,63 @@ const AMOUNT_COL_X = W - M - TOTAL_W;
   }
   if (!tLines.length) tLines.push("No terms and conditions specified.");
 
-  // Calculate terms box height first
   let tH = 12;
   tLines.forEach((l) => {
     tH += doc.splitTextToSize(l, termTW).length * 3.5;
   });
-  const tBH = Math.max(28, tH + 4); // min 28 = 6 (header bar) + 22 (content)
+  const tBH = Math.max(28, tH + 4);
 
-  /* ══════════════════════════════════════════════════════════
-     ⑧  PAGE-BREAK CHECK — before drawing either block
-  ══════════════════════════════════════════════════════════ */
   if (termsY + tBH > H - 16) {
     doc.addPage();
-    drawWatermark();
     termsY = 16;
   }
 
-  /* ══════════════════════════════════════════════════════════
-     SIGNATURE — drawn after page-break check, uses termsY
-     so it always sits at the same Y as the T&C box
-  ══════════════════════════════════════════════════════════ */
-// Align signature with bottom of terms block (same as PO)
-const signatureStartY = termsY + tBH - 46;
+  const signatureStartY = termsY + tBH - 46;
 
-// Header bar
-doc.setFillColor(...ERP_BLUE);
-doc.rect(SIGN_X, signatureStartY, SIGN_W, 6, "F");
+  doc.setFillColor(...ERP_BLUE);
+  doc.rect(SIGN_X, signatureStartY, SIGN_W, 6, "F");
 
-doc.setFont("helvetica", "bold");
-doc.setFontSize(8);
-doc.setTextColor(...WHITE);
-doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, signatureStartY + 4, {
-  align: "center",
-});
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...WHITE);
+  doc.text("Authorised Signatory", SIGN_X + SIGN_W / 2, signatureStartY + 4, {
+    align: "center",
+  });
 
-// Signature box
-doc.setFillColor(...WHITE);
-doc.rect(SIGN_X, signatureStartY + 6, SIGN_W, 22, "F");
+  doc.setFillColor(...WHITE);
+  doc.rect(SIGN_X, signatureStartY + 6, SIGN_W, 22, "F");
 
-doc.setDrawColor(...RULE);
+  doc.setDrawColor(...RULE);
 
-// top line
-doc.line(SIGN_X, signatureStartY + 6, SIGN_X + SIGN_W, signatureStartY + 6);
+  doc.line(SIGN_X, signatureStartY + 6, SIGN_X + SIGN_W, signatureStartY + 6);
 
-// bottom line
-doc.line(SIGN_X, signatureStartY + 28, SIGN_X + SIGN_W, signatureStartY + 28);
+  doc.line(SIGN_X, signatureStartY + 28, SIGN_X + SIGN_W, signatureStartY + 28);
 
-// Signature image
-if (company?.documents?.authorizedSignatureUrl) {
-  try {
-    doc.addImage(
-      px(company.documents.authorizedSignatureUrl),
-      "PNG",
-      SIGN_X + (SIGN_W - 40) / 2,
-      signatureStartY + 9,
-      40,
-      14,
-    );
-  } catch {}
-}
+  if (company?.documents?.authorizedSignatureUrl) {
+    try {
+      doc.addImage(
+        px(company.documents.authorizedSignatureUrl),
+        "PNG",
+        SIGN_X + (SIGN_W - 40) / 2,
+        signatureStartY + 9,
+        40,
+        14,
+      );
+    } catch {}
+  }
 
-// Signature line
-doc.line(
-  SIGN_X + 5,
-  signatureStartY + 22,
-  SIGN_X + SIGN_W - 5,
-  signatureStartY + 22,
-);
+  doc.line(
+    SIGN_X + 5,
+    signatureStartY + 22,
+    SIGN_X + SIGN_W - 5,
+    signatureStartY + 22,
+  );
 
-doc.setFontSize(6.5);
-doc.setTextColor(120, 120, 120);
-doc.text("Signature", SIGN_X + SIGN_W / 2, signatureStartY + 26, {
-  align: "center",
-});
+  doc.setFontSize(6.5);
+  doc.setTextColor(120, 120, 120);
+  doc.text("Signature", SIGN_X + SIGN_W / 2, signatureStartY + 26, {
+    align: "center",
+  });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
@@ -583,9 +522,6 @@ doc.text("Signature", SIGN_X + SIGN_W / 2, signatureStartY + 26, {
     tcy += wr.length * 3.5;
   });
 
-  /* ══════════════════════════════════════════════════════════
-     ⑨  FOOTER — simple text footer (matches PO)
-  ══════════════════════════════════════════════════════════ */
   const totalPg = (doc as any).internal.getNumberOfPages();
   for (let pg = 1; pg <= totalPg; pg++) {
     doc.setPage(pg);
@@ -597,9 +533,6 @@ doc.text("Signature", SIGN_X + SIGN_W / 2, signatureStartY + 26, {
     doc.text("This is a computer-generated document.", M, H - 6);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     ⑩  OUTPUT
-  ══════════════════════════════════════════════════════════ */
   return resultType === "save"
     ? doc.save(`Purchase_Invoice_${pi.pId}.pdf`)
     : doc.output("bloburl");

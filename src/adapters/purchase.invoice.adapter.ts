@@ -8,12 +8,12 @@ import type {
 } from "../types/paymententryrecord.types";
 
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants 
 
-// Purchase invoices with these statuses have nothing left to pay
+
 const PAID_STATUSES = new Set(["Paid", "Cancelled", "Closed"]);
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers 
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -21,49 +21,45 @@ function formatDate(iso: string | null | undefined): string {
   return isNaN(d.getTime()) ? "—" : d.toLocaleDateString();
 }
 
-// ─── Normalizer ───────────────────────────────────────────────────────────────
-// 
-// CRITICAL: Purchase API does NOT return outstandingAmount.
-// Strategy:
-//   - If status is in PAID_STATUSES → outstanding = 0 (filter these out)
-//   - Otherwise → outstanding = grandTotal (full amount is unpaid)
-//   - This is a safe assumption; backend should add outstandingAmount in future
-//
+
 function normalizePurchaseInvoice(raw: PurchaseInvoiceRaw): NormalizedInvoice {
   const totalAmount = Number(raw.grandTotal ?? 0);
+  // TODO think about it
   const isPaid = PAID_STATUSES.has(raw.status);
-  const outstanding = isPaid ? 0 : totalAmount;
+  const outstanding = Number(raw.outstanding_amount ?? 0);
+  const paid = Number(raw.paidAmount ?? 0);
 
-  // deliveryDate is the only date usable for FIFO — no actual dueDate in API
-  const dueDateRaw = raw.deliveryDate ?? raw.poDate ?? "9999-12-31";
+  const dueDateRaw = raw.deliveryDate ?? raw.poDate ?? "-";
 
   return {
-    invoiceNumber: raw.pId,              // pId is the invoice ID in purchase API
+    invoiceNumber: raw.pId,             
     partyName: raw.supplierName ?? "",
     invoiceDate: formatDate(raw.poDate),
-    dueDate: formatDate(raw.deliveryDate), // best available proxy for due date
+    dueDate: formatDate(raw.deliveryDate), 
     dueDateRaw,
     totalAmount,
-    paid: isPaid ? totalAmount : 0,
+    // paid: isPaid ? totalAmount : 0,
+    paid,
     outstanding,
     status: raw.status ?? "Unknown",
   };
 }
 
-// ─── Adapter ──────────────────────────────────────────────────────────────────
+// ─── Adapter 
 
 export const purchaseInvoiceAdapter: InvoiceAdapter = {
   async fetchPage({ page, pageSize, partyName }: FetchParams): Promise<NormalizedPage> {
     const res = await getPurchaseInvoices(page, pageSize, {
       supplier: partyName,
+      status: ["Partly Paid", "Unpaid", "Overdue"],
+      sort_order: "asc",
     });
-
     const raw: PurchaseInvoiceRaw[] = res?.data ?? [];
 
     return {
       data: raw
         .map(normalizePurchaseInvoice)
-        .filter((inv) => inv.outstanding > 0),  // removes Paid/Cancelled
+        .filter((inv) => inv.outstanding > 0), 
       pagination: {
         page: res?.pagination?.page ?? page,
         totalPages: res?.pagination?.total_pages ?? 1,
@@ -75,7 +71,11 @@ export const purchaseInvoiceAdapter: InvoiceAdapter = {
   },
 
   async fetchAllForFifo(partyName): Promise<NormalizedInvoice[]> {
-    const res = await getPurchaseInvoices(1, 1000, { supplier: partyName });
+    const res = await getPurchaseInvoices(1, 1000, {
+      supplier: partyName,
+      status: ["Partly Paid", "Unpaid", "Overdue"],
+      sort_order: "asc",
+    });
     const raw: PurchaseInvoiceRaw[] = res?.data ?? [];
 
     return raw

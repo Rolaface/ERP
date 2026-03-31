@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getInvoiceAdapter, isSupportedPartyType } from "../adapters/invoice.adapter.registry";
 import type {
   AllocationMap,
@@ -10,7 +9,8 @@ import type {
 
 const PAGE_SIZE = 10;
 
-export function runFifoAllocation(invoices: NormalizedInvoice[], budget: number): AllocationMap {
+// ─── Greedy allocation in API order (no frontend sorting — API returns FIFO) ──
+function runGreedyAllocation(invoices: NormalizedInvoice[], budget: number): AllocationMap {
   if (budget <= 0) return {};
   const result: AllocationMap = {};
   let remaining = budget;
@@ -60,12 +60,9 @@ export function useInvoiceList(
   partyType: string,
   partyName: string | undefined,
   paymentAmount: number,
-  fifoTrigger: number | undefined,
   onFormChange: (data: AllocationResult) => void,
   referenceInvoice?: string,
-   initialAllocated?: Record<string, number>  
-
-  
+  initialAllocated?: Record<string, number>,
 ): UseInvoiceListReturn {
   const adapter     = getInvoiceAdapter(partyType);
   const isSupported = isSupportedPartyType(partyType);
@@ -76,141 +73,153 @@ export function useInvoiceList(
   const [loading, setLoading]         = useState(false);
   const [fetchError, setFetchError]   = useState<string | null>(null);
   const [editingRow, setEditingRow]   = useState<string | null>(null);
-const [allocated, setAllocated] = useState<AllocationMap>(initialAllocated ?? {});
-const [inputValues, setInputValues] = useState<Record<string, string>>(
-  Object.fromEntries(
-    Object.entries(initialAllocated ?? {}).map(([k, v]) => [k, String(v)])
-  )
-);
 
-  const paymentAmountRef      = useRef(paymentAmount);
-  paymentAmountRef.current    = paymentAmount;
+  const [allocated, setAllocated] = useState<AllocationMap>(initialAllocated ?? {});
+  const [inputValues, setInputValues] = useState<Record<string, string>>(
+    Object.fromEntries(
+      Object.entries(initialAllocated ?? {}).map(([k, v]) => [k, String(v)])
+    )
+  );
 
-  const onFormChangeRef       = useRef(onFormChange);
-  onFormChangeRef.current     = onFormChange;
+  // ── Refs — avoid stale closures ───────────────────────────────────────────
+  const paymentAmountRef    = useRef(paymentAmount);
+  paymentAmountRef.current  = paymentAmount;
 
-  const referenceInvoiceRef   = useRef(referenceInvoice);
+  const onFormChangeRef     = useRef(onFormChange);
+  onFormChangeRef.current   = onFormChange;
+
+  const referenceInvoiceRef = useRef(referenceInvoice);
   referenceInvoiceRef.current = referenceInvoice;
 
-  const lastFifoTrigger = useRef<number>(0);
-
-  // ── Fetch page — no cache, no frontend filtering, backend handles everything
-  const fetchPage = useCallback(
-    async (page: number) => {
-      if (!adapter) return;
-
-      setLoading(true);
-      setFetchError(null);
-
-      try {
-        const ref = referenceInvoiceRef.current;
-
-        if (ref) {
-          // Specific invoice context — fetch all for FIFO and filter by ref
-          const allData = await adapter.fetchAllForFifo(partyName);
-          const match   = allData.filter((inv) => inv.invoiceNumber === ref);
-          setInvoices(match);
-          setPagination({
-            page: 1,
-            totalPages: 1,
-            total: match.length,
-            hasNext: false,
-            hasPrev: false,
-          });
-        } else {
-          // Normal flow — backend handles pagination entirely
-          const result = await adapter.fetchPage({ page, pageSize: PAGE_SIZE, partyName });
-          setInvoices(result.data);
-          setPagination(result.pagination);
-        }
-      } catch (err) {
-        setFetchError(err instanceof Error ? err.message : "Failed to load invoices.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [adapter, partyName] // eslint-disable-line react-hooks/exhaustive-deps
+  // Track the amount that was used for the last auto-allocation.
+  // If paymentAmount differs on next tab visit → re-run allocation.
+  const lastAutoAllocatedAmountRef = useRef<number | null>(
+    initialAllocated && Object.keys(initialAllocated).length > 0
+      ? paymentAmount   // treat initial as already allocated
+      : null
   );
-
-  const fetchPageRef   = useRef(fetchPage);
-  fetchPageRef.current = fetchPage;
-
-  // ── Effect 1: party / referenceInvoice change → reset + fetch ─────────────
-  useEffect(() => {
-    const fifoAlreadyPending =
-      fifoTrigger !== undefined && fifoTrigger !== lastFifoTrigger.current;
-
-    setCurrentPage(1);
-    setInvoices([]);
-    setPagination(null);
-    setFetchError(null);
-
-  if (!fifoAlreadyPending) {
-  const seedAllocated = initialAllocated && Object.keys(initialAllocated).length > 0
-    ? initialAllocated
-    : {};
-  setAllocated(seedAllocated);
-  setInputValues(
-    Object.fromEntries(Object.entries(seedAllocated).map(([k, v]) => [k, String(v)]))
-  );
-}
-
-    if (isSupported && partyType) fetchPageRef.current(1);
-  }, [partyType, partyName, referenceInvoice]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Effect 2: page navigation — just call backend with new page number ─────
- useEffect(() => {
-  if (isSupported && partyType) fetchPageRef.current(currentPage);
-}, [currentPage]); 
 
   const publishAllocation = useCallback((map: AllocationMap) => {
     onFormChangeRef.current(buildAllocationResult(map));
   }, []);
 
-  // ── Effect 3: FIFO ─────────────────────────────────────────────────────────
-  useEffect(() => {
-    const trigger = fifoTrigger;
-    if (!trigger || trigger === lastFifoTrigger.current || !adapter) return;
-    lastFifoTrigger.current = trigger;
+  // ── Fetch a single page (display only — no allocation side-effect) ─────────
+  const fetchPage = useCallback(async (page: number) => {
+    if (!adapter) return;
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const ref = referenceInvoiceRef.current;
+      if (ref) {
+        const allData = await adapter.fetchAllForFifo(partyName);
+        const match   = allData.filter((inv) => inv.invoiceNumber === ref);
+        setInvoices(match);
+        setPagination({ page: 1, totalPages: 1, total: match.length, hasNext: false, hasPrev: false });
+      } else {
+        const result = await adapter.fetchPage({ page, pageSize: PAGE_SIZE, partyName });
+        setInvoices(result.data);
+        setPagination(result.pagination);
+      }
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : "Failed to load invoices.");
+    } finally {
+      setLoading(false);
+    }
+  }, [adapter, partyName]);
 
+  const fetchPageRef   = useRef(fetchPage);
+  fetchPageRef.current = fetchPage;
+
+  // ── Auto-FIFO allocation — fetch all → allocate greedily in API order ─────
+  // Called on mount and whenever paymentAmount changes since last run.
+  const runAutoAllocation = useCallback(async () => {
+    if (!adapter) return;
     const budget = paymentAmountRef.current;
     if (budget <= 0) return;
 
     let cancelled = false;
+    try {
+      const ref         = referenceInvoiceRef.current;
+      const allData     = await adapter.fetchAllForFifo(partyName);
+      const allInvoices = ref
+        ? allData.filter((inv) => inv.invoiceNumber === ref)
+        : allData;
 
-    const runFifo = async () => {
-      try {
-        const allData     = await adapter.fetchAllForFifo(partyName);
-        const ref         = referenceInvoiceRef.current;
-        const allInvoices = ref
-          ? allData.filter((inv) => inv.invoiceNumber === ref)
-          : allData;
+      if (cancelled) return;
 
-        if (cancelled) return;
+      // API already returns invoices in FIFO order — allocate as-is
+      const newAllocated = runGreedyAllocation(allInvoices, budget);
 
-        const newAllocated                        = runFifoAllocation(allInvoices, budget);
-        const newInputValues: Record<string, string> = {};
-        for (const [num, amount] of Object.entries(newAllocated)) {
-          newInputValues[num] = String(amount);
-        }
-
-        setAllocated(newAllocated);
-        setInputValues(newInputValues);
-        publishAllocation(newAllocated);
-
-        // Refresh page 1 from backend after FIFO
-        setCurrentPage(1);
-        fetchPageRef.current(1);
-      } catch {
-        // silent
+      const newInputValues: Record<string, string> = {};
+      for (const [num, amount] of Object.entries(newAllocated)) {
+        newInputValues[num] = String(amount);
       }
-    };
 
-    runFifo();
+      setAllocated(newAllocated);
+      setInputValues(newInputValues);
+      publishAllocation(newAllocated);
+      lastAutoAllocatedAmountRef.current = budget;
+
+      // Refresh the visible page after allocation
+      setCurrentPage(1);
+      fetchPageRef.current(1);
+    } catch {
+      // silent — page fetch will show its own error
+    }
     return () => { cancelled = true; };
-  }, [fifoTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [adapter, partyName, publishAllocation]);
 
-  // ── Manual allocation ──────────────────────────────────────────────────────
+  // ── Effect 1: On mount — party / referenceInvoice change ─────────────────
+  // Reset state, then decide: run auto-allocation or just fetch page.
+  useEffect(() => {
+    setCurrentPage(1);
+    setInvoices([]);
+    setPagination(null);
+    setFetchError(null);
+
+    if (!isSupported || !partyType) return;
+
+    const budget = paymentAmountRef.current;
+    const needsAllocation =
+      budget > 0 &&
+      lastAutoAllocatedAmountRef.current !== budget;
+
+    if (needsAllocation) {
+      // Reset allocation state before re-running
+      setAllocated({});
+      setInputValues({});
+      runAutoAllocation();
+    } else {
+      // Allocation already correct for this amount — just fetch display page
+      fetchPageRef.current(1);
+    }
+  }, [partyType, partyName, referenceInvoice]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Effect 2: Page navigation ─────────────────────────────────────────────
+  useEffect(() => {
+    if (isSupported && partyType) fetchPageRef.current(currentPage);
+  }, [currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Effect 3: paymentAmount changed → mark for re-allocation ─────────────
+  // We don't run immediately (component may be hidden). Mark stale so that
+  // the next time Effect 1 fires (tab revisit / party change) it re-runs.
+  // But if component IS mounted and amount changes, re-run right away.
+  const isMountedRef = useRef(false);
+  useEffect(() => {
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      return;
+    }
+    // Amount changed while this component is mounted — re-run allocation
+    if (isSupported && partyType) {
+      lastAutoAllocatedAmountRef.current = null; // mark stale
+      setAllocated({});
+      setInputValues({});
+      runAutoAllocation();
+    }
+  }, [paymentAmount]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Manual allocation ─────────────────────────────────────────────────────
   const handleInputChange = useCallback((invoiceNumber: string, raw: string) => {
     if (!/^\d*\.?\d*$/.test(raw)) return;
     setInputValues((prev) => ({ ...prev, [invoiceNumber]: raw }));

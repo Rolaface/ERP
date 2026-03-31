@@ -418,24 +418,27 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     try {
       showLoading("Updating invoice status...");
 
-      const res = await updateInvoiceStatus(invoiceNumber, status);
+    const res = await updateInvoiceStatus(invoiceNumber, status);
 
-      closeSwal();
+closeSwal();
 
-      if (!res || res.status_code !== 200) {
-        showApiError(res?.message || "Failed to update invoice status");
-        return;
-      }
+if (!res || res.status_code !== 200) {
+  showApiError(res?.message || "Failed to update invoice status");
+  return;
+}
 
-      setInvoices((prev) =>
-        prev.map((inv) =>
-          inv.invoiceNumber === invoiceNumber
-            ? { ...inv, invoiceStatus: status }
-            : inv,
-        ),
-      );
+// ✅ use backend response (NOT input param)
+const updatedStatus = res.data?.status;
 
-      showSuccess(`Invoice marked as ${status}`);
+setInvoices((prev) =>
+  prev.map((inv) =>
+    inv.invoiceNumber === invoiceNumber
+      ? { ...inv, invoiceStatus: updatedStatus }
+      : inv,
+  ),
+);
+
+showSuccess(`Invoice marked as ${updatedStatus}`);
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -589,15 +592,16 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             onDownload={(e) => handleDownload(inv, e)}
             onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
             customActions={[
-              ...(inv.invoiceStatus === "Approved"
-                ? [
-                    {
-                      label: "Receive Payment",
-                      onClick: () => handleReceivePayment(inv),
-                    },
-                  ]
-                : []),
-
+...(inv.invoiceStatus !== "Draft" &&
+   inv.invoiceStatus !== "Cancelled" &&
+   inv.outstandingAmount > 0
+  ? [
+      {
+        label: "Receive Payment",
+        onClick: () => handleReceivePayment(inv),
+      },
+    ]
+  : []),
               {
                 label: "View PDF",
                 onClick: () => handlePreviewPDF(inv),
@@ -704,7 +708,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                 partyName: paymentInvoice.customerName,
                 partyId: paymentInvoice.customerId,
                 amount: paymentInvoice.outstandingAmount,
-                referenceInvoice: paymentInvoice.invoiceNumber,
+                referenceName: paymentInvoice.invoiceNumber,
+                referenceType: "Sales Invoice",
               }
             : undefined
         }

@@ -277,6 +277,13 @@ else if (api.tax) {
 
     totalQuantity: totalQuantity,
     grandTotal: grandTotal,
+    
+    advanceAmount:
+      (api.advances_payments || []).reduce(
+        (sum: number, p: any) => sum + Number(p.allocated_amount || 0),
+        0
+      ),
+
     roundingAdjustment: roundingAdjustment,
     roundedTotal: roundedTotal,
 

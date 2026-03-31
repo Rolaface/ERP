@@ -40,6 +40,7 @@ interface PurchaseOrder {
   date: string;
   amount: number;
   status: string;
+   supplierId: string;  
   deliveryDate: string;
   referenceNumber: string;
 }
@@ -136,6 +137,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
         id: po.poId,
         supplier: po.supplierName,
         date: po.poDate,
+        supplierId: po.supplierId ?? po.partyId ?? po.supplier_id,
         deliveryDate: po.deliveryDate || po.items?.[0]?.requiredBy || "",
         amount: po.grandTotal,
         status: po.status,
@@ -621,8 +623,12 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   defaultValues={{
     paymentType: "Pay",
     partyType: "Supplier",
-    partyName: selectedPOForPayment?.supplier,
-    referenceInvoice: selectedPOForPayment?.id,
+    partyName: selectedPOForPayment?.supplier,   // display name for UI
+    partyId: selectedPOForPayment?.supplierId,   // ← actual ID for API (add this field to your PurchaseOrder interface)
+    amount: selectedPOForPayment?.amount, 
+    referenceName: selectedPOForPayment?.id,
+   referenceType: "Purchase Order",
+    
   }}
 />
     </div>

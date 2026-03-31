@@ -101,6 +101,13 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   // ── Clear GL + mode when paymentType or partyType changes ─────────────────
   const prevRef = useRef({ paymentType, partyType });
+  useEffect(() => {
+  if (!form.mode && modeOptions.length > 0) {
+    onFormChange({
+      mode: modeOptions[0].value,
+    });
+  }
+}, [modeOptions]);
 
   useEffect(() => {
     const prev = prevRef.current;
@@ -111,7 +118,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         currencyFrom: "",
         glTo: "",
         currencyTo: "",
-        mode: "",
+        
         ...(paymentType === "Internal Transfer"
           ? { partyType: "", partyName: "", partyId: "", allocations: {}, selectedInvoices: [], allocatedAmount: 0 }
           : {}),
@@ -868,7 +875,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                 onClick={onAllocate}
                 className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors w-fit"
               >
-                Allocate against invoices <ArrowRight size={11} />
+                Modify Allocation Order <ArrowRight size={11} />
               </button>
             )}
           </div>

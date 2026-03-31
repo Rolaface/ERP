@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Loader2,
   Pencil,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useInvoiceList } from "../../hooks/useInvoiceList";
 import type { AllocationResult, NormalizedPagination } from "../../types/paymententryrecord.types";
@@ -14,21 +15,22 @@ interface InvoiceListProps {
     partyType?: string;
     partyName?: string;
     amount?: number | string;
-    fifoTrigger?: number;
-    referenceInvoice?: string;  
-     allocations?: Record<string, number>; 
+    referenceInvoice?: string;
+    allocations?: Record<string, number>;
   };
   onFormChange: (data: AllocationResult) => void;
+  /** Called when user clicks "Modify INV Allocation" — parent switches to invoices tab */
+  onModifyAllocation?: () => void;
+  /** Called when loading state changes — parent can show loading indicator */
+  onLoadingChange?: (loading: boolean) => void;
 }
 
-const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
-  const partyType        = form.partyType ?? "";
-  const partyName        = form.partyName;
-  const paymentAmount    = Number(form.amount ?? 0);
-  const fifoTrigger      = form.fifoTrigger;
-  const referenceInvoice = form.referenceInvoice; 
+const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange, onModifyAllocation, onLoadingChange }) => {
+  const partyType          = form.partyType ?? "";
+  const partyName          = form.partyName;
+  const paymentAmount      = Number(form.amount ?? 0);
+  const referenceInvoice   = form.referenceInvoice;
   const initialAllocations = form.allocations ?? {};
- 
 
   const {
     invoices,
@@ -52,11 +54,15 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
     partyType,
     partyName,
     paymentAmount,
-    fifoTrigger,
     onFormChange,
     referenceInvoice,
-    initialAllocations
+    initialAllocations,
   );
+
+  // Notify parent when loading state changes
+  React.useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
 
   if (!partyType) {
     return <EmptyMessage text="Select a party type in the Details tab first." />;
@@ -92,6 +98,26 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange }) => {
 
   return (
     <div className="flex flex-col gap-3">
+
+      {/* ── Top bar: title + Modify button ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-0.5">
+          <p className="text-sm font-semibold text-main">Invoice Allocation</p>
+          <p className="text-[11px] text-muted">
+            Invoices are auto-allocated in FIFO order. Edit any row to override.
+          </p>
+        </div>
+        {onModifyAllocation && (
+          <button
+            onClick={onModifyAllocation}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)]
+              text-xs font-medium text-main hover:bg-[var(--row-hover)] transition-colors"
+          >
+            <SlidersHorizontal size={12} />
+            Modify INV Allocation
+          </button>
+        )}
+      </div>
 
       {showUnallocatedWarning && (
         <div className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
