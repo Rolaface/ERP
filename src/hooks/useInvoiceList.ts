@@ -122,6 +122,8 @@ const [inputValues, setInputValues] = useState<Record<string, string>>(
           const result = await adapter.fetchPage({ page, pageSize: PAGE_SIZE, partyName });
           setInvoices(result.data);
           setPagination(result.pagination);
+          console.log(result);
+
         }
       } catch (err) {
         setFetchError(err instanceof Error ? err.message : "Failed to load invoices.");
@@ -130,6 +132,7 @@ const [inputValues, setInputValues] = useState<Record<string, string>>(
       }
     },
     [adapter, partyName] // eslint-disable-line react-hooks/exhaustive-deps
+    
   );
 
   const fetchPageRef   = useRef(fetchPage);
