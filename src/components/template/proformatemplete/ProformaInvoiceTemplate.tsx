@@ -68,29 +68,10 @@ export const generateProformaInvoicePDF = async (
   // # (6) + ItemCode (20) + ItemName (22) + Desc (40) + Packing (12) +
   // Qty (14) + Rate (14) + Disc% (10) + Tax (10) + TaxCode (10) + Amount (24)
   // = 6+20+22+40+12+14+14+10+10+10+24 = 182 ✓
- const COL_WIDTHS = [6, 39, 42, 14, 14, 14, 13, 16, 24];
+ const COL_WIDTHS = [8, 38, 41, 14, 14, 14, 13, 16, 24];
   const TOTAL_W = 24; // last column
   // AMOUNT_COL_X = M + sum of first 10 columns = M + (182 - 24) = M + 158
  const AMOUNT_COL_X = W - M - TOTAL_W;
-
-  /* ══════════════════════════════════════════════════════════
-     WATERMARK  (same as Invoice)
-  ══════════════════════════════════════════════════════════ */
-  const drawWatermark = () => {
-    const name = (company?.companyName ?? "").toUpperCase();
-    doc.setFont("helvetica", "bold");
-    let fs = 20;
-    doc.setFontSize(fs);
-    while (doc.getTextWidth(name) > W - 20 && fs > 8) {
-      fs--;
-      doc.setFontSize(fs);
-    }
-    doc.setTextColor(...ERP_BLUE);
-    doc.setGState(doc.GState({ opacity: 0.07 }));
-    doc.text(name, W / 2, H - 48, { align: "center" });
-    doc.setGState(doc.GState({ opacity: 1 }));
-  };
-  drawWatermark();
 
   /* ══════════════════════════════════════════════════════════
      ①  LOGO  (same position as Invoice)
@@ -185,8 +166,6 @@ doc.text(`Proforma No.: ${proformaInvoice.proformaId ?? "-"}`, MR, 20, { align: 
   doc.setTextColor(...INK_SOFT);
   [
     `Invoice Date: ${fmtDate(proformaInvoice.dateofinvoice)}`,
-    `Payment Method: ${getPaymentMethodLabel(proformaInvoice?.paymentInformation?.paymentMethod) ?? "-"}`,
-    `Status: ${proformaInvoice.invoiceStatus ?? "-"}`,
   ].forEach((l, i) => doc.text(l, MR, 26 + i * 4, { align: "right" }));
 
   /* ══════════════════════════════════════════════════════════
@@ -208,8 +187,7 @@ doc.text(`Proforma No.: ${proformaInvoice.proformaId ?? "-"}`, MR, 20, { align: 
 
   const payL: string[] = (
     [
-      `Method: ${getPaymentMethodLabel(proformaInvoice?.paymentInformation?.paymentMethod) ?? "-"}`,
-      `Terms: ${proformaInvoice?.paymentInformation?.paymentTerms ?? "-"}`,
+      
       `Bank: ${proformaInvoice?.paymentInformation?.bankName ?? "-"}`,
       proformaInvoice?.paymentInformation?.accountNumber
         ? `A/C: ${proformaInvoice.paymentInformation.accountNumber}`
@@ -217,6 +195,8 @@ doc.text(`Proforma No.: ${proformaInvoice.proformaId ?? "-"}`, MR, 20, { align: 
       proformaInvoice?.paymentInformation?.swiftCode
         ? `SWIFT: ${proformaInvoice.paymentInformation.swiftCode}`
         : null,
+        `Sort Code: ${proformaInvoice?.paymentInformation?.routingNumber ?? "-"}`,
+        `Terms: ${proformaInvoice?.paymentInformation?.paymentTerms ?? "-"}`,
     ] as (string | null)[]
   ).filter(Boolean) as string[];
 
@@ -318,9 +298,6 @@ doc.text(`Proforma No.: ${proformaInvoice.proformaId ?? "-"}`, MR, 20, { align: 
     startY: afterMetaY + 8,
     theme: "grid",
   alternateRowStyles: { fillColor: WHITE },
-    willDrawPage: () => {
-    drawWatermark();
-  },
     head: [
       [
         "#",
@@ -343,7 +320,7 @@ doc.text(`Proforma No.: ${proformaInvoice.proformaId ?? "-"}`, MR, 20, { align: 
       const discamt = base * (disc / 100);
       const taxable = base - discamt;
       const taxamt = taxable * (Number(item.vatRate ?? 0) / 100);
-      const net = taxable + taxamt;
+      const net = taxable;
       const packing =
         item.packingUnit && item.packingSize
           ? `${item.packingUnit}×${item.packingSize}`
@@ -356,9 +333,10 @@ doc.text(`Proforma No.: ${proformaInvoice.proformaId ?? "-"}`, MR, 20, { align: 
         Number.isInteger(qty) ? qty.toLocaleString() : fmt2(qty),
         fmt2(rate),
         disc > 0 ? `${disc}%` : "0%",
-       item.vatCode
-  ? `${item.vatCode} (${item.vatRate ?? "0"})`
-  : "-",
+  //      item.vatCode
+  // ? `${item.vatCode} (${item.vatRate ?? "0"})`
+  // : "-",
+  item.vatRate,
         fmt2(net),
       ];
     }),
@@ -530,7 +508,6 @@ const tBH = Math.max(SIGN_HDR_H + SIGN_BOX_H + 2, tH + 6);
 let termsY = sumEndY;
 if (termsY + tBH > H - 16) {
   doc.addPage();
-  drawWatermark();
   termsY = 16;
 }
 

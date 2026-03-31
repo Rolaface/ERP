@@ -50,22 +50,7 @@ export const generateQuotationPDF = async (
   const MR  = W - M;
 
 
-  const TOTAL_W    = 28; // last column width
-
-  /* ══════════════════════════════════════════════════════════
-     WATERMARK 
-  ══════════════════════════════════════════════════════════ */
-  const drawWatermark = () => {
-    const name = (company?.companyName ?? "").toUpperCase();
-    doc.setFont("helvetica", "bold");
-    let fs = 20; doc.setFontSize(fs);
-    while (doc.getTextWidth(name) > W - 20 && fs > 8) { fs--; doc.setFontSize(fs); }
-    doc.setTextColor(...ERP_BLUE);
-    doc.setGState(doc.GState({ opacity: 0.07 }));
-    doc.text(name, W / 2, H - 48, { align: "center" });
-    doc.setGState(doc.GState({ opacity: 1 }));
-  };
-  drawWatermark();
+  const TOTAL_W    = 28; 
 
   /* ══════════════════════════════════════════════════════════
      ①  LOGO  (same position as Invoice)
@@ -147,8 +132,6 @@ doc.text(
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...INK_SOFT);
   [
     `Issue Date: ${fmtDate(quotation.transactionDate)}`,
-    `Payment Method: ${getPaymentMethodLabel(quotation?.paymentInformation?.paymentMethod) ?? "-"}`,
-    `Status: ${quotation.invoiceStatus ?? "-"}`,
   ].forEach((l, i) => doc.text(l, MR, 26 + i * 4, { align: "right" }));
 
   /* ══════════════════════════════════════════════════════════
@@ -168,13 +151,14 @@ doc.text(
   if (quotation?.billingAddress?.phone) billL.push(`Phone: ${quotation.billingAddress.phone}`);
 
   const payL: string[] = ([
-    `Method: ${getPaymentMethodLabel(quotation?.paymentInformation?.paymentMethod) ?? "-"}`,
-    `Terms: ${quotation?.paymentInformation?.paymentTerms ?? "-"}`,
+    
     `Bank: ${quotation?.paymentInformation?.bankName ?? "-"}`,
     quotation?.paymentInformation?.accountNumber
       ? `A/C: ${quotation.paymentInformation.accountNumber}` : null,
     quotation?.paymentInformation?.swiftCode
       ? `SWIFT: ${quotation.paymentInformation.swiftCode}` : null,
+    `Sort Code: ${quotation?.paymentInformation?.routingNumber ?? "-"}`,
+      `Terms: ${quotation?.paymentInformation?.paymentTerms ?? "-"}`,
   ] as (string | null)[]).filter(Boolean) as string[];
 
   const calcBH = (lines: string[], hasBold = false) => {
@@ -254,7 +238,6 @@ autoTable(doc, {
   startY: afterMetaY + 11,
   theme: "grid",
   willDrawPage: () => {
-  drawWatermark();
 },
 
   head: [[
@@ -466,7 +449,7 @@ doc.text("Signature", SIGN_X + SIGN_W / 2, sigLineY + 4, { align: "center" });
 // ── Terms box (starts at SIG_Y, height = tBH) ──
 let termsY = SIG_Y;
 if (termsY + tBH > H - 16) {
-  doc.addPage(); drawWatermark(); termsY = 16;
+  doc.addPage();  termsY = 16;
 }
 
 doc.setFillColor(...WHITE); doc.setDrawColor(...RULE); doc.setLineWidth(0.25);
