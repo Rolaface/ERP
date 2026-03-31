@@ -148,7 +148,6 @@ export const generatePurchaseOrderPDF = async (
   const metaLines = [
     `PO Date: ${fmtDate(po.poDate)}`,
     `Incoterm: ${po.incoterm ?? "-"}`,
-    `Status: ${po.status ?? "-"}`,
     `Currency: ${cur}`,
   ];
 

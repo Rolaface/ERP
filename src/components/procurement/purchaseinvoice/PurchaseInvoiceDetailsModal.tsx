@@ -909,7 +909,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                       big: false,
                     },
                     {
-                      label: `Tax (${data.tax?.taxRate ?? ""})`,
+                      label: `Tax`,
                       val: fmt(taxTotal, currency),
                       big: false,
                     },
