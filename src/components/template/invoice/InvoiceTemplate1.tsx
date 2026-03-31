@@ -53,16 +53,6 @@ export const generateInvoicePDF = async (
   const AMOUNT_COL_X = W - M - TOTAL_W;
 
 
-  const drawWatermark = () => {
-    const name = (company?.companyName ?? "").toUpperCase();
-    doc.setFont("helvetica", "bold");
-    let fs = 20; doc.setFontSize(fs);
-    while (doc.getTextWidth(name) > W - 20 && fs > 8) { fs--; doc.setFontSize(fs); }
-    doc.setTextColor(...ERP_BLUE);
-    doc.setGState(doc.GState({ opacity: 0.09 }));
-    doc.text(name, W / 2, H - 48, { align: "center" });
-    doc.setGState(doc.GState({ opacity: 1 }));
-  };
  
 
   const LOGO_SZ = 32;
@@ -223,9 +213,6 @@ const payL: string[] = ([
     startY: afterMetaY + 8,
     theme: "grid",
     alternateRowStyles: { fillColor: WHITE },
-    willDrawPage: () => {
-      drawWatermark();
-    },
     head: [[
       "#", "Box No.","Item", "Batch", "Packing","MFG", "EXP", "Qty", "Rate", "Disc%", "Tax", `Amount(${cur})`,
     ]],
@@ -518,7 +505,7 @@ const taxTotal = Number(invoice.taxTotal ?? 0);
   
    let termsY = Math.max(realCifEndY, sumEndY);
   if (termsY + tBH > H - 16) {
-    doc.addPage(); drawWatermark(); termsY = 16;
+    doc.addPage(); termsY = 16;
   }
 
   
@@ -568,7 +555,6 @@ const taxTotal = Number(invoice.taxTotal ?? 0);
   const totalPg = (doc as any).internal.getNumberOfPages();
   for (let pg = 1; pg <= totalPg; pg++) {
     doc.setPage(pg);
-     drawWatermark();
     doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...INK_PALE);
     doc.text("This is a computer-generated document.", M, H - 6);
     doc.text("Powered by ERP SYSTEM", W / 2, H - 6, { align: "center" });
