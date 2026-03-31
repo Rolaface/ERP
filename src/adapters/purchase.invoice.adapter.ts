@@ -52,6 +52,7 @@ export const purchaseInvoiceAdapter: InvoiceAdapter = {
     const res = await getPurchaseInvoices(page, pageSize, {
       supplier: partyName,
       status: ["Partly Paid", "Unpaid", "Overdue"],
+      sort_order: "asc",
     });
     const raw: PurchaseInvoiceRaw[] = res?.data ?? [];
 
@@ -73,6 +74,7 @@ export const purchaseInvoiceAdapter: InvoiceAdapter = {
     const res = await getPurchaseInvoices(1, 1000, {
       supplier: partyName,
       status: ["Partly Paid", "Unpaid", "Overdue"],
+      sort_order: "asc",
     });
     const raw: PurchaseInvoiceRaw[] = res?.data ?? [];
 
