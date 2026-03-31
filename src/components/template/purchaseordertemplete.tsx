@@ -1,23 +1,14 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { ERP_BASE } from "../../config/api";
-
-// ── Palette (matches invoice/purchase invoice exactly) ────────────────────────
-// ── Slightly Darker Light-Blue Palette ─────────────────────────
 const ERP_BLUE: [number, number, number] = [46, 109, 197];
-const HDR_DARK: [number, number, number] = ERP_BLUE;
-const HDR_MED: [number, number, number] = ERP_BLUE;
-const BADGE_BG: [number, number, number] = [120, 180, 235];
-const STRIP_BG: [number, number, number] = [150, 200, 245];
 const BOX_TITLE: [number, number, number] = ERP_BLUE;
-const TINT: [number, number, number] = [240, 248, 255];
 const RULE: [number, number, number] = [200, 220, 240];
 const WHITE: [number, number, number] = [255, 255, 255];
 const INK: [number, number, number] = [25, 45, 75];
 const INK_SOFT: [number, number, number] = [70, 95, 130];
 const INK_PALE: [number, number, number] = [130, 150, 180];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const px = (path: string): string => {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
@@ -26,7 +17,6 @@ const px = (path: string): string => {
 
 const fmt2 = (n: any) => Number(n ?? 0).toFixed(2);
 
-// PO uses addressLine1/addressLine2 (not line1/line2)
 const addrBlock = (a: any): string[] => {
   if (!a) return [];
   return [
@@ -62,7 +52,6 @@ const fmtDate = (dateStr: any) => {
   return `${day}-${month}-${year}`;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 export const generatePurchaseOrderPDF = async (
   po: any,
   company: any,
@@ -101,30 +90,6 @@ export const generatePurchaseOrderPDF = async (
     );
   }
 
-  /* ══════════════════════════════════════════════════════════
-     WATERMARK — auto-shrink font so full name always fits
-  ══════════════════════════════════════════════════════════ */
-  const drawWatermark = () => {
-    const name = (company?.companyName ?? "").toUpperCase();
-    doc.setFont("helvetica", "bold");
-    let fontSize = 20;
-    doc.setFontSize(fontSize);
-    while (doc.getTextWidth(name) > W - 20 && fontSize > 8) {
-      fontSize -= 1;
-      doc.setFontSize(fontSize);
-    }
-    doc.setTextColor(...HDR_DARK);
-    doc.setGState(doc.GState({ opacity: 0.07 }));
-    doc.text(name, W / 2, H - 48, { align: "center" });
-    doc.setGState(doc.GState({ opacity: 1 }));
-  };
-  drawWatermark();
-
-  /* ══════════════════════════════════════════════════════════
-     ①  HEADER — navy bg | logo | company | badge + doc no
-  ══════════════════════════════════════════════════════════ */
-
-  // Company name + tagline + details
   const TX = LOGO_X + LOGO_SZ + 6;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
@@ -152,34 +117,30 @@ export const generatePurchaseOrderPDF = async (
   if (company?.contactInfo?.companyEmail)
     infoLines.push(`Email: ${company.contactInfo.companyEmail}`);
   infoLines.forEach((l, i) => doc.text(l, TX, infoY + i * 5));
-  // Document number — po.poId
-  // PURCHASE ORDER title
-// BEFORE
-doc.setFont("helvetica", "bold");
-doc.setFontSize(10);
-doc.setTextColor(...INK);
-doc.text("PURCHASE ORDER", MR, 14, { align: "right" });
 
-// AFTER
-const badgeLabel = "PURCHASE ORDER";
-doc.setFont("helvetica", "bold");
-doc.setFontSize(10);
-const badgeTextW = doc.getTextWidth(badgeLabel);
-const badgePadX  = 2;
-const badgeH     = 8;
-const badgeW     = badgeTextW + badgePadX * 2;
-const badgeX     = MR - badgeW;
-const badgeY     = 8;
-doc.setFillColor(...ERP_BLUE);
-doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.5, 1.5, "F");
-doc.setTextColor(...WHITE);
-doc.text(badgeLabel, badgeX + badgeW - badgePadX, badgeY + badgeH / 2 + 1.5, { align: "right" });
-doc.setTextColor(...INK);
-doc.text(po.poId ?? "-", MR, 20, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...INK);
+  doc.text("PURCHASE ORDER", MR, 14, { align: "right" });
 
- 
+  const badgeLabel = "PURCHASE ORDER";
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  const badgeTextW = doc.getTextWidth(badgeLabel);
+  const badgePadX = 2;
+  const badgeH = 8;
+  const badgeW = badgeTextW + badgePadX * 2;
+  const badgeX = MR - badgeW;
+  const badgeY = 8;
+  doc.setFillColor(...ERP_BLUE);
+  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.5, 1.5, "F");
+  doc.setTextColor(...WHITE);
+  doc.text(badgeLabel, badgeX + badgeW - badgePadX, badgeY + badgeH / 2 + 1.5, {
+    align: "right",
+  });
+  doc.setTextColor(...INK);
+  doc.text(po.poId ?? "-", MR, 20, { align: "right" });
 
-  // META INFO
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...INK_SOFT);
@@ -195,9 +156,6 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
     doc.text(line, MR, 26 + i * 4, { align: "right" });
   });
 
-  /* ══════════════════════════════════════════════════════════
-     ③  ADDRESS BOXES — Supplier | Dispatch | Ship To
-  ══════════════════════════════════════════════════════════ */
   const AY = 40;
   const BOX_HDR = 7;
   const LH = 4.5;
@@ -209,7 +167,6 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
   const dispatchL = addrBlock(po?.addresses?.dispatchAddress);
   const shippingL = addrBlock(po?.addresses?.shippingAddress);
 
-  // email/phone from supplier address
   if (po?.addresses?.supplierAddress?.email)
     supplierL.push(`Email: ${po.addresses.supplierAddress.email}`);
   if (po?.addresses?.supplierAddress?.phone)
@@ -269,14 +226,8 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
   drawBox(M + colW + gap, "Dispatch Address", dispatchL);
   drawBox(M + (colW + gap) * 2, "Ship To", shippingL);
 
-  /* ══════════════════════════════════════════════════════════
-     ④  META LINE — Project / Cost Center / Tax Category / Conv Rate
-  ══════════════════════════════════════════════════════════ */
   const afterBoxY = AY + boxH + 4;
 
-  /* ══════════════════════════════════════════════════════════
-     ⑤  ITEMS TABLE — PO fields: item_code/name/qty/rate/amount/vatCd
-  ══════════════════════════════════════════════════════════ */
   doc.setFont("helvetica");
   doc.setFontSize(7);
   doc.setTextColor(...INK_PALE);
@@ -285,9 +236,6 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
   autoTable(doc, {
     startY: afterBoxY + 11,
     theme: "grid",
-    didDrawPage: () => {
-    drawWatermark();
-  },
     head: [
       [
         "#",
@@ -337,13 +285,13 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
 
     columnStyles: {
       0: { cellWidth: 7, halign: "center" },
-      1: { cellWidth: 36, halign: "left" }, // Item (expanded)
-      2: { cellWidth: 22, halign: "center" }, // Required By
-      3: { cellWidth: 16, halign: "center" }, // Packing
-      4: { cellWidth: 17, halign: "center" }, // Qty
-      5: { cellWidth: 20, halign: "center" }, // UOM
-      6: { cellWidth: 18, halign: "center" }, // Rate
-      7: { cellWidth: 20, halign: "center" }, // Tax
+      1: { cellWidth: 36, halign: "left" },
+      2: { cellWidth: 22, halign: "center" },
+      3: { cellWidth: 16, halign: "center" },
+      4: { cellWidth: 17, halign: "center" },
+      5: { cellWidth: 20, halign: "center" },
+      6: { cellWidth: 18, halign: "center" },
+      7: { cellWidth: 20, halign: "center" },
       8: {
         cellWidth: TOTAL_W,
         halign: "center",
@@ -358,34 +306,17 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
 
   const tblY = (doc as any).lastAutoTable.finalY;
 
-  /* ══════════════════════════════════════════════════════════
-     ⑥  SIGNATURE (left)  +  TOTALS (right)
-  ══════════════════════════════════════════════════════════ */
   const SEC_Y = tblY;
 
-  // Signature box
-
-  // Totals — from po.summary + po.tax
   const subTotal = Number(po?.summary?.subTotal ?? 0);
   const taxTotal = Number(po?.summary?.taxTotal ?? 0);
   const grandTotal = Number(po?.summary?.grandTotal ?? 0);
   const rounding = Number(po?.summary?.roundingAdjustment ?? 0);
 
   const ROW_H = 6;
-  // exact X where Amount column starts
 
-  const AMOUNT_COL_X =
-    M +
-    7 + // #
-    36 + // Item
-    22 + // Required By
-    16 + // Packing
-    17 + // Qty
-    20 + // UOM
-    18 + // Rate
-    20; // Tax  // Tax
+  const AMOUNT_COL_X = M + 7 + 36 + 22 + 16 + 17 + 20 + 18 + 20;
 
-  // label position just before amount column
   const LABEL_X = AMOUNT_COL_X - 4;
 
   doc.setFont("helvetica", "normal");
@@ -432,13 +363,11 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
   });
   const sumEndY = (doc as any).lastAutoTable.finalY;
   const SIG_Y = sumEndY;
-   // width used by labels before amount column
+
   const LABEL_W = 28;
 
-  // start signature where labels start
   const SIGN_X = AMOUNT_COL_X - LABEL_W;
 
-  // total width = labels + amount column
   const SIGN_W = LABEL_W + TOTAL_W;
   let termsY = SIG_Y;
 
@@ -449,7 +378,8 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
   if (buying) {
     if (buying.general) tLines.push(`General: ${buying.general}`);
     if (buying.delivery) tLines.push(`Delivery: ${buying.delivery}`);
-    if (buying.cancellation) tLines.push(`Cancellation: ${buying.cancellation}`);
+    if (buying.cancellation)
+      tLines.push(`Cancellation: ${buying.cancellation}`);
     if (buying.warranty) tLines.push(`Warranty: ${buying.warranty}`);
     if (buying.liability) tLines.push(`Liability: ${buying.liability}`);
     if (buying.payment) {
@@ -457,26 +387,26 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
       if (p.dueDates) tLines.push(`Payment Due: ${p.dueDates}`);
       if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
       if (p.notes) tLines.push(`Notes: ${p.notes}`);
-     p.phases?.forEach((ph: any, i: number) => {
-  const phaseName = ph.name ?? "Phase";
-  const percent = ph.percentage ?? "0";
-  const condition = ph.condition ?? "";
+      p.phases?.forEach((ph: any, i: number) => {
+        const phaseName = ph.name ?? "Phase";
+        const percent = ph.percentage ?? "0";
+        const condition = ph.condition ?? "";
 
-  tLines.push(
-    `${i + 1}. ${phaseName} — ${percent}%${condition ? ` (${condition})` : ""}`
-  );
-});
+        tLines.push(
+          `${i + 1}. ${phaseName} — ${percent}%${condition ? ` (${condition})` : ""}`,
+        );
+      });
     }
   }
   if (!tLines.length) tLines.push("No terms and conditions specified.");
   let tH = 12;
-  tLines.forEach((l) => { tH += doc.splitTextToSize(l, termTW).length * 3.5; });
+  tLines.forEach((l) => {
+    tH += doc.splitTextToSize(l, termTW).length * 3.5;
+  });
   const tBH = Math.max(24, tH + 4);
 
-  const signatureStartY = termsY + tBH - 46; // 6 header + 22 box = 28
- 
+  const signatureStartY = termsY + tBH - 46;
 
-  // Header bar
   doc.setFillColor(...ERP_BLUE);
   doc.rect(SIGN_X, signatureStartY, SIGN_W, 6, "F");
 
@@ -487,19 +417,15 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
     align: "center",
   });
 
-  // Signature box
   doc.setFillColor(...WHITE);
   doc.rect(SIGN_X, signatureStartY + 6, SIGN_W, 22, "F");
 
   doc.setDrawColor(...RULE);
 
-  // top line
   doc.line(SIGN_X, signatureStartY + 6, SIGN_X + SIGN_W, signatureStartY + 6);
 
-  // bottom line
   doc.line(SIGN_X, signatureStartY + 28, SIGN_X + SIGN_W, signatureStartY + 28);
 
-  // Signature image
   if (company?.documents?.authorizedSignatureUrl) {
     try {
       doc.addImage(
@@ -513,17 +439,22 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
     } catch {}
   }
 
-  // Signature line
-  doc.line(SIGN_X + 5, signatureStartY + 22, SIGN_X + SIGN_W - 5, signatureStartY + 22);
+  doc.line(
+    SIGN_X + 5,
+    signatureStartY + 22,
+    SIGN_X + SIGN_W - 5,
+    signatureStartY + 22,
+  );
 
   doc.setFontSize(6.5);
   doc.setTextColor(120, 120, 120);
-  doc.text("Signature", SIGN_X + SIGN_W / 2, signatureStartY + 26, { align: "center" });
+  doc.text("Signature", SIGN_X + SIGN_W / 2, signatureStartY + 26, {
+    align: "center",
+  });
 
   const termsBottom = termsY + tBH;
   if (termsY + tBH > H - 16) {
     doc.addPage();
-    drawWatermark();
     termsY = 16;
   }
 
@@ -546,9 +477,6 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
     tcy += wr.length * 3.5;
   });
 
-  /* ══════════════════════════════════════════════════════════
-     ⑧  FOOTER — same simple text footer
-  ══════════════════════════════════════════════════════════ */
   const totalPg = (doc as any).internal.getNumberOfPages();
   for (let pg = 1; pg <= totalPg; pg++) {
     doc.setPage(pg);
@@ -560,9 +488,6 @@ doc.text(po.poId ?? "-", MR, 20, { align: "right" });
     doc.text("This is a computer-generated document.", M, H - 6);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     ⑨  OUTPUT
-  ══════════════════════════════════════════════════════════ */
   return resultType === "save"
     ? doc.save(`Purchase_Order_${po.poId}.pdf`)
     : doc.output("bloburl");
