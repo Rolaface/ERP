@@ -242,31 +242,91 @@ if (defaultValues?.partyId) {
   const advance = Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
+const getResetPartyState = (name: string, value: string) => ({
+  [name]: value,
+  allocatedAmount: 0,
+  selectedInvoices: [],
+  allocations: {},
+});
+
+const getOptimisticAmountState = (prev: Record<string, any>, name: string, value: string) => {
+  const numericValue = Number(value) || 0;
+  
+  if (numericValue === 0) {
+    return { 
+      [name]: value, 
+      fifoTrigger: Date.now(), 
+      allocatedAmount: 0, 
+      allocations: {}, 
+      selectedInvoices: [] 
+    };
+  }
+
+  const isRef = Boolean(prev.referenceInvoice);
+  const outstanding = Number(prev.totalOutstanding || 0);
+
+  return {
+    [name]: value,
+    allocatedAmount: isRef ? numericValue : Math.min(numericValue, outstanding),
+    ...(isRef && {
+      allocations: { ...prev.allocations, [prev.referenceInvoice]: numericValue },
+      selectedInvoices: Array.from(new Set([...(prev.selectedInvoices || []), prev.referenceInvoice])),
+    }),
+  };
+};
+
+useEffect(() => {
+    const amount = Number(form?.amountFrom ?? form?.amount ?? 0);
+    
+    if (amount === 0 || form?.referenceInvoice) return;
+
+    const timeoutId = setTimeout(() => {
+      setForm((prev) => ({ ...prev, fifoTrigger: Date.now() }));
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [form?.amount, form?.amountFrom, form?.referenceInvoice]);
+
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
-
-      if (name === "partyType" || name === "partyName") {
-        setForm((prev) => ({
-          ...prev,
-          [name]: value,
-          allocatedAmount: 0,
-          selectedInvoices: [],
-          allocations: {},
-        }));
-      } else {
-        setForm((prev) => ({ ...prev, [name]: value }));
-      }
-
       setError(null);
+
+      setForm((prev) => {
+        if (name === "partyType" || name === "partyName") {
+          return { ...prev, ...getResetPartyState(name, value) };
+        }
+        if (name === "amount" || name === "amountFrom") {
+          return { ...prev, ...getOptimisticAmountState(prev, name, value) };
+        }
+        return { ...prev, [name]: value };
+      });
     },
-    [],
+    []
   );
 
   const handleFormChange = useCallback(
-    (updates: Record<string, unknown> | AllocationResult) => {
-      setForm((prev) => ({ ...prev, ...updates }));
+    (updates: Record<string, any>) => {
+      setForm((prev) => {
+        const currentAmount = Number(prev.amountFrom ?? prev.amount ?? 0);
+        
+        if (
+          currentAmount === 0 &&
+          (updates.allocatedAmount !== undefined || updates.allocations !== undefined)
+        ) {
+          return prev;
+        }
+
+        if (
+          updates.allocatedAmount !== undefined && 
+          Number(updates.allocatedAmount) > currentAmount
+        ) {
+          return prev;
+        }
+
+        return { ...prev, ...updates };
+      });
       setError((prev) => (prev ? null : prev));
     },
     [],
