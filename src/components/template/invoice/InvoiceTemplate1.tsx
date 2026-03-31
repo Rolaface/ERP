@@ -62,11 +62,11 @@ export const generateInvoicePDF = async (
     let fs = 20; doc.setFontSize(fs);
     while (doc.getTextWidth(name) > W - 20 && fs > 8) { fs--; doc.setFontSize(fs); }
     doc.setTextColor(...ERP_BLUE);
-    doc.setGState(doc.GState({ opacity: 0.07 }));
+    doc.setGState(doc.GState({ opacity: 0.09 }));
     doc.text(name, W / 2, H - 48, { align: "center" });
     doc.setGState(doc.GState({ opacity: 1 }));
   };
-  drawWatermark();
+ 
 
   /* ══════════════════════════════════════════════════════════
      ①  LOGO  
@@ -248,11 +248,11 @@ const payL: string[] = ([
     body: invoice.items.map((item: any, idx: number) => {
       const qty     = Number(item.quantity ?? 0);
       const rate    = Number(item.price    ?? 0);
-      const disc    = Number(item.discount ?? 0);
-      const discAbs = Math.abs(disc);
+      //const disc    = Number(item.discount ?? 0);
+      //const discAbs = Math.abs(disc);
       const gross   = qty * rate;
-      const discPct = gross > 0 ? (discAbs / gross) * 100 : 0;
-      const net     = gross - discAbs;
+      //const discPct = gross > 0 ? (discAbs / gross) * 100 : 0;
+      const net     = gross;// - discAbs;
       const packing = item.packingUnit && item.packingSize
         ? `${item.packingUnit}×${item.packingSize}` : "-";
       const batchShort = (item.batchNo || "-").length > 18
@@ -268,9 +268,10 @@ const payL: string[] = ([
         fmtDate(item.expDate),
         Number.isInteger(qty) ? qty.toLocaleString() : fmt2(qty),
         fmt2(rate),
-        discAbs > 0 ? `${discPct.toFixed(1)}%` : "0%",
+        // discAbs > 0 ? `${discPct.toFixed(1)}%` : "0%",
+        "-",
         item.vatCode
-          ? `${item.vatCode} (${item.vatRate ?? "0"})`
+          ? `${item.vatCode}`
           : "-",
         fmt2(net),
       ];
@@ -322,15 +323,17 @@ const payL: string[] = ([
   invoice.items.forEach((i: any) => {
     const q = Number(i.quantity ?? 0);
     const p = Number(i.price    ?? 0);
-    const d = Math.abs(Number(i.discount ?? 0));
+    // const d = Math.abs(Number(i.discount ?? 0));
     gross     += q * p;
-    discTotal += d;
+    // discTotal += d;
   });
   const subTotal    = gross;
-  const taxableRaw  = invoice.items.reduce(
-    (a: number, i: any) => a + Number(i.vatTaxableAmount ?? 0), 0);
-  const taxTotal    = taxableRaw > 0 ? taxableRaw : 0;
-  const grandTotal  = gross - discTotal + taxTotal;
+//   const taxableRaw  = invoice.items.reduce(
+//     (a: number, i: any) => a + Number(i.vatTaxableAmount ?? 0), 0);
+//   const taxTotal    = taxableRaw > 0 ? taxableRaw : 0;
+//  const grandTotal  = gross - discTotal + taxTotal;
+const taxTotal = Number(invoice.taxTotal ?? 0);
+  const grandTotal  = gross + taxTotal;
 
   // ── CIF / Other Charges / FOB ─────────────────────────────
   const otherCharges = (invoice?.invoiceCharges || []).reduce(
@@ -354,7 +357,7 @@ const payL: string[] = ([
   const maxH         = Math.max(cifH, cur !== "INR" ? exH : 0, totalsH);
   const cifStartY    = SEC_Y + (maxH - cifH);
   const exStartY     = SEC_Y + (maxH - exH);
-  const totalsStartY = SEC_Y + (maxH - totalsH);
+  const totalsStartYEstimate = SEC_Y + (maxH - totalsH);
 
   autoTable(doc, {
     startY: cifStartY,
@@ -386,6 +389,10 @@ const payL: string[] = ([
     margin:     { left: M, right: W - M - CIF_TABLE_W },
     tableWidth: CIF_TABLE_W,
   });
+
+    const cifTableEndY = (doc as any).lastAutoTable.finalY;
+    const totalsStartY = Math.max(totalsStartYEstimate, cifTableEndY - totalsH);
+  
 
 
   if (cur !== "INR") {
@@ -438,6 +445,7 @@ const payL: string[] = ([
   }
 
   const cifEndY = (doc as any).lastAutoTable.finalY;
+   const realCifEndY = Math.max(cifTableEndY, cifEndY);
 
   // ── Existing label text + amount column ───────────────────
   const LABEL_X = AMOUNT_COL_X - 4;
@@ -531,7 +539,7 @@ const payL: string[] = ([
   const tBH = Math.max(SIGN_HDR_H + SIGN_BOX_H + 2, tH + 6);
 
   // ── Resolve termsY — must clear BOTH the left CIF block and right totals block
-  let termsY = Math.max(cifEndY, sumEndY);
+   let termsY = Math.max(realCifEndY, sumEndY);
   if (termsY + tBH > H - 16) {
     doc.addPage(); drawWatermark(); termsY = 16;
   }
@@ -585,6 +593,7 @@ const payL: string[] = ([
   const totalPg = (doc as any).internal.getNumberOfPages();
   for (let pg = 1; pg <= totalPg; pg++) {
     doc.setPage(pg);
+     drawWatermark();
     doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...INK_PALE);
     doc.text("This is a computer-generated document.", M, H - 6);
     doc.text("Powered by ERP SYSTEM", W / 2, H - 6, { align: "center" });
