@@ -166,9 +166,16 @@ const PaymentEntryModal: React.FC<Props> = ({
     const base: Record<string, any> = { ...(defaultValues ?? {}) };
     lastFetchedPartyKeyRef.current = "";
 
+    const today = new Date().toISOString().split("T")[0];
+
     if (!base.date) {
-      base.date = new Date().toISOString().split("T")[0];
+      base.date = today;
     }
+
+    if (!base.referenceDate) {
+      base.referenceDate = today;
+    }
+
 
     if (base.amount != null) {
       base.amountFrom ??= base.amount;
