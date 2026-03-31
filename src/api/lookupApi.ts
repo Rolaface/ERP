@@ -57,31 +57,68 @@ export async function getRolaCountryList(): Promise<any[]> {
   return resp.data?.data || [];
 }
 
-export async function getCompanyPayableAccounts(): Promise<any[]> {
+type QueryParams = {
+  page?: number;
+  page_size?: number;
+  search?: string;
+};
+
+export async function getCompanyPayableAccounts(
+  params?: QueryParams
+): Promise<any[]> {
   const resp: AxiosResponse = await api.get(
     RolaLookupAPI.getCompanyPayableAccounts,
+    { params }
   );
   return resp.data.message.data || [];
 }
-export async function getCompanyRecievableAccounts(): Promise<any[]> {
+
+export async function getCompanyRecievableAccounts(
+  params?: QueryParams
+): Promise<any[]> {
   const resp: AxiosResponse = await api.get(
     RolaLookupAPI.getCompanyRecievableAccounts,
+    { params }
   );
   return resp.data.message.data || [];
 }
-export async function getCompanyCostCenters(): Promise<any[]> {
-  const resp: AxiosResponse = await api.get(RolaLookupAPI.getCompanyCostCenter);
+
+export async function getCompanyCostCenters(
+  params?: QueryParams
+): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(
+    RolaLookupAPI.getCompanyCostCenter,
+    { params }
+  );
   return resp.data.message.data || [];
 }
-export async function getCustomerList(): Promise<any[]> {
-  const resp: AxiosResponse = await api.get(RolaLookupAPI.getCustomer);
+
+export async function getCustomerList(
+  params?: QueryParams
+): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(
+    RolaLookupAPI.getCustomer,
+    { params }
+  );
   return resp.data.message.data || [];
 }
-export async function getSupplierList(): Promise<any[]> {
-  const resp: AxiosResponse = await api.get(RolaLookupAPI.getSupplier);
+
+export async function getSupplierList(
+  params?: QueryParams
+): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(
+    RolaLookupAPI.getSupplier,
+    { params }
+  );
   return resp.data.message.data || [];
 }
-export async function getCurrencyList(): Promise<any[]> {
-  const resp: AxiosResponse = await api.get(RolaLookupAPI.getCurrency);
+
+export async function getCurrencyList(
+  params?: QueryParams
+): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(
+    RolaLookupAPI.getCurrency,
+    { params }
+  );
   return resp.data.message.data || [];
 }
