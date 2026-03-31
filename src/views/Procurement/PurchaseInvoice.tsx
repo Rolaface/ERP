@@ -594,7 +594,8 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
               partyName: selectedPI.supplierName,
               partyId: selectedPI.supplierId ?? selectedPI.pId,
               amount: selectedPI.grandTotal,
-              referenceInvoice: selectedPI.pId,
+              referenceName: selectedPI.pId,
+              referenceType: "Purchase Invoice",
             }
             : undefined
         }

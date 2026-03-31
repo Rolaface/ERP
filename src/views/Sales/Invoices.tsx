@@ -592,15 +592,16 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
             onDownload={(e) => handleDownload(inv, e)}
             onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
             customActions={[
-              ...(inv.invoiceStatus === "Approved"
-                ? [
-                    {
-                      label: "Receive Payment",
-                      onClick: () => handleReceivePayment(inv),
-                    },
-                  ]
-                : []),
-
+...(inv.invoiceStatus !== "Draft" &&
+   inv.invoiceStatus !== "Cancelled" &&
+   inv.outstandingAmount > 0
+  ? [
+      {
+        label: "Receive Payment",
+        onClick: () => handleReceivePayment(inv),
+      },
+    ]
+  : []),
               {
                 label: "View PDF",
                 onClick: () => handlePreviewPDF(inv),
@@ -707,7 +708,8 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
                 partyName: paymentInvoice.customerName,
                 partyId: paymentInvoice.customerId,
                 amount: paymentInvoice.outstandingAmount,
-                referenceInvoice: paymentInvoice.invoiceNumber,
+                referenceName: paymentInvoice.invoiceNumber,
+                referenceType: "Sales Invoice",
               }
             : undefined
         }

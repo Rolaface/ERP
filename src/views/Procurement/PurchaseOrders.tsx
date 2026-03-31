@@ -625,8 +625,10 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
     partyType: "Supplier",
     partyName: selectedPOForPayment?.supplier,   // display name for UI
     partyId: selectedPOForPayment?.supplierId,   // ← actual ID for API (add this field to your PurchaseOrder interface)
-    amount: selectedPOForPayment?.amount,        // ← pre-fill amount
-    referenceInvoice: selectedPOForPayment?.id,
+    amount: selectedPOForPayment?.amount, 
+    referenceName: selectedPOForPayment?.id,
+   referenceType: "Purchase Order",
+    
   }}
 />
     </div>

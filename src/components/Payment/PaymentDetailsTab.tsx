@@ -101,6 +101,13 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   // ── Clear GL + mode when paymentType or partyType changes ─────────────────
   const prevRef = useRef({ paymentType, partyType });
+  useEffect(() => {
+  if (!form.mode && modeOptions.length > 0) {
+    onFormChange({
+      mode: modeOptions[0].value,
+    });
+  }
+}, [modeOptions]);
 
   useEffect(() => {
     const prev = prevRef.current;

@@ -354,7 +354,7 @@ const SupplierManagement: React.FC<Props> = () => {
           partyName: selectedPI.supplierName,
           partyId: selectedPI.supplierId,
          
-          referenceInvoice: selectedPI.isAdvance
+          referenceName: selectedPI.isAdvance
             ? `ADV-${selectedPI.supplierId}`
             : undefined,
         }
