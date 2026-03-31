@@ -416,6 +416,11 @@ useFieldDefault(
 
         // ITEMS
         items: finalItems,
+        advanceAmount:
+          (data.advances_payments || []).reduce(
+            (sum: number, p: any) => sum + Number(p.allocated_amount || 0),
+            0
+          ),
 
         // // SUMMARY
         // totalQuantity: data.summary?.totalQuantity || 0,
