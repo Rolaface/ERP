@@ -655,7 +655,7 @@ useFieldDefault(
       case "INR":
         return "₹";
       default:
-        return "K";
+        return "";
     }
   };
 
