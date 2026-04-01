@@ -148,7 +148,7 @@ export default function SignupPage() {
   const [country, setCountry] = useState<Country>("India");
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [currency, setCurrency] = useState("INR");
-  const [chart, setChart] = useState(chartOfAccountsByCountry["India"]);
+  const [chart] = useState("Standard");
   const [fyStart, setFyStart] = useState("2025-04-01");
   const [fyEnd, setFyEnd] = useState("2026-03-31");
 
@@ -171,7 +171,6 @@ export default function SignupPage() {
 
   useEffect(() => {
     setCurrency(currencyByCountry[country]);
-    setChart(chartOfAccountsByCountry[country]);
     const fy = getFYDates(country);
     setFyStart(fy.start);
     setFyEnd(fy.end);
@@ -348,16 +347,16 @@ export default function SignupPage() {
     key: string;
     type?: string;
   }> = [
-    { label: "Full Name", val: fullName, set: setFullName, key: "name" },
-    { label: "Email", val: email, set: setEmail, key: "email", type: "email" },
-    { label: "Company", val: company, set: setCompany, key: "company" },
-    { label: "Abbr", val: abbr, set: setAbbr, key: "abbr" },
-    { label: "Country", val: country, set: () => {}, key: "country" }, // not editable inline
-    { label: "Timezone", val: timezone, set: setTimezone, key: "tz" },
-    { label: "Currency", val: currency, set: setCurrency, key: "cur" },
-    { label: "FY Start", val: fyStart, set: setFyStart, key: "start", type: "date" },
-    { label: "FY End", val: fyEnd, set: setFyEnd, key: "end", type: "date" },
-  ];
+      { label: "Full Name", val: fullName, set: setFullName, key: "name" },
+      { label: "Email", val: email, set: setEmail, key: "email", type: "email" },
+      { label: "Company", val: company, set: setCompany, key: "company" },
+      { label: "Abbr", val: abbr, set: setAbbr, key: "abbr" },
+      { label: "Country", val: country, set: () => { }, key: "country" }, // not editable inline
+      { label: "Timezone", val: timezone, set: setTimezone, key: "tz" },
+      { label: "Currency", val: currency, set: setCurrency, key: "cur" },
+      { label: "FY Start", val: fyStart, set: setFyStart, key: "start", type: "date" },
+      { label: "FY End", val: fyEnd, set: setFyEnd, key: "end", type: "date" },
+    ];
 
   // ---------------- RENDER ----------------
 
@@ -378,8 +377,8 @@ export default function SignupPage() {
                     ${step > s
                       ? "bg-indigo-600 text-white"
                       : step === s
-                      ? "bg-indigo-600 text-white ring-4 ring-indigo-100"
-                      : "bg-gray-200 text-gray-400"
+                        ? "bg-indigo-600 text-white ring-4 ring-indigo-100"
+                        : "bg-gray-200 text-gray-400"
                     }`}
                 >
                   {step > s ? <Check size={12} strokeWidth={3} /> : s}
@@ -465,11 +464,10 @@ export default function SignupPage() {
                       {[...Array(4)].map((_, i) => (
                         <div
                           key={i}
-                          className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                            password.length >= [4, 8, 12, 16][i]
+                          className={`h-1 flex-1 rounded-full transition-all duration-300 ${password.length >= [4, 8, 12, 16][i]
                               ? ["bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-green-500"][i]
                               : "bg-gray-100"
-                          }`}
+                            }`}
                         />
                       ))}
                     </div>
@@ -578,15 +576,11 @@ export default function SignupPage() {
                 {/* Chart of Accounts */}
                 <div>
                   <label className={labelClass}>Chart of Accounts</label>
-                  <select
-                    className={inputNormal}
-                    value={chart}
-                    onChange={(e) => setChart(e.target.value)}
-                  >
-                    {Object.entries(chartOfAccountsByCountry).map(([k, v]) => (
-                      <option key={k} value={v}>{k}</option>
-                    ))}
-                  </select>
+                  <input
+                    className={`${inputNormal} bg-gray-50 text-gray-600 cursor-not-allowed`}
+                    value="Standard"
+                    readOnly
+                  />
                 </div>
 
                 {/* FY Dates */}
