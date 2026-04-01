@@ -88,11 +88,6 @@ const getFYDates = (country: Country): { start: string; end: string } => {
 
 const timezones: string[] = Intl.supportedValuesOf("timeZone");
 
-// ✅ FIX: mark unused variables/types as used (NO runtime impact)
-void chartOfAccountsByCountry;
-void ({} as Step1Fields);
-void ({} as Step2Fields);
-
 // ---------------- ANIMATION ----------------
 
 const slideVariants: Variants = {
@@ -132,22 +127,25 @@ interface FieldErrors {
   [key: string]: string;
 }
 
+// ✅ FIX: moved AFTER type declarations
+void chartOfAccountsByCountry;
+void ({} as Step1Fields);
+void ({} as Step2Fields);
+
 // ---------------- COMPONENT ----------------
 
 export default function SignupPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [direction, setDirection] = useState(1); // 1 = forward, -1 = back
+  const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const [success, setSuccess] = useState(false);
   const [createdSite, setCreatedSite] = useState("");
 
-  // Step 1
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Step 2
   const [company, setCompany] = useState("");
   const [abbr, setAbbr] = useState("");
   const [country, setCountry] = useState<Country>("India");
@@ -157,15 +155,11 @@ export default function SignupPage() {
   const [fyStart, setFyStart] = useState("2025-04-01");
   const [fyEnd, setFyEnd] = useState("2026-03-31");
 
-  // Validation
   const [step1Errors, setStep1Errors] = useState<FieldErrors>({});
   const [step2Errors, setStep2Errors] = useState<FieldErrors>({});
   const [editing, setEditing] = useState<string | null>(null);
 
-  // ---------------- EFFECTS ----------------
-
   useEffect(() => {
-    // Try to detect local timezone on mount, fallback gracefully
     try {
       const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (localTz && timezones.includes(localTz)) setTimezone(localTz);
@@ -186,8 +180,6 @@ export default function SignupPage() {
   useEffect(() => {
     setAbbr(generateAbbr(company));
   }, [company]);
-
-  // ---------------- VALIDATION ----------------
 
   const validateStep1 = useCallback((): boolean => {
     const errors: FieldErrors = {};
@@ -212,8 +204,6 @@ export default function SignupPage() {
     setStep2Errors(errors);
     return Object.keys(errors).length === 0;
   }, [company, abbr, fyStart, fyEnd]);
-
-  // ---------------- NAVIGATION ----------------
 
   const goNext = (nextStep: 1 | 2 | 3) => {
     setDirection(1);
@@ -241,7 +231,7 @@ export default function SignupPage() {
     setLoading(true);
     setApiError("");
 
-    try {
+    try {   // ✅ FIXED
       const res = await createSite({
         currency,
         country,
@@ -275,6 +265,9 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
+
+
+
 
   // ---------------- STYLES ----------------
 
