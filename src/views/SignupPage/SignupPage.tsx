@@ -5,6 +5,8 @@ import { createSite } from "../../api/createSite";
 
 // ---------------- HELPERS ----------------
 
+const USE_MOCK = true;
+
 const generateAbbr = (name: string): string => {
   if (!name.trim()) return "";
   const words = name.replace(/[,.]/g, "").split(/\s+/).filter(Boolean);
@@ -140,7 +142,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [createdSite, setCreatedSite] = useState("");
+  // const [createdSite, setCreatedSite] = useState("");
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -228,43 +230,65 @@ export default function SignupPage() {
   // ---------------- SUBMIT ----------------
 
   const handleConfirm = async () => {
-    setLoading(true);
-    setApiError("");
+  setLoading(true);
+  setApiError("");
 
-    try {   // ✅ FIXED
-      const res = await createSite({
-        currency,
-        country,
-        timezone,
-        language: "en",
-        full_name: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        password,
-        company_name: company.trim(),
-        company_abbr: abbr.trim().toUpperCase(),
-        chart_of_accounts: chart,
-        fy_start_date: fyStart,
-        fy_end_date: fyEnd,
-        setup_demo: 0,
-        apps: [],
-      });
+  try {
+    // ✅ MOCK MODE
+    if (USE_MOCK) {
+      await new Promise((res) => setTimeout(res, 1500)); // simulate API delay
 
-      if (res.message?.status === "accepted") {
-        setCreatedSite(res.message?.site ?? "");
+      const mockRes = {
+        message: {
+          status: "accepted",
+          site: "demo.rolaface.com",
+        },
+      };
+
+      if (mockRes.message?.status === "accepted") {
+        // setCreatedSite(mockRes.message.site);
         setSuccess(true);
       } else {
-        setApiError(res.message?.message || "Something went wrong. Please try again.");
+        setApiError("Something went wrong. Please try again.");
       }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setApiError(err.message || "Network error. Please check your connection.");
-      } else {
-        setApiError("An unexpected error occurred.");
-      }
-    } finally {
-      setLoading(false);
+
+      return; // 🚀 IMPORTANT: stop here in mock mode
     }
-  };
+
+    // ✅ REAL API (unchanged)
+    const res = await createSite({
+      currency,
+      country,
+      timezone,
+      language: "en",
+      full_name: fullName.trim(),
+      email: email.trim().toLowerCase(),
+      password,
+      company_name: company.trim(),
+      company_abbr: abbr.trim().toUpperCase(),
+      chart_of_accounts: chart,
+      fy_start_date: fyStart,
+      fy_end_date: fyEnd,
+      setup_demo: 0,
+      apps: [],
+    });
+
+    if (res.message?.status === "accepted") {
+      // setCreatedSite(res.message?.site ?? "");
+      setSuccess(true);
+    } else {
+      setApiError(res.message?.message || "Something went wrong. Please try again.");
+    }
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      setApiError(err.message || "Network error. Please check your connection.");
+    } else {
+      setApiError("An unexpected error occurred.");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
 
 
@@ -305,10 +329,7 @@ export default function SignupPage() {
           </div>
 
           <h2 className="text-2xl font-semibold tracking-tight mb-2">You're all set!</h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Your workspace is being provisioned. This usually takes{" "}
-            <span className="font-medium text-gray-700">2–5 minutes</span>.
-          </p>
+          
 
           {/* Pulsing progress indicator */}
           <div className="bg-indigo-50 rounded-[16px] px-6 py-5 mb-6 text-left">
@@ -317,19 +338,13 @@ export default function SignupPage() {
                 <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-indigo-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-600" />
               </div>
-              <span className="text-sm font-medium text-indigo-700">Site provisioning in progress…</span>
+              <span className="text-sm font-medium text-indigo-700">We're setting up your site. It will be ready soon!</span>
             </div>
-            {createdSite && (
-              <p className="text-xs text-indigo-500 ml-6">
-                Your site:{" "}
-                <span className="font-semibold text-indigo-700 break-all">{createdSite}</span>
-              </p>
-            )}
           </div>
 
           <div className="flex items-center gap-2 text-xs text-gray-400 justify-center">
             <Clock size={13} />
-            <span>You'll be able to log in once provisioning is complete.</span>
+            <span>We will notify you via email as soon as it is ready.</span>
           </div>
         </motion.div>
       </div>
