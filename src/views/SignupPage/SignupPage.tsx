@@ -5,8 +5,6 @@ import { createSite } from "../../api/createSite";
 
 // ---------------- HELPERS ----------------
 
-const USE_MOCK = true;
-
 const generateAbbr = (name: string): string => {
   if (!name.trim()) return "";
   const words = name.replace(/[,.]/g, "").split(/\s+/).filter(Boolean);
@@ -127,9 +125,8 @@ interface Step2Fields {
 
 interface FieldErrors {
   [key: string]: string;
-}
+};
 
-// ✅ FIX: moved AFTER type declarations
 void chartOfAccountsByCountry;
 void ({} as Step1Fields);
 void ({} as Step2Fields);
@@ -142,7 +139,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const [success, setSuccess] = useState(false);
-  // const [createdSite, setCreatedSite] = useState("");
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -230,67 +226,42 @@ export default function SignupPage() {
   // ---------------- SUBMIT ----------------
 
   const handleConfirm = async () => {
-  setLoading(true);
-  setApiError("");
+    setLoading(true);
+    setApiError("");
 
-  try {
-    // ✅ MOCK MODE
-    if (USE_MOCK) {
-      await new Promise((res) => setTimeout(res, 1500)); // simulate API delay
+    try {
+      const res = await createSite({
+        currency,
+        country,
+        timezone,
+        language: "en",
+        full_name: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        company_name: company.trim(),
+        company_abbr: abbr.trim().toUpperCase(),
+        chart_of_accounts: chart,
+        fy_start_date: fyStart,
+        fy_end_date: fyEnd,
+        setup_demo: 0,
+        apps: [],
+      });
 
-      const mockRes = {
-        message: {
-          status: "accepted",
-          site: "demo.rolaface.com",
-        },
-      };
-
-      if (mockRes.message?.status === "accepted") {
-        // setCreatedSite(mockRes.message.site);
+      if (res.message?.status === "accepted") {
         setSuccess(true);
       } else {
-        setApiError("Something went wrong. Please try again.");
+        setApiError(res.message?.message || "Something went wrong. Please try again.");
       }
-
-      return; // 🚀 IMPORTANT: stop here in mock mode
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setApiError(err.message || "Network error. Please check your connection.");
+      } else {
+        setApiError("An unexpected error occurred.");
+      }
+    } finally {
+      setLoading(false);
     }
-
-    // ✅ REAL API (unchanged)
-    const res = await createSite({
-      currency,
-      country,
-      timezone,
-      language: "en",
-      full_name: fullName.trim(),
-      email: email.trim().toLowerCase(),
-      password,
-      company_name: company.trim(),
-      company_abbr: abbr.trim().toUpperCase(),
-      chart_of_accounts: chart,
-      fy_start_date: fyStart,
-      fy_end_date: fyEnd,
-      setup_demo: 0,
-      apps: [],
-    });
-
-    if (res.message?.status === "accepted") {
-      // setCreatedSite(res.message?.site ?? "");
-      setSuccess(true);
-    } else {
-      setApiError(res.message?.message || "Something went wrong. Please try again.");
-    }
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      setApiError(err.message || "Network error. Please check your connection.");
-    } else {
-      setApiError("An unexpected error occurred.");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
-
-
+  };
 
 
   // ---------------- STYLES ----------------
@@ -329,7 +300,7 @@ export default function SignupPage() {
           </div>
 
           <h2 className="text-2xl font-semibold tracking-tight mb-2">You're all set!</h2>
-          
+
 
           {/* Pulsing progress indicator */}
           <div className="bg-indigo-50 rounded-[16px] px-6 py-5 mb-6 text-left">
@@ -478,8 +449,8 @@ export default function SignupPage() {
                         <div
                           key={i}
                           className={`h-1 flex-1 rounded-full transition-all duration-300 ${password.length >= [4, 8, 12, 16][i]
-                              ? ["bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-green-500"][i]
-                              : "bg-gray-100"
+                            ? ["bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-green-500"][i]
+                            : "bg-gray-100"
                             }`}
                         />
                       ))}
