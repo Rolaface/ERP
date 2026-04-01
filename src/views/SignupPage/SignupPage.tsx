@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { ArrowRight, ArrowLeft, Pencil, Check, Loader2, Clock } from "lucide-react";
+import { ArrowRight, ArrowLeft, Pencil, Check, Loader2, Clock, ChevronDown } from "lucide-react";
 import { createSite } from "../../api/createSite";
 
 // ---------------- HELPERS ----------------
@@ -275,6 +275,10 @@ export default function SignupPage() {
   const labelClass = "text-[11px] uppercase tracking-wider text-gray-500 font-semibold ml-1 mb-1 block";
   const errorClass = "text-red-500 text-xs mt-1 ml-1";
 
+  const selectClass =
+    "w-full bg-white border border-gray-200 rounded-[14px] pl-5 pr-11 py-4 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none transition-all hover:border-gray-300";
+
+
   // ---------------- SUCCESS SCREEN ----------------
 
   if (success) {
@@ -484,10 +488,13 @@ export default function SignupPage() {
                 </div>
 
                 {/* Company Name + Abbr */}
+                {/* Company Name + Abbr */}
                 <div>
-                  <label className={labelClass}>Company Name</label>
                   <div className="grid grid-cols-3 gap-3">
+
+                    {/* Company Name */}
                     <div className="col-span-2">
+                      <label className={labelClass}>Company Name</label>
                       <input
                         className={step2Errors.company ? inputError : inputNormal}
                         placeholder="Acme Corp."
@@ -499,9 +506,12 @@ export default function SignupPage() {
                       />
                       {step2Errors.company && <p className={errorClass}>{step2Errors.company}</p>}
                     </div>
+
+                    {/* Company Abbreviation */}
                     <div>
+                      <label className={labelClass}>Abbreviation</label>
                       <input
-                        className={`${step2Errors.abbr ? inputError : inputNormal} bg-gray-50 text-center font-mono font-bold tracking-widest`}
+                        className={`${step2Errors.abbr ? inputError : inputNormal} bg-gray-50 font-mono font-semibold tracking-wider`}
                         value={abbr}
                         maxLength={5}
                         placeholder="ACM"
@@ -512,48 +522,70 @@ export default function SignupPage() {
                       />
                       {step2Errors.abbr && <p className={errorClass}>{step2Errors.abbr}</p>}
                     </div>
+
                   </div>
                 </div>
 
                 {/* Country */}
                 <div>
                   <label className={labelClass}>Country</label>
-                  <select
-                    className={inputNormal}
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value as Country)}
-                  >
-                    {countryList.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  <div className="relative group">
+                    <select
+                      className={selectClass}
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value as Country)}
+                    >
+                      {countryList.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+
+                    <ChevronDown
+                      size={18}
+                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-all group-hover:text-gray-600"
+                    />
+                  </div>
                 </div>
 
                 {/* Timezone + Currency */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={labelClass}>Timezone</label>
-                    <select
-                      className={inputNormal}
-                      value={timezone}
-                      onChange={(e) => setTimezone(e.target.value)}
-                    >
-                      {timezones.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
+                    <div className="relative group">
+                      <select
+                        className={selectClass}
+                        value={timezone}
+                        onChange={(e) => setTimezone(e.target.value)}
+                      >
+                        {timezones.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+
+                      <ChevronDown
+                        size={18}
+                        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-all group-hover:text-gray-600"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className={labelClass}>Currency</label>
-                    <select
-                      className={inputNormal}
-                      value={currency}
-                      onChange={(e) => setCurrency(e.target.value)}
-                    >
-                      {[...new Set(Object.values(currencyByCountry))].map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                    <div className="relative group">
+                      <select
+                        className={selectClass}
+                        value={currency}
+                        onChange={(e) => setCurrency(e.target.value)}
+                      >
+                        {[...new Set(Object.values(currencyByCountry))].map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+
+                      <ChevronDown
+                        size={18}
+                        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-all group-hover:text-gray-600"
+                      />
+                    </div>
                   </div>
                 </div>
 
