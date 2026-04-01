@@ -434,7 +434,7 @@ useFieldDefault(
       case "ZMW":
         return "K";
       default:
-        return "K";
+        return "";
     }
   };
 
