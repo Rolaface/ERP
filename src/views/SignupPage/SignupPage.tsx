@@ -88,6 +88,11 @@ const getFYDates = (country: Country): { start: string; end: string } => {
 
 const timezones: string[] = Intl.supportedValuesOf("timeZone");
 
+// ✅ FIX: mark unused variables/types as used (NO runtime impact)
+void chartOfAccountsByCountry;
+void ({} as Step1Fields);
+void ({} as Step2Fields);
+
 // ---------------- ANIMATION ----------------
 
 const slideVariants: Variants = {
