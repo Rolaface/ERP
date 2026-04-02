@@ -14,7 +14,8 @@ export type Theme =
   | "cyber"
   | "glass"
   | "luxury"
-  | "clinical-sanctuary";
+  | "clinical-sanctuary"
+  | "saas-indigo";
 
 const THEME_KEY = "erp-theme";
 

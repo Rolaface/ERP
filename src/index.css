@@ -252,6 +252,41 @@
   --font-body: "Manrope", sans-serif;
 }
 
+:root[data-theme="saas-indigo"] {
+  /* PRIMARY BRAND (matches your buttons, focus rings, accents) */
+  --primary: #4f46e5;        /* indigo-600 */
+  --primary-600: #4338ca;    /* indigo-700 */
+  --primary-700: #3730a3;    /* deeper hover */
+
+  /* BACKGROUND SYSTEM */
+  --bg: #f7f8fb;             /* page gradient base */
+  --card: #ffffff;           /* clean white cards */
+
+  /* TEXT SYSTEM */
+  --text: #0f172a;           /* slate-900 */
+  --muted: #64748b;          /* slate-500 */
+
+  /* SIDEBAR */
+  --sidebar-bg: #ffffff;
+  --sidebar-text: #0f172a;
+
+  /* TABLE / HEADERS */
+  --table-head: #1e293b;     /* slate-800 */
+  --table-head-text: #ffffff;
+
+  /* BORDERS + INTERACTIONS */
+  --border: #e5e7eb;         /* gray-200 */
+  --row-hover: #f1f5f9;      /* subtle slate hover */
+
+  /* OPTIONAL ENHANCEMENTS (matches your UI feel) */
+  --input-bg: #ffffff;
+  --input-border: #e5e7eb;
+  --input-focus: rgba(79, 70, 229, 0.2); /* indigo glow */
+
+  /* SUCCESS SCREEN / ACCENTS */
+  --accent-soft: #eef2ff;    /* indigo-50 */
+}
+
 @layer utilities {
   .bg-app {
     background: var(--bg) !important;

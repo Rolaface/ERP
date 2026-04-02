@@ -19,7 +19,10 @@ const themes: { value: Theme; label: string }[] = [
   { value: "gold", label: "🏆 Classic Gold" },
   { value: "cyber", label: "🚀 Cyber Neon" },
 
-  { value: "clinical-sanctuary", label: "🧪 Clinical Sanctuary"},
+  { value: "clinical-sanctuary", label: "🧪 Clinical Sanctuary" },
+
+  // ✅ NEW THEME ADDED
+  { value: "saas-indigo", label: "🚀 SaaS Indigo" },
 ];
 
 export function ThemeSwitcher() {
