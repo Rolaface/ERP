@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-export const ERP_BASE = ENV.apiBaseUrl;
+export const ERP_BASE = "";
 // export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
@@ -112,10 +112,10 @@ export const API = {
    * CUSTOMER
    * ========================= */
   customer: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.get_all_customers_api`,
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.get_customer_by_id`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.customer.get_customers`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.customer.get_customer_by_id`,
     create: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.create_customer_api`,
-    update: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.update_customer_by_id`,
+    update: `${ERP_BASE}/api/method/custom_api.api.customer.update_customer`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.delete_customer_by_id`,
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,

@@ -34,18 +34,18 @@ export async function createCustomer(payload: any): Promise<any> {
 }
 
 export async function getCustomerByCustomerCode(
-  custom_id: string,
+  id: string,
 ): Promise<any> {
-  const url = `${CustomerAPI.getById}?custom_id=${custom_id}`;
+  const url = `${CustomerAPI.getById}?id=${id}`;
   const resp: AxiosResponse = await api.get(url);
   return resp.data || null;
 }
 
 export async function updateCustomerByCustomerCode(
-  custom_id: string,
+  id: string,
   payload: any,
 ): Promise<any> {
-  const url = `${CustomerAPI.update}?id=${custom_id}`;
+  const url = `${CustomerAPI.update}?id=${id}`;
   const resp: AxiosResponse = await api.patch(url, payload);
   return resp.data;
 }
