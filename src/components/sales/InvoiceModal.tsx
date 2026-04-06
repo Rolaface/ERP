@@ -99,10 +99,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
   const showExportField = ui.isExport;
-  // Remove internal handleFormSubmit. Let parent handle submit.
-
-  // Removed unused invoiceModalOpen state.
-
   const footerContent = (
     <>
       <Button
@@ -139,9 +135,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     const dummyEvent = {
                       preventDefault: () => {},
                     } as React.FormEvent;
-                    const payload = await actions.handleSubmit(dummyEvent);
+                  const payload = await actions.handleSubmit(dummyEvent);
                   payload.invoiceCharges = (payload.invoiceCharges || [])
-  .filter(ch => ch.charge_type?.trim() && Number(ch.amount) > 0);
+                  .filter(ch => ch.charge_type?.trim() && Number(ch.amount) > 0);
                     if (!payload) {
                       showValidationError(
                         "Please fill all required fields correctly.",
