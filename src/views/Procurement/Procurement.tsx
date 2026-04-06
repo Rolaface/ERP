@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import RFQsTable from "./Rfqs";
 import PurchaseOrdersTable from "./PurchaseOrders";
 import ApprovalsSection from "./Approvals";
@@ -15,10 +16,27 @@ import {
   FaCreditCard,
 } from "react-icons/fa";
 import SupplierManagement from "./SupplierManagement";
-import SupplierModal from "../../components/procurement/supply/SupplierModal";
 import PurchaseInvoiceTable from "./PurchaseInvoice";
 import Payments from "./SupplierPayment";
 import PurchaseAnalytics from "./PurchaseAnalytics";
+
+type OutletContextType = {
+  // Sales
+  openInvoiceCreate: () => void;
+  openInvoiceEdit: (invoiceNumber: string, data: any) => void;
+  openProformaCreate: () => void;
+  openProformaEdit: (proformaId: string, data: any) => void;
+  openQuotationCreate: () => void;
+  openQuotationEdit: (quotationId: string, data: any) => void;
+  // CRM
+  openCustomerCreate: () => void;
+  openCustomerEdit: (id: string, data: any) => void;
+  // Procurement
+  openSupplierCreate: () => void;
+  openSupplierEdit: (id: string, data: any) => void;
+  openPOCreate: () => void;
+  openPOEdit: (poId: string | number) => void;
+};
 
 const procurement = {
   name: "Procurement",
@@ -51,13 +69,17 @@ const procurement = {
 
 const Procurement: React.FC = () => {
   const [activeTab, setActiveTab] = useState(procurement.defaultTab);
-  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  
+  // ✅ GLOBAL MODAL CONTROL FROM APP LAYOUT
+  const { openSupplierCreate, openSupplierEdit, openPOCreate } = useOutletContext<OutletContextType>();
+  
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showGRModal, setShowGRModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   const handleAdd = () => {
-    if (activeTab === "supplier") setShowSupplierModal(true);
+    if (activeTab === "supplier") openSupplierCreate();
+    else if (activeTab === "orders") openPOCreate();
     else if (activeTab === "approvals") setShowApprovalModal(true);
     else if (activeTab === "goodsreceipt") setShowGRModal(true);
     else if (activeTab === "invoicematching") setShowInvoiceModal(true);
@@ -102,11 +124,6 @@ const Procurement: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <SupplierModal
-        isOpen={showSupplierModal}
-        onClose={() => setShowSupplierModal(false)}
-        onSubmit={(data) => console.log("New RFQ:", data)}
-      />
       <ApprovalModal
         isOpen={showApprovalModal}
         onClose={() => setShowApprovalModal(false)}

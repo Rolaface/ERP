@@ -9,7 +9,7 @@ import { User, Mail, Phone, Plus, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import PaymentInfoBlock from "./PaymentInfoBlock";
-import Modal from "../ui/modal/modal";
+import { MinimizableModal } from "../common/ModalManagerContext";
 import AddressBlock from "../ui/modal/AddressBlock";
 import { getAllCustomers } from "../../api/customerApi";
 import CustomerSelect from "../selects/CustomerSelect";
@@ -30,6 +30,7 @@ interface ProformaInvoiceModalProps {
   onSubmit?: () => void;
   initialData?: any;
   mode?: "create" | "edit";
+  modalId?: string;
 }
 
 const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
@@ -38,7 +39,11 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   onSubmit,
   initialData,
   mode = "create",
+  modalId,
 }) => {
+  const resolvedModalId = modalId || (mode === "edit" && initialData?.proformaId
+    ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
+    : `proforma-create-${Date.now()}`);
   const {
     formData,
     customerDetails,
@@ -112,7 +117,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         return;
       }
 
-      showSuccess(res.message || "Proforma invoice created successfully");
+      showSuccess(res.message);
 
       actions.handleReset();
       onSubmit?.();
@@ -156,10 +161,11 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     return () => controller.abort();
   }, [isOpen]);
 
-  if (!isOpen) return null;
+
 
   return (
-    <Modal
+    <MinimizableModal
+    modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={handleClose}
       title={
@@ -771,7 +777,7 @@ ${
           </Button>
         </div> */}
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

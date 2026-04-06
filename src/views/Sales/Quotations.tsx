@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   showApiError,
   showSuccess,
@@ -25,10 +26,13 @@ import { deleteQuotationById } from "../../api/quotationApi";
 import Swal from "sweetalert2";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import QuotationDetailModal, { QuotationDetail } from "./Quotationdetailmodal";
-import QuotationModal from "../../components/sales/QuotationModal";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
+type OutletContextType = {
+  openQuotationCreate: () => void;
+  openQuotationEdit: (quotationId: string, data: any) => void;
+};
 
 const SORT_FIELD_MAP: Record<string, string> = {
   quotationNumber: "id",
@@ -52,7 +56,7 @@ const STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
 
 };
 const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
-
+  const { openQuotationEdit } = useOutletContext<OutletContextType>();
 
   const [quotations, setQuotations]   = useState<QuotationSummary[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -90,8 +94,6 @@ const [detailData, setDetailData] = useState<QuotationDetail | null>(null);
 const [detailLoading, setDetailLoading] = useState(false);
 const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
 const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
-const [editOpen, setEditOpen] = useState(false);
-const [editQuotation, setEditQuotation] = useState<any>(null);
 
   // ── Fetch company once 
   useEffect(() => {
@@ -209,8 +211,7 @@ const handleEdit = async (quotationNumber: string, e?: React.MouseEvent) => {
 
     closeSwal();
 
-    setEditQuotation(res.data);
-    setEditOpen(true);
+    openQuotationEdit(quotationNumber, res.data);
 
   } catch (err) {
     closeSwal();
@@ -545,19 +546,6 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
   onViewPdf={() => detailData && handleDrawerPdf(detailData.id)}
   onDownload={() => detailData && company && generateQuotationPDF(detailData, company, "save")}
   onClosePdf={() => { if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl); setDrawerPdfUrl(null); }}
-/>
-
-<QuotationModal
-  isOpen={editOpen}
-  onClose={() => {
-    setEditOpen(false);
-    setEditQuotation(null);
-  }}
-  initialData={editQuotation}
-  mode="edit"
-  onSubmit={() => {
-    fetchQuotations();
-  }}
 />
     </div>
   );

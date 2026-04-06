@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import SupplierDetailView from "./SupplierDetailView";
-import SupplierModal from "../../components/procurement/supply/SupplierModal";
 import {
   deleteSupplier,
   getSupplierById,
@@ -21,17 +21,31 @@ import { showApiError, showSuccess } from "../../utils/alert";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
 import Tooltip from "../../components/Tooltip";
 
-interface Props {}
+type OutletContextType = {
+  openSupplierCreate: () => void;
+  openSupplierEdit: (id: string, data: any) => void;
+};
 
-const SupplierManagement: React.FC<Props> = () => {
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+interface Props {
+  onAdd?: () => void;
+}
+
+const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
+  const { openSupplierCreate, openSupplierEdit } = useOutletContext<OutletContextType>();
+  
+  // Use openSupplierCreate from context, fall back to props.onAdd
+  const handleAddSupplier = () => {
+    if (openSupplierCreate) {
+      openSupplierCreate();
+    } else if (onAdd) {
+      onAdd();
+    }
+  };
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
     null,
   );
-  const [showModal, setShowModal] = useState(false);
-  const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -39,7 +53,7 @@ const SupplierManagement: React.FC<Props> = () => {
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
-  const supplierCodes = suppliers.map((s) => s.supplierCode || "");
+  const supplierCodes = allSuppliers.map((s) => s.supplierCode || "");
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPI, setSelectedPI] = useState<any | null>(null);
@@ -69,7 +83,7 @@ const SupplierManagement: React.FC<Props> = () => {
         ...s,
         status: normalizeStatus(s.status),
       }));
-      setSuppliers(list);
+      setAllSuppliers(list);
       setTotalPages(res.data?.pagination?.total_pages || 1);
       setTotalItems(res.data?.pagination?.total || 0);
     } catch (err) {
@@ -123,25 +137,17 @@ const SupplierManagement: React.FC<Props> = () => {
     setSelectedSupplier(null);
   };
 
-  const handleAddSupplier = () => {
-    setEditSupplier(null);
-    setShowModal(true);
-  };
-
   const handleEditSupplier = async (supplier: Supplier) => {
     if (!supplier.supplierId) return;
     setLoading(true);
     const res = await getSupplierById(supplier.supplierId);
     const mapped = mapSupplierApi(res.data || res);
-    setEditSupplier(mapped);
-    setShowModal(true);
     setLoading(false);
+    openSupplierEdit(supplier.supplierId, mapped);
   };
 
   const handleSupplierSaved = async () => {
     await fetchSuppliers();
-    setShowModal(false);
-    setEditSupplier(null);
   };
 
   const handleEditFromDetail = (supplier: Supplier) =>
@@ -295,7 +301,7 @@ const SupplierManagement: React.FC<Props> = () => {
       {viewMode === "table" ? (
         <Table
           columns={columns}
-          data={suppliers}
+          data={allSuppliers}
           showToolbar
           loading={loading}
           onPageSizeChange={(size) => setPageSize(size)}
@@ -321,18 +327,6 @@ const SupplierManagement: React.FC<Props> = () => {
           onEdit={handleEditFromDetail}
         />
       ) : null}
-
-      <SupplierModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditSupplier(null);
-        }}
-        onSubmit={handleSupplierSaved}
-        initialData={editSupplier}
-        isEditMode={!!editSupplier}
-        existingSupplierCodes={supplierCodes}
-      />
 
       {/* <SupplierPaymentModal
         isOpen={showPaymentModal}

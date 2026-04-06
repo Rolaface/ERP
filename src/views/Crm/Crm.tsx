@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import CustomerManagement from "./CustomerManagement";
 import CRMDashboard from "./CRMDashboard";
 import CRMReports from "./Reports";
@@ -14,6 +15,24 @@ import {
   FaCalendarAlt,
   FaIdBadge,
 } from "react-icons/fa";
+
+type OutletContextType = {
+  // Sales
+  openInvoiceCreate: () => void;
+  openInvoiceEdit: (invoiceNumber: string, data: any) => void;
+  openProformaCreate: () => void;
+  openProformaEdit: (proformaId: string, data: any) => void;
+  openQuotationCreate: () => void;
+  openQuotationEdit: (quotationId: string, data: any) => void;
+  // CRM
+  openCustomerCreate: () => void;
+  openCustomerEdit: (id: string, data: any) => void;
+  // Procurement
+  openSupplierCreate: () => void;
+  openSupplierEdit: (id: string, data: any) => void;
+  openPOCreate: () => void;
+  openPOEdit: (poId: string | number) => void;
+};
 
 const crmModule = {
   name: "CRM",
@@ -113,10 +132,12 @@ const crmModule = {
 
 const CRM: React.FC = () => {
   const [activeTab, setActiveTab] = useState(crmModule.defaultTab);
+  
+  // ✅ GLOBAL MODAL CONTROL FROM APP LAYOUT
+  const { openCustomerCreate } = useOutletContext<OutletContextType>();
 
   const handleAddCustomer = () => {
-    setActiveTab("customer-managment");
-    console.log("onAdd -> Customer (parent handler called)");
+    openCustomerCreate();
   };
 
   const handleAddLead = () => {

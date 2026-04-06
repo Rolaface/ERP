@@ -735,6 +735,23 @@ export const useInvoiceForm = (
       return { ...prev, items };
     });
   };
+
+  // ✅ DUPLICATE ITEM — inserts an exact copy right below the source row
+  const duplicateItem = (absoluteIndex: number) => {
+    setFormData((prev) => {
+      const source = prev.items[absoluteIndex];
+      if (!source) return prev;
+
+      const copy = { ...source };
+      const newItems = [...prev.items];
+      newItems.splice(absoluteIndex + 1, 0, copy);
+
+      setPage(Math.floor((absoluteIndex + 1) / ITEMS_PER_PAGE));
+
+      return { ...prev, items: newItems };
+    });
+  };
+
   const setFormDataFromInvoice = (invoice: any) => {
     setFormData((prev: any) => ({
       ...prev,
@@ -989,6 +1006,7 @@ export const useInvoiceForm = (
       updateItemDirectly,
       addItem,
       removeItem,
+      duplicateItem,
       setTerms,
       handleSameAsBillingChange,
       handleReset,

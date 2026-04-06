@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import CustomerDetailView from "./CustomerDetailView";
+
 import {
   showLoading,
   showApiError,
@@ -11,8 +13,6 @@ import {
   deleteCustomerById,
   getCustomerByCustomerCode,
 } from "../../api/customerApi";
-
-import CustomerModal from "../../components/crm/CustomerModal";
 
 import type { CustomerSummary, CustomerDetail } from "../../types/customer";
 
@@ -28,19 +28,24 @@ import Swal from "sweetalert2";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 import Tooltip from "../../components/Tooltip";
 
+type OutletContextType = {
+  openCustomerCreate: () => void;
+  openCustomerEdit: (id: string, data: any) => void;
+};
+
 interface Props {
   onAdd: () => void;
 }
 
 const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
+  const { openCustomerEdit } = useOutletContext<OutletContextType>();
+  
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerDetail | null>(null);
   const [custLoading, setCustLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editCustomer, setEditCustomer] = useState<CustomerDetail | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -49,6 +54,8 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const openCustomerCreate = useOutletContext<OutletContextType>()
+    .openCustomerCreate;
   const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<
     any | null
   >(null);
@@ -93,6 +100,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       await fetchAllCustomers();
     }
   };
+  const handleAddCustomer = () => {
+    openCustomerCreate();
+  };
 
   const handleMakePayment = (customer: CustomerSummary) => {
     setSelectedCustomerForPayment(customer);
@@ -130,28 +140,23 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     }
   };
 
-  const handleAddCustomer = () => {
-    setEditCustomer(null);
-    setShowModal(true);
-  };
-
   const handleEditCustomer = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
+      showLoading("Loading customer...");
       const customer = await getCustomerByCustomerCode(id);
-      setEditCustomer(customer.data ?? customer);
-      setShowModal(true);
+      closeSwal();
+      openCustomerEdit(id, customer.data ?? customer);
     } catch (error) {
+      closeSwal();
       console.error("Failed to fetch customer:", error);
       showApiError(error);
     }
   };
 
   const handleCustomerSaved = async () => {
-    setShowModal(false);
-    setEditCustomer(null);
     await fetchCustomers();
-    showSuccess(editCustomer ? "Customer updated!" : "Customer created!");
+    showSuccess("Customer saved!");
   };
 
   const handleRowClick = async (customer: CustomerSummary) => {
@@ -323,16 +328,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         />
       ) : null}
 
-      <CustomerModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditCustomer(null);
-        }}
-        onSubmit={handleCustomerSaved}
-        initialData={editCustomer}
-        isEditMode={!!editCustomer}
-      />
       <PaymentEntryModal
         isOpen={paymentModalOpen}
         onClose={() => {

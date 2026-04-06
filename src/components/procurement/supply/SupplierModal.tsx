@@ -1,9 +1,9 @@
 import React from "react";
 import { Building2, DollarSign, MapPin, FileText } from "lucide-react";
-import Modal from "../../ui/modal/modal";
 import { Button } from "../../ui/modal/formComponent";
 import { SupplierInfoTab } from "./SupplierInfoTab";
 import { useSupplierForm } from "../../../hooks/useSupplierForm";
+import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import type {
   SupplierTab,
   SupplierFormData,
@@ -13,6 +13,7 @@ import { AddressTab } from "./AddressTab";
 import TermsAndCondition from "../../TermsAndCondition";
 import type { TermSection } from "../../../types/termsAndCondition";
 import { PaymentInfoTab } from "./PaymentInfoTab";
+import { MinimizableModal } from "../../common/ModalManagerContext";
 
 interface SupplierModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface SupplierModalProps {
   initialData?: Supplier | null;
   isEditMode?: boolean;
   existingSupplierCodes?: string[];
+  modalId?: string;
 }
 
 const tabs: { key: SupplierTab; icon: typeof Building2; label: string }[] = [
@@ -37,7 +39,12 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   initialData,
   isEditMode = false,
   existingSupplierCodes = [],
+  modalId,
 }) => {
+  const resolvedModalId = modalId || (isEditMode && initialData?.id
+    ? `supplier-edit-${initialData.id}-${Date.now()}`
+    : `supplier-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     form,
     loading,
@@ -59,12 +66,19 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
 
   const footer = (
     <>
-      <Button variant="secondary" onClick={onClose} type="button">
+      <Button variant="secondary" onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)} type="button">
         Cancel
       </Button>
 
       <div className="flex gap-3">
-        <Button variant="secondary" onClick={reset} type="button">
+        <Button
+          variant="secondary"
+          onClick={() => {
+            resetDirty();
+            reset();
+          }}
+          type="button"
+        >
           Reset
         </Button>
         {activeTab !== "terms" ? (
@@ -94,9 +108,10 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   );
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={isEditMode ? "Edit Supplier" : "Add New Supplier"}
       subtitle={
         isEditMode
@@ -110,7 +125,14 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     >
       <form
         id="supplierForm"
-        onSubmit={handleSubmit}
+        onChange={() => markDirty()}
+        onSubmit={(e) => {
+          const wrappedSubmit = async () => {
+            resetDirty();
+            await handleSubmit(e);
+          };
+          wrappedSubmit();
+        }}
         noValidate
         className="h-full flex flex-col"
       >
@@ -167,7 +189,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
           )}
         </div>
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

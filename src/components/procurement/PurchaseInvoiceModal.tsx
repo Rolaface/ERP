@@ -1,6 +1,6 @@
 import React from "react";
-import { Building2, MapPin, FileText } from "lucide-react";
-import Modal from "../ui/modal/modal";
+import { Building2, MapPin, FileText, Receipt } from "lucide-react";
+import { MinimizableModal } from "../common/ModalManagerContext";
 import { Button } from "../ui/modal/formComponent";
 import { DetailsTab } from "../procurement/purchaseinvoice/DetailsTab";
 // import { EmailTab } from "../procurement/purchaseorder/EmailTab";
@@ -8,6 +8,7 @@ import { DetailsTab } from "../procurement/purchaseinvoice/DetailsTab";
 import { AddressTab } from "../procurement/purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
 import { usePurchaseInvoiceForm } from "../../hooks/usePurchaseInvoiceForm";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import type { POTab } from "../../types/Supply/purchaseInvoice";
 import { showValidationError } from "../../utils/alert";
 
@@ -17,6 +18,7 @@ interface PurchaseInvoiceModalProps {
   onSubmit?: (data: any) => void;
   pId?: string | number;
   poLoading?: boolean;
+  modalId?: string;
 }
 
 const tabs: { key: POTab; icon: typeof Building2; label: string }[] = [
@@ -34,7 +36,11 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
   onClose,
   onSubmit,
   pId,
+  modalId,
 }) => {
+  const resolvedModalId = modalId || (pId ? `purchase-invoice-edit-${pId}` : `purchase-invoice-create`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+
   const {
     form,
     setForm,
@@ -46,6 +52,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     handleItemChange,
     addItem,
     removeItem,
+    duplicateItem,
     getCurrencySymbol,
     handleSubmit,
     reset,
@@ -65,11 +72,17 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
 
   const footer = (
     <>
-      <Button variant="secondary" onClick={onClose}>
+      <Button variant="secondary" onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}>
         Cancel
       </Button>
       <div className="flex gap-2">
-        <Button variant="secondary" onClick={reset}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            resetDirty();
+            reset();
+          }}
+        >
           Reset
         </Button>
         <Button
@@ -97,22 +110,21 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
   };
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={() => {
-        if (saving) return;
-        onClose();
-      }}
+      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={pId ? "Edit Purchase Invoice" : "New Purchase Invoice"}
       subtitle="Create and manage purchase invoice"
-      icon={Building2}
-      customWidth="97vw"
-      height="93vh"
+      icon={Receipt}
+      customWidth="95vw"
+      height="90vh"
       footer={footer}
     >
       <form
         id="purchaseInvoiceForm"
         noValidate
+        onChange={() => markDirty()}
         onSubmit={(e) => {
           e.preventDefault();
 
@@ -128,11 +140,15 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             return;
           }
 
-          handleSubmit(e);
+          const handleFormSubmit = async () => {
+            resetDirty();
+            await handleSubmit(e);
+          };
+          handleFormSubmit();
         }}
         className="h-full flex flex-col"
       >
-        <div className=" sticky  bg-app border-b border-theme px-8 shrink-0">
+        <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
             {tabs.map(({ key, icon: Icon, label }) => (
               <button
@@ -150,7 +166,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           </div>
         </div>
 
-        <section className="flex-1 overflow-y-auto  space-y-6 ">
+        <section className="flex-1 overflow-y-auto p-4 space-y-6">
           {activeTab === "details" && (
             <DetailsTab
               form={form}
@@ -160,6 +176,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               onItemChange={handleItemChange}
               onAddItem={addItem}
               onRemoveItem={removeItem}
+              onDuplicateItem={duplicateItem}
               getCurrencySymbol={getCurrencySymbol}
               onItemSelect={handleItemSelect}
               poList={poList}
@@ -233,7 +250,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           )}
         </section>
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

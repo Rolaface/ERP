@@ -199,9 +199,7 @@ const CreditNoteInvoiceLikeForm: React.FC<CreditNoteInvoiceLikeFormProps> = ({
         return;
       }
 
-      showSuccess(
-        res.message || "Credit note created successfully"
-      );
+      showSuccess(res.message);
 
       onSubmit?.(res);
 

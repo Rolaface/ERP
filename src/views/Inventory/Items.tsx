@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
 import { showApiError, showSuccess } from "../../utils/alert";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
@@ -9,7 +10,6 @@ import {
 } from "../../api/itemApi";
 import { ItemFilters } from "../../api/itemApi";
 
-import ItemModal      from "../../components/inventory/ItemModal";
 import DeleteModal    from "../../components/actionModal/DeleteModal";
 import ItemDetailView, {
   type SalesInvoice,
@@ -26,9 +26,15 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import type { ItemSummary, Item } from "../../types/item";
 
+type OutletContextType = {
+  openItemCreate: () => void;
+  openItemEdit: (id: string, data: any) => void;
+};
+
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 
 const Items: React.FC = () => {
+  const { openItemCreate, openItemEdit } = useOutletContext<OutletContextType>();
 
   /* ── Table / list state ── */
   const [items,       setItems]       = useState<ItemSummary[]>([]);
@@ -57,10 +63,6 @@ const Items: React.FC = () => {
   const [loadingSales,     setLoadingSales]     = useState(false);
   const [loadingPurchase,  setLoadingPurchase]  = useState(false);
   const [loadingStock,     setLoadingStock]     = useState(false);
-
-  /* ── Add / Edit modal state ── */
-  const [showModal,  setShowModal]  = useState(false);
-  const [editItem,   setEditItem]   = useState<Item | null>(null);
 
   /* ── Delete modal state ── */
   const [deleteOpen,   setDeleteOpen]   = useState(false);
@@ -205,8 +207,7 @@ const Items: React.FC = () => {
     e.stopPropagation();
     try {
       const res = await getItemByItemCode(itemCode);
-      setEditItem(res.data);
-      setShowModal(true);
+      openItemEdit(itemCode, res.data);
     } catch { console.error("Unable to fetch item"); }
   };
 
@@ -224,7 +225,7 @@ const Items: React.FC = () => {
       const res = await deleteItemByItemCode(itemToDelete.id);
       if (!res || ![200, 201].includes(res.status_code)) { showApiError(res); return; }
       setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
-      showSuccess(res.message || "Item deleted successfully");
+      showSuccess(res.message);
       setDeleteOpen(false);
       /* If the deleted item was open in detail view, go back to table */
       if (activeSummary?.id === itemToDelete.id) {
@@ -238,13 +239,6 @@ const Items: React.FC = () => {
     }
   };
 
-  const handleSaved = async (res: any) => {
-    const wasEdit = !!editItem;
-    setShowModal(false);
-    setEditItem(null);
-    await fetchItems();
-    showSuccess(res?.message || (wasEdit ? "Item updated successfully" : "Item created successfully"));
-  };
 
   /* ── Detail view action handlers ── */
   const handleDetailEdit = async () => {
@@ -370,7 +364,7 @@ const Items: React.FC = () => {
             onSearch={setSearchTerm}
             enableAdd
             addLabel="Add Item"
-            onAdd={() => { setEditItem(null); setShowModal(true); }}
+            onAdd={openItemCreate}
             currentPage={page}
             totalPages={totalPages}
             pageSize={pageSize}
@@ -408,7 +402,7 @@ const Items: React.FC = () => {
             onSelectItem={(summary) => handleRowClick(summary)}
             onEditItem={handleDetailEdit}
             onDeleteItem={handleDetailDelete}
-            onAddItem={() => { setEditItem(null); setShowModal(true); }}
+            onAddItem={openItemCreate}
             salesInvoices={salesInvoices}
             purchaseInvoices={purchaseInvoices}
             stockRows={stockRows}
@@ -422,15 +416,6 @@ const Items: React.FC = () => {
           />
         </div>
       )}
-
-      {/* ── Add / Edit modal ── */}
-      <ItemModal
-        isOpen={showModal}
-        onClose={() => { setShowModal(false); setEditItem(null); }}
-        onSubmit={handleSaved}
-        initialData={editItem}
-        isEditMode={!!editItem}
-      />
 
       {/* ── Delete modal ── */}
       {deleteOpen && itemToDelete && (

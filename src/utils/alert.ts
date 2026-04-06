@@ -121,6 +121,9 @@ export const showConfirm = async (message: string) => {
     confirmButtonColor: "#ef4444",
     cancelButtonColor: "#6b7280",
     reverseButtons: true,
+    didClose: () => {
+      document.body.style.pointerEvents = "";
+    },
   });
 
   return result.isConfirmed;

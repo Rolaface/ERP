@@ -5,10 +5,12 @@ import {
 } from "../../api/itemCategoryApi";
 import { getRolaUOMs } from "../../api/itemZraApi";
 import { showApiError, showValidationError } from "../../utils/alert";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import ItemGenericSelect from "../selects/ItemGenericSelect";
-import Modal from "../ui/modal/modal";
+import { MinimizableModal } from "../common/ModalManagerContext";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
+import { Layers } from "lucide-react";
 
 /* 
    Default Form State
@@ -47,7 +49,12 @@ const ItemsCategoryModal: React.FC<{
   onSubmit?: (data: Record<string, any>) => void;
   initialData?: Record<string, any> | null;
   isEditMode?: boolean;
-}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false }) => {
+  modalId?: string;
+}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false, modalId }) => {
+  const resolvedModalId = modalId || (isEditMode && initialData?.id
+    ? `category-edit-${initialData.id}-${Date.now()}`
+    : `category-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "pricing">("details");
@@ -108,37 +115,25 @@ const validateForm = () => {
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
-   if (loading) return; 
+  if (loading) return;
   if (!validateForm()) return;
 
   setLoading(true);
 
-    try {
-      const payload: any = { ...form };
+  try {
+    const payload: any = { ...form };
 
-      if (!isEditMode) delete payload.id;
+    if (!isEditMode) delete payload.id;
 
-      let response;
-
-      if (isEditMode && initialData?.id) {
-        response = await updateItemGroupById(initialData.id, payload);
-      } else {
-        response = await createItemGroup(payload);
-      }
-
-      if (!response || ![200, 201].includes(response.status_code)) {
-        showApiError(response);
-        return;
-      }
-
-      onSubmit?.(payload);
-      handleClose();
-    } catch (err: any) {
-      showApiError(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Pass to parent - parent handles API call and shows success message
+    onSubmit?.(payload);
+    handleClose();
+  } catch (err: any) {
+    showApiError(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   /* 
      Reset
@@ -166,15 +161,17 @@ const handleClose = () => {
   ──────────────────────────────── */
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
       title={isEditMode ? "Edit Item Category" : "Add Item Category"}
       subtitle="Manage category configuration"
+      icon={Layers}
       customWidth="55vw"
       height="45vh"
     >
-      <form onSubmit={handleSubmit} noValidate className="h-full flex flex-col">
+      <form onChange={() => markDirty()} onSubmit={handleSubmit} noValidate className="h-full flex flex-col">
 
         {/* ───── Tabs ───── */}
         <div className="border-b border-theme px-6 bg-app shrink-0">
@@ -307,11 +304,11 @@ const handleClose = () => {
 
         {/* ───── Footer ───── */}
         <div className="flex justify-end gap-3 border-t border-theme px-6 py-4 bg-app shrink-0">
-          <Button variant="secondary" type="button" onClick={handleClose}>
+          <Button variant="secondary" type="button" onClick={() => handleCloseWithConfirm(handleClose, resolvedModalId)}>
             Cancel
           </Button>
 
-          <Button variant="ghost" type="button" onClick={reset}>
+          <Button variant="ghost" type="button" onClick={() => { resetDirty(); reset(); }}>
             Reset
           </Button>
 
@@ -321,7 +318,7 @@ const handleClose = () => {
         </div>
 
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   X, Search, FileText, Plus, CreditCard, Mail, Menu, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import type { Supplier } from "../../types/Supply/supplier";
 import SupplierStatement from "./SupplierStatement";
-import PurchaseInvoiceModal from "../../components/procurement/PurchaseInvoiceModal";
 import PurchaseOrderModal from "../../components/procurement/PurchaseOrderModal";
 import SupplierPurchaseOrders from "./SupplierPurchaseOrders";
 import SupplierPurchaseInvoices from "./SupplierPurchaseInvoices";
@@ -47,10 +47,10 @@ const SupplierDetailView: React.FC<Props> = ({
   onSupplierSelect,
   onEdit,
 }) => {
+  const { openPICreate } = useOutletContext<{ openPICreate: () => void }>();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [showPOModal, setShowPOModal] = useState(false);
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showBankAccountModal, setShowBankAccountModal] = useState(false);
   const [statement, setStatement] = useState<any>(null);
@@ -117,7 +117,7 @@ const SupplierDetailView: React.FC<Props> = ({
       case "bills":
         return (
           <button
-            onClick={() => setShowInvoiceModal(true)}
+            onClick={() => openPICreate()}
             className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
           >
             <Plus size={13} /> New Invoice
@@ -612,10 +612,6 @@ const SupplierDetailView: React.FC<Props> = ({
       <PurchaseOrderModal
         isOpen={showPOModal}
         onClose={() => setShowPOModal(false)}
-      />
-      <PurchaseInvoiceModal
-        isOpen={showInvoiceModal}
-        onClose={() => setShowInvoiceModal(false)}
       />
       <PaymentEntryModal
         isOpen={showPaymentModal}

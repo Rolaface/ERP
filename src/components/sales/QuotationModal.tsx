@@ -6,7 +6,7 @@ import { Button } from "../../components/ui/modal/formComponent";
 import { ModalSelect, ModalInput } from "../ui/modal/modalComponent";
 import CustomerSelect from "../selects/CustomerSelect";
 import ItemSelect from "../selects/ItemSelect";
-import Modal from "../../components/ui/modal/modal";
+import { MinimizableModal } from "../common/ModalManagerContext";
 import { User, Mail, Phone } from "lucide-react";
 import AddressBlock from "../ui/modal/AddressBlock";
 import PaymentInfoBlock from "./PaymentInfoBlock";
@@ -24,6 +24,7 @@ interface QuotationModalProps {
   onSubmit?: () => void;
   initialData?: any;
   mode?: "create" | "edit";
+  modalId?: string;
 }
 const QuotationModal: React.FC<QuotationModalProps> = ({
   isOpen,
@@ -31,8 +32,12 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   onSubmit,
   initialData,
   mode = "create",
+  modalId,
 }) => {
-  if (!isOpen) return null;
+  const resolvedModalId = modalId || (mode === "edit" && initialData?.id
+    ? `quotation-edit-${initialData.id}-${Date.now()}`
+    : `quotation-create-${Date.now()}`);
+ 
 
   const {
     formData,
@@ -106,7 +111,8 @@ const handleFormSubmit = async (e: React.FormEvent) => {
   );
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={onClose}
       title="Create Quotation"
@@ -666,7 +672,7 @@ const handleFormSubmit = async (e: React.FormEvent) => {
           )}
         </div>
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

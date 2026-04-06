@@ -56,6 +56,7 @@ interface ModalManagerCtx {
   isMinimized: (id: string) => boolean;
   getZIndex: (id: string) => number;
   isFocused: (id: string) => boolean;
+  getTopModalId: () => string | null;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -127,7 +128,6 @@ export const ModalManagerProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const bringToFront = useCallback((id: string) => {
     setInstances((prev) => {
-      // Already on top — skip re-render
       const sorted = [...prev].sort((a, b) => b.focusOrder - a.focusOrder);
       if (sorted[0]?.id === id) return prev;
 
@@ -167,6 +167,15 @@ export const ModalManagerProvider: React.FC<{ children: React.ReactNode }> = ({
     [instances]
   );
 
+  const getTopModalId = useCallback(() => {
+    const visible = instances.filter((m) => !m.minimized);
+    if (visible.length === 0) return null;
+    const top = visible.reduce((a, b) =>
+      a.focusOrder > b.focusOrder ? a : b
+    );
+    return top.id;
+  }, [instances]);
+
   return (
     <ModalManagerContext.Provider
       value={{
@@ -179,6 +188,7 @@ export const ModalManagerProvider: React.FC<{ children: React.ReactNode }> = ({
         isMinimized,
         getZIndex,
         isFocused,
+        getTopModalId,
       }}
     >
       {children}
@@ -198,39 +208,17 @@ const ModalTaskbar: React.FC = () => {
       {minimized.length > 0 && (
         <motion.div
           key="taskbar"
-          initial={{ y: 80, opacity: 0 }}
+          initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 80, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-card border border-[var(--border)] rounded-2xl shadow-2xl"
           style={{
-            position: "fixed",
-            bottom: 16,
-            left: "50%",
-            transform: "translateX(-50%)",
-            // above all modals
-            zIndex: BASE_Z + instances.length * Z_STEP + 100,
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-            padding: "6px 10px",
-            background: "var(--bg-card, #fff)",
-            border: "1.5px solid var(--border, #e2e8f0)",
-            borderRadius: 16,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.14)",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
           }}
         >
           <span
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--text-muted, #64748b)",
-              textTransform: "uppercase",
-              letterSpacing: 1,
-              paddingRight: 8,
-              borderRight: "1.5px solid var(--border, #e2e8f0)",
-              marginRight: 4,
-              whiteSpace: "nowrap",
-            }}
+            className="text-[10px] font-bold text-muted uppercase tracking-wider pr-3 border-r border-[var(--border)]"
           >
             Minimized ({minimized.length})
           </span>
@@ -408,10 +396,13 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
   height = "520px",
   customWidth,
 }) => {
-  const { register, unregister, minimize, isMinimized, getZIndex, isFocused, bringToFront } =
+  const { register, unregister, minimize, isMinimized, getZIndex, isFocused, bringToFront, instances } =
     useModalManager();
 
   const registered = useRef(false);
+
+  // Check if modal instance still exists in manager (won't exist if closed from taskbar)
+  const instanceExists = instances.some((m) => m.id === modalId);
 
   useEffect(() => {
     if (isOpen) {
@@ -434,7 +425,8 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Don't render anything if not open
+  // Don't render if not open
+  // Note: instanceExists check happens after async register in useEffect
   if (!isOpen) return null;
 
   const minimized = isMinimized(modalId);
@@ -456,25 +448,27 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
         </div>
       )}
 
-      {/* Visible modal shell */}
-      {!minimized && (
-        <ModalShell
-          title={title}
-          subtitle={subtitle}
-          icon={icon}
-          footer={footer}
-          maxWidth={maxWidth}
-          height={height}
-          customWidth={customWidth}
-          zIndex={zIndex}
-          focused={focused}
-          onClose={handleClose}
-          onMinimize={() => minimize(modalId)}
-          onFocus={() => bringToFront(modalId)}
-        >
-          {children}
-        </ModalShell>
-      )}
+      {/* Visible modal shell with smooth animation */}
+      <AnimatePresence>
+        {!minimized && (
+          <ModalShell
+            title={title}
+            subtitle={subtitle}
+            icon={icon}
+            footer={footer}
+            maxWidth={maxWidth}
+            height={height}
+            customWidth={customWidth}
+            zIndex={zIndex}
+            focused={focused}
+            onClose={handleClose}
+            onMinimize={() => minimize(modalId)}
+            onFocus={() => bringToFront(modalId)}
+          >
+            {children}
+          </ModalShell>
+        )}
+      </AnimatePresence>
     </>
   );
 };
@@ -574,10 +568,12 @@ const ModalShell: React.FC<ModalShellProps> = ({
             scale: focused ? 1 : 0.98,
             y: 0,
           }}
-          exit={{ opacity: 0, scale: 0.94, y: 24 }}
-          transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-          // Re-enable pointer events on the modal itself
-          style={{ pointerEvents: "auto" }}
+          exit={{ 
+            opacity: 0, 
+            scale: 0.85, 
+            y: 40,
+          }}
+          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
           className={`w-full ${
             !customWidth ? MAX_WIDTH_CLASSES[maxWidth] ?? "max-w-4xl" : ""
           } bg-card flex flex-col border border-[var(--border)] rounded-2xl overflow-hidden`}
@@ -585,11 +581,9 @@ const ModalShell: React.FC<ModalShellProps> = ({
             height,
             width: customWidth || undefined,
             maxWidth: customWidth ? "none" : undefined,
-            // Focused modal: full shadow. Background: softer
             boxShadow: focused
               ? "0 25px 60px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06)"
               : "0 8px 24px rgba(0,0,0,0.10)",
-            // Slightly scale down background modals for depth
             transform: focused ? "scale(1)" : "scale(0.985)",
             transition: "box-shadow 0.2s, transform 0.2s",
             pointerEvents: "auto",
@@ -677,7 +671,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
               // Slightly dim content of background modals
               opacity: focused ? 1 : 0.7,
               transition: "opacity 0.2s",
-              pointerEvents: focused ? "auto" : "none",
+              pointerEvents: "auto",
             }}
           >
             {children}
@@ -690,7 +684,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
               style={{
                 opacity: focused ? 1 : 0.7,
                 transition: "opacity 0.2s",
-                pointerEvents: focused ? "auto" : "none",
+                pointerEvents: "auto",
               }}
             >
               {footer}

@@ -583,6 +583,19 @@ useFieldDefault(
     setForm((p) => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
   };
 
+  const duplicateItem = (absoluteIndex: number) => {
+    setForm((prev) => {
+      const source = prev.items[absoluteIndex];
+      if (!source) return prev;
+
+      const copy = { ...source };
+      const newItems = [...prev.items];
+      newItems.splice(absoluteIndex + 1, 0, copy);
+
+      return { ...prev, items: newItems };
+    });
+  };
+
   const handleTaxRowChange = (idx: number, key: keyof TaxRow, value: any) => {
     const taxRows = [...form.taxRows];
     taxRows[idx] = { ...taxRows[idx], [key]: value };
@@ -759,11 +772,7 @@ useFieldDefault(
         return;
       }
 
-      showSuccess(
-        isEditMode
-          ? "Purchase Invoice Updated"
-          : "Purchase Invoice Created"
-      );
+      showSuccess(res.message);
 
       onSuccess?.(res);
       onClose?.();
@@ -810,6 +819,7 @@ useFieldDefault(
     handleItemChange,
     addItem,
     removeItem,
+    duplicateItem,
     handleTaxRowChange,
     addTaxRow,
     removeTaxRow,

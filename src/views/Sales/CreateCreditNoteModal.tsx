@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Modal from "../../components/ui/modal/modal";
+import { MinimizableModal } from "../../components/common/ModalManagerContext";
 import CreditNoteInvoiceLikeForm from "./CreditNoteForm";
 import { FileMinus } from "lucide-react";
 import { Button } from "../../components/ui/modal/formComponent";
@@ -9,6 +9,7 @@ interface Props {
   onClose: () => void;
   onSubmit: (payload: any) => void;
   invoiceId: string;
+  modalId?: string;
 }
 
 const CreateCreditNoteModal: React.FC<Props> = ({
@@ -16,8 +17,10 @@ const CreateCreditNoteModal: React.FC<Props> = ({
   onClose,
   onSubmit,
   invoiceId,
+  modalId,
 }) => {
   const [saving, setSaving] = useState(false);
+  const resolvedModalId = modalId || `credit-note-create-${Date.now()}`;
 
   const footerContent = (
     <>
@@ -37,7 +40,8 @@ const CreateCreditNoteModal: React.FC<Props> = ({
   );
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={onClose}
       title="Create Credit Note"
@@ -53,7 +57,7 @@ const CreateCreditNoteModal: React.FC<Props> = ({
         saving={saving}
         setSaving={setSaving}
       />
-    </Modal>
+    </MinimizableModal>
   );
 };
 

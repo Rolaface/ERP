@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   getAllProformaInvoices,
   updateProformaInvoiceStatus,
@@ -32,7 +33,11 @@ import PdfPreviewModal from "./PdfPreviewModal";
 import ProformaDetailModal, {
   type ProformaDetail,
 } from "./Proformadetailmodal";
-import ProformaInvoiceModal from "../../components/sales/ProformaInvoiceModal";
+
+type OutletContextType = {
+  openProformaCreate: () => void;
+  openProformaEdit: (proformaId: string, data: any) => void;
+};
 
 // Constants
 
@@ -74,6 +79,8 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   onAddProformaInvoice,
   refreshKey,
 }) => {
+  const { openProformaEdit } = useOutletContext<OutletContextType>();
+
   // ── Data
   const [invoices, setInvoices] = useState<ProformaInvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,9 +113,6 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [selectedProforma, setSelectedProforma] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
-  // Edit modal state
-const [editOpen, setEditOpen] = useState(false);
-const [editInvoice, setEditInvoice] = useState<any>(null);
   // ── Fetch company once
   useEffect(() => {
     getCompanyById(COMPANY_ID)
@@ -175,8 +179,7 @@ const [editInvoice, setEditInvoice] = useState<any>(null);
 
     closeSwal();
 
-    setEditInvoice(res.data);
-    setEditOpen(true);
+    openProformaEdit(proformaId, res.data);
 
   } catch (err) {
     closeSwal();
@@ -670,19 +673,6 @@ const [editInvoice, setEditInvoice] = useState<any>(null);
           generateProformaInvoicePDF(selectedProforma, company, "save")
         }
       />
-      <ProformaInvoiceModal
-  isOpen={editOpen}
-  onClose={() => {
-    setEditOpen(false);
-    setEditInvoice(null);
-  }}
-  initialData={editInvoice}
-  mode="edit"
-  onSubmit={() => {
-    setEditOpen(false);
-    fetchInvoices();
-  }}
-/>
     </div>
   );
 };

@@ -9,6 +9,7 @@ import {
   showLoading,
   showValidationError,
 } from "../../utils/alert";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { getCompanyById } from "../../api/companySetupApi";
 const companyId = import.meta.env.VITE_COMPANY_ID;
 import { Card, Button } from "../ui/modal/formComponent";
@@ -25,6 +26,7 @@ import {
 import AddressBlock from "../ui/modal/AddressBlock";
 import type { CustomerDetail } from "../../types/customer";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
+import { MinimizableModal } from "../../components/common/ModalManagerContext";
 const defaultSellingTerms: TermSection = {
   general: "",
   delivery: "",
@@ -78,12 +80,16 @@ const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
 
 const CustomerModal: React.FC<{
   isOpen: boolean;
-
   onClose: () => void;
   onSubmit?: (data: CustomerDetail) => void;
   initialData?: CustomerDetail | null;
   isEditMode?: boolean;
-}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false }) => {
+  modalId?: string;
+}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false, modalId }) => {
+  const resolvedModalId = modalId || (isEditMode && initialData?.id
+    ? `customer-edit-${initialData.id}-${Date.now()}`
+    : `customer-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [form, setForm] = useState<CustomerDetail & { sameAsBilling: boolean }>(
     emptyForm,
   );
@@ -447,21 +453,19 @@ const CustomerModal: React.FC<{
       //  Loading
       showLoading(isEditMode ? "Updating Customer..." : "Creating Customer...");
 
+      let res;
       if (isEditMode && initialData?.id) {
-        await updateCustomerByCustomerCode(initialData.id, payload);
+        res = await updateCustomerByCustomerCode(initialData.id, payload);
       } else {
-        await createCustomer(payload);
+        res = await createCustomer(payload);
       }
 
       //  Success
       closeSwal();
 
-      showSuccess(
-        isEditMode
-          ? "Customer updated successfully!"
-          : "Customer created successfully!",
-      );
+      showSuccess(res?.message);
 
+      resetDirty();
       onSubmit?.(payload);
       handleClose();
     } catch (error) {
@@ -489,6 +493,21 @@ const CustomerModal: React.FC<{
     setActiveTab("details");
     onClose();
   };
+
+  const handleCloseWithWarning = () => {
+    handleCloseWithConfirm(() => {
+      setForm({
+        ...emptyForm,
+        terms: {
+          selling: companySellingTerms ?? defaultSellingTerms,
+        },
+        sameAsBilling: true,
+      });
+      setErrors({});
+      setActiveTab("details");
+      onClose();
+    }, resolvedModalId);
+  };
   const reset = () => {
     if (initialData) {
       setForm({
@@ -514,11 +533,17 @@ const CustomerModal: React.FC<{
   // Footer content
   const footer = (
     <>
-      <Button variant="secondary" onClick={handleClose}>
+      <Button variant="secondary" onClick={handleCloseWithWarning}>
         Cancel
       </Button>
       <div className="flex gap-3">
-        <Button variant="secondary" onClick={reset}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            resetDirty();
+            reset();
+          }}
+        >
           Reset
         </Button>
 
@@ -546,9 +571,10 @@ const CustomerModal: React.FC<{
   );
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={() => handleCloseWithWarning()}
       title={isEditMode ? "Edit Customer" : "Add New Customer"}
       subtitle={
         isEditMode
@@ -562,6 +588,7 @@ const CustomerModal: React.FC<{
     >
       <form
         id="customerForm"
+        onChange={() => markDirty()}
         onSubmit={handleSubmit}
         className="h-full flex flex-col"
       >
@@ -915,7 +942,7 @@ const CustomerModal: React.FC<{
           )}
         </div>
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 export default CustomerModal;

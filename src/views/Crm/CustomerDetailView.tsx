@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   X,
   Search,
@@ -24,6 +25,14 @@ import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
 import CustomerdetailviewPayment from "./CustomerDetailViewPayments";
 
 import { CreditCard } from "lucide-react";
+
+type OutletContextType = {
+  openCustomerCreate: () => void;
+  openCustomerEdit: (id: string, data: any) => void;
+  openQuotationCreate: () => void;
+  openInvoiceCreate: () => void;
+};
+
 interface Props {
   customer: CustomerDetail;
   customers: CustomerDetail[];
@@ -41,8 +50,8 @@ const CustomerDetailView: React.FC<Props> = ({
   onAdd,
   onEdit,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isCustomerModalOpen, setCustomerModalOpen] = useState(false);
+  const { openCustomerCreate } = useOutletContext<OutletContextType>();
+  
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -126,7 +135,7 @@ ${sellingTerms?.liability || ""}
       case "overview":
         return (
           <button
-            onClick={() => setCustomerModalOpen(true)}
+            onClick={() => openCustomerCreate()}
             className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md"
           >
             <Plus size={14} /> New Customer
@@ -506,11 +515,6 @@ ${sellingTerms?.liability || ""}
       <InvoiceModal
         isOpen={showInvoiceModal}
         onClose={() => setShowInvoiceModal(false)}
-      />
-      <CustomerModal
-        isOpen={isCustomerModalOpen}
-        onClose={() => setCustomerModalOpen(false)}
-        onSubmit={(created: any) => onCustomerSelect(created)}
       />
       <PaymentEntryModal
         isOpen={showPaymentModal}
