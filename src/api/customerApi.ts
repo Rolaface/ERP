@@ -21,17 +21,23 @@ export async function getAllCustomers(
   return resp.data;
 }
 
+export async function getCustomerByCustomerCode(id: string): Promise<any> {
+  const url = `${CustomerAPI.getById}?id=${id}`;
+  const resp: AxiosResponse = await api.get(url);
+  return resp.data || null;
+}
 
-
-export async function createCustomer(payload: Omit<CustomerDetail, "id">): Promise<CustomerDetail> {
+/** POST — create new customer */
+export async function createCustomer(payload: any): Promise<any> {
   const resp: AxiosResponse = await api.post(CustomerAPI.create, payload);
   return resp.data;
 }
 
+
 export async function updateCustomerByCustomerCode(
   id: string,
-  payload: Partial<CustomerDetail>,
-): Promise<CustomerDetail> {
+  payload: any,
+): Promise<any> {
   const url = `${CustomerAPI.update}?id=${id}`;
   const resp: AxiosResponse = await api.patch(url, payload);
   return resp.data;
@@ -42,16 +48,12 @@ export async function deleteCustomerById(id: string): Promise<any> {
   const resp: AxiosResponse = await api.delete(url);
   return resp.data;
 }
-export async function getCustomerGroups(): Promise<any> {
-  const resp: AxiosResponse = await api.get(CustomerAPI.group);
+
+export async function getCustomerGroups(search?: string): Promise<any> {
+  const resp: AxiosResponse = await api.get(CustomerAPI.group, {
+    params: {
+      ...(search && { search }),
+    },
+  });
   return resp.data;
 }
-
-export async function getCustomerByCustomerCode(
-  id: string,
-): Promise<any> {
-  const url = `${CustomerAPI.getById}?id=${id}`;
-  const resp: AxiosResponse = await api.get(url);
-  return resp.data || null;
-}
-
