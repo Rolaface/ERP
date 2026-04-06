@@ -1,7 +1,8 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
-
 import { API, ERP_BASE } from "../config/api";
+import type { CustomerDetail } from "../types/customer";
+
 const api = createAxiosInstance(ERP_BASE);
 export const CustomerAPI = API.customer;
 
@@ -17,35 +18,40 @@ export async function getAllCustomers(
       ...(taxCategory && { taxCategory }),
     },
   });
-
   return resp.data;
 }
 
+
+
+export async function createCustomer(payload: Omit<CustomerDetail, "id">): Promise<CustomerDetail> {
+  const resp: AxiosResponse = await api.post(CustomerAPI.create, payload);
+  return resp.data;
+}
+
+export async function updateCustomerByCustomerCode(
+  id: string,
+  payload: Partial<CustomerDetail>,
+): Promise<CustomerDetail> {
+  const url = `${CustomerAPI.update}?id=${id}`;
+  const resp: AxiosResponse = await api.patch(url, payload);
+  return resp.data;
+}
 
 export async function deleteCustomerById(id: string): Promise<any> {
   const url = `${CustomerAPI.delete}?id=${id}`;
   const resp: AxiosResponse = await api.delete(url);
   return resp.data;
 }
-
-export async function createCustomer(payload: any): Promise<any> {
-  const resp: AxiosResponse = await api.post(CustomerAPI.create, payload);
+export async function getCustomerGroups(): Promise<any> {
+  const resp: AxiosResponse = await api.get(CustomerAPI.group);
   return resp.data;
 }
 
 export async function getCustomerByCustomerCode(
-  custom_id: string,
+  id: string,
 ): Promise<any> {
-  const url = `${CustomerAPI.getById}?custom_id=${custom_id}`;
+  const url = `${CustomerAPI.getById}?id=${id}`;
   const resp: AxiosResponse = await api.get(url);
   return resp.data || null;
 }
 
-export async function updateCustomerByCustomerCode(
-  custom_id: string,
-  payload: any,
-): Promise<any> {
-  const url = `${CustomerAPI.update}?id=${custom_id}`;
-  const resp: AxiosResponse = await api.patch(url, payload);
-  return resp.data;
-}

@@ -47,8 +47,8 @@ const getApiBaseUrl = (): string => {
 // export const ERP_BASE = getApiBaseUrl();
 // console.log("🚀 ~ ERP_BASE:", ERP_BASE)
 
-export const ERP_BASE = ENV.apiBaseUrl;
-// export const ERP_BASE = "";
+// export const ERP_BASE = ENV.apiBaseUrl;
+ export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -153,21 +153,23 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
     update: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.update_currency_exchange?`,
     delete: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.delete_currency_exchange`,
-    get:`${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`
+    get:`${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
+   
   },
   /* =========================
    * CUSTOMER
    * ========================= */
   customer: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.get_all_customers_api`,
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.get_customer_by_id`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.create_customer_api`,
-    update: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.update_customer_by_id`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.customer.get_customers`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.customer.get_customer_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.customer.create_customer`,
+    update: `${ERP_BASE}/api/method/custom_api.api.customer.update_customer`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.delete_customer_by_id`,
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
     getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
+    group: `${ERP_BASE}/api/method/custom_api.api.search.get_customers_group`
   },
 
   /* =========================
