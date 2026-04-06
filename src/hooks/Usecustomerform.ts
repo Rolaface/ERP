@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   showApiError,
   showSuccess,
@@ -154,7 +154,7 @@ export const emptyForm: CustomerFormState = {
 
 function splitMobile(mobile?: string): { code: string; number: string } {
   if (!mobile) return { code: "", number: "" };
-  const countryCodes = ["+91", "+260", "+1", "+44"];
+  const countryCodes = ["+91", "+260", "+1", "+44", "+00"];
   const matchedCode = countryCodes.find((code) => mobile.startsWith(code));
   if (matchedCode) return { code: matchedCode, number: mobile.slice(matchedCode.length) };
   return { code: "", number: mobile };
@@ -174,6 +174,7 @@ export function mapApiResponseToFormState(
         lastName: c.lastName ?? "",
         designation: c.designation ?? "",
         department: c.department ?? "",
+        taxCategory: c.taxCategory ?? "",
         email: c.email ?? "",
         mobileCode: mob.code,
         mobile: mob.number,
@@ -242,7 +243,7 @@ export function mapApiResponseToFormState(
     tpin: data.tpin ?? "",
     currency: data.currency ?? "",
     onboardingBalance: data.onboardingBalance ?? 0,
-    displayName: data.displayName ?? "",
+    displayName: data.displayName ?? data.name ?? "",
     customerGroup: data.customerGroup ?? "",
     accountNumber: data.accountNumber ?? "",
     status: (data.status as CustomerFormState["status"]) ?? "Active",
@@ -255,9 +256,7 @@ export function mapApiResponseToFormState(
 }
 
 /**
- * Single payload builder — same shape for both create (POST) and update (PATCH).
- * mobileCode + mobile are merged into a single mobile string per contact.
- * sameAsBilling copies billing → shipping before sending.
+ * Same payload shape for both POST (create) and PATCH (update).
  */
 export function buildPayload(form: CustomerFormState): Record<string, any> {
   const { sameAsBilling, id, ...rest } = form;
@@ -303,7 +302,9 @@ export function useCustomerForm({
   const [activeTab, setActiveTab] = useState<ActiveTab>("details");
   const [allowSubmit, setAllowSubmit] = useState(false);
   const [companySellingTerms, setCompanySellingTerms] = useState<TermSection | null>(null);
+  const submitRef = useRef(false);
 
+  // ── Load company terms (create mode only) ─────────────────────────────────
   useEffect(() => {
     if (!isOpen || !companyId || isEditMode) return;
     const loadCompanyTerms = async () => {
@@ -320,9 +321,15 @@ export function useCustomerForm({
     loadCompanyTerms();
   }, [companyId, isOpen, isEditMode]);
 
+  // ── Populate form from initialData ────────────────────────────────────────
   useEffect(() => {
     if (initialData) {
-      setForm(mapApiResponseToFormState(initialData, companySellingTerms));
+      const mapped = mapApiResponseToFormState(initialData, companySellingTerms);
+      const newId = initialData?.id || mapped.id || form.id;
+      setForm({
+        ...mapped,
+        id: newId,
+      });
     } else {
       setForm({ ...emptyForm, terms: { selling: companySellingTerms ?? defaultSellingTerms }, sameAsBilling: true });
     }
@@ -332,6 +339,7 @@ export function useCustomerForm({
     setErrors({});
   }, [initialData, isOpen]);
 
+  // ── Auto-fill displayName ─────────────────────────────────────────────────
   useEffect(() => {
     if (!form.displayName) {
       const primary = form.contacts.find((c) => c.isPrimary);
@@ -340,6 +348,7 @@ export function useCustomerForm({
     }
   }, [form.name, form.contacts]);
 
+  // ── Sync shipping ← billing when sameAsBilling ────────────────────────────
   useEffect(() => {
     if (!form.sameAsBilling) return;
     const billing = form.addresses.find((a) => a.type === "Billing");
@@ -359,6 +368,8 @@ export function useCustomerForm({
     form.addresses.find?.((a) => a.type === "Billing")?.postalCode,
     form.addresses.find?.((a) => a.type === "Billing")?.country,
   ]);
+
+  // ─── Field handlers ───────────────────────────────────────────────────────
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -405,6 +416,8 @@ export function useCustomerForm({
   const setSameAsBilling = (checked: boolean) =>
     setForm((prev) => ({ ...prev, sameAsBilling: checked }));
 
+  // ─── Validation ───────────────────────────────────────────────────────────
+
   const validateDetailsTab = (): boolean => {
     const newErrors: CustomerFormErrors = {};
     const pc = form.contacts.find((c) => c.isPrimary);
@@ -432,6 +445,8 @@ export function useCustomerForm({
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  // ─── Navigation ───────────────────────────────────────────────────────────
 
   const tabs: ActiveTab[] = ["details", "bank", "address", "terms"];
 
@@ -473,41 +488,112 @@ export function useCustomerForm({
     if (idx < tabs.length - 1) { setActiveTab(tabs[idx + 1]); setAllowSubmit(false); }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isEditMode && activeTab !== "terms") { handleNext(); return; }
-    if (!isEditMode && !allowSubmit) return;
-    if (!isEditMode) {
-      if (!validateDetailsTab()) { setActiveTab("details"); return; }
-      if (!validateAddressTab()) { setActiveTab("address"); return; }
-    }
-    if (loading) return;
+  function getPatchPayload(original: any, updated: any) {
+    const diff: any = {};
+    Object.keys(updated).forEach((key) => {
+      const originalValue = original[key];
+      const updatedValue = updated[key];
+      if (Array.isArray(updatedValue)) {
+        if (JSON.stringify(originalValue) !== JSON.stringify(updatedValue)) {
+          diff[key] = updatedValue;
+        }
+      } else if (typeof updatedValue === "object" && updatedValue !== null) {
+        if (JSON.stringify(originalValue) !== JSON.stringify(updatedValue)) {
+          diff[key] = updatedValue;
+        }
+      } else {
+        if (originalValue !== updatedValue) {
+          diff[key] = updatedValue;
+        }
+      }
+    });
+    return diff;
+  }
+
+  // ─── Submit ───────────────────────────────────────────────────────────────
+
+  const handleSubmit = (_e: React.FormEvent) => {
+    _e.preventDefault();
+  };
+
+  const handleSubmitInternal = async () => {
+    if (submitRef.current || loading) return;
+
+    submitRef.current = true;
     setLoading(true);
 
-    // Same payload shape for both create and update
-    const payload = buildPayload(form);
-
     try {
-      showLoading(isEditMode ? "Updating Customer..." : "Creating Customer...");
+      const payload = buildPayload(form);
 
-      if (isEditMode && initialData?.id) {
-        await updateCustomerByCustomerCode(initialData.id, payload); // PATCH
+      if (isEditMode) {
+        const idToUse = form.id || initialData?.id;
+        
+        if (!idToUse) {
+          showApiError(new Error("Customer ID is missing. Cannot update."));
+          return;
+        }
+
+        showLoading("Updating Customer...");
+
+        const originalForm = mapApiResponseToFormState(initialData!, null);
+        const originalPayload = buildPayload(originalForm);
+        const patchPayload = getPatchPayload(originalPayload, payload);
+
+        if (Object.keys(patchPayload).length === 0) {
+          closeSwal();
+          showSuccess("No changes detected");
+          return;
+        }
+
+        await updateCustomerByCustomerCode(idToUse, patchPayload);
+
+        closeSwal();
+        showSuccess("Customer updated successfully!");
+        handleClose();
+        onSubmit?.(payload as any);
       } else {
-        await createCustomer(payload); // POST
+        if (!validateDetailsTab()) {
+          setActiveTab("details");
+          return;
+        }
+
+        if (!validateAddressTab()) {
+          setActiveTab("address");
+          return;
+        }
+
+        showLoading("Creating Customer...");
+
+        const res = await createCustomer(payload);
+
+        closeSwal();
+
+        // Backend response shape:
+        // { message: { status_code, status, message, data: { customerId } } }
+        const apiMessage = res?.message?.message ?? "Customer created successfully.";
+        const customerId = res?.message?.data?.customerId ?? "";
+
+        showSuccess(
+          customerId
+            ? `${apiMessage}\nCustomer ID: ${customerId}`
+            : apiMessage,
+        );
+
+        onSubmit?.(payload as any);
+        handleClose();
       }
 
-      closeSwal();
-      showSuccess(isEditMode ? "Customer updated successfully!" : "Customer created successfully!");
-      onSubmit?.(payload as unknown as CustomerDetail);
-      handleClose();
     } catch (error) {
-      console.error("Customer save error:", error);
       closeSwal();
       showApiError(error);
+
     } finally {
       setLoading(false);
+      submitRef.current = false;
     }
   };
+
+  // ─── Close / Reset ────────────────────────────────────────────────────────
 
   const handleClose = () => {
     if (loading) return;
@@ -519,13 +605,17 @@ export function useCustomerForm({
 
   const reset = () => {
     if (initialData) {
-      setForm(mapApiResponseToFormState(initialData, companySellingTerms));
+      const mapped = mapApiResponseToFormState(initialData, companySellingTerms);
+      const newId = initialData?.id || mapped.id || form.id;
+      setForm({ ...mapped, id: newId });
     } else {
       setForm({ ...emptyForm, terms: { selling: companySellingTerms ?? defaultSellingTerms }, sameAsBilling: true });
     }
     setErrors({});
     setActiveTab("details");
   };
+
+  // ─── Derived ──────────────────────────────────────────────────────────────
 
   const primaryContact = form.contacts.find((c) => c.isPrimary) ?? form.contacts[0];
   const billingAddress = form.addresses.find((a) => a.type === "Billing") ?? form.addresses[0];
@@ -536,6 +626,6 @@ export function useCustomerForm({
     activeTab, setActiveTab, allowSubmit, setAllowSubmit,
     primaryContact, billingAddress, shippingAddress, tabs,
     handleChange, handlePrimaryContactChange, handleAddressChange,
-    setSameAsBilling, handleNext, handleSubmit, handleClose, reset,
+    setSameAsBilling, handleNext, handleSubmit, handleSubmitInternal, handleClose, reset,
   };
 }

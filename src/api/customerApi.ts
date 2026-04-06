@@ -24,7 +24,7 @@ export async function getAllCustomers(
 export async function getCustomerByCustomerCode(id: string): Promise<any> {
   const url = `${CustomerAPI.getById}?id=${id}`;
   const resp: AxiosResponse = await api.get(url);
-  return resp.data || null;
+  return resp.data;
 }
 
 /** POST — create new customer */

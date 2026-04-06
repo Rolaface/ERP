@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import Modal from "../ui/modal/modal";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
 import Tooltip from "../Tooltip";
-import { getCompanyById } from "../../api/companySetupApi";
 import { Card, Button } from "../ui/modal/formComponent";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
 import TermsAndCondition from "../TermsAndCondition";
@@ -13,8 +12,6 @@ import SearchSelect2 from "../ui/modal/SearchSelect2";
 import AddressBlock from "../ui/modal/AddressBlock";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import type { CustomerDetail } from "../../types/customer";
-import { getCustomerGroups } from "../../api/customerApi";
-
 import {
   useCustomerForm,
   defaultSellingTerms,
@@ -56,25 +53,10 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     handleAddressChange,
     setSameAsBilling,
     handleNext,
-    handleSubmit,
+    handleSubmitInternal,
     handleClose,
     reset,
   } = useCustomerForm({ isOpen, isEditMode, initialData, onSubmit, onClose });
-  const [customerGroupApiResponse, setCustomerGroupApiResponse] =
-    useState<any>(null);
-
-  useEffect(() => {
-    const loadCustomerGroups = async () => {
-      try {
-        const res = await getCustomerGroups();
-        setCustomerGroupApiResponse(res);
-      } catch (err) {
-        console.error("Customer group fetch error", err);
-      }
-    };
-
-    loadCustomerGroups();
-  }, []);
 
   // ─── Footer ───────────────────────────────────────────────────────────────
 
@@ -87,18 +69,19 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
         <Button variant="secondary" onClick={reset}>
           Reset
         </Button>
-        <Button
+<Button
           variant="primary"
           loading={loading}
-          type={!isEditMode && activeTab !== "terms" ? "button" : "submit"}
-          form={
-            !isEditMode && activeTab !== "terms" ? undefined : "customerForm"
-          }
-          onClick={
-            !isEditMode && activeTab !== "terms"
-              ? handleNext
-              : () => setAllowSubmit(true)
-          }
+          type="button"
+          onClick={() => {
+            if (isEditMode) {
+              handleSubmitInternal();
+            } else if (activeTab !== "terms") {
+              handleNext();
+            } else {
+              handleSubmitInternal();
+            }
+          }}
         >
           {isEditMode
             ? "Update Customer"
@@ -129,7 +112,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     >
       <form
         id="customerForm"
-        onSubmit={handleSubmit}
+        onSubmit={(e) => e.preventDefault()}
         className="h-full flex flex-col"
       >
         {/* ── Tab Bar ──────────────────────────────────────────────────────── */}
@@ -165,6 +148,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
 
         {/* ── Tab Content ──────────────────────────────────────────────────── */}
         <div className="px-4 py-2 bg-app mt-5">
+
           {/* ── Details Tab ──────────────────────────────────────────────── */}
           {activeTab === "details" && (
             <Card
@@ -173,6 +157,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               icon={<User className="w-5 h-5 text-primary" />}
             >
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+
                 {/* Type */}
                 <Tooltip content={form.type || "Select Customer Type"}>
                   <ModalSelect
@@ -202,10 +187,8 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   />
                 </Tooltip>
 
-                {/* Contact Person — now reads from primaryContact */}
-                <Tooltip
-                  content={primaryContact?.firstName || "Primary contact"}
-                >
+                {/* Contact First Name */}
+                <Tooltip content={primaryContact?.firstName || "Primary contact"}>
                   <ModalInput
                     label="Contact Person First Name"
                     name="firstName"
@@ -217,33 +200,17 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   />
                 </Tooltip>
 
-                {/* Last name */}
-                <Tooltip
-                  content={
-                    primaryContact?.lastName || "Primary contact last name"
-                  }
-                >
+                {/* Contact Last Name */}
+                <Tooltip content={primaryContact?.lastName || "Primary contact last name"}>
                   <ModalInput
                     label="Contact Person Last Name"
                     name="lastName"
                     value={primaryContact?.lastName ?? ""}
                     onChange={handlePrimaryContactChange}
-                    required
                     placeholder="Primary contact last name"
                     error={errors.contactLastName}
                   />
                 </Tooltip>
-                {/* Designation */}
-                {/* <Tooltip content={primaryContact?.designation || "Contact designation"}>
-                  <ModalInput
-                    label="Contact Designation"
-                    name="designation"
-                    value={primaryContact?.designation ?? ""}
-                    onChange={handlePrimaryContactChange}
-                    placeholder="Contact designation"
-                    error={errors.contactDesignation}
-                  />
-                </Tooltip> */}
 
                 {/* Display Name */}
                 <Tooltip content={form.displayName || "Select Display Name"}>
@@ -280,9 +247,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 </Tooltip>
 
                 {/* Tax Category */}
-                <Tooltip
-                  content={form.customerTaxCategory || "Select Tax Category"}
-                >
+                <Tooltip content={form.customerTaxCategory || "Select Tax Category"}>
                   <TaxCategorySelect
                     value={form.customerTaxCategory}
                     onChange={(val) =>
@@ -325,8 +290,9 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   />
                 </Tooltip>
 
-                {/* Email + Mobile — reads from primaryContact */}
+                {/* Email + Mobile + Customer Group */}
                 <div className="col-span-4 grid grid-cols-4 gap-5">
+
                   {/* Email */}
                   <ModalInput
                     label="Email"
@@ -380,7 +346,6 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
 
                   {/* Customer Group */}
                   <CustomerGroupSearchSelect
-                    apiResponse={customerGroupApiResponse}
                     value={form.customerGroup}
                     onChange={(value) =>
                       handleChange({
@@ -423,6 +388,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
           {/* ── Address Tab ──────────────────────────────────────────────── */}
           {activeTab === "address" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
               {/* Billing Address */}
               <AddressBlock
                 type="billing"

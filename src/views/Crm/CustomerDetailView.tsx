@@ -22,19 +22,20 @@ import CustomerBankDetails from "./CustomerBankDetails";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
 import CustomerdetailviewPayment from "./CustomerDetailViewPayments";
+import { getCustomerByCustomerCode } from "../../api/customerApi";
 
 import { CreditCard } from "lucide-react";
 interface Props {
-  customer: CustomerDetail;
+  customerId: string;
   customers: CustomerDetail[];
   onBack: () => void;
-  onCustomerSelect: (customer: CustomerDetail) => void;
+  onCustomerSelect: (customerId: string) => void;
   onAdd: () => void;
   onEdit: (id: string, e: React.MouseEvent) => void;
 }
 
 const CustomerDetailView: React.FC<Props> = ({
-  customer,
+  customerId,
   customers,
   onBack,
   onCustomerSelect,
@@ -42,6 +43,8 @@ const CustomerDetailView: React.FC<Props> = ({
   onEdit,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [customer, setCustomer] = useState<CustomerDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isCustomerModalOpen, setCustomerModalOpen] = useState(false);
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -52,6 +55,32 @@ const CustomerDetailView: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<
     "overview" | "bank" | "quotations" | "invoices" | "payments" | "statement"
   >("overview");
+
+  // Fetch customer data by ID
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      if (!customerId) return;
+      setLoading(true);
+      try {
+        const res = await getCustomerByCustomerCode(customerId);
+        const data = res?.message?.data;
+        setCustomer(data);
+      } catch (err) {
+        console.error("Failed to fetch customer:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCustomer();
+  }, [customerId]);
+
+  if (loading || !customer) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   const q = searchTerm.trim().toLowerCase();
   const filteredCustomers = (customers || []).filter(
@@ -234,7 +263,7 @@ ${sellingTerms?.liability || ""}
             {filteredCustomers.map((c) => (
               <button
                 key={c.id}
-                onClick={() => onCustomerSelect(c)}
+                onClick={() => onCustomerSelect(c.id)}
                 className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-3 border ${c.id === customer.id
                   ? "bg-primary text-white border-primary shadow-sm"
                   : "bg-transparent border-transparent hover:bg-row-hover"

@@ -135,11 +135,17 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     setShowModal(true);
   };
 
-  const handleEditCustomer = async (id: string, e: React.MouseEvent) => {
+const handleEditCustomer = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const customer = await getCustomerByCustomerCode(id);
-      setEditCustomer(customer.data ?? customer);
+      const response = await getCustomerByCustomerCode(id);
+      
+      const actualCustomer =
+        response?.message?.data ||
+        response?.data ||
+        response;
+
+      setEditCustomer(actualCustomer);
       setShowModal(true);
     } catch (error) {
       console.error("Failed to fetch customer:", error);
@@ -147,23 +153,30 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     }
   };
 
+
   const handleCustomerSaved = async () => {
     setShowModal(false);
     setEditCustomer(null);
     await fetchCustomers();
-    showSuccess(editCustomer ? "Customer updated!" : "Customer created!");
   };
 
-  const handleRowClick = async (customer: CustomerSummary) => {
+  const handleRowClick = async (customerOrId: CustomerSummary | string) => {
     try {
       setCustLoading(true);
 
       //  Ensure sidebar data loaded
       await ensureAllCustomers();
 
+      // Determine if we got an ID or full object
+      const customerId = typeof customerOrId === 'string' ? customerOrId : customerOrId.id;
+
       //  Fetch full customer detail
-      const res = await getCustomerByCustomerCode(customer.id);
-      const fullCustomer = res.data ?? res;
+      const res = await getCustomerByCustomerCode(customerId);
+      const fullCustomer = res?.message?.data;
+
+      if (!fullCustomer) {
+        throw new Error("Customer not found");
+      }
 
       setSelectedCustomer(fullCustomer);
       setViewMode("detail");
@@ -182,27 +195,26 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   // columns definition for Table component
   const columns: Column<CustomerSummary>[] = [
-
     {
-  key: "id",
-  header: "Customer ID",
-  align: "center",
-  render: (c: CustomerSummary) => (
-    <Tooltip content={c.id}>
-      <span className="cursor-pointer">{c.id}</span>
-    </Tooltip>
-  ),
-},
-{
-  key: "name",
-  header: "Name",
-  align: "center",
-  render: (c: CustomerSummary) => (
-    <Tooltip content={c.name}>
-      <span className="cursor-pointer">{c.name}</span>
-    </Tooltip>
-  ),
-},
+      key: "id",
+      header: "Customer ID",
+      align: "center",
+      render: (c: CustomerSummary) => (
+        <Tooltip content={c.id}>
+          <span className="cursor-pointer">{c.id}</span>
+        </Tooltip>
+      ),
+    },
+    {
+      key: "name",
+      header: "Name",
+      align: "center",
+      render: (c: CustomerSummary) => (
+        <Tooltip content={c.name}>
+          <span className="cursor-pointer">{c.name}</span>
+        </Tooltip>
+      ),
+    },
     {
       key: "type",
       header: "Type",
@@ -247,7 +259,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         </Tooltip>
       ),
     },
-    
     {
       key: "status",
       header: "Status",
@@ -327,7 +338,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         </>
       ) : selectedCustomer ? (
         <CustomerDetailView
-          customer={selectedCustomer}
+          customerId={selectedCustomer.id}
           customers={allCustomers}
           onBack={handleBack}
           onCustomerSelect={handleRowClick}
