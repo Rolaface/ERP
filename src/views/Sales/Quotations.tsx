@@ -493,7 +493,7 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
 
 
   return (
-    <div className="p-8">
+    <div className="h-full min-h-0">
       <Table
         columns={columns}
         data={quotations}

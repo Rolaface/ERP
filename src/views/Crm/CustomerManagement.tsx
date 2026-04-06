@@ -287,7 +287,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   ];
 
   return (
-    <div className="p-8">
+    <div>
       {viewMode === "table" ? (
         <Table
           columns={columns}

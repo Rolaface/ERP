@@ -625,7 +625,7 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
   ];
 
   return (
-    <div className="p-8">
+    <div className="h-full min-h-0">
       <Table
         columns={columns}
         data={invoices}

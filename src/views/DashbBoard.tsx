@@ -14,8 +14,13 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-
 import { DollarSign, FileText, TrendingUp, Users } from 'lucide-react';
+import {
+  AppMetricCard,
+  AppPage,
+  AppPageHeader,
+  AppSectionCard,
+} from '../components/ui/app-shell';
 
 const Dashboard = () => {
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -88,7 +93,7 @@ const Dashboard = () => {
     };
   }, []);
 
-  const currencyINR= useMemo(
+  const currencyINR = useMemo(
     () =>
       new Intl.NumberFormat('en-IN', {
         style: 'currency',
@@ -181,83 +186,65 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="p-6 bg-app min-h-screen">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-0.5">
-            Dashboard
-          </h1>
-          <p className="text-gray-600 text-xs md:text-sm">
-            Business overview and key performance trends
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right leading-tight hidden sm:block">
-            <div className="text-sm font-bold text-gray-900">Admin User</div>
-            <div className="text-xs text-gray-600 font-semibold">Administrator</div>
+    <AppPage>
+      <AppPageHeader
+        title="Dashboard"
+        description="Business overview and key performance trends"
+        actions={
+          <div className="flex items-center gap-3">
+            <div className="hidden text-right leading-tight sm:block">
+              <div className="text-sm font-bold text-main">Admin User</div>
+              <div className="text-xs font-semibold text-muted">Administrator</div>
+            </div>
+            <UserMenu />
           </div>
-
-          <UserMenu />
-        </div>
-      </div>
+        }
+      />
 
       {summaryLoading && (
-        <div className="mb-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl px-4 py-3 text-sm font-semibold">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm font-semibold text-blue-700">
           Loading dashboard summary...
         </div>
       )}
 
       {summaryError && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-semibold">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
           {summaryError}
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {chartsLoading
           ? Array.from({ length: 5 }).map((_, idx) => (
-            <div
-              key={idx}
-              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[124px] animate-pulse"
-            >
-              <div className="flex items-center justify-between h-full">
-                <div>
-                  <div className="h-3 w-28 bg-gray-300 rounded" />
-                  <div className="h-7 w-20 bg-gray-300 rounded mt-2" />
+              <div key={idx} className="app-surface min-h-[124px] animate-pulse p-6">
+                <div className="flex h-full items-center justify-between">
+                  <div>
+                    <div className="h-3 w-28 rounded bg-gray-300" />
+                    <div className="mt-3 h-8 w-20 rounded bg-gray-300" />
+                  </div>
+                  <div className="h-12 w-12 rounded-xl border border-gray-300 bg-gray-300" />
                 </div>
-                <div className="h-12 w-12 bg-gray-300 rounded-xl border border-gray-400" />
               </div>
-            </div>
-          ))
+            ))
           : kpiCards.map((card, idx) => (
-            <div
-              key={idx}
-              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[124px]"
-            >
-              <div className="flex items-center justify-between h-full">
-                <div>
-                  <p className="text-sm font-semibold text-gray-600">{card.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
-                </div>
-                <div className={`p-3 bg-gradient-to-br ${card.gradient} rounded-xl shadow-sm`}>
-                  <card.icon className="text-white" size={22} />
-                </div>
-              </div>
-            </div>
-          ))}
+              <AppMetricCard
+                key={idx}
+                label={card.label}
+                value={card.value}
+                icon={card.icon}
+                accentClassName={card.gradient}
+              />
+            ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-gray-900">Monthly Sales</h3>
-          </div>
-          <div className="h-72 rounded-lg border border-gray-200 bg-white">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <AppSectionCard title="Monthly Sales">
+          <div className="h-72 rounded-xl border border-[var(--border)] bg-card">
             {chartsLoading ? (
               <ChartSkeleton variant="line" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyTrendData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                <LineChart data={monthlyTrendData} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} width={52} />
@@ -268,18 +255,15 @@ const Dashboard = () => {
               </ResponsiveContainer>
             )}
           </div>
-        </div>
+        </AppSectionCard>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-gray-900">Top 10 Invoices</h3>
-          </div>
-          <div className="h-72 rounded-lg border border-gray-200 bg-white">
+        <AppSectionCard title="Top 10 Invoices">
+          <div className="h-72 rounded-xl border border-[var(--border)] bg-card">
             {chartsLoading ? (
               <ChartSkeleton variant="bar" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={recentSalesChartData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                <BarChart data={recentSalesChartData} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={48} />
                   <YAxis tick={{ fontSize: 12 }} width={52} />
@@ -299,7 +283,7 @@ const Dashboard = () => {
                           labelParts.push(dateWithDay.format(d));
                         }
                       }
-                      return labelParts.join(' â€¢ ');
+                      return labelParts.join(' • ');
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -308,18 +292,15 @@ const Dashboard = () => {
               </ResponsiveContainer>
             )}
           </div>
-        </div>
+        </AppSectionCard>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-gray-900">Top 10 Customers</h3>
-          </div>
-          <div className="h-72 rounded-lg border border-gray-200 bg-white">
+        <AppSectionCard title="Top 10 Customers">
+          <div className="h-72 rounded-xl border border-[var(--border)] bg-card">
             {chartsLoading ? (
               <ChartSkeleton variant="bar" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salesByCustomerChartData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                <BarChart data={salesByCustomerChartData} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={52} />
                   <YAxis tick={{ fontSize: 12 }} width={52} />
@@ -330,18 +311,15 @@ const Dashboard = () => {
               </ResponsiveContainer>
             )}
           </div>
-        </div>
+        </AppSectionCard>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-gray-900">Totals Overview</h3>
-          </div>
-          <div className="h-72 rounded-lg border border-gray-200 bg-white">
+        <AppSectionCard title="Totals Overview">
+          <div className="h-72 rounded-xl border border-[var(--border)] bg-card">
             {chartsLoading ? (
               <ChartSkeleton variant="bar" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={totalsOverviewChartData} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
+                <BarChart data={totalsOverviewChartData} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-10} textAnchor="end" height={44} />
                   <YAxis tick={{ fontSize: 12 }} width={52} />
@@ -352,9 +330,9 @@ const Dashboard = () => {
               </ResponsiveContainer>
             )}
           </div>
-        </div>
+        </AppSectionCard>
       </div>
-    </div>
+    </AppPage>
   );
 };
 

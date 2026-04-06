@@ -1,21 +1,14 @@
 import React, { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-
 import QuotationsTable from "./Quotations";
 import InvoiceTable from "./Invoices";
 import ReportTable from "./Reports";
 import POS from "./POS";
 import SalesDashboard from "./SalesDashboard";
 import ProformaInvoicesTable from "./ProformaInvoice";
-
 import CreditNotesTable from "./CreditNotesTable";
 import DebitNotesTable from "./DebitNotesTable";
 import SalesAnalytics from "./SalesAnalytics";
-
-import { showApiError, showSuccess } from "../../utils/alert";
-import { createSalesInvoice } from "../../api/salesApi";
-import { createQuotation } from "../../api/quotationApi";
-
 import {
   FaMoneyBillWave,
   FaCalendarAlt,
@@ -23,19 +16,22 @@ import {
   FaFileInvoiceDollar,
   FaChartBar,
 } from "react-icons/fa";
+import {
+  AppPage,
+  AppPageBody,
+  AppPageHeader,
+  AppTabs,
+} from "../../components/ui/app-shell";
 
 type OutletContextType = {
-  // Sales
   openInvoiceCreate: () => void;
   openInvoiceEdit: (invoiceNumber: string, data: any) => void;
   openProformaCreate: () => void;
   openProformaEdit: (proformaId: string, data: any) => void;
   openQuotationCreate: () => void;
   openQuotationEdit: (quotationId: string, data: any) => void;
-  // CRM
   openCustomerCreate: () => void;
   openCustomerEdit: (id: string, data: any) => void;
-  // Procurement
   openSupplierCreate: () => void;
   openSupplierEdit: (id: string, data: any) => void;
   openPOCreate: () => void;
@@ -43,44 +39,29 @@ type OutletContextType = {
 };
 
 const salesTabs = [
-  { id: "salesdashboard", name: "Dashboard", icon: <FaCalendarAlt /> },
-  { id: "quotations", name: "Quotations", icon: <FaFileInvoice /> },
+  { id: "salesdashboard", label: "Dashboard", icon: <FaCalendarAlt /> },
+  { id: "quotations", label: "Quotations", icon: <FaFileInvoice /> },
   {
     id: "proformaInvoice",
-    name: "Proforma Invoice",
+    label: "Proforma Invoice",
     icon: <FaFileInvoiceDollar />,
   },
-  { id: "invoices", name: "Invoices", icon: <FaFileInvoiceDollar /> },
-  { id: "creditNotes", name: "Credit Notes", icon: <FaFileInvoiceDollar /> },
-  { id: "debitNotes", name: "Debit Notes", icon: <FaFileInvoiceDollar /> },
-  { id: "reports", name: "Reports", icon: <FaChartBar /> },
-  { id: "salesAnalytics", name: "Sales Analytics", icon: <FaChartBar /> },
+  { id: "invoices", label: "Invoices", icon: <FaFileInvoiceDollar /> },
+  { id: "creditNotes", label: "Credit Notes", icon: <FaFileInvoiceDollar /> },
+  { id: "debitNotes", label: "Debit Notes", icon: <FaFileInvoiceDollar /> },
+  { id: "reports", label: "Reports", icon: <FaChartBar /> },
+  { id: "salesAnalytics", label: "Sales Analytics", icon: <FaChartBar /> },
 ];
 
 const SalesModule: React.FC = () => {
   const [activeTab, setActiveTab] = useState("salesdashboard");
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKey] = useState(0);
+  const isDashboardTab = activeTab === "salesdashboard";
+  const { openInvoiceCreate, openProformaCreate, openQuotationCreate } =
+    useOutletContext<OutletContextType>();
 
-  // ✅ GLOBAL MODAL CONTROL FROM APP LAYOUT
-  const { 
-    openInvoiceCreate, 
-    openInvoiceEdit,
-    openProformaCreate, 
-    openProformaEdit,
-    openQuotationCreate,
-    openQuotationEdit,
-  } = useOutletContext<OutletContextType>();
-
-  // ================= API HANDLERS =================
-
- 
-  // ================= TAB CONFIG =================
-
-  const TAB_CONFIG: Record<string, { component: React.ReactNode }> = {
-    salesdashboard: {
-      component: <SalesDashboard />,
-    },
-
+  const tabConfig: Record<string, { component: React.ReactNode }> = {
+    salesdashboard: { component: <SalesDashboard /> },
     quotations: {
       component: (
         <QuotationsTable
@@ -90,19 +71,15 @@ const SalesModule: React.FC = () => {
         />
       ),
     },
-
     proformaInvoice: {
       component: (
         <ProformaInvoicesTable
           refreshKey={refreshKey}
           onAddProformaInvoice={() => openProformaCreate()}
-          onExportProformaInvoice={() =>
-            console.log("Export proforma invoices")
-          }
+          onExportProformaInvoice={() => console.log("Export proforma invoices")}
         />
       ),
     },
-
     invoices: {
       component: (
         <InvoiceTable
@@ -112,62 +89,25 @@ const SalesModule: React.FC = () => {
         />
       ),
     },
-
-    pos: {
-      component: <POS />,
-    },
-
-    creditNotes: {
-      component: <CreditNotesTable />,
-    },
-
-    debitNotes: {
-      component: <DebitNotesTable />,
-    },
-
-    reports: {
-      component: <ReportTable />,
-    },
-
-    salesAnalytics: {
-      component: <SalesAnalytics />,
-    },
+    pos: { component: <POS /> },
+    creditNotes: { component: <CreditNotesTable /> },
+    debitNotes: { component: <DebitNotesTable /> },
+    reports: { component: <ReportTable /> },
+    salesAnalytics: { component: <SalesAnalytics /> },
   };
 
-  const tab = TAB_CONFIG[activeTab];
-
-  // ================= UI =================
-
   return (
-    <div className="p-6 bg-app">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
-          <FaMoneyBillWave /> Sales
-        </h2>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-4">
-        {salesTabs.map((tabItem) => (
-          <button
-            key={tabItem.id}
-            onClick={() => setActiveTab(tabItem.id)}
-            className={`px-4 py-2 font-medium flex items-center gap-2 ${
-              activeTab === tabItem.id
-                ? "text-primary border-b-2 border-current"
-                : "text-muted hover:text-main"
-            }`}
-          >
-            {tabItem.icon}
-            {tabItem.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      <div>{tab?.component}</div>
-    </div>
+    <AppPage viewportLocked={isDashboardTab}>
+      <AppPageHeader
+        title="Sales"
+        description="Quotes, invoices, receivables, and sales analytics in one workflow."
+        icon={<FaMoneyBillWave />}
+      />
+      <AppTabs tabs={salesTabs} activeTab={activeTab} onChange={setActiveTab} />
+      <AppPageBody viewportLocked={isDashboardTab}>
+        {tabConfig[activeTab]?.component}
+      </AppPageBody>
+    </AppPage>
   );
 };
 

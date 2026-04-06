@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Maximize2, Minus, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { getDockWidthClasses } from "../../layout/layoutSystem";
 import {
   APP_SWAL_CLOSE_EVENT,
   APP_SWAL_OPEN_EVENT,
@@ -65,6 +66,11 @@ interface ModalManagerCtx {
 
 const ModalManagerContext = createContext<ModalManagerCtx | null>(null);
 
+interface ModalManagerProviderProps {
+  children: React.ReactNode;
+  dockWidth?: "80" | "90" | "100";
+}
+
 export const useModalManager = (): ModalManagerCtx => {
   const ctx = useContext(ModalManagerContext);
   if (!ctx) {
@@ -73,8 +79,9 @@ export const useModalManager = (): ModalManagerCtx => {
   return ctx;
 };
 
-export const ModalManagerProvider: React.FC<{ children: React.ReactNode }> = ({
+export const ModalManagerProvider: React.FC<ModalManagerProviderProps> = ({
   children,
+  dockWidth = "90",
 }) => {
   const [instances, setInstances] = useState<ModalInstance[]>([]);
   const [swalDepth, setSwalDepth] = useState(0);
@@ -281,12 +288,14 @@ export const ModalManagerProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <ModalManagerContext.Provider value={value}>
       {children}
-      <ModalTaskbar />
+      <FloatingDock dockWidth={dockWidth} />
     </ModalManagerContext.Provider>
   );
 };
 
-const ModalTaskbar: React.FC = () => {
+const FloatingDock: React.FC<{ dockWidth?: "80" | "90" | "100" }> = ({
+  dockWidth = "90",
+}) => {
   const { instances, requestClose, restore } = useModalManager();
   const minimized = instances.filter((modal) => modal.minimized);
 
@@ -302,24 +311,27 @@ const ModalTaskbar: React.FC = () => {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
         transition={{ type: "spring", stiffness: 320, damping: 30 }}
-        className="fixed bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-[var(--border)] bg-card px-4 py-3 shadow-2xl"
+        className={`floating-dock fixed bottom-4 left-1/2 flex w-[95%] max-w-[var(--app-content-max-width)] -translate-x-1/2 items-center gap-3 overflow-x-auto overflow-y-hidden rounded-[var(--app-radius-xl)] border border-[var(--border)] bg-card px-3 py-3 sm:bottom-6 sm:px-4 ${getDockWidthClasses(
+          dockWidth
+        )}`}
         style={{
           zIndex: MODAL_LAYER.minimizedTaskbar,
-          boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
         }}
       >
-        <span className="border-r border-[var(--border)] pr-3 text-[10px] font-bold uppercase tracking-wider text-muted">
+        <span className="shrink-0 border-r border-[var(--border)] pr-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
           Minimized ({minimized.length})
         </span>
 
-        {minimized.map((inst) => (
-          <TaskbarPill
-            key={inst.id}
-            inst={inst}
-            onRestore={() => restore(inst.id)}
-            onClose={() => requestClose(inst.id)}
-          />
-        ))}
+        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto overflow-y-hidden whitespace-nowrap">
+          {minimized.map((inst) => (
+            <TaskbarPill
+              key={inst.id}
+              inst={inst}
+              onRestore={() => restore(inst.id)}
+              onClose={() => requestClose(inst.id)}
+            />
+          ))}
+        </div>
       </motion.div>
     </AnimatePresence>,
     document.body
@@ -339,18 +351,12 @@ const TaskbarPill: React.FC<{
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.8, opacity: 0 }}
+      className="flex max-w-[220px] shrink-0 cursor-pointer select-none items-center gap-2 rounded-[var(--app-radius-lg)] border px-2.5 py-1.5 transition-colors duration-150"
       style={{
-        display: "flex",
-        maxWidth: 220,
-        cursor: "pointer",
-        userSelect: "none",
-        alignItems: "center",
-        gap: 6,
-        borderRadius: 10,
-        border: "1.5px solid rgba(37,99,235,0.2)",
-        background: hovered ? "rgba(37,99,235,0.15)" : "rgba(37,99,235,0.08)",
-        padding: "5px 10px 5px 8px",
-        transition: "background 0.15s",
+        borderColor: "color-mix(in srgb, var(--primary) 15%, transparent)",
+        background: hovered
+          ? "color-mix(in srgb, var(--primary) 16%, transparent)"
+          : "color-mix(in srgb, var(--primary) 8%, transparent)",
       }}
       onClick={onRestore}
       onMouseEnter={() => setHovered(true)}
@@ -358,43 +364,19 @@ const TaskbarPill: React.FC<{
     >
       {Icon && (
         <div
-          style={{
-            display: "flex",
-            height: 20,
-            width: 20,
-            flexShrink: 0,
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: 6,
-            background: "var(--color-primary, #2563eb)",
-          }}
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary"
         >
-          <Icon style={{ height: 11, width: 11, color: "#fff" }} />
+          <Icon className="h-[11px] w-[11px] text-white" />
         </div>
       )}
 
-      <span
-        style={{
-          flexShrink: 1,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          fontSize: 11,
-          fontWeight: 600,
-          color: "var(--color-primary, #2563eb)",
-        }}
-      >
+      <span className="min-w-0 shrink truncate text-[11px] font-semibold text-primary">
         {inst.title}
       </span>
 
       <Maximize2
-        style={{
-          height: 10,
-          width: 10,
-          flexShrink: 0,
-          color: "var(--color-primary, #2563eb)",
-          opacity: 0.5,
-        }}
+        className="h-2.5 w-2.5 shrink-0 text-primary"
+        style={{ opacity: 0.5 }}
       />
 
       <button
@@ -404,19 +386,8 @@ const TaskbarPill: React.FC<{
           event.stopPropagation();
           onClose();
         }}
-        style={{
-          marginLeft: 2,
-          display: "flex",
-          flexShrink: 0,
-          alignItems: "center",
-          border: "none",
-          background: "none",
-          padding: 0,
-          color: "var(--color-primary, #2563eb)",
-          opacity: 0.45,
-          cursor: "pointer",
-          transition: "opacity 0.15s",
-        }}
+        className="ml-0.5 flex shrink-0 items-center bg-transparent p-0 text-primary transition-opacity duration-150"
+        style={{ opacity: 0.45 }}
         onMouseEnter={(event) => {
           event.currentTarget.style.opacity = "1";
         }}
@@ -424,7 +395,7 @@ const TaskbarPill: React.FC<{
           event.currentTarget.style.opacity = "0.45";
         }}
       >
-        <X style={{ height: 11, width: 11 }} />
+        <X className="h-[11px] w-[11px]" />
       </button>
     </motion.div>
   );
