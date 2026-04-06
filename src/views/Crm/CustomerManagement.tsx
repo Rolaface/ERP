@@ -186,7 +186,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
   key: "id",
   header: "Customer ID",
-  align: "left",
+  align: "center",
   render: (c: CustomerSummary) => (
     <Tooltip content={c.id}>
       <span className="cursor-pointer">{c.id}</span>
@@ -196,7 +196,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 {
   key: "name",
   header: "Name",
-  align: "left",
+  align: "center",
   render: (c: CustomerSummary) => (
     <Tooltip content={c.name}>
       <span className="cursor-pointer">{c.name}</span>
@@ -206,7 +206,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "type",
       header: "Type",
-      align: "left",
+      align: "center",
       render: (c: CustomerSummary) => (
         <Tooltip content={c.type ?? "—"}>
           <span>{c.type ?? "—"}</span>
@@ -214,9 +214,21 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       ),
     },
     {
+      key: "tpin",
+      header: "TPIN",
+      align: "center",
+      render: (c: CustomerSummary) => (
+        <Tooltip content={c.tpin}>
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {c.tpin}
+          </code>
+        </Tooltip>
+      ),
+    },
+    {
       key: "customerTaxCategory",
-      header: "TaxCategory",
-      align: "left",
+      header: "Tax Category",
+      align: "center",
       render: (c: CustomerSummary) => (
         <Tooltip content={c.customerTaxCategory ?? "—"}>
           <span>{c.customerTaxCategory ?? "—"}</span>
@@ -226,7 +238,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "currency",
       header: "Currency",
-      align: "left",
+      align: "center",
       render: (c: CustomerSummary) => (
         <Tooltip content={c.currency}>
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
@@ -235,14 +247,15 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         </Tooltip>
       ),
     },
+    
     {
-      key: "onboardingBalance",
-      header: "Onboard Balance",
-      align: "right",
+      key: "status",
+      header: "Status",
+      align: "center",
       render: (c: CustomerSummary) => (
-        <Tooltip content={c.onboardingBalance}>
+        <Tooltip content={c.status}>
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {c.onboardingBalance}
+            {c.status}
           </code>
         </Tooltip>
       ),
