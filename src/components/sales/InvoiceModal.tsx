@@ -9,6 +9,7 @@ import { MinimizableModal } from "../../components/common/ModalManagerContext";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import WarehouseSelect from "../selects/WarehouseSelect";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
@@ -27,7 +28,7 @@ import ItemTable from "../common/ItemTable";
 interface InvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (data: any) => void;
+  onSubmit?: (data: any) => Promise<boolean> | boolean;
   initialData?: any;
   mode?: "create" | "edit";
   modalId?: string;
@@ -45,6 +46,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const resolvedModalId = modalId || (mode === "edit" && initialData?.invoiceNumber
     ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
     : `invoice-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const [submitting, setSubmitting] = useState(false);
   const {
@@ -105,7 +107,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     <>
       <Button
         variant="secondary"
-        onClick={onClose}
+        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
         type="button"
         disabled={submitting}
       >
@@ -114,7 +116,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       <div className="flex gap-2">
         <Button
           variant="secondary"
-          onClick={actions.handleReset}
+          onClick={async () => {
+            resetDirty();
+            await actions.handleReset();
+          }}
           type="button"
           disabled={submitting}
         >
@@ -144,7 +149,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       setSubmitting(false);
                       return;
                     }
-                    await onSubmit?.(payload);
+                    const didSave = await onSubmit?.(payload);
+                    if (didSave) {
+                      resetDirty();
+                    }
                   } catch (err: any) {
                     showApiError(err);
                   } finally {
@@ -168,7 +176,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
    <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={mode === "edit" ? "Edit Invoice" : "Create Invoice"}
       subtitle="Create and manage invoice details"
       icon={FileText}
@@ -180,6 +188,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         id="invoiceForm"
         className="h-full flex flex-col"
         autoComplete="off"
+        onChange={() => markDirty()}
       >
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">

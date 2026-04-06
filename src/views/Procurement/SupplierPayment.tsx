@@ -9,8 +9,7 @@ import {
   showSuccess,
   closeSwal,
 } from "../../utils/alert";
-
-import Swal from "sweetalert2";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 import { getAllPayments } from "../../api/CustomerPayment";
 
@@ -78,7 +77,7 @@ const Payments: React.FC = () => {
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    const confirm = await Swal.fire({
+    const confirm = await fireManagedSwal({
       icon: "warning",
       title: "Delete Payment?",
       text: `Payment ${id} will be removed`,

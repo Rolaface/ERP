@@ -7,6 +7,7 @@ import { ModalSelect, ModalInput } from "../ui/modal/modalComponent";
 import CustomerSelect from "../selects/CustomerSelect";
 import ItemSelect from "../selects/ItemSelect";
 import { MinimizableModal } from "../common/ModalManagerContext";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { User, Mail, Phone } from "lucide-react";
 import AddressBlock from "../ui/modal/AddressBlock";
 import PaymentInfoBlock from "./PaymentInfoBlock";
@@ -21,7 +22,7 @@ import {
 interface QuotationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: () => void;
+  onSubmit?: (data: any) => Promise<boolean> | boolean;
   initialData?: any;
   mode?: "create" | "edit";
   modalId?: string;
@@ -37,6 +38,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   const resolvedModalId = modalId || (mode === "edit" && initialData?.id
     ? `quotation-edit-${initialData.id}-${Date.now()}`
     : `quotation-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
  
 
   const {
@@ -83,18 +85,33 @@ const handleFormSubmit = async (e: React.FormEvent) => {
   }
 
   if (ui.activeTab === "terms") {
-    await actions.handleSubmit(e);
+    const didSubmit = await actions.handleSubmit(e);
+    if (didSubmit) {
+      resetDirty();
+      onClose();
+    }
   }
 };
 
 
   const footerContent = (
     <>
-      <Button variant="secondary" onClick={onClose} type="button">
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+        type="button"
+      >
         Cancel
       </Button>
       <div className="flex gap-2">
-        <Button variant="secondary" onClick={actions.handleReset} type="button">
+        <Button
+          variant="secondary"
+          onClick={() => {
+            resetDirty();
+            actions.handleReset();
+          }}
+          type="button"
+        >
           Reset
         </Button>
         <Button
@@ -114,7 +131,7 @@ const handleFormSubmit = async (e: React.FormEvent) => {
     <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title="Create Quotation"
       subtitle="Create and manage quotation details"
       icon={FileText}
@@ -122,7 +139,12 @@ const handleFormSubmit = async (e: React.FormEvent) => {
       customWidth="82vw"
       height="82vh"
     >
-      <form id="quotationForm" onSubmit={handleFormSubmit} className="h-full flex flex-col">
+      <form
+        id="quotationForm"
+        onSubmit={handleFormSubmit}
+        onChange={() => markDirty()}
+        className="h-full flex flex-col"
+      >
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">

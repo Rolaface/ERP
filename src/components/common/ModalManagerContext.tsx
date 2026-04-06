@@ -1,40 +1,29 @@
-/**
- * ModalManagerContext.tsx
- * Place at: src/components/common/ModalManagerContext.tsx
- *
- * Features:
- *  - Multiple modals open simultaneously (stacked)
- *  - Click any modal to bring it to front (focus management)
- *  - Each modal independently minimizable
- *  - Floating taskbar shows all minimized modals
- *  - Restoring a minimized modal brings it to front
- *  - Proper z-index stacking (no backdrop overlap issues)
- *  - State always preserved (never unmounted while open)
- *
- * Exports:
- *  ModalManagerProvider   → wrap AppLayout once
- *  MinimizableModal       → drop-in for <Modal>, add modalId + remove "if (!isOpen) return null" from your modal components
- *  useModalManager        → hook for direct access
- */
-
 import React, {
   createContext,
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Minus, Maximize2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { Maximize2, Minus, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import {
+  APP_SWAL_CLOSE_EVENT,
+  APP_SWAL_OPEN_EVENT,
+} from "../../utils/swalManager";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const BASE_Z = 50; // z-index of first modal backdrop
-const Z_STEP = 10; // increment per stacked modal
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+export const MODAL_LAYER = {
+  sidebar: 100,
+  appChrome: 120,
+  modalBackdropBase: 1000,
+  modalStep: 20,
+  modalPanelOffset: 10,
+  minimizedTaskbar: 1800,
+} as const;
 
 export interface ModalInstance {
   id: string;
@@ -43,201 +32,299 @@ export interface ModalInstance {
   icon?: LucideIcon;
   minimized: boolean;
   openedAt: number;
-  focusOrder: number; // higher = on top
+  focusOrder: number;
+}
+
+interface ModalRegistration {
+  id: string;
+  title: string;
+  subtitle?: string;
+  icon?: LucideIcon;
+  onRequestClose?: () => void;
+}
+
+interface ModalLayerPosition {
+  backdrop: number;
+  panel: number;
 }
 
 interface ModalManagerCtx {
   instances: ModalInstance[];
-  register: (inst: Omit<ModalInstance, "minimized" | "openedAt" | "focusOrder">) => void;
+  register: (inst: ModalRegistration) => void;
   unregister: (id: string) => void;
   minimize: (id: string) => void;
   restore: (id: string) => void;
   bringToFront: (id: string) => void;
+  requestClose: (id: string) => void;
   isMinimized: (id: string) => boolean;
-  getZIndex: (id: string) => number;
   isFocused: (id: string) => boolean;
+  isInteractionLocked: boolean;
+  getModalLayer: (id: string) => ModalLayerPosition;
   getTopModalId: () => string | null;
 }
-
-// ─── Context ──────────────────────────────────────────────────────────────────
 
 const ModalManagerContext = createContext<ModalManagerCtx | null>(null);
 
 export const useModalManager = (): ModalManagerCtx => {
   const ctx = useContext(ModalManagerContext);
-  if (!ctx)
+  if (!ctx) {
     throw new Error("useModalManager must be used inside <ModalManagerProvider>");
+  }
   return ctx;
 };
-
-// ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const ModalManagerProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [instances, setInstances] = useState<ModalInstance[]>([]);
+  const [swalDepth, setSwalDepth] = useState(0);
   const focusCounter = useRef(0);
+  const closeHandlersRef = useRef(new Map<string, () => void>());
 
-  const register = useCallback(
-    (inst: Omit<ModalInstance, "minimized" | "openedAt" | "focusOrder">) => {
-      setInstances((prev) => {
-        // already registered — just bring to front
-        if (prev.find((m) => m.id === inst.id)) {
-          focusCounter.current += 1;
-          return prev.map((m) =>
-            m.id === inst.id
-              ? { ...m, minimized: false, focusOrder: focusCounter.current }
-              : m
-          );
-        }
-        focusCounter.current += 1;
-        return [
-          ...prev,
-          {
-            ...inst,
-            minimized: false,
-            openedAt: Date.now(),
-            focusOrder: focusCounter.current,
-          },
-        ];
-      });
-    },
-    []
-  );
+  const register = useCallback((inst: ModalRegistration) => {
+    if (inst.onRequestClose) {
+      closeHandlersRef.current.set(inst.id, inst.onRequestClose);
+    }
+
+    setInstances((prev) => {
+      const existing = prev.find((modal) => modal.id === inst.id);
+
+      if (existing) {
+        return prev.map((modal) =>
+          modal.id === inst.id
+            ? {
+                ...modal,
+                title: inst.title,
+                subtitle: inst.subtitle,
+                icon: inst.icon,
+              }
+            : modal
+        );
+      }
+
+      focusCounter.current += 1;
+
+      return [
+        ...prev,
+        {
+          id: inst.id,
+          title: inst.title,
+          subtitle: inst.subtitle,
+          icon: inst.icon,
+          minimized: false,
+          openedAt: Date.now(),
+          focusOrder: focusCounter.current,
+        },
+      ];
+    });
+  }, []);
 
   const unregister = useCallback((id: string) => {
-    setInstances((prev) => prev.filter((m) => m.id !== id));
+    closeHandlersRef.current.delete(id);
+    setInstances((prev) => prev.filter((modal) => modal.id !== id));
   }, []);
 
   const minimize = useCallback((id: string) => {
     setInstances((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, minimized: true } : m))
+      prev.map((modal) =>
+        modal.id === id ? { ...modal, minimized: true } : modal
+      )
     );
   }, []);
 
   const restore = useCallback((id: string) => {
     setInstances((prev) => {
       focusCounter.current += 1;
-      return prev.map((m) =>
-        m.id === id
-          ? { ...m, minimized: false, focusOrder: focusCounter.current }
-          : m
+
+      return prev.map((modal) =>
+        modal.id === id
+          ? { ...modal, minimized: false, focusOrder: focusCounter.current }
+          : modal
       );
     });
   }, []);
 
   const bringToFront = useCallback((id: string) => {
     setInstances((prev) => {
-      const sorted = [...prev].sort((a, b) => b.focusOrder - a.focusOrder);
-      if (sorted[0]?.id === id) return prev;
+      const topVisible = [...prev]
+        .filter((modal) => !modal.minimized)
+        .sort((a, b) => b.focusOrder - a.focusOrder)[0];
+
+      if (!topVisible || topVisible.id === id) {
+        return prev;
+      }
 
       focusCounter.current += 1;
-      return prev.map((m) =>
-        m.id === id ? { ...m, focusOrder: focusCounter.current } : m
+
+      return prev.map((modal) =>
+        modal.id === id
+          ? { ...modal, minimized: false, focusOrder: focusCounter.current }
+          : modal
       );
     });
   }, []);
 
-  const isMinimized = useCallback(
-    (id: string) => instances.find((m) => m.id === id)?.minimized ?? false,
-    [instances]
-  );
+  const requestClose = useCallback((id: string) => {
+    closeHandlersRef.current.get(id)?.();
+  }, []);
 
-  // Compute z-index for a modal based on its focusOrder rank
-  const getZIndex = useCallback(
-    (id: string) => {
-      const visible = instances
-        .filter((m) => !m.minimized)
-        .sort((a, b) => a.focusOrder - b.focusOrder);
-      const rank = visible.findIndex((m) => m.id === id);
-      return BASE_Z + rank * Z_STEP;
-    },
+  const isMinimized = useCallback(
+    (id: string) => instances.find((modal) => modal.id === id)?.minimized ?? false,
     [instances]
   );
 
   const isFocused = useCallback(
     (id: string) => {
-      const visible = instances.filter((m) => !m.minimized);
-      if (visible.length === 0) return false;
-      const top = visible.reduce((a, b) =>
-        a.focusOrder > b.focusOrder ? a : b
+      const visible = instances.filter((modal) => !modal.minimized);
+      if (visible.length === 0) {
+        return false;
+      }
+
+      const topModal = visible.reduce((currentTop, modal) =>
+        modal.focusOrder > currentTop.focusOrder ? modal : currentTop
       );
-      return top.id === id;
+
+      return topModal.id === id;
     },
     [instances]
   );
 
   const getTopModalId = useCallback(() => {
-    const visible = instances.filter((m) => !m.minimized);
-    if (visible.length === 0) return null;
-    const top = visible.reduce((a, b) =>
-      a.focusOrder > b.focusOrder ? a : b
+    const visible = instances.filter((modal) => !modal.minimized);
+    if (visible.length === 0) {
+      return null;
+    }
+
+    const topModal = visible.reduce((currentTop, modal) =>
+      modal.focusOrder > currentTop.focusOrder ? modal : currentTop
     );
-    return top.id;
+
+    return topModal.id;
   }, [instances]);
 
+  const getModalLayer = useCallback(
+    (id: string): ModalLayerPosition => {
+      const visible = instances
+        .filter((modal) => !modal.minimized)
+        .sort((a, b) => a.focusOrder - b.focusOrder);
+
+      const rank = Math.max(
+        visible.findIndex((modal) => modal.id === id),
+        0
+      );
+      const backdrop =
+        MODAL_LAYER.modalBackdropBase + rank * MODAL_LAYER.modalStep;
+
+      return {
+        backdrop,
+        panel: backdrop + MODAL_LAYER.modalPanelOffset,
+      };
+    },
+    [instances]
+  );
+
+  useEffect(() => {
+    const handleSwalOpen = () => {
+      setSwalDepth((prev) => prev + 1);
+    };
+
+    const handleSwalClose = () => {
+      setSwalDepth((prev) => Math.max(prev - 1, 0));
+    };
+
+    window.addEventListener(APP_SWAL_OPEN_EVENT, handleSwalOpen as EventListener);
+    window.addEventListener(APP_SWAL_CLOSE_EVENT, handleSwalClose as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        APP_SWAL_OPEN_EVENT,
+        handleSwalOpen as EventListener
+      );
+      window.removeEventListener(
+        APP_SWAL_CLOSE_EVENT,
+        handleSwalClose as EventListener
+      );
+    };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      instances,
+      register,
+      unregister,
+      minimize,
+      restore,
+      bringToFront,
+      requestClose,
+      isMinimized,
+      isFocused,
+      isInteractionLocked: swalDepth > 0,
+      getModalLayer,
+      getTopModalId,
+    }),
+    [
+      instances,
+      register,
+      unregister,
+      minimize,
+      restore,
+      bringToFront,
+      requestClose,
+      isMinimized,
+      isFocused,
+      swalDepth,
+      getModalLayer,
+      getTopModalId,
+    ]
+  );
+
   return (
-    <ModalManagerContext.Provider
-      value={{
-        instances,
-        register,
-        unregister,
-        minimize,
-        restore,
-        bringToFront,
-        isMinimized,
-        getZIndex,
-        isFocused,
-        getTopModalId,
-      }}
-    >
+    <ModalManagerContext.Provider value={value}>
       {children}
       <ModalTaskbar />
     </ModalManagerContext.Provider>
   );
 };
 
-// ─── Floating Taskbar ─────────────────────────────────────────────────────────
-
 const ModalTaskbar: React.FC = () => {
-  const { instances, restore, unregister } = useModalManager();
-  const minimized = instances.filter((m) => m.minimized);
+  const { instances, requestClose, restore } = useModalManager();
+  const minimized = instances.filter((modal) => modal.minimized);
 
-  return (
+  if (typeof document === "undefined" || minimized.length === 0) {
+    return null;
+  }
+
+  return createPortal(
     <AnimatePresence>
-      {minimized.length > 0 && (
-        <motion.div
-          key="taskbar"
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-card border border-[var(--border)] rounded-2xl shadow-2xl"
-          style={{
-            boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
-          }}
-        >
-          <span
-            className="text-[10px] font-bold text-muted uppercase tracking-wider pr-3 border-r border-[var(--border)]"
-          >
-            Minimized ({minimized.length})
-          </span>
+      <motion.div
+        key="taskbar"
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 100, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 320, damping: 30 }}
+        className="fixed bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-[var(--border)] bg-card px-4 py-3 shadow-2xl"
+        style={{
+          zIndex: MODAL_LAYER.minimizedTaskbar,
+          boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+        }}
+      >
+        <span className="border-r border-[var(--border)] pr-3 text-[10px] font-bold uppercase tracking-wider text-muted">
+          Minimized ({minimized.length})
+        </span>
 
-          {minimized.map((inst) => (
-            <TaskbarPill
-              key={inst.id}
-              inst={inst}
-              onRestore={() => restore(inst.id)}
-              onClose={() => unregister(inst.id)}
-            />
-          ))}
-        </motion.div>
-      )}
-    </AnimatePresence>
+        {minimized.map((inst) => (
+          <TaskbarPill
+            key={inst.id}
+            inst={inst}
+            onRestore={() => restore(inst.id)}
+            onClose={() => requestClose(inst.id)}
+          />
+        ))}
+      </motion.div>
+    </AnimatePresence>,
+    document.body
   );
 };
-
-// ─── Taskbar Pill ─────────────────────────────────────────────────────────────
 
 const TaskbarPill: React.FC<{
   inst: ModalInstance;
@@ -254,15 +341,15 @@ const TaskbarPill: React.FC<{
       exit={{ scale: 0.8, opacity: 0 }}
       style={{
         display: "flex",
+        maxWidth: 220,
+        cursor: "pointer",
+        userSelect: "none",
         alignItems: "center",
         gap: 6,
-        padding: "5px 10px 5px 8px",
         borderRadius: 10,
-        background: hovered ? "rgba(37,99,235,0.15)" : "rgba(37,99,235,0.08)",
         border: "1.5px solid rgba(37,99,235,0.2)",
-        cursor: "pointer",
-        userSelect: "none" as const,
-        maxWidth: 220,
+        background: hovered ? "rgba(37,99,235,0.15)" : "rgba(37,99,235,0.08)",
+        padding: "5px 10px 5px 8px",
         transition: "background 0.15s",
       }}
       onClick={onRestore}
@@ -272,29 +359,29 @@ const TaskbarPill: React.FC<{
       {Icon && (
         <div
           style={{
-            width: 20,
-            height: 20,
-            borderRadius: 6,
-            background: "var(--color-primary, #2563eb)",
             display: "flex",
+            height: 20,
+            width: 20,
+            flexShrink: 0,
             alignItems: "center",
             justifyContent: "center",
-            flexShrink: 0,
+            borderRadius: 6,
+            background: "var(--color-primary, #2563eb)",
           }}
         >
-          <Icon style={{ width: 11, height: 11, color: "#fff" }} />
+          <Icon style={{ height: 11, width: 11, color: "#fff" }} />
         </div>
       )}
 
       <span
         style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: "var(--color-primary, #2563eb)",
+          flexShrink: 1,
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
-          flexShrink: 1,
+          fontSize: 11,
+          fontWeight: 600,
+          color: "var(--color-primary, #2563eb)",
         }}
       >
         {inst.title}
@@ -302,62 +389,46 @@ const TaskbarPill: React.FC<{
 
       <Maximize2
         style={{
-          width: 10,
           height: 10,
+          width: 10,
+          flexShrink: 0,
           color: "var(--color-primary, #2563eb)",
           opacity: 0.5,
-          flexShrink: 0,
         }}
       />
 
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
+        title="Close"
+        onClick={(event) => {
+          event.stopPropagation();
           onClose();
         }}
-        title="Discard & close"
         style={{
           marginLeft: 2,
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          padding: 0,
           display: "flex",
+          flexShrink: 0,
           alignItems: "center",
+          border: "none",
+          background: "none",
+          padding: 0,
           color: "var(--color-primary, #2563eb)",
           opacity: 0.45,
-          flexShrink: 0,
+          cursor: "pointer",
           transition: "opacity 0.15s",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-        onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.45")}
+        onMouseEnter={(event) => {
+          event.currentTarget.style.opacity = "1";
+        }}
+        onMouseLeave={(event) => {
+          event.currentTarget.style.opacity = "0.45";
+        }}
       >
-        <X style={{ width: 11, height: 11 }} />
+        <X style={{ height: 11, width: 11 }} />
       </button>
     </motion.div>
   );
 };
-
-// ─── MinimizableModal ─────────────────────────────────────────────────────────
-/**
- * Drop-in for <Modal>. Add modalId. 
- *
- * IMPORTANT: Remove "if (!isOpen) return null" from the TOP of your
- * modal component (e.g. InvoiceModal). MinimizableModal handles
- * visibility itself so state is never lost.
- *
- * Usage:
- *   <MinimizableModal
- *     modalId="invoice-create"
- *     isOpen={isOpen}
- *     onClose={handleClose}
- *     title="Create Invoice"
- *     icon={FileText}
- *   >
- *     <InvoiceForm />
- *   </MinimizableModal>
- */
 
 export interface MinimizableModalProps {
   modalId: string;
@@ -396,26 +467,37 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
   height = "520px",
   customWidth,
 }) => {
-  const { register, unregister, minimize, isMinimized, getZIndex, isFocused, bringToFront, instances } =
-    useModalManager();
-
+  const {
+    register,
+    unregister,
+    minimize,
+    isMinimized,
+    getModalLayer,
+    isFocused,
+    bringToFront,
+    isInteractionLocked,
+  } = useModalManager();
   const registered = useRef(false);
 
-  // Check if modal instance still exists in manager (won't exist if closed from taskbar)
-  const instanceExists = instances.some((m) => m.id === modalId);
-
   useEffect(() => {
-    if (isOpen) {
-      // register (or re-focus if already registered)
-      register({ id: modalId, title, subtitle, icon });
-      registered.current = true;
-    } else if (!isOpen && registered.current) {
-      unregister(modalId);
-      registered.current = false;
+    if (!isOpen) {
+      if (registered.current) {
+        unregister(modalId);
+        registered.current = false;
+      }
+      return;
     }
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Always clean up on unmount
+    register({
+      id: modalId,
+      title,
+      subtitle,
+      icon,
+      onRequestClose: onClose,
+    });
+    registered.current = true;
+  }, [icon, isOpen, modalId, onClose, register, subtitle, title, unregister]);
+
   useEffect(() => {
     return () => {
       if (registered.current) {
@@ -423,32 +505,20 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
         registered.current = false;
       }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [modalId, unregister]);
 
-  // Don't render if not open
-  // Note: instanceExists check happens after async register in useEffect
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const minimized = isMinimized(modalId);
-  const zIndex = getZIndex(modalId);
+  const layer = getModalLayer(modalId);
   const focused = isFocused(modalId);
-
-  const handleClose = () => {
-    unregister(modalId);
-    registered.current = false;
-    onClose();
-  };
 
   return (
     <>
-      {/* Children hidden but mounted when minimized — state preserved */}
-      {minimized && (
-        <div style={{ display: "none" }} aria-hidden="true">
-          {children}
-        </div>
-      )}
+      {minimized && <div style={{ display: "none" }}>{children}</div>}
 
-      {/* Visible modal shell with smooth animation */}
       <AnimatePresence>
         {!minimized && (
           <ModalShell
@@ -459,9 +529,11 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
             maxWidth={maxWidth}
             height={height}
             customWidth={customWidth}
-            zIndex={zIndex}
+            backdropZIndex={layer.backdrop}
+            panelZIndex={layer.panel}
             focused={focused}
-            onClose={handleClose}
+            interactionLocked={isInteractionLocked}
+            onClose={onClose}
             onMinimize={() => minimize(modalId)}
             onFocus={() => bringToFront(modalId)}
           >
@@ -472,8 +544,6 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
     </>
   );
 };
-
-// ─── ModalShell ───────────────────────────────────────────────────────────────
 
 const MAX_WIDTH_CLASSES: Record<string, string> = {
   sm: "max-w-sm",
@@ -497,8 +567,10 @@ interface ModalShellProps {
   maxWidth?: string;
   height?: string;
   customWidth?: string;
-  zIndex: number;
+  backdropZIndex: number;
+  panelZIndex: number;
   focused: boolean;
+  interactionLocked: boolean;
   onClose: () => void;
   onMinimize: () => void;
   onFocus: () => void;
@@ -513,178 +585,175 @@ const ModalShell: React.FC<ModalShellProps> = ({
   maxWidth = "4xl",
   height = "520px",
   customWidth,
-  zIndex,
+  backdropZIndex,
+  panelZIndex,
   focused,
+  interactionLocked,
   onClose,
   onMinimize,
   onFocus,
 }) => {
-  return (
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!focused || typeof document === "undefined") {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      panelRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [focused]);
+
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
     <>
-      {/*
-        Backdrop: only the FOCUSED (top) modal shows a dark backdrop.
-        Background modals show a very faint tint so you know they're there.
-      */}
       <div
+        className="erp-modal-backdrop"
+        data-focused={focused ? "true" : "false"}
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: zIndex,
-          background: focused
-            ? "rgba(0,0,0,0.30)"
-            : "rgba(0,0,0,0.08)",
-          backdropFilter: focused ? "blur(1px)" : "none",
-          transition: "background 0.2s",
-          // Clicking the backdrop of a background modal brings it to front
-          cursor: focused ? "default" : "pointer",
+          zIndex: backdropZIndex,
+          cursor: !focused && !interactionLocked ? "pointer" : "default",
+          background: focused ? "rgba(15, 23, 42, 0.32)" : "rgba(15, 23, 42, 0.1)",
+          backdropFilter: focused ? "blur(2px)" : "none",
+          transition: "background 0.2s ease, backdrop-filter 0.2s ease",
         }}
-        onClick={(e) => {
-          // Only trigger if clicking the backdrop itself, not the modal
-          if (e.target === e.currentTarget) {
-            if (!focused) {
-              onFocus();
-            }
+        onMouseDown={(event) => {
+          if (
+            event.target === event.currentTarget &&
+            !focused &&
+            !interactionLocked
+          ) {
+            onFocus();
           }
         }}
       />
 
-      {/* Modal panel — sits above its own backdrop */}
       <div
+        className="erp-modal-layer"
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: zIndex + 1,
+          zIndex: panelZIndex,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: 16,
-          pointerEvents: "none", // let backdrop clicks pass through
+          pointerEvents: "none",
         }}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 24 }}
-          animate={{
-            opacity: 1,
-            scale: focused ? 1 : 0.98,
-            y: 0,
-          }}
-          exit={{ 
-            opacity: 0, 
-            scale: 0.85, 
-            y: 40,
-          }}
-          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-          className={`w-full ${
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
+          initial={{ opacity: 0, scale: 0.96, y: 24 }}
+          animate={{ opacity: 1, scale: focused ? 1 : 0.985, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 32 }}
+          transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+          className={`erp-modal-panel flex w-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-card ${
             !customWidth ? MAX_WIDTH_CLASSES[maxWidth] ?? "max-w-4xl" : ""
-          } bg-card flex flex-col border border-[var(--border)] rounded-2xl overflow-hidden`}
+          }`}
           style={{
+            pointerEvents: "auto",
             height,
             width: customWidth || undefined,
             maxWidth: customWidth ? "none" : undefined,
             boxShadow: focused
-              ? "0 25px 60px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06)"
-              : "0 8px 24px rgba(0,0,0,0.10)",
+              ? "0 28px 70px rgba(15,23,42,0.28), 0 0 0 1px rgba(15,23,42,0.06)"
+              : "0 10px 28px rgba(15,23,42,0.14)",
             transform: focused ? "scale(1)" : "scale(0.985)",
-            transition: "box-shadow 0.2s, transform 0.2s",
-            pointerEvents: "auto",
+            transition: "box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease",
           }}
-          // Clicking anywhere on a background modal brings it to front
-          onMouseDown={onFocus}
+          onMouseDown={() => {
+            if (!focused && !interactionLocked) {
+              onFocus();
+            }
+          }}
         >
-          {/* ── Header ── */}
           <header
-            className="relative overflow-hidden px-4 py-3 bg-primary flex-shrink-0"
+            className="relative overflow-hidden bg-primary px-4 py-3"
             style={{
-              // Slightly dim header of background modals
-              opacity: focused ? 1 : 0.85,
-              transition: "opacity 0.2s",
+              opacity: focused ? 1 : 0.9,
+              transition: "opacity 0.2s ease",
             }}
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)]" />
             <div className="relative flex items-center justify-between">
-              {/* Title */}
               <div className="flex items-center gap-2">
                 {Icon && (
-                  <div className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm">
-                    <Icon className="w-4 h-4 text-white" />
+                  <div className="rounded-lg bg-white/10 p-1.5 backdrop-blur-sm">
+                    <Icon className="h-4 w-4 text-white" />
                   </div>
                 )}
                 <div>
                   <h2 className="text-base font-semibold text-white">{title}</h2>
                   {subtitle && (
-                    <p className="text-xs text-white/70 mt-0.5">{subtitle}</p>
+                    <p className="mt-0.5 text-xs text-white/70">{subtitle}</p>
                   )}
                 </div>
               </div>
 
-              {/* Focused indicator dot + buttons */}
               <div className="flex items-center gap-1">
-                {/* Subtle indicator that this modal is in background */}
                 {!focused && (
-                  <span
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 600,
-                      color: "rgba(255,255,255,0.6)",
-                      marginRight: 6,
-                      letterSpacing: 0.5,
-                    }}
-                  >
+                  <span className="mr-2 text-[9px] font-semibold tracking-[0.12em] text-white/60">
                     CLICK TO FOCUS
                   </span>
                 )}
 
-                {/* Minimize */}
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  aria-label="Minimize"
+                  title="Minimize"
+                  className="group rounded-lg p-1.5 transition-all duration-200 hover:bg-white/10"
+                  onClick={(event) => {
+                    event.stopPropagation();
                     onMinimize();
                   }}
-                  className="p-1.5 rounded-lg hover:bg-white/10 transition-all duration-200 group"
-                  aria-label="Minimize"
-                  title="Minimize — your progress is saved"
                 >
-                  <Minus className="w-4 h-4 text-white group-hover:scale-110 transition-transform duration-200" />
+                  <Minus className="h-4 w-4 text-white transition-transform duration-200 group-hover:scale-110" />
                 </button>
 
-                {/* Close */}
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  aria-label="Close"
+                  className="group rounded-lg p-1.5 transition-all duration-200 hover:bg-white/10"
+                  onClick={(event) => {
+                    event.stopPropagation();
                     onClose();
                   }}
-                  className="p-1.5 rounded-lg hover:bg-white/10 transition-all duration-200 group"
-                  aria-label="Close"
                 >
-                  <X className="w-4 h-4 text-white group-hover:rotate-90 transition-transform duration-200" />
+                  <X className="h-4 w-4 text-white transition-transform duration-200 group-hover:rotate-90" />
                 </button>
               </div>
             </div>
           </header>
 
-          {/* ── Content ── */}
           <section
-            className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 bg-app text-sm text-main"
+            className="flex-1 overflow-x-hidden overflow-y-auto bg-app px-4 py-3 text-sm text-main"
             style={{
-              // Slightly dim content of background modals
-              opacity: focused ? 1 : 0.7,
-              transition: "opacity 0.2s",
-              pointerEvents: "auto",
+              opacity: focused ? 1 : 0.78,
+              transition: "opacity 0.2s ease",
             }}
           >
             {children}
           </section>
 
-          {/* ── Footer ── */}
           {footer && (
             <footer
-              className="flex items-center justify-between px-4 py-3 bg-app border-t border-[var(--border)] flex-shrink-0"
+              className="flex flex-shrink-0 items-center justify-between border-t border-[var(--border)] bg-app px-4 py-3"
               style={{
-                opacity: focused ? 1 : 0.7,
-                transition: "opacity 0.2s",
-                pointerEvents: "auto",
+                opacity: focused ? 1 : 0.78,
+                transition: "opacity 0.2s ease",
               }}
             >
               {footer}
@@ -692,6 +761,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
           )}
         </motion.div>
       </div>
-    </>
+    </>,
+    document.body
   );
 };

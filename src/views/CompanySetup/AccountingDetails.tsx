@@ -12,7 +12,7 @@ import {
   FaUndo,
 } from "react-icons/fa";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
-import Swal from "sweetalert2";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 
 import type { AccountingSetup, FinancialConfig } from "../../types/company";
@@ -211,7 +211,7 @@ const handleSubmit = async () => {
 };
 
 const handleReset = async () => {
-  const result = await Swal.fire({
+  const result = await fireManagedSwal({
     icon: "warning",
     title: "Reset All Fields?",
     text: "This will clear all entered accounting settings.",

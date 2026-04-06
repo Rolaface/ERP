@@ -24,9 +24,9 @@ import ActionButton, {
 
 import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
-import Swal from "sweetalert2";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 import Tooltip from "../../components/Tooltip";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 type OutletContextType = {
   openCustomerCreate: () => void;
@@ -112,7 +112,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const handleDelete = async (customerId: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    const confirm = await Swal.fire({
+    const confirm = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
       text: `Delete customer ${customerId}?`,

@@ -1,10 +1,31 @@
-import { useState, useCallback } from "react";
-import { showConfirm } from "../utils/alert";
+import { useCallback, useRef, useState } from "react";
 import { useModalManager } from "../components/common/ModalManagerContext";
+import { showConfirm } from "../utils/alert";
 
-export const useUnsavedChanges = () => {
+interface UnsavedChangesGuardOptions {
+  confirmTitle?: string;
+  confirmMessage?: string;
+  confirmButtonText?: string;
+  cancelButtonText?: string;
+}
+
+interface ConfirmCloseOptions {
+  onConfirmClose: () => void;
+  modalId?: string;
+  dirtyOverride?: boolean;
+}
+
+export const useUnsavedChangesGuard = (
+  options: UnsavedChangesGuardOptions = {}
+) => {
   const [isDirty, setIsDirty] = useState(false);
-  const { bringToFront, getTopModalId } = useModalManager();
+  const pendingConfirmationRef = useRef(false);
+  const {
+    bringToFront,
+    getTopModalId,
+    isMinimized,
+    restore,
+  } = useModalManager();
 
   const markDirty = useCallback(() => {
     setIsDirty(true);
@@ -14,32 +35,80 @@ export const useUnsavedChanges = () => {
     setIsDirty(false);
   }, []);
 
-  const handleCloseWithConfirm = useCallback(
-    async (onClose: () => void, currentModalId?: string) => {
-      if (isDirty) {
+  const restoreModalFocus = useCallback(
+    (modalId?: string) => {
+      const targetModalId = modalId || getTopModalId();
+      if (!targetModalId) {
+        return;
+      }
+
+      window.requestAnimationFrame(() => {
+        if (isMinimized(targetModalId)) {
+          restore(targetModalId);
+        } else {
+          bringToFront(targetModalId);
+        }
+      });
+    },
+    [bringToFront, getTopModalId, isMinimized, restore]
+  );
+
+  const confirmClose = useCallback(
+    async ({ onConfirmClose, modalId, dirtyOverride }: ConfirmCloseOptions) => {
+      const shouldConfirm = dirtyOverride ?? isDirty;
+
+      if (!shouldConfirm) {
+        onConfirmClose();
+        return true;
+      }
+
+      if (pendingConfirmationRef.current) {
+        return false;
+      }
+
+      pendingConfirmationRef.current = true;
+      restoreModalFocus(modalId);
+
+      try {
         const confirmed = await showConfirm(
-          "You have unsaved changes. Do you really want to close?"
+          options.confirmMessage ??
+            "You have unsaved changes. Do you really want to close?",
+          {
+            title: options.confirmTitle ?? "Discard unsaved changes?",
+            confirmButtonText: options.confirmButtonText ?? "Discard",
+            cancelButtonText: options.cancelButtonText ?? "Keep Editing",
+          }
         );
+
         if (confirmed) {
           resetDirty();
-          onClose();
-        } else {
-          const modalId = currentModalId || getTopModalId();
-          if (modalId) {
-            setTimeout(() => bringToFront(modalId), 10);
-          }
+          onConfirmClose();
+          return true;
         }
-      } else {
-        onClose();
+
+        restoreModalFocus(modalId);
+        return false;
+      } finally {
+        pendingConfirmationRef.current = false;
       }
     },
-    [isDirty, resetDirty, bringToFront, getTopModalId]
+    [isDirty, options, resetDirty, restoreModalFocus]
+  );
+
+  const handleCloseWithConfirm = useCallback(
+    async (onClose: () => void, modalId?: string) =>
+      confirmClose({ onConfirmClose: onClose, modalId }),
+    [confirmClose]
   );
 
   return {
     isDirty,
+    setIsDirty,
     markDirty,
     resetDirty,
+    confirmClose,
     handleCloseWithConfirm,
   };
 };
+
+export const useUnsavedChanges = useUnsavedChangesGuard;

@@ -23,6 +23,7 @@ import { useAuth } from "../context/AuthContext";
 import { FaSignOutAlt } from "react-icons/fa";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 import { useCompanyStore } from "../store/companyStore";
+import { MODAL_LAYER } from "./common/ModalManagerContext";
 
 
 const menuItems = [
@@ -98,6 +99,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
       <div
         className={`flex flex-col h-screen bg-sidebar fixed z-50 shadow-2xl transition-all duration-300 border-r border-[var(--border)] overflow-hidden ${open ? "w-64" : "w-20"
           }`}
+        style={{ zIndex: MODAL_LAYER.sidebar }}
       >
         {/* 1. HEADER */}
         <div className="flex items-center justify-between p-4 h-16 shrink-0 border-b border-[var(--border)]">

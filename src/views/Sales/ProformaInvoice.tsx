@@ -26,6 +26,7 @@ import {
   closeSwal,
 } from "../../utils/alert";
 import Swal from "sweetalert2";
+import { closeManagedSwal, fireManagedSwal } from "../../utils/swalManager";
 import InvoiceDetailsModal, {
   type InvoiceDetails,
 } from "./InvoiceDetailsModal";
@@ -388,7 +389,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const handleDelete = async (proformaId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    const result = await Swal.fire({
+    const result = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
       text: `Delete proforma invoice ${proformaId}?`,
@@ -401,7 +402,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
     if (!result.isConfirmed) return;
 
     try {
-      Swal.fire({
+      fireManagedSwal({
         title: "Deleting...",
         text: "Please wait while we delete the invoice.",
         allowOutsideClick: false,
@@ -411,7 +412,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
       });
 
       const res = await deleteProformaInvoiceById(proformaId);
-      Swal.close();
+      closeManagedSwal();
 
       if (!res || res.status_code !== 200) {
         showApiError(res?.message || "Delete failed");
@@ -424,7 +425,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
       );
       showSuccess("Proforma invoice deleted successfully");
     } catch (err) {
-      Swal.close();
+      closeManagedSwal();
       showApiError(err);
     }
   };

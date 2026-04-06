@@ -30,8 +30,8 @@ import {
 import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import Swal from "sweetalert2";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -404,7 +404,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     status: InvoiceStatus,
   ) => {
     if (CRITICAL_STATUSES.includes(status)) {
-      const result = await Swal.fire({
+      const result = await fireManagedSwal({
         icon: "warning",
         title: "Confirm Status Change",
         text: `Mark invoice ${invoiceNumber} as ${status}?`,
@@ -450,7 +450,7 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
   const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    const result = await Swal.fire({
+    const result = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
       text: `Delete invoice ${invoiceNumber}?`,

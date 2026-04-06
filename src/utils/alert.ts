@@ -1,5 +1,5 @@
 import Swal from "sweetalert2";
-
+import { closeManagedSwal, fireManagedSwal } from "./swalManager";
 
 const extractErrorMessage = (error: any): string => {
   if (typeof error === "string") return error;
@@ -57,7 +57,7 @@ const toUserFriendlyMessage = (message: string): string => {
   return m;
 };
 export const showValidationError = (message: string) => {
-  Swal.fire({
+  fireManagedSwal({
     icon: "warning",
     title: "Validation Error",
     text: message,
@@ -72,7 +72,7 @@ export const showApiError = (error: any) => {
   const cleanMessage = String(rawMessage).replace(/<[^>]+>/g, "");
   const userMessage = toUserFriendlyMessage(cleanMessage);
 
-  Swal.fire({
+  fireManagedSwal({
     icon: "error",
     title: "Operation Failed",
     text: userMessage,
@@ -82,7 +82,7 @@ export const showApiError = (error: any) => {
 
 /*  Success  */
 export const showSuccess = (message: string) => {
-  Swal.fire({
+  fireManagedSwal({
     icon: "success",
     title: "Success",
     text: message,
@@ -92,7 +92,7 @@ export const showSuccess = (message: string) => {
 
 /*  Loading  */
 export const showLoading = (title = "Processing...") => {
-  Swal.fire({
+  fireManagedSwal({
     title,
     text: "Please wait while we complete your request.",
     allowOutsideClick: false,
@@ -106,24 +106,29 @@ export const showLoading = (title = "Processing...") => {
 
 /*  Close  */
 export const closeSwal = () => {
-  Swal.close();
+  closeManagedSwal();
 };
 
 
-export const showConfirm = async (message: string) => {
-  const result = await Swal.fire({
+export const showConfirm = async (
+  message: string,
+  options?: {
+    title?: string;
+    confirmButtonText?: string;
+    cancelButtonText?: string;
+    confirmButtonColor?: string;
+  }
+) => {
+  const result = await fireManagedSwal({
     icon: "warning",
-    title: "Are you sure?",
+    title: options?.title ?? "Are you sure?",
     text: message,
     showCancelButton: true,
-    confirmButtonText: "Yes",
-    cancelButtonText: "Cancel",
-    confirmButtonColor: "#ef4444",
+    confirmButtonText: options?.confirmButtonText ?? "Yes",
+    cancelButtonText: options?.cancelButtonText ?? "Cancel",
+    confirmButtonColor: options?.confirmButtonColor ?? "#ef4444",
     cancelButtonColor: "#6b7280",
     reverseButtons: true,
-    didClose: () => {
-      document.body.style.pointerEvents = "";
-    },
   });
 
   return result.isConfirmed;
@@ -132,7 +137,7 @@ export const showPOConflictDialog = async (
   existingCount: number,
   poNumber?: string
 ): Promise<"keep" | "replace" | "cancel"> => {
-  const result = await Swal.fire({
+  const result = await fireManagedSwal({
     icon: "question",
     title: "Add PO Items?",
     text: `You have ${existingCount} item${existingCount > 1 ? "s" : ""} already added. Do you want to import items from ${poNumber ?? "this PO"} or replace them?`,

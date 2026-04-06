@@ -112,12 +112,14 @@ const handleInvoiceSubmit = async (payload: any) => {
 
     if (!response || ![200, 201].includes(response.status_code)) {
       showApiError(response);
-      return;
+      return false;
     }
 
     showSuccess(response.message);
+    return true;
   } catch (error: any) {
     showApiError(error);
+    return false;
   }
 };
 
@@ -126,12 +128,15 @@ const handleQuotationSubmit = async (payload: any) => {
     const response = await createQuotation(payload);
 
     if (!response || ![200, 201].includes(response.status_code)) {
-      throw response;
+      showApiError(response);
+      return false;
     }
 
     showSuccess(response.message);
+    return true;
   } catch (error: any) {
     showApiError(error);
+    return false;
   }
 };
 
@@ -208,8 +213,11 @@ const handleProformaCreated = () => {
             isOpen={true}
             onClose={() => setInvoiceModals((prev) => prev.filter((m) => m.id !== modal.id))}
             onSubmit={async (data) => {
-              await handleInvoiceSubmit(data);
-              setInvoiceModals((prev) => prev.filter((m) => m.id !== modal.id));
+              const didSave = await handleInvoiceSubmit(data);
+              if (didSave) {
+                setInvoiceModals((prev) => prev.filter((m) => m.id !== modal.id));
+              }
+              return didSave;
             }}
             initialData={modal.initialData}
             mode={modal.initialData ? "edit" : "create"}

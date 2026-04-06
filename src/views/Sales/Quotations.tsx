@@ -23,9 +23,9 @@ import { saveAs } from "file-saver";
 import { generateQuotationPDF } from "../../components/template/quotation/QuotationTemplate1";
 import PdfPreviewModal from "./PdfPreviewModal";
 import { deleteQuotationById } from "../../api/quotationApi";
-import Swal from "sweetalert2";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import QuotationDetailModal, { QuotationDetail } from "./Quotationdetailmodal";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
@@ -274,7 +274,7 @@ const handlePreviewQuotationPDF = async (
 const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
   e?.stopPropagation();
 
-  const result = await Swal.fire({
+  const result = await fireManagedSwal({
     icon: "warning",
     title: "Are you sure?",
     text: `Delete quotation ${quotationNumber}?`,

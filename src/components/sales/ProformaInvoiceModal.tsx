@@ -16,6 +16,7 @@ import CustomerSelect from "../selects/CustomerSelect";
 import ItemSelect from "../selects/ItemSelect";
 import { createProformaInvoice } from "../../api/proformaInvoiceApi";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import DatePickerInput from "../calendar/DatePickerInput";
 import {
   invoiceStatusOptions,
@@ -44,6 +45,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   const resolvedModalId = modalId || (mode === "edit" && initialData?.proformaId
     ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
     : `proforma-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     formData,
     customerDetails,
@@ -119,6 +121,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
       showSuccess(res.message);
 
+      resetDirty();
       actions.handleReset();
       onSubmit?.();
       onClose();
@@ -167,19 +170,28 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     <MinimizableModal
     modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
       title={
         mode === "edit" ? "Edit Proforma Invoice" : "Create Proforma Invoice"
       }
       subtitle="Create and manage proforma invoice details"
       footer={
         <>
-          <Button variant="secondary" onClick={handleClose}>
+          <Button
+            variant="secondary"
+            onClick={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          >
             Cancel
           </Button>
 
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={actions.handleReset}>
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                resetDirty();
+                await actions.handleReset();
+              }}
+            >
               Reset
             </Button>
             <Button
@@ -205,7 +217,12 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       customWidth="83vw"
       height="82vh"
     >
-      <form id="proforma-form" onSubmit={handleFormSubmit}>
+      <form
+        id="proforma-form"
+        onSubmit={handleFormSubmit}
+        onChange={() => markDirty()}
+        className="h-full flex flex-col"
+      >
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
