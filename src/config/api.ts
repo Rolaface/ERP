@@ -111,14 +111,14 @@ export const API = {
    * ========================= */
   company: {
     getAll: `${ERP_BASE}/api/method/erpnext.company-setup.setup.get_companies_api`,
-    getById: `${ERP_BASE}/api/method/erpnext.company-setup.setup.get_company_api`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.get`,
     create: `${ERP_BASE}/api/method/erpnext.company-setup.setup.create_company_api`,
     // update: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_info`,
     createSite: `https://api.master.rolaface.com/api/method/saas_provisioning.api.create_site`, 
-    updateById: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_api`,
+    updateById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.update`,
     delete: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_api`,
     updateAccounts: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_accounts_company_info`,
-    updateCompanyFiles: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_files`,
+    updateCompanyFiles: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.upload_company_documents`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
   Account: {
