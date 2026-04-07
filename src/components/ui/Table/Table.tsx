@@ -191,8 +191,8 @@ function Table<T extends Record<string, any>>({
       )}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="shrink-0 border-b border-[var(--border)] bg-card">
-          <table className="w-full table-fixed border-separate border-spacing-0">
+        <div className="shrink-0 border-b border-[var(--border)] bg-card w-full overflow-x-auto">
+          <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               {visibleColumns.map((column) => (
                 <col key={column.key} style={{ width: columnWidth }} />
@@ -239,8 +239,8 @@ function Table<T extends Record<string, any>>({
           </table>
         </div>
 
-        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <table className="w-full table-fixed border-separate border-spacing-0">
+        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-auto">
+          <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               {visibleColumns.map((column) => (
                 <col key={column.key} style={{ width: columnWidth }} />

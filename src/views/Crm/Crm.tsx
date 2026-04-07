@@ -126,7 +126,7 @@ const CRM: React.FC = () => {
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title={crmModule.name}
-        description="Customers, collections, and CRM reporting with a shared workspace rhythm."
+        description="Customers and CRM reporting with a shared workspace rhythm."
         icon={crmModule.icon}
       />
       <AppTabs tabs={crmModule.tabs} activeTab={activeTab} onChange={setActiveTab} />
