@@ -29,7 +29,7 @@ function InputField({
     (!asyncStatus || asyncStatus === "valid");
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-0.5">
       <label className="text-[10px] font-semibold uppercase tracking-wide text-muted">
         {label}
       </label>
@@ -80,7 +80,7 @@ function InputField({
         </div>
       </div>
 
-      <div className="min-h-[12px] text-[10px] leading-none">
+      <div className="min-h-[16px] text-[10px] leading-snug mt-0.5">
         <AnimatePresence mode="wait">
           {error && (
             <motion.p key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-danger">
@@ -165,7 +165,7 @@ function PasswordField({ value, error, onChange, inputRef }: any) {
         />
       </div>
 
-      <div className="space-y-[2px]">
+      <div className="space-y-1 mt-1">
         {rules.map((r, i) => (
           <div
             key={i}
@@ -227,7 +227,7 @@ export default function Step1Account({ form, errors, update, next }: any) {
       </div>
 
       {/* Form */}
-      <div className="form-section space-y-3">
+      <div className="form-group">
         <InputField
           label="Full Name"
           value={form.fullName}
