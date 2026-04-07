@@ -14,7 +14,6 @@ import {
 import {
   showApiError,
   showLoading,
-  showSuccess,
   closeSwal,
   showValidationError
 } from "../utils/alert";
@@ -541,7 +540,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   const isValid = validateDetails();
-  if (!isValid) return;
+  if (!isValid) return false;
 
   try {
     showLoading("Saving quotation...");
@@ -592,15 +591,14 @@ const handleSubmit = async (e: React.FormEvent) => {
       throw new Error("No onSubmit handler provided");
     }
 
-    await onSubmit(payload);
+    const didSave = await onSubmit(payload);
 
     closeSwal();
-    showSuccess("Quotation saved successfully");
-
-    onClose?.();
+    return didSave !== false;
   } catch (error) {
     closeSwal();
     showApiError(error);
+    return false;
   }
 };
   const paginatedItems = formData.items.slice(

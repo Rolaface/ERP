@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Plus, ToolCase, Trash2 } from "lucide-react";
+import { ToolCase } from "lucide-react";
 import { FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import { showApiError, showValidationError } from "../../utils/alert";
 import { User, Mail, Phone } from "lucide-react";
 import CustomerSelect from "../selects/CustomerSelect";
-import Modal from "../../components/ui/modal/modal";
+import { MinimizableModal } from "../../components/common/ModalManagerContext";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
-import StockItemSelect from "../selects/StockItemSelect";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import WarehouseSelect from "../selects/WarehouseSelect";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
@@ -23,13 +23,15 @@ import PaymentInfoBlock from "./PaymentInfoBlock";
 import AddressBlock from "../ui/modal/AddressBlock";
 import { formatDate } from "../../utils/dateFormatter";
 import Tooltip from "../Tooltip";
+import ItemTable from "../common/ItemTable";
 
 interface InvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (data: any) => void;
+  onSubmit?: (data: any) => Promise<boolean> | boolean;
   initialData?: any;
   mode?: "create" | "edit";
+  modalId?: string;
 }
 const ITEMS_PER_PAGE = 5;
 
@@ -39,8 +41,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   onSubmit,
   initialData,
   mode = "create",
+  modalId,
 }) => {
-  if (!isOpen) return null;
+  const resolvedModalId = modalId || (mode === "edit" && initialData?.invoiceNumber
+    ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
+    : `invoice-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+
   const [submitting, setSubmitting] = useState(false);
   const {
     formData,
@@ -96,7 +103,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     <>
       <Button
         variant="secondary"
-        onClick={onClose}
+        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
         type="button"
         disabled={submitting}
       >
@@ -105,7 +112,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       <div className="flex gap-2">
         <Button
           variant="secondary"
-          onClick={actions.handleReset}
+          onClick={async () => {
+            resetDirty();
+            await actions.handleReset();
+          }}
           type="button"
           disabled={submitting}
         >
@@ -135,7 +145,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       setSubmitting(false);
                       return;
                     }
-                    await onSubmit?.(payload);
+                    const didSave = await onSubmit?.(payload);
+                    if (didSave) {
+                      resetDirty();
+                    }
                   } catch (err: any) {
                     showApiError(err);
                   } finally {
@@ -156,9 +169,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   );
 
   return (
-    <Modal
+   <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={mode === "edit" ? "Edit Invoice" : "Create Invoice"}
       subtitle="Create and manage invoice details"
       icon={FileText}
@@ -170,6 +184,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         id="invoiceForm"
         className="h-full flex flex-col"
         autoComplete="off"
+        onChange={() => markDirty()}
       >
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
@@ -378,434 +393,15 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
               {/* ITEMS */}
               <div className="grid grid-cols-[4fr_1fr] gap-4 items-start">
-                <div className="bg-card rounded-lg p-1 shadow-sm ">
-                  <div className="flex items-center gap-1 ">
-                    <h3 className="text-sm font-semibold text-main">
-                      Invoiced Items
-                    </h3>
-                  </div>
-
-                  <div className="mt-2 overflow-x-auto">
-                    <table className="w-full min-w-[760px] border-collapse text-[10px] leading-tight">
-                      <thead>
-                        <tr className="border-b border-theme">
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">
-                            #
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
-                            Item
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[140px] whitespace-nowrap">
-                            Description
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
-                            Packing
-                            <span className="ml-1 text-[9px] text-muted/60 font-normal">
-                              (unit × size)
-                            </span>
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
-                            Box
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[250px] whitespace-nowrap">
-                            Batch No
-                          </th>
-
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
-                            Qty
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px0px] whitespace-nowrap">
-                            Mfg Date
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
-                            Expiry Date
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">
-                            Warehouse
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[40px]  whitespace-nowrap">
-                            Unit Price <span className="text-danger">*</span>
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
-                            Dis(%)
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
-                            Tax(%)
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">
-                            Tax Code
-                          </th>
-                          <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]  whitespace-nowrap">
-                            Amount
-                          </th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedItems.map((it, idx) => {
-                          const i = ui.page * ITEMS_PER_PAGE + idx;
-                          const discountAmount =
-                            it.quantity *
-                            it.price *
-                            (Number(it.discount || 0) / 100);
-                          const amount =
-                            it.quantity * it.price - discountAmount;
-
-                          return (
-                            <tr
-                              key={i}
-                              className="border-b border-theme bg-card row-hover"
-                            >
-                              <td className="px-2 py-1 text-center">{i + 1}</td>
-                              {/* <ItemSelect
-                                    taxCategory={ui.taxCategory}
-                                    value={it.itemCode}
-                                    onChange={(item) => {
-                                      actions.updateItemDirectly(i, {
-                                        itemCode: item.id,
-                                        price: item.sellingPrice ?? it.price,
-                                      });
-                                    }}
-                                  /> */}
-
-                              {/* ITEM COLUMN */}
-                              <td className="px-0.5 py-1 min-w-[135px]">
-                                <StockItemSelect
-                                  value={it.itemCode}
-                                  batchNo={it.batchNo}
-                                  itemName={it.description}
-                                  onChange={(item) => {
-                                    actions.updateItemDirectly(i, {
-                                      qty: item.qty,
-                                      itemCode: item.itemCode,
-                                      description: item.description,
-                                      batchNo: item.batchNo,
-                                      mfgDate: item.mfgDate,
-                                      expDate: item.expiryDate,
-                                      packingUnit: item.packingUnit,
-                                      packingSize: item.packingSize,
-
-                                      vatRate: item.taxRate,
-                                      vatCode: item.taxCode,
-                                      warehouse: item.warehouse,
-                                    });
-                                  }}
-                                  onClear={() => {
-                                    actions.updateItemDirectly(i, {
-                                      itemCode: "",
-                                      description: "",
-                                      batchNo: "",
-                                      mfgDate: "",
-                                      expDate: "",
-                                      packingUnit: "",
-                                      packingSize: "",
-                                      price: 0,
-                                      vatRate: undefined,
-                                      vatCode: "",
-                                    });
-                                  }}
-                                />
-                              </td>
-
-                              <td className="px-0.5 py-1">
-                                <Tooltip content={it.description || "No description"}>
-                                  <input
-                                    className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                    name="description"
-                                    value={it.description}
-                                    onChange={(e) =>
-                                      actions.handleItemChange(i, e)
-                                    }
-                                  />
-                                </Tooltip>
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <div className="flex items-center gap-1">
-                                  {/* PACKING UNIT */}
-                                  <Tooltip content={`Unit: ${it.packingUnit}`}>
-                                  <input
-                                    type="number"
-                                    name="packingUnit"
-                                    value={it.packingUnit || ""}
-                                    disabled
-                                    onChange={(e) =>
-                                      actions.handleItemChange(i, e)
-                                    }
-                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
-                                  />
-                                  </Tooltip>
-
-                                  <span className="text-[10px] text-muted font-semibold">
-                                    ×
-                                  </span>
-
-                                  {/* PACKING SIZE */}
-                                  <Tooltip content={`Size: ${it.packingSize}`}> 
-                                  <input
-                                    type="number"
-                                    name="packingSize"
-                                    value={it.packingSize || ""}
-                                    disabled
-                                    onChange={(e) =>
-                                      actions.handleItemChange(i, e)
-                                    }
-                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
-                                  />
-                                  </Tooltip>
-                                </div>
-                              </td>
-
-                              {/* BOX COLUMN */}
-                              <td className="px-0.5 py-1">
-                                <div className="flex items-center gap-1">
-                                  <Tooltip content={`Box Start: ${it.boxStart}`}> 
-                                  <input
-                                    name="boxStart"
-                                    value={it.boxStart || ""}
-                                    onChange={(e) =>
-                                      actions.handleItemChange(i, e)
-                                    }
-                                    placeholder="Start"
-                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
-                                  />
-                                  </Tooltip>
-                                  <span className="text-[10px] text-muted">
-                                    -
-                                  </span>
-                                  <Tooltip content={`Box End: ${it.boxEnd}`}>
-                                  <input
-                                    name="boxEnd"
-                                    value={it.boxEnd || ""}
-                                    onChange={(e) =>
-                                      actions.handleItemChange(i, e)
-                                    }
-                                    placeholder="End"
-                                    className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
-                                  />
-                                  </Tooltip>
-                                </div>
-                              </td>
-
-                              {
-                                <td className="px-0.5 py-1 min-w-[100px]">
-                                  <Tooltip content={`Batch No: ${it.batchNo}`}>
-                                  <input
-                                    type="string"
-                                    className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                    name="batchNo"
-                                    value={it.batchNo}
-                                    disabled
-                                    onChange={(e) =>
-                                      actions.handleItemChange(i, e)
-                                    }
-                                  />
-                                  </Tooltip>
-                                </td>
-                              }
-
-                              <td className="px-0.5 py-1">
-                                <Tooltip content={`Quantity: ${it.quantity ?? 0}`}>
-                                  <input
-                                    type="number"
-                                    className="w-[75px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                    name="quantity"
-                                    value={it.quantity ?? ""}
-                                    onChange={(e) => {
-                                      const qty = Number(e.target.value);
-                                      const available =
-                                        it.availableQty ?? it.qty ?? 0;
-
-                                      const usedQty = formData.items
-                                        .filter(
-                                          (x, idx) =>
-                                            x.batchNo === it.batchNo && idx !== i,
-                                        )
-                                        .reduce(
-                                          (sum, x) =>
-                                            sum + Number(x.quantity || 0),
-                                          0,
-                                        );
-
-                                      const remaining = available - usedQty;
-
-                                      if (qty > remaining) {
-                                        showValidationError(
-                                          `Only ${remaining} items remaining in batch ${it.batchNo}`,
-                                        );
-                                        return;
-                                      }
-
-                                      actions.handleItemChange(i, e);
-                                    }}
-                                  />
-                                </Tooltip>
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <div style={{ width: "130px" }}>
-                                  <DatePickerInput
-                                    label=""
-                                    name="mfgDate"
-                                    value={it.mfgDate}
-                                    disabled
-                                    onChange={(name, value) =>
-                                      actions.handleItemChange(i, {
-                                        target: { name, value },
-                                      } as any)
-                                    }
-                                  />
-                                </div>
-                              </td>
-
-                              <td className="px-0.5 py-1">
-                                <div style={{ width: "130px" }}>
-                                  <DatePickerInput
-                                    label=""
-                                    name="expDate"
-                                    value={it.expDate}
-                                    disabled
-                                    onChange={(name, value) =>
-                                      actions.handleItemChange(i, {
-                                        target: { name, value },
-                                      } as any)
-                                    }
-                                  />
-                                </div>
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <Tooltip content={it.warehouse || "No warehouse selected"}>
-                                <WarehouseSelect
-                                  compact
-                                  value={(it as any).warehouse || ""}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, {
-                                      target: {
-                                        name: "warehouse",
-                                        value: e.target?.value ?? e,
-                                      },
-                                    } as any)
-                                  }
-                                />
-                                </Tooltip>
-                              </td>
-
-                              <td className="px-0.5 py-1">
-                                <Tooltip content={`Price: ${symbol} ${Number(it.price || 0).toFixed(2)}`}>
-                                  <input
-                                    type="number"
-                                    className="w-[50px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                    name="price"
-                                    value={it.price ?? ""}
-                                    onChange={(e) =>
-                                      actions.handleItemChange(i, e)
-                                    }
-                                  />
-                                </Tooltip>
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <input
-                                  type="number"
-                                  className="w-[55px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                  name="discount"
-                                  value={it.discount ?? ""}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                />
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <input
-                                  type="number" // Assuming input is number for entry, stored as string in Type
-                                  className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                  name="vatRate"
-                                  value={it.vatRate ?? ""}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                />
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <Tooltip content={it.vatCode || "No tax code"}>
-                                <input
-                                  type="string"
-                                  className="w-[45px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                  name="vatCode"
-                                  value={it.vatCode}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                />
-                                </Tooltip>
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <Tooltip content={`Amount: ${symbol} ${amount.toFixed(2)}`}>
-                                  <span className="w-[110px] text-[10px] font-medium text-main">
-                                    {symbol} {amount.toFixed(2)}
-                                  </span>
-                                </Tooltip>
-                              </td>
-
-                              <td className="px-0.5 py-1">
-                                <button
-                                  type="button"
-                                  onClick={() => actions.removeItem(i)}
-                                  className="p-0.5 rounded bg-danger/10 text-danger hover:bg-danger/20 transition text-[10px]"
-                                  title="Remove item"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="flex justify-between mt-3">
-                    <button
-                      type="button"
-                      onClick={actions.addItem}
-                      className="px-4 py-1.5 bg-primary hover:bg-[var(--primary-600)] text-white rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" /> Add Item
-                    </button>
-
-                    {(ui.itemCount > ITEMS_PER_PAGE || ui.page > 0) && (
-                      <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
-                        <div className="text-[11px] text-muted whitespace-nowrap">
-                          Showing {ui.page * ITEMS_PER_PAGE + 1} to{" "}
-                          {Math.min(
-                            (ui.page + 1) * ITEMS_PER_PAGE,
-                            ui.itemCount,
-                          )}{" "}
-                          of {ui.itemCount} items
-                        </div>
-
-                        <div className="flex gap-1.5 items-center">
-                          <button
-                            type="button"
-                            onClick={() => ui.setPage(Math.max(0, ui.page - 1))}
-                            disabled={ui.page === 0}
-                            className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px]"
-                          >
-                            Previous
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => ui.setPage(ui.page + 1)}
-                            disabled={
-                              (ui.page + 1) * ITEMS_PER_PAGE >= ui.itemCount
-                            }
-                            className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px]"
-                          >
-                            Next
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <ItemTable
+                  paginatedItems={paginatedItems}
+                  ui={ui}
+                  
+                  actions={actions}
+                  formData={formData}
+                  symbol={symbol}
+                  ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                />
 
                 {/* RIGHT SIDE */}
                 <div className="col-span-1 sticky top-0 flex flex-col items-center gap-4 px-3 lg:px-4 h-fit">
@@ -978,7 +574,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           )}
         </div>
       </form>
-    </Modal>
+   </MinimizableModal>
   );
 };
 

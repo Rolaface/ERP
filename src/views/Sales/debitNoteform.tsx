@@ -162,9 +162,7 @@ const DebitNoteForm: React.FC<DebitNoteFormProps> = ({
         return;
       }
 
-      showSuccess(
-        res.message || "Debit note created successfully"
-      );
+      showSuccess(res.message);
 
       onSubmit?.(res);
 

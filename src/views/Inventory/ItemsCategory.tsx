@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
 import { showApiError, showSuccess } from "../../utils/alert";
 
@@ -8,7 +9,6 @@ import {
   getItemGroupById,
 } from "../../api/itemCategoryApi";
 
-import ItemsCategoryModal from "../../components/inventory/ItemsCategoryModal";
 import DeleteModal from "../../components/actionModal/DeleteModal";
 
 import Table from "../../components/ui/Table/Table";
@@ -21,11 +21,17 @@ import { ItemGroupFilters } from "../../api/itemCategoryApi";
 import type { Column } from "../../components/ui/Table/type";
 import type { ItemGroupSummary, ItemGroup } from "../../types/itemCategory";
 
+type OutletContextType = {
+  openCategoryCreate: () => void;
+  openCategoryEdit: (id: string, data: any) => void;
+};
+
 /* 
    COMPONENT
  */
 
 const ItemsCategory: React.FC = () => {
+  const { openCategoryCreate, openCategoryEdit } = useOutletContext<OutletContextType>();
   const [groups, setGroups] = useState<ItemGroupSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -35,8 +41,6 @@ const ItemsCategory: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editGroup, setEditGroup] = useState<ItemGroup | null>(null);
   const [filters, setFilters] = useState<ItemGroupFilters>({});
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<ItemGroupSummary | null>(
@@ -93,8 +97,7 @@ const ItemsCategory: React.FC = () => {
    */
 
   const handleAdd = () => {
-    setEditGroup(null);
-    setShowModal(true);
+    openCategoryCreate();
   };
 
   const handleEdit = async (id: string, e?: React.MouseEvent) => {
@@ -102,12 +105,7 @@ const ItemsCategory: React.FC = () => {
 
     try {
       const res = await getItemGroupById(id);
-
-      setEditGroup({
-        ...res.data,
-        itemType: res.data.itemType,
-      });
-      setShowModal(true);
+      openCategoryEdit(id, res.data);
     } catch {
       console.error("Unable to fetch item category");
     }
@@ -243,18 +241,6 @@ const ItemsCategory: React.FC = () => {
             />
           </div>
         }
-      />
-
-      {/* CATEGORY MODAL */}
-      <ItemsCategoryModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditGroup(null);
-        }}
-        onSubmit={handleSaved}
-        initialData={editGroup}
-        isEditMode={!!editGroup}
       />
 
       {/* DELETE MODAL */}

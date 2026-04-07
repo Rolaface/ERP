@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
 import QuotationsTable from "./Quotations";
 import InvoiceTable from "./Invoices";
@@ -7,16 +8,13 @@ import POS from "./POS";
 import SalesDashboard from "./SalesDashboard";
 import ProformaInvoicesTable from "./ProformaInvoice";
 
-import QuotationModal from "../../components/sales/QuotationModal";
-import InvoiceModal from "../../components/sales/InvoiceModal";
-import ProformaInvoiceModal from "../../components/sales/ProformaInvoiceModal";
-import PosModal from "../../components/sales/PosModal";
-import { showApiError, showSuccess } from "../../utils/alert";
-import { createSalesInvoice } from "../../api/salesApi";
-import { createQuotation } from "../../api/quotationApi";
 import CreditNotesTable from "./CreditNotesTable";
 import DebitNotesTable from "./DebitNotesTable";
 import SalesAnalytics from "./SalesAnalytics";
+
+import { showApiError, showSuccess } from "../../utils/alert";
+import { createSalesInvoice } from "../../api/salesApi";
+import { createQuotation } from "../../api/quotationApi";
 
 import {
   FaMoneyBillWave,
@@ -26,7 +24,23 @@ import {
   FaChartBar,
 } from "react-icons/fa";
 
-type ModalType = null | "quotation" | "invoice" | "proforma" | "pos";
+type OutletContextType = {
+  // Sales
+  openInvoiceCreate: () => void;
+  openInvoiceEdit: (invoiceNumber: string, data: any) => void;
+  openProformaCreate: () => void;
+  openProformaEdit: (proformaId: string, data: any) => void;
+  openQuotationCreate: () => void;
+  openQuotationEdit: (quotationId: string, data: any) => void;
+  // CRM
+  openCustomerCreate: () => void;
+  openCustomerEdit: (id: string, data: any) => void;
+  // Procurement
+  openSupplierCreate: () => void;
+  openSupplierEdit: (id: string, data: any) => void;
+  openPOCreate: () => void;
+  openPOEdit: (poId: string | number) => void;
+};
 
 const salesTabs = [
   { id: "salesdashboard", name: "Dashboard", icon: <FaCalendarAlt /> },
@@ -37,65 +51,72 @@ const salesTabs = [
     icon: <FaFileInvoiceDollar />,
   },
   { id: "invoices", name: "Invoices", icon: <FaFileInvoiceDollar /> },
-
   { id: "creditNotes", name: "Credit Notes", icon: <FaFileInvoiceDollar /> },
   { id: "debitNotes", name: "Debit Notes", icon: <FaFileInvoiceDollar /> },
-
-  // { id: "pos", name: "POS", icon: <FaCashRegister /> },
   { id: "reports", name: "Reports", icon: <FaChartBar /> },
   { id: "salesAnalytics", name: "Sales Analytics", icon: <FaChartBar /> },
 ];
 
 const SalesModule: React.FC = () => {
   const [activeTab, setActiveTab] = useState("salesdashboard");
-  const [openModal, setOpenModal] = useState<ModalType>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const TAB_CONFIG: Record<
-    string,
-    { component: React.ReactNode; onAdd?: () => void }
-  > = {
+  // ✅ GLOBAL MODAL CONTROL FROM APP LAYOUT
+  const { 
+    openInvoiceCreate, 
+    openInvoiceEdit,
+    openProformaCreate, 
+    openProformaEdit,
+    openQuotationCreate,
+    openQuotationEdit,
+  } = useOutletContext<OutletContextType>();
+
+  // ================= API HANDLERS =================
+
+ 
+  // ================= TAB CONFIG =================
+
+  const TAB_CONFIG: Record<string, { component: React.ReactNode }> = {
     salesdashboard: {
       component: <SalesDashboard />,
     },
+
     quotations: {
       component: (
         <QuotationsTable
           key={refreshKey}
-          onAddQuotation={() => setOpenModal("quotation")}
-          onExportQuotation={() => {
-            console.log("Export quotations");
-          }}
+          onAddQuotation={() => openQuotationCreate()}
+          onExportQuotation={() => console.log("Export quotations")}
         />
       ),
     },
+
     proformaInvoice: {
       component: (
         <ProformaInvoicesTable
           refreshKey={refreshKey}
-          onAddProformaInvoice={() => setOpenModal("proforma")}
-          onExportProformaInvoice={() => {
-            console.log("Export proforma invoices");
-          }}
+          onAddProformaInvoice={() => openProformaCreate()}
+          onExportProformaInvoice={() =>
+            console.log("Export proforma invoices")
+          }
         />
       ),
     },
+
     invoices: {
       component: (
         <InvoiceTable
           key={refreshKey}
-          onAddInvoice={() => setOpenModal("invoice")}
-          onExportInvoice={() => {
-            console.log("Export invoices");
-          }}
+          onAddInvoice={() => openInvoiceCreate()}
+          onExportInvoice={() => console.log("Export invoices")}
         />
       ),
     },
 
     pos: {
       component: <POS />,
-      onAdd: () => setOpenModal("pos"),
     },
+
     creditNotes: {
       component: <CreditNotesTable />,
     },
@@ -107,51 +128,15 @@ const SalesModule: React.FC = () => {
     reports: {
       component: <ReportTable />,
     },
+
     salesAnalytics: {
       component: <SalesAnalytics />,
     },
   };
 
-  const handleInvoiceSubmit = async (payload: any) => {
-    console.log("[Sales] handleInvoiceSubmit called");
-    try {
-      const response = await createSalesInvoice(payload);
-
-      if (!response || ![200, 201].includes(response.status_code)) {
-        showApiError(response);
-        return;
-      }
-
-      showSuccess(response.message || "Invoice created successfully");
-
-      setOpenModal(null); // Ensure modal closes immediately after success
-      setRefreshKey((prev) => prev + 1);
-    } catch (error: any) {
-      showApiError(error);
-    }
-  };
-
-  const handleQuotationSubmit = async (payload: any) => {
-    try {
-      const response = await createQuotation(payload);
-
-      if (!response || ![200, 201].includes(response.status_code)) {
-        throw response;
-      }
-
-      setRefreshKey((prev) => prev + 1);
-      setOpenModal(null);
-    } catch (error: any) {
-      throw error;
-    }
-  };
-
-  const handleProformaCreated = () => {
-    setRefreshKey((prev) => prev + 1);
-    setOpenModal(null);
-  };
-
   const tab = TAB_CONFIG[activeTab];
+
+  // ================= UI =================
 
   return (
     <div className="p-6 bg-app">
@@ -164,57 +149,24 @@ const SalesModule: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-4">
-        {salesTabs.map((tab) => (
+        {salesTabs.map((tabItem) => (
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors ${
-              activeTab === tab.id
+            key={tabItem.id}
+            onClick={() => setActiveTab(tabItem.id)}
+            className={`px-4 py-2 font-medium flex items-center gap-2 ${
+              activeTab === tabItem.id
                 ? "text-primary border-b-2 border-current"
                 : "text-muted hover:text-main"
             }`}
           >
-            {tab.icon}
-            {tab.name}
+            {tabItem.icon}
+            {tabItem.name}
           </button>
         ))}
       </div>
 
       {/* Content */}
-      <div className="">
-        {tab?.onAdd && (
-          <div className="flex items-center justify-end gap-4 mb-4">
-            {/* Add button if needed */}
-          </div>
-        )}
-
-        {tab?.component}
-      </div>
-
-      {/* Modals */}
-      <QuotationModal
-        isOpen={openModal === "quotation"}
-        onClose={() => setOpenModal(null)}
-        onSubmit={handleQuotationSubmit}
-      />
-
-      <InvoiceModal
-        isOpen={openModal === "invoice"}
-        onClose={() => setOpenModal(null)}
-        onSubmit={handleInvoiceSubmit}
-      />
-
-      <ProformaInvoiceModal
-        isOpen={openModal === "proforma"}
-        onClose={() => setOpenModal(null)}
-        onSubmit={handleProformaCreated}
-      />
-
-      <PosModal
-        isOpen={openModal === "pos"}
-        onClose={() => setOpenModal(null)}
-        onSave={(data) => console.log("POS", data)}
-      />
+      <div>{tab?.component}</div>
     </div>
   );
 };

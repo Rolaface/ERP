@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import PurchaseInvoiceView from "../../views/Procurement/PurchaseInvoiceView";
-import PurchaseInvoiceModal from "../../components/procurement/PurchaseInvoiceModal";
 // Shared UI Table Components
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
@@ -86,7 +86,13 @@ const invoiceStatusOptions = [
 
 const CRITICAL_STATUSES: PIStatus[] = ["Debit Note Issued", "Cancelled"];
 
+type OutletContextType = {
+  openPICreate: () => void;
+  openPIEdit: (pId: string | number) => void;
+};
+
 const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) => {
+  const { openPICreate, openPIEdit } = useOutletContext<OutletContextType>();
   const [orders, setOrders] = useState<Purchaseinvoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -94,7 +100,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [modalOpen, setModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
@@ -254,8 +259,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
   // ── Modal handlers
   const handleAddClick = () => {
     setSelectedInvoice(null);
-    setModalOpen(true);
-    onAdd?.();
+    openPICreate();
   };
 
   const handleEdit = (invoice: Purchaseinvoice, e: React.MouseEvent) => {
@@ -267,7 +271,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
     }
 
     setSelectedInvoice(invoice);
-    setModalOpen(true);
+    openPIEdit(invoice.pId);
   };
 
   const handleDelete = (invoice: Purchaseinvoice, e: React.MouseEvent) => {
@@ -276,7 +280,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
     }
   };
 
-  const handleCloseModal = () => setModalOpen(false);
   const handlePISaved = async () => { await fetchInvoice(); };
 
   // ── Export
@@ -399,9 +402,9 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
           </code>
         </Tooltip>
       ),
-    },
-     {
-      key: "amount",
+},
+    {
+      key: "grandTotalWithTax",
       header: "Amount with Tax",
       align: "left",
       render: (o) => (
@@ -560,14 +563,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
         }}
       />
 
-      {/* ── Add / Edit modal ── */}
-      <PurchaseInvoiceModal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-        pId={selectedInvoice?.pId}
-        onSubmit={handlePISaved}
-      />
-
       {/* ── View modal —   ── */}
       {viewModalOpen && selectedInvoice && (
         <PurchaseInvoiceView
@@ -575,7 +570,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
           onClose={() => setViewModalOpen(false)}
           onEdit={() => {
             setViewModalOpen(false);
-            setModalOpen(true);
+            openPIEdit(selectedInvoice.pId);
           }}
         />
 
@@ -594,7 +589,8 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
               partyName: selectedPI.supplierName,
               partyId: selectedPI.supplierId ?? selectedPI.pId,
               amount: selectedPI.grandTotal,
-              referenceInvoice: selectedPI.pId,
+              referenceName: selectedPI.pId,
+              referenceType: "Purchase Invoice",
             }
             : undefined
         }

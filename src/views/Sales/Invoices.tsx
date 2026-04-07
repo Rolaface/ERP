@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   getAllSalesInvoices,
   updateInvoiceStatus,
@@ -29,9 +30,13 @@ import {
 import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import Swal from "sweetalert2";
-import InvoiceModal from "../../components/sales/InvoiceModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+import { fireManagedSwal } from "../../utils/swalManager";
+
+type OutletContextType = {
+  openInvoiceCreate: () => void;
+  openInvoiceEdit: (invoiceNumber: string, data: any) => void;
+};
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   Draft: ["Rejected", "Approved"],
@@ -49,6 +54,8 @@ interface InvoiceTableProps {
 }
 
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
+  const { openInvoiceEdit } = useOutletContext<OutletContextType>();
+
   // ── Data
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,9 +64,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
   // ── PDF preview (kept — do not remove)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  // Edit state
-  const [editOpen, setEditOpen] = useState(false);
-  const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
 
@@ -235,8 +239,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
       closeSwal();
 
-      setEditInvoice(res.data);
-      setEditOpen(true);
+      openInvoiceEdit(invoiceNumber, res.data);
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -401,7 +404,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     status: InvoiceStatus,
   ) => {
     if (CRITICAL_STATUSES.includes(status)) {
-      const result = await Swal.fire({
+      const result = await fireManagedSwal({
         icon: "warning",
         title: "Confirm Status Change",
         text: `Mark invoice ${invoiceNumber} as ${status}?`,
@@ -447,7 +450,7 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
   const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    const result = await Swal.fire({
+    const result = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
       text: `Delete invoice ${invoiceNumber}?`,
@@ -592,15 +595,16 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
             onDownload={(e) => handleDownload(inv, e)}
             onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
             customActions={[
-              ...(inv.invoiceStatus === "Approved"
-                ? [
-                    {
-                      label: "Receive Payment",
-                      onClick: () => handleReceivePayment(inv),
-                    },
-                  ]
-                : []),
-
+...(inv.invoiceStatus !== "Draft" &&
+   inv.invoiceStatus !== "Cancelled" &&
+   inv.outstandingAmount > 0
+  ? [
+      {
+        label: "Receive Payment",
+        onClick: () => handleReceivePayment(inv),
+      },
+    ]
+  : []),
               {
                 label: "View PDF",
                 onClick: () => handlePreviewPDF(inv),
@@ -707,49 +711,11 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
                 partyName: paymentInvoice.customerName,
                 partyId: paymentInvoice.customerId,
                 amount: paymentInvoice.outstandingAmount,
-                referenceInvoice: paymentInvoice.invoiceNumber,
+                referenceName: paymentInvoice.invoiceNumber,
+                referenceType: "Sales Invoice",
               }
             : undefined
         }
-      />
-
-      <InvoiceModal
-        isOpen={editOpen}
-        onClose={() => {
-          setEditOpen(false);
-          setEditInvoice(null);
-        }}
-        mode="edit"
-        initialData={editInvoice}
-        onSubmit={async (data) => {
-          try {
-            if (!editInvoice?.invoiceNumber) {
-              showApiError("Invalid invoice selected");
-              return;
-            }
-
-            showLoading("Updating invoice...");
-
-            const res = await editSalesInvoice(editInvoice.invoiceNumber, data);
-
-            closeSwal();
-
-            if (!res || res.status_code !== 200) {
-              showApiError(res?.message || "Failed to update invoice");
-              return;
-            }
-
-            showSuccess("Invoice updated successfully");
-
-            setEditOpen(false);
-            setEditInvoice(null);
-
-            fetchInvoices();
-          } catch (err) {
-            closeSwal();
-            showApiError(err);
-          }
-        }}
       />
     </div>
   );

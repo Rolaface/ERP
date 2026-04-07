@@ -37,6 +37,7 @@ interface UsePurchaseOrderFormProps {
   onSuccess?: (data: any) => void;
   onClose?: () => void;
   poId?: string | number;
+  duplicateItem?: ItemRow;
 }
 
 export const usePurchaseOrderForm = ({
@@ -44,7 +45,6 @@ export const usePurchaseOrderForm = ({
   onSuccess,
   onClose,
   poId,
-
 }: UsePurchaseOrderFormProps) => {
   const [form, setForm] = useState<PurchaseOrderFormData>(emptyPOForm);
   const [activeTab, setActiveTab] = useState<POTab>("details");
@@ -362,6 +362,19 @@ useFieldDefault(
     setForm((p) => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
   };
 
+  const duplicateItem = (absoluteIndex: number) => {
+    setForm((prev) => {
+      const source = prev.items[absoluteIndex];
+      if (!source) return prev;
+
+      const copy = { ...source };
+      const newItems = [...prev.items];
+      newItems.splice(absoluteIndex + 1, 0, copy);
+
+      return { ...prev, items: newItems };
+    });
+  };
+
   const handleTaxRowChange = (idx: number, key: keyof TaxRow, value: any) => {
     const taxRows = [...form.taxRows];
     taxRows[idx] = { ...taxRows[idx], [key]: value };
@@ -434,7 +447,7 @@ useFieldDefault(
       case "ZMW":
         return "K";
       default:
-        return "K";
+        return "";
     }
   };
 
@@ -631,6 +644,7 @@ useFieldDefault(
     handleItemChange,
     addItem,
     removeItem,
+    duplicateItem,
     handleTaxRowChange,
     addTaxRow,
     removeTaxRow,

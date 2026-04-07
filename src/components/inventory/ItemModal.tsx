@@ -1,8 +1,9 @@
 import React from "react";
-import Modal from "../ui/modal/modal";
+import { MinimizableModal } from "../common/ModalManagerContext";
 import { Button } from "../../components/ui/modal/formComponent";
 import { DynamicField } from "../DynamicField";
 import { useItemForm } from "../../hooks/Useitemform";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { YesNoCheckbox } from "../ui/modal/modalComponent";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
 import Tooltip from "../Tooltip";
@@ -288,7 +289,12 @@ const ItemModal: React.FC<{
   onSubmit?: (res: any) => void;
   initialData?: Record<string, any> | null;
   isEditMode?: boolean;
-}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false }) => {
+  modalId?: string;
+}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false, modalId }) => {
+  const resolvedModalId = modalId || (isEditMode && initialData?.id
+    ? `item-edit-${initialData.id}-${Date.now()}`
+    : `item-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     form,
     setForm,
@@ -328,15 +334,28 @@ const ItemModal: React.FC<{
   };
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
       title={isEditMode ? "Edit Item" : "Add Item"}
       subtitle="Create and manage item details"
+      icon={ToolCase}
       customWidth="68vw"
       height="60vh"
     >
-      <form onSubmit={handleSubmit} noValidate className="h-full flex flex-col">
+      <form
+        onChange={() => markDirty()}
+        onSubmit={(e) => {
+          const wrappedSubmit = async () => {
+            resetDirty();
+            await handleSubmit(e);
+          };
+          wrappedSubmit();
+        }}
+        noValidate
+        className="h-full flex flex-col"
+      >
         {/* ── Tab bar ─────────────────────────────────────────────────── */}
         <div className="bg-app border-b border-theme px-6 shrink-0">
           <div className="flex gap-6">
@@ -988,10 +1007,17 @@ if (fieldConfig.fieldName === "description") {
 
         {/* ── Footer ───────────────────────────────────────────────────── */}
         <div className="flex justify-end gap-2 border-t border-theme px-5 py-3 bg-app shrink-0">
-          <Button variant="secondary" type="button" onClick={handleClose}>
+          <Button variant="secondary" type="button" onClick={() => handleCloseWithConfirm(handleClose, resolvedModalId)}>
             Cancel
           </Button>
-          <Button variant="danger" type="button" onClick={reset}>
+          <Button
+            variant="danger"
+            type="button"
+            onClick={() => {
+              resetDirty();
+              reset();
+            }}
+          >
             Reset
           </Button>
           <Button variant="primary" type="submit" loading={loading}>
@@ -1002,7 +1028,7 @@ if (fieldConfig.fieldName === "description") {
           </Button>
         </div>
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

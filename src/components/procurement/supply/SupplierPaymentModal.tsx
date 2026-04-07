@@ -96,7 +96,7 @@ const handleSubmit = async () => {
       return;
     }
 
-    showSuccess(response?.message?.message || "Payment recorded successfully");
+    showSuccess(response?.message?.message);
 
     onSubmit?.(response);
     onClose();

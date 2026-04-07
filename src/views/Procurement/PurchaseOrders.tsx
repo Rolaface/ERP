@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import PurchaseOrderModal from "../../components/procurement/PurchaseOrderModal";
+import { useOutletContext } from "react-router-dom";
 import PurchaseOrderView from "../../views/Procurement/purchaseorderview";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
@@ -28,6 +28,11 @@ import { generatePurchaseOrderPDF } from "../../components/template/purchaseorde
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
+
+type OutletContextType = {
+  openPOCreate: () => void;
+  openPOEdit: (poId: string | number) => void;
+};
 import PurchaseOrderDetailModal, {
   type PurchaseOrderDetail,
 } from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
@@ -40,6 +45,7 @@ interface PurchaseOrder {
   date: string;
   amount: number;
   status: string;
+   supplierId: string;  
   deliveryDate: string;
   referenceNumber: string;
 }
@@ -67,6 +73,8 @@ const statusOptions = [
 ];
 
 const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
+  const { openPOEdit } = useOutletContext<OutletContextType>();
+  
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,7 +88,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
   const [company, setCompany] = useState<any | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(null);
+  const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(null);
 
   // ── PDF preview modal (kept — do not remove)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -136,6 +144,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
         id: po.poId,
         supplier: po.supplierName,
         date: po.poDate,
+        supplierId: po.supplierId ?? po.partyId ?? po.supplier_id,
         deliveryDate: po.deliveryDate || po.items?.[0]?.requiredBy || "",
         amount: po.grandTotal,
         status: po.status,
@@ -224,9 +233,8 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
 
   // ── Modal handlers
   const handleAddClick = () => {
-    setSelectedOrder(null);
-    setModalOpen(true);
-    onAdd?.();
+    console.log("OPEN PURCHASE MODAL");
+    openPOEdit(0); // This will create a new PO (poId is undefined)
   };
 
   const handleEdit = (order: PurchaseOrder, e: React.MouseEvent) => {
@@ -237,8 +245,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
       return;
     }
 
-    setSelectedOrder(order);
-    setModalOpen(true);
+    openPOEdit(order.id);
   };
 
   const handleDelete = (order: PurchaseOrder, e: React.MouseEvent) => {
@@ -552,13 +559,6 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
       />
 
 
-      <PurchaseOrderModal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-        poId={selectedOrder?.id}
-        onSubmit={handlePOSaved}
-      />
-
 
       <PurchaseOrderDetailModal
         open={drawerOpen}
@@ -621,8 +621,12 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   defaultValues={{
     paymentType: "Pay",
     partyType: "Supplier",
-    partyName: selectedPOForPayment?.supplier,
-    referenceInvoice: selectedPOForPayment?.id,
+    partyName: selectedPOForPayment?.supplier,   // display name for UI
+    partyId: selectedPOForPayment?.supplierId,   // ← actual ID for API (add this field to your PurchaseOrder interface)
+    amount: selectedPOForPayment?.amount, 
+    referenceName: selectedPOForPayment?.id,
+   referenceType: "Purchase Order",
+    
   }}
 />
     </div>

@@ -37,6 +37,14 @@
   --hero-title-size: 40px;
   --hero-subtitle-size: 16px;
   --hero-max-width: 600px;
+
+  --z-sidebar: 100;
+  --z-app-chrome: 120;
+  --z-modal-backdrop-base: 1000;
+  --z-modal-step: 20;
+  --z-modal-panel-offset: 10;
+  --z-modal-taskbar: 1800;
+  --z-swal: 4000;
 }
 
 /* =========================================
@@ -723,6 +731,37 @@ h4 {
 }
 .react-datepicker-wrapper {
   width: 100%;
+}
+
+.erp-modal-backdrop,
+.erp-modal-layer {
+  isolation: isolate;
+}
+
+.erp-modal-panel {
+  will-change: transform, opacity;
+}
+
+body.app-swal-open .erp-modal-backdrop,
+body.app-swal-open .erp-modal-layer {
+  pointer-events: none !important;
+}
+
+.swal2-container {
+  z-index: var(--z-swal) !important;
+}
+
+.swal2-container.app-swal-container {
+  backdrop-filter: blur(3px);
+}
+
+.swal2-container.app-swal-container.swal2-backdrop-show {
+  background: rgba(15, 23, 42, 0.45) !important;
+}
+
+.swal2-popup.app-swal-popup {
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
 }
  
 /* TEXT COLORS (Keep as is — already solid) */

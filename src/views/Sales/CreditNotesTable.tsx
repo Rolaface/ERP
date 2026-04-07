@@ -49,7 +49,7 @@ const CreditNotesTable: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // ── Modals ────────────────────────────────────────────────────────────────
-  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [createModals, setCreateModals] = useState<{ id: string }[]>([]);
   const [detailsOpen, setDetailsOpen]         = useState(false);
   const [detailsId, setDetailsId]             = useState<string | null>(null);
 
@@ -260,7 +260,7 @@ const CreditNotesTable: React.FC = () => {
         onSearch={(q) => { setSearchTerm(q); setPage(1); }}
         enableAdd
         addLabel="Add Credit Note"
-        onAdd={() => setOpenCreateModal(true)}
+        onAdd={() => setCreateModals((prev) => [...prev, { id: `credit-note-create-${Date.now()}` }])}
         emptyMessage="No credit notes found"
         enableColumnSelector
         enableExport
@@ -284,15 +284,19 @@ const CreditNotesTable: React.FC = () => {
         onOpenReceiptPdf={handleOpenReceipt}
       />
 
-      <CreateCreditNoteModal
-        isOpen={openCreateModal}
-        onClose={() => setOpenCreateModal(false)}
-        onSubmit={(payload) => {
-          console.log("Credit Note Payload:", payload);
-          setOpenCreateModal(false);
-        }}
-        invoiceId={data.length > 0 ? data[0].invoiceNo : ""}
-      />
+      {createModals.map((modal) => (
+        <CreateCreditNoteModal
+          key={modal.id}
+          modalId={modal.id}
+          isOpen={true}
+          onClose={() => setCreateModals((prev) => prev.filter((m) => m.id !== modal.id))}
+          onSubmit={(payload) => {
+            console.log("Credit Note Payload:", payload);
+            setCreateModals((prev) => prev.filter((m) => m.id !== modal.id));
+          }}
+          invoiceId={data.length > 0 ? data[0].invoiceNo : ""}
+        />
+      ))}
     </div>
   );
 };

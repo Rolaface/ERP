@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   getAllProformaInvoices,
   updateProformaInvoiceStatus,
@@ -25,6 +26,7 @@ import {
   closeSwal,
 } from "../../utils/alert";
 import Swal from "sweetalert2";
+import { closeManagedSwal, fireManagedSwal } from "../../utils/swalManager";
 import InvoiceDetailsModal, {
   type InvoiceDetails,
 } from "./InvoiceDetailsModal";
@@ -32,7 +34,11 @@ import PdfPreviewModal from "./PdfPreviewModal";
 import ProformaDetailModal, {
   type ProformaDetail,
 } from "./Proformadetailmodal";
-import ProformaInvoiceModal from "../../components/sales/ProformaInvoiceModal";
+
+type OutletContextType = {
+  openProformaCreate: () => void;
+  openProformaEdit: (proformaId: string, data: any) => void;
+};
 
 // Constants
 
@@ -74,6 +80,8 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   onAddProformaInvoice,
   refreshKey,
 }) => {
+  const { openProformaEdit } = useOutletContext<OutletContextType>();
+
   // ── Data
   const [invoices, setInvoices] = useState<ProformaInvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,9 +114,6 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [selectedProforma, setSelectedProforma] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
-  // Edit modal state
-const [editOpen, setEditOpen] = useState(false);
-const [editInvoice, setEditInvoice] = useState<any>(null);
   // ── Fetch company once
   useEffect(() => {
     getCompanyById(COMPANY_ID)
@@ -175,8 +180,7 @@ const [editInvoice, setEditInvoice] = useState<any>(null);
 
     closeSwal();
 
-    setEditInvoice(res.data);
-    setEditOpen(true);
+    openProformaEdit(proformaId, res.data);
 
   } catch (err) {
     closeSwal();
@@ -385,7 +389,7 @@ const [editInvoice, setEditInvoice] = useState<any>(null);
   const handleDelete = async (proformaId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    const result = await Swal.fire({
+    const result = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
       text: `Delete proforma invoice ${proformaId}?`,
@@ -398,7 +402,7 @@ const [editInvoice, setEditInvoice] = useState<any>(null);
     if (!result.isConfirmed) return;
 
     try {
-      Swal.fire({
+      fireManagedSwal({
         title: "Deleting...",
         text: "Please wait while we delete the invoice.",
         allowOutsideClick: false,
@@ -408,7 +412,7 @@ const [editInvoice, setEditInvoice] = useState<any>(null);
       });
 
       const res = await deleteProformaInvoiceById(proformaId);
-      Swal.close();
+      closeManagedSwal();
 
       if (!res || res.status_code !== 200) {
         showApiError(res?.message || "Delete failed");
@@ -421,7 +425,7 @@ const [editInvoice, setEditInvoice] = useState<any>(null);
       );
       showSuccess("Proforma invoice deleted successfully");
     } catch (err) {
-      Swal.close();
+      closeManagedSwal();
       showApiError(err);
     }
   };
@@ -670,19 +674,6 @@ const [editInvoice, setEditInvoice] = useState<any>(null);
           generateProformaInvoicePDF(selectedProforma, company, "save")
         }
       />
-      <ProformaInvoiceModal
-  isOpen={editOpen}
-  onClose={() => {
-    setEditOpen(false);
-    setEditInvoice(null);
-  }}
-  initialData={editInvoice}
-  mode="edit"
-  onSubmit={() => {
-    setEditOpen(false);
-    fetchInvoices();
-  }}
-/>
     </div>
   );
 };
