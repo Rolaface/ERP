@@ -223,7 +223,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               {/* Label */}
               <span
                 className={`
-                  truncate text-sm font-medium transition-all duration-200 pr-3
+                  truncate text-[14px] font-semibold tracking-tight transition-all duration-200 pr-3
                   ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
                 `}
               >
@@ -252,7 +252,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
 
               <span
                 className={`
-                  flex-1 truncate text-left text-sm font-medium transition-all duration-200
+                  flex-1 truncate text-left text-[14px] font-semibold tracking-tight transition-all duration-200
                   ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
                 `}
               >
