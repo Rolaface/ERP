@@ -56,23 +56,8 @@ const Settings = () => {
         }
       />
       <AppTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-      <AppPageBody className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <div className="space-y-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${
-                activeTab === tab.id
-                  ? "bg-primary text-white"
-                  : "text-muted hover:bg-card hover:text-main"
-              }`}
-            >
-              <span className="text-base">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <AppPageBody className="flex flex-col gap-6">
+      
 
         <AppSurface className="flex min-h-0 flex-col overflow-hidden">
           <div className="border-b border-[var(--border)] px-6 py-4">
