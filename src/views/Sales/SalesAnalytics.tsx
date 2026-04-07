@@ -7,6 +7,8 @@ import {
 } from "../../api/analyticsApi";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 
+/*  ── Types ── */
+
 export type SalesNode = {
   entity: string;
   entity_name: string;
@@ -47,26 +49,22 @@ export type SalesData = {
   pagination: PaginationMeta;
 };
 
+/*  ── Helpers ── */
+
 const nf = (value: number | undefined | null, isCurrency = true): string => {
   if (value === null || value === undefined) return "—";
   const formatted = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: isCurrency ? 2 : 0,
     maximumFractionDigits: isCurrency ? 2 : 0,
   }).format(Math.abs(value));
-
   const prefix = isCurrency ? "₹" : "";
   return value < 0 ? `-${prefix}${formatted}` : `${prefix}${formatted}`;
 };
 
-const currentYearStart = (): string => {
-  const year = new Date().getFullYear();
-  return `${year}-01-01`;
-};
+const currentYearStart = () => `${new Date().getFullYear()}-01-01`;
+const currentYearEnd = () => `${new Date().getFullYear()}-12-31`;
 
-const currentYearEnd = (): string => {
-  const year = new Date().getFullYear();
-  return `${year}-12-31`;
-};
+/*  ── KPI Cards ── */
 
 function SummaryStrip({
   kpis,
@@ -76,43 +74,53 @@ function SummaryStrip({
   isQuantity: boolean;
 }) {
   if (!kpis) return null;
+  const topPerformer = kpis.top_performers?.[0] ?? null;
 
-  const topPerformer =
-    kpis.top_performers?.length > 0 ? kpis.top_performers[0] : null;
+  const cards = [
+    {
+      label: isQuantity ? "Total Sales Quantity" : "Total Sales Value",
+      value: nf(kpis.total_sales_value, !isQuantity),
+      color: "text-emerald-500",
+    },
+    {
+      label: "Entities Analyzed",
+      value: nf(kpis.total_entities_analyzed, false),
+      color: "text-blue-500",
+    },
+    {
+      label: isQuantity ? "Avg Quantity / Entity" : "Avg Value / Entity",
+      value: nf(kpis.average_value_per_entity, !isQuantity),
+      color: "text-violet-500",
+    },
+    {
+      label: "Top Performer",
+      value: topPerformer ? topPerformer.entity : "—",
+      color: "text-main",
+      truncate: true,
+    },
+  ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
-      <div className="bg-card rounded-lg border border-theme p-4 shadow-sm">
-        <span className="text-xs text-muted">
-          {isQuantity ? "Total Sales Quantity" : "Total Sales Value"}
-        </span>
-        <div className="text-xl font-bold text-emerald-500 mt-1">
-          {nf(kpis.total_sales_value, !isQuantity)}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      {cards.map((card) => (
+        <div
+          key={card.label}
+          className="bg-card rounded-xl border border-theme p-4 shadow-sm"
+        >
+          <span className="text-xs text-muted">{card.label}</span>
+          <div
+            className={`text-xl font-bold mt-1 ${card.color} ${card.truncate ? "truncate" : ""}`}
+            title={card.truncate ? card.value : undefined}
+          >
+            {card.value}
+          </div>
         </div>
-      </div>
-      <div className="bg-card rounded-lg border border-theme p-4 shadow-sm">
-        <span className="text-xs text-muted">Entities Analyzed</span>
-        <div className="text-xl font-bold text-blue-500 mt-1">
-          {nf(kpis.total_entities_analyzed, false)}
-        </div>
-      </div>
-      <div className="bg-card rounded-lg border border-theme p-4 shadow-sm">
-        <span className="text-xs text-muted">
-          {isQuantity ? "Avg Quantity / Entity" : "Avg Value / Entity"}
-        </span>
-        <div className="text-xl font-bold text-violet-500 mt-1">
-          {nf(kpis.average_value_per_entity, !isQuantity)}
-        </div>
-      </div>
-      <div className="bg-card rounded-lg border border-theme p-4 shadow-sm overflow-hidden">
-        <span className="text-xs text-muted">Top Performer</span>
-        <div className="text-xl font-bold text-main mt-1 truncate">
-          {topPerformer ? topPerformer.entity : "—"}
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
+
+/*  ── Extra Filters (rendered above Table toolbar) ── */
 
 type FilterBarProps = {
   filters: SalesAnalyticsFilters;
@@ -120,13 +128,17 @@ type FilterBarProps = {
 };
 
 function FilterBar({ filters, setFilters }: FilterBarProps) {
+  const selectClass =
+    "bg-card border border-theme rounded-lg text-sm text-main shadow-sm focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition px-3 py-2 appearance-none";
   const inputClass =
-    "px-3 py-2 border border-theme bg-app rounded-lg text-sm text-main w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all";
+    "bg-card border border-theme rounded-lg text-sm text-main shadow-sm focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition px-3 py-2 w-40";
+  const labelClass = "text-xs text-muted font-medium whitespace-nowrap";
 
   return (
-    <div className="bg-card rounded-lg border border-theme p-4 flex flex-wrap gap-4 items-center shadow-sm w-full mb-4">
+    <div className="flex flex-wrap gap-3 items-center pb-3">
+      {/* Analyze By */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted font-medium">Analyze By:</span>
+        <span className={labelClass}>Analyze By:</span>
         <select
           value={filters.tree_type}
           onChange={(e) =>
@@ -136,7 +148,7 @@ function FilterBar({ filters, setFilters }: FilterBarProps) {
               page: 1,
             }))
           }
-          className={inputClass}
+          className={selectClass}
         >
           <option value="Customer">Customer</option>
           <option value="Customer Group">Customer Group</option>
@@ -146,8 +158,9 @@ function FilterBar({ filters, setFilters }: FilterBarProps) {
         </select>
       </div>
 
+      {/* Range */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted font-medium">Range:</span>
+        <span className={labelClass}>Range:</span>
         <select
           value={filters.range}
           onChange={(e) =>
@@ -157,7 +170,7 @@ function FilterBar({ filters, setFilters }: FilterBarProps) {
               page: 1,
             }))
           }
-          className={inputClass}
+          className={selectClass}
         >
           <option value="Weekly">Weekly</option>
           <option value="Monthly">Monthly</option>
@@ -166,52 +179,46 @@ function FilterBar({ filters, setFilters }: FilterBarProps) {
         </select>
       </div>
 
+      {/* Based On */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted font-medium">BasedOn:</span>
+        <span className={labelClass}>Based On:</span>
         <select
           value={filters.value_quantity}
           onChange={(e) =>
             setFilters((f) => ({
               ...f,
-              value_quantity: e.target
-                .value as SalesAnalyticsFilters["value_quantity"],
+              value_quantity: e.target.value as SalesAnalyticsFilters["value_quantity"],
               page: 1,
             }))
           }
-          className={inputClass}
+          className={selectClass}
         >
           <option value="Value">Value</option>
           <option value="Quantity">Quantity</option>
         </select>
       </div>
 
+      {/* From Date */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted font-medium">From:</span>
+        <span className={labelClass}>From:</span>
         <input
           type="date"
           value={filters.from_date || ""}
           onChange={(e) =>
-            setFilters((f) => ({
-              ...f,
-              from_date: e.target.value,
-              page: 1,
-            }))
+            setFilters((f) => ({ ...f, from_date: e.target.value, page: 1 }))
           }
           className={inputClass}
         />
       </div>
 
+      {/* To Date */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted font-medium">To:</span>
+        <span className={labelClass}>To:</span>
         <input
           type="date"
           value={filters.to_date || ""}
           onChange={(e) =>
-            setFilters((f) => ({
-              ...f,
-              to_date: e.target.value,
-              page: 1,
-            }))
+            setFilters((f) => ({ ...f, to_date: e.target.value, page: 1 }))
           }
           className={inputClass}
         />
@@ -219,6 +226,8 @@ function FilterBar({ filters, setFilters }: FilterBarProps) {
     </div>
   );
 }
+
+/*  ── Main Component ── */
 
 const SalesAnalytics: React.FC = () => {
   const [filters, setFilters] = useState<SalesAnalyticsFilters>({
@@ -246,19 +255,14 @@ const SalesAnalytics: React.FC = () => {
           setLoading(false);
           return;
         }
-
         const res: any = await getSalesAnalytics(currentFilters);
-
         if (res?.status === "success" || res?.message?.status_code === 200) {
-          const payload = res.message?.data || res.data;
-          setData(payload);
+          setData(res.message?.data || res.data);
         } else {
           setError(res?.message?.message || "Failed to load Sales Analytics.");
         }
       } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : "Error fetching analytics.",
-        );
+        setError(err instanceof Error ? err.message : "Error fetching analytics.");
       } finally {
         setLoading(false);
       }
@@ -273,11 +277,8 @@ const SalesAnalytics: React.FC = () => {
 
   const tableColumns = useMemo((): Column<SalesNode>[] => {
     if (!data?.columns) return [];
-
     return data.columns.map((col) => {
-      const isNumeric =
-        col.fieldtype === "Float" || col.fieldtype === "Currency";
-
+      const isNumeric = col.fieldtype === "Float" || col.fieldtype === "Currency";
       return {
         key: col.fieldname,
         header: col.label,
@@ -285,23 +286,13 @@ const SalesAnalytics: React.FC = () => {
         width: isNumeric ? 120 : 200,
         render: (row: SalesNode) => {
           const val = row[col.fieldname];
-
           if (col.fieldname === "entity" || col.fieldname === "entity_name") {
             return (
-              <span className="font-semibold text-main truncate block">
-                {val || "—"}
-              </span>
+              <span className="font-semibold text-main truncate block">{val || "—"}</span>
             );
           }
-
           return (
-            <div
-              className={
-                isNumeric
-                  ? "text-muted font-medium w-full text-right"
-                  : "text-main"
-              }
-            >
+            <div className={isNumeric ? "text-muted font-medium w-full text-right" : "text-main"}>
               {isNumeric ? nf(val, filters.value_quantity === "Value") : val}
             </div>
           );
@@ -310,14 +301,7 @@ const SalesAnalytics: React.FC = () => {
     });
   }, [data, filters.value_quantity]);
 
-  if (loading && !data) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 size={30} className="animate-spin text-primary" />
-      </div>
-    );
-  }
-
+  /* ── Error state ── */
   if (error && !data) {
     return (
       <div className="flex flex-col items-center py-20 gap-3">
@@ -325,7 +309,7 @@ const SalesAnalytics: React.FC = () => {
         <p className="text-danger text-sm">{error}</p>
         <button
           onClick={() => fetchAnalytics(filters)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium"
         >
           <RefreshCw size={14} />
           Retry
@@ -334,35 +318,43 @@ const SalesAnalytics: React.FC = () => {
     );
   }
 
+  /* ── Initial loading state ── */
+  if (loading && !data) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 size={30} className="animate-spin text-primary" />
+      </div>
+    );
+  }
+
   const isQuantity = filters.value_quantity === "Quantity";
 
   return (
-    <div className="flex flex-col gap-6 bg-app p-6 w-full max-w-[calc(100vw-280px)] box-border">
+    <div className="h-full min-h-0 flex flex-col gap-0">
+      {/* KPI strip */}
       {data?.kpis && <SummaryStrip kpis={data.kpis} isQuantity={isQuantity} />}
 
+      {/* Filters row — same pattern as Reports.tsx extraFilters */}
       <FilterBar filters={filters} setFilters={setFilters} />
 
-      <div className="w-full bg-card rounded-xl border border-theme shadow-sm overflow-hidden">
-        <div className="w-full overflow-x-auto scrollbar-thin">
-          <Table<SalesNode>
-            key={`table-${filters.range}-${filters.value_quantity}-${data?.columns?.length || 0}`}
-            columns={tableColumns}
-            data={data?.data ?? []}
-            loading={loading}
-            showToolbar={false}
-            currentPage={filters.page || 1}
-            totalPages={data?.pagination?.total_pages || 1}
-            pageSize={filters.page_size || 10}
-            totalItems={data?.pagination?.total_items || 0}
-            pageSizeOptions={[10, 15, 25, 50, 100]}
-            onPageSizeChange={(size) =>
-              setFilters((prev) => ({ ...prev, page_size: size, page: 1 }))
-            }
-            onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
-            emptyMessage="No analytics data found for the selected criteria."
-          />
-        </div>
-      </div>
+      {/* Table — same usage pattern as InvoiceTable / ReportTable */}
+      <Table<SalesNode>
+        key={`table-${filters.range}-${filters.value_quantity}-${data?.columns?.length ?? 0}`}
+        columns={tableColumns}
+        data={data?.data ?? []}
+        loading={loading}
+        showToolbar={false}
+        currentPage={filters.page || 1}
+        totalPages={data?.pagination?.total_pages || 1}
+        pageSize={filters.page_size || 10}
+        totalItems={data?.pagination?.total_items || 0}
+        pageSizeOptions={[10, 15, 25, 50, 100]}
+        onPageSizeChange={(size) =>
+          setFilters((prev) => ({ ...prev, page_size: size, page: 1 }))
+        }
+        onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
+        emptyMessage="No analytics data found for the selected criteria."
+      />
     </div>
   );
 };

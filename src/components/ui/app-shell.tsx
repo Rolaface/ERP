@@ -75,7 +75,9 @@ export const AppPageHeader: React.FC<AppPageHeaderProps> = ({
         </div>
       </div>
     </div>
-    {actions ? <div className="flex shrink-0 items-center gap-3">{actions}</div> : null}
+    {actions ? (
+      <div className="flex shrink-0 items-center gap-3">{actions}</div>
+    ) : null}
   </div>
 );
 
@@ -90,23 +92,22 @@ export const AppTabs: React.FC<AppTabsProps> = ({
   activeTab,
   onChange,
 }) => (
-  <div className="overflow-x-auto">
-    <div className="flex min-w-max items-center gap-2 rounded-2xl border border-[var(--border)] bg-card p-2 shadow-[var(--app-shadow-soft)]">
+  <div className="w-full overflow-hidden">
+    <div className="flex w-full items-center justify-start gap-2 rounded-2xl border border-[var(--border)] bg-card p-2 shadow-[var(--app-shadow-soft)]">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         return (
           <button
             key={tab.id}
-            type="button"
             onClick={() => onChange(tab.id)}
-            className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors ${
+            className={`flex items-center gap-1 px-4 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all ${
               isActive
                 ? "bg-primary text-white"
                 : "text-muted hover:bg-row-hover hover:text-main"
             }`}
           >
-            {tab.icon ? <span className="text-base">{tab.icon}</span> : null}
-            <span className="whitespace-nowrap">{tab.label}</span>
+            {tab.icon && <span className="text-sm">{tab.icon}</span>}
+            <span className="truncate">{tab.label}</span>
           </button>
         );
       })}
@@ -162,7 +163,9 @@ export const AppMetricCard: React.FC<AppMetricCardProps> = ({
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0">
         <p className="text-sm font-medium text-muted">{label}</p>
-        <p className="mt-3 truncate text-3xl font-semibold text-main">{value}</p>
+        <p className="mt-3 truncate text-3xl font-semibold text-main">
+          {value}
+        </p>
       </div>
       <div
         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white ${accentClassName}`}

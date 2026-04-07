@@ -3,7 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/SideBar";
 import PageLoader from "../components/ui/PageLoader";
 import { ModalManagerProvider } from "../components/common/ModalManagerContext";
-import { AppContentContainer, AppMain, AppShell } from "./layoutSystem";
+import { AppContentContainer, AppMain, AppShell, RightPanel } from "./layoutSystem";
 
 
 import InvoiceModal from "../components/sales/InvoiceModal";
@@ -164,11 +164,14 @@ const handleCategorySubmit = async (payload: any, isEdit: boolean, onSuccess: ()
 };
 
 const handleProformaCreated = () => {
-  
+   
   };
   return (
     <ModalManagerProvider dockWidth="90">
-      <AppShell sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}>
+      <AppShell 
+        sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
+        rightPanel={<RightPanel />}
+      >
         <AppMain sidebarOpen={sidebarOpen}>
           <AppContentContainer viewportLocked={isRootDashboard}>
             <div className={isRootDashboard ? "flex min-h-0 flex-1 flex-col overflow-auto" : ""}>

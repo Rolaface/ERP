@@ -14,17 +14,28 @@ export const getDockWidthClasses = (width: DockWidth = "90") =>
 interface AppShellProps {
   children: React.ReactNode;
   sidebar: React.ReactNode;
+  rightPanel?: React.ReactNode;
 }
 
-export const AppShell: React.FC<AppShellProps> = ({ children, sidebar }) => (
+export const AppShell: React.FC<AppShellProps> = ({ children, sidebar, rightPanel }) => (
   <div className="flex min-h-screen bg-app text-main">
     {sidebar}
-    {children}
+    <div className="flex flex-1 min-w-0 overflow-hidden">
+      <div className="flex-1 min-w-0 overflow-auto">
+        {children}
+      </div>
+      {rightPanel && (
+        <div className="flex-shrink-0 h-full">
+          {rightPanel}
+        </div>
+      )}
+    </div>
   </div>
 );
 
 interface AppMainProps {
   sidebarOpen: boolean;
+  rightPanelOpen?: boolean;
   children: React.ReactNode;
 }
 
@@ -45,6 +56,23 @@ export const AppMain: React.FC<AppMainProps> = ({
     {children}
   </main>
 );
+
+interface RightPanelProps {
+  children?: React.ReactNode;
+}
+
+export const RightPanel: React.FC<RightPanelProps> = ({ children }) => {
+  return (
+    <aside
+      className={`
+        flex flex-col border-l border-[var(--border)] bg-card 
+        w-[60px] min-w-[60px] shrink-0
+      `}
+    >
+      {children}
+    </aside>
+  );
+};
 
 export const AppContentContainer: React.FC<{
   children: React.ReactNode;

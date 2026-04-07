@@ -34,7 +34,10 @@ interface Props {
 }
 
 const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
-  const { openCustomerCreate, openCustomerEdit } =
+  const { 
+    openCustomerCreate, 
+    openCustomerEdit
+  } =
     useOutletContext<OutletContextType>();
 
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
@@ -55,27 +58,30 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     CustomerSummary | null
   >(null);
 
-  const fetchCustomers = async () => {
-    try {
-      setCustLoading(true);
+ const fetchCustomers = async () => {
+  try {
+    setCustLoading(true);
 
-      const response = await getAllCustomers(
-        page,
-        pageSize,
-        taxCategory || undefined,
-      );
+    const response = await getAllCustomers(
+      page,
+      pageSize,
+      taxCategory || undefined,
+    );
 
-      setCustomers(response.data);
-      setTotalPages(response.pagination?.total_pages || 1);
-      setTotalItems(response.pagination?.total || 1);
-    } catch (error) {
-      console.error("Error loading customers:", error);
-      showApiError(error);
-    } finally {
-      setCustLoading(false);
-      setInitialLoad(false);
-    }
-  };
+    const res = response?.message;
+
+    setCustomers(res?.data || []);
+    setTotalPages(res?.pagination?.total_pages || 1);
+    setTotalItems(res?.pagination?.total || 0);
+
+  } catch (error) {
+    console.error("Error loading customers:", error);
+    showApiError(error);
+  } finally {
+    setCustLoading(false);
+    setInitialLoad(false);
+  }
+};
 
   useEffect(() => {
     fetchCustomers();
@@ -84,7 +90,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const fetchAllCustomers = async () => {
     try {
       const response = await getAllCustomers(1, 1000, taxCategory);
-      setAllCustomers(response.data || []);
+      setAllCustomers(response?.message?.data || []);
     } catch (error) {
       console.error("Error loading all customers:", error);
     }

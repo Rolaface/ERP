@@ -100,7 +100,7 @@ const SalesModule: React.FC = () => {
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title="Sales"
-        description="Quotes, invoices, receivables, and sales analytics in one workflow."
+        description="Quotes, invoices and sales analytics in one workflow."
         icon={<FaMoneyBillWave />}
       />
       <AppTabs tabs={salesTabs} activeTab={activeTab} onChange={setActiveTab} />

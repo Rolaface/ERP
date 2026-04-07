@@ -47,6 +47,8 @@
   --z-swal: 4000;
   --app-sidebar-width: 16rem;
   --app-sidebar-width-collapsed: 4rem;
+  --app-right-panel-width: 320px;
+  --app-right-panel-width-collapsed: 60px;
   --app-topbar-height: 4.5rem;
   --app-content-max-width: 1400px;
   --app-radius-lg: 1rem;
