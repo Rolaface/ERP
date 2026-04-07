@@ -42,7 +42,7 @@ const CustomerGroupSearchSelect: React.FC<Props> = ({
     const resolveLabel = async () => {
       try {
         const res = await getCustomerGroups(value);
-        const data: CustomerGroup[] = res?.data?.data ?? [];
+        const data: CustomerGroup[] = res?.message?.data ?? [];
         const found = data.find((g) => g.value === value);
         setSearch(found ? found.label : value);
       } catch {
@@ -53,19 +53,37 @@ const CustomerGroupSearchSelect: React.FC<Props> = ({
   }, [value]);
 
   // ── Fetch groups from API ──────────────────────────────────────────────────
-  const fetchGroups = useCallback(async (query: string) => {
-    setLoading(true);
-    try {
-      const res = await getCustomerGroups(query);
-      setResults(res?.data?.data ?? []);
-    } catch (err) {
-      console.error("Customer group search error:", err);
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const fetchGroups = useCallback(async (query: string) => {
+  setLoading(true);
+  try {
+    const res = await getCustomerGroups();
 
+    const all = res?.message?.data ?? [];
+
+    console.log("DATA:", all);
+
+    if (!Array.isArray(all)) {
+      setResults([]);
+      return;
+    }
+
+    if (!query) {
+      setResults(all); // show all when empty
+      return;
+    }
+
+    const filtered = all.filter((g: CustomerGroup) =>
+      g.label?.toLowerCase().includes(query.toLowerCase())
+    );
+
+    setResults(filtered);
+  } catch (err) {
+    console.error("Customer group search error:", err);
+    setResults([]);
+  } finally {
+    setLoading(false);
+  }
+}, []);
   // ── Handle typing — debounce 300ms ────────────────────────────────────────
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
