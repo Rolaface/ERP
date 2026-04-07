@@ -111,14 +111,14 @@ export const API = {
    * ========================= */
   company: {
     getAll: `${ERP_BASE}/api/method/erpnext.company-setup.setup.get_companies_api`,
-    getById: `${ERP_BASE}/api/method/erpnext.company-setup.setup.get_company_api`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.get`,
     create: `${ERP_BASE}/api/method/erpnext.company-setup.setup.create_company_api`,
     // update: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_info`,
     createSite: `https://api.master.rolaface.com/api/method/saas_provisioning.api.create_site`, 
-    updateById: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_api`,
+    updateById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.update`,
     delete: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_api`,
     updateAccounts: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_accounts_company_info`,
-    updateCompanyFiles: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_files`,
+    updateCompanyFiles: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.upload_company_documents`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
   Account: {
@@ -153,7 +153,8 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
     update: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.update_currency_exchange?`,
     delete: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.delete_currency_exchange`,
-    get:`${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`
+    get:`${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
+   
   },
   /* =========================
    * CUSTOMER
@@ -161,13 +162,14 @@ export const API = {
   customer: {
     getAll: `${ERP_BASE}/api/method/custom_api.api.customer.get_customers`,
     getById: `${ERP_BASE}/api/method/custom_api.api.customer.get_customer_by_id`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.create_customer_api`,
+    create: `${ERP_BASE}/api/method/custom_api.api.customer.create_customer`,
     update: `${ERP_BASE}/api/method/custom_api.api.customer.update_customer`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.delete_customer_by_id`,
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
     getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
+    group: `${ERP_BASE}/api/method/custom_api.api.search.get_customers_group`
   },
 
   /* =========================

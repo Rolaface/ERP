@@ -97,15 +97,15 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   return (
     <>
       <div
-        className={`flex flex-col h-screen bg-sidebar fixed z-50 shadow-2xl transition-all duration-300 border-r border-[var(--border)] overflow-hidden ${open ? "w-64" : "w-20"
-          }`}
+        className={`app-sidebar fixed inset-y-0 left-0 flex shrink-0 flex-col overflow-hidden border-r border-[var(--border)] bg-sidebar transition-[width] duration-300 ease-out ${
+          open ? "w-[var(--app-sidebar-width)]" : "w-[var(--app-sidebar-width-collapsed)]"
+        }`}
         style={{ zIndex: MODAL_LAYER.sidebar }}
       >
-        {/* 1. HEADER */}
-        <div className="flex items-center justify-between p-4 h-16 shrink-0 border-b border-[var(--border)]">
+        <div className="flex h-[var(--app-topbar-height)] items-center justify-between border-b border-[var(--border)] px-4 shrink-0">
           <div className="flex items-center overflow-hidden">
             {open && (
-              <h2 className="text-2xl font-bold text-primary truncate">ERP</h2>
+              <h2 className="truncate text-xl font-bold text-primary">ERP</h2>
             )}
           </div>
           <button
@@ -118,13 +118,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         </div>
 
         {company && (
-          <div className="px-4 py-3 border-b border-[var(--border)]">
+          <div className="border-b border-[var(--border)] px-4 py-4">
             <div
-              className={`flex items-center gap-3 ${open ? "justify-start" : "justify-center"
-                }`}
+              className={`flex items-center gap-3 ${open ? "justify-start" : "justify-center"}`}
             >
-              {/* Logo */}
-              <div className="w-15 h-15 rounded-full border border-[var(--border)] flex items-center justify-center overflow-hidden">
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-[var(--border)] bg-card">
                 {company.logo ? (
                   <img
                     src={company.logo}
@@ -142,11 +140,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 )}
               </div>
 
-              {/* Name */}
               {open && (
                 <div className="flex flex-col min-w-0">
-                  <span className="text-lg font-bold text-primary truncate">
+                  <span className="truncate text-sm font-bold text-main">
                     {company.name}
+                  </span>
+                  <span className="text-[11px] font-medium text-muted">
+                    Workspace
                   </span>
                 </div>
               )}
@@ -154,8 +154,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           </div>
         )}
 
-        {/* 2. MIDDLE - SCROLLABLE AREA */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1 custom-scrollbar">
+        <nav className="custom-scrollbar flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-3 py-4">
           {menuItems.map((item) => (
             <NavLink
               key={item.name}
@@ -174,10 +173,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               <span
                 className={`font-semibold text-sm nav-text whitespace-nowrap transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0 invisible"}`}
               >
-                {item.name}
+                  {item.name}
               </span>
 
-              {/* Tooltip when collapsed */}
               {!open && (
                 <span className="absolute left-16 bg-card text-main border border-[var(--border)] text-[10px] uppercase font-bold tracking-widest px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 whitespace-nowrap shadow-xl translate-x-2 group-hover:translate-x-0">
                   {item.name}
@@ -216,7 +214,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             </button>
 
             {open && settingsOpen && (
-              <div className="ml-6 mt-1 space-y-1 border-l-2 border-[var(--border)] pl-2">
+              <div className="mt-2 space-y-1 border-l-2 border-[var(--border)] pl-4">
                 {[
                   {
                     to: "/companySetup",
@@ -274,13 +272,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           </div>
         </nav>
 
-        {/* 3. BOTTOM USER SECTION  */}
-        <div className="p-4 border-t border-[var(--border)] shrink-0 bg-sidebar">
-          <div
-            className={`flex items-center ${open ? "justify-between" : "flex-col gap-4"
-              }`}
-          >
-            {/* LEFT SIDE: Avatar + Name */}
+        <div className="shrink-0 border-t border-[var(--border)] bg-sidebar px-4 py-4">
+          <div className={`flex items-center ${open ? "justify-between" : "flex-col gap-4"}`}>
             <div className="flex items-center gap-3 relative group">
               <div className="w-10 h-10 shrink-0 rounded-full bg-primary text-white font-bold flex items-center justify-center shadow-sm">
                 {(() => {
@@ -312,7 +305,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               )}
             </div>
 
-            {/* RIGHT SIDE: Logout Menu */}
             <button
               onClick={() => setLogoutOpen(true)}
               className="p-2 rounded-lg text-danger hover:bg-row-hover transition"

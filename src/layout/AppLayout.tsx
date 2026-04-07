@@ -1,8 +1,9 @@
 import React, { useState, Suspense } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/SideBar";
 import PageLoader from "../components/ui/PageLoader";
 import { ModalManagerProvider } from "../components/common/ModalManagerContext";
+import { AppContentContainer, AppMain, AppShell } from "./layoutSystem";
 
 
 import InvoiceModal from "../components/sales/InvoiceModal";
@@ -21,6 +22,8 @@ import { createItemGroup, updateItemGroupById } from "../api/itemCategoryApi";
 
 const AppLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const location = useLocation();
+  const isRootDashboard = location.pathname === "/dashboard";
 
   // Sales modals
   const [invoiceModals, setInvoiceModals] = useState<{ id: string; initialData?: any }[]>([]);
@@ -164,46 +167,42 @@ const handleProformaCreated = () => {
   
   };
   return (
-    <ModalManagerProvider>
-      <div className="flex min-h-screen">
-        <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-
-        <div
-          className={`flex-1 transition-all duration-300 bg-app ${
-            sidebarOpen ? "md:ml-64" : "md:ml-16"
-          }`}
-        >
-          <Suspense fallback={<PageLoader />}>
-            
-            <Outlet
-              context={{
-                // Sales
-                openInvoiceCreate,
-                openInvoiceEdit,
-                openProformaCreate,
-                openProformaEdit,
-                openQuotationCreate,
-                openQuotationEdit,
-                // CRM
-                openCustomerCreate,
-                openCustomerEdit,
-                // Procurement
-                openSupplierCreate,
-                openSupplierEdit,
-                openPOCreate,
-                openPOEdit,
-                openPICreate,
-                openPIEdit,
-                // Inventory
-                openItemCreate,
-                openItemEdit,
-                openCategoryCreate,
-                openCategoryEdit,
-              }}
-            />
-          </Suspense>
-        </div>
-        
+    <ModalManagerProvider dockWidth="90">
+      <AppShell sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}>
+        <AppMain sidebarOpen={sidebarOpen}>
+          <AppContentContainer viewportLocked={isRootDashboard}>
+            <div className={isRootDashboard ? "flex min-h-0 flex-1 flex-col overflow-auto" : ""}>
+              <Suspense fallback={<PageLoader />}>
+                <Outlet
+                  context={{
+                    // Sales
+                    openInvoiceCreate,
+                    openInvoiceEdit,
+                    openProformaCreate,
+                    openProformaEdit,
+                    openQuotationCreate,
+                    openQuotationEdit,
+                    // CRM
+                    openCustomerCreate,
+                    openCustomerEdit,
+                    // Procurement
+                    openSupplierCreate,
+                    openSupplierEdit,
+                    openPOCreate,
+                    openPOEdit,
+                    openPICreate,
+                    openPIEdit,
+                    // Inventory
+                    openItemCreate,
+                    openItemEdit,
+                    openCategoryCreate,
+                    openCategoryEdit,
+                  }}
+                />
+              </Suspense>
+            </div>
+          </AppContentContainer>
+        </AppMain>
 
         {/* Sales Modals */}
         {invoiceModals.map((modal) => (
@@ -328,7 +327,7 @@ const handleProformaCreated = () => {
             isEditMode={modal.isEdit}
           />
         ))}
-      </div>
+      </AppShell>
     </ModalManagerProvider>
   );
 };

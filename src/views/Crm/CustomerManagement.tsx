@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import CustomerDetailView from "./CustomerDetailView";
-
 import {
   showLoading,
   showApiError,
@@ -9,19 +8,16 @@ import {
   closeSwal,
 } from "../../utils/alert";
 import {
-  getAllCustomers,
   deleteCustomerById,
+  getAllCustomers,
   getCustomerByCustomerCode,
 } from "../../api/customerApi";
-
 import type { CustomerSummary, CustomerDetail } from "../../types/customer";
-
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
-
 import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
@@ -38,8 +34,9 @@ interface Props {
 }
 
 const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
-  const { openCustomerEdit } = useOutletContext<OutletContextType>();
-  
+  const { openCustomerCreate, openCustomerEdit } =
+    useOutletContext<OutletContextType>();
+
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
@@ -54,10 +51,8 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const openCustomerCreate = useOutletContext<OutletContextType>()
-    .openCustomerCreate;
   const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<
-    any | null
+    CustomerSummary | null
   >(null);
 
   const fetchCustomers = async () => {
@@ -88,10 +83,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   const fetchAllCustomers = async () => {
     try {
-      const resp = await getAllCustomers(1, 1000, taxCategory);
-      setAllCustomers(resp.data || []);
-    } catch (err) {
-      console.error("Error loading all customers:", err);
+      const response = await getAllCustomers(1, 1000, taxCategory);
+      setAllCustomers(response.data || []);
+    } catch (error) {
+      console.error("Error loading all customers:", error);
     }
   };
 
@@ -100,6 +95,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       await fetchAllCustomers();
     }
   };
+
   const handleAddCustomer = () => {
     openCustomerCreate();
   };
@@ -122,17 +118,15 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       confirmButtonText: "Yes, delete",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!confirm.isConfirmed) {
+      return;
+    }
 
     try {
       showLoading("Deleting Customer...");
-
       await deleteCustomerById(customerId);
-
       closeSwal();
-
-      setCustomers((prev) => prev.filter((c) => c.id !== customerId));
-
+      setCustomers((prev) => prev.filter((customer) => customer.id !== customerId));
       showSuccess("Customer deleted successfully.");
     } catch (error) {
       closeSwal();
@@ -142,11 +136,12 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   const handleEditCustomer = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+
     try {
       showLoading("Loading customer...");
       const customer = await getCustomerByCustomerCode(id);
       closeSwal();
-      openCustomerEdit(id, customer.data ?? customer);
+      openCustomerEdit(id, customer.data ?? customer.message?.data ?? customer);
     } catch (error) {
       closeSwal();
       console.error("Failed to fetch customer:", error);
@@ -156,25 +151,28 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   const handleCustomerSaved = async () => {
     await fetchCustomers();
-    showSuccess("Customer saved!");
   };
 
-  const handleRowClick = async (customer: CustomerSummary) => {
+  const handleRowClick = async (customerOrId: CustomerSummary | string) => {
     try {
       setCustLoading(true);
-
-      //  Ensure sidebar data loaded
       await ensureAllCustomers();
 
-      //  Fetch full customer detail
-      const res = await getCustomerByCustomerCode(customer.id);
-      const fullCustomer = res.data ?? res;
+      const customerId =
+        typeof customerOrId === "string" ? customerOrId : customerOrId.id;
+
+      const response = await getCustomerByCustomerCode(customerId);
+      const fullCustomer = response?.message?.data ?? response?.data;
+
+      if (!fullCustomer) {
+        throw new Error("Customer not found");
+      }
 
       setSelectedCustomer(fullCustomer);
       setViewMode("detail");
-    } catch (err) {
-      console.error("Failed to load customer detail:", err);
-      showApiError(err);
+    } catch (error) {
+      console.error("Failed to load customer detail:", error);
+      showApiError(error);
     } finally {
       setCustLoading(false);
     }
@@ -185,36 +183,34 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     setSelectedCustomer(null);
   };
 
-  // columns definition for Table component
   const columns: Column<CustomerSummary>[] = [
-
     {
-  key: "id",
-  header: "Customer ID",
-  align: "center",
-  render: (c: CustomerSummary) => (
-    <Tooltip content={c.id}>
-      <span className="cursor-pointer">{c.id}</span>
-    </Tooltip>
-  ),
-},
-{
-  key: "name",
-  header: "Name",
-  align: "center",
-  render: (c: CustomerSummary) => (
-    <Tooltip content={c.name}>
-      <span className="cursor-pointer">{c.name}</span>
-    </Tooltip>
-  ),
-},
+      key: "id",
+      header: "Customer ID",
+      align: "center",
+      render: (customer) => (
+        <Tooltip content={customer.id}>
+          <span className="cursor-pointer">{customer.id}</span>
+        </Tooltip>
+      ),
+    },
+    {
+      key: "name",
+      header: "Name",
+      align: "center",
+      render: (customer) => (
+        <Tooltip content={customer.name}>
+          <span className="cursor-pointer">{customer.name}</span>
+        </Tooltip>
+      ),
+    },
     {
       key: "type",
       header: "Type",
       align: "center",
-      render: (c: CustomerSummary) => (
-        <Tooltip content={c.type ?? "—"}>
-          <span>{c.type ?? "—"}</span>
+      render: (customer) => (
+        <Tooltip content={customer.type ?? "-"}>
+          <span>{customer.type ?? "-"}</span>
         </Tooltip>
       ),
     },
@@ -222,10 +218,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "tpin",
       header: "TPIN",
       align: "center",
-      render: (c: CustomerSummary) => (
-        <Tooltip content={c.tpin}>
+      render: (customer) => (
+        <Tooltip content={customer.tpin}>
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {c.tpin}
+            {customer.tpin}
           </code>
         </Tooltip>
       ),
@@ -234,9 +230,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "customerTaxCategory",
       header: "Tax Category",
       align: "center",
-      render: (c: CustomerSummary) => (
-        <Tooltip content={c.customerTaxCategory ?? "—"}>
-          <span>{c.customerTaxCategory ?? "—"}</span>
+      render: (customer) => (
+        <Tooltip content={customer.customerTaxCategory ?? "-"}>
+          <span>{customer.customerTaxCategory ?? "-"}</span>
         </Tooltip>
       ),
     },
@@ -244,23 +240,22 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "currency",
       header: "Currency",
       align: "center",
-      render: (c: CustomerSummary) => (
-        <Tooltip content={c.currency}>
+      render: (customer) => (
+        <Tooltip content={customer.currency}>
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {c.currency}
+            {customer.currency}
           </code>
         </Tooltip>
       ),
     },
-    
     {
       key: "status",
       header: "Status",
       align: "center",
-      render: (c: CustomerSummary) => (
-        <Tooltip content={c.status}>
+      render: (customer) => (
+        <Tooltip content={customer.status}>
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {c.status}
+            {customer.status}
           </code>
         </Tooltip>
       ),
@@ -269,20 +264,20 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "actions",
       header: "Actions",
       align: "center",
-      render: (c: CustomerSummary) => (
+      render: (customer) => (
         <ActionGroup>
           <ActionButton
             type="view"
-            onClick={() => handleRowClick(c)}
+            onClick={() => handleRowClick(customer)}
             iconOnly
           />
           <ActionMenu
-            onEdit={(e) => handleEditCustomer(c.id, e as any)}
-            onDelete={(e) => handleDelete(c.id, e as any)}
+            onEdit={(e) => handleEditCustomer(customer.id, e as any)}
+            onDelete={(e) => handleDelete(customer.id, e as any)}
             customActions={[
               {
                 label: "Receive Payment",
-                onClick: () => handleMakePayment(c),
+                onClick: () => handleMakePayment(customer),
               },
             ]}
           />
@@ -292,47 +287,45 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   ];
 
   return (
-    <div className="p-8">
+    <div>
       {viewMode === "table" ? (
-        <>
-          <Table
-            columns={columns}
-            data={customers}
-            showToolbar
-            loading={custLoading || initialLoad}
-            onPageSizeChange={(size) => setPageSize(size)}
-            pageSizeOptions={[10, 25, 50, 100]}
-            searchValue={searchTerm}
-            onSearch={setSearchTerm}
-            enableAdd
-            addLabel="Add Customer"
-            onAdd={handleAddCustomer}
-            enableColumnSelector
-            currentPage={page}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={totalItems}
-            onPageChange={setPage}
-            extraFilters={
-              <div>
-                <FilterSelect
-                  value={taxCategory}
-                  onChange={(e) => {
-                    setPage(1);
-                    setTaxCategory(e.target.value);
-                  }}
-                  options={[
-                    { label: "Non-Export", value: "Non-Export" },
-                    { label: "Export", value: "Export" },
-                  ]}
-                />
-              </div>
-            }
-          />
-        </>
+        <Table
+          columns={columns}
+          data={customers}
+          showToolbar
+          loading={custLoading || initialLoad}
+          onPageSizeChange={(size) => setPageSize(size)}
+          pageSizeOptions={[10, 25, 50, 100]}
+          searchValue={searchTerm}
+          onSearch={setSearchTerm}
+          enableAdd
+          addLabel="Add Customer"
+          onAdd={handleAddCustomer}
+          enableColumnSelector
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={setPage}
+          extraFilters={
+            <div>
+              <FilterSelect
+                value={taxCategory}
+                onChange={(e) => {
+                  setPage(1);
+                  setTaxCategory(e.target.value);
+                }}
+                options={[
+                  { label: "Non-Export", value: "Non-Export" },
+                  { label: "Export", value: "Export" },
+                ]}
+              />
+            </div>
+          }
+        />
       ) : selectedCustomer ? (
         <CustomerDetailView
-          customer={selectedCustomer}
+          customerId={selectedCustomer.id}
           customers={allCustomers}
           onBack={handleBack}
           onCustomerSelect={handleRowClick}
@@ -346,6 +339,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         onClose={() => {
           setPaymentModalOpen(false);
           setSelectedCustomerForPayment(null);
+        }}
+        onSuccess={async () => {
+          setPaymentModalOpen(false);
+          setSelectedCustomerForPayment(null);
+          await handleCustomerSaved();
         }}
         defaultValues={
           selectedCustomerForPayment

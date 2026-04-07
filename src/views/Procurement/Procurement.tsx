@@ -19,19 +19,22 @@ import SupplierManagement from "./SupplierManagement";
 import PurchaseInvoiceTable from "./PurchaseInvoice";
 import Payments from "./SupplierPayment";
 import PurchaseAnalytics from "./PurchaseAnalytics";
+import {
+  AppPage,
+  AppPageBody,
+  AppPageHeader,
+  AppTabs,
+} from "../../components/ui/app-shell";
 
 type OutletContextType = {
-  // Sales
   openInvoiceCreate: () => void;
   openInvoiceEdit: (invoiceNumber: string, data: any) => void;
   openProformaCreate: () => void;
   openProformaEdit: (proformaId: string, data: any) => void;
   openQuotationCreate: () => void;
   openQuotationEdit: (quotationId: string, data: any) => void;
-  // CRM
   openCustomerCreate: () => void;
   openCustomerEdit: (id: string, data: any) => void;
-  // Procurement
   openSupplierCreate: () => void;
   openSupplierEdit: (id: string, data: any) => void;
   openPOCreate: () => void;
@@ -43,25 +46,16 @@ const procurement = {
   icon: <FaShoppingBag />,
   defaultTab: "procurementdashboard",
   tabs: [
-    {
-      id: "procurementdashboard",
-      name: "Dashboard",
-      icon: <FaTachometerAlt />,
-    },
-    { id: "supplier", name: "Supplier Management", icon: <FaLandmark /> },
-    { id: "payments", name: "Payments", icon: <FaCreditCard /> },
-    { id: "rfqs", name: "RFQs", icon: <FaFileSignature /> },
-    { id: "orders", name: "Purchase Orders", icon: <FaClipboardList /> },
-    { id: "approvals", name: "Approvals", icon: <FaCheckCircle /> },
-    // {
-    //   id: "invoicematching",
-    //   name: "Invoice Matching",
-    //   icon: <FaFileInvoiceDollar />,
-    // },
-    { id: "purchase", name: "Purchase Invoice", icon: <FaTruckLoading /> },
+    { id: "procurementdashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
+    { id: "supplier", label: "Supplier Management", icon: <FaLandmark /> },
+    { id: "payments", label: "Payments", icon: <FaCreditCard /> },
+    { id: "rfqs", label: "RFQs", icon: <FaFileSignature /> },
+    { id: "orders", label: "Purchase Orders", icon: <FaClipboardList /> },
+    { id: "approvals", label: "Approvals", icon: <FaCheckCircle /> },
+    { id: "purchase", label: "Purchase Invoice", icon: <FaTruckLoading /> },
     {
       id: "purchaseAnalytics",
-      name: "Purchase Analytics",
+      label: "Purchase Analytics",
       icon: <FaTruckLoading />,
     },
   ],
@@ -69,10 +63,10 @@ const procurement = {
 
 const Procurement: React.FC = () => {
   const [activeTab, setActiveTab] = useState(procurement.defaultTab);
-  
-  // ✅ GLOBAL MODAL CONTROL FROM APP LAYOUT
-  const { openSupplierCreate, openSupplierEdit, openPOCreate } = useOutletContext<OutletContextType>();
-  
+  const isDashboardTab = activeTab === "procurementdashboard";
+  const { openSupplierCreate, openPOCreate } =
+    useOutletContext<OutletContextType>();
+
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showGRModal, setShowGRModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -86,33 +80,14 @@ const Procurement: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-app ">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
-          <span>{procurement.icon}</span> {procurement.name}
-        </h2>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-4">
-        {procurement.tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors ${
-              activeTab === tab.id
-                ? "text-primary border-b-2 border-current"
-                : "text-muted hover:text-main"
-            }`}
-          >
-            <span>{tab.icon}</span> {tab.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      <div>
+    <AppPage viewportLocked={isDashboardTab}>
+      <AppPageHeader
+        title={procurement.name}
+        description="Supplier operations, approvals, and purchasing analytics in one layout system."
+        icon={procurement.icon}
+      />
+      <AppTabs tabs={procurement.tabs} activeTab={activeTab} onChange={setActiveTab} />
+      <AppPageBody viewportLocked={isDashboardTab}>
         {activeTab === "supplier" && <SupplierManagement onAdd={handleAdd} />}
         {activeTab === "rfqs" && <RFQsTable onAdd={handleAdd} />}
         {activeTab === "orders" && <PurchaseOrdersTable onAdd={handleAdd} />}
@@ -121,15 +96,14 @@ const Procurement: React.FC = () => {
         {activeTab === "procurementdashboard" && <Dashboard />}
         {activeTab === "payments" && <Payments />}
         {activeTab === "purchaseAnalytics" && <PurchaseAnalytics />}
-      </div>
+      </AppPageBody>
 
-      {/* Modals */}
       <ApprovalModal
         isOpen={showApprovalModal}
         onClose={() => setShowApprovalModal(false)}
         onSubmit={(data) => console.log("New Approval:", data)}
       />
-    </div>
+    </AppPage>
   );
 };
 

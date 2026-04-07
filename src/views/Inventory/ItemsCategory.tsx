@@ -199,7 +199,7 @@ const ItemsCategory: React.FC = () => {
    */
 
   return (
-    <div className="p-8">
+    <div className="h-full min-h-0">
       <Table
         loading={loading || initialLoad}
         

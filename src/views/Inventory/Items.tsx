@@ -353,7 +353,7 @@ const Items: React.FC = () => {
     <>
       {viewMode === "table" ? (
         /* ── Normal table view ── */
-        <div className="p-4 sm:p-8">
+        <div className="h-full min-h-0">
           <Table
             loading={loading || initialLoad}
             columns={columns}

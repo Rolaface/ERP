@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   X,
@@ -11,9 +11,9 @@ import {
   Building2,
   FileBarChart,
   Globe,
+  CreditCard,
 } from "lucide-react";
 import type { CustomerDetail } from "../../types/customer";
-import CustomerModal from "../../components/crm/CustomerModal";
 import QuotationModal from "../../components/sales/QuotationModal";
 import InvoiceModal from "../../components/sales/InvoiceModal";
 import CustomerStatement from "../Crm/CustomerStatement";
@@ -23,35 +23,31 @@ import CustomerBankDetails from "./CustomerBankDetails";
 import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
 import CustomerdetailviewPayment from "./CustomerDetailViewPayments";
-
-import { CreditCard } from "lucide-react";
+import { getCustomerByCustomerCode } from "../../api/customerApi";
 
 type OutletContextType = {
   openCustomerCreate: () => void;
-  openCustomerEdit: (id: string, data: any) => void;
-  openQuotationCreate: () => void;
-  openInvoiceCreate: () => void;
 };
 
 interface Props {
-  customer: CustomerDetail;
+  customerId: string;
   customers: CustomerDetail[];
   onBack: () => void;
-  onCustomerSelect: (customer: CustomerDetail) => void;
+  onCustomerSelect: (customerId: string) => void;
   onAdd: () => void;
   onEdit: (id: string, e: React.MouseEvent) => void;
 }
 
 const CustomerDetailView: React.FC<Props> = ({
-  customer,
+  customerId,
   customers,
   onBack,
   onCustomerSelect,
-  onAdd,
-  onEdit,
 }) => {
   const { openCustomerCreate } = useOutletContext<OutletContextType>();
-  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [customer, setCustomer] = useState<CustomerDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -62,73 +58,76 @@ const CustomerDetailView: React.FC<Props> = ({
     "overview" | "bank" | "quotations" | "invoices" | "payments" | "statement"
   >("overview");
 
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      if (!customerId) {
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const response = await getCustomerByCustomerCode(customerId);
+        const data = response?.message?.data ?? response?.data ?? null;
+        setCustomer(data);
+      } catch (error) {
+        console.error("Failed to fetch customer:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomer();
+  }, [customerId]);
+
+  if (loading || !customer) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   const q = searchTerm.trim().toLowerCase();
   const filteredCustomers = (customers || []).filter(
-    (c) => c.name?.toLowerCase().includes(q) || c.id?.toLowerCase().includes(q),
+    (entry) =>
+      entry.name?.toLowerCase().includes(q) ||
+      entry.id?.toLowerCase().includes(q),
   );
-  // shipping address formatting
+
   const line1 = [customer.shippingAddressLine1, customer.shippingAddressLine2]
     .filter(Boolean)
     .join(", ");
-
   const line2 = [customer.shippingCity, customer.shippingPostalCode]
     .filter(Boolean)
     .join(", ");
-
   const line3 = [customer.shippingState, customer.shippingCountry]
     .filter(Boolean)
     .join(", ");
-
   const shippingAddress = [line1, line2, line3].filter(Boolean).join("\n");
-  // billing  address frormatting
+
   const bLine1 = [customer.billingAddressLine1, customer.billingAddressLine2]
     .filter(Boolean)
     .join(", ");
-
   const bLine2 = [customer.billingCity, customer.billingPostalCode]
     .filter(Boolean)
     .join(", ");
-
   const bLine3 = [customer.billingState, customer.billingCountry]
     .filter(Boolean)
     .join(", ");
-
   const billingAddress = [bLine1, bLine2, bLine3].filter(Boolean).join("\n");
-  const sellingTerms = customer?.terms?.selling;
-  const getPhaseName = (p: any) => {
-    return p.name || "";
-  };
+
+  const sellingTerms = customer.terms?.selling;
+
+  const getPhaseName = (phase: any) => phase.name || "";
 
   const formatPercentage = (value: any) => {
-    if (!value) return "";
+    if (!value) {
+      return "";
+    }
+
     return value.toString().includes("%") ? value : `${value}%`;
   };
-
-  const formattedTerms = `
-PAYMENT TERMS:
-${sellingTerms?.payment?.phases
-      ?.map(
-        (p: any) =>
-          `• ${p.percentage} - ${p.condition}`
-      )
-      .join("\n") || ""}
-
-Due Dates: ${sellingTerms?.payment?.dueDates || ""}
-Late Charges: ${sellingTerms?.payment?.lateCharges || ""}
-Notes: ${sellingTerms?.payment?.notes || ""}
-
-DELIVERY:
-${sellingTerms?.delivery || ""}
-
-CANCELLATION:
-${sellingTerms?.cancellation || ""}
-
-WARRANTY:
-${sellingTerms?.warranty || ""}
-
-LIABILITY:
-${sellingTerms?.liability || ""}
-`.trim();
 
   const renderActionButton = () => {
     switch (activeTab) {
@@ -170,8 +169,8 @@ ${sellingTerms?.liability || ""}
           >
             <Plus size={14} /> Receive Payment
           </button>
-
         );
+
       case "bank":
         return (
           <button
@@ -190,10 +189,8 @@ ${sellingTerms?.liability || ""}
     }
   };
 
-
-
   return (
-    <div className="flex flex-col  bg-app text-main overflow-hidden">
+    <div className="flex flex-col bg-app text-main overflow-hidden">
       <header className="bg-card px-5 py-3 flex items-center justify-between border-b border-theme shrink-0">
         <div className="flex items-center gap-4">
           <button
@@ -221,11 +218,10 @@ ${sellingTerms?.liability || ""}
       </header>
 
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* 2. TIGHT SIDEBAR */}
         <aside
-  className="hidden lg:flex flex-col bg-card border border-theme rounded-b-2xl mb-3 transition-all shrink-0 overflow-hidden self-start sticky top-0 w-64"
-  style={{ maxHeight: "calc(100vh - 110px)" }}
->
+          className="hidden lg:flex flex-col bg-card border border-theme rounded-b-2xl mb-3 transition-all shrink-0 overflow-hidden self-start sticky top-0 w-64"
+          style={{ maxHeight: "calc(100vh - 110px)" }}
+        >
           <div className="px-3 h-[42px] flex items-center border-b border-theme bg-row-hover/10 shrink-0">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
@@ -239,29 +235,36 @@ ${sellingTerms?.liability || ""}
             </div>
           </div>
 
-          <div className="overflow-y-auto custom-scrollbar flex-1 p-2 ">
-            {filteredCustomers.map((c) => (
+          <div className="overflow-y-auto custom-scrollbar flex-1 p-2">
+            {filteredCustomers.map((entry) => (
               <button
-                key={c.id}
-                onClick={() => onCustomerSelect(c)}
-                className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-3 border ${c.id === customer.id
-                  ? "bg-primary text-white border-primary shadow-sm"
-                  : "bg-transparent border-transparent hover:bg-row-hover"
-                  }`}
+                key={entry.id}
+                onClick={() => onCustomerSelect(entry.id)}
+                className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-3 border ${
+                  entry.id === customer.id
+                    ? "bg-primary text-white border-primary shadow-sm"
+                    : "bg-transparent border-transparent hover:bg-row-hover"
+                }`}
               >
                 <div
-                  className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-bold text-[10px] ${c.id === customer.id ? "bg-white/20" : "bg-muted text-white"}`}
+                  className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-bold text-[10px] ${
+                    entry.id === customer.id
+                      ? "bg-white/20"
+                      : "bg-muted text-white"
+                  }`}
                 >
-                  {c.name.charAt(0).toUpperCase()}
+                  {entry.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-[11px] truncate leading-tight">
-                    {c.name}
+                    {entry.name}
                   </p>
                   <p
-                    className={`text-[8px] font-mono uppercase ${c.id === customer.id ? "text-white/60" : "text-muted"}`}
+                    className={`text-[8px] font-mono uppercase ${
+                      entry.id === customer.id ? "text-white/60" : "text-muted"
+                    }`}
                   >
-                    {c.id}
+                    {entry.id}
                   </p>
                 </div>
               </button>
@@ -269,9 +272,7 @@ ${sellingTerms?.liability || ""}
           </div>
         </aside>
 
-        {/* 3. CONTENT AREA */}
         <main className="flex-1 flex flex-col min-w-0 bg-app/20">
-          {/* COMPACT TABS */}
           <div className="bg-card border-b border-theme px-4 shrink-0 z-10 flex items-center justify-between">
             <div className="flex">
               {[
@@ -281,28 +282,26 @@ ${sellingTerms?.liability || ""}
                 { id: "invoices", label: "Invoices", icon: <Receipt /> },
                 { id: "payments", label: "Payments", icon: <CreditCard /> },
                 { id: "statement", label: "Statement", icon: <FileBarChart /> },
-              ].map((t) => (
+              ].map((tab) => (
                 <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id as any)}
-                  className={`px-4 py-3.5 font-bold text-[10px] uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 shrink-0 ${activeTab === t.id ? "border-primary text-primary" : "border-transparent text-muted hover:text-main"}`}
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                  className={`px-4 py-3.5 font-bold text-[10px] uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 shrink-0 ${
+                    activeTab === tab.id
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted hover:text-main"
+                  }`}
                 >
-                  {React.cloneElement(t.icon as any, { size: 14 })} {t.label}
+                  {React.cloneElement(tab.icon as React.ReactElement, { size: 14 })}{" "}
+                  {tab.label}
                 </button>
               ))}
             </div>
-            {/* <button
-              onClick={(e) => onEdit(customer.id, e)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-card border border-theme text-muted hover:text-main rounded-lg transition-all font-bold text-[10px] uppercase tracking-widest"
-            >
-              <Edit size={12} /> Edit Profile
-            </button> */}
           </div>
 
           <div className="flex-1 min-w-0 overflow-hidden">
             {activeTab === "overview" && (
               <div className="max-w-6xl mx-auto space-y-4 animate-in fade-in duration-500 p-5">
-                {/* REFINED QUICK INFO ROW */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <InfoStrip
                     icon={<Building2 />}
@@ -321,9 +320,7 @@ ${sellingTerms?.liability || ""}
                   />
                 </div>
 
-                {/* CONSOLIDATED DATA SECTION */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-                  {/* Contact Details */}
                   <div className="bg-card rounded-2xl border border-theme p-5 shadow-sm">
                     <h4 className="text-[10px] font-black text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
                       <Mail size={12} className="text-primary" /> Contact
@@ -334,11 +331,10 @@ ${sellingTerms?.liability || ""}
                         label="Contact Person"
                         value={customer.contactPerson}
                       />
-                      `
-                      <DataRow label="Mobile Number" value={customer.mobile} />`
+                      <DataRow label="Mobile Number" value={customer.mobile} />
                       <DataRow label="Email Address" value={customer.email} />
                     </div>
-                    <h4 className=" mt-6 text-[10px] font-black text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <h4 className="mt-6 text-[10px] font-black text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
                       <MapPin size={12} className="text-primary" /> Physical
                       Locations
                     </h4>
@@ -350,6 +346,7 @@ ${sellingTerms?.liability || ""}
                       />
                     </div>
                   </div>
+
                   <div className="bg-card rounded-2xl border border-theme shadow-sm flex flex-col h-[400px]">
                     <h4 className="text-[10px] font-black text-muted uppercase tracking-widest p-5 border-b border-theme">
                       Terms & Conditions
@@ -357,114 +354,134 @@ ${sellingTerms?.liability || ""}
 
                     <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
                       <div className="text-xs text-muted space-y-4">
-
-                        <div className="text-xs text-muted space-y-4">
-
-                          {/* GENERAL TERMS */}
-                          {sellingTerms?.general && (
-                            <div>
-                              <h5 className="text-main font-semibold mb-1">General</h5>
-                              <p>{sellingTerms.general}</p>
-                            </div>
-                          )}
-
-                          {/* PAYMENT TERMS */}
+                        {sellingTerms?.general && (
                           <div>
-                            <h5 className="text-main font-semibold mb-2">Payment Terms</h5>
+                            <h5 className="text-main font-semibold mb-1">
+                              General
+                            </h5>
+                            <p>{sellingTerms.general}</p>
+                          </div>
+                        )}
 
-                            <ul className="space-y-2">
-                              {sellingTerms?.payment?.phases?.map((p: any, index: number) => {
-                                const phaseName = getPhaseName(p);
-                                const percentage = formatPercentage(p.percentage);
+                        <div>
+                          <h5 className="text-main font-semibold mb-2">
+                            Payment Terms
+                          </h5>
+
+                          <ul className="space-y-2">
+                            {sellingTerms?.payment?.phases?.map(
+                              (phase: any, index: number) => {
+                                const phaseName = getPhaseName(phase);
+                                const percentage = formatPercentage(
+                                  phase.percentage,
+                                );
 
                                 return (
-                                  <li key={p.id} className="border-b border-theme pb-2 last:border-none">
+                                  <li
+                                    key={phase.id ?? `${phaseName}-${index}`}
+                                    className="border-b border-theme pb-2 last:border-none"
+                                  >
                                     <div className="flex justify-between items-center">
-                                      <span className="font-medium text-main">{phaseName}</span>
-                                      <span className="font-semibold text-primary">{percentage}</span>
+                                      <span className="font-medium text-main">
+                                        {phaseName}
+                                      </span>
+                                      <span className="font-semibold text-primary">
+                                        {percentage}
+                                      </span>
                                     </div>
 
-                                    {p.condition && (
+                                    {phase.condition && (
                                       <p className="text-[10px] text-muted mt-0.5">
-                                        {p.condition}
+                                        {phase.condition}
                                       </p>
                                     )}
                                   </li>
                                 );
-                              })}
-                            </ul>
+                              },
+                            )}
+                          </ul>
 
-                            <div className="mt-3 space-y-1">
-                              {sellingTerms?.payment?.dueDates && (
-                                <p>
-                                  <span className="text-main font-medium">Due Dates:</span>{" "}
-                                  {sellingTerms.payment.dueDates}
-                                </p>
-                              )}
+                          <div className="mt-3 space-y-1">
+                            {sellingTerms?.payment?.dueDates && (
+                              <p>
+                                <span className="text-main font-medium">
+                                  Due Dates:
+                                </span>{" "}
+                                {sellingTerms.payment.dueDates}
+                              </p>
+                            )}
 
-                              {sellingTerms?.payment?.lateCharges && (
-                                <p>
-                                  <span className="text-main font-medium">Late Charges:</span>{" "}
-                                  {sellingTerms.payment.lateCharges}
-                                </p>
-                              )}
+                            {sellingTerms?.payment?.lateCharges && (
+                              <p>
+                                <span className="text-main font-medium">
+                                  Late Charges:
+                                </span>{" "}
+                                {sellingTerms.payment.lateCharges}
+                              </p>
+                            )}
 
-                              {sellingTerms?.payment?.taxes && (
-                                <p>
-                                  <span className="text-main font-medium">Taxes:</span>{" "}
-                                  {sellingTerms.payment.taxes}
-                                </p>
-                              )}
+                            {sellingTerms?.payment?.taxes && (
+                              <p>
+                                <span className="text-main font-medium">
+                                  Taxes:
+                                </span>{" "}
+                                {sellingTerms.payment.taxes}
+                              </p>
+                            )}
 
-                              {sellingTerms?.payment?.notes && (
-                                <p>
-                                  <span className="text-main font-medium">Notes:</span>{" "}
-                                  {sellingTerms.payment.notes}
-                                </p>
-                              )}
-                            </div>
+                            {sellingTerms?.payment?.notes && (
+                              <p>
+                                <span className="text-main font-medium">
+                                  Notes:
+                                </span>{" "}
+                                {sellingTerms.payment.notes}
+                              </p>
+                            )}
                           </div>
-
-                          {/* DELIVERY */}
-                          {sellingTerms?.delivery && (
-                            <div>
-                              <h5 className="text-main font-semibold mb-1">Delivery</h5>
-                              <p>{sellingTerms.delivery}</p>
-                            </div>
-                          )}
-
-                          {/* CANCELLATION */}
-                          {sellingTerms?.cancellation && (
-                            <div>
-                              <h5 className="text-main font-semibold mb-1">Cancellation</h5>
-                              <p>{sellingTerms.cancellation}</p>
-                            </div>
-                          )}
-
-                          {/* WARRANTY */}
-                          {sellingTerms?.warranty && (
-                            <div>
-                              <h5 className="text-main font-semibold mb-1">Warranty</h5>
-                              <p>{sellingTerms.warranty}</p>
-                            </div>
-                          )}
-
-                          {/* LIABILITY */}
-                          {sellingTerms?.liability && (
-                            <div>
-                              <h5 className="text-main font-semibold mb-1">Liability</h5>
-                              <p>{sellingTerms.liability}</p>
-                            </div>
-                          )}
-
                         </div>
 
+                        {sellingTerms?.delivery && (
+                          <div>
+                            <h5 className="text-main font-semibold mb-1">
+                              Delivery
+                            </h5>
+                            <p>{sellingTerms.delivery}</p>
+                          </div>
+                        )}
+
+                        {sellingTerms?.cancellation && (
+                          <div>
+                            <h5 className="text-main font-semibold mb-1">
+                              Cancellation
+                            </h5>
+                            <p>{sellingTerms.cancellation}</p>
+                          </div>
+                        )}
+
+                        {sellingTerms?.warranty && (
+                          <div>
+                            <h5 className="text-main font-semibold mb-1">
+                              Warranty
+                            </h5>
+                            <p>{sellingTerms.warranty}</p>
+                          </div>
+                        )}
+
+                        {sellingTerms?.liability && (
+                          <div>
+                            <h5 className="text-main font-semibold mb-1">
+                              Liability
+                            </h5>
+                            <p>{sellingTerms.liability}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             )}
+
             {activeTab === "bank" && (
               <div className="p-5 w-full min-w-0 overflow-hidden">
                 <CustomerBankDetails
@@ -486,7 +503,6 @@ ${sellingTerms?.liability || ""}
               <CustomerStatement customerId={customer.id} />
             )}
 
-            {/* Empty States for other tabs */}
             {activeTab === "quotations" && (
               <div className="p-5 w-full min-w-0 overflow-hidden">
                 <CustomerQuotations customerId={customer.id} />
@@ -524,7 +540,6 @@ ${sellingTerms?.liability || ""}
         onSuccess={() => {
           setShowPaymentModal(false);
         }}
-
       />
       <AddBankAccountModal
         isOpen={showBankAccountModal}
@@ -544,8 +559,6 @@ ${sellingTerms?.liability || ""}
   );
 };
 
-// --- Enterprise UI Sub-components ---
-
 const InfoStrip = ({ icon, label, value }: any) => (
   <div className="bg-card rounded-xl border border-theme p-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-all group">
     <div className="p-2 rounded-lg bg-row-hover text-primary border border-theme group-hover:bg-primary group-hover:text-white transition-all">
@@ -555,7 +568,7 @@ const InfoStrip = ({ icon, label, value }: any) => (
       <p className="text-[8px] font-black text-muted uppercase tracking-wider mb-0.5">
         {label}
       </p>
-      <p className="text-xs font-bold text-main">{value || "—"}</p>
+      <p className="text-xs font-bold text-main">{value || "-"}</p>
     </div>
   </div>
 );

@@ -512,7 +512,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   ];
 
   return (
-    <div className="p-6">
+    <div className="h-full min-h-0">
       <Table
         columns={columns}
         data={orders}

@@ -178,7 +178,7 @@ const Items: React.FC = () => {
   // ─── RENDER ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-8">
+    <div className="h-full min-h-0">
       <Table
         loading={loading || initialLoad}
         columns={columns}

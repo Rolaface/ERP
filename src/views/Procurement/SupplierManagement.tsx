@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import SupplierDetailView from "./SupplierDetailView";
 import {
@@ -7,7 +7,6 @@ import {
   getSuppliers,
 } from "../../api/procurement/supplierApi";
 import { mapSupplierApi } from "../../types/Supply/supplierMapper";
-
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import ActionButton, {
@@ -19,7 +18,6 @@ import type { Supplier } from "../../types/Supply/supplier";
 import type { SupplierFilters } from "../../api/procurement/supplierApi";
 import { showApiError, showSuccess } from "../../utils/alert";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
-import Tooltip from "../../components/Tooltip";
 
 type OutletContextType = {
   openSupplierCreate: () => void;
@@ -31,9 +29,9 @@ interface Props {
 }
 
 const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
-  const { openSupplierCreate, openSupplierEdit } = useOutletContext<OutletContextType>();
-  
-  // Use openSupplierCreate from context, fall back to props.onAdd
+  const { openSupplierCreate, openSupplierEdit } =
+    useOutletContext<OutletContextType>();
+
   const handleAddSupplier = () => {
     if (openSupplierCreate) {
       openSupplierCreate();
@@ -41,11 +39,10 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       onAdd();
     }
   };
+
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
-    null,
-  );
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -53,16 +50,19 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
-  const supplierCodes = allSuppliers.map((s) => s.supplierCode || "");
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPI, setSelectedPI] = useState<any | null>(null);
 
   const normalizeStatus = (status?: string) => {
     if (!status) return "active";
-    const s = status.toLowerCase();
-    if (s === "unactive" || s === "inactive") return "inactive";
-    if (s === "active") return "active";
+    const normalized = status.toLowerCase();
+    if (normalized === "unactive" || normalized === "inactive") {
+      return "inactive";
+    }
+    if (normalized === "active") {
+      return "active";
+    }
     return "active";
   };
 
@@ -71,6 +71,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));
       setPage(1);
     }, 600);
+
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
@@ -79,16 +80,17 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       setLoading(true);
       const res = await getSuppliers(page, pageSize, filters);
       if (!res || res.status_code !== 200) return;
-      const list = (res.data?.suppliers || []).map((s: any) => ({
-        ...s,
-        status: normalizeStatus(s.status),
+
+      const list = (res.data?.suppliers || []).map((supplier: any) => ({
+        ...supplier,
+        status: normalizeStatus(supplier.status),
       }));
+
       setAllSuppliers(list);
       setTotalPages(res.data?.pagination?.total_pages || 1);
       setTotalItems(res.data?.pagination?.total || 0);
     } catch (err) {
       showApiError(err);
-     
     } finally {
       setLoading(false);
     }
@@ -102,22 +104,27 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     try {
       const res = await getSuppliers(1, 1000);
       if (!res || res.status_code !== 200) return;
-      const list = (res.data?.suppliers || []).map((s: any) => ({
-        ...s,
-        status: normalizeStatus(s.status),
+
+      const list = (res.data?.suppliers || []).map((supplier: any) => ({
+        ...supplier,
+        status: normalizeStatus(supplier.status),
       }));
+
       setAllSuppliers(list);
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
     }
   };
 
   const ensureAllSuppliers = async () => {
-    if (!allSuppliers.length) await fetchAllSuppliers();
+    if (!allSuppliers.length) {
+      await fetchAllSuppliers();
+    }
   };
 
   const handleRowClick = async (supplier: Supplier) => {
     if (!supplier.supplierId) return;
+
     try {
       setLoading(true);
       await ensureAllSuppliers();
@@ -125,8 +132,6 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       const mapped = mapSupplierApi(res.data || res);
       setSelectedSupplier(mapped);
       setViewMode("detail");
-    } catch (err) {
-      
     } finally {
       setLoading(false);
     }
@@ -139,6 +144,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
 
   const handleEditSupplier = async (supplier: Supplier) => {
     if (!supplier.supplierId) return;
+
     setLoading(true);
     const res = await getSupplierById(supplier.supplierId);
     const mapped = mapSupplierApi(res.data || res);
@@ -146,27 +152,27 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     openSupplierEdit(supplier.supplierId, mapped);
   };
 
-  const handleSupplierSaved = async () => {
-    await fetchSuppliers();
-  };
-
-  const handleEditFromDetail = (supplier: Supplier) =>
-    handleEditSupplier(supplier);
+  const handleEditFromDetail = (supplier: Supplier) => handleEditSupplier(supplier);
 
   const handleMakePayment = (supplier: Supplier) => {
     setSelectedPI(supplier);
     setPaymentModalOpen(true);
   };
-  const handleMakeadvancePayment = (supplier: Supplier) => {
-  setSelectedPI({ ...supplier, isAdvance: true });
-  setPaymentModalOpen(true);
-};
+
+  const handleMakeAdvancePayment = (supplier: Supplier) => {
+    setSelectedPI({ ...supplier, isAdvance: true });
+    setPaymentModalOpen(true);
+  };
+
   const handleDeleteSupplier = async (supplier: Supplier) => {
     if (!supplier.supplierId) return;
-    const confirm = window.confirm(
+
+    const confirmed = window.confirm(
       `Are you sure you want to delete ${supplier.supplierName}?`,
     );
-    if (!confirm) return;
+
+    if (!confirmed) return;
+
     try {
       setLoading(true);
       await deleteSupplier(supplier.supplierId);
@@ -182,103 +188,100 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
 
   const columns: Column<Supplier>[] = [
     {
-  key: "supplierCode",
-  header: "Code",
-  align: "left",
-  render: (s) => (
-    <Tooltip content={s.supplierCode}>
-      <span className="truncate max-w-[120px] block">
-        {s.supplierCode || "—"}
-      </span>
-    </Tooltip>
-  ),
-},
+      key: "supplierCode",
+      header: "Code",
+      align: "left",
+      render: (supplier) => (
+        <span className="block truncate text-sm">
+          {supplier.supplierCode || "-"}
+        </span>
+      ),
+      tooltip: (supplier) => supplier.supplierCode || "-",
+    },
     {
-  key: "supplierName",
-  header: "Supplier Name",
-  align: "left",
-  render: (s) => (
-    <Tooltip content={s.supplierName}>
-      <span className="truncate max-w-[160px] block">
-        {s.supplierName || "—"}
-      </span>
-    </Tooltip>
-  ),
-},
+      key: "supplierName",
+      header: "Supplier Name",
+      align: "left",
+      render: (supplier) => (
+        <span className="block truncate text-sm">
+          {supplier.supplierName || "-"}
+        </span>
+      ),
+      tooltip: (supplier) => supplier.supplierName || "-",
+    },
     {
-  key: "taxCategory",
-  header: "Tax Category",
-  align: "left",
-  render: (s) => (
-    <Tooltip content={s.taxCategory}>
-      <span className="truncate max-w-[140px] block">
-        {s.taxCategory || "—"}
-      </span>
-    </Tooltip>
-  ),
-},
-   {
-  key: "phoneNo",
-  header: "Phone",
-  align: "left",
-  render: (s) => (
-    <Tooltip content={s.phoneNo}>
-      <span className="truncate max-w-[140px] block">
-        {s.phoneNo || "—"}
-      </span>
-    </Tooltip>
-  ),
-},
+      key: "taxCategory",
+      header: "Tax Category",
+      align: "left",
+      render: (supplier) => (
+        <span className="block truncate text-sm">
+          {supplier.taxCategory || "-"}
+        </span>
+      ),
+      tooltip: (supplier) => supplier.taxCategory || "-",
+    },
+    {
+      key: "phoneNo",
+      header: "Phone",
+      align: "left",
+      render: (supplier) => (
+        <span className="block truncate text-sm">
+          {supplier.phoneNo || "-"}
+        </span>
+      ),
+      tooltip: (supplier) => supplier.phoneNo || "-",
+    },
     {
       key: "tpin",
       header: "TPIN",
       align: "left",
-      render: (s) =>
-        s.tpin ? (
-          <Tooltip content={s.tpin}>
-            <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-              {s.tpin}
-            </code>
-          </Tooltip>
+      render: (supplier) =>
+        supplier.tpin ? (
+          <code className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+            {supplier.tpin}
+          </code>
         ) : (
-          <span className="text-muted">—</span>
+          <span className="text-muted">-</span>
         ),
+      tooltip: (supplier) => supplier.tpin || "-",
     },
-{
-  key: "currency",
-  header: "Currency",
-  align: "left",
-  render: (s) => (
-    <Tooltip content={s.currency}>
-      <span className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-        {s.currency || "—"}
-      </span>
-    </Tooltip>
-  ),
-},
+    {
+      key: "currency",
+      header: "Currency",
+      align: "left",
+      render: (supplier) => (
+        <span className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+          {supplier.currency || "-"}
+        </span>
+      ),
+      tooltip: (supplier) => supplier.currency || "-",
+    },
     {
       key: "status",
       header: "Status",
       align: "left",
-      render: (s) => <StatusBadge status={s.status || "active"} />,
+      render: (supplier) => <StatusBadge status={supplier.status || "active"} />,
     },
     {
       key: "actions",
       header: "Actions",
       align: "center",
-      render: (s) => (
+      render: (supplier) => (
         <ActionGroup>
           <ActionButton
             type="view"
-            onClick={() => handleRowClick(s)}
+            onClick={() => handleRowClick(supplier)}
             iconOnly
           />
           <ActionMenu
-            onEdit={() => handleEditSupplier(s)}
-            onDelete={() => handleDeleteSupplier(s)}
+            onEdit={() => handleEditSupplier(supplier)}
+            onDelete={() => handleDeleteSupplier(supplier)}
             customActions={[
-              { label: "Make Payment", onClick: () => handleMakePayment(s) },
-              {label:"Make Advance Payment", onClick: () => handleMakeadvancePayment(s)}
+              { label: "Make Payment", onClick: () => handleMakePayment(supplier) },
+              {
+                label: "Make Advance Payment",
+                onClick: () => handleMakeAdvancePayment(supplier),
+              },
             ]}
           />
         </ActionGroup>
@@ -286,16 +289,12 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     },
   ];
 
-  /* ─── UI ─── */
   return (
-    /*
-     * KEY FIX: when in detail mode, remove p-8 and make container h-full
-     * so SupplierDetailView (which uses h-full) fills exactly the available
-     * space — no extra white space below the table.
-     */
     <div
       className={
-        viewMode === "detail" ? "h-full flex flex-col overflow-hidden" : "p-8"
+        viewMode === "detail"
+          ? "flex h-full min-h-0 flex-col overflow-hidden"
+          : "h-full min-h-0"
       }
     >
       {viewMode === "table" ? (
@@ -328,33 +327,26 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
         />
       ) : null}
 
-      {/* <SupplierPaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => { setShowPaymentModal(false); setPaymentSupplier(null); }}
-        supplierName={paymentSupplier?.supplierName}
-        supplierId={paymentSupplier?.supplierId}
-      /> */}
-     <PaymentEntryModal
-  isOpen={paymentModalOpen}
-  onClose={() => {
-    setPaymentModalOpen(false);
-    setSelectedPI(null);
-  }}
-  defaultValues={
-    selectedPI
-      ? {
-          paymentType: "Pay",
-          partyType: "Supplier",
-          partyName: selectedPI.supplierName,
-          partyId: selectedPI.supplierId,
-         
-          referenceName: selectedPI.isAdvance
-            ? `ADV-${selectedPI.supplierId}`
-            : undefined,
+      <PaymentEntryModal
+        isOpen={paymentModalOpen}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setSelectedPI(null);
+        }}
+        defaultValues={
+          selectedPI
+            ? {
+                paymentType: "Pay",
+                partyType: "Supplier",
+                partyName: selectedPI.supplierName,
+                partyId: selectedPI.supplierId,
+                referenceName: selectedPI.isAdvance
+                  ? `ADV-${selectedPI.supplierId}`
+                  : undefined,
+              }
+            : undefined
         }
-      : undefined
-  }
-/>
+      />
     </div>
   );
 };

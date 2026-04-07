@@ -6,28 +6,29 @@ import CRMReports from "./Reports";
 import Leads from "./Leads";
 import SupportTickets from "./Support-tickets";
 import Payments from "./CustomerPayments";
-import { FaCreditCard } from "react-icons/fa";
 import {
+  FaCreditCard,
   FaUsers,
-  // FaUser,
-  // FaTicketAlt,
   FaChartBar,
   FaCalendarAlt,
   FaIdBadge,
 } from "react-icons/fa";
+import {
+  AppPage,
+  AppPageBody,
+  AppPageHeader,
+  AppTabs,
+} from "../../components/ui/app-shell";
 
 type OutletContextType = {
-  // Sales
   openInvoiceCreate: () => void;
   openInvoiceEdit: (invoiceNumber: string, data: any) => void;
   openProformaCreate: () => void;
   openProformaEdit: (proformaId: string, data: any) => void;
   openQuotationCreate: () => void;
   openQuotationEdit: (quotationId: string, data: any) => void;
-  // CRM
   openCustomerCreate: () => void;
   openCustomerEdit: (id: string, data: any) => void;
-  // Procurement
   openSupplierCreate: () => void;
   openSupplierEdit: (id: string, data: any) => void;
   openPOCreate: () => void;
@@ -39,16 +40,14 @@ const crmModule = {
   icon: <FaUsers />,
   defaultTab: "dashboard",
   tabs: [
-    { id: "dashboard", name: "Dashboard", icon: <FaCalendarAlt /> },
+    { id: "dashboard", label: "Dashboard", icon: <FaCalendarAlt /> },
     {
       id: "customer-managment",
-      name: "Customer Management",
+      label: "Customer Management",
       icon: <FaIdBadge />,
     },
-    // { id: "leads", name: "Leads", icon: <FaUser /> },
-    // { id: "tickets", name: "Support Tickets", icon: <FaTicketAlt /> },
-    { id: "payments", name: "Payments", icon: <FaCreditCard /> },
-    { id: "reports", name: "Reports", icon: <FaChartBar /> },
+    { id: "payments", label: "Payments", icon: <FaCreditCard /> },
+    { id: "reports", label: "Reports", icon: <FaChartBar /> },
   ],
   leads: [
     {
@@ -74,32 +73,6 @@ const crmModule = {
       status: "Contacted",
       value: 80000,
       source: "Cold Call",
-    },
-  ],
-  opportunities: [
-    {
-      id: "OPP-001",
-      name: "Enterprise Software Deal",
-      customer: "Global Enterprises",
-      value: 150000,
-      stage: "Proposal",
-      probability: 70,
-    },
-    {
-      id: "OPP-002",
-      name: "Startup Package",
-      customer: "StartupCo",
-      value: 50000,
-      stage: "Qualification",
-      probability: 30,
-    },
-    {
-      id: "OPP-003",
-      name: "Manufacturing Solution",
-      customer: "Manufacturing Inc",
-      value: 80000,
-      stage: "Needs Analysis",
-      probability: 50,
     },
   ],
   tickets: [
@@ -132,8 +105,7 @@ const crmModule = {
 
 const CRM: React.FC = () => {
   const [activeTab, setActiveTab] = useState(crmModule.defaultTab);
-  
-  // ✅ GLOBAL MODAL CONTROL FROM APP LAYOUT
+  const isDashboardTab = activeTab === "dashboard";
   const { openCustomerCreate } = useOutletContext<OutletContextType>();
 
   const handleAddCustomer = () => {
@@ -151,56 +123,28 @@ const CRM: React.FC = () => {
   };
 
   return (
-    <div className="bg-app min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 pb-0">
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
-          <span>{crmModule.icon}</span> {crmModule.name}
-        </h2>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 px-6 mt-6">
-        {crmModule.tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors ${
-              activeTab === tab.id
-                ? "text-primary border-b-2 border-current"
-                : "text-muted hover:text-main"
-            }`}
-          >
-            <span>{tab.icon}</span> {tab.name}
-          </button>
-        ))}
-      </div>
-
-      <div className={activeTab === "customer-managment" ? "" : "p-8"}>
-        <div>
-          {activeTab === "dashboard" && <CRMDashboard />}
-
-          {activeTab === "customer-managment" && (
-            <CustomerManagement onAdd={handleAddCustomer} />
-          )}
-
-          {activeTab === "leads" && (
-            <Leads leads={crmModule.leads} onAdd={handleAddLead} />
-          )}
-
-          {activeTab === "tickets" && (
-            <SupportTickets
-              tickets={crmModule.tickets}
-              onAdd={handleAddTicket}
-            />
-          )}
-
-          {activeTab === "payments" && <Payments />}
-
-          {activeTab === "reports" && <CRMReports />}
-        </div>
-      </div>
-    </div>
+    <AppPage viewportLocked={isDashboardTab}>
+      <AppPageHeader
+        title={crmModule.name}
+        description="Customers, collections, and CRM reporting with a shared workspace rhythm."
+        icon={crmModule.icon}
+      />
+      <AppTabs tabs={crmModule.tabs} activeTab={activeTab} onChange={setActiveTab} />
+      <AppPageBody viewportLocked={isDashboardTab}>
+        {activeTab === "dashboard" && <CRMDashboard />}
+        {activeTab === "customer-managment" && (
+          <CustomerManagement onAdd={handleAddCustomer} />
+        )}
+        {activeTab === "leads" && (
+          <Leads leads={crmModule.leads} onAdd={handleAddLead} />
+        )}
+        {activeTab === "tickets" && (
+          <SupportTickets tickets={crmModule.tickets} onAdd={handleAddTicket} />
+        )}
+        {activeTab === "payments" && <Payments />}
+        {activeTab === "reports" && <CRMReports />}
+      </AppPageBody>
+    </AppPage>
   );
 };
 

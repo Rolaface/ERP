@@ -231,7 +231,7 @@ const DebitNotesTable: React.FC = () => {
   ];
 
   return (
-    <div className="p-8">
+    <div className="h-full min-h-0">
       <Table
         columns={columns}
         data={data}
