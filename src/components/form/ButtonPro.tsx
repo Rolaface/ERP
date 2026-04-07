@@ -33,9 +33,9 @@ export default function ButtonPro({
 }: ButtonProProps) {
   const isDisabled = disabled || loading;
 
-  /* ---------------- Variant Styles ---------------- */
+  /* ---------------- Base Styles (UPDATED) ---------------- */
   const base =
-    "rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 group";
+    "rounded-xl font-semibold transition-all duration-200 ease-out flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-primary/30";
 
   const variants = {
     primary: isDisabled
@@ -77,17 +77,15 @@ export default function ButtonPro({
       `}
     >
       {/* Left Icon */}
-      {leftIcon && !loading && (
-        <span className="flex items-center justify-center">
-          {leftIcon}
-        </span>
-      )}
+      <span className="flex items-center justify-center w-4 h-4">
+        {!loading && leftIcon}
+      </span>
 
       {/* Text */}
       <span className="whitespace-nowrap">{children}</span>
 
-      {/* Right Icon / Loader */}
-      <span className="flex items-center justify-center">
+      {/* Right Icon / Loader (FIXED WIDTH to prevent layout shift) */}
+      <span className="flex items-center justify-center w-4 h-4">
         {loading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (

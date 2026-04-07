@@ -19,7 +19,6 @@ type FormFieldProps = {
   inputRef?: React.RefObject<HTMLInputElement>;
   onEnter?: () => void;
 
-  /* NEW (advanced UX) */
   asyncStatus?: "idle" | "loading" | "taken" | "valid";
   rightElement?: React.ReactNode;
 };
@@ -48,6 +47,16 @@ export default function FormFieldPro({
     isFilled &&
     (!asyncStatus || asyncStatus === "valid");
 
+  /* ---------------- Unified Input Styles ---------------- */
+  const baseInput =
+    "input pr-10 rounded-xl transition-all duration-200";
+
+  const stateStyles = `
+    ${hasError ? "input-error" : ""}
+    ${isSuccess ? "border-green-400" : ""}
+    ${!hasError && !isSuccess ? "focus:border-primary" : ""}
+  `;
+
   return (
     <div className="form-group-v2">
       {/* Label */}
@@ -62,7 +71,6 @@ export default function FormFieldPro({
       <div className="relative">
         <motion.input
           ref={inputRef}
-          whileFocus={{ scale: 1.01 }}
           type={type}
           value={value}
           onChange={onChange}
@@ -71,11 +79,11 @@ export default function FormFieldPro({
           onKeyDown={(e) => {
             if (e.key === "Enter" && onEnter) onEnter();
           }}
-          className={`
-            input pr-10
-            ${hasError ? "input-error" : ""}
-            ${isSuccess ? "border-green-400" : ""}
-          `}
+          whileFocus={{
+            scale: 1.01,
+            boxShadow: "0 0 0 2px rgba(99,102,241,0.15)",
+          }}
+          className={`${baseInput} ${stateStyles}`}
         />
 
         {/* Right Icon */}
@@ -85,19 +93,31 @@ export default function FormFieldPro({
           ) : (
             <AnimatePresence mode="wait">
               {asyncStatus === "loading" && (
-                <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
                   <Loader2 className="w-4 h-4 animate-spin text-muted" />
                 </motion.div>
               )}
 
               {asyncStatus === "taken" && (
-                <motion.div key="taken" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <motion.div
+                  key="taken"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
                   <AlertCircle className="w-4 h-4 text-danger" />
                 </motion.div>
               )}
 
               {isSuccess && (
-                <motion.div key="success" initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                <motion.div
+                  key="success"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                >
                   <CheckCircle2 className="w-4 h-4 text-success" />
                 </motion.div>
               )}
@@ -110,31 +130,56 @@ export default function FormFieldPro({
       <div className="min-h-[16px]">
         <AnimatePresence mode="wait">
           {hasError && (
-            <motion.p key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="form-helper-v2 text-danger">
+            <motion.p
+              key="error"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="form-helper-v2 text-danger"
+            >
               {error}
             </motion.p>
           )}
 
           {!hasError && asyncStatus === "loading" && (
-            <motion.p key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="form-helper-v2 text-muted">
+            <motion.p
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="form-helper-v2 text-muted"
+            >
               Checking...
             </motion.p>
           )}
 
           {!hasError && asyncStatus === "taken" && (
-            <motion.p key="taken" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="form-helper-v2 text-danger">
+            <motion.p
+              key="taken"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="form-helper-v2 text-danger"
+            >
               Already exists
             </motion.p>
           )}
 
           {isSuccess && successText && (
-            <motion.p key="success" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="form-helper-v2 text-success">
+            <motion.p
+              key="success"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="form-helper-v2 text-success"
+            >
               {successText}
             </motion.p>
           )}
 
           {!hasError && !isSuccess && helper && (
-            <motion.p key="helper" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="form-helper-v2 text-muted">
+            <motion.p
+              key="helper"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="form-helper-v2 text-muted"
+            >
               {helper}
             </motion.p>
           )}
