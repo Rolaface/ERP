@@ -2,25 +2,25 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
-type FormFieldProProps = {
+type FormFieldProps = {
   label?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  type?: string;
 
+  placeholder?: string;
   error?: string;
   helper?: string;
   successText?: string;
 
-  asyncStatus?: "idle" | "loading" | "taken" | "valid";
-
+  type?: string;
   required?: boolean;
   disabled?: boolean;
 
   inputRef?: React.RefObject<HTMLInputElement>;
   onEnter?: () => void;
 
+  /* NEW (advanced UX) */
+  asyncStatus?: "idle" | "loading" | "taken" | "valid";
   rightElement?: React.ReactNode;
 };
 
@@ -29,37 +29,24 @@ export default function FormFieldPro({
   value,
   onChange,
   placeholder,
-  type = "text",
-
   error,
   helper,
   successText,
-
-  asyncStatus,
-
+  type = "text",
   required = false,
   disabled = false,
-
   inputRef,
   onEnter,
-
+  asyncStatus,
   rightElement,
-}: FormFieldProProps) {
-  /* ---------------- STATE ---------------- */
-
+}: FormFieldProps) {
   const hasError = Boolean(error);
   const isFilled = value?.length > 0;
-
-  const isAsyncLoading = asyncStatus === "loading";
-  const isAsyncError = asyncStatus === "taken";
-  const isAsyncSuccess = asyncStatus === "valid";
 
   const isSuccess =
     !hasError &&
     isFilled &&
-    (!asyncStatus || isAsyncSuccess);
-
-  /* ---------------- UI ---------------- */
+    (!asyncStatus || asyncStatus === "valid");
 
   return (
     <div className="form-group-v2">
@@ -78,15 +65,17 @@ export default function FormFieldPro({
           whileFocus={{ scale: 1.01 }}
           type={type}
           value={value}
-          placeholder={placeholder}
           onChange={onChange}
+          placeholder={placeholder}
           disabled={disabled}
           onKeyDown={(e) => {
             if (e.key === "Enter" && onEnter) onEnter();
           }}
-          className={`input pr-10 ${
-            hasError || isAsyncError ? "input-error" : ""
-          }`}
+          className={`
+            input pr-10
+            ${hasError ? "input-error" : ""}
+            ${isSuccess ? "border-green-400" : ""}
+          `}
         />
 
         {/* Right Icon */}
@@ -95,32 +84,20 @@ export default function FormFieldPro({
             rightElement
           ) : (
             <AnimatePresence mode="wait">
-              {isAsyncLoading && (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
+              {asyncStatus === "loading" && (
+                <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   <Loader2 className="w-4 h-4 animate-spin text-muted" />
                 </motion.div>
               )}
 
-              {(hasError || isAsyncError) && (
-                <motion.div
-                  key="error"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
+              {asyncStatus === "taken" && (
+                <motion.div key="taken" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   <AlertCircle className="w-4 h-4 text-danger" />
                 </motion.div>
               )}
 
               {isSuccess && (
-                <motion.div
-                  key="success"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                >
+                <motion.div key="success" initial={{ scale: 0 }} animate={{ scale: 1 }}>
                   <CheckCircle2 className="w-4 h-4 text-success" />
                 </motion.div>
               )}
@@ -130,36 +107,36 @@ export default function FormFieldPro({
       </div>
 
       {/* Feedback */}
-      <div className="form-helper-v2 min-h-[16px]">
+      <div className="min-h-[16px]">
         <AnimatePresence mode="wait">
           {hasError && (
-            <motion.span key="error" className="text-danger">
+            <motion.p key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="form-helper-v2 text-danger">
               {error}
-            </motion.span>
+            </motion.p>
           )}
 
-          {!hasError && isAsyncError && (
-            <motion.span key="taken" className="text-danger">
-              Already exists — try logging in
-            </motion.span>
-          )}
-
-          {!hasError && isAsyncLoading && (
-            <motion.span key="loading" className="text-muted">
+          {!hasError && asyncStatus === "loading" && (
+            <motion.p key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="form-helper-v2 text-muted">
               Checking...
-            </motion.span>
+            </motion.p>
+          )}
+
+          {!hasError && asyncStatus === "taken" && (
+            <motion.p key="taken" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="form-helper-v2 text-danger">
+              Already exists
+            </motion.p>
           )}
 
           {isSuccess && successText && (
-            <motion.span key="success" className="text-success">
+            <motion.p key="success" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="form-helper-v2 text-success">
               {successText}
-            </motion.span>
+            </motion.p>
           )}
 
           {!hasError && !isSuccess && helper && (
-            <motion.span key="helper" className="text-muted">
+            <motion.p key="helper" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="form-helper-v2 text-muted">
               {helper}
-            </motion.span>
+            </motion.p>
           )}
         </AnimatePresence>
       </div>
