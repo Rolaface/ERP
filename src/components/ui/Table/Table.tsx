@@ -157,7 +157,7 @@ function Table<T extends Record<string, any>>({
     <div
       className="app-surface relative z-10 flex w-full flex-col overflow-hidden"
       style={{
-        height: "calc(90vh - 129px)",
+        height: "calc(95.5vh - 130px)",
       }}
     >
       {showToolbar && (
@@ -207,7 +207,7 @@ function Table<T extends Record<string, any>>({
       )}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="shrink-0 border-b border-[var(--border)] bg-card w-full overflow-x-auto">
+        <div className="shrink-0 border-b-2 border-[var(--border)] bg-card w-full overflow-x-auto">
           <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               {visibleColumns.map((column) => (
@@ -223,16 +223,16 @@ function Table<T extends Record<string, any>>({
                   const isDesc = isActive && sortOrderProp === "desc";
 
                   return (
-                    <th
-                      key={column.key}
-                      onClick={isSortable ? () => handleColumnSort(column.key) : undefined}
-                      className={[
-                        "bg-card px-3 py-1.5 text-xs font-semibold text-muted whitespace-nowrap sm:px-4",
-                        getAlignment(column.align),
-                        isSortable ? "cursor-pointer select-none transition-colors hover:text-primary" : "",
-                        isActive ? "text-primary" : "",
-                      ].join(" ")}
-                    >
+                   <th
+  key={column.key}
+  onClick={isSortable ? () => handleColumnSort(column.key) : undefined}
+  className={[
+    "bg-[var(--border)]/10 px-3 py-2.5 text-xs font-bold text-muted uppercase tracking-wide whitespace-nowrap sm:px-4",
+    getAlignment(column.align),
+    isSortable ? "cursor-pointer select-none transition-colors hover:text-primary" : "",
+    isActive ? "text-primary" : "",
+  ].join(" ")}
+>
                       <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
                         {column.header}
                         {isSortable && (
