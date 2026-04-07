@@ -61,12 +61,61 @@
   --hero-subtitle-size: 16px;
   --hero-max-width: 600px;
 
-    /* SEMANTIC TOKENS */
+  /* SEMANTIC TOKENS */
   --color-bg: var(--bg);
   --color-card: var(--card);
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-primary: var(--primary);
+}
+
+/* Form Tokens */
+:root {
+  /* Field Structure */
+  --field-padding-x: 0.25rem;
+  --field-padding-y: 0.75rem;
+  --field-radius: 12px;
+
+  /* Field Colors */
+  --field-border: var(--border);
+  --field-border-focus: var(--primary);
+  --field-border-error: var(--danger);
+
+  /* Text */
+  --label-size: 11px;
+  --helper-size: 12px;
+
+  /* Feedback */
+  --focus-ring: 0 2px 0 0 rgba(0, 0, 0, 0.2);
+  --focus-ring-primary: 0 2px 0 0 rgba(79, 70, 229, 0.3);
+
+  /* Motion */
+  --field-transition: all 0.25s ease;
+}
+
+/* =========================================
+   MOTION TOKENS
+   (Add BELOW Form Tokens)
+========================================= */
+:root {
+  /* Duration */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+
+  /* Easing */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+  /* Scale */
+  --scale-hover: 1.02;
+  --scale-active: 0.98;
+
+  /* Elevation */
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 /* =========================================
@@ -301,12 +350,12 @@
   --sidebar-text: #0f172a;
 
   /* TABLE / HEADERS */
-  --table-head: #1e293b;     /* slate-800 */
+  --table-head: #1e293b; /* slate-800 */
   --table-head-text: #ffffff;
 
   /* BORDERS + INTERACTIONS */
-  --border: #e5e7eb;         /* gray-200 */
-  --row-hover: #f1f5f9;      /* subtle slate hover */
+  --border: #e5e7eb; /* gray-200 */
+  --row-hover: #f1f5f9; /* subtle slate hover */
 
   /* OPTIONAL ENHANCEMENTS (matches your UI feel) */
   --input-bg: #ffffff;
@@ -325,11 +374,25 @@
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    transition: all 0.2s;
+
+    transition:
+      transform var(--motion-fast) var(--ease-standard),
+      box-shadow var(--motion-fast) var(--ease-standard),
+      background var(--motion-fast) var(--ease-standard);
+
     padding: var(--density-padding-sm) var(--density-padding-md);
     border-radius: var(--density-radius);
     cursor: pointer;
     text-decoration: none;
+  }
+
+  .btn:hover {
+    transform: scale(var(--scale-hover));
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn:active {
+    transform: scale(var(--scale-active));
   }
   .btn-primary {
     background: var(--primary);
@@ -362,11 +425,132 @@
     padding: var(--density-padding-md);
   }
   .card-hover {
-    transition: all 0.2s ease;
+    transition:
+      transform var(--motion-base) var(--ease-standard),
+      box-shadow var(--motion-base) var(--ease-standard);
   }
   .card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Input Field */
+  .input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--field-border);
+    padding: var(--field-padding-y) var(--field-padding-x);
+    font-size: var(--text-md);
+    color: var(--text);
+
+    transition:
+      border-color var(--motion-fast) var(--ease-standard),
+      box-shadow var(--motion-fast) var(--ease-standard),
+      transform var(--motion-fast) var(--ease-standard);
+  }
+
+  .input::placeholder {
+    color: var(--muted);
+    opacity: 0.6;
+  }
+
+  .input:focus {
+    outline: none;
+    border-bottom: 1px solid var(--field-border-focus);
+    box-shadow: var(--focus-ring-primary);
+    transform: translateY(-1px);
+  }
+
+  .input-error {
+    border-bottom: 1px solid var(--field-border-error);
+  }
+
+  /* Label */
+  .label {
+    font-size: var(--label-size);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-left: 4px;
+  }
+
+  /* Error Text */
+  .error-text {
+    font-size: var(--helper-size);
+    color: var(--danger);
+    margin-top: 4px;
+    margin-left: 4px;
+  }
+
+  /* Form Group */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Form Card */
+  .form-card {
+    background: linear-gradient(to bottom, var(--card), rgba(0, 0, 0, 0.02));
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Higher-level composed UI */
+  /* Form Section (group of fields) */
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Form Header */
+  .form-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .form-subtitle {
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  /* Step Indicator */
+  .form-step {
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  /* Form Footer (CTA area) */
+  .form-footer {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Inline Row (for side-by-side inputs later) */
+  .form-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .form-row > * {
+    flex: 1;
   }
 }
 
@@ -404,6 +588,28 @@
   }
   .row-hover:hover {
     background: var(--row-hover) !important;
+  }
+
+  /* Motion Utilities */
+  .motion-fade {
+    animation: fadeIn var(--motion-base) var(--ease-out);
+  }
+
+  .motion-slide-up {
+    animation: slideUp var(--motion-base) var(--ease-out);
+  }
+
+  .motion-scale-in {
+    animation: scaleIn var(--motion-base) var(--ease-standard);
+  }
+
+  .motion-hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .motion-hover-scale:hover {
+    transform: scale(var(--scale-hover));
   }
 }
 
@@ -452,8 +658,6 @@ h4 {
 
   font-family: var(--font-body);
 }
-
-
 
 /* Typography */
 .heading-xl {
@@ -678,6 +882,37 @@ h4 {
   }
   50% {
     transform: translateY(-12px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

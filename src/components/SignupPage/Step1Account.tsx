@@ -219,7 +219,7 @@ export default function Step1Account({ form, errors, update, next }: any) {
     emailStatus === "valid";
 
   return (
-    <div className="form-card motion-scale-in max-w-sm mx-auto shadow-lg p-4">
+    <div className="form-card motion-scale-in shadow-lg p-4">
       {/* Header */}
       <div className="form-header mb-1.5">
         <h2 className="form-title">Create your account</h2>
@@ -227,7 +227,7 @@ export default function Step1Account({ form, errors, update, next }: any) {
       </div>
 
       {/* Form */}
-      <div className="form-section space-y-2">
+      <div className="form-section space-y-3">
         <InputField
           label="Full Name"
           value={form.fullName}
@@ -257,8 +257,6 @@ export default function Step1Account({ form, errors, update, next }: any) {
           inputRef={passwordRef}
         />
       </div>
-
-      
 
       {/* CTA */}
       <div>
