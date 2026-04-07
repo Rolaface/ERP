@@ -93,7 +93,7 @@ export const AppTabs: React.FC<AppTabsProps> = ({
   onChange,
 }) => (
   <div className="w-full overflow-hidden">
-    <div className="flex w-full items-center justify-start gap-2 rounded-2xl border border-[var(--border)] bg-card p-2 shadow-[var(--app-shadow-soft)]">
+    <div className="flex w-full items-center justify-start gap-2 rounded-2xl border border-[var(--border)] bg-card p-2 ">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         return (
