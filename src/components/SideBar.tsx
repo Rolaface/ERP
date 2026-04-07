@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  FaChartBar,
+  FaTachometerAlt ,
   FaMoneyBillWave,
+  FaMoneyBill,
   FaUsers,
   FaShoppingBag,
   FaBoxes,
@@ -17,6 +18,7 @@ import {
   FaReceipt,
   FaUsersCog,
   FaSignOutAlt,
+  FaUniversity
 } from "react-icons/fa";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -28,7 +30,7 @@ import { MODAL_LAYER } from "./common/ModalManagerContext";
 /* ── Menu config ── */
 
 const menuItems = [
-  { name: "Dashboard",      to: "/dashboard",   icon: <FaChartBar /> },
+  { name: "Dashboard",      to: "/dashboard",   icon: <FaTachometerAlt  /> },
   { name: "Sales",          to: "/sales",       icon: <FaMoneyBillWave /> },
   { name: "Customer",       to: "/crm",         icon: <FaUsers /> },
   { name: "Procurement",    to: "/procurement", icon: <FaShoppingBag /> },
@@ -40,8 +42,8 @@ const menuItems = [
 const settingsItems = [
   { to: "/companySetup",          label: "Company Setup",       icon: <FaBuilding /> },
   { to: "/userManagement",        label: "User Management",     icon: <FaUsers /> },
-  { to: "/bank-account-setup",    label: "Bank Account",        icon: <FaBars /> },
-  { to: "/mode-of-payment-setup", label: "Mode of Payment",     icon: <FaMoneyBillWave /> },
+  { to: "/bank-account-setup",    label: "Bank Account",        icon: <FaUniversity /> },
+  { to: "/mode-of-payment-setup", label: "Mode of Payment",     icon: <FaMoneyBill /> },
   { to: "/payment-entry",         label: "Payment Entry",       icon: <FaReceipt /> },
   { to: "/currency-conversion",   label: "Currency Exchange",   icon: <FaExchangeAlt /> },
   { to: "/customer-group",        label: "Customer Group",      icon: <FaUsersCog /> },

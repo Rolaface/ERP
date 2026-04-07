@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaBoxOpen, FaBoxes, FaChartBar } from "react-icons/fa";
+import { FaBoxOpen, FaBoxes, FaTachometerAlt  } from "react-icons/fa";
 import Items from "./Items";
 import Movements from "./Movements";
 import ItemsCategory from "./ItemsCategory";
@@ -18,7 +18,7 @@ const inventory = {
   icon: <FaBoxes />,
   defaultTab: "inventorydashboard",
   tabs: [
-    { id: "inventorydashboard", label: "Dashboard", icon: <FaChartBar /> },
+    { id: "inventorydashboard", label: "Dashboard", icon: <FaTachometerAlt  /> },
     { id: "items", label: "Items", icon: <FaBoxOpen /> },
     { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
     { id: "stock", label: "Stock", icon: <FaBoxOpen /> },

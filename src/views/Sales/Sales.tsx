@@ -11,7 +11,7 @@ import DebitNotesTable from "./DebitNotesTable";
 import SalesAnalytics from "./SalesAnalytics";
 import {
   FaMoneyBillWave,
-  FaCalendarAlt,
+  FaTachometerAlt,
   FaFileInvoice,
   FaFileInvoiceDollar,
   FaChartBar,
@@ -39,7 +39,7 @@ type OutletContextType = {
 };
 
 const salesTabs = [
-  { id: "salesdashboard", label: "Dashboard", icon: <FaCalendarAlt /> },
+  { id: "salesdashboard", label: "Dashboard", icon: <FaTachometerAlt  /> },
   { id: "quotations", label: "Quotations", icon: <FaFileInvoice /> },
   {
     id: "proformaInvoice",
