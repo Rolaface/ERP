@@ -7,6 +7,7 @@ import Stock from "./Stock";
 import Import from "./Import";
 import TaxTemplate from "./TaxTemplate";
 import InventoryDashboard from "./InventoryDashboard";
+import TaxCategory from "./TaxCategory";
 import {
   AppPage,
   AppPageBody,
@@ -22,11 +23,13 @@ const inventory = {
     { id: "inventorydashboard", label: "Dashboard", icon: <FaTachometerAlt  /> },
     { id: "taxTemplates",label : "Tax Templates", icon: <FaBoxOpen /> },
     { id: "items", label: "Items", icon: <FaBoxOpen /> },
+    { id: "taxCategory", label: "Tax Category", icon: <FaBoxOpen /> },
     { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
     { id: "stock", label: "Stock", icon: <FaBoxOpen /> },
     { id: "import", label: "Import", icon: <FaBoxOpen /> },
+
   ],
-  products: [
+  products: [ 
     {
       id: "PR-001",
       name: "Laptop Pro 14",
@@ -87,6 +90,9 @@ const Inventory: React.FC = () => {
             onAdd={() => {}}
           />
         )}
+        {activeTab === "taxCategory" && (
+  <TaxCategory />
+)}
         {activeTab === "itemsCategory" && (
           <ItemsCategory
             products={inventory.products}

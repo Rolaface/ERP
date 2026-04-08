@@ -198,10 +198,15 @@ export const API = {
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.delete_item_by_id`,
     
   },
+    /* =========================
+   * TAX
+   * ========================= */
 
   tax:{
     taxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.create_or_update_tax_template`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
+    getAllTaxCategories: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.get`,
+    createTaxCategory: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.create`,
 
   },
 
