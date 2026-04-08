@@ -19,6 +19,7 @@ import PurchaseOrderModal from "../procurement/PurchaseOrderModal";
 import PurchaseInvoiceModal from "../procurement/PurchaseInvoiceModal";
 import ItemModal from "../inventory/ItemModal";
 import ItemsCategoryModal from "../inventory/ItemsCategoryModal";
+import TaxTemplateModalComponent from "../inventory/TaxTemplateModal";
 
 const GlobalModalHandler: React.FC = () => {
   const { modals, closeModal, getModalContext } = useModalStore();
@@ -170,6 +171,19 @@ const GlobalModalHandler: React.FC = () => {
       case "itemCategory":
         return (
           <ItemsCategoryModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={modal.initialData}
+            isEditMode={modal.isEdit}
+          />
+        );
+
+      case "taxTemplate":
+        return (
+          <TaxTemplateModalComponent
             key={modal.id}
             modalId={modal.id}
             isOpen={true}

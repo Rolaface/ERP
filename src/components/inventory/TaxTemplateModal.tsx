@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Tag, Plus, Trash2 } from "lucide-react";
-import { MinimizableModal } from "../../components/common/ModalManagerContext";
+
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
+import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput } from "../ui/modal/modalComponent";
 import SearchSelect2 from "../ui/modal/SearchSelect2"; 

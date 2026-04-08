@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   showApiError,
   showSuccess,
@@ -13,13 +14,18 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import Tooltip from "../../components/Tooltip";
 import { fireManagedSwal } from "../../utils/swalManager";
-import TaxTemplateModal from "../../components/inventory/TaxTemplateModal";
 import { getAllTemplates, deleteTemplate } from "../../api/TaxTemplateApi";
 import { useTaxTemplate } from "../../hooks/useTaxTemplate";
+import { openTaxTemplateModal } from "../../store/modalStore";
 import type {
   TaxCategoryFormData,
   TaxRow,
 } from "../../types/tax/taxTemplate";
+
+interface OutletContextType {
+  openTaxTemplateCreate?: () => void;
+  openTaxTemplateEdit?: (id: string, data: any) => void;
+}
 
 //  Types 
 
@@ -37,7 +43,7 @@ interface Props {
 
 //  Component 
 
-const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
+const TaxTemplate: React.FC<Props> = () => {
   const [templates, setTemplates] = useState<TaxTemplateSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -48,25 +54,30 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedItem, setSelectedItem] =
-    useState<TaxCategoryFormData | null>(null);
-
   const { createTaxTemplate, updateTaxTemplate, updateStatus } =
     useTaxTemplate();
 
   //  Modal Helpers 
 
   const openCreate = () => {
-    setSelectedItem(null);
-    setIsEditMode(false);
-    setModalOpen(true);
-    onAdd?.();
+    openTaxTemplateModal(null, false, {
+      callback: async (formData: TaxCategoryFormData) => {
+        try {
+          await createTaxTemplate(formData);
+          await fetchTemplates();
+        } catch (error) {
+          showApiError(error);
+          throw error;
+        }
+      },
+    }, {
+      title: "Add Tax Template",
+      subtitle: "Create simple tax template",
+    });
   };
 
   const openEdit = (row: TaxTemplateSummary) => {
-    setSelectedItem({
+    const formData: TaxCategoryFormData = {
       name: row.name,
       title: row.title,
       disabled: row.disabled === 1,
@@ -74,14 +85,21 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
         tax_type: t.tax_type,
         tax_rate: t.tax_rate,
       })),
+    };
+    openTaxTemplateModal(formData, true, {
+      callback: async (formData: TaxCategoryFormData) => {
+        try {
+          await updateTaxTemplate(formData);
+          await fetchTemplates();
+        } catch (error) {
+          showApiError(error);
+          throw error;
+        }
+      },
+    }, {
+      title: "Edit Tax Template",
+      subtitle: "Update tax template",
     });
-    setIsEditMode(true);
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setSelectedItem(null);
   };
 
   //  Fetch 
@@ -167,20 +185,6 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
     } catch (error) {
       closeSwal();
       showApiError(error);
-    }
-  };
-
-  const handleSubmit = async (formData: TaxCategoryFormData) => {
-    try {
-      if (isEditMode) {
-        await updateTaxTemplate(formData);
-      } else {
-        await createTaxTemplate(formData);
-      }
-      await fetchTemplates();
-    } catch (error) {
-      showApiError(error);
-      throw error;
     }
   };
 
@@ -293,14 +297,6 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
         pageSize={pageSize}
         totalItems={totalItems}
         onPageChange={setPage}
-      />
-
-      <TaxTemplateModal
-        isOpen={modalOpen}
-        onClose={closeModal}
-        onSubmit={handleSubmit}
-        initialData={selectedItem}
-        isEditMode={isEditMode}
       />
     </>
   );

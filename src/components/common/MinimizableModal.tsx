@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useMemo, useEffect,useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Minus, X } from "lucide-react";
@@ -50,47 +50,13 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
 }) => {
   const modals = useModalStore((state) => state.modals);
   const swalDepth = useModalStore((state) => state.swalDepth);
-  const {
-    minimizeModal,
-    restoreModal,
-    bringToFront,
-    registerModalMeta,
-    unregisterModalMeta,
-  } = useModalStore();
+  const { minimizeModal, restoreModal, bringToFront, registerModalMeta } = useModalStore();
 
-  const registeredRef = useRef(false);
-  const onCloseRef = useRef(onClose);
-
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      if (registeredRef.current) {
-        unregisterModalMeta(modalId);
-        registeredRef.current = false;
-      }
-      return;
+  React.useEffect(() => {
+    if (isOpen) {
+      registerModalMeta(modalId, { title, subtitle, icon });
     }
-
-    registerModalMeta(modalId, {
-      title,
-      subtitle,
-      icon,
-      onRequestClose: () => onCloseRef.current(),
-    });
-    registeredRef.current = true;
-  }, [isOpen, modalId, title, subtitle, icon, registerModalMeta, unregisterModalMeta]);
-
-  useEffect(() => {
-    return () => {
-      if (registeredRef.current) {
-        unregisterModalMeta(modalId);
-        registeredRef.current = false;
-      }
-    };
-  }, [modalId, unregisterModalMeta]);
+  }, [isOpen, modalId, title, subtitle, icon, registerModalMeta]);
 
   const modalMeta = useMemo(
     () => modals.find((m) => m.id === modalId),
