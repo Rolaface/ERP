@@ -47,6 +47,7 @@ export const AppMain: React.FC<AppMainProps> = ({
     className="flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300 ease-out"
     style={{
       paddingLeft: sidebarOpen ? 'var(--app-sidebar-width)' : 'var(--app-sidebar-width-collapsed)',
+      paddingRight: '8px',
     } as React.CSSProperties}
   >
     {children}
@@ -76,7 +77,7 @@ export const AppContentContainer: React.FC<{
 }) => (
   <div
     className={[
-      "mx-auto flex w-full max-w-[1400px] flex-col px-4 py-4",
+      "flex w-full flex-1 flex-col px-3 py-4 min-h-0",
       viewportLocked ? "h-screen overflow-hidden" : "overflow-visible",
     ].join(" ")}
   >

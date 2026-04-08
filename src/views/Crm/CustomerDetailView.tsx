@@ -190,8 +190,8 @@ const CustomerDetailView: React.FC<Props> = ({
   };
 
   return (
-    <div className="flex flex-col bg-app text-main overflow-hidden">
-      <header className="bg-card px-5 py-3 flex items-center justify-between border-b border-theme shrink-0">
+    <div className="flex flex-col bg-app text-main overflow-hidden flex-1 min-h-0">
+      <header className="bg-card px-4 py-2 flex items-center justify-between border-b border-theme shrink-0">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
@@ -219,8 +219,7 @@ const CustomerDetailView: React.FC<Props> = ({
 
       <div className="flex-1 flex overflow-hidden min-h-0">
         <aside
-          className="hidden lg:flex flex-col bg-card border border-theme rounded-b-2xl mb-3 transition-all shrink-0 overflow-hidden self-start sticky top-0 w-64"
-          style={{ maxHeight: "calc(100vh - 110px)" }}
+          className="flex flex-col bg-card border-r border-theme transition-all shrink-0 overflow-hidden w-64"
         >
           <div className="px-3 h-[42px] flex items-center border-b border-theme bg-row-hover/10 shrink-0">
             <div className="relative">
@@ -235,7 +234,7 @@ const CustomerDetailView: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="overflow-y-auto custom-scrollbar flex-1 p-2">
+          <div className="overflow-y-auto custom-scrollbar flex-1 p-2" style={{ maxHeight: '560px' }}>
             {filteredCustomers.map((entry) => (
               <button
                 key={entry.id}
@@ -272,7 +271,7 @@ const CustomerDetailView: React.FC<Props> = ({
           </div>
         </aside>
 
-        <main className="flex-1 flex flex-col min-w-0 bg-app/20">
+        <main className="flex-1 flex flex-col min-w-0 min-h-0 bg-app/20">
           <div className="bg-card border-b border-theme px-4 shrink-0 z-10 flex items-center justify-between">
             <div className="flex">
               {[
@@ -299,9 +298,9 @@ const CustomerDetailView: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="flex-1 min-w-0 overflow-hidden">
+          <div className="flex-1 min-w-0 overflow-auto">
             {activeTab === "overview" && (
-              <div className="max-w-6xl mx-auto space-y-4 animate-in fade-in duration-500 p-5">
+              <div className="space-y-4 animate-in fade-in duration-500 p-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <InfoStrip
                     icon={<Building2 />}

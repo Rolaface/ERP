@@ -87,7 +87,7 @@ const fetchCustomers = async () => {
   const fetchAllCustomers = async () => {
     try {
       const response = await getAllCustomers(1, 1000, taxCategory);
-      setAllCustomers(response?.message?.data || []);
+      setAllCustomers(response?.data || []);
     } catch (error) {
       console.error("Error loading all customers:", error);
     }
