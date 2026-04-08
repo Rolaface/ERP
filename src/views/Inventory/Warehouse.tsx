@@ -6,9 +6,9 @@ import DeleteModal from "../../components/actionModal/DeleteModal";
 import { showApiError, showSuccess } from "../../utils/alert";
 
 import {
-  getItemGroupTree,
-  deleteItemGroupById,
-} from "../../api/itemGroupApi";
+  getWarehouseTree,
+  deleteWarehouseById,
+} from "../../api/WarehouseApi";
 
 import {
   AlertCircle,
@@ -16,62 +16,64 @@ import {
   RefreshCw,
   FolderOpen,
   Folder,
-  Package,
+  Warehouse,
   MoreHorizontal,
   Pencil,
   Trash2,
   GitBranch,
   Plus,
-  PackageSearch
+  Boxes
 } from "lucide-react";
 
 
 type OutletContextType = {
-  openCategoryCreate: (parentId?: string) => void;
-  openCategoryEdit: (id: string, data?: any) => void;
+  openWarehouseCreate: (initialData?: { parent: string }) => void;
+  openWarehouseEdit: (id: string, data?: any) => void;
 };
 
-export interface ItemGroupNode {
+export interface WarehouseNode {
   name: string;
-  item_group_name: string;
-  parent_item_group: string | null;
+  warehouse_name: string;
+  parent_warehouse: string | null;
   is_group: number;
-  item_count: number;
-  children?: ItemGroupNode[];
+  bin_count: number;
+  company: string;
+  children?: WarehouseNode[];
 }
 
-export interface ItemGroupTreeResponse {
+export interface WarehouseTreeResponse {
   status_code: number;
   message: string;
   data: {
     total: number;
-    item_groups: ItemGroupNode[];
+    warehouses: WarehouseNode[];
   };
 }
 
 
-function normalizeItemGroups(groups: ItemGroupNode[]): ItemGroupNode[] {
-  return groups.map((g) => ({
-    ...g,
-    children: Array.isArray(g.children) ? normalizeItemGroups(g.children) : [],
+function normalizeWarehouses(nodes: WarehouseNode[]): WarehouseNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    children: Array.isArray(node.children) ? normalizeWarehouses(node.children) : [],
   }));
 }
 
-function matchItemGroupNode(node: ItemGroupNode, term: string): boolean {
+function matchWarehouseNode(node: WarehouseNode, term: string): boolean {
   const t = term.toLowerCase();
   return (
     node.name.toLowerCase().includes(t) ||
-    node.item_group_name.toLowerCase().includes(t)
+    node.warehouse_name.toLowerCase().includes(t) ||
+    node.company.toLowerCase().includes(t)
   );
 }
 
-function itemGroupExpandIcon(
-  _node: ItemGroupNode,
+function warehouseExpandIcon(
+  _node: WarehouseNode,
   isExpanded: boolean,
   hasChildren: boolean,
 ): React.ReactNode {
   if (!hasChildren)
-    return <Package size={12} className="text-muted opacity-50" />;
+    return <Warehouse size={12} className="text-muted opacity-50" />;
   return isExpanded ? (
     <FolderOpen size={13} className="text-muted" />
   ) : (
@@ -162,38 +164,38 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
 };
 
 
-const ItemsCategory: React.FC = () => {
-  const { openCategoryCreate, openCategoryEdit } = useOutletContext<OutletContextType>();
+const WarehouseView: React.FC = () => {
+  const { openWarehouseCreate, openWarehouseEdit } = useOutletContext<OutletContextType>();
   const navigate = useNavigate();
 
-  const [treeData, setTreeData] = useState<ItemGroupNode[]>([]);
+  const [treeData, setTreeData] = useState<WarehouseNode[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [groupToDelete, setGroupToDelete] = useState<ItemGroupNode | null>(null);
+  const [warehouseToDelete, setWarehouseToDelete] = useState<WarehouseNode | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const fetchTree = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res: any = await getItemGroupTree(); 
+      const res: any = await getWarehouseTree(); 
       const responseBody = res?.message || res;
 
       if (responseBody?.status_code === 200 && responseBody?.data) {
-        const normalizedGroups = normalizeItemGroups(responseBody.data.item_groups);
-        setTreeData(normalizedGroups);
+        const normalizedNodes = normalizeWarehouses(responseBody.data.warehouses);
+        setTreeData(normalizedNodes);
       } else {
         const errorText = typeof responseBody?.message === 'string' 
             ? responseBody.message 
-            : "Failed to load item groups.";
+            : "Failed to load warehouses.";
             
         setError(errorText);
       }
     } catch (err: any) {
-      setError(typeof err?.message === 'string' ? err.message : "An error occurred while fetching item groups.");
+      setError(typeof err?.message === 'string' ? err.message : "An error occurred while fetching warehouses.");
     } finally {
       setLoading(false);
     }
@@ -203,30 +205,30 @@ const ItemsCategory: React.FC = () => {
     fetchTree();
   }, [fetchTree]);
 
-  const handleAddChild = (row: ItemGroupNode) => {
-    openCategoryCreate({ parent: row.name }); 
+  const handleAddChild = (row: WarehouseNode) => {
+    openWarehouseCreate({ parent: row.name }); 
   };
-  
 
   const confirmDelete = async () => {
-    if (!groupToDelete) return;
+    if (!warehouseToDelete) return;
 
     try {
       setDeleting(true);
-      const res = await deleteItemGroupById(groupToDelete.name);
-      if (!res || ![200,202].includes(res.status)) {
+      const res = await deleteWarehouseById(warehouseToDelete.name);
+
+      if (!res || ![200, 202].includes(res.status)) {
         showApiError(res);
         return;
       }
 
-      showSuccess(res.message || `Item Group ${groupToDelete.item_group_name} deleted succesfully`);
+      showSuccess(res.message || `Warehouse ${warehouseToDelete.warehouse_name} deleted successfully`);
       setDeleteModalOpen(false);
       fetchTree();
     } catch (err: any) {
       showApiError(err);
     } finally {
       setDeleting(false);
-      setGroupToDelete(null);
+      setWarehouseToDelete(null);
     }
   };
 
@@ -235,7 +237,7 @@ const ItemsCategory: React.FC = () => {
       <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col items-center justify-center py-24 gap-3 shadow-sm">
         <Loader2 size={28} className="animate-spin text-primary" />
         <p className="text-xs font-bold text-muted uppercase tracking-widest opacity-40">
-          Loading Item Groups…
+          Loading Warehouses…
         </p>
       </div>
     );
@@ -259,10 +261,10 @@ const ItemsCategory: React.FC = () => {
     );
   }
 
-  const columns: Column<ItemGroupNode>[] = [
+  const columns: Column<WarehouseNode>[] = [
     {
-      key: "item_group_name",
-      header: "Group Name",
+      key: "warehouse_name",
+      header: "Warehouse Name",
       align: "left",
       render: (row) => (
         <span
@@ -270,7 +272,7 @@ const ItemsCategory: React.FC = () => {
             row.is_group ? "font-semibold text-main" : "font-normal text-main"
           }
         >
-          {row.item_group_name}
+          {row.warehouse_name}
         </span>
       ),
     },
@@ -281,14 +283,20 @@ const ItemsCategory: React.FC = () => {
       render: (row) => <span className="text-xs text-muted">{row.name}</span>,
     },
     {
-      key: "item_count",
-      header: "Items",
+      key: "company",
+      header: "Company",
+      align: "left",
+      render: (row) => <span className="text-xs text-muted">{row.company}</span>,
+    },
+    {
+      key: "bin_count",
+      header: "Bins",
       align: "center",
       render: (row) => {
-        if (row.item_count === 0) return <span className="text-muted text-xs">—</span>;
+        if (row.bin_count === 0) return <span className="text-muted text-xs">—</span>;
         return (
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {row.item_count} Items
+            {row.bin_count} Bins
           </code>
         );
       },
@@ -302,7 +310,7 @@ const ItemsCategory: React.FC = () => {
           {
             label: "Edit",
             icon: <Pencil size={12} />,
-            onClick: () => openCategoryEdit(row.name),
+            onClick: () => openWarehouseEdit(row.name),
           },
           ...(row.is_group === 1
             ? [
@@ -314,11 +322,11 @@ const ItemsCategory: React.FC = () => {
               ]
             : [
                 {
-                  label: "View Items",
-                  icon: <PackageSearch size={12} />,
+                  label: "View Stock",
+                  icon: <Boxes size={12} />,
                   onClick: () =>
-                    navigate("/items", {
-                      state: { item_group: row.name },
+                    navigate("/stock-balance", { 
+                      state: { warehouse: row.name },
                     }),
                 },
               ]),
@@ -326,7 +334,7 @@ const ItemsCategory: React.FC = () => {
             label: "Delete",
             icon: <Trash2 size={12} />,
             onClick: () => {
-              setGroupToDelete(row);
+              setWarehouseToDelete(row);
               setDeleteModalOpen(true);
             },
             danger: true,
@@ -341,7 +349,7 @@ const ItemsCategory: React.FC = () => {
 
   return (
     <div className="h-full min-h-0">
-      <ExpandableTreeTable<ItemGroupNode>
+      <ExpandableTreeTable<WarehouseNode>
         columns={columns}
         data={treeData}
         childrenKey="children"
@@ -349,36 +357,36 @@ const ItemsCategory: React.FC = () => {
         showToolbar
         searchValue={searchTerm}
         onSearch={setSearchTerm}
-        toolbarPlaceholder="Search item groups…"
+        toolbarPlaceholder="Search warehouses…"
         showExpandControls
         onRefresh={fetchTree}
-        matchNode={matchItemGroupNode}
+        matchNode={matchWarehouseNode}
         defaultExpandDepth={0}
         indentSize={20}
         loading={loading}
-        emptyMessage="No item groups found."
-        expandIconRender={itemGroupExpandIcon}
+        emptyMessage="No warehouses found."
+        expandIconRender={warehouseExpandIcon}
         extraFilters={
           <button
             type="button"
-            onClick={() => openCategoryCreate()}
+            onClick={() => openWarehouseCreate()}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
           >
             <Plus size={13} />
-            New Group
+            New Warehouse
           </button>
         }
       />
 
-      {deleteModalOpen && groupToDelete && (
+      {deleteModalOpen && warehouseToDelete && (
         <DeleteModal
-          entityName="Item Group"
-          entityId={groupToDelete.name}
-          entityDisplayName={groupToDelete.item_group_name}
+          entityName="Warehouse"
+          entityId={warehouseToDelete.name}
+          entityDisplayName={warehouseToDelete.warehouse_name}
           isLoading={deleting}
           onClose={() => {
             setDeleteModalOpen(false);
-            setGroupToDelete(null);
+            setWarehouseToDelete(null);
           }}
           onDelete={confirmDelete}
         />
@@ -387,4 +395,4 @@ const ItemsCategory: React.FC = () => {
   );
 };
 
-export default ItemsCategory;
+export default WarehouseView;

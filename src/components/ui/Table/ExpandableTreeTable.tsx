@@ -387,7 +387,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
       {/* ── Table — exact same scroll wrapper as Table ── */}
       <div
         className="w-full overflow-x-auto custom-scrollbar"
-        style={{ minHeight: "200px", overflowY: "auto", maxHeight: "55vh" }}
+        style={{ minHeight: "200px", overflowY: "auto", maxHeight: "70vh" }}
       >
         <div className="pb-4">
           <table className="w-full min-w-full md:min-w-[800px] border-separate border-spacing-0">

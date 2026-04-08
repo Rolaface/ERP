@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { FaBoxOpen, FaBoxes, FaTachometerAlt  } from "react-icons/fa";
+import { FaBoxOpen, FaBoxes, FaTachometerAlt, FaWarehouse  } from "react-icons/fa";
 import Items from "./Items";
 import Movements from "./Movements";
 import ItemsCategory from "./ItemsCategory";
+import WarehouseView from "./Warehouse";
 import Stock from "./Stock";
 import Import from "./Import";
 import InventoryDashboard from "./InventoryDashboard";
@@ -21,6 +22,7 @@ const inventory = {
     { id: "inventorydashboard", label: "Dashboard", icon: <FaTachometerAlt  /> },
     { id: "items", label: "Items", icon: <FaBoxOpen /> },
     { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
+    { id: "warehouse", label: "WareHouse", icon: <FaWarehouse /> },
     { id: "stock", label: "Stock", icon: <FaBoxOpen /> },
     { id: "import", label: "Import", icon: <FaBoxOpen /> },
   ],
@@ -87,6 +89,14 @@ const Inventory: React.FC = () => {
         )}
         {activeTab === "itemsCategory" && (
           <ItemsCategory
+            products={inventory.products}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            onAdd={() => {}}
+          />
+        )}
+        {activeTab === "warehouse" && (
+          <WarehouseView
             products={inventory.products}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}

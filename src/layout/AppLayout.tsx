@@ -4,7 +4,9 @@ import Sidebar from "../components/SideBar";
 import PageLoader from "../components/ui/PageLoader";
 import { ModalManagerProvider } from "../components/common/ModalManagerContext";
 import { AppContentContainer, AppMain, AppShell, RightPanel } from "./layoutSystem";
-
+import WarehouseModal from "../components/inventory/WarehouseModal";
+import { createWarehouseNode } from "../api/WarehouseApi"; 
+// import { updateWarehouseById } from "../api/warehouseApi";
 
 import InvoiceModal from "../components/sales/InvoiceModal";
 import ProformaInvoiceModal from "../components/sales/ProformaInvoiceModal";
@@ -19,6 +21,7 @@ import { showApiError, showSuccess } from "../utils/alert";
 import { createSalesInvoice } from "../api/salesApi";
 import { createQuotation } from "../api/quotationApi";
 import { createItemGroup, updateItemGroupById } from "../api/itemCategoryApi";
+import { createItemGroupNode } from "../api/itemGroupApi";
 
 const AppLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
@@ -99,11 +102,30 @@ const AppLayout: React.FC = () => {
     setItemModals((prev) => [...prev, { id: `item-edit-${id}-${Date.now()}`, data, isEdit: true }]);
   };
 
+  // Warehouse modals
+  const [warehouseModals, setWarehouseModals] = useState<{ id: string; data?: any; isEdit: boolean }[]>([]);
+
+  const openWarehouseCreate = (initialData?: any) => {
+    setWarehouseModals((prev) => [
+      ...prev, 
+      { id: `warehouse-create-${Date.now()}`, data: initialData || null, isEdit: false }
+    ]);
+  };
+  
+  const openWarehouseEdit = (id: string, data: any) => {
+    setWarehouseModals((prev) => [
+      ...prev, 
+      { id: `warehouse-edit-${id}-${Date.now()}`, data, isEdit: true }
+    ]);
+  };
   // Item Category modals
   const [categoryModals, setCategoryModals] = useState<{ id: string; data?: any; isEdit: boolean }[]>([]);
 
-  const openCategoryCreate = () => {
-    setCategoryModals((prev) => [...prev, { id: `category-create-${Date.now()}`, data: null, isEdit: false }]);
+  const openCategoryCreate = (initialData?: any) => {
+    setCategoryModals((prev) => [
+      ...prev, 
+      { id: `category-create-${Date.now()}`, data: initialData || null, isEdit: false }
+    ]);
   };
   const openCategoryEdit = (id: string, data: any) => {
     setCategoryModals((prev) => [...prev, { id: `category-edit-${id}-${Date.now()}`, data, isEdit: true }]);
@@ -146,15 +168,35 @@ const handleQuotationSubmit = async (payload: any) => {
 const handleCategorySubmit = async (payload: any, isEdit: boolean, onSuccess: () => void) => {
   try {
     const response = isEdit
-      ? await updateItemGroupById(payload.id, payload)
-      : await createItemGroup(payload);
+      ? null // TODO add updateWarehouseById in second phase
+      : await createItemGroupNode(payload);
 
     if (!response || ![200, 201].includes(response.status_code)) {
       showApiError(response);
       return false;
     }
 
-    showSuccess(response.message);
+    showSuccess(response.message || `Item Group ${payload.item_group_name} under parent ${payload.parent} created successfully`);
+    onSuccess();
+    return true;
+  } catch (error: any) {
+    showApiError(error);
+    return false;
+  }
+};
+
+const handleWarehouseSubmit = async (payload: any, isEdit: boolean, onSuccess: () => void) => {
+  try {
+    const response = isEdit
+      ? null // TODO add updateWarehouseById in second phase
+      : await createWarehouseNode(payload);
+
+    if (!response || ![200, 201].includes(response.status_code || response.status)) {
+      showApiError(response);
+      return false;
+    }
+
+    showSuccess(response.message || `Warehouse ${payload.warehouse_name} under parent ${payload.parent} created successfully`);
     onSuccess();
     return true;
   } catch (error: any) {
@@ -200,6 +242,8 @@ const handleProformaCreated = () => {
                     openItemEdit,
                     openCategoryCreate,
                     openCategoryEdit,
+                    openWarehouseCreate,
+                    openWarehouseEdit,
                   }}
                 />
               </Suspense>
@@ -324,6 +368,21 @@ const handleProformaCreated = () => {
             onSubmit={async (data) => {
               await handleCategorySubmit(data, modal.isEdit, () => {
                 setCategoryModals((prev) => prev.filter((m) => m.id !== modal.id));
+              });
+            }}
+            initialData={modal.data}
+            isEditMode={modal.isEdit}
+          />
+        ))}
+        {warehouseModals.map((modal) => (
+          <WarehouseModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={() => setWarehouseModals((prev) => prev.filter((m) => m.id !== modal.id))}
+            onSubmit={async (data) => {
+              await handleWarehouseSubmit(data, modal.isEdit, () => {
+                setWarehouseModals((prev) => prev.filter((m) => m.id !== modal.id));
               });
             }}
             initialData={modal.data}

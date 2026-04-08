@@ -201,11 +201,11 @@ export const API = {
    * ITEM GROUP
    * ========================= */
   itemGroup: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.get_all_item_groups_api`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.item_group.get_item_group_tree`,
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.get_item_group_by_id_api`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.create_item_group_api`,
+    create: `${ERP_BASE}/api/method/frappe.desk.treeview.add_node`,
     update: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.update_item_group_api`,
-    delete: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.delete_item_group`,
+    delete: `${ERP_BASE}/api/resource/Item Group`,
   },
 
   /* =========================
@@ -304,10 +304,10 @@ export const API = {
    * WAREHOUSE
    * ========================= */
   warehouse: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.get_all_warehouses`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.create_warehouse_api`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_warehouse_tree`,
+    create: `${ERP_BASE}/api/method/erpnext.stock.doctype.warehouse.warehouse.add_node`,
     update: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.update_warehouse_api`,
-    delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.delete_warehouse_api`,
+    delete: `${ERP_BASE}/api/resource/Warehouse`,
     getAllWarehouses: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
   },
 
