@@ -85,3 +85,7 @@ export async function getCurrencyList(): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getCurrency);
   return resp.data.message.data || [];
 }
+export async function getItemGroupList(): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(RolaLookupAPI.getItemGroups);
+  return resp.data.message.data || [];
+}

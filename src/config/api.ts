@@ -397,5 +397,7 @@ export const API = {
     getCompanyCostCenter: `${ERP_BASE}/api/method/custom_api.api.search.get_cost_centers`,
     getCustomer: `${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
     getSupplier: `${ERP_BASE}/api/method/custom_api.api.search.get_suppliers`,
+    getCurrency: `${ERP_BASE}/api/method/custom_api.api.search.get_currencies`,
+    getItemGroups: `${ERP_BASE}/api/method/custom_api.api.search.get_item_groups`,
   },
 } as const;
