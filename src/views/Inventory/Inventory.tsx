@@ -5,6 +5,7 @@ import Movements from "./Movements";
 import ItemsCategory from "./ItemsCategory";
 import Stock from "./Stock";
 import Import from "./Import";
+import TaxTemplate from "./TaxTemplate";
 import InventoryDashboard from "./InventoryDashboard";
 import {
   AppPage,
@@ -19,6 +20,7 @@ const inventory = {
   defaultTab: "inventorydashboard",
   tabs: [
     { id: "inventorydashboard", label: "Dashboard", icon: <FaTachometerAlt  /> },
+    { id: "taxTemplates",label : "Tax Templates", icon: <FaBoxOpen /> },
     { id: "items", label: "Items", icon: <FaBoxOpen /> },
     { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
     { id: "stock", label: "Stock", icon: <FaBoxOpen /> },
@@ -110,6 +112,10 @@ const Inventory: React.FC = () => {
           />
         )}
         {activeTab === "movements" && <Movements onAdd={() => {}} />}
+         {activeTab === "taxTemplates" && (
+          <TaxTemplate onAdd={() => {}} />
+        )}
+
       </AppPageBody>
     </AppPage>
   );
