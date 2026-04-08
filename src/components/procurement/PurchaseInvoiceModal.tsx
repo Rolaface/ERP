@@ -1,6 +1,6 @@
 import React from "react";
 import { Building2, MapPin, FileText, Receipt } from "lucide-react";
-import { MinimizableModal } from "../common/ModalManagerContext";
+import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { DetailsTab } from "../procurement/purchaseinvoice/DetailsTab";
 // import { EmailTab } from "../procurement/purchaseorder/EmailTab";

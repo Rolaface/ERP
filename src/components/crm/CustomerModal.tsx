@@ -10,7 +10,7 @@ import { Card, Button } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import { PaymentInfoTab } from "../../components/procurement/supply/PaymentInfoTab";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
-import { MinimizableModal } from "../../components/common/ModalManagerContext";
+import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import {
   defaultSellingTerms,

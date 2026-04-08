@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { useModalManager } from "../components/common/ModalManagerContext";
+import { useCallback, useRef, useState, useMemo } from "react";
+import { useModalStore } from "../store/modalStore";
 import { showConfirm } from "../utils/alert";
 
 interface UnsavedChangesGuardOptions {
@@ -20,12 +20,23 @@ export const useUnsavedChangesGuard = (
 ) => {
   const [isDirty, setIsDirty] = useState(false);
   const pendingConfirmationRef = useRef(false);
-  const {
-    bringToFront,
-    getTopModalId,
-    isMinimized,
-    restore,
-  } = useModalManager();
+
+  const modals = useModalStore((state) => state.modals);
+  const { bringToFront, restoreModal } = useModalStore();
+
+  const topModalId = useMemo(() => {
+    const visible = modals.filter((m) => !m.minimized);
+    if (!visible.length) return null;
+    return [...visible].sort((a, b) => b.focusOrder - a.focusOrder)[0].id;
+  }, [modals]);
+
+  const isMinimized = useCallback(
+    (id: string) => {
+      const modal = modals.find((m) => m.id === id);
+      return modal?.minimized ?? false;
+    },
+    [modals]
+  );
 
   const markDirty = useCallback(() => {
     setIsDirty(true);
@@ -37,20 +48,20 @@ export const useUnsavedChangesGuard = (
 
   const restoreModalFocus = useCallback(
     (modalId?: string) => {
-      const targetModalId = modalId || getTopModalId();
+      const targetModalId = modalId || topModalId;
       if (!targetModalId) {
         return;
       }
 
       window.requestAnimationFrame(() => {
         if (isMinimized(targetModalId)) {
-          restore(targetModalId);
+          restoreModal(targetModalId);
         } else {
           bringToFront(targetModalId);
         }
       });
     },
-    [bringToFront, getTopModalId, isMinimized, restore]
+    [bringToFront, topModalId, isMinimized, restoreModal]
   );
 
   const confirmClose = useCallback(

@@ -5,7 +5,7 @@ import TermsAndCondition from "../TermsAndCondition";
 import { showApiError, showValidationError } from "../../utils/alert";
 import { User, Mail, Phone } from "lucide-react";
 import CustomerSelect from "../selects/CustomerSelect";
-import { MinimizableModal } from "../../components/common/ModalManagerContext";
+import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";

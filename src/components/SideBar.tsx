@@ -25,7 +25,7 @@ import { ERP_BASE } from "../config/api";
 import { useAuth } from "../context/AuthContext";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 import { useCompanyStore } from "../store/companyStore";
-import { MODAL_LAYER } from "./common/ModalManagerContext";
+import { MODAL_LAYER } from "../store/modalStore";
 
 /* ── Menu config ── */
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { MinimizableModal } from "../common/ModalManagerContext";
+import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { DynamicField } from "../DynamicField";
 import { useItemForm } from "../../hooks/Useitemform";

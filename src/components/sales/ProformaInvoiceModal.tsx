@@ -9,7 +9,7 @@ import { User, Mail, Phone, Plus, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import PaymentInfoBlock from "./PaymentInfoBlock";
-import { MinimizableModal } from "../common/ModalManagerContext";
+import { MinimizableModal } from "../common/MinimizableModal";
 import AddressBlock from "../ui/modal/AddressBlock";
 import { getAllCustomers } from "../../api/customerApi";
 import CustomerSelect from "../selects/CustomerSelect";

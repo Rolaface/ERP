@@ -21,7 +21,6 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
-import Tooltip from "../../components/Tooltip";
 import { fireManagedSwal } from "../../utils/swalManager";
 
 type OutletContextType = {
@@ -193,11 +192,9 @@ const fetchCustomers = async () => {
       align: "left",
       maxWidth: "120px",
       render: (customer) => (
-        <Tooltip content={customer.id}>
-          <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
-            {customer.id}
-          </span>
-        </Tooltip>
+        <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.id}
+        </span>
       ),
     },
     {
@@ -206,11 +203,9 @@ const fetchCustomers = async () => {
       align: "left",
       maxWidth: "220px",
       render: (customer) => (
-        <Tooltip content={customer.name}>
-          <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
-            {customer.name}
-          </span>
-        </Tooltip>
+        <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.name}
+        </span>
       ),
     },
     {
@@ -219,11 +214,9 @@ const fetchCustomers = async () => {
       align: "left",
       maxWidth: "100px",
       render: (customer) => (
-        <Tooltip content={customer.type ?? "-"}>
-          <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
-            {customer.type ?? "-"}
-          </span>
-        </Tooltip>
+        <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.type ?? "-"}
+        </span>
       ),
     },
     {
@@ -232,11 +225,9 @@ const fetchCustomers = async () => {
       align: "left",
       maxWidth: "100px",
       render: (customer) => (
-        <Tooltip content={customer.tpin}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
-            {customer.tpin}
-          </code>
-        </Tooltip>
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.tpin}
+        </code>
       ),
     },
     {
@@ -245,11 +236,9 @@ const fetchCustomers = async () => {
       align: "left",
       maxWidth: "120px",
       render: (customer) => (
-        <Tooltip content={customer.customerTaxCategory ?? "-"}>
-          <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
-            {customer.customerTaxCategory ?? "-"}
-          </span>
-        </Tooltip>
+        <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.customerTaxCategory ?? "-"}
+        </span>
       ),
     },
     {
@@ -258,11 +247,9 @@ const fetchCustomers = async () => {
       align: "left",
       maxWidth: "80px",
       render: (customer) => (
-        <Tooltip content={customer.currency}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
-            {customer.currency}
-          </code>
-        </Tooltip>
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.currency}
+        </code>
       ),
     },
     {
@@ -271,11 +258,9 @@ const fetchCustomers = async () => {
       align: "left",
       maxWidth: "90px",
       render: (customer) => (
-        <Tooltip content={customer.status}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
-            {customer.status}
-          </code>
-        </Tooltip>
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.status}
+        </code>
       ),
     },
     {

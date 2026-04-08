@@ -6,7 +6,7 @@ import { Button } from "../../components/ui/modal/formComponent";
 import { ModalSelect, ModalInput } from "../ui/modal/modalComponent";
 import CustomerSelect from "../selects/CustomerSelect";
 import ItemSelect from "../selects/ItemSelect";
-import { MinimizableModal } from "../common/ModalManagerContext";
+import { MinimizableModal } from "../common/MinimizableModal";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { User, Mail, Phone } from "lucide-react";
 import AddressBlock from "../ui/modal/AddressBlock";

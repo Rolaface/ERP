@@ -13,7 +13,7 @@ import { AddressTab } from "./AddressTab";
 import TermsAndCondition from "../../TermsAndCondition";
 import type { TermSection } from "../../../types/termsAndCondition";
 import { PaymentInfoTab } from "./PaymentInfoTab";
-import { MinimizableModal } from "../../common/ModalManagerContext";
+import { MinimizableModal } from "../../common/MinimizableModal";
 
 interface SupplierModalProps {
   isOpen: boolean;

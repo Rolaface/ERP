@@ -2,7 +2,6 @@ import React, { Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/SideBar";
 import PageLoader from "../components/ui/PageLoader";
-import { ModalManagerProvider } from "../components/common/ModalManagerContext";
 import { QuickAddProvider } from "../context/QuickAddContext";
 import { 
   openCustomerModal, 
@@ -156,25 +155,23 @@ const AppLayout: React.FC = () => {
   };
 
   return (
-    <ModalManagerProvider>
-      <QuickAddProvider>
-        <AppShell
-          sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
-          rightPanel={<RightPanel />}
-        >
-          <AppMain sidebarOpen={sidebarOpen}>
-            <AppContentContainer viewportLocked={isRootDashboard}>
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <Suspense fallback={<PageLoader />}>
-                  <Outlet context={sharedProps} />
-                </Suspense>
-              </div>
-            </AppContentContainer>
-          </AppMain>
-          <GlobalModalHandler />
-        </AppShell>
-      </QuickAddProvider>
-    </ModalManagerProvider>
+    <QuickAddProvider>
+      <AppShell
+        sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
+        rightPanel={<RightPanel />}
+      >
+        <AppMain sidebarOpen={sidebarOpen}>
+          <AppContentContainer viewportLocked={isRootDashboard}>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <Suspense fallback={<PageLoader />}>
+                <Outlet context={sharedProps} />
+              </Suspense>
+            </div>
+          </AppContentContainer>
+        </AppMain>
+        <GlobalModalHandler />
+      </AppShell>
+    </QuickAddProvider>
   );
 };
 

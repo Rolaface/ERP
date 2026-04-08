@@ -1,23 +1,16 @@
 import { create } from "zustand";
+import type { LucideIcon } from "lucide-react";
 
-export type ModalType = 
-  | "invoice" 
-  | "proforma" 
-  | "quotation" 
-  | "customer" 
-  | "supplier" 
-  | "purchaseOrder" 
-  | "purchaseInvoice" 
-  | "item" 
+export type ModalType =
+  | "invoice"
+  | "proforma"
+  | "quotation"
+  | "customer"
+  | "supplier"
+  | "purchaseOrder"
+  | "purchaseInvoice"
+  | "item"
   | "itemCategory";
-
-export interface ModalInstance {
-  id: string;
-  type: ModalType;
-  initialData?: any;
-  isEdit: boolean;
-  context?: ModalContext;
-}
 
 export interface ModalContext {
   source?: string;
@@ -26,31 +19,91 @@ export interface ModalContext {
   onSuccess?: (data: any) => void;
 }
 
+export interface ModalMeta {
+  title: string;
+  subtitle?: string;
+  icon?: LucideIcon;
+  onRequestClose?: () => void;
+}
+
+export interface ModalInstance {
+  id: string;
+  type: ModalType;
+  initialData?: any;
+  isEdit: boolean;
+  context?: ModalContext;
+  meta?: ModalMeta;
+  minimized: boolean;
+  openedAt: number;
+  focusOrder: number;
+}
+
+export interface ModalLayerPosition {
+  backdrop: number;
+  panel: number;
+}
+
+export const MODAL_LAYER = {
+  sidebar: 100,
+  appChrome: 120,
+  modalBackdropBase: 1000,
+  modalStep: 20,
+  modalPanelOffset: 10,
+  minimizedTaskbar: 1800,
+} as const;
+
 interface ModalState {
   modals: ModalInstance[];
   activeModalId: string | null;
-  
-  // Modal operations
-  openModal: (type: ModalType, initialData?: any, isEdit?: boolean, context?: ModalContext) => string;
+  swalDepth: number;
+  focusCounter: number;
+
+  openModal: (
+    type: ModalType,
+    initialData?: any,
+    isEdit?: boolean,
+    context?: ModalContext,
+    meta?: ModalMeta
+  ) => string;
   closeModal: (id: string) => void;
   closeAllModals: () => void;
+
+  registerModalMeta: (id: string, meta: ModalMeta) => void;
+  unregisterModalMeta: (id: string) => void;
+
+  minimizeModal: (id: string) => void;
+  restoreModal: (id: string) => void;
+  bringToFront: (id: string) => void;
+
+  isMinimized: (id: string) => boolean;
+  isFocused: (id: string) => boolean;
+  getTopModalId: () => string | null;
+  getModalLayer: (id: string) => ModalLayerPosition;
   getModalById: (id: string) => ModalInstance | undefined;
   getModalsByType: (type: ModalType) => ModalInstance[];
-  
-  // Context operations (for QuickAdd flow)
+
   setModalContext: (id: string, context: ModalContext) => void;
   clearModalContext: (id: string) => void;
   getModalContext: (id: string) => ModalContext | undefined;
-  
-  // Utility
+
   isModalOpen: (type: ModalType) => boolean;
+  isInteractionLocked: () => boolean;
+
+  incrementSwalDepth: () => void;
+  decrementSwalDepth: () => void;
+
+  getVisibleModals: () => ModalInstance[];
+  getMinimizedModals: () => ModalInstance[];
 }
 
 export const useModalStore = create<ModalState>((set, get) => ({
   modals: [],
   activeModalId: null,
+  swalDepth: 0,
+  focusCounter: 0,
 
-  openModal: (type, initialData, isEdit = false, context) => {
+  openModal: (type, initialData, isEdit = false, context, meta) => {
+    const state = get();
     const id = `${type}-${Date.now()}`;
     const newModal: ModalInstance = {
       id,
@@ -58,27 +111,146 @@ export const useModalStore = create<ModalState>((set, get) => ({
       initialData,
       isEdit,
       context,
+      meta,
+      minimized: false,
+      openedAt: Date.now(),
+      focusOrder: state.focusCounter + 1,
     };
-    
-    set((state) => ({
+
+    set({
       modals: [...state.modals, newModal],
       activeModalId: id,
-    }));
-    
+      focusCounter: state.focusCounter + 1,
+    });
+
     return id;
   },
 
   closeModal: (id) => {
-    set((state) => ({
-      modals: state.modals.filter((m) => m.id !== id),
-      activeModalId: state.activeModalId === id 
-        ? state.modals.find((m) => m.id !== id)?.id || null 
-        : state.activeModalId,
-    }));
+    set((state) => {
+      const remaining = state.modals.filter((m) => m.id !== id);
+      const visibleModals = remaining.filter((m) => !m.minimized);
+      const newActiveId =
+        state.activeModalId === id
+          ? visibleModals.length > 0
+            ? visibleModals.sort((a, b) => b.focusOrder - a.focusOrder)[0].id
+            : null
+          : state.activeModalId;
+
+      return {
+        modals: remaining,
+        activeModalId: newActiveId,
+      };
+    });
   },
 
   closeAllModals: () => {
     set({ modals: [], activeModalId: null });
+  },
+
+  registerModalMeta: (id, meta) => {
+    set((state) => ({
+      modals: state.modals.map((m) =>
+        m.id === id
+          ? {
+              ...m,
+              meta: {
+                title: meta.title,
+                subtitle: meta.subtitle,
+                icon: meta.icon,
+                onRequestClose: meta.onRequestClose,
+              },
+            }
+          : m
+      ),
+    }));
+  },
+
+  unregisterModalMeta: (id) => {
+    set((state) => ({
+      modals: state.modals.map((m) =>
+        m.id === id ? { ...m, meta: undefined } : m
+      ),
+    }));
+  },
+
+  minimizeModal: (id) => {
+    set((state) => ({
+      modals: state.modals.map((m) =>
+        m.id === id ? { ...m, minimized: true } : m
+      ),
+    }));
+  },
+
+  restoreModal: (id) => {
+    set((state) => {
+      const newFocusOrder = state.focusCounter + 1;
+      return {
+        focusCounter: newFocusOrder,
+        modals: state.modals.map((m) =>
+          m.id === id
+            ? { ...m, minimized: false, focusOrder: newFocusOrder }
+            : m
+        ),
+      };
+    });
+  },
+
+  bringToFront: (id) => {
+    set((state) => {
+      const visible = state.modals.filter((m) => !m.minimized);
+      const topVisible = [...visible].sort(
+        (a, b) => b.focusOrder - a.focusOrder
+      )[0];
+
+      if (!topVisible || topVisible.id === id) {
+        return state;
+      }
+
+      const newFocusOrder = state.focusCounter + 1;
+      return {
+        focusCounter: newFocusOrder,
+        modals: state.modals.map((m) =>
+          m.id === id
+            ? { ...m, minimized: false, focusOrder: newFocusOrder }
+            : m
+        ),
+      };
+    });
+  },
+
+  isMinimized: (id) => {
+    const modal = get().modals.find((m) => m.id === id);
+    return modal?.minimized ?? false;
+  },
+
+  isFocused: (id) => {
+    const state = get();
+    const visible = state.modals.filter((m) => !m.minimized);
+    if (!visible.length) return false;
+    const top = [...visible].sort((a, b) => b.focusOrder - a.focusOrder)[0];
+    return top.id === id;
+  },
+
+  getTopModalId: () => {
+    const state = get();
+    const visible = state.modals.filter((m) => !m.minimized);
+    if (!visible.length) return null;
+    return [...visible].sort((a, b) => b.focusOrder - a.focusOrder)[0].id;
+  },
+
+  getModalLayer: (id) => {
+    const state = get();
+    const visible = state.modals
+      .filter((m) => !m.minimized)
+      .sort((a, b) => a.focusOrder - b.focusOrder);
+    const rank = Math.max(visible.findIndex((m) => m.id === id), 0);
+    const backdrop =
+      MODAL_LAYER.modalBackdropBase + rank * MODAL_LAYER.modalStep;
+    return {
+      backdrop,
+      panel: backdrop + MODAL_LAYER.modalPanelOffset,
+    };
   },
 
   getModalById: (id) => {
@@ -112,39 +284,120 @@ export const useModalStore = create<ModalState>((set, get) => ({
   isModalOpen: (type) => {
     return get().modals.some((m) => m.type === type);
   },
+
+  isInteractionLocked: () => {
+    return get().swalDepth > 0;
+  },
+
+  incrementSwalDepth: () => {
+    set((state) => ({ swalDepth: state.swalDepth + 1 }));
+  },
+
+  decrementSwalDepth: () => {
+    set((state) => ({ swalDepth: Math.max(state.swalDepth - 1, 0) }));
+  },
+
+  getVisibleModals: () => {
+    return get().modals.filter((m) => !m.minimized);
+  },
+
+  getMinimizedModals: () => {
+    return get().modals.filter((m) => m.minimized);
+  },
 }));
 
-// Convenience hooks for specific modal types
-export const useCustomerModals = () => useModalStore((s) => s.getModalsByType("customer"));
-export const useSupplierModals = () => useModalStore((s) => s.getModalsByType("supplier"));
-export const useInvoiceModals = () => useModalStore((s) => s.getModalsByType("invoice"));
-export const useQuotationModals = () => useModalStore((s) => s.getModalsByType("quotation"));
-export const useItemModals = () => useModalStore((s) => s.getModalsByType("item"));
+export const useVisibleModals = () =>
+  useModalStore((state) => state.getVisibleModals());
+export const useMinimizedModals = () =>
+  useModalStore((state) => state.getMinimizedModals());
 
-// Action creators for opening modals
-export const openCustomerModal = (initialData?: any, isEdit = false, context?: ModalContext) =>
-  useModalStore.getState().openModal("customer", initialData, isEdit, context);
+export const useModalMeta = (id: string) =>
+  useModalStore((state) => state.getModalById(id)?.meta);
 
-export const openSupplierModal = (initialData?: any, isEdit = false, context?: ModalContext) =>
-  useModalStore.getState().openModal("supplier", initialData, isEdit, context);
+export const openCustomerModal = (
+  initialData?: any,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("customer", initialData, isEdit, context, meta);
 
-export const openInvoiceModal = (initialData?: any, isEdit = false, context?: ModalContext) =>
-  useModalStore.getState().openModal("invoice", initialData, isEdit, context);
+export const openSupplierModal = (
+  initialData?: any,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("supplier", initialData, isEdit, context, meta);
 
-export const openQuotationModal = (initialData?: any, isEdit = false, context?: ModalContext) =>
-  useModalStore.getState().openModal("quotation", initialData, isEdit, context);
+export const openInvoiceModal = (
+  initialData?: any,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("invoice", initialData, isEdit, context, meta);
 
-export const openItemModal = (initialData?: any, isEdit = false, context?: ModalContext) =>
-  useModalStore.getState().openModal("item", initialData, isEdit, context);
+export const openQuotationModal = (
+  initialData?: any,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("quotation", initialData, isEdit, context, meta);
 
-export const openItemCategoryModal = (initialData?: any, isEdit = false, context?: ModalContext) =>
-  useModalStore.getState().openModal("itemCategory", initialData, isEdit, context);
+export const openItemModal = (
+  initialData?: any,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("item", initialData, isEdit, context, meta);
 
-export const openPurchaseOrderModal = (poId?: string | number, context?: ModalContext) =>
-  useModalStore.getState().openModal("purchaseOrder", { poId }, !!poId, context);
+export const openItemCategoryModal = (
+  initialData?: any,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("itemCategory", initialData, isEdit, context, meta);
 
-export const openPurchaseInvoiceModal = (pId?: string | number, context?: ModalContext) =>
-  useModalStore.getState().openModal("purchaseInvoice", { pId }, !!pId, context);
+export const openPurchaseOrderModal = (
+  poId?: string | number,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("purchaseOrder", { poId }, !!poId, context, meta);
 
-export const openProformaModal = (initialData?: any, isEdit = false, context?: ModalContext) =>
-  useModalStore.getState().openModal("proforma", initialData, isEdit, context);
+export const openPurchaseInvoiceModal = (
+  pId?: string | number,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("purchaseInvoice", { pId }, !!pId, context, meta);
+
+export const openProformaModal = (
+  initialData?: any,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("proforma", initialData, isEdit, context, meta);

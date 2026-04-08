@@ -37,7 +37,6 @@ import PurchaseOrderDetailModal, {
   type PurchaseOrderDetail,
 } from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
-import Tooltip from "../../components/Tooltip";
 
 interface PurchaseOrder {
   id: string;
@@ -390,11 +389,9 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   header: "PO ID",
   align: "left",
   render: (o) => (
-    <Tooltip content={o.id}>
-      <span className="truncate max-w-[120px] block">
-        {o.id || "—"}
-      </span>
-    </Tooltip>
+    <span className="truncate max-w-[120px] block">
+      {o.id || "—"}
+    </span>
   ),
 },
     {
@@ -402,11 +399,9 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   header: "Reference Code",
   align: "left",
   render: (o) => (
-    <Tooltip content={o.referenceNumber}>
-      <span className="truncate max-w-[140px] block">
-        {o.referenceNumber || "—"}
-      </span>
-    </Tooltip>
+    <span className="truncate max-w-[140px] block">
+      {o.referenceNumber || "—"}
+    </span>
   ),
 },
    {
@@ -414,11 +409,9 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   header: "Supplier",
   align: "left",
   render: (o) => (
-    <Tooltip content={o.supplier}>
-      <span className="truncate max-w-[160px] block">
-        {o.supplier || "—"}
-      </span>
-    </Tooltip>
+    <span className="truncate max-w-[160px] block">
+      {o.supplier || "—"}
+    </span>
   ),
 },
   {
@@ -426,9 +419,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   header: "Date",
   align: "left",
   render: (o) => (
-    <Tooltip content={o.date}>
-      <span>{o.date || "—"}</span>
-    </Tooltip>
+    <span>{o.date || "—"}</span>
   ),
 },
     {
@@ -436,11 +427,9 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       header: "Amount",
       align: "right",
       render: (o) => (
-        <Tooltip content={Number(o.amount || 0).toFixed(2)}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {Number(o.amount || 0).toFixed(2)}
-          </code>
-        </Tooltip>
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          {Number(o.amount || 0).toFixed(2)}
+        </code>
       ),
     },
     {
@@ -454,9 +443,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   header: "Delivery Date",
   align: "left",
   render: (o) => (
-    <Tooltip content={o.deliveryDate}>
-      <span>{o.deliveryDate || "—"}</span>
-    </Tooltip>
+    <span>{o.deliveryDate || "—"}</span>
   ),
 },
     {

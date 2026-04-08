@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { showValidationError, showApiError } from "../../utils/alert";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-import { MinimizableModal } from "../common/ModalManagerContext";
+import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { Warehouse } from "lucide-react";
 import type { CreateWarehousePayload } from "../../api/WarehouseApi";

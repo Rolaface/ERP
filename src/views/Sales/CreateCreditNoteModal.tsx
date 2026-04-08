@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MinimizableModal } from "../../components/common/ModalManagerContext";
+import { MinimizableModal } from "../../components/common/MinimizableModal";
 import CreditNoteInvoiceLikeForm from "./CreditNoteForm";
 import { FileMinus } from "lucide-react";
 import { Button } from "../../components/ui/modal/formComponent";

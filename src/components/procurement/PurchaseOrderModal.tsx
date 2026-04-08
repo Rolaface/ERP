@@ -9,7 +9,7 @@ import { usePurchaseOrderForm } from "../../hooks/usePurchaseOrderForm";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import type { POTab } from "../../types/Supply/purchaseOrder";
 import { showValidationError } from "../../utils/alert";
-import { MinimizableModal } from "../common/ModalManagerContext";
+import { MinimizableModal } from "../common/MinimizableModal";
 
 interface PurchaseOrderModalProps {
   isOpen: boolean;

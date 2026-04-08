@@ -16,7 +16,6 @@ import ItemDetailView, {
   type PurchaseInvoice,
   type StockRow,
 } from "../../views/Inventory/Itemdetailmodal";
-import Tooltip from "../../components/Tooltip";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -263,9 +262,7 @@ const Items: React.FC = () => {
       header: "Item Code",    
       align: "left",
       render: (i) => (
-        <Tooltip content={i.id} position="top">
-          <span className="truncate block max-w-[120px]">{i.id}</span>
-        </Tooltip>
+        <span className="truncate block max-w-[120px]">{i.id}</span>
       )
     },
     { 
@@ -273,9 +270,7 @@ const Items: React.FC = () => {
       header: "Name",         
       align: "left",
       render: (i) => (
-        <Tooltip content={i.itemName} position="top">
-          <span className="truncate block max-w-[150px]">{i.itemName}</span>
-        </Tooltip>
+        <span className="truncate block max-w-[150px]">{i.itemName}</span>
       )
     },
     { 
@@ -283,9 +278,7 @@ const Items: React.FC = () => {
       header: "Category",     
       align: "left",
       render: (i) => (
-        <Tooltip content={i.itemGroup} position="top">
-          <span className="truncate block max-w-[120px]">{i.itemGroup}</span>
-        </Tooltip>
+        <span className="truncate block max-w-[120px]">{i.itemGroup}</span>
       )
     },
     { 
@@ -293,9 +286,7 @@ const Items: React.FC = () => {
       header: "Tax Category", 
       align: "left",
       render: (i) => (
-        <Tooltip content={i.taxCategory} position="top">
-          <span className="truncate block max-w-[100px]">{i.taxCategory}</span>
-        </Tooltip>
+        <span className="truncate block max-w-[100px]">{i.taxCategory}</span>
       )
     },
     { key: "minStockLevel",header: "Min Stock",    align: "right" },
@@ -305,9 +296,7 @@ const Items: React.FC = () => {
       header: "Supplier",  
       align: "left",
       render: (i) => (
-        <Tooltip content={i.preferredVendor} position="top">
-          <span className="truncate block max-w-[130px]">{i.preferredVendor}</span>
-        </Tooltip>
+        <span className="truncate block max-w-[130px]">{i.preferredVendor}</span>
       )
     },
     {
@@ -315,11 +304,9 @@ const Items: React.FC = () => {
       header: "Price",
       align: "right",
       render: (i) => (
-        <Tooltip content={i.sellingPrice} position="top">
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {i.sellingPrice}
-          </code>
-        </Tooltip>
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          {i.sellingPrice}
+        </code>
       ),
     },
    {

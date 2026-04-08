@@ -4,7 +4,7 @@
  * Your original Modal component is kept 100% intact.
  * It still works for any existing usage.
  *
- * For minimize support, use <MinimizableModal> from ModalManagerContext.tsx instead.
+ * For minimize support, use <MinimizableModal> from MinimizableModal.tsx instead.
  * MinimizableModal is a drop-in: same props + modalId.
  */
 
