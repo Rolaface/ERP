@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
 import PaymentEntryModal from "./PaymentEntryModal";
-import { FaMoneyBillWave } from "react-icons/fa";
+import { FaReceipt } from "react-icons/fa";
 import type { Column } from "../../components/ui/Table/type";
 
 import { getAllPayments } from "../../api/CustomerPayment";
@@ -143,7 +143,7 @@ const PaymentEntry: React.FC = () => {
       {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
-          <FaMoneyBillWave className="text-primary" />
+          <FaReceipt className="text-primary" />
           Payment Entry
         </h1>
       </div>

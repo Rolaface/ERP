@@ -41,15 +41,31 @@ interface TableProps<T> {
   onPageSizeChange?: (size: number) => void;
 }
 
-const SkeletonRow: React.FC<{ columnsCount: number }> = ({ columnsCount }) => (
-  <tr className="bg-transparent">
-    {Array.from({ length: columnsCount }).map((_, idx) => (
-      <td key={idx} className="border-b border-[var(--border)]/20 px-3 py-1.5 sm:px-4">
-        <div className="h-4 animate-pulse rounded bg-gray-300" />
-      </td>
-    ))}
-  </tr>
-);
+const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({ columnsCount, rowIdx }) => {
+  const widths = ["w-3/4", "w-1/2", "w-5/6", "w-2/3", "w-4/5"];
+  return (
+    <tr>
+      {Array.from({ length: columnsCount }).map((_, idx) => (
+        <td key={idx} className="border-b border-[var(--border)]/20 px-3 py-[9px] sm:px-4">
+          <div
+            className={`h-3 rounded-full relative overflow-hidden ${widths[(rowIdx + idx) % widths.length]}`}
+            style={{ backgroundColor: "rgba(0,0,0,0.07)" }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)",
+                animation: "shimmer 1.5s ease-in-out infinite",
+                animationDelay: `${rowIdx * 60}ms`,
+              }}
+            />
+          </div>
+        </td>
+      ))}
+    </tr>
+  );
+};
+
 
 const ExpandedPanel: React.FC<{ children: React.ReactNode; open: boolean }> = ({
   children,
@@ -139,9 +155,9 @@ function Table<T extends Record<string, any>>({
 
   return (
     <div
-      className="app-surface relative z-10 flex h-full min-h-0 w-full flex-col overflow-hidden"
+      className="app-surface relative z-10 flex w-full flex-col overflow-hidden"
       style={{
-        maxHeight: "min(100%, var(--app-table-height))",
+        height: "calc(95.5vh - 130px)",
       }}
     >
       {showToolbar && (
@@ -191,7 +207,7 @@ function Table<T extends Record<string, any>>({
       )}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="shrink-0 border-b border-[var(--border)] bg-card w-full overflow-x-auto">
+        <div className="shrink-0 border-b-2 border-[var(--border)] bg-card w-full overflow-x-auto">
           <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               {visibleColumns.map((column) => (
@@ -207,16 +223,16 @@ function Table<T extends Record<string, any>>({
                   const isDesc = isActive && sortOrderProp === "desc";
 
                   return (
-                    <th
-                      key={column.key}
-                      onClick={isSortable ? () => handleColumnSort(column.key) : undefined}
-                      className={[
-                        "bg-card px-3 py-1.5 text-xs font-semibold text-muted whitespace-nowrap sm:px-4",
-                        getAlignment(column.align),
-                        isSortable ? "cursor-pointer select-none transition-colors hover:text-primary" : "",
-                        isActive ? "text-primary" : "",
-                      ].join(" ")}
-                    >
+                   <th
+  key={column.key}
+  onClick={isSortable ? () => handleColumnSort(column.key) : undefined}
+  className={[
+    "bg-[var(--border)]/10 px-3 py-2.5 text-xs font-bold text-muted uppercase tracking-wide whitespace-nowrap sm:px-4",
+    getAlignment(column.align),
+    isSortable ? "cursor-pointer select-none transition-colors hover:text-primary" : "",
+    isActive ? "text-primary" : "",
+  ].join(" ")}
+>
                       <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
                         {column.header}
                         {isSortable && (
@@ -249,7 +265,7 @@ function Table<T extends Record<string, any>>({
             <tbody className="relative z-10">
               {loading ? (
                 Array.from({ length: pageSize }).map((_, idx) => (
-                  <SkeletonRow key={idx} columnsCount={visibleColumns.length} />
+                  <SkeletonRow key={idx} columnsCount={visibleColumns.length} rowIdx={idx} />
                 ))
               ) : data.length === 0 ? (
                 <tr>
@@ -351,7 +367,7 @@ function Table<T extends Record<string, any>>({
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="cursor-pointer rounded-lg border border-[var(--border)] bg-card px-3 py-1.5 text-xs text-main outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
+              className="cursor-pointer rounded-lg border border-[var(--border)] bg-card px-3 py-1.5 text-xs text-main outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
             >
               {pageSizeOptions.map((size) => (
                 <option key={size} value={size}>
@@ -367,7 +383,7 @@ function Table<T extends Record<string, any>>({
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
-          onPageChange={onPageChange ?? (() => {})}
+          onPageChange={onPageChange ?? (() => { })}
         />
       </div>
     </div>

@@ -790,7 +790,7 @@ body.app-swal-open .erp-modal-layer {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--app-radius-xl);
-  box-shadow: var(--app-shadow-soft);
+  /* box-shadow: var(--app-shadow-soft); */
 }
 
 .floating-dock {
@@ -892,3 +892,39 @@ input[type=number]::-webkit-inner-spin-button {
 .react-datepicker-wrapper {
   width: 100%;
 }
+
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+[data-theme="dark"] .skeleton-shimmer,
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 100%
+  );
+}
+
+
+:root {
+  --skeleton-base: #e5e7eb;
+}
+[data-theme="dark"], .dark {
+  --skeleton-base: #374151;
+}
+
+

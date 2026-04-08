@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
 import AddModeOfPaymentModal from "./AddModeOfPaymentModal";
-import { FaMoneyBillWave } from "react-icons/fa";
+import { FaMoneyBill } from "react-icons/fa";
 import {
   getAllModeOfPayment,
   updateModeOfPaymentStatus,
@@ -115,7 +115,7 @@ const ModeOfPaymentSetup: React.FC = () => {
       {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
-          <FaMoneyBillWave className="text-primary" />
+          <FaMoneyBill className="text-primary" />
           Mode Of Payment
         </h1>
       </div>

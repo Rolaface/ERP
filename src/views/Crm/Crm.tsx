@@ -10,7 +10,7 @@ import {
   FaCreditCard,
   FaUsers,
   FaChartBar,
-  FaCalendarAlt,
+  FaTachometerAlt ,
   FaIdBadge,
 } from "react-icons/fa";
 import {
@@ -40,7 +40,7 @@ const crmModule = {
   icon: <FaUsers />,
   defaultTab: "dashboard",
   tabs: [
-    { id: "dashboard", label: "Dashboard", icon: <FaCalendarAlt /> },
+    { id: "dashboard", label: "Dashboard", icon: <FaTachometerAlt  /> },
     {
       id: "customer-managment",
       label: "Customer Management",
