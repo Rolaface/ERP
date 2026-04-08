@@ -40,3 +40,15 @@ export async function deleteWarehouseById(id: string): Promise<any> {
   const resp: AxiosResponse = await api.delete(url);
   return resp;
 }
+
+export async function updateWarehouseById(id: string, payload: any): Promise<any> {
+  const url = `${WarehouseAPI.update}/${id}`;
+  
+  const data = {
+    is_group: payload.is_group,
+    parent_warehouse: payload.parent 
+  };
+
+  const resp: AxiosResponse = await api.put(url, data);
+  return resp;
+}

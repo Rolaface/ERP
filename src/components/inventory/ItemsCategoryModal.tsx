@@ -71,7 +71,7 @@ const ItemsCategoryModal: React.FC<{
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (loading) return;
@@ -87,6 +87,11 @@ const ItemsCategoryModal: React.FC<{
         doctype: "Item Group",
         is_root: "false",
       };
+
+      if (isEditMode && initialData?.name) {
+        payload.id = initialData.name;
+        payload.original_name = initialData.name;
+      }
 
       onSubmit?.(payload);
       handleClose();
@@ -146,7 +151,7 @@ const ItemsCategoryModal: React.FC<{
                 placeholder="e.g. All Item Groups, Services..."
                 required
                 className={inputClass}
-                disabled={isEditMode}
+                // disabled={isEditMode}
               />
             </label>
 

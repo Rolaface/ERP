@@ -5,7 +5,7 @@ import PageLoader from "../components/ui/PageLoader";
 import { ModalManagerProvider } from "../components/common/ModalManagerContext";
 import { AppContentContainer, AppMain, AppShell, RightPanel } from "./layoutSystem";
 import WarehouseModal from "../components/inventory/WarehouseModal";
-import { createWarehouseNode } from "../api/WarehouseApi"; 
+import { createWarehouseNode, renameWarehouse, updateWarehouseById } from "../api/WarehouseApi"; 
 // import { updateWarehouseById } from "../api/warehouseApi";
 
 import InvoiceModal from "../components/sales/InvoiceModal";
@@ -20,8 +20,8 @@ import ItemsCategoryModal from "../components/inventory/ItemsCategoryModal";
 import { showApiError, showSuccess } from "../utils/alert";
 import { createSalesInvoice } from "../api/salesApi";
 import { createQuotation } from "../api/quotationApi";
-import { createItemGroup, updateItemGroupById } from "../api/itemCategoryApi";
-import { createItemGroupNode } from "../api/itemGroupApi";
+// import { createItemGroup, updateItemGroupById } from "../api/itemCategoryApi";
+import { createItemGroupNode,  renameItemGroup,  updateItemGroupById} from "../api/itemGroupApi";
 
 const AppLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
@@ -167,16 +167,41 @@ const handleQuotationSubmit = async (payload: any) => {
 
 const handleCategorySubmit = async (payload: any, isEdit: boolean, onSuccess: () => void) => {
   try {
-    const response = isEdit
-      ? null // TODO add updateWarehouseById in second phase
-      : await createItemGroupNode(payload);
+    let response;
 
-    if (!response || ![200, 201].includes(response.status_code)) {
+    if (isEdit) {
+      let targetId = payload.id;
+
+      if (payload.original_name && payload.original_name !== payload.item_group_name) {
+        const renameResp = await renameItemGroup(payload.original_name, payload.item_group_name);
+        
+        if (!renameResp || ![200, 201].includes(renameResp.status || renameResp.status_code)) {
+          showApiError(renameResp);
+          return false;
+        }
+        targetId = payload.item_group_name; 
+      }
+
+      response = await updateItemGroupById(targetId, payload);
+
+    } else {
+      response = await createItemGroupNode(payload);
+    }
+
+    const isSuccess = response && [200, 201, 202].includes(response.status_code || response.status);
+
+    if (!isSuccess) {
       showApiError(response);
       return false;
     }
 
-    showSuccess(response.message || `Item Group ${payload.item_group_name} under parent ${payload.parent} created successfully`);
+    const actionText = isEdit ? "updated" : "created";
+    showSuccess(
+      response.data?.message || 
+      response.message || 
+      `Item Group ${payload.item_group_name} ${actionText} successfully`
+    );
+    
     onSuccess();
     return true;
   } catch (error: any) {
@@ -184,19 +209,25 @@ const handleCategorySubmit = async (payload: any, isEdit: boolean, onSuccess: ()
     return false;
   }
 };
-
 const handleWarehouseSubmit = async (payload: any, isEdit: boolean, onSuccess: () => void) => {
   try {
     const response = isEdit
-      ? null // TODO add updateWarehouseById in second phase
+      ? await updateWarehouseById(payload.id, payload)
       : await createWarehouseNode(payload);
+    const isSuccess = response && [200, 201, 202].includes(response.status_code || response.status);
 
-    if (!response || ![200, 201].includes(response.status_code || response.status)) {
+    if (!isSuccess) {
       showApiError(response);
       return false;
     }
 
-    showSuccess(response.message || `Warehouse ${payload.warehouse_name} under parent ${payload.parent} created successfully`);
+    const actionText = isEdit ? "updated" : "created";
+    showSuccess(
+      response.data?.message || 
+      response.message || 
+      `Warehouse ${payload.warehouse_name} ${actionText} successfully`
+    );
+    
     onSuccess();
     return true;
   } catch (error: any) {

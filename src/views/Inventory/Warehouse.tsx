@@ -310,7 +310,7 @@ const WarehouseView: React.FC = () => {
           {
             label: "Edit",
             icon: <Pencil size={12} />,
-            onClick: () => openWarehouseEdit(row.name),
+            onClick: () => openWarehouseEdit(row.name, row),
           },
           ...(row.is_group === 1
             ? [
