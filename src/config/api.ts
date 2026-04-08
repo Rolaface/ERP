@@ -45,10 +45,11 @@ const getApiBaseUrl = (): string => {
 
 
 // export const ERP_BASE = getApiBaseUrl();
-// console.log("🚀 ~ ERP_BASE:", ERP_BASE)
+export const ERP_BASE="";
+console.log("🚀 ~ ERP_BASE:", ERP_BASE)
 
 // export const ERP_BASE = ENV.apiBaseUrl;
-export const ERP_BASE = "";
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -195,6 +196,15 @@ export const API = {
     create: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.create_item_api`,
     update: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.update_item_api`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.delete_item_by_id`,
+    
+  },
+
+  tax:{
+    getTemplates: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get`,
+    taxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.create_or_update_tax_template`,
+    delete: `${ERP_BASE}/api/method/frappe.client.delete`,
+    getTemplateGl:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
+    updatestatus:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.update_item_template_tax_status`
   },
 
   /* =========================
