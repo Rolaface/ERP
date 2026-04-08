@@ -200,9 +200,11 @@ export const API = {
   },
 
   tax:{
+    getTemplates: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get`,
     taxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.create_or_update_tax_template`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
-
+    getTemplateGl:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
+    updatestatus:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.update_item_template_tax_status`
   },
 
   /* =========================

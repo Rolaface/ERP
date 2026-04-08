@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  showLoading,
   showApiError,
   showSuccess,
+  showLoading,
   closeSwal,
 } from "../../utils/alert";
 import Table from "../../components/ui/Table/Table";
@@ -14,31 +14,31 @@ import type { Column } from "../../components/ui/Table/type";
 import Tooltip from "../../components/Tooltip";
 import { fireManagedSwal } from "../../utils/swalManager";
 import TaxTemplateModal from "../../components/inventory/TaxTemplateModal";
+import { getAllTemplates, deleteTemplate } from "../../api/TaxTemplateApi";
+import { useTaxTemplate } from "../../hooks/useTaxTemplate";
+import type {
+  TaxCategoryFormData,
+  TaxRow,
+} from "../../types/tax/taxTemplate";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+//  Types 
 
-interface TaxRateRow {
-  id: string;
-  tax: string;
-  taxRate: number;
-}
-
-export interface TaxCategorySummary {
-  id: string;
+interface TaxTemplateSummary {
+  name: string;
   title: string;
   company: string;
-  disabled: boolean;
-  taxRates: TaxRateRow[];
+  disabled: number; // 0 | 1
+  taxes: TaxRow[];
 }
 
 interface Props {
   onAdd?: () => void;
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
+//  Component 
 
 const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
-  const [taxCategories, setTaxCategories] = useState<TaxCategorySummary[]>([]);
+  const [templates, setTemplates] = useState<TaxTemplateSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -48,10 +48,15 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Modal State ───────────────────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<TaxCategorySummary | null>(null);
+  const [selectedItem, setSelectedItem] =
+    useState<TaxCategoryFormData | null>(null);
+
+  const { createTaxTemplate, updateTaxTemplate, updateStatus } =
+    useTaxTemplate();
+
+  //  Modal Helpers 
 
   const openCreate = () => {
     setSelectedItem(null);
@@ -60,8 +65,16 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
     onAdd?.();
   };
 
-  const openEdit = (data: TaxCategorySummary) => {
-    setSelectedItem(data);
+  const openEdit = (row: TaxTemplateSummary) => {
+    setSelectedItem({
+      name: row.name,
+      title: row.title,
+      disabled: row.disabled === 1,
+      taxes: row.taxes.map((t) => ({
+        tax_type: t.tax_type,
+        tax_rate: t.tax_rate,
+      })),
+    });
     setIsEditMode(true);
     setModalOpen(true);
   };
@@ -71,21 +84,17 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
     setSelectedItem(null);
   };
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
+  //  Fetch 
 
-  const fetchTaxCategories = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       setLoading(true);
-
-      // Replace with your actual API call:
-      // const response = await getAllTaxTemplates(page, pageSize);
-      // setTaxCategories(response?.message?.data || []);
-      // setTotalPages(response?.message?.pagination?.total_pages || 1);
-      // setTotalItems(response?.message?.pagination?.total || 0);
-
-      setTaxCategories([]);
-      setTotalPages(1);
-      setTotalItems(0);
+      const res = await getAllTemplates(page, pageSize, searchTerm || undefined);
+      const list: TaxTemplateSummary[] = res?.data?.templates ?? [];
+      const pagination = res?.data?.pagination;
+      setTemplates(list);
+      setTotalPages(pagination?.total_pages ?? 1);
+      setTotalItems(pagination?.total ?? list.length);
     } catch (error) {
       console.error("Error loading tax templates:", error);
       showApiError(error);
@@ -93,36 +102,54 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
       setLoading(false);
       setInitialLoad(false);
     }
-  };
+  }, [page, pageSize, searchTerm]);
 
   useEffect(() => {
-    fetchTaxCategories();
-  }, [page, pageSize]);
+    fetchTemplates();
+  }, [fetchTemplates]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  //  Handlers 
 
-  const handleEdit = async (id: string, e: React.MouseEvent) => {
+  const handleEdit = (row: TaxTemplateSummary, e: React.MouseEvent) => {
     e.stopPropagation();
+    openEdit(row);
+  };
+
+  //  Status Toggle: Enable / Disable 
+  const handleToggleStatus = async (
+    row: TaxTemplateSummary,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    const newDisabled: 0 | 1 = row.disabled === 1 ? 0 : 1;
+
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: newDisabled === 1 ? "Disable Template?" : "Enable Template?",
+      text: `"${row.title}" will be ${newDisabled === 1 ? "disabled" : "enabled"}.`,
+      showCancelButton: true,
+      confirmButtonColor: newDisabled === 1 ? "#ef4444" : "#22c55e",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: newDisabled === 1 ? "Yes, Disable" : "Yes, Enable",
+    });
+
+    if (!confirm.isConfirmed) return;
+
     try {
-      showLoading("Loading tax template...");
-      // const response = await getTaxTemplateById(id);
-      // const data = response?.data ?? response?.message?.data ?? response;
-      const data = taxCategories.find((tc) => tc.id === id);
-      closeSwal();
-      if (data) openEdit(data);
-    } catch (error) {
-      closeSwal();
-      showApiError(error);
+      await updateStatus(row.name, newDisabled);
+      await fetchTemplates();
+    } catch (_) {
+      // error already shown in hook
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (name: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
     const confirm = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
-      text: `Delete tax template ${id}?`,
+      text: `Delete tax template "${name}"?`,
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
       cancelButtonColor: "#6b7280",
@@ -133,77 +160,63 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
 
     try {
       showLoading("Deleting...");
-      // await deleteTaxTemplateById(id);
+      await deleteTemplate(name);
       closeSwal();
-      setTaxCategories((prev) => prev.filter((tc) => tc.id !== id));
       showSuccess("Tax template deleted successfully.");
+      await fetchTemplates();
     } catch (error) {
       closeSwal();
       showApiError(error);
     }
   };
 
-  const handleSubmit = async (data: TaxCategorySummary) => {
+  const handleSubmit = async (formData: TaxCategoryFormData) => {
     try {
-      if (isEditMode && selectedItem) {
-        // await updateTaxTemplate(selectedItem.id, data);
-        setTaxCategories((prev) =>
-          prev.map((tc) => (tc.id === selectedItem.id ? { ...tc, ...data } : tc))
-        );
-        showSuccess("Tax template updated successfully.");
+      if (isEditMode) {
+        await updateTaxTemplate(formData);
       } else {
-        // const response = await createTaxTemplate(data);
-        const newItem: TaxCategorySummary = {
-          ...data,
-          id: `TC-${String(taxCategories.length + 1).padStart(3, "0")}`,
-        };
-        setTaxCategories((prev) => [...prev, newItem]);
-        showSuccess("Tax template created successfully.");
+        await createTaxTemplate(formData);
       }
-      await fetchTaxCategories();
+      await fetchTemplates();
     } catch (error) {
       showApiError(error);
-      throw error; // re-throw so modal stays open on error
+      throw error;
     }
   };
 
-  // ── Columns ───────────────────────────────────────────────────────────────
+  //  Columns 
 
-  const columns: Column<TaxCategorySummary>[] = [
-    {
-      key: "id",
-      header: "ID",
-      align: "left",
-      render: (tc) => (
-        <Tooltip content={tc.id}>
-          <span className="cursor-pointer">{tc.id}</span>
-        </Tooltip>
-      ),
-    },
+  const columns: Column<TaxTemplateSummary>[] = [
     {
       key: "title",
       header: "Title",
       align: "left",
       render: (tc) => (
         <Tooltip content={tc.title}>
-          <span className="cursor-pointer font-medium text-main">{tc.title}</span>
+          <span className="cursor-pointer font-medium text-main text-xs">
+            {tc.title}
+          </span>
         </Tooltip>
       ),
     },
     {
-      key: "taxRates",
+      key: "taxes",
       header: "Tax Rates",
       align: "left",
       render: (tc) => {
         const summary =
-          tc.taxRates.length === 0
+          tc.taxes.length === 0
             ? "None"
-            : tc.taxRates
-                .map((r) => `${r.tax} (${r.taxRate.toFixed(3)}%)`)
+            : tc.taxes
+                .map(
+                  (r) => `${r.tax_type} (${Number(r.tax_rate).toFixed(2)}%)`
+                )
                 .join(", ");
         return (
           <Tooltip content={summary}>
-            <span className="text-xs text-muted">{summary}</span>
+            <span className="text-xs text-muted truncate max-w-[200px] block">
+              {summary}
+            </span>
           </Tooltip>
         );
       },
@@ -213,18 +226,16 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
       header: "Status",
       align: "left",
       render: (tc) => (
-        <Tooltip content={tc.disabled ? "Disabled" : "Active"}>
-          <code
-            className={[
-              "text-xs px-2 py-1 rounded",
-              tc.disabled
-                ? "bg-danger/10 text-danger"
-                : "bg-success/10 text-success",
-            ].join(" ")}
-          >
-            {tc.disabled ? "Disabled" : "Active"}
-          </code>
-        </Tooltip>
+        <code
+          className={[
+            "text-xs px-2 py-1 rounded",
+            tc.disabled
+              ? "bg-danger/10 text-danger"
+              : "bg-success/10 text-success",
+          ].join(" ")}
+        >
+          {tc.disabled ? "Disabled" : "Enabled"}
+        </code>
       ),
     },
     {
@@ -233,35 +244,46 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
       align: "center",
       render: (tc) => (
         <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={() => {
-              /* open detail view if needed */
-            }}
-            iconOnly
-          />
-          <ActionMenu
-            onEdit={(e) => handleEdit(tc.id, e as any)}
-            onDelete={(e) => handleDelete(tc.id, e as any)}
-          />
+          <ActionButton type="view" onClick={() => {}} iconOnly />
+           <ActionMenu
+          onEdit={(e) => handleEdit(tc, e as any)}
+          onDelete={(e) => handleDelete(tc.name, e as any)}
+          customActions={[
+            {
+              label: tc.disabled ? "Enable" : "Disable",
+              onClick: () =>
+                handleToggleStatus(
+                  tc,
+                  { stopPropagation: () => {} } as React.MouseEvent
+                ),
+              danger: !tc.disabled, // Disable option = red, Enable = normal
+            },
+          ]}
+        />
         </ActionGroup>
       ),
     },
   ];
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  //  Render 
 
   return (
     <>
       <Table
         columns={columns}
-        data={taxCategories}
+        data={templates}
         showToolbar
         loading={loading || initialLoad}
-        onPageSizeChange={(size) => setPageSize(size)}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         pageSizeOptions={[10, 25, 50, 100]}
         searchValue={searchTerm}
-        onSearch={setSearchTerm}
+        onSearch={(val) => {
+          setSearchTerm(val);
+          setPage(1); // reset page on search
+        }}
         enableAdd
         addLabel="Add Tax Template"
         onAdd={openCreate}
@@ -276,7 +298,7 @@ const TaxTemplate: React.FC<Props> = ({ onAdd }) => {
       <TaxTemplateModal
         isOpen={modalOpen}
         onClose={closeModal}
-        onSubmit={handleSubmit as any}
+        onSubmit={handleSubmit}
         initialData={selectedItem}
         isEditMode={isEditMode}
       />
