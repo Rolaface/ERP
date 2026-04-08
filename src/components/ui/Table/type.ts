@@ -1,3 +1,5 @@
+import React from "react";
+
 export interface Column<T> {
   key: string;
   header: string;
@@ -5,4 +7,6 @@ export interface Column<T> {
   align?: "left" | "center" | "right";
   sortable?: boolean;
   tooltip?: (item: T) => React.ReactNode;
+  maxWidth?: string;
+  truncate?: boolean;
 }

@@ -44,14 +44,10 @@ export const AppMain: React.FC<AppMainProps> = ({
   children,
 }) => (
   <main
-    className="flex min-h-screen min-w-0 flex-1 flex-col transition-[padding] duration-300 ease-out md:pl-[var(--app-sidebar-offset)]"
-    style={
-      {
-        "--app-sidebar-offset": sidebarOpen
-          ? "var(--app-sidebar-width)"
-          : "var(--app-sidebar-width-collapsed)",
-      } as React.CSSProperties
-    }
+    className="flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300 ease-out"
+    style={{
+      paddingLeft: sidebarOpen ? 'var(--app-sidebar-width)' : 'var(--app-sidebar-width-collapsed)',
+    } as React.CSSProperties}
   >
     {children}
   </main>
@@ -64,10 +60,7 @@ interface RightPanelProps {
 export const RightPanel: React.FC<RightPanelProps> = ({ children }) => {
   return (
     <aside
-      className={`
-        flex flex-col border-l border-[var(--border)] bg-card 
-        w-[60px] min-w-[60px] shrink-0
-      `}
+      className="flex flex-col w-14 min-w-14 shrink-0"
     >
       {children}
     </aside>

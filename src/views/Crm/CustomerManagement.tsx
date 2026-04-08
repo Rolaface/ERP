@@ -58,21 +58,19 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     CustomerSummary | null
   >(null);
 
- const fetchCustomers = async () => {
+const fetchCustomers = async () => {
   try {
     setCustLoading(true);
 
     const response = await getAllCustomers(
       page,
       pageSize,
-      taxCategory || undefined,
+      taxCategory || undefined
     );
 
-    const res = response?.message;
-
-    setCustomers(res?.data || []);
-    setTotalPages(res?.pagination?.total_pages || 1);
-    setTotalItems(res?.pagination?.total || 0);
+    setCustomers(response?.data || []);
+    setTotalPages(response?.pagination?.total_pages || 1);
+    setTotalItems(response?.pagination?.total || 0);
 
   } catch (error) {
     console.error("Error loading customers:", error);
@@ -82,7 +80,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     setInitialLoad(false);
   }
 };
-
   useEffect(() => {
     fetchCustomers();
   }, [page, pageSize, taxCategory]);
@@ -194,9 +191,12 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "id",
       header: "Customer ID",
       align: "left",
+      maxWidth: "120px",
       render: (customer) => (
         <Tooltip content={customer.id}>
-          <span className="cursor-pointer">{customer.id}</span>
+          <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+            {customer.id}
+          </span>
         </Tooltip>
       ),
     },
@@ -204,9 +204,12 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "name",
       header: "Name",
       align: "left",
+      maxWidth: "220px",
       render: (customer) => (
         <Tooltip content={customer.name}>
-          <span className="cursor-pointer">{customer.name}</span>
+          <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+            {customer.name}
+          </span>
         </Tooltip>
       ),
     },
@@ -214,9 +217,12 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "type",
       header: "Type",
       align: "left",
+      maxWidth: "100px",
       render: (customer) => (
         <Tooltip content={customer.type ?? "-"}>
-          <span>{customer.type ?? "-"}</span>
+          <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+            {customer.type ?? "-"}
+          </span>
         </Tooltip>
       ),
     },
@@ -224,9 +230,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "tpin",
       header: "TPIN",
       align: "left",
+      maxWidth: "100px",
       render: (customer) => (
         <Tooltip content={customer.tpin}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
             {customer.tpin}
           </code>
         </Tooltip>
@@ -236,9 +243,12 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "customerTaxCategory",
       header: "Tax Category",
       align: "left",
+      maxWidth: "120px",
       render: (customer) => (
         <Tooltip content={customer.customerTaxCategory ?? "-"}>
-          <span>{customer.customerTaxCategory ?? "-"}</span>
+          <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+            {customer.customerTaxCategory ?? "-"}
+          </span>
         </Tooltip>
       ),
     },
@@ -246,9 +256,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "currency",
       header: "Currency",
       align: "left",
+      maxWidth: "80px",
       render: (customer) => (
         <Tooltip content={customer.currency}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
             {customer.currency}
           </code>
         </Tooltip>
@@ -258,9 +269,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "status",
       header: "Status",
       align: "left",
+      maxWidth: "90px",
       render: (customer) => (
         <Tooltip content={customer.status}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
             {customer.status}
           </code>
         </Tooltip>
@@ -270,6 +282,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "actions",
       header: "Actions",
       align: "center",
+      width: "100px",
       render: (customer) => (
         <ActionGroup>
           <ActionButton

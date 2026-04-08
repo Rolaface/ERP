@@ -126,7 +126,6 @@ function Table<T extends Record<string, any>>({
   const allKeys = columns.map((col) => col.key);
   const [visibleKeys, setVisibleKeys] = useState<string[]>(allKeys);
   const visibleColumns = columns.filter((col) => visibleKeys.includes(col.key));
-  const columnWidth = visibleColumns.length > 0 ? `${100 / visibleColumns.length}%` : "auto";
 
   const toggleColumn = (key: string) => {
     setVisibleKeys((prev) =>
@@ -211,7 +210,13 @@ function Table<T extends Record<string, any>>({
           <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               {visibleColumns.map((column) => (
-                <col key={column.key} style={{ width: columnWidth }} />
+                <col 
+                  key={column.key} 
+                  style={{ 
+                    width: column.width || (column.maxWidth ? column.maxWidth : 'auto'),
+                    minWidth: column.minWidth || (column.maxWidth ? column.maxWidth : '100px')
+                  }} 
+                />
               ))}
             </colgroup>
             <thead>
@@ -259,7 +264,13 @@ function Table<T extends Record<string, any>>({
           <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               {visibleColumns.map((column) => (
-                <col key={column.key} style={{ width: columnWidth }} />
+                <col 
+                  key={column.key} 
+                  style={{ 
+                    width: column.width || (column.maxWidth ? column.maxWidth : 'auto'),
+                    minWidth: column.minWidth || (column.maxWidth ? column.maxWidth : '100px')
+                  }} 
+                />
               ))}
             </colgroup>
             <tbody className="relative z-10">
@@ -269,8 +280,12 @@ function Table<T extends Record<string, any>>({
                 ))
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan={visibleColumns.length} className="px-4 py-16 text-center">
-                    <p className="text-sm font-medium text-muted opacity-60">{emptyMessage}</p>
+                  <td colSpan={visibleColumns.length} className="p-0">
+                    <div className="flex items-center justify-center h-[300px] w-full">
+                      <p className="text-sm font-medium text-muted opacity-60">
+                        {emptyMessage}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -297,38 +312,59 @@ function Table<T extends Record<string, any>>({
                               ? "-"
                               : String(rawValue);
 
-                          const content = column.render ? (
-                            column.render(item)
-                          ) : (
-                            <span className="block truncate opacity-90">
-                              {fallbackText}
-                            </span>
+                          const needsTruncation = column.truncate === true || column.maxWidth !== undefined;
+                          const cellStyle = column.maxWidth 
+                            ? { maxWidth: column.maxWidth } 
+                            : {};
+
+                          const getCellContent = () => {
+                            if (column.render) {
+                              return column.render(item);
+                            }
+                            return (
+                              <span className="block truncate opacity-90">
+                                {fallbackText}
+                              </span>
+                            );
+                          };
+
+                          const cellContent = (
+                            <div 
+                              style={needsTruncation ? { maxWidth: column.maxWidth || '200px' } : undefined}
+                              className={needsTruncation 
+                                ? "min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap" 
+                                : "min-w-0"
+                              }
+                            >
+                              {getCellContent()}
+                            </div>
                           );
+
+                          const tooltipText = column.tooltip 
+                            ? column.tooltip(item) 
+                            : (needsTruncation ? fallbackText : undefined);
+
+                          if (tooltipText) {
+                            return (
+                              <td
+                                key={column.key}
+                                style={cellStyle}
+                                className={`border-b border-[var(--border)]/20 px-3 py-1.5 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
+                              >
+                                <Tooltip content={tooltipText}>
+                                  {cellContent}
+                                </Tooltip>
+                              </td>
+                            );
+                          }
 
                           return (
                             <td
                               key={column.key}
+                              style={cellStyle}
                               className={`border-b border-[var(--border)]/20 px-3 py-1.5 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
                             >
-                              <div className="min-w-0 overflow-hidden">
-                                {column.tooltip ? (
-                                  <Tooltip content={column.tooltip(item)}>
-                                    <div className="min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-                                      {content}
-                                    </div>
-                                  </Tooltip>
-                                ) : column.render ? (
-                                  <div className="min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-                                    {content}
-                                  </div>
-                                ) : (
-                                  <Tooltip content={fallbackText}>
-                                    <div className="min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-                                      {content}
-                                    </div>
-                                  </Tooltip>
-                                )}
-                              </div>
+                              {cellContent}
                             </td>
                           );
                         })}

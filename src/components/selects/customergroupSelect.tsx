@@ -58,7 +58,7 @@ const fetchGroups = useCallback(async (query: string) => {
   try {
     const res = await getCustomerGroups();
 
-    const all = res?.message?.data ?? [];
+    const all = res?.data ?? [];
 
     console.log("DATA:", all);
 

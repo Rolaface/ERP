@@ -573,13 +573,19 @@ export function useCustomerForm({
         const apiMessage = res?.message?.message ?? "Customer created successfully.";
         const customerId = res?.message?.data?.customerId ?? "";
 
+        const createdCustomer = {
+          id: customerId,
+          name: form.name || form.displayName || customerId,
+          ...payload,
+        };
+
         showSuccess(
           customerId
             ? `${apiMessage}\nCustomer ID: ${customerId}`
             : apiMessage,
         );
 
-        onSubmit?.(payload as any);
+        onSubmit?.(createdCustomer as any);
         handleClose();
       }
 
