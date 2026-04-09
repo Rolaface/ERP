@@ -113,8 +113,7 @@ const TaxCategory: React.FC = () => {
   ];
 
   return (
-    <>
-    
+    <div className="h-full min-h-0">
       <Table
         loading={loading}
         columns={columns}
@@ -135,7 +134,7 @@ const TaxCategory: React.FC = () => {
           setPage(1);
         }}
       />
-      </>
+    </div>
   );
 };
 
