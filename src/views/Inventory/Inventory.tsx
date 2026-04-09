@@ -1,5 +1,10 @@
 import React, { useState } from "react";
-import { FaBoxOpen, FaBoxes, FaTachometerAlt, FaWarehouse  } from "react-icons/fa";
+import {
+  FaBoxOpen,
+  FaBoxes,
+  FaTachometerAlt,
+  FaWarehouse,
+} from "react-icons/fa";
 import Items from "./Items";
 import Movements from "./Movements";
 import ItemsCategory from "./ItemsCategory";
@@ -29,10 +34,14 @@ const Inventory: React.FC = () => {
       />
       <AppTabs
         tabs={[
-          { id: "inventorydashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
+          {
+            id: "inventorydashboard",
+            label: "Dashboard",
+            icon: <FaTachometerAlt />,
+          },
           { id: "taxTemplates", label: "Tax Templates", icon: <FaBoxOpen /> },
           { id: "items", label: "Items", icon: <FaBoxOpen /> },
-          { id: "taxCategory", label: "Tax Category", icon: <FaBoxOpen /> },
+
           { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
           { id: "warehouse", label: "WareHouse", icon: <FaWarehouse /> },
           { id: "stock", label: "Stock", icon: <FaBoxOpen /> },
