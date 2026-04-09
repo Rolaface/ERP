@@ -7,7 +7,7 @@ import {
   getUOMs,
 } from "../../api/itemZraApi";
 import { useCompanySelection } from "../../hooks/useCompanySelection";
-import { ModalInput,YesNoCheckbox } from "../ui/modal/modalComponent";
+import { ModalInput, YesNoCheckbox } from "../ui/modal/modalComponent";
 import type {
   ItemFieldSetter,
   ItemFormChangeHandler,
@@ -26,17 +26,7 @@ const isRolaCompany = (companyCode: string) => {
   return normalized === "ROLA" || normalized === "COMP-00004";
 };
 
-/**
- * Row 2 of the Item Details tab.
- * Renders: Packing Unit | UOM | SKU | Country | SVC Charge | Insurance | Taxable
- *
- * - UOM and Country use SearchSelect2 (async search)
- * - SVC Charge, Insurance, Taxable use YesNoCheckbox
- * - Packing Unit uses two ModalInput fields (unit × size)
- * - SKU uses ModalInput
- *
- * Layout matches the target screenshot exactly.
- */
+
 const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
   React.memo(({ form, onFormChange, onToggleChange, setField }) => {
     const { companyCode } = useCompanySelection();
@@ -72,17 +62,19 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
           </div>
         </div>
 
-        {/* UOM — async search */}
+        {/* UOM */}
         <div className="w-[140px] min-w-0">
           <SearchSelect2
             label="UOM"
             value={form.unitOfMeasureCd ?? ""}
-            fetchOptions={async (q) => {
-              const data = await fetchUoms(q);
-              // fetchUoms returns items with id/name — normalise to {label, value}
-              return (data ?? []).map((item: { id: string; name?: string; cdNm?: string }) => ({
-                label: item.name ?? item.cdNm ?? item.id,
-                value: item.id,
+            fetchOptions={async () => {
+              const data = await fetchUoms();
+
+              const list = data?.data ?? [];
+
+              return list.map((item: any) => ({
+                label: item.name ?? item.cdNm ?? "",
+                value: item.name ?? item.cdNm ?? "",
               }));
             }}
             onChange={(value) => setField("unitOfMeasureCd", value)}
@@ -101,16 +93,19 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
           />
         </div>
 
-        {/* Country of Origin — async search */}
+        {/* Country of Origin  */}
         <div className="w-[160px] min-w-0">
           <SearchSelect2
             label="Country"
             value={form.originNationCode ?? ""}
-            fetchOptions={async (q) => {
-              const data = await fetchCountries(q);
-              return (data ?? []).map((item: { id: string; name?: string; cdNm?: string }) => ({
-                label: item.name ?? item.cdNm ?? item.id,
-                value: item.id,
+            fetchOptions={async () => {
+              const data = await fetchCountries();
+
+              const list = data?.data ?? [];
+
+              return list.map((item: any) => ({
+                label: item.name,
+                value: item.code ?? item.name,
               }));
             }}
             onChange={(value) => setField("originNationCode", value)}
