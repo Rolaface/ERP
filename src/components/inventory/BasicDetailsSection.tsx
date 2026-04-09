@@ -49,7 +49,7 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           name="itemGroup"
           value={form.itemGroup}
           onChange={onFormChange}
-          disabled={!form.itemTypeCode || loadingItemGroups}
+         
           required
           placeholder={loadingItemGroups ? "Loading..." : categoryPlaceholder}
         >

@@ -192,7 +192,7 @@ export const API = {
    * ========================= */
   item: {
     getAll: `${ERP_BASE}/api/method/custom_api.api.item.api.get`,
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.get_item_by_id_api`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.item.api.get_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.item.api.create`,
     update: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.update_item_api`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.delete_item_by_id`,
