@@ -227,31 +227,3 @@ export const SectionHeading: React.FC<{ title: string }> = ({ title }) => (
     <div className="h-px flex-1 bg-theme" />
   </div>
 );
-
-interface TabButtonProps {
-  label: string;
-  active: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-}
-
-export const TabButton: React.FC<TabButtonProps> = React.memo(
-  ({ label, active, disabled = false, onClick }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={[
-        "border-none bg-transparent px-1 py-2.5 text-sm font-semibold tracking-wide transition-all",
-        active
-          ? "border-b-2 border-primary text-primary"
-          : "border-b-2 border-transparent text-muted hover:text-main",
-        disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer",
-      ].join(" ")}
-    >
-      {label}
-    </button>
-  ),
-);
-
-TabButton.displayName = "TabButton";
