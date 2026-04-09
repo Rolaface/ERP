@@ -308,7 +308,15 @@
   .row-hover:hover {
     background: var(--row-hover) !important;
   }
- 
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
   /* OVERRIDES
   .bg-white { background: var(--card) !important; }
   .text-gray-900, .text-slate-900 { color: var(--text) !important; }

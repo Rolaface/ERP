@@ -28,7 +28,7 @@ import {
 
 type OutletContextType = {
   openCategoryCreate: (parentId?: string) => void;
-  openCategoryEdit: (id: string, data?: any) => void;
+  openCategoryEdit: (id: string, data?: any) => void; 
 };
 
 export interface ItemGroupNode {
@@ -302,7 +302,7 @@ const ItemsCategory: React.FC = () => {
           {
             label: "Edit",
             icon: <Pencil size={12} />,
-            onClick: () => openCategoryEdit(row.name),
+            onClick: () => openCategoryEdit(row.name, row),
           },
           ...(row.is_group === 1
             ? [
