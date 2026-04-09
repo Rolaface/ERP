@@ -20,6 +20,7 @@ import type {
   ItemModalTab,
   SupplierOption,
 } from "../components/inventory/itemModalTypes";
+import { getSupplierList } from "../api/lookupApi";
 
 interface ItemNestedInitialData extends Partial<ItemFormData> {
   taxInfo?: Partial<
@@ -84,19 +85,41 @@ interface ItemGroupTreeResponse {
   };
 }
 
+// interface SupplierApiItem {
+//   supplierName: string;
+//   supplierId: string;
+// }
+
+// interface SupplierApiResponse {
+//   status_code?: number;
+//   message?: string;
+//   data?: {
+//     suppliers?: SupplierApiItem[];
+//   };
+// }
 interface SupplierApiItem {
-  supplierName: string;
-  supplierId: string;
+  value: string;
+  label: string;
+  description: string;
+}
+
+interface Pagination {
+  page: number;
+  page_size: number;
+  items_in_page: number;
+  total_items: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
 }
 
 interface SupplierApiResponse {
-  status_code?: number;
-  message?: string;
-  data?: {
-    suppliers?: SupplierApiItem[];
-  };
+  status_code: number;
+  status: "success" | "fail";
+  message: string;
+  data: SupplierApiItem[];
+  pagination: Pagination;
 }
-
 interface SaveItemResponse {
   status_code?: number;
 }
@@ -254,16 +277,17 @@ export const useItemForm = ({
     try {
       setLoadingSuppliers(true);
 
-      const response = (await getSuppliers(1, 1000)) as SupplierApiResponse;
+      const response = (await getSupplierList({ page: 1, page_size: 100, search: "" }) as unknown as SupplierApiResponse)
+      console.log("🚀 ~ useItemForm ~ response:", response.data)
 
       if (!response || response.status_code !== 200) {
         showApiError(response?.message || "Failed to load suppliers");
         return;
       }
 
-      const mapped = (response.data?.suppliers ?? []).map((supplier) => ({
-        label: supplier.supplierName,
-        value: supplier.supplierId,
+      const mapped = (response.data ?? []).map((supplier) => ({
+        label: supplier.label,
+        value: supplier.value,
       }));
 
       setSuppliers(mapped);
