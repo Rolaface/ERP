@@ -324,8 +324,8 @@ export const YesNoCheckbox: React.FC<YesNoCheckboxProps> = ({
   const checked = normalizedValue === "Y";
 
   return (
-    <label className="flex flex-col text-sm min-w-0 w-fit">
-      <span className="text-[11px] font-medium uppercase tracking-wide text-muted mb-1">
+    <label className="flex flex-col min-w-0 w-fit">
+      <span className="block text-[10px] font-medium text-main mb-1">
         {label}
         {required && <span className="text-danger">*</span>}
       </span>

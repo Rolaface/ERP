@@ -1,5 +1,5 @@
 import React from "react";
-import { Copy, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import Tooltip from "../Tooltip";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
@@ -10,23 +10,48 @@ interface SearchOption {
   value: string;
 }
 
+/** Shape of a single tax line returned by the API */
+interface TemplateTax {
+  tax_type: string;
+  tax_rate: number;
+}
+
 interface TaxSectionProps {
   taxRows: ItemTaxRow[];
   paginatedRows: ItemTaxRow[];
   taxPage: number;
   itemsPerPage: number;
   fetchTaxTemplateOptions: (search: string) => Promise<SearchOption[]>;
+  /**
+   * Given a template value (name), return the cached taxes for that template.
+   * Returns undefined if the template hasn't been fetched yet.
+   */
+  getTemplateTaxes: (templateValue: string) => TemplateTax[] | undefined;
   onTaxRowChange: (
     absoluteIndex: number,
     field: keyof ItemTaxRow,
     value: string,
   ) => void;
   onAddTaxRow: () => void;
-  onDuplicateTaxRow: (absoluteIndex: number) => void;
   onRemoveTaxRow: (absoluteIndex: number) => void;
   onPreviousPage: () => void;
   onNextPage: () => void;
 }
+
+/** Renders the tax breakdown tooltip content */
+const TaxTooltipContent: React.FC<{ taxes: TemplateTax[] }> = ({ taxes }) => (
+  <div className="min-w-[160px]">
+    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide opacity-70">
+      Tax Breakdown
+    </p>
+    {taxes.map((t, i) => (
+      <div key={i} className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="truncate">{t.tax_type}</span>
+        <span className="shrink-0 font-medium">{t.tax_rate}%</span>
+      </div>
+    ))}
+  </div>
+);
 
 const TaxSection: React.FC<TaxSectionProps> = React.memo(
   ({
@@ -35,9 +60,9 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
     taxPage,
     itemsPerPage,
     fetchTaxTemplateOptions,
+    getTemplateTaxes,
     onTaxRowChange,
     onAddTaxRow,
-    onDuplicateTaxRow,
     onRemoveTaxRow,
     onPreviousPage,
     onNextPage,
@@ -60,12 +85,28 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                 <th className="min-w-[220px] px-2 py-1 text-left text-[11px] font-medium text-muted">
                   Tax Template
                 </th>
-                <th className="w-[76px]" />
+                {/* Action column — only trash, no duplicate */}
+                <th className="w-[44px]" />
               </tr>
             </thead>
             <tbody>
               {paginatedRows.map((row, index) => {
                 const absoluteIndex = taxPage * itemsPerPage + index;
+                const taxes = row.taxTemplate
+                  ? getTemplateTaxes(row.taxTemplate)
+                  : undefined;
+
+                const templateCell = (
+                  <SearchSelect2
+                    label=""
+                    value={row.taxTemplate}
+                    onChange={(value) =>
+                      onTaxRowChange(absoluteIndex, "taxTemplate", value)
+                    }
+                    fetchOptions={fetchTaxTemplateOptions}
+                    placeholder="Search tax template..."
+                  />
+                );
 
                 return (
                   <tr
@@ -75,47 +116,41 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                     <td className="px-2 py-1 text-center text-[10px]">
                       {absoluteIndex + 1}
                     </td>
-                    <td className="min-w-[220px] px-0.5 py-1">
-                      <TaxCategorySelect
-                        value={row.taxCategory}
-                        onChange={(value) =>
-                          onTaxRowChange(absoluteIndex, "taxCategory", value)
-                        }
-                      />
-                    </td>
-                    <td className="min-w-[220px] px-0.5 py-1">
-                      <SearchSelect2
-                        label=""
-                        value={row.taxTemplate}
-                        onChange={(value) =>
-                          onTaxRowChange(absoluteIndex, "taxTemplate", value)
-                        }
-                        fetchOptions={fetchTaxTemplateOptions}
-                        placeholder="Search tax template..."
-                      />
-                    </td>
-                    <td className="px-0.5 py-1">
-                      <div className="flex items-center gap-1">
-                        <Tooltip content="Duplicate row">
-                          <button
-                            type="button"
-                            onClick={() => onDuplicateTaxRow(absoluteIndex)}
-                            className="rounded bg-primary/10 p-0.5 text-primary transition hover:bg-primary/20"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
-                        </Tooltip>
-                        <Tooltip content="Remove row">
-                          <button
-                            type="button"
-                            onClick={() => onRemoveTaxRow(absoluteIndex)}
-                            disabled={taxRows.length === 1}
-                            className="rounded bg-danger/10 p-0.5 text-danger transition hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-30"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </Tooltip>
+
+                    <td className="min-w-[220px] px-1 py-1 align-middle">
+                      <div className="flex items-center h-[28px]">
+                        <TaxCategorySelect
+                          value={row.taxCategory}
+                          onChange={(value) =>
+                            onTaxRowChange(absoluteIndex, "taxCategory", value)
+                          }
+                        />
                       </div>
+                    </td>
+                    {/* Tax Template cell — wrap with tooltip only when taxes are available */}
+                    <td className="min-w-[220px] px-1 py-1 align-middle">
+                      <div className="flex items-center h-[28px]">
+                        {taxes && taxes.length > 0 ? (
+                          <Tooltip content={<TaxTooltipContent taxes={taxes} />}>
+                            <div className="w-full">{templateCell}</div>
+                          </Tooltip>
+                        ) : (
+                          templateCell
+                        )}
+                      </div>
+                    </td>
+                    {/* Actions: only Remove (no duplicate) */}
+                    <td className="px-0.5 py-1">
+                      <Tooltip content="Remove row">
+                        <button
+                          type="button"
+                          onClick={() => onRemoveTaxRow(absoluteIndex)}
+                          disabled={taxRows.length === 1}
+                          className="rounded bg-danger/10 p-0.5 text-danger transition hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </Tooltip>
                     </td>
                   </tr>
                 );
@@ -124,6 +159,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
           </table>
         </div>
 
+        {/* Footer: Add Row + Pagination */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"

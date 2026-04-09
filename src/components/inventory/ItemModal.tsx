@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ToolCase } from "lucide-react";
 import { getAllTemplates } from "../../api/TaxTemplateApi";
 import { useItemForm } from "../../hooks/Useitemform";
@@ -26,11 +26,18 @@ interface TaxTemplateOption {
   value: string;
 }
 
+/** Shape of a single tax line from the API */
+interface TemplateTax {
+  tax_type: string;
+  tax_rate: number;
+}
+
 interface TaxTemplateResponse {
   data?: {
     templates?: Array<{
       name: string;
       title: string;
+      taxes?: TemplateTax[];
     }>;
   };
 }
@@ -78,6 +85,13 @@ const ItemModal: React.FC<ItemModalProps> = ({
   ]);
   const [taxPage, setTaxPage] = useState(0);
 
+  /**
+   * Cache: template value (name) → taxes array.
+   * Populated whenever fetchTaxTemplateOptions is called and results are returned.
+   * Using useRef so updates don't trigger re-renders.
+   */
+  const templateTaxCacheRef = useRef<Map<string, TemplateTax[]>>(new Map());
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -92,6 +106,11 @@ const ItemModal: React.FC<ItemModalProps> = ({
     setTaxPage(0);
   }, [initialData?.taxes, isEditMode, isOpen]);
 
+  /**
+   * Fetches tax template options for SearchSelect2.
+   * Also populates templateTaxCacheRef so hovering a selected template
+   * can show its tax breakdown via tooltip.
+   */
   const fetchTaxTemplateOptions = useCallback(
     async (search: string): Promise<TaxTemplateOption[]> => {
       try {
@@ -102,6 +121,13 @@ const ItemModal: React.FC<ItemModalProps> = ({
         )) as TaxTemplateResponse;
         const templates = response.data?.templates ?? [];
 
+        // Populate cache with tax details for each returned template
+        templates.forEach((template) => {
+          if (template.taxes) {
+            templateTaxCacheRef.current.set(template.name, template.taxes);
+          }
+        });
+
         return templates.map((template) => ({
           label: template.title,
           value: template.name,
@@ -110,6 +136,16 @@ const ItemModal: React.FC<ItemModalProps> = ({
         return [];
       }
     },
+    [],
+  );
+
+  /**
+   * Look up cached taxes for a given template value (name).
+   * Returns undefined if the template has not been fetched yet.
+   */
+  const getTemplateTaxes = useCallback(
+    (templateValue: string): TemplateTax[] | undefined =>
+      templateTaxCacheRef.current.get(templateValue),
     [],
   );
 
@@ -169,22 +205,6 @@ const ItemModal: React.FC<ItemModalProps> = ({
       );
       setTaxPage((current) => Math.min(current, maxPage));
 
-      return nextRows;
-    });
-  }, []);
-
-  const duplicateTaxRow = useCallback((absoluteIndex: number) => {
-    setTaxRows((previous) => {
-      const row = previous[absoluteIndex];
-      if (!row) return previous;
-
-      const nextRows = [
-        ...previous.slice(0, absoluteIndex + 1),
-        { ...row },
-        ...previous.slice(absoluteIndex + 1),
-      ];
-
-      setTaxPage(Math.floor((absoluteIndex + 1) / TAX_ITEMS_PER_PAGE));
       return nextRows;
     });
   }, []);
@@ -269,6 +289,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
         noValidate
         className="min-h-full"
       >
+        {/* Tab navigation */}
         <div className="-mx-4 -mt-3 border-b border-theme bg-app px-6">
           <div className="flex gap-6">
             <button
@@ -312,9 +333,11 @@ const ItemModal: React.FC<ItemModalProps> = ({
           </div>
         </div>
 
+        {/* Tab content */}
         <div className="px-2 py-5">
           {activeTab === "details" && (
-            <>
+            <div className="space-y-4">
+              {/* Row 1: Item Type, Item Category, Item Name, Description, HSN Code */}
               <BasicDetailsSection
                 form={form}
                 itemGroups={itemGroups}
@@ -322,18 +345,23 @@ const ItemModal: React.FC<ItemModalProps> = ({
                 onFormChange={handleForm}
                 setField={setField}
               />
+
+              {/* Row 2: Packing Unit, UOM, SKU, Country, SVC Charge, Insurance, Taxable */}
               <AdditionalDetailsSection
                 form={form}
                 onFormChange={handleForm}
                 onToggleChange={handleToggleChange}
+                setField={setField}
               />
+
+              {/* Row 3: Sales & Purchase */}
               <PricingSection
                 form={form}
                 suppliers={suppliers}
                 loadingSuppliers={loadingSuppliers}
                 onFormChange={handleForm}
               />
-            </>
+            </div>
           )}
 
           {activeTab === "taxDetails" && (
@@ -343,9 +371,9 @@ const ItemModal: React.FC<ItemModalProps> = ({
               taxPage={taxPage}
               itemsPerPage={TAX_ITEMS_PER_PAGE}
               fetchTaxTemplateOptions={fetchTaxTemplateOptions}
+              getTemplateTaxes={getTemplateTaxes}
               onTaxRowChange={handleTaxRowChange}
               onAddTaxRow={addTaxRow}
-              onDuplicateTaxRow={duplicateTaxRow}
               onRemoveTaxRow={removeTaxRow}
               onPreviousPage={handlePreviousTaxPage}
               onNextPage={handleNextTaxPage}
