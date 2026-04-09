@@ -2,47 +2,64 @@ import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
 
-
 const api = createAxiosInstance(ERP_BASE);
 export const TaxCategoryAPI = API.tax;
 
+//  GET All Tax Categories 
 export async function getAllTaxCategories(
   page: number = 1,
-  page_size: number = 10
+  page_size: number = 10,
+  search?: string,
+  disables?: 0 | 1,
+  order_by: string = "title"
 ): Promise<any> {
-  try {
-    const resp: AxiosResponse = await api.get(
-      TaxCategoryAPI.getAllTaxCategories,
-      {
-        params: {
-          page,
-          page_size,
-        },
-      }
-    );
-
-   
-    return resp.data;
-
-  } catch (error: any) {
-    console.error("Something went wrong", error?.response || error);
-    throw error;
-  }
+  const resp: AxiosResponse = await api.get(
+    TaxCategoryAPI.getAllTaxCategories,
+    {
+      params: {
+        page,
+        page_size,
+        order_by,
+        ...(search ? { search } : {}),
+        ...(disables !== undefined ? { disables } : {}),
+      },
+    }
+  );
+  return resp.data;
 }
+
+//  Create Tax Category 
 export async function createTaxCategory(payload: {
   title: string;
-  disabled: number;
+  disabled: 0 | 1;
 }): Promise<any> {
-  try {
-    const resp: AxiosResponse = await api.post(
-      TaxCategoryAPI.createTaxCategory,
-      payload
-    );
+  const resp: AxiosResponse = await api.post(
+    TaxCategoryAPI.createTaxCategory,
+    payload
+  );
+  return resp.data;
+}
 
-    return resp.data;
+//  Update Tax Category Status (Enable / Disable) 
+export async function updateTaxCategoryStatus(
+  name: string,
+  disabled: 0 | 1
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    TaxCategoryAPI.updateTaxCategory,
+    { name, disabled }
+  );
+  return resp.data;
+}
 
-  } catch (error: any) {
-    console.error("Create Tax Category failed", error?.response || error);
-    throw error;
-  }
+//  Delete Tax Category 
+export async function deleteTaxCategory(name: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    TaxCategoryAPI.deleteTaxCategory,
+    {
+      name,
+      doctype: "Tax Category",
+    }
+  );
+  return resp.data;
 }

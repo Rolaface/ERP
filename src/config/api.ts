@@ -210,7 +210,8 @@ export const API = {
     updatestatus:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.update_item_template_tax_status`,
     getAllTaxCategories: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.get`,
     createTaxCategory: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.create`,
-
+    updateTaxCategory: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.update`,
+    deleteTaxCategory: `${ERP_BASE}/api/method/frappe.client.delete`
   },
 
   /* =========================

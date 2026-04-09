@@ -1,140 +1,222 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { showApiError, showLoading, showSuccess, closeSwal } from "../../utils/alert";
 import Table from "../../components/ui/Table/Table";
+import ActionButton, {
+  ActionGroup,
+  ActionMenu,
+} from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
+import Tooltip from "../../components/Tooltip";
+import { fireManagedSwal } from "../../utils/swalManager";
 import { getAllTaxCategories } from "../../api/taxCategoryApi";
-import {
-  showApiError
-} from "../../utils/alert";
-import { openTaxCategoryModal } from "../../store/modalStore";
+import { useTaxCategory } from "../../hooks/useTaxCategory";
+import TaxCategoryModal from "../../components/inventory/TaxCategoryModal";
+import type { TaxCategoryFormData } from "../../hooks/useTaxCategory";
 
-type TaxCategory = {
-  id: string;
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface TaxCategorySummary {
+  name: string;
   title: string;
-  status: string;
-};
+  disabled: 0 | 1;
+}
 
-type EmptyRow = TaxCategory & { __isEmpty?: boolean };
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const TaxCategory: React.FC = () => {
-  const [data, setData] = useState<EmptyRow[]>([]);
+  const [categories, setCategories] = useState<TaxCategorySummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const openCreate = () => {
-    openTaxCategoryModal(null, false, {
-      callback: async () => {
-        await fetchTaxCategories();
-      },
-    }, {
-      title: "Add Tax Category",
-      subtitle: "Create a new tax category",
-    });
-  };
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchTaxCategories = async () => {
+  const { createTaxCategoryEntry, updateStatus, deleteTaxCategoryEntry } =
+    useTaxCategory();
+
+  // ─── Fetch ──────────────────────────────────────────────────────────────────
+
+  const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
+      const res = await getAllTaxCategories(
+        page,
+        pageSize,
+        searchTerm || undefined
+      );
 
-      const res = await getAllTaxCategories(page, pageSize);
-      
-      console.log("TaxCategory API response:", res);
+      // API response shape: { data: [...], pagination: { total_count, total_pages, page, page_size } }
+      const list: TaxCategorySummary[] = res?.data ?? [];
+      const pagination = res?.pagination;
 
-      const list = res?.data || [];
-      const pagination = res?.pagination || {};
-
-      const formatted = list.map((item: any) => ({
-        id: item.name || `-`,
-        title: item.title || "-",
-        status: item.disabled ? "Inactive" : "Active",
-      }));
-
-      console.log("Formatted data length:", formatted.length, "pageSize:", pageSize);
-
-      const filledData = [...formatted];
-      while (filledData.length < pageSize) {
-        filledData.push({
-          id: "",
-          title: "",
-          status: "",
-          __isEmpty: true,
-        });
-      }
-
-      setData(filledData);
-      setTotalPages(pagination.total_pages || 1);
-      setTotalItems(pagination.total_count || 0);
-    } catch (err) {
-      showApiError(err);
-      setData([]);
+      setCategories(list);
+      setTotalPages(pagination?.total_pages ?? 1);
+      setTotalItems(pagination?.total_count ?? list.length);
+    } catch (error) {
+      console.error("Error loading tax categories:", error);
+      showApiError(error);
     } finally {
       setLoading(false);
+      setInitialLoad(false);
+    }
+  }, [page, pageSize, searchTerm]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  // ─── Handlers ───────────────────────────────────────────────────────────────
+
+  const handleCreate = async (formData: TaxCategoryFormData) => {
+    await createTaxCategoryEntry(formData);
+    await fetchCategories();
+  };
+
+  // Status Toggle: Enable / Disable — replaces Edit in ActionMenu
+  const handleToggleStatus = async (row: TaxCategorySummary) => {
+    const newDisabled: 0 | 1 = row.disabled === 1 ? 0 : 1;
+
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: newDisabled === 1 ? "Disable Category?" : "Enable Category?",
+      text: `"${row.title}" will be ${newDisabled === 1 ? "disabled" : "enabled"}.`,
+      showCancelButton: true,
+      confirmButtonColor: newDisabled === 1 ? "#ef4444" : "#22c55e",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: newDisabled === 1 ? "Yes, Disable" : "Yes, Enable",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await updateStatus(row.name, newDisabled);
+      await fetchCategories();
+    } catch {
+      // error already shown inside hook
     }
   };
 
-  useEffect(() => {
-    fetchTaxCategories();
-  }, [page, pageSize]);
+  const handleDelete = async (name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
 
-  const columns: Column<EmptyRow>[] = [
-    {
-      key: "id",
-      header: "Name",
-      align: "left",
-      render: (row) => (row.__isEmpty ? <div className="invisible">-</div> : row.id),
-    },
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete tax category "${name}"?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await deleteTaxCategoryEntry(name);
+      await fetchCategories();
+    } catch {
+      // error already shown inside hook
+    }
+  };
+
+  // ─── Columns ────────────────────────────────────────────────────────────────
+
+  const columns: Column<TaxCategorySummary>[] = [
     {
       key: "title",
       header: "Title",
       align: "left",
-      render: (row) => (row.__isEmpty ? <div className="invisible">-</div> : row.title),
+      render: (tc) => (
+        <div className="inline-flex w-fit">
+          <Tooltip content={tc.title}>
+            <span className="cursor-pointer font-medium text-main text-xs">
+              {tc.title}
+            </span>
+          </Tooltip>
+        </div>
+      ),
     },
     {
-      key: "status",
+      key: "disabled",
       header: "Status",
+      align: "left",
+      render: (tc) => (
+        <code
+          className={[
+            "text-xs px-2 py-1 rounded",
+            tc.disabled
+              ? "bg-danger/10 text-danger"
+              : "bg-success/10 text-success",
+          ].join(" ")}
+        >
+          {tc.disabled ? "Disabled" : "Active"}
+        </code>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
       align: "center",
-      render: (row) =>
-        row.__isEmpty ? (
-          <div className="invisible">-</div>
-        ) : (
-          <span
-            className={`font-medium ${
-              row.status === "Active" ? "text-success" : "text-danger"
-            }`}
-          >
-            {row.status}
-          </span>
-        )
+      render: (tc) => (
+        <ActionGroup>
+          <ActionMenu
+            // No onEdit — edit is not supported; only status toggle is allowed
+            onDelete={(e) => handleDelete(tc.name, e as React.MouseEvent)}
+            customActions={[
+              {
+                label: tc.disabled ? "Enable" : "Disable",
+                onClick: () => handleToggleStatus(tc),
+                danger: !tc.disabled, // Disable action is red; Enable is normal
+              },
+            ]}
+          />
+        </ActionGroup>
+      ),
     },
   ];
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
+
   return (
-    <div className="h-full min-h-0">
+    <>
       <Table
-        loading={loading}
         columns={columns}
-        data={data}
+        data={categories}
         showToolbar
-        searchValue={searchTerm}
-        onSearch={setSearchTerm}
-        enableAdd
-        addLabel="Add Tax Category"
-        onAdd={openCreate}
-        currentPage={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        pageSize={pageSize}
-        onPageChange={setPage}
+        loading={loading || initialLoad}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
         }}
+        pageSizeOptions={[10, 25, 50, 100]}
+        searchValue={searchTerm}
+        onSearch={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="Add Tax Category"
+        onAdd={() => setIsModalOpen(true)}
+        enableColumnSelector
+        currentPage={page}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        onPageChange={setPage}
       />
-    </div>
+
+      {/* Create Modal — no edit modal needed since only status toggle is supported */}
+      <TaxCategoryModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleCreate}
+      />
+    </>
   );
 };
 
