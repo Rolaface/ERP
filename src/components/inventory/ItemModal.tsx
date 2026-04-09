@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { DynamicField } from "../DynamicField";
@@ -8,6 +8,8 @@ import { YesNoCheckbox } from "../ui/modal/modalComponent";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
 import Tooltip from "../Tooltip";
 import { ToolCase } from "lucide-react";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
+import { getAllTemplates } from "../../api/TaxTemplateApi";
 // ─── Compact shared primitives ────────────────────────────────────────────────
 
 /** Tiny label text with optional required asterisk */
@@ -156,47 +158,47 @@ const ToggleField: React.FC<{
   onChange,
   required,
 }) => {
-  const isOn =
-    value === onValue ||
-    value === true ||
-    value === "true" ||
-    value === "Taxable";
+    const isOn =
+      value === onValue ||
+      value === true ||
+      value === "true" ||
+      value === "Taxable";
 
-  return (
-    <div className="flex flex-col gap-0.5">
-      <FieldLabel label={label} required={required} />
-      {/* Pill toggle — same h-8 height as all other inputs */}
-      <div className="flex h-8 rounded-md border border-theme overflow-hidden w-fit">
-        <button
-          type="button"
-          onClick={() => !isOn && onChange(name, onValue)}
-          className={[
-            "px-3 text-sm font-semibold transition-colors select-none",
-            isOn
-              ? "bg-primary text-white"
-              : "bg-card text-muted hover:bg-primary/10 hover:text-primary",
-          ].join(" ")}
-        >
-          {onLabel ?? onValue}
-        </button>
-        <div className="w-px bg-theme shrink-0" />
-        <button
-          type="button"
-          onClick={() => isOn && onChange(name, offValue)}
-          className={[
-            "px-3 text-sm font-semibold transition-colors select-none",
-            !isOn
-              ? "bg-primary text-white"
-              : "bg-card text-muted hover:bg-primary/10 hover:text-primary",
-          ].join(" ")}
-        >
-          {offLabel ?? offValue}
-        </button>
+    return (
+      <div className="flex flex-col gap-0.5">
+        <FieldLabel label={label} required={required} />
+        {/* Pill toggle — same h-8 height as all other inputs */}
+        <div className="flex h-8 rounded-md border border-theme overflow-hidden w-fit">
+          <button
+            type="button"
+            onClick={() => !isOn && onChange(name, onValue)}
+            className={[
+              "px-3 text-sm font-semibold transition-colors select-none",
+              isOn
+                ? "bg-primary text-white"
+                : "bg-card text-muted hover:bg-primary/10 hover:text-primary",
+            ].join(" ")}
+          >
+            {onLabel ?? onValue}
+          </button>
+          <div className="w-px bg-theme shrink-0" />
+          <button
+            type="button"
+            onClick={() => isOn && onChange(name, offValue)}
+            className={[
+              "px-3 text-sm font-semibold transition-colors select-none",
+              !isOn
+                ? "bg-primary text-white"
+                : "bg-card text-muted hover:bg-primary/10 hover:text-primary",
+            ].join(" ")}
+          >
+            {offLabel ?? offValue}
+          </button>
+        </div>
+        <input type="hidden" name={name} value={isOn ? onValue : offValue} />
       </div>
-      <input type="hidden" name={name} value={isOn ? onValue : offValue} />
-    </div>
-  );
-};
+    );
+  };
 
 /** Simple checkbox with label */
 const CheckboxField: React.FC<{
@@ -333,6 +335,21 @@ const ItemModal: React.FC<{
     handleForm(syntheticEvent);
   };
 
+
+  const fetchTaxTemplateOptions = useCallback(async (search: string) => {
+    try {
+      const res = await getAllTemplates(1, 20, search || undefined);
+      const list: { name: string; title: string }[] = res?.data?.templates ?? [];
+      return list.map((t) => ({
+        label: t.title,
+        value: t.name,
+      }));
+    } catch {
+      return [];
+    }
+  }, []);
+
+
   return (
     <MinimizableModal
       modalId={resolvedModalId}
@@ -391,16 +408,16 @@ const ItemModal: React.FC<{
                     if (fieldConfig.fieldName === "itemClassCode") {
                       return (
                         <Tooltip key="itemClassCode" content={`HSN: ${form.itemClassCode || "N/A"}`}>
-                        <Input
-                          key="itemClassCode"
-                          label="HSN Code"
-                          name="itemClassCode"
-                          value={form.itemClassCode || ""}
-                          onChange={handleForm}
-                          required
-                          placeholder="e.g. 84713010"
-                          className="w-[140px]"
-                        />
+                          <Input
+                            key="itemClassCode"
+                            label="HSN Code"
+                            name="itemClassCode"
+                            value={form.itemClassCode || ""}
+                            onChange={handleForm}
+                            required
+                            placeholder="e.g. 84713010"
+                            className="w-[140px]"
+                          />
                         </Tooltip>
                       );
                     }
@@ -413,34 +430,34 @@ const ItemModal: React.FC<{
                           className="col-span-3 grid grid-cols-[120px_140px_160px_180px_80px_80px_90px] gap-3 items-end"
                         >
                           {/* Packing */}
-                          
+
                           <DynamicFieldWrapper className="w-[120px]">
                             <div className="flex flex-col gap-0.5">
                               <FieldLabel label="Packing Unit" />
                               <div className="flex items-center gap-1 h-8">
                                 <Tooltip content={`Unit: ${form.packingUnit || "N/A"}`}>
-                                <input
-                                  type="number"
-                                  name="packingUnit"
-                                  value={form.packingUnit || ""}
-                                  onChange={handleForm}
-                                  className="w-15 h-8 rounded-md border border-theme bg-card text-main  text-sm px-1
+                                  <input
+                                    type="number"
+                                    name="packingUnit"
+                                    value={form.packingUnit || ""}
+                                    onChange={handleForm}
+                                    className="w-15 h-8 rounded-md border border-theme bg-card text-main  text-sm px-1
                                 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner"
-                                />
+                                  />
                                 </Tooltip>
                                 <span className="text-muted text-sm font-bold">
                                   ×
                                 </span>
                                 <Tooltip content={`Size: ${form.packingSize || "N/A"}`}>
-                                <input
+                                  <input
 
-                                  type="number"
-                                  name="packingSize"
-                                  value={form.packingSize || ""}
-                                  onChange={handleForm}
-                                  className="w-15 h-8 rounded-md border border-theme bg-card text-main text-sm px-1
+                                    type="number"
+                                    name="packingSize"
+                                    value={form.packingSize || ""}
+                                    onChange={handleForm}
+                                    className="w-15 h-8 rounded-md border border-theme bg-card text-main text-sm px-1
                                   focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner"
-                                />
+                                  />
                                 </Tooltip>
                               </div>
                             </div>
@@ -449,29 +466,29 @@ const ItemModal: React.FC<{
                           {/* UOM */}
                           <DynamicFieldWrapper className="max-w-[130px]">
                             <Tooltip content={`UOM: ${form.unitOfMeasureCd || "N/A"}`}>
-                            <DynamicField
-                              config={fieldConfig}
-                              value={form[fieldConfig.fieldName]}
-                              onChange={handleDynamicFieldChange}
-                              filterValue={form.itemTypeCode}
-                            />
+                              <DynamicField
+                                config={fieldConfig}
+                                value={form[fieldConfig.fieldName]}
+                                onChange={handleDynamicFieldChange}
+                                filterValue={form.itemTypeCode}
+                              />
                             </Tooltip>
                           </DynamicFieldWrapper>
 
                           {/* SKU */}
                           <DynamicFieldWrapper className="w-[160px] shrink-0">
                             <Tooltip content={`SKU: ${form.sku || "N/A"}`}>
-                            <DynamicField
-                              config={{
-                                ...fieldConfigs.find(
-                                  (f) => f.fieldName === "sku",
-                                )!,
-                                required: false,
-                              }}
-                              value={form.sku}
-                              onChange={handleDynamicFieldChange}
-                              filterValue={form.itemTypeCode}
-                            />
+                              <DynamicField
+                                config={{
+                                  ...fieldConfigs.find(
+                                    (f) => f.fieldName === "sku",
+                                  )!,
+                                  required: false,
+                                }}
+                                value={form.sku}
+                                onChange={handleDynamicFieldChange}
+                                filterValue={form.itemTypeCode}
+                              />
                             </Tooltip>
                           </DynamicFieldWrapper>
 
@@ -479,15 +496,15 @@ const ItemModal: React.FC<{
                           <DynamicFieldWrapper className="w-[180px] shrink-0">
                             <Tooltip content={`Country of Origin: ${form.originNationCode || "N/A"}`}>
 
-                            <DynamicField
-                              config={
-                                fieldConfigs.find(
-                                  (f) => f.fieldName === "originNationCode",
-                                )!
-                              }
-                              value={form.originNationCode}
-                              onChange={handleDynamicFieldChange}
-                            />
+                              <DynamicField
+                                config={
+                                  fieldConfigs.find(
+                                    (f) => f.fieldName === "originNationCode",
+                                  )!
+                                }
+                                value={form.originNationCode}
+                                onChange={handleDynamicFieldChange}
+                              />
                             </Tooltip>
                           </DynamicFieldWrapper>
 
@@ -537,53 +554,53 @@ const ItemModal: React.FC<{
                     if (fieldConfig.fieldName === "dimensionWidth") return null;
                     if (fieldConfig.fieldName === "originNationCode")
                       return null;
-if (fieldConfig.fieldName === "description") {
-  return (
-    <DynamicFieldWrapper key="description">
-      <Tooltip content={`Description: ${form.description || "N/A"}`}>
-      <DynamicField
-        config={{
-          ...fieldConfig,
-          required: true
-        }}
-        value={form[fieldConfig.fieldName]}
-        onChange={handleDynamicFieldChange}
-        filterValue={form.itemTypeCode}
-      />
-      </Tooltip>
-    </DynamicFieldWrapper>
-  );
-}
+                    if (fieldConfig.fieldName === "description") {
+                      return (
+                        <DynamicFieldWrapper key="description">
+                          <Tooltip content={`Description: ${form.description || "N/A"}`}>
+                            <DynamicField
+                              config={{
+                                ...fieldConfig,
+                                required: true
+                              }}
+                              value={form[fieldConfig.fieldName]}
+                              onChange={handleDynamicFieldChange}
+                              filterValue={form.itemTypeCode}
+                            />
+                          </Tooltip>
+                        </DynamicFieldWrapper>
+                      );
+                    }
                     /* Item Group */
                     if (fieldConfig.fieldName === "itemGroup") {
                       return (
                         <Tooltip content={`Item Group: ${form.itemGroup || "N/A"}`}>
-                        <CompactSelect
-                          key="itemGroup"
-                          label="Item Category"
-                          name="itemGroup"
-                          value={form.itemGroup || ""}
-                          onChange={handleForm}
-                          disabled={loadingItemGroups || !form.itemTypeCode}
-                          required
-                        >
-                       
+                          <CompactSelect
+                            key="itemGroup"
+                            label="Item Category"
+                            name="itemGroup"
+                            value={form.itemGroup || ""}
+                            onChange={handleForm}
+                            disabled={loadingItemGroups || !form.itemTypeCode}
+                            required
+                          >
 
-                          {loadingItemGroups ? (
-                            <option>Searching…</option>
-                          ) : !form.itemTypeCode ? (
-                            <option value="">Select Item Type first</option>
-                          ) : (
-                            <>
-                              <option value="">Select Category</option>
-                              {itemGroups.map((group) => (
-                                <option key={group.id} value={group.groupName}>
-                                  {group.groupName}
-                                </option>
-                              ))}
-                            </>
-                          )}
-                        </CompactSelect>
+
+                            {loadingItemGroups ? (
+                              <option>Searching…</option>
+                            ) : !form.itemTypeCode ? (
+                              <option value="">Select Item Type first</option>
+                            ) : (
+                              <>
+                                <option value="">Select Category</option>
+                                {itemGroups.map((group) => (
+                                  <option key={group.id} value={group.groupName}>
+                                    {group.groupName}
+                                  </option>
+                                ))}
+                              </>
+                            )}
+                          </CompactSelect>
                         </Tooltip>
                       );
                     }
@@ -591,16 +608,16 @@ if (fieldConfig.fieldName === "description") {
                     /* Default */
                     return (
                       <Tooltip key={fieldConfig.fieldName} content={`Value: ${form[fieldConfig.fieldName] || "N/A"}`}>
-                      <DynamicFieldWrapper key={fieldConfig.fieldName}>
-                        <DynamicField
-                          config={fieldConfig}
-                          value={form[fieldConfig.fieldName]}
-                          onChange={handleDynamicFieldChange}
-                          filterValue={form.itemTypeCode}
-                        />
-                      </DynamicFieldWrapper>
+                        <DynamicFieldWrapper key={fieldConfig.fieldName}>
+                          <DynamicField
+                            config={fieldConfig}
+                            value={form[fieldConfig.fieldName]}
+                            onChange={handleDynamicFieldChange}
+                            filterValue={form.itemTypeCode}
+                          />
+                        </DynamicFieldWrapper>
                       </Tooltip>
-                      
+
                     );
                   })}
                 </div>
@@ -611,104 +628,121 @@ if (fieldConfig.fieldName === "description") {
                 <div className="flex flex-wrap gap-4 items-end">
                   <div className="max-w-[120px]">
                     <Tooltip content={`Selling Price: ${form.sellingPrice || "N/A"}`}>
-                    <Input
-                      label="Selling Price"
-                      name="sellingPrice"
-                      type="number"
-                      value={form.sellingPrice || ""}
-                      onChange={handleForm}
-                      className="no-spinner"
-                    />
+                      <Input
+                        label="Selling Price"
+                        name="sellingPrice"
+                        type="number"
+                        value={form.sellingPrice || ""}
+                        onChange={handleForm}
+                        className="no-spinner"
+                      />
                     </Tooltip>
                   </div>
 
                   <div className="max-w-[150px]">
                     <Tooltip content={`Sales Account: ${form.salesAccount || "N/A"}`}>
-                    <Input
-                      label="Sales Account"
-                      name="salesAccount"
-                      value={form.salesAccount || ""}
-                      onChange={handleForm}
-                      placeholder="e.g. 4000-Sales"
-                    />
+                      <Input
+                        label="Sales Account"
+                        name="salesAccount"
+                        value={form.salesAccount || ""}
+                        onChange={handleForm}
+                        placeholder="e.g. 4000-Sales"
+                      />
                     </Tooltip>
                   </div>
 
                   <div className="max-w-[120px]">
-                      <Tooltip content={`Buying Price: ${form.buyingPrice || "N/A"}`}>
-                    <Input
-                      label="Buying Price"
-                      name="buyingPrice"
-                      type="number"
-                      value={form.buyingPrice || ""}
-                      onChange={handleForm}
-                      placeholder="0.00"
-                      className="no-spinner"
-                    />
+                    <Tooltip content={`Buying Price: ${form.buyingPrice || "N/A"}`}>
+                      <Input
+                        label="Buying Price"
+                        name="buyingPrice"
+                        type="number"
+                        value={form.buyingPrice || ""}
+                        onChange={handleForm}
+                        placeholder="0.00"
+                        className="no-spinner"
+                      />
                     </Tooltip>
                   </div>
 
                   <div className="max-w-[150px]">
-                      <Tooltip content={`Purchase Account: ${form.purchaseAccount || "N/A"}`}>
-                    <Input
-                      label="Purchase Account"
-                      name="purchaseAccount"
-                      value={form.purchaseAccount || ""}
-                      onChange={handleForm}
-                      placeholder="e.g. 5000-COGS"
-                    />
+                    <Tooltip content={`Purchase Account: ${form.purchaseAccount || "N/A"}`}>
+                      <Input
+                        label="Purchase Account"
+                        name="purchaseAccount"
+                        value={form.purchaseAccount || ""}
+                        onChange={handleForm}
+                        placeholder="e.g. 5000-COGS"
+                      />
                     </Tooltip>
                   </div>
 
                   <div className="max-w-[210px]">
                     <Tooltip content={`Preferred Vendor: ${form.preferredVendor || "N/A"}`}>
-                    <CompactSelect
-                      label="Preferred Vendor"
-                      name="preferredVendor"
-                      value={form.preferredVendor || ""}
-                      onChange={handleForm}
-                      disabled={loadingSuppliers}
-                    >
-                      {loadingSuppliers ? (
-                        <option>Loading suppliers...</option>
-                      ) : (
-                        <>
-                          <option value="">Select Supplier</option>
-                          {suppliers.map((supplier) => (
-                            <option key={supplier.value} value={supplier.value}>
-                              {supplier.label}
-                            </option>
-                          ))}
-                        </>
-                      )}
-                    </CompactSelect>
+                      <CompactSelect
+                        label="Preferred Vendor"
+                        name="preferredVendor"
+                        value={form.preferredVendor || ""}
+                        onChange={handleForm}
+                        disabled={loadingSuppliers}
+                      >
+                        {loadingSuppliers ? (
+                          <option>Loading suppliers...</option>
+                        ) : (
+                          <>
+                            <option value="">Select Supplier</option>
+                            {suppliers.map((supplier) => (
+                              <option key={supplier.value} value={supplier.value}>
+                                {supplier.label}
+                              </option>
+                            ))}
+                          </>
+                        )}
+                      </CompactSelect>
                     </Tooltip>
-                    
+
                   </div>
                 </div>
               </>
             )}
 
+
             {/*  TAX DETAILS TAB  */}
             {activeTab === "taxDetails" && (
               <>
-                <div className="w-[130px]">
-                  <Tooltip content={`Tax Category: ${form.taxCategory || "N/A"}`}>
-                  <TaxCategorySelect
-                    value={form.taxCategory}
-                    onChange={(val) =>
-                      handleForm({
-                        target: { name: "taxCategory", value: val },
-                      } as React.ChangeEvent<HTMLSelectElement>)
-                    }
-                    required
-                  />
-                  </Tooltip>
-                  {form.taxCategory && (
-                    <p className="mt-1.5 text-sm text-muted">
-                      {taxConfigs[form.taxCategory]?.taxDescription}
-                    </p>
-                  )}
+                <div className="flex flex-wrap items-end gap-4 mb-1">
+                  <div className="w-[160px]">
+                    <Tooltip content={`Tax Category: ${form.taxCategory || "N/A"}`}>
+                      <TaxCategorySelect
+                        value={form.taxCategory}
+                        onChange={(val) =>
+                          handleForm({
+                            target: { name: "taxCategory", value: val },
+                          } as React.ChangeEvent<HTMLSelectElement>)
+                        }
+                        required
+                      />
+                    </Tooltip>
+                    {form.taxCategory && (
+                      <p className="mt-1.5 text-sm text-muted">
+                        {taxConfigs[form.taxCategory]?.taxDescription}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="w-[200px]">
+                    <SearchSelect2
+                      label="Tax Template"
+                      value={form.taxTemplate || ""}
+                      onChange={(val) =>
+                        handleForm({
+                          target: { name: "taxTemplate", value: val },
+                        } as React.ChangeEvent<HTMLSelectElement>)
+                      }
+                      fetchOptions={fetchTaxTemplateOptions}
+                      placeholder="Search template..."
+                    />
+                  </div>
                 </div>
 
                 <SectionHeading
@@ -718,47 +752,46 @@ if (fieldConfig.fieldName === "description") {
                       : "Tax Details"
                   }
                 />
-
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="max-w-[140px]">
                     <Tooltip content={`Tax Type: ${form.taxType || "N/A"}`}>
-                    <Input
-                      label="Tax Type"
-                      name="taxType"
-                      value={form.taxType || ""}
-                      onChange={handleForm}
-                      placeholder="e.g. VAT"
-                      disabled={autoPopulateTax}
-                    />
+                      <Input
+                        label="Tax Type"
+                        name="taxType"
+                        value={form.taxType || ""}
+                        onChange={handleForm}
+                        placeholder="e.g. VAT"
+                        disabled={autoPopulateTax}
+                      />
                     </Tooltip>
                   </div>
 
                   <div className="max-w-[140px]">
                     <Tooltip content={`Tax Code: ${form.taxCode || "N/A"}`}>
 
-                    <Input
-                      label="Tax Code"
-                      name="taxCode"
-                      value={form.taxCode || ""}
-                      onChange={handleForm}
-                      placeholder="V001"
-                      disabled={autoPopulateTax}
-                    />
+                      <Input
+                        label="Tax Code"
+                        name="taxCode"
+                        value={form.taxCode || ""}
+                        onChange={handleForm}
+                        placeholder="V001"
+                        disabled={autoPopulateTax}
+                      />
                     </Tooltip>
                   </div>
 
                   <div className="max-w-[140px]">
                     <Tooltip content={`Tax Name: ${form.taxName || "N/A"}`}>
-                    <Input
-                      label="Tax Name"
-                      name="taxName"
-                      value={form.taxName || ""}
-                      onChange={handleForm}
-                      placeholder="Standard VAT"
-                      readOnly={autoPopulateTax}
-                    />
+                      <Input
+                        label="Tax Name"
+                        name="taxName"
+                        value={form.taxName || ""}
+                        onChange={handleForm}
+                        placeholder="Standard VAT"
+                        readOnly={autoPopulateTax}
+                      />
                     </Tooltip>
-                    
+
                   </div>
                   <div className="w-[110px] flex flex-col gap-0.5">
                     <FieldLabel label="Tax (%)" />
@@ -783,15 +816,15 @@ if (fieldConfig.fieldName === "description") {
                     </div>
                   </div>
                   <div className="w-[210px]">
-                      <Tooltip content={`Tax Description: ${form.taxDescription || "N/A"}`}>
-                    <Input
-                      label="Description"
-                      name="taxDescription"
-                      value={form.taxDescription || ""}
-                      onChange={handleForm}
-                      placeholder="12% VAT on Non-Export"
-                      disabled={autoPopulateTax}
-                    />
+                    <Tooltip content={`Tax Description: ${form.taxDescription || "N/A"}`}>
+                      <Input
+                        label="Description"
+                        name="taxDescription"
+                        value={form.taxDescription || ""}
+                        onChange={handleForm}
+                        placeholder="12% VAT on Non-Export"
+                        disabled={autoPopulateTax}
+                      />
                     </Tooltip>
                   </div>
                 </div>
@@ -804,6 +837,7 @@ if (fieldConfig.fieldName === "description") {
                   <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
                     {[
                       { label: "Category", value: form.taxCategory },
+                      { label: "Template", value: form.taxTemplate },
                       { label: "Type", value: form.taxType },
                       { label: "Code", value: form.taxCode },
                       {
@@ -828,15 +862,15 @@ if (fieldConfig.fieldName === "description") {
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-4 items-end">
                   <Tooltip content={`Brand: ${form.brand || "N/A"}`}>
-                  <Input
-                    label="Brand"
-                    name="brand"
-                    value={form.brand || ""}
-                    onChange={handleForm}
-                    disabled={isServiceItem}
-                    placeholder="Brand name"
+                    <Input
+                      label="Brand"
+                      name="brand"
+                      value={form.brand || ""}
+                      onChange={handleForm}
+                      disabled={isServiceItem}
+                      placeholder="Brand name"
 
-                  />
+                    />
                   </Tooltip>
 
                   {/* Dimensions */}
@@ -908,16 +942,16 @@ if (fieldConfig.fieldName === "description") {
                     </div>
                   </div>
                   <Tooltip content={`Valuation Method: ${form.valuationMethod || "N/A"}`}>
-                  <CompactSelect
-                    label="Valuation Method"
-                    name="valuationMethod"
-                    value={form.valuationMethod || ""}
-                    onChange={handleForm}
-                  >
-                    <option value="">Select…</option>
-                    <option value="FIFO">FIFO</option>
-                    <option value="WAC">WAC</option>
-                  </CompactSelect>
+                    <CompactSelect
+                      label="Valuation Method"
+                      name="valuationMethod"
+                      value={form.valuationMethod || ""}
+                      onChange={handleForm}
+                    >
+                      <option value="">Select…</option>
+                      <option value="FIFO">FIFO</option>
+                      <option value="WAC">WAC</option>
+                    </CompactSelect>
                   </Tooltip>
                 </div>
 
@@ -970,34 +1004,34 @@ if (fieldConfig.fieldName === "description") {
 
                 {/* Stock Levels */}
                 <SectionHeading title="Stock Level Tracking" />
-                
+
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-w-lg">
                   <Tooltip content={`Min Stock Level: ${form.minStockLevel || "N/A"}`}>
-                  <Input
-                    label="Min Stock Level"
-                    name="minStockLevel"
-                    value={form.minStockLevel || ""}
-                    onChange={handleForm}
-                    placeholder="0"
-                  />
+                    <Input
+                      label="Min Stock Level"
+                      name="minStockLevel"
+                      value={form.minStockLevel || ""}
+                      onChange={handleForm}
+                      placeholder="0"
+                    />
                   </Tooltip>
-                   <Tooltip content={`Max Stock Level: ${form.maxStockLevel || "N/A"}`}>
-                  <Input
-                    label="Max Stock Level"
-                    name="maxStockLevel"
-                    value={form.maxStockLevel || ""}
-                    onChange={handleForm}
-                    placeholder="0"
-                  />
+                  <Tooltip content={`Max Stock Level: ${form.maxStockLevel || "N/A"}`}>
+                    <Input
+                      label="Max Stock Level"
+                      name="maxStockLevel"
+                      value={form.maxStockLevel || ""}
+                      onChange={handleForm}
+                      placeholder="0"
+                    />
                   </Tooltip>
                   <Tooltip content={`Re-order Level: ${form.reorderLevel || "N/A"}`}>
-                  <Input
-                    label="Re-order Level"
-                    name="reorderLevel"
-                    value={form.reorderLevel || ""}
-                    onChange={handleForm}
-                    placeholder="0"
-                  />
+                    <Input
+                      label="Re-order Level"
+                      name="reorderLevel"
+                      value={form.reorderLevel || ""}
+                      onChange={handleForm}
+                      placeholder="0"
+                    />
                   </Tooltip>
                 </div>
               </>
@@ -1022,7 +1056,7 @@ if (fieldConfig.fieldName === "description") {
           </Button>
           <Button variant="primary" type="submit" loading={loading}>
             {activeTab === "inventoryDetails" ||
-            (activeTab === "taxDetails" && isServiceItem)
+              (activeTab === "taxDetails" && isServiceItem)
               ? "Submit"
               : "Next →"}
           </Button>
