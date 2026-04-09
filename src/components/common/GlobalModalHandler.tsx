@@ -20,6 +20,7 @@ import PurchaseInvoiceModal from "../procurement/PurchaseInvoiceModal";
 import ItemModal from "../inventory/ItemModal";
 import ItemsCategoryModal from "../inventory/ItemsCategoryModal";
 import TaxTemplateModalComponent from "../inventory/TaxTemplateModal";
+import TaxCategoryModalComponent from "../inventory/TaxCategoryModal";
 
 const GlobalModalHandler: React.FC = () => {
   const { modals, closeModal, getModalContext } = useModalStore();
@@ -28,10 +29,17 @@ const GlobalModalHandler: React.FC = () => {
   useEffect(() => {
     if (pending) {
       const entityTypeMap: Record<string, string> = {
+        invoice: "invoice",
+        proforma: "proforma",
+        quotation: "quotation",
+        purchaseOrder: "purchaseOrder",
+        purchaseInvoice: "purchaseInvoice",
         customer: "customer",
         supplier: "supplier",
         item: "item",
         customerGroup: "itemCategory",
+        taxTemplate: "taxTemplate",
+        taxCategory: "taxCategory",
       };
 
       const modalType = entityTypeMap[pending.entityType];
@@ -41,10 +49,11 @@ const GlobalModalHandler: React.FC = () => {
           fieldId: pending.fieldId,
           callback: pending.callback,
           onSuccess: (data) => {
-            completeQuickAdd({ id: data.id || data.customerId, name: data.name });
+          completeQuickAdd({ id: data.id || data.customerId, name: data.name });
           },
         });
       }
+      
     }
   }, [pending, completeQuickAdd]);
 
@@ -191,6 +200,18 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={handleSubmit}
             initialData={modal.initialData}
             isEditMode={modal.isEdit}
+          />
+        );
+
+      case "taxCategory":
+        return (
+          <TaxCategoryModalComponent
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={modal.initialData}
           />
         );
 

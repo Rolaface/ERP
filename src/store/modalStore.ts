@@ -11,7 +11,8 @@ export type ModalType =
   | "purchaseInvoice"
   | "item"
   | "itemCategory"
-  | "taxTemplate";
+  | "taxTemplate"
+  |"taxCategory";
 
 export interface ModalContext {
   source?: string;
@@ -412,3 +413,12 @@ export const openTaxTemplateModal = (
   useModalStore
     .getState()
     .openModal("taxTemplate", initialData, isEdit, context, meta);
+    export const openTaxCategoryModal = (
+      initialData?: any,
+      isEdit = false,
+      context?: ModalContext,
+      meta?: ModalMeta
+    ) =>
+      useModalStore
+        .getState()
+        .openModal("taxCategory", initialData, isEdit, context, meta);

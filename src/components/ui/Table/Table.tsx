@@ -41,12 +41,18 @@ interface TableProps<T> {
   onPageSizeChange?: (size: number) => void;
 }
 
-const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({ columnsCount, rowIdx }) => {
+const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({
+  columnsCount,
+  rowIdx,
+}) => {
   const widths = ["w-3/4", "w-1/2", "w-5/6", "w-2/3", "w-4/5"];
   return (
     <tr>
       {Array.from({ length: columnsCount }).map((_, idx) => (
-        <td key={idx} className="border-b border-[var(--border)]/20 px-3 py-[9px] sm:px-4">
+        <td
+          key={idx}
+          className="border-b border-[var(--border)]/20 px-3 py-[9px] sm:px-4"
+        >
           <div
             className={`h-3 rounded-full relative overflow-hidden ${widths[(rowIdx + idx) % widths.length]}`}
             style={{ backgroundColor: "rgba(0,0,0,0.07)" }}
@@ -54,7 +60,8 @@ const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({ colum
             <div
               className="absolute inset-0"
               style={{
-                background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)",
+                background:
+                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)",
                 animation: "shimmer 1.5s ease-in-out infinite",
                 animationDelay: `${rowIdx * 60}ms`,
               }}
@@ -65,7 +72,6 @@ const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({ colum
     </tr>
   );
 };
-
 
 const ExpandedPanel: React.FC<{ children: React.ReactNode; open: boolean }> = ({
   children,
@@ -172,7 +178,9 @@ function Table<T extends Record<string, any>>({
           </div>
 
           {extraFilters && (
-            <div className="flex shrink-0 items-center gap-4">{extraFilters}</div>
+            <div className="flex shrink-0 items-center gap-4">
+              {extraFilters}
+            </div>
           )}
 
           <div className="flex shrink-0 items-center gap-3">
@@ -210,12 +218,16 @@ function Table<T extends Record<string, any>>({
           <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               {visibleColumns.map((column) => (
-                <col 
-                  key={column.key} 
-                  style={{ 
-                    width: column.width || (column.maxWidth ? column.maxWidth : 'auto'),
-                    minWidth: column.minWidth || (column.maxWidth ? column.maxWidth : '100px')
-                  }} 
+                <col
+                  key={column.key}
+                  style={{
+                    width:
+                      column.width ||
+                      (column.maxWidth ? column.maxWidth : "auto"),
+                    minWidth:
+                      column.minWidth ||
+                      (column.maxWidth ? column.maxWidth : "100px"),
+                  }}
                 />
               ))}
             </colgroup>
@@ -228,24 +240,36 @@ function Table<T extends Record<string, any>>({
                   const isDesc = isActive && sortOrderProp === "desc";
 
                   return (
-                   <th
-  key={column.key}
-  onClick={isSortable ? () => handleColumnSort(column.key) : undefined}
-  className={[
-    "bg-[var(--border)]/10 px-3 py-2.5 text-xs font-bold text-muted uppercase tracking-wide whitespace-nowrap sm:px-4",
-    getAlignment(column.align),
-    isSortable ? "cursor-pointer select-none transition-colors hover:text-primary" : "",
-    isActive ? "text-primary" : "",
-  ].join(" ")}
->
+                    <th
+                      key={column.key}
+                      onClick={
+                        isSortable
+                          ? () => handleColumnSort(column.key)
+                          : undefined
+                      }
+                      className={[
+                        "bg-[var(--border)]/10 px-3 py-2.5 text-xs font-bold text-muted uppercase tracking-wide whitespace-nowrap sm:px-4",
+                        getAlignment(column.align),
+                        isSortable
+                          ? "cursor-pointer select-none transition-colors hover:text-primary"
+                          : "",
+                        isActive ? "text-primary" : "",
+                      ].join(" ")}
+                    >
                       <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
                         {column.header}
                         {isSortable && (
                           <span className="inline-flex opacity-60">
                             {isAsc ? (
-                              <FaSortUp size={10} className="text-primary opacity-100" />
+                              <FaSortUp
+                                size={10}
+                                className="text-primary opacity-100"
+                              />
                             ) : isDesc ? (
-                              <FaSortDown size={10} className="text-primary opacity-100" />
+                              <FaSortDown
+                                size={10}
+                                className="text-primary opacity-100"
+                              />
                             ) : (
                               <FaSort size={10} />
                             )}
@@ -264,19 +288,27 @@ function Table<T extends Record<string, any>>({
           <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               {visibleColumns.map((column) => (
-                <col 
-                  key={column.key} 
-                  style={{ 
-                    width: column.width || (column.maxWidth ? column.maxWidth : 'auto'),
-                    minWidth: column.minWidth || (column.maxWidth ? column.maxWidth : '100px')
-                  }} 
+                <col
+                  key={column.key}
+                  style={{
+                    width:
+                      column.width ||
+                      (column.maxWidth ? column.maxWidth : "auto"),
+                    minWidth:
+                      column.minWidth ||
+                      (column.maxWidth ? column.maxWidth : "100px"),
+                  }}
                 />
               ))}
             </colgroup>
             <tbody className="relative z-10">
               {loading ? (
                 Array.from({ length: pageSize }).map((_, idx) => (
-                  <SkeletonRow key={idx} columnsCount={visibleColumns.length} rowIdx={idx} />
+                  <SkeletonRow
+                    key={idx}
+                    columnsCount={visibleColumns.length}
+                    rowIdx={idx}
+                  />
                 ))
               ) : data.length === 0 ? (
                 <tr>
@@ -294,7 +326,9 @@ function Table<T extends Record<string, any>>({
                   const isExpanded = !!expandedContent;
 
                   return (
-                    <React.Fragment key={rowKey ? rowKey(item) : JSON.stringify(item)}>
+                    <React.Fragment
+                      key={rowKey ? rowKey(item) : JSON.stringify(item)}
+                    >
                       <tr
                         onClick={() => onRowClick?.(item)}
                         className={[
@@ -312,9 +346,11 @@ function Table<T extends Record<string, any>>({
                               ? "-"
                               : String(rawValue);
 
-                          const needsTruncation = column.truncate === true || column.maxWidth !== undefined;
-                          const cellStyle = column.maxWidth 
-                            ? { maxWidth: column.maxWidth } 
+                          const needsTruncation =
+                            column.truncate === true ||
+                            column.maxWidth !== undefined;
+                          const cellStyle = column.maxWidth
+                            ? { maxWidth: column.maxWidth }
                             : {};
 
                           const getCellContent = () => {
@@ -329,20 +365,27 @@ function Table<T extends Record<string, any>>({
                           };
 
                           const cellContent = (
-                            <div 
-                              style={needsTruncation ? { maxWidth: column.maxWidth || '200px' } : undefined}
-                              className={needsTruncation 
-                                ? "min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap" 
-                                : "min-w-0"
+                            <div
+                              style={
+                                needsTruncation
+                                  ? { maxWidth: column.maxWidth || "200px" }
+                                  : undefined
+                              }
+                              className={
+                                needsTruncation
+                                  ? "min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap"
+                                  : "min-w-0"
                               }
                             >
                               {getCellContent()}
                             </div>
                           );
 
-                          const tooltipText = column.tooltip 
-                            ? column.tooltip(item) 
-                            : (needsTruncation ? fallbackText : undefined);
+                          const tooltipText = column.tooltip
+                            ? column.tooltip(item)
+                            : needsTruncation
+                              ? fallbackText
+                              : undefined;
 
                           if (tooltipText) {
                             return (
@@ -395,7 +438,9 @@ function Table<T extends Record<string, any>>({
       </div>
 
       <div className="flex shrink-0 flex-col items-center justify-between gap-2 border-t border-[var(--border)] bg-card px-3 py-1.5 text-xs sm:flex-row sm:px-4">
-        <div className="text-xs font-medium text-muted">Total: {totalItems}</div>
+        <div className="text-xs font-medium text-muted">
+          Total: {totalItems}
+        </div>
 
         {onPageSizeChange && (
           <div className="flex items-center gap-2">
@@ -419,7 +464,7 @@ function Table<T extends Record<string, any>>({
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
-          onPageChange={onPageChange ?? (() => { })}
+          onPageChange={onPageChange ?? (() => {})}
         />
       </div>
     </div>
