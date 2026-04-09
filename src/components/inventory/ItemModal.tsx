@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { DynamicField } from "../DynamicField";
@@ -7,7 +7,7 @@ import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { YesNoCheckbox } from "../ui/modal/modalComponent";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
 import Tooltip from "../Tooltip";
-import { ToolCase } from "lucide-react";
+import { ToolCase, Copy, Trash2 } from "lucide-react";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { getAllTemplates } from "../../api/TaxTemplateApi";
 // ─── Compact shared primitives ────────────────────────────────────────────────
@@ -320,7 +320,75 @@ const ItemModal: React.FC<{
     loadingSuppliers,
   } = useItemForm({ isOpen, isEditMode, initialData, onSubmit, onClose });
 
+  // ── Tax rows state ────────────────────────────────────────────────────────
+  const TAX_ITEMS_PER_PAGE = 5;
+  const [taxRows, setTaxRows] = useState<{ taxCategory: string; taxTemplate: string }[]>([
+    { taxCategory: "", taxTemplate: "" },
+  ]);
+  const [taxPage, setTaxPage] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (isEditMode && Array.isArray(initialData?.taxes) && initialData.taxes.length > 0) {
+      setTaxRows(initialData.taxes);
+    } else {
+      setTaxRows([{ taxCategory: "", taxTemplate: "" }]);
+    }
+    setTaxPage(0);
+  }, [isOpen, isEditMode, initialData]);
+
+  const fetchTaxTemplateOptions = useCallback(async (search: string) => {
+    try {
+      const res = await getAllTemplates(1, 20, search || undefined);
+      const list: { name: string; title: string }[] = res?.data?.templates ?? [];
+      return list.map((t) => ({ label: t.title, value: t.name }));
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleTaxRowChange = (
+    absoluteIndex: number,
+    field: "taxCategory" | "taxTemplate",
+    value: string
+  ) => {
+    setTaxRows((prev) =>
+      prev.map((row, i) => (i === absoluteIndex ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const addTaxRow = () => {
+    setTaxRows((prev) => [...prev, { taxCategory: "", taxTemplate: "" }]);
+    setTaxPage(Math.floor(taxRows.length / TAX_ITEMS_PER_PAGE));
+  };
+
+  const removeTaxRow = (absoluteIndex: number) => {
+    if (taxRows.length === 1) return;
+    setTaxRows((prev) => prev.filter((_, i) => i !== absoluteIndex));
+    const newTotal = taxRows.length - 1;
+    const maxPage = Math.max(0, Math.ceil(newTotal / TAX_ITEMS_PER_PAGE) - 1);
+    setTaxPage((p) => Math.min(p, maxPage));
+  };
+
+  const duplicateTaxRow = (absoluteIndex: number) => {
+    const row = taxRows[absoluteIndex];
+    if (!row) return;
+    setTaxRows((prev) => [
+      ...prev.slice(0, absoluteIndex + 1),
+      { ...row },
+      ...prev.slice(absoluteIndex + 1),
+    ]);
+    setTaxPage(Math.floor((absoluteIndex + 1) / TAX_ITEMS_PER_PAGE));
+  };
+
+  const paginatedTaxRows = taxRows.slice(
+    taxPage * TAX_ITEMS_PER_PAGE,
+    (taxPage + 1) * TAX_ITEMS_PER_PAGE
+  );
+
   if (!isOpen) return null;
+
+  /** Wrapper that bridges ToggleField → handleDynamicFieldChange */
 
   /** Wrapper that bridges ToggleField → handleDynamicFieldChange */
   const handleToggleChange = (name: string, value: string) => {
@@ -336,18 +404,7 @@ const ItemModal: React.FC<{
   };
 
 
-  const fetchTaxTemplateOptions = useCallback(async (search: string) => {
-    try {
-      const res = await getAllTemplates(1, 20, search || undefined);
-      const list: { name: string; title: string }[] = res?.data?.templates ?? [];
-      return list.map((t) => ({
-        label: t.title,
-        value: t.name,
-      }));
-    } catch {
-      return [];
-    }
-  }, []);
+
 
 
   return (
@@ -366,6 +423,7 @@ const ItemModal: React.FC<{
         onSubmit={(e) => {
           const wrappedSubmit = async () => {
             resetDirty();
+            setForm((prev) => ({ ...prev, taxes: taxRows }));
             await handleSubmit(e);
           };
           wrappedSubmit();
@@ -708,154 +766,116 @@ const ItemModal: React.FC<{
 
 
             {/*  TAX DETAILS TAB  */}
+
             {activeTab === "taxDetails" && (
-              <>
-                <div className="flex flex-wrap items-end gap-4 mb-1">
-                  <div className="w-[160px]">
-                    <Tooltip content={`Tax Category: ${form.taxCategory || "N/A"}`}>
-                      <TaxCategorySelect
-                        value={form.taxCategory}
-                        onChange={(val) =>
-                          handleForm({
-                            target: { name: "taxCategory", value: val },
-                          } as React.ChangeEvent<HTMLSelectElement>)
-                        }
-                        required
-                      />
-                    </Tooltip>
-                    {form.taxCategory && (
-                      <p className="mt-1.5 text-sm text-muted">
-                        {taxConfigs[form.taxCategory]?.taxDescription}
-                      </p>
-                    )}
-                  </div>
+              <div className="bg-card rounded-lg p-2 shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-[10px] leading-tight">
+                    <thead>
+                      <tr className="border-b border-theme">
+                        <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[30px]">#</th>
+                        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax Category</th>
+                        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax Template</th>
+                        <th className="w-[60px]" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedTaxRows.map((row, idx) => {
+                        const absoluteIndex = taxPage * TAX_ITEMS_PER_PAGE + idx;
+                        return (
+                          <tr key={absoluteIndex} className="border-b border-theme bg-card row-hover">
+                            <td className="px-2 py-1 text-center text-[10px]">{absoluteIndex + 1}</td>
 
-                  <div className="w-[200px]">
-                    <SearchSelect2
-                      label="Tax Template"
-                      value={form.taxTemplate || ""}
-                      onChange={(val) =>
-                        handleForm({
-                          target: { name: "taxTemplate", value: val },
-                        } as React.ChangeEvent<HTMLSelectElement>)
-                      }
-                      fetchOptions={fetchTaxTemplateOptions}
-                      placeholder="Search template..."
-                    />
-                  </div>
+                            {/* Tax Category */}
+                            <td className="px-0.5 py-1 min-w-[220px]">
+                              <TaxCategorySelect
+                                value={row.taxCategory}
+                                onChange={(val) => handleTaxRowChange(absoluteIndex, "taxCategory", val)}
+                              />
+                            </td>
+
+                            {/* Tax Template */}
+                            <td className="px-0.5 py-1 min-w-[220px]">
+                              <SearchSelect2
+                                label=""
+                                value={row.taxTemplate}
+                                onChange={(val) => handleTaxRowChange(absoluteIndex, "taxTemplate", val)}
+                                fetchOptions={fetchTaxTemplateOptions}
+                                placeholder="Search tax template..."
+                              />
+                            </td>
+
+                            {/* Row actions */}
+                            <td className="px-0.5 py-1">
+                              <div className="flex items-center gap-1">
+                                <Tooltip content="Duplicate row">
+                                  <button
+                                    type="button"
+                                    onClick={() => duplicateTaxRow(absoluteIndex)}
+                                    className="p-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition"
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </button>
+                                </Tooltip>
+                                <Tooltip content="Remove row">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeTaxRow(absoluteIndex)}
+                                    disabled={taxRows.length === 1}
+                                    className="p-0.5 rounded bg-danger/10 text-danger hover:bg-danger/20 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </Tooltip>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
 
-                <SectionHeading
-                  title={
-                    form.taxCategory
-                      ? `${form.taxCategory} Tax Details`
-                      : "Tax Details"
-                  }
-                />
-                <div className="flex flex-wrap items-end gap-3">
-                  <div className="max-w-[140px]">
-                    <Tooltip content={`Tax Type: ${form.taxType || "N/A"}`}>
-                      <Input
-                        label="Tax Type"
-                        name="taxType"
-                        value={form.taxType || ""}
-                        onChange={handleForm}
-                        placeholder="e.g. VAT"
-                        disabled={autoPopulateTax}
-                      />
-                    </Tooltip>
-                  </div>
+                {/* Footer: Add Row + Pagination */}
+                <div className="flex justify-between items-center mt-3">
+                  <button
+                    type="button"
+                    onClick={addTaxRow}
+                    className="px-4 py-1.5 bg-primary hover:bg-[var(--primary-600)] text-white rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
+                  >
+                    <span className="text-base leading-none">+</span> Add Row
+                  </button>
 
-                  <div className="max-w-[140px]">
-                    <Tooltip content={`Tax Code: ${form.taxCode || "N/A"}`}>
-
-                      <Input
-                        label="Tax Code"
-                        name="taxCode"
-                        value={form.taxCode || ""}
-                        onChange={handleForm}
-                        placeholder="V001"
-                        disabled={autoPopulateTax}
-                      />
-                    </Tooltip>
-                  </div>
-
-                  <div className="max-w-[140px]">
-                    <Tooltip content={`Tax Name: ${form.taxName || "N/A"}`}>
-                      <Input
-                        label="Tax Name"
-                        name="taxName"
-                        value={form.taxName || ""}
-                        onChange={handleForm}
-                        placeholder="Standard VAT"
-                        readOnly={autoPopulateTax}
-                      />
-                    </Tooltip>
-
-                  </div>
-                  <div className="w-[110px] flex flex-col gap-0.5">
-                    <FieldLabel label="Tax (%)" />
-                    <div className="relative">
-                      <input
-                        type="number"
-                        name="taxPerct"
-                        value={form.taxPerct || ""}
-                        onChange={handleForm}
-                        className={[
-                          "h-8 w-full rounded-md border border-theme text-sm px-2.5 pr-7",
-                          "focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary no-spinner",
-                          autoPopulateTax
-                            ? "bg-app text-muted cursor-not-allowed opacity-60"
-                            : "bg-card text-main",
-                        ].join(" ")}
-                        disabled={autoPopulateTax}
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted font-semibold">
-                        %
+                  {taxRows.length > TAX_ITEMS_PER_PAGE && (
+                    <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
+                      <span className="text-[11px] text-muted whitespace-nowrap">
+                        Showing {taxPage * TAX_ITEMS_PER_PAGE + 1} to{" "}
+                        {Math.min((taxPage + 1) * TAX_ITEMS_PER_PAGE, taxRows.length)} of {taxRows.length}
                       </span>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setTaxPage((p) => Math.max(0, p - 1))}
+                          disabled={taxPage === 0}
+                          className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px] disabled:opacity-40"
+                        >
+                          Previous
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTaxPage((p) => p + 1)}
+                          disabled={(taxPage + 1) * TAX_ITEMS_PER_PAGE >= taxRows.length}
+                          className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px] disabled:opacity-40"
+                        >
+                          Next
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="w-[210px]">
-                    <Tooltip content={`Tax Description: ${form.taxDescription || "N/A"}`}>
-                      <Input
-                        label="Description"
-                        name="taxDescription"
-                        value={form.taxDescription || ""}
-                        onChange={handleForm}
-                        placeholder="12% VAT on Non-Export"
-                        disabled={autoPopulateTax}
-                      />
-                    </Tooltip>
-                  </div>
+                  )}
                 </div>
-
-                {/* Summary card */}
-                <div className="mt-4 bg-card border border-theme rounded-lg p-3 w-fit min-w-[420px]">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">
-                    Current Configuration
-                  </p>
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
-                    {[
-                      { label: "Category", value: form.taxCategory },
-                      { label: "Template", value: form.taxTemplate },
-                      { label: "Type", value: form.taxType },
-                      { label: "Code", value: form.taxCode },
-                      {
-                        label: "Rate",
-                        value: form.taxPerct ? `${form.taxPerct}%` : null,
-                      },
-                    ].map(({ label, value }) => (
-                      <span key={label}>
-                        <span className="font-semibold text-main">
-                          {label}:
-                        </span>{" "}
-                        <span>{value || "—"}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </>
+              </div>
             )}
+
 
             {/*  INVENTORY DETAILS TAB  */}
             {activeTab === "inventoryDetails" && (

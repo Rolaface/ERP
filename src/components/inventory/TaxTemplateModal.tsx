@@ -10,7 +10,7 @@ import type { TaxCategoryFormData } from "../../types/tax/taxTemplate";
 import { defaultForm, defaultTaxRow } from "../../types/tax/taxTemplate";
 import { getGlAccounts } from "../../api/TaxTemplateApi";
 
-const ROWS_PER_PAGE = 5;
+const ROWS_PER_PAGE = 4;
 
 interface TaxTemplateModalProps {
   modalId: string;
@@ -185,7 +185,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
       icon={Tag}
       footer={footer}
       customWidth="46vw"
-      height="60vh"
+      height="66vh"
     >
       <form
         onSubmit={(e) => e.preventDefault()}
@@ -264,10 +264,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                           name="tax_rate"
                           value={row.tax_rate}
                           onChange={(e) => handleRowChange(actualIdx, e)}
-                          className="w-full px-2 py-1 border border-[var(--border)] rounded text-sm"
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
+                          className="w-full px-2 py-1 border border-[var(--border)] rounded text-sm no-spinner"
                         />
                         {errors[`tax_rate_${actualIdx}`] && (
                           <p className="text-xs text-danger mt-1">{errors[`tax_rate_${actualIdx}`]}</p>

@@ -53,6 +53,15 @@ const TaxTemplate: React.FC<Props> = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (name: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
+  };
 
   const { createTaxTemplate, updateTaxTemplate, updateStatus } =
     useTaxTemplate();
@@ -203,25 +212,29 @@ const TaxTemplate: React.FC<Props> = () => {
         </Tooltip>
       ),
     },
-    {
+{
       key: "taxes",
       header: "Tax Rates",
       align: "left",
       render: (tc) => {
-        const summary =
-          tc.taxes.length === 0
-            ? "None"
-            : tc.taxes
-                .map(
-                  (r) => `${r.tax_type} (${Number(r.tax_rate).toFixed(2)}%)`
-                )
-                .join(", ");
+        const isExpanded = expandedRows.has(tc.name);
+        if (tc.taxes.length === 0) {
+          return <span className="text-xs text-muted">None</span>;
+        }
         return (
-          <Tooltip content={summary}>
-            <span className="text-xs text-muted truncate max-w-[200px] block">
-              {summary}
-            </span>
-          </Tooltip>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); toggleExpand(tc.name); }}
+            className="flex items-center gap-1.5 text-xs text-primary hover:underline focus:outline-none"
+          >
+            <span>{tc.taxes.length} tax {tc.taxes.length === 1 ? "row" : "rows"}</span>
+            <svg
+              className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+            >
+              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         );
       },
     },
@@ -273,11 +286,47 @@ const TaxTemplate: React.FC<Props> = () => {
 
   return (
     <>
-      <Table
+     <Table
         columns={columns}
         data={templates}
         showToolbar
         loading={loading || initialLoad}
+        rowKey={(row) => row.name}
+        expandedRowRender={(tc) => {
+          if (!expandedRows.has(tc.name) || tc.taxes.length === 0) return null;
+          return (
+            <div className="px-4 py-3 bg-app border-t border-[var(--border)]/30">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-[var(--border)]/40">
+                    <th className="text-left py-1.5 px-2 font-semibold text-muted uppercase tracking-wide text-[10px] w-[50%]">
+                      Tax Type
+                    </th>
+                    <th className="text-left py-1.5 px-2 font-semibold text-muted uppercase tracking-wide text-[10px]">
+                      Rate
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tc.taxes.map((row, i) => (
+                    <tr
+                      key={i}
+                      className={`border-b border-[var(--border)]/20 ${i % 2 === 0 ? "" : "bg-row-hover/10"}`}
+                    >
+                      <td className="py-1.5 px-2 text-main font-medium">{row.tax_type}</td>
+                      <td className="py-1.5 px-2 text-main">
+                        <span className="inline-flex items-center gap-1">
+                          {Number(row.tax_rate).toFixed(2)}
+                          <span className="text-muted">%</span>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
