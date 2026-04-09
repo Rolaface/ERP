@@ -36,10 +36,6 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
     const fetchCountries = useRolaLookups ? getRolaCountries : getCountries;
     const fetchUoms = useRolaLookups ? getRolaUOMs : getUOMs;
 
-    const categoryPlaceholder = form.itemTypeCode
-      ? "Select Category"
-      : "Select Item Type first";
-
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-5">
@@ -64,18 +60,17 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
               name="itemGroup"
               value={form.itemGroup}
               onChange={onFormChange}
-              disabled={!form.itemTypeCode || loadingItemGroups}
+              disabled={loadingItemGroups}
               required
             >
               <option value="">
-                {loadingItemGroups ? "Loading..." : categoryPlaceholder}
+                {loadingItemGroups ? "Loading..." : "Select Category"}
               </option>
-              {form.itemTypeCode &&
-                itemGroups.map((group) => (
-                  <option key={group.id} value={group.groupName}>
-                    {group.groupName}
-                  </option>
-                ))}
+              {itemGroups.map((group) => (
+                <option key={group.id} value={group.groupName}>
+                  {group.groupName}
+                </option>
+              ))}
             </SelectInput>
           </Tooltip>
 

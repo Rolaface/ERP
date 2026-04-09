@@ -3,11 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import { createItem, updateItemByItemCode } from "../api/itemApi";
 import { getItemGroupTree } from "../api/itemGroupApi";
 import { getSuppliers } from "../api/procurement/supplierApi";
-import { useCompanySelection } from "../hooks/useCompanySelection";
-import {
-  getTaxConfigs,
-  isTaxAutoPopulated,
-} from "../taxconfig/taxConfigResolver";
 import {
   closeSwal,
   showApiError,
@@ -18,23 +13,11 @@ import type {
   ItemFormData,
   ItemGroupOption,
   ItemModalTab,
+  ItemTaxRow,
   SupplierOption,
 } from "../components/inventory/itemModalTypes";
 
 interface ItemNestedInitialData extends Partial<ItemFormData> {
-  taxInfo?: Partial<
-    Pick<
-      ItemFormData,
-      | "taxCategory"
-      | "taxPreference"
-      | "taxType"
-      | "taxCode"
-      | "taxName"
-      | "taxDescription"
-      | "taxPerct"
-      | "countryCode"
-    >
-  >;
   vendorInfo?: Partial<
     Pick<ItemFormData, "preferredVendor" | "salesAccount" | "purchaseAccount">
   >;
@@ -122,12 +105,6 @@ export const emptyForm: ItemFormData = {
   preferredVendor: "",
   salesAccount: "",
   purchaseAccount: "",
-  taxCategory: "",
-  taxType: "",
-  taxCode: "",
-  taxName: "",
-  taxDescription: "",
-  taxPerct: "",
   countryCode: "",
   dimensionUnit: "",
   weight: "",
@@ -152,7 +129,7 @@ export const emptyForm: ItemFormData = {
   has_expiry_date: false,
 };
 
-const buildPayload = (form: ItemFormData) => ({
+const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   id: form.id,
   itemName: form.itemName,
   itemGroup: form.itemGroup,
@@ -180,16 +157,17 @@ const buildPayload = (form: ItemFormData) => ({
     salesAccount: form.salesAccount,
     purchaseAccount: form.purchaseAccount,
   },
-  taxInfo: {
-    taxCategory: form.taxCategory,
-    taxPreference: form.taxPreference,
-    taxType: form.taxType,
-    taxCode: form.taxCode,
-    taxName: form.taxName,
-    taxDescription: form.taxDescription,
-    taxPerct: form.taxPerct,
-    countryCode: form.countryCode || form.originNationCode || "",
-  },
+  taxInfo: [
+    ...taxRows.map((row) => ({
+      taxCategory: row.taxCategory,
+      taxPreference: "",
+      taxType: "",
+      taxCode: "",
+      taxName: row.taxTemplate,
+      taxPerct: "",
+      countryCode: form.countryCode || form.originNationCode || "",
+    })),
+  ],
   inventoryInfo: {
     valuationMethod: form.valuationMethod,
     trackingMethod: form.trackingMethod,
@@ -205,7 +183,7 @@ const buildPayload = (form: ItemFormData) => ({
       expiryDate: form.has_expiry_date ? form.expiryDate : "",
       manufacturingDate: form.has_expiry_date ? form.manufacturingDate : "",
       shelfLifeInDays: Number(form.shelfLifeInDays) || 52,
-      endOfLife: form.endOfLife || "",
+      endOfLife: form.endOfLife 
     },
   }),
 });
@@ -231,9 +209,6 @@ export const useItemForm = ({
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
-  const { companyCode } = useCompanySelection();
-  const taxConfigs = getTaxConfigs(companyCode);
-  const autoPopulateTax = isTaxAutoPopulated(companyCode);
   const isServiceItem = Number(form.itemTypeCode) === 3;
 
   const fetchItemGroups = useCallback(async () => {
@@ -287,20 +262,6 @@ export const useItemForm = ({
       setForm({
         ...emptyForm,
         ...initialData,
-        taxCategory:
-          initialData.taxInfo?.taxCategory ?? initialData.taxCategory ?? "",
-        taxPreference:
-          initialData.taxInfo?.taxPreference ?? initialData.taxPreference ?? "",
-        taxType: initialData.taxInfo?.taxType ?? initialData.taxType ?? "",
-        taxCode: initialData.taxInfo?.taxCode ?? initialData.taxCode ?? "",
-        taxName: initialData.taxInfo?.taxName ?? initialData.taxName ?? "",
-        taxDescription:
-          initialData.taxInfo?.taxDescription ??
-          initialData.taxDescription ??
-          "",
-        taxPerct: initialData.taxInfo?.taxPerct ?? initialData.taxPerct ?? "",
-        countryCode:
-          initialData.taxInfo?.countryCode ?? initialData.countryCode ?? "",
         packingUnit: initialData.packingUnit ?? "",
         packingSize: initialData.packingSize ?? "",
         preferredVendor:
@@ -397,10 +358,22 @@ export const useItemForm = ({
     return true;
   };
 
-  const validateTaxDetails = (): boolean => {
-    if (!form.taxCategory?.trim()) {
-      showValidationError("Please select a Tax Category.");
+  const validateTaxDetails = (taxRows: ItemTaxRow[]): boolean => {
+    if (taxRows.length === 0) {
+      showValidationError("At least one tax row is required.");
       return false;
+    }
+
+    for (const [index, row] of taxRows.entries()) {
+      if (!row.taxCategory.trim()) {
+        showValidationError(`Tax Category is required in row ${index + 1}.`);
+        return false;
+      }
+
+      if (!row.taxTemplate.trim()) {
+        showValidationError(`Tax Template is required in row ${index + 1}.`);
+        return false;
+      }
     }
 
     return true;
@@ -412,50 +385,6 @@ export const useItemForm = ({
     >,
   ) => {
     const { name, value } = event.target;
-
-    if (name === "itemTypeCode") {
-      setForm((previous) => ({
-        ...previous,
-        itemTypeCode: value,
-        itemGroup: "",
-      }));
-      if (value) {
-        void fetchItemGroups();
-      }
-      return;
-    }
-
-    if (name === "taxCategory") {
-      if (!autoPopulateTax) {
-        setForm((previous) => ({ ...previous, taxCategory: value }));
-        return;
-      }
-
-      const taxConfig = taxConfigs[value];
-      if (!taxConfig) {
-        setForm((previous) => ({
-          ...previous,
-          taxCategory: "",
-          taxType: "",
-          taxPerct: "",
-          taxCode: "",
-          taxDescription: "",
-          taxName: "",
-        }));
-        return;
-      }
-
-      setForm((previous) => ({
-        ...previous,
-        taxCategory: value,
-        taxType: taxConfig.taxType,
-        taxPerct: taxConfig.taxPerct,
-        taxCode: taxConfig.taxCode,
-        taxDescription: taxConfig.taxDescription,
-        taxName: value,
-      }));
-      return;
-    }
 
     setForm((previous) => ({ ...previous, [name]: value }));
   };
@@ -469,7 +398,10 @@ export const useItemForm = ({
     onClose();
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (
+    event: React.FormEvent,
+    taxRows: ItemTaxRow[],
+  ) => {
     event.preventDefault();
 
     if (activeTab === "details") {
@@ -479,7 +411,7 @@ export const useItemForm = ({
     }
 
     if (activeTab === "taxDetails") {
-      if (!validateTaxDetails()) return;
+      if (!validateTaxDetails(taxRows)) return;
       if (!isServiceItem) {
         setActiveTab("inventoryDetails");
         return;
@@ -490,7 +422,7 @@ export const useItemForm = ({
       setLoading(true);
       showLoading(isEditMode ? "Updating item..." : "Creating item...");
 
-      const payload = buildPayload(form);
+      const payload = buildPayload(form, taxRows);
       const itemCode = form.id;
       const response = (
         isEditMode && itemCode

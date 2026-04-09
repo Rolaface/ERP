@@ -7,6 +7,16 @@ export interface ItemTaxRow {
   taxTemplate: string;
 }
 
+export interface ItemTaxInfo {
+  taxCategory: string;
+  taxPreference: string;
+  taxType: string;
+  taxCode: string;
+  taxName: string;
+  taxPerct: string;
+  countryCode: string;
+}
+
 export interface SupplierOption {
   label: string;
   value: string;
@@ -38,12 +48,6 @@ export interface ItemFormData {
   preferredVendor: string;
   salesAccount: string;
   purchaseAccount: string;
-  taxCategory: string;
-  taxType: string;
-  taxCode: string;
-  taxName: string;
-  taxDescription: string;
-  taxPerct: string;
   countryCode: string;
   dimensionUnit: string;
   weight: string | number;
@@ -66,7 +70,6 @@ export interface ItemFormData {
   batchNo: string;
   create_new_batch: boolean;
   has_expiry_date: boolean;
-  taxes?: ItemTaxRow[];
 }
 
 export type ItemFormChangeHandler = (

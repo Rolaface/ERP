@@ -10,13 +10,23 @@ import BasicDetailsSection from "./BasicDetailsSection";
 import InventorySection from "./InventorySection";
 import PricingSection from "./PricingSection";
 import TaxSection from "./TaxSection";
-import type { ItemFormData, ItemModalTab, ItemTaxRow } from "./itemModalTypes";
+import type {
+  ItemFormData,
+  ItemModalTab,
+  ItemTaxInfo,
+  ItemTaxRow,
+} from "./itemModalTypes";
+
+interface ItemInitialData extends Partial<ItemFormData> {
+  taxes?: ItemTaxRow[];
+  taxInfo?: Partial<ItemTaxInfo> | Array<Partial<ItemTaxInfo>>;
+}
 
 interface ItemModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (response: unknown) => void;
-  initialData?: Partial<ItemFormData> | null;
+  initialData?: ItemInitialData | null;
   isEditMode?: boolean;
   modalId?: string;
 }
@@ -36,7 +46,21 @@ interface TaxTemplateResponse {
 }
 
 const TAX_ITEMS_PER_PAGE = 5;
-const ITEM_FORM_ID = "item-modal-form";
+const ITEM_FORM_ID_PREFIX = "item-modal-form";
+const EMPTY_TAX_ROW: ItemTaxRow = { taxCategory: "", taxTemplate: "" };
+
+const mapTaxInfoToRows = (
+  taxInfo?: Partial<ItemTaxInfo> | Array<Partial<ItemTaxInfo>>,
+): ItemTaxRow[] => {
+  const taxInfoRows = Array.isArray(taxInfo) ? taxInfo : taxInfo ? [taxInfo] : [];
+
+  return taxInfoRows
+    .map((row) => ({
+      taxCategory: row.taxCategory ?? "",
+      taxTemplate: row.taxName ?? "",
+    }))
+    .filter((row) => row.taxCategory || row.taxTemplate);
+};
 
 const ItemModal: React.FC<ItemModalProps> = ({
   isOpen,
@@ -53,6 +77,10 @@ const ItemModal: React.FC<ItemModalProps> = ({
         ? `item-edit-${initialData.id}`
         : "item-create"),
     [initialData?.id, isEditMode, modalId],
+  );
+  const itemFormId = useMemo(
+    () => `${ITEM_FORM_ID_PREFIX}-${resolvedModalId}`,
+    [resolvedModalId],
   );
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
@@ -73,24 +101,23 @@ const ItemModal: React.FC<ItemModalProps> = ({
     loadingSuppliers,
   } = useItemForm({ isOpen, isEditMode, initialData, onSubmit, onClose });
 
-  const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([
-    { taxCategory: "", taxTemplate: "" },
-  ]);
+  const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([EMPTY_TAX_ROW]);
   const [taxPage, setTaxPage] = useState(0);
 
   useEffect(() => {
     if (!isOpen) return;
 
+    const taxInfoRows = mapTaxInfoToRows(initialData?.taxInfo);
     const initialTaxRows =
-      isEditMode &&
-      Array.isArray(initialData?.taxes) &&
-      initialData.taxes.length > 0
-        ? initialData.taxes
-        : [{ taxCategory: "", taxTemplate: "" }];
+      isEditMode && taxInfoRows.length > 0
+        ? taxInfoRows
+        : isEditMode && initialData?.taxes && initialData.taxes.length > 0
+          ? initialData.taxes
+          : [EMPTY_TAX_ROW];
 
     setTaxRows(initialTaxRows);
     setTaxPage(0);
-  }, [initialData?.taxes, isEditMode, isOpen]);
+  }, [initialData?.taxInfo, initialData?.taxes, isEditMode, isOpen]);
 
   const fetchTaxTemplateOptions = useCallback(
     async (search: string): Promise<TaxTemplateOption[]> => {
@@ -143,16 +170,13 @@ const ItemModal: React.FC<ItemModalProps> = ({
         ),
       );
 
-      if (absoluteIndex === 0 && field === "taxCategory") {
-        setForm((previous) => ({ ...previous, taxCategory: value }));
-      }
     },
-    [setForm],
+    [],
   );
 
   const addTaxRow = useCallback(() => {
     setTaxRows((previous) => {
-      const nextRows = [...previous, { taxCategory: "", taxTemplate: "" }];
+      const nextRows = [...previous, EMPTY_TAX_ROW];
       setTaxPage(Math.floor((nextRows.length - 1) / TAX_ITEMS_PER_PAGE));
       return nextRows;
     });
@@ -215,7 +239,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
   const handleReset = useCallback(() => {
     resetDirty();
     reset();
-    setTaxRows([{ taxCategory: "", taxTemplate: "" }]);
+    setTaxRows([EMPTY_TAX_ROW]);
     setTaxPage(0);
   }, [reset, resetDirty]);
 
@@ -236,7 +260,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
         Reset
       </Button>
       <Button
-        form={ITEM_FORM_ID}
+        form={itemFormId}
         variant="primary"
         type="submit"
         loading={loading}
@@ -259,12 +283,11 @@ const ItemModal: React.FC<ItemModalProps> = ({
       height="64vh"
     >
       <form
-        id={ITEM_FORM_ID}
+        id={itemFormId}
         onChange={markDirty}
         onSubmit={(event) => {
           resetDirty();
-          setForm((previous) => ({ ...previous, taxes: taxRows }));
-          void handleSubmit(event);
+          void handleSubmit(event, taxRows);
         }}
         noValidate
         className="min-h-full"
