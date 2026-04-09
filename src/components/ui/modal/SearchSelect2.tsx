@@ -165,12 +165,16 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
           />
 
           {/*  Clear button */}
-          {search && (
+          {isCustom && search && (
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 setSearch("");
                 setIsCustom(false);
+
+                onChange("", { label: "", value: "" });
+
                 setOpen(true);
               }}
               className="absolute right-1 top-1/2 -translate-y-1/2 text-muted hover:text-danger text-xs"
@@ -237,7 +241,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
                     }}
                     className="px-3 py-2 cursor-pointer text-[13px] text-primary hover:bg-primary/10 border-t"
                   >
-                     Add "{search}"
+                    Add "{search}"
                   </div>
                 )}
             </>

@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { createItem, updateItemByItemCode } from "../api/itemApi";
 import { getItemGroupTree } from "../api/itemGroupApi";
-import { getSuppliers } from "../api/procurement/supplierApi";
 import {
   closeSwal,
   showApiError,
@@ -180,17 +179,15 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
     salesAccount: form.salesAccount,
     purchaseAccount: form.purchaseAccount,
   },
-  taxInfo: [
-    ...taxRows.map((row) => ({
-      taxCategory: row.taxCategory,
-      taxPreference: "",
-      taxType: "",
-      taxCode: "",
-      taxName: row.taxTemplate,
-      taxPerct: "",
-      countryCode: form.countryCode || form.originNationCode || "",
-    })),
-  ],
+  taxInfo: taxRows.map((row) => ({
+    taxCategory: row.taxCategory,
+    taxPreference: "",
+    taxType: "",
+    taxCode: "",
+    taxName: row.taxTemplate,
+    taxPerct: "",
+    countryCode: form.countryCode || form.originNationCode || "",
+  })),
   inventoryInfo: {
     valuationMethod: form.valuationMethod,
     trackingMethod: form.trackingMethod,
@@ -206,7 +203,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
       expiryDate: form.has_expiry_date ? form.expiryDate : "",
       manufacturingDate: form.has_expiry_date ? form.manufacturingDate : "",
       shelfLifeInDays: Number(form.shelfLifeInDays) || 52,
-      endOfLife: form.endOfLife 
+      endOfLife: form.endOfLife,
     },
   }),
 });
@@ -252,8 +249,11 @@ export const useItemForm = ({
     try {
       setLoadingSuppliers(true);
 
-      const response = (await getSupplierList({ page: 1, page_size: 100, search: "" }) as unknown as SupplierApiResponse)
-      console.log("🚀 ~ useItemForm ~ response:", response.data)
+      const response = (await getSupplierList({
+        page: 1,
+        page_size: 100,
+        search: "",
+      })) as unknown as SupplierApiResponse;
 
       if (!response || response.status_code !== 200) {
         showApiError(response?.message || "Failed to load suppliers");
@@ -440,6 +440,11 @@ export const useItemForm = ({
         setActiveTab("inventoryDetails");
         return;
       }
+    }
+
+    if (!validateTaxDetails(taxRows)) {
+      setActiveTab("taxDetails");
+      return;
     }
 
     try {
