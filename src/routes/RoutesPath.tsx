@@ -1,3 +1,5 @@
+import { ta } from "date-fns/locale";
+
 export const ROUTES = {
   LOGIN: "/login",
   DASHBOARD: "/dashboard",
@@ -15,5 +17,6 @@ export const ROUTES = {
    ModeOfPaymentSetup: "/mode-of-payment-setup",
    PaymentEntry : "/payment-entry",
     CurrencyConversion : "/currency-conversion",
-    CustomerGroup : "/customer-group"
+    CustomerGroup : "/customer-group",
+    taxMaintenance : "/Tax-Maintenance"
 };

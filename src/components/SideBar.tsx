@@ -18,7 +18,8 @@ import {
   FaReceipt,
   FaUsersCog,
   FaSignOutAlt,
-  FaUniversity
+  FaUniversity,
+  FaPercentage
 } from "react-icons/fa";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -47,6 +48,7 @@ const settingsItems = [
   { to: "/payment-entry",         label: "Payment Entry",       icon: <FaReceipt /> },
   { to: "/currency-conversion",   label: "Currency Exchange",   icon: <FaExchangeAlt /> },
   { to: "/customer-group",        label: "Customer Group",      icon: <FaUsersCog /> },
+  { to: "/Tax-Maintenance",       label:"Tax Maintenance",      icon:<FaPercentage />},
   { to: "/settings",              label: "General Settings",    icon: <FaCog /> },
 ];
 
@@ -125,6 +127,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const isSettingsRoute = ["/settings", "/companySetup", "/userManagement"].some((p) =>
     location.pathname.startsWith(p)
   );
+
 
   /* close settings submenu when sidebar collapses */
   useEffect(() => {

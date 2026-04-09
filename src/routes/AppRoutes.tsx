@@ -29,8 +29,10 @@ const CurrencyConversion = lazy(
 );
 const CustomerGroup = lazy(
   () => import("../views/Customergroup/CustomerGroup")
+);
+const TaxMaintenance = lazy(
+  () => import("../views/TaxMaintaince/taxmaintaince")
 )
-
 import { Toaster } from "react-hot-toast";
 import ResetPassword from "../ResetPassword";
 
@@ -66,6 +68,7 @@ const AppRoutes: React.FC = () => {
     <Route path="/customer-group" element={<CustomerGroup/>} />
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
     <Route path="/ledger" element={<GLView />} />
+    <Route path="/Tax-Maintenance" element={<TaxMaintenance />} />
   </Route>
 </Route>
 
