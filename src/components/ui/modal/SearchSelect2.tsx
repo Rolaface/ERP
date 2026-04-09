@@ -16,6 +16,7 @@ interface SearchSelectProps {
   disabled?: boolean;
   error?: string;
   required?: boolean;
+  allowCustomInput?: boolean;
 }
 
 const DEBOUNCE_DELAY = 400;
@@ -30,11 +31,13 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
   disabled,
   error,
   required,
+  allowCustomInput,
 }) => {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [options, setOptions] = useState<Option[]>([]);
   const [open, setOpen] = useState(false);
+  const [isCustom, setIsCustom] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({
     top: 0,
     left: 0,
@@ -138,33 +141,51 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
           {required && <span className="text-danger">*</span>}
         </label>
 
-        <input
-          ref={inputRef}
-          placeholder={placeholder}
-          value={search}
-          disabled={disabled}
-          onChange={(e) => {
-            const val = e.target.value;
-            setSearch(val);
-            if (!open) setOpen(true);
-          }}
-          onFocus={async () => {
-            if (!open) {
-              setOpen(true);
-              const data = await fetchOptionsRef.current("");
-              setOptions(data);
-            }
-          }}
-          className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0 ${error ? "border-danger" : "border-theme"
-            }`}
-        />
+        <div className="relative w-full">
+          <input
+            ref={inputRef}
+            placeholder={placeholder}
+            value={search}
+            disabled={disabled}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearch(val);
+              setIsCustom(true); // mark as custom typing
+              if (!open) setOpen(true);
+            }}
+            onFocus={async () => {
+              if (!open) {
+                setOpen(true);
+                const data = await fetchOptionsRef.current("");
+                setOptions(data);
+              }
+            }}
+            className={`py-1 px-2 pr-6 border rounded text-[11px] text-main bg-card transition-all w-full ${error ? "border-danger" : "border-theme"
+              }`}
+          />
+
+          {/*  Clear button */}
+          {search && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setIsCustom(false);
+                setOpen(true);
+              }}
+              className="absolute right-1 top-1/2 -translate-y-1/2 text-muted hover:text-danger text-xs"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
         {error && (
           <span className="text-danger text-[10px] mt-1">{error}</span>
         )}
       </div>
 
-      {open && options.length > 0 &&
+      {open &&
         createPortal(
           <div
             ref={dropdownRef}
@@ -178,30 +199,48 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
             }}
             className="bg-white border rounded shadow-lg max-h-48 overflow-auto"
           >
-            {options.length > 0 ? (
-              options.map((opt) => (
+            <>
+              {/* Existing options */}
+              {options.map((opt) => (
                 <div
                   key={opt.value || opt.label}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     onChange(opt.value, opt);
                     setSearch(opt.label);
+                    setIsCustom(false);
                     setOpen(false);
                   }}
                   className="px-3 py-2 cursor-pointer text-[13px] hover:bg-gray-100"
                 >
                   {opt.label}
                 </div>
-              ))
-            ) : (
-              <>
-              </>
-              // <div className="px-3 py-2 text-xs text-gray-400">
-              //   {debouncedSearch.length < MIN_SEARCH_LENGTH
-              //     ? "Type at least 2 characters..."
-              //     : "No results"}
-              // </div>
-            )}
+              ))}
+
+              {/*  ADD CUSTOM OPTION */}
+              {allowCustomInput &&
+                search &&
+                !options.some(
+                  (opt) => opt.label.toLowerCase() === search.toLowerCase()
+                ) && (
+                  <div
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      const customOption = {
+                        label: search,
+                        value: search,
+                      };
+
+                      onChange(search, customOption);
+                      setIsCustom(true);
+                      setOpen(false);
+                    }}
+                    className="px-3 py-2 cursor-pointer text-[13px] text-primary hover:bg-primary/10 border-t"
+                  >
+                     Add "{search}"
+                  </div>
+                )}
+            </>
           </div>,
           document.body
         )}
