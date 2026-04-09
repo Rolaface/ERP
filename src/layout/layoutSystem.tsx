@@ -20,7 +20,7 @@ interface AppShellProps {
 export const AppShell: React.FC<AppShellProps> = ({ children, sidebar, rightPanel }) => (
   <div className="flex min-h-screen bg-app text-main">
     {sidebar}
-    <div className="flex flex-1 min-w-0 overflow-hidden">
+    <div className="flex flex-1 min-w-0 overflow-visible">
       <div className="flex-1 min-w-0 overflow-auto">
         {children}
       </div>
@@ -77,8 +77,8 @@ export const AppContentContainer: React.FC<{
 }) => (
   <div
     className={[
-      "flex w-full flex-1 flex-col px-3 py-4 min-h-0",
-      viewportLocked ? "h-screen overflow-hidden" : "overflow-visible",
+      "flex w-full flex-1 flex-col px-3 py-4 min-h-0 overflow-visible",
+      viewportLocked ? "h-screen" : "",
     ].join(" ")}
   >
     {children}

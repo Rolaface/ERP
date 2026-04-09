@@ -1,12 +1,9 @@
-import React, { useMemo, useEffect,useRef } from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Minus, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import {
-  useModalStore,
-  MODAL_LAYER,
-} from "../../store/modalStore";
+import { useModalStore, MODAL_LAYER } from "../../store/modalStore";
 
 const MAX_WIDTH_CLASSES: Record<string, string> = {
   sm: "max-w-sm",
@@ -30,7 +27,17 @@ export interface MinimizableModalProps {
   icon?: LucideIcon;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "4xl" | "5xl" | "6xl" | "wide" | "full";
+  maxWidth?:
+    | "sm"
+    | "md"
+    | "lg"
+    | "xl"
+    | "2xl"
+    | "4xl"
+    | "5xl"
+    | "6xl"
+    | "wide"
+    | "full";
   height?: string;
   customWidth?: string;
 }
@@ -50,7 +57,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
 }) => {
   const modals = useModalStore((state) => state.modals);
   const swalDepth = useModalStore((state) => state.swalDepth);
-  const { minimizeModal, restoreModal, bringToFront, registerModalMeta } = useModalStore();
+  const { minimizeModal, bringToFront, registerModalMeta } = useModalStore();
 
   React.useEffect(() => {
     if (isOpen) {
@@ -60,7 +67,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
 
   const modalMeta = useMemo(
     () => modals.find((m) => m.id === modalId),
-    [modals, modalId]
+    [modals, modalId],
   );
 
   const minimized = modalMeta?.minimized ?? false;
@@ -75,8 +82,12 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
     const visible = modals
       .filter((m) => !m.minimized)
       .sort((a, b) => a.focusOrder - b.focusOrder);
-    const rank = Math.max(visible.findIndex((m) => m.id === modalId), 0);
-    const backdrop = MODAL_LAYER.modalBackdropBase + rank * MODAL_LAYER.modalStep;
+    const rank = Math.max(
+      visible.findIndex((m) => m.id === modalId),
+      0,
+    );
+    const backdrop =
+      MODAL_LAYER.modalBackdropBase + rank * MODAL_LAYER.modalStep;
     return {
       backdrop,
       panel: backdrop + MODAL_LAYER.modalPanelOffset,
@@ -209,7 +220,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
           exit={{ opacity: 0, scale: 0.9, y: 32 }}
           transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
           className={`erp-modal-panel flex w-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-card ${
-            !customWidth ? MAX_WIDTH_CLASSES[maxWidth] ?? "max-w-4xl" : ""
+            !customWidth ? (MAX_WIDTH_CLASSES[maxWidth] ?? "max-w-4xl") : ""
           }`}
           style={{
             pointerEvents: "auto",
@@ -227,7 +238,10 @@ const ModalShell: React.FC<ModalShellProps> = ({
         >
           <header
             className="relative overflow-hidden bg-primary px-4 py-3"
-            style={{ opacity: focused ? 1 : 0.9, transition: "opacity 0.2s ease" }}
+            style={{
+              opacity: focused ? 1 : 0.9,
+              transition: "opacity 0.2s ease",
+            }}
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)]" />
             <div className="relative flex items-center justify-between">
@@ -238,7 +252,9 @@ const ModalShell: React.FC<ModalShellProps> = ({
                   </div>
                 )}
                 <div>
-                  <h2 className="text-base font-semibold text-white">{title}</h2>
+                  <h2 className="text-base font-semibold text-white">
+                    {title}
+                  </h2>
                   {subtitle && (
                     <p className="mt-0.5 text-xs text-white/70">{subtitle}</p>
                   )}
@@ -279,8 +295,8 @@ const ModalShell: React.FC<ModalShellProps> = ({
           <section
             className="flex-1 overflow-x-hidden overflow-y-auto bg-app px-4 py-3 text-sm text-main"
             style={{
-              opacity: focused ? 1 : 0.78,
-              transition: "opacity 0.2s ease",
+              opacity: 1,
+              transition: "background 0.2s ease",
             }}
           >
             {children}
@@ -290,8 +306,8 @@ const ModalShell: React.FC<ModalShellProps> = ({
             <footer
               className="flex shrink-0 items-center justify-between border-t border-[var(--border)] bg-app px-4 py-3"
               style={{
-                opacity: focused ? 1 : 0.78,
-                transition: "opacity 0.2s ease",
+                opacity: 1,
+                transition: "background 0.2s ease",
               }}
             >
               {footer}
@@ -300,6 +316,6 @@ const ModalShell: React.FC<ModalShellProps> = ({
         </motion.div>
       </div>
     </>,
-    document.body
+    document.body,
   );
 };

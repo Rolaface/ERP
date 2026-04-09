@@ -1,18 +1,107 @@
-import { useState, useEffect, useCallback } from "react";
-
-import { showApiError, showLoading, closeSwal, showValidationError } from "../utils/alert";
-import { updateItemByItemCode, createItem } from "../api/itemApi";
-import { getItemGroupById } from "../api/itemCategoryApi";
+/* eslint-disable camelcase */
+import { useCallback, useEffect, useState } from "react";
+import { createItem, updateItemByItemCode } from "../api/itemApi";
+import { getItemGroupTree } from "../api/itemGroupApi";
+import { getSuppliers } from "../api/procurement/supplierApi";
 import { useCompanySelection } from "../hooks/useCompanySelection";
-import { getAllItemGroups } from "../api/itemCategoryApi";
-import { getItemFieldConfigs } from "../config/companyConfigResolver";
 import {
   getTaxConfigs,
   isTaxAutoPopulated,
 } from "../taxconfig/taxConfigResolver";
-import { getSuppliers } from "../api/procurement/supplierApi";
+import {
+  closeSwal,
+  showApiError,
+  showLoading,
+  showValidationError,
+} from "../utils/alert";
+import type {
+  ItemFormData,
+  ItemGroupOption,
+  ItemModalTab,
+  SupplierOption,
+} from "../components/inventory/itemModalTypes";
 
-export const emptyForm: Record<string, any> = {
+interface ItemNestedInitialData extends Partial<ItemFormData> {
+  taxInfo?: Partial<
+    Pick<
+      ItemFormData,
+      | "taxCategory"
+      | "taxPreference"
+      | "taxType"
+      | "taxCode"
+      | "taxName"
+      | "taxDescription"
+      | "taxPerct"
+      | "countryCode"
+    >
+  >;
+  vendorInfo?: Partial<
+    Pick<ItemFormData, "preferredVendor" | "salesAccount" | "purchaseAccount">
+  >;
+  inventoryInfo?: Partial<
+    Pick<
+      ItemFormData,
+      | "valuationMethod"
+      | "trackingMethod"
+      | "reorderLevel"
+      | "minStockLevel"
+      | "maxStockLevel"
+    >
+  >;
+  batchInfo?: Partial<
+    Pick<
+      ItemFormData,
+      | "has_batch_no"
+      | "create_new_batch"
+      | "has_expiry_date"
+      | "expiryDate"
+      | "manufacturingDate"
+      | "shelfLifeInDays"
+      | "endOfLife"
+    >
+  >;
+}
+
+interface UseItemFormProps {
+  isOpen: boolean;
+  isEditMode: boolean;
+  initialData?: ItemNestedInitialData | null;
+  onSubmit?: (res: unknown) => void;
+  onClose: () => void;
+}
+
+interface ItemGroupTreeNode {
+  name: string;
+  item_group_name: string;
+  children?: ItemGroupTreeNode[];
+}
+
+interface ItemGroupTreeResponse {
+  message?: {
+    data?: {
+      item_groups?: ItemGroupTreeNode[];
+    };
+  };
+}
+
+interface SupplierApiItem {
+  supplierName: string;
+  supplierId: string;
+}
+
+interface SupplierApiResponse {
+  status_code?: number;
+  message?: string;
+  data?: {
+    suppliers?: SupplierApiItem[];
+  };
+}
+
+interface SaveItemResponse {
+  status_code?: number;
+}
+
+export const emptyForm: ItemFormData = {
   id: "",
   itemName: "",
   itemGroup: "",
@@ -63,7 +152,7 @@ export const emptyForm: Record<string, any> = {
   has_expiry_date: false,
 };
 
-const buildPayload = (form: Record<string, any>) => ({
+const buildPayload = (form: ItemFormData) => ({
   id: form.id,
   itemName: form.itemName,
   itemGroup: form.itemGroup,
@@ -86,13 +175,11 @@ const buildPayload = (form: Record<string, any>) => ({
   dimensionWidth: form.dimensionWidth,
   dimensionHeight: form.dimensionHeight,
   brand: form.brand,
-
   vendorInfo: {
     preferredVendor: form.preferredVendor,
     salesAccount: form.salesAccount,
     purchaseAccount: form.purchaseAccount,
   },
-
   taxInfo: {
     taxCategory: form.taxCategory,
     taxPreference: form.taxPreference,
@@ -101,10 +188,8 @@ const buildPayload = (form: Record<string, any>) => ({
     taxName: form.taxName,
     taxDescription: form.taxDescription,
     taxPerct: form.taxPerct,
-    // countryCode lives inside taxInfo; fall back to originNationCode if not set.
     countryCode: form.countryCode || form.originNationCode || "",
   },
-
   inventoryInfo: {
     valuationMethod: form.valuationMethod,
     trackingMethod: form.trackingMethod,
@@ -112,12 +197,10 @@ const buildPayload = (form: Record<string, any>) => ({
     minStockLevel: form.minStockLevel,
     maxStockLevel: form.maxStockLevel,
   },
-
   ...(Number(form.itemTypeCode) !== 3 && {
     batchInfo: {
       has_batch_no: form.has_batch_no,
       create_new_batch: false,
-
       has_expiry_date: form.has_expiry_date,
       expiryDate: form.has_expiry_date ? form.expiryDate : "",
       manufacturingDate: form.has_expiry_date ? form.manufacturingDate : "",
@@ -127,13 +210,11 @@ const buildPayload = (form: Record<string, any>) => ({
   }),
 });
 
-interface UseItemFormProps {
-  isOpen: boolean;
-  isEditMode: boolean;
-  initialData?: Record<string, any> | null;
-  onSubmit?: (res: any) => void;
-  onClose: () => void;
-}
+const flattenItemGroups = (nodes: ItemGroupTreeNode[]): ItemGroupOption[] =>
+  nodes.flatMap((node) => [
+    { id: node.name, groupName: node.item_group_name },
+    ...flattenItemGroups(node.children ?? []),
+  ]);
 
 export const useItemForm = ({
   isOpen,
@@ -142,53 +223,27 @@ export const useItemForm = ({
   onSubmit,
   onClose,
 }: UseItemFormProps) => {
-  const [form, setForm] = useState<Record<string, any>>(emptyForm);
+  const [form, setForm] = useState<ItemFormData>(emptyForm);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "details" | "taxDetails" | "inventoryDetails"
-  >("details");
-
-  // HSN / item-class hierarchical selector state
-  const [itemClassOptions, setItemClassOptions] = useState<
-    Array<{ cd: string; cdNm: string; lvl: string }>
-  >([]);
-  const [loadingItemClasses, setLoadingItemClasses] = useState(false);
-  const [selectedLevel1, setSelectedLevel1] = useState("");
-  const [selectedLevel2, setSelectedLevel2] = useState("");
-  const [selectedLevel3, setSelectedLevel3] = useState("");
-  const [selectedLevel4, setSelectedLevel4] = useState("");
-
-  const { companyCode } = useCompanySelection();
-  const fieldConfigs = getItemFieldConfigs(companyCode);
-  const taxConfigs = getTaxConfigs(companyCode);
-  const autoPopulateTax = isTaxAutoPopulated(companyCode);
-  const [itemGroups, setItemGroups] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<ItemModalTab>("details");
+  const [itemGroups, setItemGroups] = useState<ItemGroupOption[]>([]);
   const [loadingItemGroups, setLoadingItemGroups] = useState(false);
-  // Derived UI flags
-  const isServiceItem = Number(form.itemTypeCode) === 3;
-  const showBatchExpiry =
-    Number(form.itemTypeCode) === 1 || Number(form.itemTypeCode) === 2;
-
-  const [suppliers, setSuppliers] = useState<
-    Array<{ label: string; value: string }>
-  >([]);
+  const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
-  const fetchItemGroups = useCallback(async (itemType?: string) => {
+  const { companyCode } = useCompanySelection();
+  const taxConfigs = getTaxConfigs(companyCode);
+  const autoPopulateTax = isTaxAutoPopulated(companyCode);
+  const isServiceItem = Number(form.itemTypeCode) === 3;
+
+  const fetchItemGroups = useCallback(async () => {
     try {
       setLoadingItemGroups(true);
 
-      const res = await getAllItemGroups(1, 1000, {
-        itemType: itemType,
-      });
-
-      if (res?.status_code !== 200) {
-        showApiError(res?.message || "Failed to load item groups");
-        return;
-      }
-
-      setItemGroups(res?.data?.data || []);
-    } catch (err) {
+      const response = (await getItemGroupTree()) as ItemGroupTreeResponse;
+      const treeData = response.message?.data?.item_groups;
+      setItemGroups(Array.isArray(treeData) ? flattenItemGroups(treeData) : []);
+    } catch {
       showApiError("Error fetching item groups");
     } finally {
       setLoadingItemGroups(false);
@@ -199,57 +254,31 @@ export const useItemForm = ({
     try {
       setLoadingSuppliers(true);
 
-      const res = await getSuppliers(1, 1000);
+      const response = (await getSuppliers(1, 1000)) as SupplierApiResponse;
 
-      if (!res || res.status_code !== 200) {
-        showApiError(res?.message || "Failed to load suppliers");
+      if (!response || response.status_code !== 200) {
+        showApiError(response?.message || "Failed to load suppliers");
         return;
       }
 
-      const list = res?.data?.suppliers || [];
-
-      const mapped = list.map((supplier: any) => ({
+      const mapped = (response.data?.suppliers ?? []).map((supplier) => ({
         label: supplier.supplierName,
         value: supplier.supplierId,
       }));
 
       setSuppliers(mapped);
-    } catch (err) {
+    } catch {
       showApiError("Error fetching suppliers");
     } finally {
       setLoadingSuppliers(false);
     }
   }, []);
-  // ── Data fetchers ──────────────────────────────────────────────────────────
 
-  // const fetchItemClassList = useCallback(async () => {
-  //   try {
-  //     setLoadingItemClasses(true);
-  //     const response = await fetch(API.lookup.getItemClasses);
-  //     const data: any[] = await response.json();
-  //     setItemClassOptions(
-  //       data.map((item) => ({
-  //         cd:  item.itemClsCd  ?? item.cd  ?? "",
-  //         cdNm: item.itemClsNm ?? item.cdNm ?? "",
-  //         lvl: item.itemClsLvl ?? item.lvl ?? "1",
-  //       }))
-  //     );
-  //   } catch (err) {
-  //     console.error("[useItemForm] Failed to fetch item classes:", err);
-  //     setItemClassOptions([]);
-  //   } finally {
-  //     setLoadingItemClasses(false);
-  //   }
-  // }, []);
+  useEffect(() => {
+    if (!isOpen) return;
 
-  // ── Form initialisation ────────────────────────────────────────────────────
-  //
-  // Runs every time the modal opens.
-  // Edit mode: flatten the nested API response into the form state.
-  // Create mode: reset to emptyForm.
-  //
-  // Use `??` (nullish coalescing) throughout — `||` would silently replace
-  // legitimate `false` or `0` values coming back from the API.
+    void fetchItemGroups();
+  }, [fetchItemGroups, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -258,8 +287,6 @@ export const useItemForm = ({
       setForm({
         ...emptyForm,
         ...initialData,
-
-        // Flatten taxInfo
         taxCategory:
           initialData.taxInfo?.taxCategory ?? initialData.taxCategory ?? "",
         taxPreference:
@@ -274,14 +301,8 @@ export const useItemForm = ({
         taxPerct: initialData.taxInfo?.taxPerct ?? initialData.taxPerct ?? "",
         countryCode:
           initialData.taxInfo?.countryCode ?? initialData.countryCode ?? "",
-
-        // API returns packingUnit / packingSize (capital U, capital S).
-        // Form state uses packingUnit / packingSize (all lowercase).
-        // Explicit remap so edit mode pre-fills these inputs correctly.
-        packingUnit: initialData.packingUnit ?? initialData.packingUnit ?? "",
-        packingSize: initialData.packingSize ?? initialData.packingSize ?? "",
-
-        // Flatten vendorInfo
+        packingUnit: initialData.packingUnit ?? "",
+        packingSize: initialData.packingSize ?? "",
         preferredVendor:
           initialData.vendorInfo?.preferredVendor ??
           initialData.preferredVendor ??
@@ -294,8 +315,6 @@ export const useItemForm = ({
           initialData.vendorInfo?.purchaseAccount ??
           initialData.purchaseAccount ??
           "",
-
-        // Flatten inventoryInfo
         valuationMethod:
           initialData.inventoryInfo?.valuationMethod ??
           initialData.valuationMethod ??
@@ -316,8 +335,6 @@ export const useItemForm = ({
           initialData.inventoryInfo?.maxStockLevel ??
           initialData.maxStockLevel ??
           "",
-
-        // Flatten batchInfo
         has_batch_no:
           initialData.batchInfo?.has_batch_no ??
           initialData.has_batch_no ??
@@ -330,7 +347,6 @@ export const useItemForm = ({
           initialData.batchInfo?.has_expiry_date ??
           initialData.has_expiry_date ??
           false,
-
         expiryDate:
           initialData.batchInfo?.expiryDate ?? initialData.expiryDate ?? "",
         manufacturingDate:
@@ -344,151 +360,81 @@ export const useItemForm = ({
         endOfLife:
           initialData.batchInfo?.endOfLife ?? initialData.endOfLife ?? "",
       });
-      if (initialData?.itemTypeCode) {
-        void fetchItemGroups(String(initialData.itemTypeCode));
-      }
     } else {
       setForm(emptyForm);
     }
 
     setActiveTab("details");
-
-    if (!isEditMode) {
-      setSelectedLevel1("");
-      setSelectedLevel2("");
-      setSelectedLevel3("");
-      setSelectedLevel4("");
-    }
     void fetchSuppliers();
-    //   void fetchItemClassList();
-    //  void fetchItemClassList();
-  }, [isOpen, isEditMode, initialData]);
+  }, [fetchSuppliers, initialData, isEditMode, isOpen]);
 
-  // Pre-populate HSN level selectors when editing an existing item.
-  // Runs after itemClassOptions are loaded so the option values exist.
-  useEffect(() => {
-    if (
-      !isEditMode ||
-      !initialData?.itemClassCode ||
-      itemClassOptions.length === 0
-    )
-      return;
+  const validateItemDetails = (): boolean => {
+    const requiredFields: Array<{ field: keyof ItemFormData; label: string }> =
+      [
+        { field: "itemTypeCode", label: "Item Type" },
+        { field: "itemGroup", label: "Item Category" },
+        { field: "itemName", label: "Item Name" },
+        { field: "description", label: "Description" },
+        { field: "itemClassCode", label: "HSN Code" },
+        { field: "unitOfMeasureCd", label: "Unit of Measurement" },
+        { field: "originNationCode", label: "Country of Origin" },
+      ];
 
-    const code = String(initialData.itemClassCode);
-    const exists = (c: string) => itemClassOptions.some((o) => o.cd === c);
+    for (const { field, label } of requiredFields) {
+      const value = form[field];
+      const stringValue =
+        typeof value === "string" || typeof value === "number"
+          ? String(value)
+          : "";
+      const empty = stringValue.trim() === "";
 
-    if (code.length >= 2 && exists(code.slice(0, 2)))
-      setSelectedLevel1(code.slice(0, 2));
-    if (code.length >= 4 && exists(code.slice(0, 4)))
-      setSelectedLevel2(code.slice(0, 4));
-    if (code.length >= 6 && exists(code.slice(0, 6)))
-      setSelectedLevel3(code.slice(0, 6));
-    if (code.length >= 8 && exists(code.slice(0, 8)))
-      setSelectedLevel4(code.slice(0, 8));
-  }, [isEditMode, initialData, itemClassOptions]);
-
-  // ── HSN hierarchical helpers ───────────────────────────────────────────────
-
-  const getCodesByLevel = (level: string, parentCode?: string) =>
-    itemClassOptions.filter((opt) => {
-      if (opt.lvl !== level) return false;
-      if (level === "1") return true;
-      if (!parentCode) return false;
-      const prefixLen = parseInt(level, 10) * 2;
-      return (
-        opt.cd.slice(0, prefixLen - 2) === parentCode.slice(0, prefixLen - 2)
-      );
-    });
-
-  const handleLevelChange = (level: number, value: string) => {
-    // Reset all child levels when a parent changes.
-    if (level === 1) {
-      setSelectedLevel1(value);
-      setSelectedLevel2("");
-      setSelectedLevel3("");
-      setSelectedLevel4("");
-    } else if (level === 2) {
-      setSelectedLevel2(value);
-      setSelectedLevel3("");
-      setSelectedLevel4("");
-    } else if (level === 3) {
-      setSelectedLevel3(value);
-      setSelectedLevel4("");
-    } else {
-      setSelectedLevel4(value);
+      if (empty) {
+        showValidationError(`${label} is required.`);
+        return false;
+      }
     }
 
-    // The deepest selected level becomes the committed itemClassCode.
-    const finalCode =
-      level === 4
-        ? value || selectedLevel3 || selectedLevel2 || selectedLevel1
-        : level === 3
-          ? value || selectedLevel2 || selectedLevel1
-          : level === 2
-            ? value || selectedLevel1
-            : value;
-
-    setForm((prev) => ({ ...prev, itemClassCode: finalCode }));
+    return true;
   };
 
-  // ── Validation ─────────────────────────────────────────────────────────────
-
-const validateItemDetails = (): boolean => {
-
-  const requiredFields = [
-    { field: "itemTypeCode", label: "Item Type" },
-    { field: "itemGroup", label: "Item Category" },
-    { field: "itemName", label: "Item Name" },
-    { field: "description", label: "Description" },
-    { field: "itemClassCode", label: "HSN Code" },
-    { field: "unitOfMeasureCd", label: "Unit of Measurement" },
-    { field: "originNationCode", label: "Country of Origin" },
-   
-  ];
-
-  for (const { field, label } of requiredFields) {
-    const val = form[field];
-    const empty = !val || String(val).trim() === "";
-
-    if (empty) {
-      showValidationError(`${label} is required.`);
+  const validateTaxDetails = (): boolean => {
+    if (!form.taxCategory?.trim()) {
+      showValidationError("Please select a Tax Category.");
       return false;
     }
-  }
 
-  return true;
-};
-
-const validateTaxDetails = (): boolean => {
-  if (!form.taxCategory?.trim()) {
-    showValidationError("Please select a Tax Category.");
-    return false;
-  }
-
-  return true;
-};
-
-  // ── Event handlers ─────────────────────────────────────────────────────────
+    return true;
+  };
 
   const handleForm = (
-    e: React.ChangeEvent<
+    event: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    const { name, value } = e.target;
+    const { name, value } = event.target;
 
-    // Tax category: when auto-populate is enabled, fill all tax fields from config.
+    if (name === "itemTypeCode") {
+      setForm((previous) => ({
+        ...previous,
+        itemTypeCode: value,
+        itemGroup: "",
+      }));
+      if (value) {
+        void fetchItemGroups();
+      }
+      return;
+    }
+
     if (name === "taxCategory") {
       if (!autoPopulateTax) {
-        setForm((prev) => ({ ...prev, taxCategory: value }));
+        setForm((previous) => ({ ...previous, taxCategory: value }));
         return;
       }
 
       const taxConfig = taxConfigs[value];
       if (!taxConfig) {
-        // Unknown category — clear all tax fields to avoid stale data.
-        setForm((prev) => ({
-          ...prev,
+        setForm((previous) => ({
+          ...previous,
           taxCategory: "",
           taxType: "",
           taxPerct: "",
@@ -499,8 +445,8 @@ const validateTaxDetails = (): boolean => {
         return;
       }
 
-      setForm((prev) => ({
-        ...prev,
+      setForm((previous) => ({
+        ...previous,
         taxCategory: value,
         taxType: taxConfig.taxType,
         taxPerct: taxConfig.taxPerct,
@@ -511,48 +457,11 @@ const validateTaxDetails = (): boolean => {
       return;
     }
 
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((previous) => ({ ...previous, [name]: value }));
   };
-
-  const handleDynamicFieldChange = (name: string, value: any) => {
-    if (name === "itemTypeCode") {
-      // Reset itemGroup whenever type changes, then re-fetch filtered groups.
-      setForm((prev) => ({ ...prev, [name]: value, itemGroup: "" }));
-
-      if (value) {
-        void fetchItemGroups(String(value)); // e.g. "1", "2", "3"
-      } else {
-        setItemGroups([]); // clear list when type is deselected / reset
-      }
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-  const handleCategoryChange = async (data: { name: string; id: string }) => {
-    try {
-      const response = await getItemGroupById(data.id);
-
-      const group = response?.data;
-
-      if (response?.status_code === 200 && group) {
-        setForm((prev) => ({
-          ...prev,
-          itemGroup: group.groupName || "",
-        }));
-      }
-    } catch (err) {
-      showApiError("Error loading item category details");
-    }
-  };
-
-  // ── Form lifecycle ─────────────────────────────────────────────────────────
 
   const reset = () => {
     setForm(emptyForm);
-    setSelectedLevel1("");
-    setSelectedLevel2("");
-    setSelectedLevel3("");
-    setSelectedLevel4("");
   };
 
   const handleClose = () => {
@@ -560,80 +469,60 @@ const validateTaxDetails = (): boolean => {
     onClose();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-  if (activeTab === "details") {
-    const isValid = validateItemDetails();
-    if (!isValid) return;
-    setActiveTab("taxDetails");
-    return;
-  }
-
-  if (activeTab === "taxDetails") {
-    const isValid = validateTaxDetails();
-    if (!isValid) return;
-    if (!isServiceItem) {
-      setActiveTab("inventoryDetails");
+    if (activeTab === "details") {
+      if (!validateItemDetails()) return;
+      setActiveTab("taxDetails");
       return;
     }
-  }
+
+    if (activeTab === "taxDetails") {
+      if (!validateTaxDetails()) return;
+      if (!isServiceItem) {
+        setActiveTab("inventoryDetails");
+        return;
+      }
+    }
 
     try {
       setLoading(true);
-      showLoading(isEditMode ? "Updating item…" : "Creating item…");
+      showLoading(isEditMode ? "Updating item..." : "Creating item...");
 
       const payload = buildPayload(form);
-
       const itemCode = form.id;
-
-      const response =
+      const response = (
         isEditMode && itemCode
           ? await updateItemByItemCode(itemCode, payload)
-          : await createItem(payload);
+          : await createItem(payload)
+      ) as SaveItemResponse;
 
       closeSwal();
 
-      if (!response || ![200, 201].includes(response.status_code)) {
+      if (!response || ![200, 201].includes(response.status_code ?? 0)) {
         showApiError(response);
         return;
       }
 
       onSubmit?.(response);
       handleClose();
-    } catch (err: any) {
+    } catch (error) {
       closeSwal();
-      console.error("[useItemForm] Save failed:", err);
-      showApiError(err);
+      showApiError(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Public API ─────────────────────────────────────────────────────────────
-
   return {
     form,
     setForm,
-    autoPopulateTax,
     loading,
     activeTab,
     setActiveTab,
     isServiceItem,
-    showBatchExpiry,
-    fieldConfigs,
-    taxConfigs,
-    itemClassOptions,
-    loadingItemClasses,
-    selectedLevel1,
-    selectedLevel2,
-    selectedLevel3,
-    selectedLevel4,
     handleForm,
-    handleDynamicFieldChange,
-    handleCategoryChange,
-    handleLevelChange,
-    getCodesByLevel,
     reset,
     handleClose,
     handleSubmit,
