@@ -58,3 +58,45 @@ export async function updateItemByItemCode(
   const resp: AxiosResponse = await api.put(url, payload);
   return resp.data;
 }
+
+
+
+
+interface LinkResult {
+  value: string;
+  description?: string;
+  label?: string;
+}
+
+interface LinkResponse {
+  message: LinkResult[];
+}
+
+
+export async function getBrands(
+  txt = "",
+): Promise<Array<{ label: string; value: string }>> {
+  try {
+    const resp: AxiosResponse<LinkResponse> = await api.get(
+      ItemAPI.brand,
+      {
+        params: {
+          doctype: "Brand",
+          txt,
+          ignore_user_permissions: 0,
+          reference_doctype: "Item",
+          page_length: 20,
+        },
+      },
+    );
+
+    const results = resp.data?.message ?? [];
+
+    return results.map((r) => ({
+      label: r.label || r.value,
+      value: r.value,
+    }));
+  } catch {
+    return [];
+  }
+}
