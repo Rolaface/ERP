@@ -1,5 +1,5 @@
 import React from "react";
-import { ModalInput,ModalSelect } from "../ui/modal/modalComponent";
+import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import type {
   ItemFieldSetter,
   ItemFormChangeHandler,
@@ -15,17 +15,10 @@ interface BasicDetailsSectionProps {
   setField: ItemFieldSetter;
 }
 
-/**
- * Row 1 of the Item Details tab.
- * Renders: Item Type | Item Category | Item Name | Description | HSN Code
- * Uses ModalSelect for dropdowns and ModalInput for text fields,
- * matching the target screenshot layout exactly.
- */
+
 const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
   ({ form, itemGroups, loadingItemGroups, onFormChange }) => {
-    const categoryPlaceholder = form.itemTypeCode
-      ? "Select Category"
-      : "Select Item Type first";
+    const categoryPlaceholder = "Select Category";
 
     return (
       <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-5">
@@ -35,7 +28,6 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           name="itemTypeCode"
           value={form.itemTypeCode}
           onChange={onFormChange}
-          required
           placeholder="Select..."
         >
           <option value="1">Raw Material</option>
@@ -49,16 +41,15 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           name="itemGroup"
           value={form.itemGroup}
           onChange={onFormChange}
-         
+
           required
           placeholder={loadingItemGroups ? "Loading..." : categoryPlaceholder}
         >
-          {form.itemTypeCode &&
-            itemGroups.map((group) => (
-              <option key={group.id} value={group.groupName}>
-                {group.groupName}
-              </option>
-            ))}
+          {itemGroups.map((group) => (
+            <option key={group.id} value={group.groupName}>
+              {group.groupName}
+            </option>
+          ))}
         </ModalSelect>
 
         {/* Item Name */}
