@@ -201,6 +201,23 @@ const TaxTemplate: React.FC<Props> = () => {
 
   const columns: Column<TaxTemplateSummary>[] = [
     {
+      key: "expand",
+      header: "",
+      align: "center",
+      render: (tc) => {
+        const isExpanded = expandedRows.has(tc.name);
+        if (tc.taxes.length === 0) return <span className="w-7 h-7 block" />;
+        return (
+          <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
+            {isExpanded
+              ? <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              : <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            }
+          </span>
+        );
+      },
+    },
+    {
       key: "title",
       header: "Title",
       align: "left",
@@ -212,29 +229,18 @@ const TaxTemplate: React.FC<Props> = () => {
         </Tooltip>
       ),
     },
-{
+    {
       key: "taxes",
       header: "Tax Rates",
       align: "left",
       render: (tc) => {
-        const isExpanded = expandedRows.has(tc.name);
         if (tc.taxes.length === 0) {
           return <span className="text-xs text-muted">None</span>;
         }
         return (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); toggleExpand(tc.name); }}
-            className="flex items-center gap-1.5 text-xs text-primary hover:underline focus:outline-none"
-          >
-            <span>{tc.taxes.length} tax {tc.taxes.length === 1 ? "row" : "rows"}</span>
-            <svg
-              className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-            >
-              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          <span className="text-xs text-muted">
+            {tc.taxes.length} tax {tc.taxes.length === 1 ? "row" : "rows"}
+          </span>
         );
       },
     },
@@ -261,22 +267,22 @@ const TaxTemplate: React.FC<Props> = () => {
       align: "center",
       render: (tc) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={() => {}} iconOnly />
-           <ActionMenu
-          onEdit={(e) => handleEdit(tc, e as any)}
-          onDelete={(e) => handleDelete(tc.name, e as any)}
-          customActions={[
-            {
-              label: tc.disabled ? "Enable" : "Disable",
-              onClick: () =>
-                handleToggleStatus(
-                  tc,
-                  { stopPropagation: () => {} } as React.MouseEvent
-                ),
-              danger: !tc.disabled, // Disable option = red, Enable = normal
-            },
-          ]}
-        />
+          <ActionButton type="view" onClick={() => { }} iconOnly />
+          <ActionMenu
+            onEdit={(e) => handleEdit(tc, e as any)}
+            onDelete={(e) => handleDelete(tc.name, e as any)}
+            customActions={[
+              {
+                label: tc.disabled ? "Enable" : "Disable",
+                onClick: () =>
+                  handleToggleStatus(
+                    tc,
+                    { stopPropagation: () => { } } as React.MouseEvent
+                  ),
+                danger: !tc.disabled, // Disable option = red, Enable = normal
+              },
+            ]}
+          />
         </ActionGroup>
       ),
     },
@@ -286,23 +292,25 @@ const TaxTemplate: React.FC<Props> = () => {
 
   return (
     <>
-     <Table
+      <Table
         columns={columns}
         data={templates}
         showToolbar
         loading={loading || initialLoad}
         rowKey={(row) => row.name}
+        onRowClick={(tc) => { if (tc.taxes.length > 0) toggleExpand(tc.name); }}
         expandedRowRender={(tc) => {
           if (!expandedRows.has(tc.name) || tc.taxes.length === 0) return null;
           return (
-            <div className="px-4 py-3 bg-app border-t border-[var(--border)]/30">
+            <div className="px-6 py-3" style={{ background: "rgba(201,125,46,0.04)", borderTop: "1.5px solid rgba(201,125,46,0.15)" }}>
+              {/* Header bar like stock's "BATCH DETAILS" */}
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-[var(--border)]/40">
-                    <th className="text-left py-1.5 px-2 font-semibold text-muted uppercase tracking-wide text-[10px] w-[50%]">
+                  <tr style={{ borderBottom: "1px solid rgba(201,125,46,0.2)" }}>
+                    <th className="text-left py-2 px-3 font-bold text-muted uppercase tracking-widest text-[10px] w-[60%]">
                       Tax Type
                     </th>
-                    <th className="text-left py-1.5 px-2 font-semibold text-muted uppercase tracking-wide text-[10px]">
+                    <th className="text-left py-2 px-3 font-bold text-muted uppercase tracking-widest text-[10px]">
                       Rate
                     </th>
                   </tr>
@@ -311,14 +319,15 @@ const TaxTemplate: React.FC<Props> = () => {
                   {tc.taxes.map((row, i) => (
                     <tr
                       key={i}
-                      className={`border-b border-[var(--border)]/20 ${i % 2 === 0 ? "" : "bg-row-hover/10"}`}
+                      className="transition-colors"
+                      style={{ borderBottom: "1px solid rgba(0,0,0,0.04)", background: i % 2 !== 0 ? "rgba(201,125,46,0.03)" : "transparent" }}
                     >
-                      <td className="py-1.5 px-2 text-main font-medium">{row.tax_type}</td>
-                      <td className="py-1.5 px-2 text-main">
-                        <span className="inline-flex items-center gap-1">
+                      <td className="py-2 px-3 text-main font-medium text-xs">{row.tax_type}</td>
+                      <td className="py-2 px-3 text-xs">
+                        <span className="font-semibold" style={{ color: "var(--primary, #c97d2e)" }}>
                           {Number(row.tax_rate).toFixed(2)}
-                          <span className="text-muted">%</span>
                         </span>
+                        <span className="text-muted ml-0.5">%</span>
                       </td>
                     </tr>
                   ))}

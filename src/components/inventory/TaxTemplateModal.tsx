@@ -5,7 +5,7 @@ import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput } from "../ui/modal/modalComponent";
-import SearchSelect2 from "../ui/modal/SearchSelect2"; 
+import SearchSelect2 from "../ui/modal/SearchSelect2";
 import type { TaxCategoryFormData } from "../../types/tax/taxTemplate";
 import { defaultForm, defaultTaxRow } from "../../types/tax/taxTemplate";
 import { getGlAccounts } from "../../api/TaxTemplateApi";
@@ -90,7 +90,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
     } catch {
       return [];
     }
-  }, []); 
+  }, []);
 
   const addRow = () => {
     setForm((prev) => ({
@@ -144,7 +144,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
       if (modal?.context?.callback) {
         await modal.context.callback(payload);
       }
-      
+
       reset();
       onClose();
     } finally {
@@ -244,6 +244,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                     <tr key={actualIdx} className="border-t border-[var(--border)]/20">
                       <td className="px-3 py-2">
                         <SearchSelect2
+                          label=""
                           value={row.tax_type}
                           onChange={(val) => {
                             const newForm = { ...form };
@@ -252,19 +253,20 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                           }}
                           fetchOptions={fetchGlOptions}
                           placeholder="Select tax type"
-                          className="text-sm"
                         />
                         {errors[`tax_type_${actualIdx}`] && (
                           <p className="text-xs text-danger mt-1">{errors[`tax_type_${actualIdx}`]}</p>
                         )}
                       </td>
                       <td className="px-3 py-2">
-                        <input
+                        <ModalInput
+                          label=""
                           type="number"
                           name="tax_rate"
                           value={row.tax_rate}
                           onChange={(e) => handleRowChange(actualIdx, e)}
-                          className="w-full px-2 py-1 border border-[var(--border)] rounded text-sm no-spinner"
+                          error={errors[`tax_rate_${actualIdx}`]}
+                          className="w-full no-spinner"
                         />
                         {errors[`tax_rate_${actualIdx}`] && (
                           <p className="text-xs text-danger mt-1">{errors[`tax_rate_${actualIdx}`]}</p>
@@ -295,11 +297,10 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                   key={i}
                   type="button"
                   onClick={() => setPage(i)}
-                  className={`w-6 h-6 rounded text-xs ${
-                    page === i
+                  className={`w-6 h-6 rounded text-xs ${page === i
                       ? "bg-primary text-white"
                       : "bg-[var(--border)] text-muted hover:bg-primary/20"
-                  }`}
+                    }`}
                 >
                   {i + 1}
                 </button>
