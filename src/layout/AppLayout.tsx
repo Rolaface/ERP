@@ -12,15 +12,16 @@ import {
   openItemCategoryModal, 
   openPurchaseOrderModal, 
   openPurchaseInvoiceModal, 
-  openProformaModal 
+  openProformaModal,
+  openWarehouseModal 
 } from "../store/modalStore";
 import { AppMain, AppShell, AppContentContainer, RightPanel } from "./layoutSystem";
 import GlobalModalHandler from "../components/common/GlobalModalHandler";
 import { showApiError, showSuccess } from "../utils/alert";
 import { createSalesInvoice } from "../api/salesApi";
 import { createQuotation } from "../api/quotationApi";
-import { createItemGroup, updateItemGroupById } from "../api/itemCategoryApi";
-import { createItemGroupNode, getItemGroupTree } from "../api/itemGroupApi";
+import { createItemGroupNode, renameItemGroup, updateItemGroupById } from "../api/itemGroupApi";
+import { createWarehouseNode, updateWarehouseById } from "../api/WarehouseApi";
 
 const AppLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(true);
@@ -63,7 +64,7 @@ const AppLayout: React.FC = () => {
         await updateItemGroupById(payload.id, payload);
         showSuccess("Item group updated successfully!");
       } else {
-        await createItemGroup(payload);
+        await createItemGroupNode(payload);
         showSuccess("Item group created successfully!");
       }
       onSuccess();
@@ -76,16 +77,67 @@ const AppLayout: React.FC = () => {
 
   const handleCategorySubmit = async (payload: any, isEdit: boolean, onSuccess: () => void) => {
     try {
-      const response = isEdit
-        ? await updateItemGroupById(payload.id, payload)
-        : await createItemGroup(payload);
+      let response;
 
-      if (!response || ![200, 201].includes(response.status_code)) {
+      if (isEdit) {
+        let targetId = payload.id;
+
+        if (payload.original_name && payload.original_name !== payload.item_group_name) {
+          const renameResp = await renameItemGroup(payload.original_name, payload.item_group_name);
+          
+          if (!renameResp || ![200, 201].includes(renameResp.status || renameResp.status_code)) {
+            showApiError(renameResp);
+            return false;
+          }
+          targetId = payload.item_group_name;
+        }
+
+        response = await updateItemGroupById(targetId, payload);
+      } else {
+        response = await createItemGroupNode(payload);
+      }
+
+      const isSuccess = response && [200, 201, 202].includes(response.status_code || response.status);
+
+      if (!isSuccess) {
         showApiError(response);
         return false;
       }
 
-      showSuccess(response.message);
+      const actionText = isEdit ? "updated" : "created";
+      showSuccess(
+        response.data?.message || 
+        response.message || 
+        `Item Group ${payload.item_group_name} ${actionText} successfully`
+      );
+      
+      onSuccess();
+      return true;
+    } catch (error: any) {
+      showApiError(error);
+      return false;
+    }
+  };
+
+  const handleWarehouseSubmit = async (payload: any, isEdit: boolean, onSuccess: () => void) => {
+    try {
+      const response = isEdit
+        ? await updateWarehouseById(payload.id, payload)
+        : await createWarehouseNode(payload);
+      const isSuccess = response && [200, 201, 202].includes(response.status_code || response.status);
+
+      if (!isSuccess) {
+        showApiError(response);
+        return false;
+      }
+
+      const actionText = isEdit ? "updated" : "created";
+      showSuccess(
+        response.data?.message || 
+        response.message || 
+        `Warehouse ${payload.warehouse_name} ${actionText} successfully`
+      );
+      
       onSuccess();
       return true;
     } catch (error: any) {
@@ -119,6 +171,8 @@ const AppLayout: React.FC = () => {
   const openItemEdit = (id: string, data: any) => openItemModal(data, true);
   const openCategoryCreate = () => openItemCategoryModal();
   const openCategoryEdit = (id: string, data: any) => openItemCategoryModal(data, true);
+  const openWarehouseCreate = (initialData?: { parent: string }) => openWarehouseModal(initialData);
+  const openWarehouseEdit = (id: string, data: any) => openWarehouseModal(data, true);
 
   const sharedProps = {
     // Sales
@@ -143,15 +197,14 @@ const AppLayout: React.FC = () => {
     openItemEdit,
     openCategoryCreate,
     openCategoryEdit,
-    getItemGroupTree,
+    openWarehouseCreate,
+    openWarehouseEdit,
     // Submit handlers
     handleInvoiceSubmit,
-    createItemGroupNode,
-  
-
     handleQuotationSubmit,
     handleItemSubmit,
     handleCategorySubmit,
+    handleWarehouseSubmit,
   };
 
   return (

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   FaBoxOpen,
   FaBoxes,
@@ -21,9 +22,25 @@ import {
   AppTabs,
 } from "../../components/ui/app-shell";
 
+interface OutletContextType {
+  openWarehouseCreate: (initialData?: { parent: string }) => void;
+  openWarehouseEdit: (id: string, data?: any) => void;
+}
+
 const Inventory: React.FC = () => {
   const [activeTab, setActiveTab] = useState("inventorydashboard");
   const isDashboardTab = activeTab === "inventorydashboard";
+  const { openWarehouseCreate, openWarehouseEdit } = useOutletContext<OutletContextType>();
+
+  const inventoryTabs = [
+    { id: "inventorydashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
+    { id: "taxTemplates", label: "Tax Templates", icon: <FaBoxOpen /> },
+    { id: "items", label: "Items", icon: <FaBoxOpen /> },
+    { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
+    { id: "warehouse", label: "WareHouse", icon: <FaWarehouse /> },
+    { id: "stock", label: "Stock", icon: <FaBoxOpen /> },
+    { id: "import", label: "Import", icon: <FaBoxOpen /> },
+  ];
 
   return (
     <AppPage viewportLocked={isDashboardTab}>
@@ -33,20 +50,7 @@ const Inventory: React.FC = () => {
         icon={<FaBoxes />}
       />
       <AppTabs
-        tabs={[
-          {
-            id: "inventorydashboard",
-            label: "Dashboard",
-            icon: <FaTachometerAlt />,
-          },
-          { id: "taxTemplates", label: "Tax Templates", icon: <FaBoxOpen /> },
-          { id: "items", label: "Items", icon: <FaBoxOpen /> },
-
-          { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
-          { id: "warehouse", label: "WareHouse", icon: <FaWarehouse /> },
-          { id: "stock", label: "Stock", icon: <FaBoxOpen /> },
-          { id: "import", label: "Import", icon: <FaBoxOpen /> },
-        ]}
+        tabs={inventoryTabs}
         activeTab={activeTab}
         onChange={(tabId) => {
           setActiveTab(tabId);
@@ -57,7 +61,7 @@ const Inventory: React.FC = () => {
         {activeTab === "items" && <Items />}
         {activeTab === "taxCategory" && <TaxCategory />}
         {activeTab === "itemsCategory" && <ItemsCategory />}
-        {activeTab === "warehouse" && <WarehouseView />}
+        {activeTab === "warehouse" && <WarehouseView openWarehouseCreate={openWarehouseCreate} openWarehouseEdit={openWarehouseEdit} />}
         {activeTab === "stock" && <Stock />}
         {activeTab === "import" && <Import />}
         {activeTab === "movements" && <Movements />}

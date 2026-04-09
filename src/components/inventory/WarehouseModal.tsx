@@ -95,7 +95,7 @@ const WarehouseModal: React.FC<{
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     if (!validateForm()) return;
@@ -103,7 +103,7 @@ const WarehouseModal: React.FC<{
     setLoading(true);
 
     try {
-      const payload: CreateWarehousePayload = {
+      const payload: any = {
         warehouse_name: form.warehouse_name.trim(),
         is_group: Number(form.is_group) as 0 | 1,
         company: form.company.trim(),
@@ -111,6 +111,11 @@ const WarehouseModal: React.FC<{
         doctype: "Warehouse",
         is_root: "false",
       };
+
+      if (isEditMode && initialData?.name) {
+        payload.id = initialData.name;
+        payload.name = initialData.name;
+      }
 
       onSubmit?.(payload);
       handleClose();
@@ -193,8 +198,14 @@ const WarehouseModal: React.FC<{
               value={form.warehouse_name}
               onChange={handleChange}
               required
-              className={inputClass}
+              disabled={isEditMode}
+              className={`${inputClass} ${isEditMode ? "opacity-60 cursor-not-allowed bg-gray-50" : ""}`}
             />
+            {isEditMode && (
+              <span className="text-[10px] text-muted mt-1 inline-block">
+                Warehouse names cannot be changed after creation.
+              </span>
+            )}
           </label>
 
           <label className="flex flex-col gap-0.5">

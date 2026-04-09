@@ -19,6 +19,7 @@ import PurchaseOrderModal from "../procurement/PurchaseOrderModal";
 import PurchaseInvoiceModal from "../procurement/PurchaseInvoiceModal";
 import ItemModal from "../inventory/ItemModal";
 import ItemsCategoryModal from "../inventory/ItemsCategoryModal";
+import WarehouseModal from "../inventory/WarehouseModal";
 import TaxTemplateModalComponent from "../inventory/TaxTemplateModal";
 import TaxCategoryModalComponent from "../inventory/TaxCategoryModal";
 
@@ -193,6 +194,19 @@ const GlobalModalHandler: React.FC = () => {
       case "taxTemplate":
         return (
           <TaxTemplateModalComponent
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={modal.initialData}
+            isEditMode={modal.isEdit}
+          />
+        );
+
+      case "warehouse":
+        return (
+          <WarehouseModal
             key={modal.id}
             modalId={modal.id}
             isOpen={true}

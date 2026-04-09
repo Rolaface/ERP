@@ -164,9 +164,20 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
 };
 
 
-const WarehouseView: React.FC = () => {
-  const { openWarehouseCreate, openWarehouseEdit } = useOutletContext<OutletContextType>();
+interface WarehouseViewProps {
+  openWarehouseCreate?: (initialData?: { parent: string }) => void;
+  openWarehouseEdit?: (id: string, data?: any) => void;
+}
+
+const WarehouseView: React.FC<WarehouseViewProps> = ({ 
+  openWarehouseCreate: propOpenWarehouseCreate, 
+  openWarehouseEdit: propOpenWarehouseEdit 
+}) => {
+  const outletContext = useOutletContext<OutletContextType>();
   const navigate = useNavigate();
+  
+  const openWarehouseCreate = propOpenWarehouseCreate || outletContext?.openWarehouseCreate;
+  const openWarehouseEdit = propOpenWarehouseEdit || outletContext?.openWarehouseEdit;
 
   const [treeData, setTreeData] = useState<WarehouseNode[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -310,7 +321,7 @@ const WarehouseView: React.FC = () => {
           {
             label: "Edit",
             icon: <Pencil size={12} />,
-            onClick: () => openWarehouseEdit(row.name),
+            onClick: () => openWarehouseEdit(row.name, row),
           },
           ...(row.is_group === 1
             ? [

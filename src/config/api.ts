@@ -191,9 +191,9 @@ export const API = {
    * ITEM
    * ========================= */
   item: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.get_all_items_api`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.item.api.get`,
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.get_item_by_id_api`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.create_item_api`,
+    create: `${ERP_BASE}/api/method/custom_api.api.item.api.create`,
     update: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.update_item_api`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.delete_item_by_id`,
     
@@ -221,7 +221,8 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.item_group.get_item_group_tree`,
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.get_item_group_by_id_api`,
     create: `${ERP_BASE}/api/method/frappe.desk.treeview.add_node`,
-    update: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.update_item_group_api`,
+    update: `${ERP_BASE}/api/resource/Item Group`,
+    rename: `${ERP_BASE}/api/method/frappe.rename_doc`,
     delete: `${ERP_BASE}/api/resource/Item Group`,
   },
 
@@ -323,7 +324,7 @@ export const API = {
   warehouse: {
     getAll: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_warehouse_tree`,
     create: `${ERP_BASE}/api/method/erpnext.stock.doctype.warehouse.warehouse.add_node`,
-    update: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.update_warehouse_api`,
+    update: `${ERP_BASE}/api/resource/Warehouse`,
     delete: `${ERP_BASE}/api/resource/Warehouse`,
     getAllWarehouses: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
   },
@@ -413,5 +414,7 @@ export const API = {
     getCompanyCostCenter: `${ERP_BASE}/api/method/custom_api.api.search.get_cost_centers`,
     getCustomer: `${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
     getSupplier: `${ERP_BASE}/api/method/custom_api.api.search.get_suppliers`,
+    getCurrency: `${ERP_BASE}/api/method/custom_api.api.search.get_currencies`,
+    getItemGroups: `${ERP_BASE}/api/method/custom_api.api.search.get_item_groups`,
   },
 } as const;
