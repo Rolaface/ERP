@@ -10,9 +10,9 @@ import Tooltip from "../Tooltip";
 import { ToolCase, Copy, Trash2 } from "lucide-react";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { getAllTemplates } from "../../api/TaxTemplateApi";
-// ─── Compact shared primitives ────────────────────────────────────────────────
 
-/** Tiny label text with optional required asterisk */
+
+
 const FieldLabel: React.FC<{ label: string; required?: boolean }> = ({
   label,
   required,
@@ -326,6 +326,7 @@ const ItemModal: React.FC<{
     { taxCategory: "", taxTemplate: "" },
   ]);
   const [taxPage, setTaxPage] = useState(0);
+  const [templateMap, setTemplateMap] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (!isOpen) return;
@@ -340,8 +341,19 @@ const ItemModal: React.FC<{
   const fetchTaxTemplateOptions = useCallback(async (search: string) => {
     try {
       const res = await getAllTemplates(1, 20, search || undefined);
-      const list: { name: string; title: string }[] = res?.data?.templates ?? [];
-      return list.map((t) => ({ label: t.title, value: t.name }));
+
+      const list = res?.data?.templates ?? [];
+
+      const map: Record<string, any> = {};
+      list.forEach((t: any) => {
+        map[t.name] = t;
+      });
+      setTemplateMap(map);
+
+      return list.map((t: any) => ({
+        label: t.title,
+        value: t.name,
+      }));
     } catch {
       return [];
     }
@@ -388,9 +400,6 @@ const ItemModal: React.FC<{
 
   if (!isOpen) return null;
 
-  /** Wrapper that bridges ToggleField → handleDynamicFieldChange */
-
-  /** Wrapper that bridges ToggleField → handleDynamicFieldChange */
   const handleToggleChange = (name: string, value: string) => {
     handleDynamicFieldChange(name, value);
   };
@@ -404,7 +413,17 @@ const ItemModal: React.FC<{
   };
 
 
+  const getTemplateTooltip = (templateName: string) => {
+    const template = templateMap[templateName];
 
+    if (!template || !template.taxes?.length) {
+      return "No taxes available";
+    }
+
+    return template.taxes
+      .map((t: any) => `${t.tax_type} (${t.tax_rate}%)`)
+      .join(", ");
+  };
 
 
   return (
@@ -787,36 +806,39 @@ const ItemModal: React.FC<{
                             <td className="px-2 py-1 text-center text-[10px]">{absoluteIndex + 1}</td>
 
                             {/* Tax Category */}
-                            <td className="px-0.5 py-1 min-w-[220px]">
-                              <TaxCategorySelect
-                                value={row.taxCategory}
-                                onChange={(val) => handleTaxRowChange(absoluteIndex, "taxCategory", val)}
-                              />
+                            <td className="px-0.5 py-1 min-w-[220px] align-middle">
+                              <div className="h-8 flex items-center">
+                                <TaxCategorySelect
+                                  value={row.taxCategory}
+                                  onChange={(val) =>
+                                    handleTaxRowChange(absoluteIndex, "taxCategory", val)
+                                  }
+                                />
+                              </div>
                             </td>
 
                             {/* Tax Template */}
-                            <td className="px-0.5 py-1 min-w-[220px]">
-                              <SearchSelect2
-                                label=""
-                                value={row.taxTemplate}
-                                onChange={(val) => handleTaxRowChange(absoluteIndex, "taxTemplate", val)}
-                                fetchOptions={fetchTaxTemplateOptions}
-                                placeholder="Search tax template..."
-                              />
+                            <td className="px-0.5 py-1 min-w-[220px] align-middle">
+                              <div className="h-8 flex items-center">
+                                <Tooltip content={getTemplateTooltip(row.taxTemplate)}>
+                                  <div className="w-full">
+                                    <SearchSelect2
+                                      label=""
+                                      value={row.taxTemplate}
+                                      onChange={(val) =>
+                                        handleTaxRowChange(absoluteIndex, "taxTemplate", val)
+                                      }
+                                      fetchOptions={fetchTaxTemplateOptions}
+                                      placeholder="Search tax template..."
+                                    />
+                                  </div>
+                                </Tooltip>
+                              </div>
                             </td>
 
                             {/* Row actions */}
                             <td className="px-0.5 py-1">
                               <div className="flex items-center gap-1">
-                                <Tooltip content="Duplicate row">
-                                  <button
-                                    type="button"
-                                    onClick={() => duplicateTaxRow(absoluteIndex)}
-                                    className="p-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition"
-                                  >
-                                    <Copy className="w-4 h-4" />
-                                  </button>
-                                </Tooltip>
                                 <Tooltip content="Remove row">
                                   <button
                                     type="button"
