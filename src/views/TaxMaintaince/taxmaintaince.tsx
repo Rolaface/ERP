@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { FaBoxOpen, FaBoxes } from "react-icons/fa";
+import { FaPercentage } from "react-icons/fa";
 import TaxTemplate from "../Inventory/TaxTemplate";
-
 import TaxCategory from "../Inventory/TaxCategory";
+import { FaFileInvoiceDollar } from "react-icons/fa";
+import { FaTags } from "react-icons/fa";
 
 import {
   AppPage,
@@ -12,29 +13,29 @@ import {
 } from "../../components/ui/app-shell";
 
 const Inventory: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("Tax  Maintenance");
-  const isDashboardTab = activeTab === "taxTemplates";
+  const [activeTab, setActiveTab] = useState("taxTemplate"); 
+
+  const isDashboardTab = activeTab === "taxTemplate";
 
   return (
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title="Tax Maintenance"
-        description="-----------------------------------."
-        icon={<FaBoxes />}
+        description="Manage tax templates and categories"
+        icon={<FaPercentage />}
       />
+
       <AppTabs
         tabs={[
-          { id: "taxTemplates", label: "Tax Templates", icon: <FaBoxOpen /> },
-
-          { id: "taxCategory", label: "Tax Category", icon: <FaBoxOpen /> },
+          { id: "taxTemplate", label: "Tax Templates", icon: <FaFileInvoiceDollar /> },
+          { id: "taxCategory", label: "Tax Category", icon: <FaTags /> },
         ]}
         activeTab={activeTab}
-        onChange={(tabId) => {
-          setActiveTab(tabId);
-        }}
+        onChange={(tabId) => setActiveTab(tabId)}
       />
+
       <AppPageBody viewportLocked={isDashboardTab}>
-        {activeTab === "TaxTemplate" && <TaxTemplate />}
+        {activeTab === "taxTemplate" && <TaxTemplate />} 
         {activeTab === "taxCategory" && <TaxCategory />}
       </AppPageBody>
     </AppPage>
