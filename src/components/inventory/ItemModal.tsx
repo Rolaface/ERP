@@ -10,7 +10,6 @@ import BasicDetailsSection from "./BasicDetailsSection";
 import InventorySection from "./InventorySection";
 import PricingSection from "./PricingSection";
 import TaxSection from "./TaxSection";
-import { TabButton } from "./ItemModalControls";
 import type { ItemFormData, ItemModalTab, ItemTaxRow } from "./itemModalTypes";
 
 interface ItemModalProps {
@@ -270,24 +269,46 @@ const ItemModal: React.FC<ItemModalProps> = ({
         noValidate
         className="min-h-full"
       >
-        <div className="-mx-4 -mt-3 border-b border-theme bg-card px-6">
-          <div className="flex flex-wrap gap-8">
-            <TabButton
-              label="Item Details"
-              active={activeTab === "details"}
+        <div className="-mx-4 -mt-3 border-b border-theme bg-app px-6">
+          <div className="flex gap-6">
+            <button
+              type="button"
               onClick={() => handleTabChange("details")}
-            />
-            <TabButton
-              label="Tax Details"
-              active={activeTab === "taxDetails"}
+              className={[
+                "border-b-2 bg-transparent px-1 py-2.5 text-sm font-semibold tracking-wide transition-all",
+                activeTab === "details"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted hover:text-main",
+              ].join(" ")}
+            >
+              Item Details
+            </button>
+            <button
+              type="button"
               onClick={() => handleTabChange("taxDetails")}
-            />
-            <TabButton
-              label="Inventory Details"
-              active={activeTab === "inventoryDetails"}
+              className={[
+                "border-b-2 bg-transparent px-1 py-2.5 text-sm font-semibold tracking-wide transition-all",
+                activeTab === "taxDetails"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted hover:text-main",
+              ].join(" ")}
+            >
+              Tax Details
+            </button>
+            <button
+              type="button"
               disabled={isServiceItem}
               onClick={() => handleTabChange("inventoryDetails")}
-            />
+              className={[
+                "border-b-2 bg-transparent px-1 py-2.5 text-sm font-semibold tracking-wide transition-all",
+                activeTab === "inventoryDetails"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted hover:text-main",
+                isServiceItem ? "cursor-not-allowed opacity-40" : "",
+              ].join(" ")}
+            >
+              Inventory Details
+            </button>
           </div>
         </div>
 
