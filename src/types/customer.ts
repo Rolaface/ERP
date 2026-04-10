@@ -29,6 +29,7 @@ export interface CustomerSummary {
 export interface CustomerContact {
   firstName: string;
   lastName: string;
+  fullName:string;
   designation: string;
   department: string;
   email: string;

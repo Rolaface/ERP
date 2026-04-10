@@ -94,28 +94,19 @@ const CustomerDetailView: React.FC<Props> = ({
       entry.name?.toLowerCase().includes(q) ||
       entry.id?.toLowerCase().includes(q),
   );
+  const formatAddress = (addr?: any) => {
+  if (!addr) return "";
 
-  const line1 = [customer.shippingAddressLine1, customer.shippingAddressLine2]
-    .filter(Boolean)
-    .join(", ");
-  const line2 = [customer.shippingCity, customer.shippingPostalCode]
-    .filter(Boolean)
-    .join(", ");
-  const line3 = [customer.shippingState, customer.shippingCountry]
-    .filter(Boolean)
-    .join(", ");
-  const shippingAddress = [line1, line2, line3].filter(Boolean).join("\n");
+  const line1 = [addr.line1, addr.line2].filter(Boolean).join(", ");
+  const line2 = [addr.city, addr.postalCode].filter(Boolean).join(", ");
+  const line3 = [addr.state, addr.country].filter(Boolean).join(", ");
 
-  const bLine1 = [customer.billingAddressLine1, customer.billingAddressLine2]
-    .filter(Boolean)
-    .join(", ");
-  const bLine2 = [customer.billingCity, customer.billingPostalCode]
-    .filter(Boolean)
-    .join(", ");
-  const bLine3 = [customer.billingState, customer.billingCountry]
-    .filter(Boolean)
-    .join(", ");
-  const billingAddress = [bLine1, bLine2, bLine3].filter(Boolean).join("\n");
+  return [line1, line2, line3].filter(Boolean).join("\n");
+  };
+  const shipping = customer.addresses?.find(a => a.type === "Shipping");
+  const billing = customer.addresses?.find(a => a.type === "Billing");
+  const shippingAddress = formatAddress(shipping);
+  const billingAddress = formatAddress(billing);
 
   const sellingTerms = customer.terms?.selling;
 
@@ -326,9 +317,13 @@ const CustomerDetailView: React.FC<Props> = ({
                       Channels
                     </h4>
                     <div className="space-y-0">
-                      <DataRow
+                      {/* <DataRow
                         label="Contact Person"
                         value={customer.contactPerson}
+                      /> */}
+                      <DataRow
+                        label="Contact Person"
+                        value={customer.contacts && customer.contacts[0] ? customer.contacts[0].fullName : 'N/A'}
                       />
                       <DataRow label="Mobile Number" value={customer.mobile} />
                       <DataRow label="Email Address" value={customer.email} />
