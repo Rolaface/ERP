@@ -160,7 +160,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   itemGroup: form.itemGroup,
   itemClassCode: form.itemClassCode,
   itemTypeCode: Number(form.itemTypeCode),
-  originNationCode: form.originNationCode,
+
   packagingUnitCode: form.packagingUnitCode,
   packingUnit: form.packingUnit || "",
   packingSize: form.packingSize || "",
@@ -177,6 +177,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   dimensionWidth: form.dimensionWidth,
   dimensionHeight: form.dimensionHeight,
   brand: form.brand,
+  countryOfOrigin: form.countryCode || form.originNationCode || "",
   vendorInfo: {
     preferredVendor: form.preferredVendor,
     salesAccount: form.salesAccount,
@@ -189,7 +190,6 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
     taxCode: "",
     taxName: row.taxTemplate,
     taxPerct: "",
-    countryCode: form.countryCode || form.originNationCode || "",
   })),
   inventoryInfo: {
     valuationMethod: form.valuationMethod,
@@ -227,20 +227,19 @@ const mapApiToForm = (item: any) => {
     has_batch_no: item.batchInfo?.has_batch_no || false,
     has_expiry_date: item.batchInfo?.has_expiry_date || false,
 
-  
-  taxRows: Array.isArray(item.taxInfo)
-  ? item.taxInfo.map((t: any) => ({
-      taxCategory: t.taxCategory || "",
-      taxTemplate: t.taxName || "",
-    }))
-  : item.taxInfo && Object.keys(item.taxInfo).length > 0
-  ? [
-      {
-        taxCategory: item.taxInfo.taxCategory || "",
-        taxTemplate: item.taxInfo.taxName || "",
-      },
-    ]
-  : [],
+    taxRows: Array.isArray(item.taxInfo)
+      ? item.taxInfo.map((t: any) => ({
+          taxCategory: t.taxCategory || "",
+          taxTemplate: t.taxName || "",
+        }))
+      : item.taxInfo && Object.keys(item.taxInfo).length > 0
+        ? [
+            {
+              taxCategory: item.taxInfo.taxCategory || "",
+              taxTemplate: item.taxInfo.taxName || "",
+            },
+          ]
+        : [],
   };
 };
 
@@ -322,10 +321,10 @@ export const useItemForm = ({
     if (isEditMode && initialData) {
       const mapped = mapApiToForm(initialData);
       setForm({
-  ...emptyForm,
-  ...mapped,
-});
-       setTaxRows(mapped.taxRows || []);
+        ...emptyForm,
+        ...mapped,
+      });
+      setTaxRows(mapped.taxRows || []);
     } else {
       setForm(emptyForm);
     }
@@ -337,7 +336,6 @@ export const useItemForm = ({
   const validateItemDetails = (): boolean => {
     const requiredFields: Array<{ field: keyof ItemFormData; label: string }> =
       [
-        
         { field: "itemGroup", label: "Item Category" },
         { field: "itemName", label: "Item Name" },
         { field: "description", label: "Description" },
@@ -443,24 +441,24 @@ export const useItemForm = ({
 
       closeSwal();
 
-     const isSuccess = response.status === "success";
+      const isSuccess = response.status === "success";
 
-if (!isSuccess) {
-  closeSwal();
-  showApiError(response.message || "Something went wrong");
-  return;
-}
+      if (!isSuccess) {
+        closeSwal();
+        showApiError(response.message || "Something went wrong");
+        return;
+      }
 
-await showSuccess(response.message);
-onSubmit?.(response.data);
-handleClose();
+      await showSuccess(response.message);
+      onSubmit?.(response.data);
+      handleClose();
     } catch (error) {
       closeSwal();
       showApiError(
-  typeof error === "string"
-    ? error
-    : (error as any)?.message?.message || "Something went wrong"
-);
+        typeof error === "string"
+          ? error
+          : (error as any)?.message?.message || "Something went wrong",
+      );
     } finally {
       setLoading(false);
     }

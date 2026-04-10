@@ -13,7 +13,8 @@ import {
   openPurchaseOrderModal, 
   openPurchaseInvoiceModal, 
   openProformaModal,
-  openWarehouseModal 
+  openWarehouseModal,
+  type ModalContext,
 } from "../store/modalStore";
 import { AppMain, AppShell, AppContentContainer, RightPanel } from "./layoutSystem";
 import GlobalModalHandler from "../components/common/GlobalModalHandler";
@@ -167,8 +168,10 @@ const AppLayout: React.FC = () => {
   const openPIEdit = (pId: string | number) => openPurchaseInvoiceModal(pId);
 
   // Inventory handlers
-  const openItemCreate = () => openItemModal();
-  const openItemEdit = (id: string, data: any) => openItemModal(data, true);
+  const openItemCreate = (context?: ModalContext) =>
+    openItemModal(undefined, false, context);
+  const openItemEdit = (id: string, data: any, context?: ModalContext) =>
+    openItemModal(data, true, context);
   const openCategoryCreate = () => openItemCategoryModal();
   const openCategoryEdit = (id: string, data: any) => openItemCategoryModal(data, true);
   const openWarehouseCreate = (initialData?: { parent: string }) => openWarehouseModal(initialData);

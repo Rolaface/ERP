@@ -105,7 +105,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
 
               return list.map((item: any) => ({
                 label: item.name,
-                value: item.code ?? item.name,
+                value: item.name,
               }));
             }}
             onChange={(value) => setField("originNationCode", value)}

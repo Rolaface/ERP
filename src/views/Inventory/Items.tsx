@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 import { showApiError, showSuccess } from "../../utils/alert";
@@ -26,11 +26,40 @@ import type { Column } from "../../components/ui/Table/type";
 import type { ItemSummary, Item } from "../../types/item";
 
 type OutletContextType = {
-  openItemCreate: () => void;
-  openItemEdit: (id: string, data: any) => void;
+  openItemCreate: (context?: { onSuccess?: () => void }) => void;
+  openItemEdit: (
+    id: string,
+    data: any,
+    context?: { onSuccess?: () => void },
+  ) => void;
 };
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+
+const flattenItemDetail = (fullItem: any): Item => ({
+  ...fullItem,
+  taxCategory: fullItem.taxInfo?.taxCategory ?? fullItem.taxCategory ?? "",
+  taxPreference:
+    fullItem.taxInfo?.taxPreference ?? fullItem.taxPreference ?? "",
+  taxType: fullItem.taxInfo?.taxType ?? fullItem.taxType ?? "",
+  taxCode: fullItem.taxInfo?.taxCode ?? fullItem.taxCode ?? "",
+  taxPerct: fullItem.taxInfo?.taxPerct ?? fullItem.taxPerct ?? "",
+  preferredVendor:
+    fullItem.vendorInfo?.preferredVendor ?? fullItem.preferredVendor ?? "",
+  salesAccount: fullItem.vendorInfo?.salesAccount ?? fullItem.salesAccount ?? "",
+  purchaseAccount:
+    fullItem.vendorInfo?.purchaseAccount ?? fullItem.purchaseAccount ?? "",
+  minStockLevel:
+    fullItem.inventoryInfo?.minStockLevel ?? fullItem.minStockLevel ?? "",
+  maxStockLevel:
+    fullItem.inventoryInfo?.maxStockLevel ?? fullItem.maxStockLevel ?? "",
+  reorderLevel:
+    fullItem.inventoryInfo?.reorderLevel ?? fullItem.reorderLevel ?? "",
+  valuationMethod:
+    fullItem.inventoryInfo?.valuationMethod ?? fullItem.valuationMethod ?? "",
+  trackingMethod:
+    fullItem.inventoryInfo?.trackingMethod ?? fullItem.trackingMethod ?? "",
+});
 
 const Items: React.FC = () => {
   const { openItemCreate, openItemEdit } =
@@ -81,7 +110,7 @@ const Items: React.FC = () => {
   }, [searchTerm]);
 
   /* ── Fetch item list ── */
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
       const res = await getAllItems(page, pageSize, filters);
@@ -117,14 +146,14 @@ const Items: React.FC = () => {
       setLoading(false);
       setInitialLoad(false);
     }
-  };
+  }, [filters, page, pageSize]);
 
   useEffect(() => {
-    fetchItems();
-  }, [page, pageSize, filters]);
+    void fetchItems();
+  }, [fetchItems]);
 
   /* ── Fetch ALL items (no pagination) for the detail sidebar ── */
-  const fetchAllItems = async () => {
+  const fetchAllItems = useCallback(async () => {
     try {
       const res = await getAllItems(1, 1000, {});
       const rawList = Array.isArray(res?.data?.data) ? res.data.data : [];
@@ -148,7 +177,24 @@ const Items: React.FC = () => {
     } catch (err) {
       console.error("Failed to fetch all items for sidebar", err);
     }
-  };
+  }, []);
+
+  const refetchItemData = useCallback(async () => {
+    await Promise.all([fetchItems(), fetchAllItems()]);
+
+    if (!activeSummary?.id) return;
+
+    try {
+      const res = await getItemByItemCode(activeSummary.id);
+      setSelectedItem(flattenItemDetail(res.data));
+    } catch (err) {
+      console.error("Failed to refetch selected item", err);
+    }
+  }, [activeSummary?.id, fetchAllItems, fetchItems]);
+
+  const handleAddItem = useCallback(() => {
+    openItemCreate({ onSuccess: refetchItemData });
+  }, [openItemCreate, refetchItemData]);
 
   /* ── Row click → fetch full item + switch to detail view (inline) ── */
   const handleRowClick = async (summary: ItemSummary) => {
@@ -157,50 +203,12 @@ const Items: React.FC = () => {
     setSelectedItem(null);
 
     /* Ensure sidebar has all items loaded */
-    if (allItems.length === 0) fetchAllItems();
+    if (allItems.length === 0) void fetchAllItems();
 
     try {
       setDetailLoading(true);
       const res = await getItemByItemCode(summary.id);
-      const fullItem = res.data;
-
-      /* Flatten nested fields */
-      const flat: Item = {
-        ...fullItem,
-        taxCategory:
-          fullItem.taxInfo?.taxCategory ?? fullItem.taxCategory ?? "",
-        taxPreference:
-          fullItem.taxInfo?.taxPreference ?? fullItem.taxPreference ?? "",
-        taxType: fullItem.taxInfo?.taxType ?? fullItem.taxType ?? "",
-        taxCode: fullItem.taxInfo?.taxCode ?? fullItem.taxCode ?? "",
-        taxPerct: fullItem.taxInfo?.taxPerct ?? fullItem.taxPerct ?? "",
-        preferredVendor:
-          fullItem.vendorInfo?.preferredVendor ??
-          fullItem.preferredVendor ??
-          "",
-        salesAccount:
-          fullItem.vendorInfo?.salesAccount ?? fullItem.salesAccount ?? "",
-        purchaseAccount:
-          fullItem.vendorInfo?.purchaseAccount ??
-          fullItem.purchaseAccount ??
-          "",
-        minStockLevel:
-          fullItem.inventoryInfo?.minStockLevel ?? fullItem.minStockLevel ?? "",
-        maxStockLevel:
-          fullItem.inventoryInfo?.maxStockLevel ?? fullItem.maxStockLevel ?? "",
-        reorderLevel:
-          fullItem.inventoryInfo?.reorderLevel ?? fullItem.reorderLevel ?? "",
-        valuationMethod:
-          fullItem.inventoryInfo?.valuationMethod ??
-          fullItem.valuationMethod ??
-          "",
-        trackingMethod:
-          fullItem.inventoryInfo?.trackingMethod ??
-          fullItem.trackingMethod ??
-          "",
-      };
-
-      setSelectedItem(flat);
+      setSelectedItem(flattenItemDetail(res.data));
 
       // TODO: fetch invoice + stock data once APIs are ready
       // const [salesRes, purchaseRes] = await Promise.all([
@@ -229,7 +237,7 @@ const Items: React.FC = () => {
     e.stopPropagation();
     try {
       const res = await getItemByItemCode(itemCode);
-      openItemEdit(itemCode, res.data);
+      openItemEdit(itemCode, res.data, { onSuccess: refetchItemData });
     } catch {
       console.error("Unable to fetch item");
     }
@@ -256,16 +264,14 @@ const confirmDelete = async () => {
       return;
     }
 
-    setItems((prev) =>
-      prev.filter((i) => i.id !== itemToDelete.id)
-    );
-
     showSuccess("Item deleted successfully");
     setDeleteOpen(false);
 
     if (activeSummary?.id === itemToDelete.id) {
       handleBack();
     }
+
+    await refetchItemData();
 
   } catch (err: any) {
     showApiError(err);
@@ -280,8 +286,7 @@ const confirmDelete = async () => {
     if (!activeSummary) return;
     try {
       const res = await getItemByItemCode(activeSummary.id);
-      (res.data);
-      (true);
+      openItemEdit(activeSummary.id, res.data, { onSuccess: refetchItemData });
     } catch {
       showApiError("Unable to fetch item");
     }
@@ -391,7 +396,7 @@ const confirmDelete = async () => {
             onSearch={setSearchTerm}
             enableAdd
             addLabel="Add Item"
-            onAdd={openItemCreate}
+            onAdd={handleAddItem}
             currentPage={page}
             totalPages={totalPages}
             pageSize={pageSize}
@@ -435,7 +440,7 @@ const confirmDelete = async () => {
             onSelectItem={(summary) => handleRowClick(summary)}
             onEditItem={handleDetailEdit}
             onDeleteItem={handleDetailDelete}
-            onAddItem={openItemCreate}
+            onAddItem={handleAddItem}
             salesInvoices={salesInvoices}
             purchaseInvoices={purchaseInvoices}
             stockRows={stockRows}
