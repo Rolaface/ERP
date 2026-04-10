@@ -10,7 +10,7 @@ import {
 } from "../../api/itemApi";
 import { ItemFilters } from "../../api/itemApi";
 
-import DeleteModal    from "../../components/actionModal/DeleteModal";
+import DeleteModal from "../../components/actionModal/DeleteModal";
 import ItemDetailView, {
   type SalesInvoice,
   type PurchaseInvoice,
@@ -33,22 +33,23 @@ type OutletContextType = {
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 
 const Items: React.FC = () => {
-  const { openItemCreate, openItemEdit } = useOutletContext<OutletContextType>();
+  const { openItemCreate, openItemEdit } =
+    useOutletContext<OutletContextType>();
 
   /* ── Table / list state ── */
-  const [items,       setItems]       = useState<ItemSummary[]>([]);
-  const [searchTerm,  setSearchTerm]  = useState("");
-  const [loading,     setLoading]     = useState(true);
+  const [items, setItems] = useState<ItemSummary[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [page,        setPage]        = useState(1);
-  const [pageSize,    setPageSize]    = useState(10);
-  const [totalPages,  setTotalPages]  = useState(1);
-  const [totalItems,  setTotalItems]  = useState(0);
-  const [filters,     setFilters]     = useState<ItemFilters>({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [filters, setFilters] = useState<ItemFilters>({});
 
   /* ── View mode — "table" or "detail" (inline, like CustomerManagement) ── */
-  const [viewMode,      setViewMode]      = useState<"table" | "detail">("table");
-  const [selectedItem,  setSelectedItem]  = useState<Item | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "detail">("table");
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [activeSummary, setActiveSummary] = useState<ItemSummary | null>(null);
 
@@ -56,17 +57,19 @@ const Items: React.FC = () => {
   const [allItems, setAllItems] = useState<ItemSummary[]>([]);
 
   /* ── Invoice / stock data — wire up your APIs here ── */
-  const [salesInvoices,    setSalesInvoices]    = useState<SalesInvoice[]>([]);
-  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([]);
-  const [stockRows,        setStockRows]        = useState<StockRow[]>([]);
-  const [loadingSales,     setLoadingSales]     = useState(false);
-  const [loadingPurchase,  setLoadingPurchase]  = useState(false);
-  const [loadingStock,     setLoadingStock]     = useState(false);
+  const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>(
+    [],
+  );
+  const [stockRows, setStockRows] = useState<StockRow[]>([]);
+  const [loadingSales, setLoadingSales] = useState(false);
+  const [loadingPurchase, setLoadingPurchase] = useState(false);
+  const [loadingStock, setLoadingStock] = useState(false);
 
   /* ── Delete modal state ── */
-  const [deleteOpen,   setDeleteOpen]   = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ItemSummary | null>(null);
-  const [deleting,     setDeleting]     = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   /* ── Search debounce ── */
   useEffect(() => {
@@ -81,30 +84,30 @@ const Items: React.FC = () => {
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const res        = await getAllItems(page, pageSize, filters);
-      const rawList    = Array.isArray(res?.data?.data) ? res.data.data : [];
+      const res = await getAllItems(page, pageSize, filters);
+      const rawList = Array.isArray(res?.data?.data) ? res.data.data : [];
       const pagination = res?.data?.pagination;
 
       const flat = rawList.map((it: any) => ({
         ...it,
-        taxCategory:     it.taxInfo?.taxCategory    ?? "",
-        taxPreference:   it.taxInfo?.taxPreference  ?? "",
-        taxType:         it.taxInfo?.taxType        ?? "",
-        taxCode:         it.taxInfo?.taxCode        ?? "",
-        taxPerct:        it.taxInfo?.taxPerct       ?? "",
-        preferredVendor: it.vendorInfo?.preferredVendor  ?? "",
-        salesAccount:    it.vendorInfo?.salesAccount     ?? "",
-        purchaseAccount: it.vendorInfo?.purchaseAccount  ?? "",
-        minStockLevel:   it.inventoryInfo?.minStockLevel  ?? "",
-        maxStockLevel:   it.inventoryInfo?.maxStockLevel  ?? "",
-        reorderLevel:    it.inventoryInfo?.reorderLevel   ?? "",
+        taxCategory: it.taxInfo?.taxCategory ?? "",
+        taxPreference: it.taxInfo?.taxPreference ?? "",
+        taxType: it.taxInfo?.taxType ?? "",
+        taxCode: it.taxInfo?.taxCode ?? "",
+        taxPerct: it.taxInfo?.taxPerct ?? "",
+        preferredVendor: it.vendorInfo?.preferredVendor ?? "",
+        salesAccount: it.vendorInfo?.salesAccount ?? "",
+        purchaseAccount: it.vendorInfo?.purchaseAccount ?? "",
+        minStockLevel: it.inventoryInfo?.minStockLevel ?? "",
+        maxStockLevel: it.inventoryInfo?.maxStockLevel ?? "",
+        reorderLevel: it.inventoryInfo?.reorderLevel ?? "",
         valuationMethod: it.inventoryInfo?.valuationMethod ?? "",
-        trackingMethod:  it.inventoryInfo?.trackingMethod  ?? "",
+        trackingMethod: it.inventoryInfo?.trackingMethod ?? "",
       }));
 
       setItems(flat);
       setTotalPages(pagination?.total_pages ?? 1);
-      setTotalItems(pagination?.total       ?? 0);
+      setTotalItems(pagination?.total ?? 0);
     } catch (err) {
       console.error(err);
       setItems([]);
@@ -116,28 +119,30 @@ const Items: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchItems(); }, [page, pageSize, filters]);
+  useEffect(() => {
+    fetchItems();
+  }, [page, pageSize, filters]);
 
   /* ── Fetch ALL items (no pagination) for the detail sidebar ── */
   const fetchAllItems = async () => {
     try {
-      const res     = await getAllItems(1, 1000, {});
+      const res = await getAllItems(1, 1000, {});
       const rawList = Array.isArray(res?.data?.data) ? res.data.data : [];
-      const flat    = rawList.map((it: any) => ({
+      const flat = rawList.map((it: any) => ({
         ...it,
-        taxCategory:     it.taxInfo?.taxCategory    ?? "",
-        taxPreference:   it.taxInfo?.taxPreference  ?? "",
-        taxType:         it.taxInfo?.taxType        ?? "",
-        taxCode:         it.taxInfo?.taxCode        ?? "",
-        taxPerct:        it.taxInfo?.taxPerct       ?? "",
-        preferredVendor: it.vendorInfo?.preferredVendor  ?? "",
-        salesAccount:    it.vendorInfo?.salesAccount     ?? "",
-        purchaseAccount: it.vendorInfo?.purchaseAccount  ?? "",
-        minStockLevel:   it.inventoryInfo?.minStockLevel  ?? "",
-        maxStockLevel:   it.inventoryInfo?.maxStockLevel  ?? "",
-        reorderLevel:    it.inventoryInfo?.reorderLevel   ?? "",
+        taxCategory: it.taxInfo?.taxCategory ?? "",
+        taxPreference: it.taxInfo?.taxPreference ?? "",
+        taxType: it.taxInfo?.taxType ?? "",
+        taxCode: it.taxInfo?.taxCode ?? "",
+        taxPerct: it.taxInfo?.taxPerct ?? "",
+        preferredVendor: it.vendorInfo?.preferredVendor ?? "",
+        salesAccount: it.vendorInfo?.salesAccount ?? "",
+        purchaseAccount: it.vendorInfo?.purchaseAccount ?? "",
+        minStockLevel: it.inventoryInfo?.minStockLevel ?? "",
+        maxStockLevel: it.inventoryInfo?.maxStockLevel ?? "",
+        reorderLevel: it.inventoryInfo?.reorderLevel ?? "",
         valuationMethod: it.inventoryInfo?.valuationMethod ?? "",
-        trackingMethod:  it.inventoryInfo?.trackingMethod  ?? "",
+        trackingMethod: it.inventoryInfo?.trackingMethod ?? "",
       }));
       setAllItems(flat);
     } catch (err) {
@@ -156,25 +161,43 @@ const Items: React.FC = () => {
 
     try {
       setDetailLoading(true);
-      const res      = await getItemByItemCode(summary.id);
+      const res = await getItemByItemCode(summary.id);
       const fullItem = res.data;
 
       /* Flatten nested fields */
       const flat: Item = {
         ...fullItem,
-        taxCategory:     fullItem.taxInfo?.taxCategory    ?? fullItem.taxCategory    ?? "",
-        taxPreference:   fullItem.taxInfo?.taxPreference  ?? fullItem.taxPreference  ?? "",
-        taxType:         fullItem.taxInfo?.taxType        ?? fullItem.taxType        ?? "",
-        taxCode:         fullItem.taxInfo?.taxCode        ?? fullItem.taxCode        ?? "",
-        taxPerct:        fullItem.taxInfo?.taxPerct       ?? fullItem.taxPerct       ?? "",
-        preferredVendor: fullItem.vendorInfo?.preferredVendor  ?? fullItem.preferredVendor  ?? "",
-        salesAccount:    fullItem.vendorInfo?.salesAccount     ?? fullItem.salesAccount     ?? "",
-        purchaseAccount: fullItem.vendorInfo?.purchaseAccount  ?? fullItem.purchaseAccount  ?? "",
-        minStockLevel:   fullItem.inventoryInfo?.minStockLevel  ?? fullItem.minStockLevel  ?? "",
-        maxStockLevel:   fullItem.inventoryInfo?.maxStockLevel  ?? fullItem.maxStockLevel  ?? "",
-        reorderLevel:    fullItem.inventoryInfo?.reorderLevel   ?? fullItem.reorderLevel   ?? "",
-        valuationMethod: fullItem.inventoryInfo?.valuationMethod ?? fullItem.valuationMethod ?? "",
-        trackingMethod:  fullItem.inventoryInfo?.trackingMethod  ?? fullItem.trackingMethod  ?? "",
+        taxCategory:
+          fullItem.taxInfo?.taxCategory ?? fullItem.taxCategory ?? "",
+        taxPreference:
+          fullItem.taxInfo?.taxPreference ?? fullItem.taxPreference ?? "",
+        taxType: fullItem.taxInfo?.taxType ?? fullItem.taxType ?? "",
+        taxCode: fullItem.taxInfo?.taxCode ?? fullItem.taxCode ?? "",
+        taxPerct: fullItem.taxInfo?.taxPerct ?? fullItem.taxPerct ?? "",
+        preferredVendor:
+          fullItem.vendorInfo?.preferredVendor ??
+          fullItem.preferredVendor ??
+          "",
+        salesAccount:
+          fullItem.vendorInfo?.salesAccount ?? fullItem.salesAccount ?? "",
+        purchaseAccount:
+          fullItem.vendorInfo?.purchaseAccount ??
+          fullItem.purchaseAccount ??
+          "",
+        minStockLevel:
+          fullItem.inventoryInfo?.minStockLevel ?? fullItem.minStockLevel ?? "",
+        maxStockLevel:
+          fullItem.inventoryInfo?.maxStockLevel ?? fullItem.maxStockLevel ?? "",
+        reorderLevel:
+          fullItem.inventoryInfo?.reorderLevel ?? fullItem.reorderLevel ?? "",
+        valuationMethod:
+          fullItem.inventoryInfo?.valuationMethod ??
+          fullItem.valuationMethod ??
+          "",
+        trackingMethod:
+          fullItem.inventoryInfo?.trackingMethod ??
+          fullItem.trackingMethod ??
+          "",
       };
 
       setSelectedItem(flat);
@@ -207,7 +230,9 @@ const Items: React.FC = () => {
     try {
       const res = await getItemByItemCode(itemCode);
       openItemEdit(itemCode, res.data);
-    } catch { console.error("Unable to fetch item"); }
+    } catch {
+      console.error("Unable to fetch item");
+    }
   };
 
   /* ── Delete ── */
@@ -217,36 +242,49 @@ const Items: React.FC = () => {
     setDeleteOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!itemToDelete) return;
-    try {
-      setDeleting(true);
-      const res = await deleteItemByItemCode(itemToDelete.id);
-      if (!res || ![200, 201].includes(res.status_code)) { showApiError(res); return; }
-      setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
-      showSuccess(res.message);
-      setDeleteOpen(false);
-      /* If the deleted item was open in detail view, go back to table */
-      if (activeSummary?.id === itemToDelete.id) {
-        handleBack();
-      }
-    } catch (err: any) {
-      showApiError(err);
-    } finally {
-      setDeleting(false);
-      setItemToDelete(null);
-    }
-  };
+const confirmDelete = async () => {
+  if (!itemToDelete) return;
 
+  try {
+    setDeleting(true);
+
+    const res = await deleteItemByItemCode(itemToDelete.id);
+
+    // ✅ Use HTTP status
+    if (res.status !== 200) {
+      showApiError(res);
+      return;
+    }
+
+    setItems((prev) =>
+      prev.filter((i) => i.id !== itemToDelete.id)
+    );
+
+    showSuccess("Item deleted successfully");
+    setDeleteOpen(false);
+
+    if (activeSummary?.id === itemToDelete.id) {
+      handleBack();
+    }
+
+  } catch (err: any) {
+    showApiError(err);
+  } finally {
+    setDeleting(false);
+    setItemToDelete(null);
+  }
+};
 
   /* ── Detail view action handlers ── */
   const handleDetailEdit = async () => {
     if (!activeSummary) return;
     try {
       const res = await getItemByItemCode(activeSummary.id);
-      setEditItem(res.data);
-      setShowModal(true);
-    } catch { showApiError("Unable to fetch item"); }
+      (res.data);
+      (true);
+    } catch {
+      showApiError("Unable to fetch item");
+    }
   };
 
   const handleDetailDelete = () => {
@@ -257,47 +295,49 @@ const Items: React.FC = () => {
 
   /* ── Table columns ── */
   const columns: Column<ItemSummary>[] = [
-    { 
-      key: "id",           
-      header: "Item Code",    
+    {
+      key: "id",
+      header: "Item Code",
       align: "left",
       render: (i) => (
         <span className="truncate block max-w-[120px]">{i.id}</span>
-      )
+      ),
     },
-    { 
-      key: "itemName",     
-      header: "Name",         
+    {
+      key: "itemName",
+      header: "Name",
       align: "left",
       render: (i) => (
         <span className="truncate block max-w-[150px]">{i.itemName}</span>
-      )
+      ),
     },
-    { 
-      key: "itemGroup",    
-      header: "Category",     
+    {
+      key: "itemGroup",
+      header: "Category",
       align: "left",
       render: (i) => (
         <span className="truncate block max-w-[120px]">{i.itemGroup}</span>
-      )
+      ),
     },
-    { 
-      key: "taxCategory",  
-      header: "Tax Category", 
+    {
+      key: "taxCategory",
+      header: "Tax Category",
       align: "left",
       render: (i) => (
         <span className="truncate block max-w-[100px]">{i.taxCategory}</span>
-      )
+      ),
     },
-    { key: "minStockLevel",header: "Min Stock",    align: "right" },
-    { key: "maxStockLevel",header: "Max Stock",    align: "right" },
-    { 
-      key: "preferredVendor", 
-      header: "Supplier",  
+    { key: "minStockLevel", header: "Min Stock", align: "right" },
+    { key: "maxStockLevel", header: "Max Stock", align: "right" },
+    {
+      key: "preferredVendor",
+      header: "Supplier",
       align: "left",
       render: (i) => (
-        <span className="truncate block max-w-[130px]">{i.preferredVendor}</span>
-      )
+        <span className="truncate block max-w-[130px]">
+          {i.preferredVendor}
+        </span>
+      ),
     },
     {
       key: "sellingPrice",
@@ -309,29 +349,29 @@ const Items: React.FC = () => {
         </code>
       ),
     },
-   {
-  key: "actions",
-  header: "Actions",
-  align: "center",
-  render: (i) => (
-    <ActionGroup>
-      {/* Eye icon → open detail */}
-      <ActionButton
-        type="view"
-        iconOnly
-        onClick={(e) => {
-          e.stopPropagation();
-          handleRowClick(i);
-        }}
-      />
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (i) => (
+        <ActionGroup>
+          {/* Eye icon → open detail */}
+          <ActionButton
+            type="view"
+            iconOnly
+            onClick={(e?: React.MouseEvent<HTMLButtonElement>) => {
+              e?.stopPropagation();
+              handleRowClick(i);
+            }}
+          />
 
-      <ActionMenu
-        onEdit={(e) => handleEdit(i.id, e as any)}
-        onDelete={(e) => handleDeleteClick(i, e as any)}
-      />
-    </ActionGroup>
-  ),
-},
+          <ActionMenu
+            onEdit={(e) => handleEdit(i.id, e as any)}
+            onDelete={(e) => handleDeleteClick(i, e as any)}
+          />
+        </ActionGroup>
+      ),
+    },
   ];
 
   // ── RENDER ────────────────────────────────────────────────────────────────
@@ -357,20 +397,26 @@ const Items: React.FC = () => {
             pageSize={pageSize}
             totalItems={totalItems}
             pageSizeOptions={[10, 25, 50, 100]}
-            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
             onPageChange={setPage}
             extraFilters={
               <div className="w-44">
                 <FilterSelect
                   value={filters.taxCategory || ""}
                   onChange={(e) => {
-                    setFilters((prev) => ({ ...prev, taxCategory: e.target.value || undefined }));
+                    setFilters((prev) => ({
+                      ...prev,
+                      taxCategory: e.target.value || undefined,
+                    }));
                     setPage(1);
                   }}
                   options={[
-                    { label: "Export",     value: "Export" },
+                    { label: "Export", value: "Export" },
                     { label: "Non-Export", value: "Non-Export" },
-                    { label: "LPO",        value: "LPO" },
+                    { label: "LPO", value: "LPO" },
                   ]}
                 />
               </div>
@@ -411,7 +457,10 @@ const Items: React.FC = () => {
           entityId={itemToDelete.id}
           entityDisplayName={itemToDelete.itemName}
           isLoading={deleting}
-          onClose={() => { setDeleteOpen(false); setItemToDelete(null); }}
+          onClose={() => {
+            setDeleteOpen(false);
+            setItemToDelete(null);
+          }}
           onDelete={confirmDelete}
         />
       )}

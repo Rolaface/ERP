@@ -39,10 +39,15 @@ export async function getItemByItemCode(itemCode: string): Promise<any> {
   return resp.data || null;
 }
 
-export async function deleteItemByItemCode(id: string): Promise<any> {
-  const url = `${ItemAPI.delete}?id=${id}`;
-  const resp: AxiosResponse = await api.delete(url);
-  return resp.data;
+export async function deleteItemByItemCode(name: string): Promise<any> {
+  const url = ItemAPI.delete;
+
+  const resp: AxiosResponse = await api.post(url, {
+    name: name,
+    doctype: "Item",
+  });
+
+  return resp;
 }
 
 export async function createItem(payload: any): Promise<any> {

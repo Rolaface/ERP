@@ -98,6 +98,7 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
               fetchOptions={fetchBrandOptions}
               onChange={(value) => setField("brand", value)}
               placeholder="Search brand..."
+              allowCustomInput
               disabled={isServiceItem}
             />
           </div>

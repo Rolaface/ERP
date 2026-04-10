@@ -16,6 +16,7 @@ import type {
   SupplierOption,
 } from "../components/inventory/itemModalTypes";
 import { getSupplierList } from "../api/lookupApi";
+import { showSuccess } from "../utils/alert";
 
 interface ItemNestedInitialData extends Partial<ItemFormData> {
   vendorInfo?: Partial<
@@ -103,9 +104,11 @@ interface SupplierApiResponse {
   pagination: Pagination;
 }
 interface SaveItemResponse {
-  status_code?: number;
+  status_code: number;
+  status: "success" | "fail";
+  message: string;
+  data: string;
 }
-
 export const emptyForm: ItemFormData = {
   id: "",
   itemName: "",
@@ -208,6 +211,39 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   }),
 });
 
+//structure the API response to match the form data shape, especially for nested fields like vendorInfo and inventoryInfo
+
+const mapApiToForm = (item: any) => {
+  return {
+    ...item,
+
+    preferredVendor: item.vendorInfo?.preferredVendor || "",
+
+    valuationMethod: item.inventoryInfo?.valuationMethod || "",
+    trackingMethod: item.inventoryInfo?.trackingMethod || "",
+    reorderLevel: item.inventoryInfo?.reorderLevel || "",
+    minStockLevel: item.inventoryInfo?.minStockLevel || "",
+
+    has_batch_no: item.batchInfo?.has_batch_no || false,
+    has_expiry_date: item.batchInfo?.has_expiry_date || false,
+
+  
+  taxRows: Array.isArray(item.taxInfo)
+  ? item.taxInfo.map((t: any) => ({
+      taxCategory: t.taxCategory || "",
+      taxTemplate: t.taxName || "",
+    }))
+  : item.taxInfo && Object.keys(item.taxInfo).length > 0
+  ? [
+      {
+        taxCategory: item.taxInfo.taxCategory || "",
+        taxTemplate: item.taxInfo.taxName || "",
+      },
+    ]
+  : [],
+  };
+};
+
 const flattenItemGroups = (nodes: ItemGroupTreeNode[]): ItemGroupOption[] =>
   nodes.flatMap((node) => [
     { id: node.name, groupName: node.item_group_name },
@@ -228,6 +264,7 @@ export const useItemForm = ({
   const [loadingItemGroups, setLoadingItemGroups] = useState(false);
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+  const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([]);
 
   const isServiceItem = Number(form.itemTypeCode) === 3;
 
@@ -283,68 +320,12 @@ export const useItemForm = ({
     if (!isOpen) return;
 
     if (isEditMode && initialData) {
+      const mapped = mapApiToForm(initialData);
       setForm({
-        ...emptyForm,
-        ...initialData,
-        packingUnit: initialData.packingUnit ?? "",
-        packingSize: initialData.packingSize ?? "",
-        preferredVendor:
-          initialData.vendorInfo?.preferredVendor ??
-          initialData.preferredVendor ??
-          "",
-        salesAccount:
-          initialData.vendorInfo?.salesAccount ??
-          initialData.salesAccount ??
-          "",
-        purchaseAccount:
-          initialData.vendorInfo?.purchaseAccount ??
-          initialData.purchaseAccount ??
-          "",
-        valuationMethod:
-          initialData.inventoryInfo?.valuationMethod ??
-          initialData.valuationMethod ??
-          "",
-        trackingMethod:
-          initialData.inventoryInfo?.trackingMethod ??
-          initialData.trackingMethod ??
-          "",
-        reorderLevel:
-          initialData.inventoryInfo?.reorderLevel ??
-          initialData.reorderLevel ??
-          "",
-        minStockLevel:
-          initialData.inventoryInfo?.minStockLevel ??
-          initialData.minStockLevel ??
-          "",
-        maxStockLevel:
-          initialData.inventoryInfo?.maxStockLevel ??
-          initialData.maxStockLevel ??
-          "",
-        has_batch_no:
-          initialData.batchInfo?.has_batch_no ??
-          initialData.has_batch_no ??
-          false,
-        create_new_batch:
-          initialData.batchInfo?.create_new_batch ??
-          initialData.create_new_batch ??
-          false,
-        has_expiry_date:
-          initialData.batchInfo?.has_expiry_date ??
-          initialData.has_expiry_date ??
-          false,
-        expiryDate:
-          initialData.batchInfo?.expiryDate ?? initialData.expiryDate ?? "",
-        manufacturingDate:
-          initialData.batchInfo?.manufacturingDate ??
-          initialData.manufacturingDate ??
-          "",
-        shelfLifeInDays:
-          initialData.batchInfo?.shelfLifeInDays ??
-          initialData.shelfLifeInDays ??
-          "",
-        endOfLife:
-          initialData.batchInfo?.endOfLife ?? initialData.endOfLife ?? "",
-      });
+  ...emptyForm,
+  ...mapped,
+});
+       setTaxRows(mapped.taxRows || []);
     } else {
       setForm(emptyForm);
     }
@@ -356,7 +337,7 @@ export const useItemForm = ({
   const validateItemDetails = (): boolean => {
     const requiredFields: Array<{ field: keyof ItemFormData; label: string }> =
       [
-        { field: "itemTypeCode", label: "Item Type" },
+        
         { field: "itemGroup", label: "Item Category" },
         { field: "itemName", label: "Item Name" },
         { field: "description", label: "Description" },
@@ -415,6 +396,7 @@ export const useItemForm = ({
 
   const reset = () => {
     setForm(emptyForm);
+    setTaxRows([]);
   };
 
   const handleClose = () => {
@@ -461,16 +443,24 @@ export const useItemForm = ({
 
       closeSwal();
 
-      if (!response || ![200, 201].includes(response.status_code ?? 0)) {
-        showApiError(response);
-        return;
-      }
+     const isSuccess = response.status === "success";
 
-      onSubmit?.(response);
-      handleClose();
+if (!isSuccess) {
+  closeSwal();
+  showApiError(response.message || "Something went wrong");
+  return;
+}
+
+await showSuccess(response.message);
+onSubmit?.(response.data);
+handleClose();
     } catch (error) {
       closeSwal();
-      showApiError(error);
+      showApiError(
+  typeof error === "string"
+    ? error
+    : (error as any)?.message?.message || "Something went wrong"
+);
     } finally {
       setLoading(false);
     }
@@ -487,6 +477,8 @@ export const useItemForm = ({
     reset,
     handleClose,
     handleSubmit,
+    taxRows,
+    setTaxRows,
     itemGroups,
     loadingItemGroups,
     suppliers,

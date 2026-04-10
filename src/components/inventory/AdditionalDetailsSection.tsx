@@ -96,7 +96,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
         {/* Country of Origin  */}
         <div className="w-[160px] min-w-0">
           <SearchSelect2
-            label="Country"
+            label="Country of origin"
             value={form.originNationCode ?? ""}
             fetchOptions={async () => {
               const data = await fetchCountries();
@@ -117,7 +117,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
         {/* SVC Charge */}
         <YesNoCheckbox
           name="svcCharge"
-          label="SVC Charge"
+          label="Service Charge"
           value={form.svcCharge || "N"}
           onChange={onToggleChange}
         />
