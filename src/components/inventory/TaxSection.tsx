@@ -36,6 +36,7 @@ interface TaxSectionProps {
   onRemoveTaxRow: (absoluteIndex: number) => void;
   onPreviousPage: () => void;
   onNextPage: () => void;
+  errors?: Record<string, string>;
 }
 
 /** Renders the tax breakdown tooltip content */
@@ -66,6 +67,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
     onRemoveTaxRow,
     onPreviousPage,
     onNextPage,
+    errors,
   }) => {
     const startIndex = taxPage * itemsPerPage + 1;
     const endIndex = Math.min((taxPage + 1) * itemsPerPage, taxRows.length);
@@ -119,17 +121,33 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
 
                     <td className="min-w-[220px] px-1 py-1 align-middle">
                       <div className="flex items-center h-[28px]">
-                        <TaxCategorySelect
-                          value={row.taxCategory}
-                          onChange={(value) =>
-                            onTaxRowChange(absoluteIndex, "taxCategory", value)
-                          }
-                        />
+                        <div
+                          className={[
+                            "w-full rounded",
+                            errors?.[`taxRows.${absoluteIndex}.taxCategory`]
+                              ? "ring-1 ring-danger"
+                              : "",
+                          ].join(" ")}
+                        >
+                          <TaxCategorySelect
+                            value={row.taxCategory}
+                            onChange={(value) =>
+                              onTaxRowChange(absoluteIndex, "taxCategory", value)
+                            }
+                          />
+                        </div>
                       </div>
                     </td>
                     {/* Tax Template cell — wrap with tooltip only when taxes are available */}
                     <td className="min-w-[220px] px-1 py-1 align-middle">
-                      <div className="flex items-center h-[28px]">
+                      <div
+                        className={[
+                          "flex items-center h-[28px] rounded",
+                          errors?.[`taxRows.${absoluteIndex}.taxTemplate`]
+                            ? "ring-1 ring-danger"
+                            : "",
+                        ].join(" ")}
+                      >
                         {taxes && taxes.length > 0 ? (
                           <Tooltip content={<TaxTooltipContent taxes={taxes} />}>
                             <div className="w-full">{templateCell}</div>

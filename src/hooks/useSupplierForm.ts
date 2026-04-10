@@ -43,13 +43,12 @@ interface SupplierErrors {
   billingPostalCode?: string;
 }
 
-
 export const useSupplierForm = ({
   initialData,
   isEditMode = false,
   onSuccess,
   isOpen,
-  existingSupplierCodes = []
+  existingSupplierCodes = [],
 }: UseSupplierFormProps) => {
   const [form, setForm] = useState<SupplierFormData>(emptySupplierForm);
   const [loading, setLoading] = useState(false);
@@ -57,7 +56,8 @@ export const useSupplierForm = ({
   const [errors, setErrors] = useState<SupplierErrors>({});
   const [allowSubmit, setAllowSubmit] = useState(false);
   const [isCodeEdited, setIsCodeEdited] = useState(false);
-  const [companyBuyingTerms, setCompanyBuyingTerms] = useState<TermSection | null>(null);
+  const [companyBuyingTerms, setCompanyBuyingTerms] =
+    useState<TermSection | null>(null);
 
   useEffect(() => {
     if (!isOpen || !companyId || isEditMode) return;
@@ -72,14 +72,13 @@ export const useSupplierForm = ({
 
         setCompanyBuyingTerms(buyingTerms);
 
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
           terms: {
             ...prev.terms,
-            buying: buyingTerms
-          }
+            buying: buyingTerms,
+          },
         }));
-
       } catch (err) {
         console.error("Failed to load buying terms", err);
       }
@@ -88,23 +87,19 @@ export const useSupplierForm = ({
     loadCompanyTerms();
   }, [companyId, isOpen, isEditMode]);
 
-
-
   const handleTermsChange = (type: "buying", updated: TermSection) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       terms: {
         ...prev.terms,
-        [type]: updated
-      }
+        [type]: updated,
+      },
     }));
   };
-
 
   // Validate Supplier Tab
   const validateSupplierTab = (): boolean => {
     const newErrors: SupplierErrors = {};
-
 
     if (!form.tpin || form.tpin.trim() === "") {
       newErrors.tpin = "TPIN is required";
@@ -156,8 +151,6 @@ export const useSupplierForm = ({
       newErrors.openingBalance = "Opening Balance is required";
     }
 
-  
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -194,8 +187,6 @@ export const useSupplierForm = ({
     return Object.keys(newErrors).length === 0;
   };
 
-
-
   // Prefill Edit Data
   useEffect(() => {
     if (!isOpen) return;
@@ -203,39 +194,38 @@ export const useSupplierForm = ({
     if (initialData) {
       const mapped = mapSupplierToForm(initialData);
 
-      const legacyAccount = (mapped as any);
+      const legacyAccount = mapped as any;
 
       if (!mapped.bankAccounts || mapped.bankAccounts.length === 0) {
-        mapped.bankAccounts = [{
-          id: crypto.randomUUID(),
-          bankName: legacyAccount.bankAccount || "",
-          accountNumber: legacyAccount.accountNumber || "",
-          accountHolder: legacyAccount.accountHolder || "",
-          sortCode: legacyAccount.sortCode || "",
-          swiftCode: legacyAccount.swiftCode || "",
-          branchAddress: legacyAccount.branchAddress || "",
-          isDefault: true
-        }];
+        mapped.bankAccounts = [
+          {
+            id: crypto.randomUUID(),
+            bankName: legacyAccount.bankAccount || "",
+            accountNumber: legacyAccount.accountNumber || "",
+            accountHolder: legacyAccount.accountHolder || "",
+            sortCode: legacyAccount.sortCode || "",
+            swiftCode: legacyAccount.swiftCode || "",
+            branchAddress: legacyAccount.branchAddress || "",
+            isDefault: true,
+          },
+        ];
       }
 
-      setForm(prev => ({
+      setForm((prev) => ({
         ...mapped,
         terms: {
-          buying:
-            mapped.terms?.buying?.payment?.phases?.length
-              ? mapped.terms.buying
-              : prev.terms?.buying || emptySupplierForm.terms?.buying
-        }
+          buying: mapped.terms?.buying?.payment?.phases?.length
+            ? mapped.terms.buying
+            : prev.terms?.buying || emptySupplierForm.terms?.buying,
+        },
       }));
-
-
 
       setIsCodeEdited(true);
     } else {
       setForm({
         ...emptySupplierForm,
         dateOfAddition: new Date().toISOString().split("T")[0],
-       bankAccounts: []
+        bankAccounts: [],
       });
       setIsCodeEdited(false);
     }
@@ -245,12 +235,11 @@ export const useSupplierForm = ({
     setAllowSubmit(false);
   }, [initialData, isOpen]);
 
-
-
-
   // Input Change
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, type, value } = e.target;
 
@@ -270,21 +259,18 @@ export const useSupplierForm = ({
       const checked = (e.target as HTMLInputElement).checked;
       setForm((p) => ({ ...p, [name]: checked as any }));
     } else {
-
       // Only email validation remains
       if (name === "emailId") {
         if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
           setErrors((prev) => ({
             ...prev,
-            emailId: "Invalid email format"
+            emailId: "Invalid email format",
           }));
         }
       }
 
       if (name === "supplierName") {
-
-        setForm(prev => {
-
+        setForm((prev) => {
           // If user already edited code → don't override
           if (isCodeEdited) {
             return { ...prev, supplierName: value };
@@ -294,7 +280,7 @@ export const useSupplierForm = ({
           return {
             ...prev,
             supplierName: value,
-            supplierCode: autoCode
+            supplierCode: autoCode,
           };
         });
 
@@ -304,9 +290,9 @@ export const useSupplierForm = ({
       if (name === "supplierCode") {
         setIsCodeEdited(true);
 
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
-          supplierCode: value.toUpperCase()
+          supplierCode: value.toUpperCase(),
         }));
 
         return;
@@ -316,12 +302,9 @@ export const useSupplierForm = ({
     }
   };
 
-
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
-
-    if (activeTab !== "terms") return;
 
     // Validate all tabs before submission
     const supplierValid = validateSupplierTab();
@@ -338,9 +321,10 @@ export const useSupplierForm = ({
       if (!form.phoneCode || !form.phoneNo) emptyFields.push("Phone Number");
       if (!form.emailId) emptyFields.push("Email");
 
-      const message = emptyFields.length > 0
-        ? `Please fill in required fields: ${emptyFields.join(", ")}`
-        : "Please fix validation errors in Supplier tab";
+      const message =
+        emptyFields.length > 0
+          ? `Please fill in required fields: ${emptyFields.join(", ")}`
+          : "Please fix validation errors in Supplier tab";
       showValidationError(message);
       return;
     }
@@ -351,11 +335,13 @@ export const useSupplierForm = ({
       if (!form.currency) emptyFields.push("Currency");
       if (!form.paymentTerms) emptyFields.push("Credit Days");
       if (!form.dateOfAddition) emptyFields.push("Date of Addition");
-      if (!form.openingBalance && form.openingBalance !== 0) emptyFields.push("Opening Balance");
-     
-      const message = emptyFields.length > 0
-        ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
-        : "Please fix validation errors in Payment tab";
+      if (!form.openingBalance && form.openingBalance !== 0)
+        emptyFields.push("Opening Balance");
+
+      const message =
+        emptyFields.length > 0
+          ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
+          : "Please fix validation errors in Payment tab";
       showValidationError(message);
       return;
     }
@@ -370,9 +356,10 @@ export const useSupplierForm = ({
       if (!form.province) emptyFields.push("Province");
       if (!form.billingPostalCode) emptyFields.push("Postal Code");
 
-      const message = emptyFields.length > 0
-        ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
-        : "Please fix validation errors in Address tab";
+      const message =
+        emptyFields.length > 0
+          ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
+          : "Please fix validation errors in Address tab";
       showValidationError(message);
       return;
     }
@@ -386,97 +373,90 @@ export const useSupplierForm = ({
         alternateNo: `${form.alternateCode || ""}${form.alternateNo || ""}`,
       };
 
-      const payload = mapSupplierToApi(
-        formattedForm,
-        initialData?.supplierId,
-      );
-let res: any;
-if (isEditMode) {
-  res = await updateSupplier(payload);
-} else {
-  res = await createSupplier(payload);
-}
+      const payload = mapSupplierToApi(formattedForm, initialData?.supplierId);
+      let res: any;
+      if (isEditMode) {
+        res = await updateSupplier(payload);
+      } else {
+        res = await createSupplier(payload);
+      }
 
-/* Backend failure */
-if (!res || ![200, 201].includes(res.status_code)) {
-  showApiError(res);
-  return;
-}
+      /* Backend failure */
+      const statusCode = res?.message?.status_code;
 
-/* Step 2 — Bank accounts (only on create, not edit) */
-if (!isEditMode) {
-  const bankAccounts = form.bankAccounts || [];
+      if (!res || ![200, 201].includes(statusCode)) {
+        showApiError(res?.message || res);
+        return;
+      }
+      /* Step 2 — Bank accounts (only on create, not edit) */
+      if (!isEditMode) {
+        const bankAccounts = form.bankAccounts || [];
 
-  if (bankAccounts.length > 0) {
-    const results = await Promise.all(
-      bankAccounts.map((acc) =>
-        createNewBankAccount({
-          accountFor: "Supplier",
-          partyName: form.supplierName,
-          bankName: acc.bankName,
-          accountNo: acc.accountNumber,
-          accountHolderName: acc.accountHolder,
-          sortCode: acc.sortCode,
-          branchAddress: acc.branchAddress || "",
-          isDefault: acc.isDefault ? "1" : "0",
-          currency: form.currency || "",
-          dateAdded:
-            form.dateOfAddition ||
-            new Date().toISOString().split("T")[0],
-        })
-      )
-    );
+        if (bankAccounts.length > 0) {
+          const results = await Promise.all(
+            bankAccounts.map((acc) =>
+              createNewBankAccount({
+                accountFor: "Supplier",
+                partyName: form.supplierName,
+                bankName: acc.bankName,
+                accountNo: acc.accountNumber,
+                accountHolderName: acc.accountHolder,
+                sortCode: acc.sortCode,
+                branchAddress: acc.branchAddress || "",
+                isDefault: acc.isDefault ? "1" : "0",
+                currency: form.currency || "",
+                dateAdded:
+                  form.dateOfAddition || new Date().toISOString().split("T")[0],
+              }),
+            ),
+          );
 
-    const failed = results.filter(
-      (res) => !res || ![200, 201].includes(res.status_code)
-    );
+          const failed = results.filter(
+            (res) => !res || ![200, 201].includes(res.status_code),
+          );
 
-    if (failed.length > 0) {
-      console.error("Bank account failures:", failed);
-      throw new Error(
-        `${failed.length} bank account(s) failed to save`
-      );
-    }
-  }
-}
+          if (failed.length > 0) {
+            console.error("Bank account failures:", failed);
+            throw new Error(`${failed.length} bank account(s) failed to save`);
+          }
+        }
+      }
 
+      /* Success */
+      const successMessage =
+        res?.message?.message ||
+        res?.message ||
+        (isEditMode ? "Supplier Updated" : "Supplier Created");
 
-/* Success */
-showSuccess(
-  res?.message?.message ||
-  res?.message ||
-  (isEditMode ? "Supplier Updated" : "Supplier Created"),
-);
-onSuccess?.(form);
+      showSuccess(successMessage);
+      onSuccess?.(form);
     } catch (err: any) {
       showApiError(err);
     } finally {
       setLoading(false);
     }
-
   };
-
-
-
 
   const reset = () => {
     if (initialData && isEditMode) {
       const mapped = mapSupplierToForm(initialData);
 
       if (!mapped.bankAccounts?.length) {
-        mapped.bankAccounts = [{
-          id: crypto.randomUUID(),
-          bankName: "",
-          accountNumber: "",
-          accountHolder: "",
-          sortCode: "",
-          swiftCode: "",
-          branchAddress: "",
-          isDefault: true
-        }];
+        mapped.bankAccounts = [
+          {
+            id: crypto.randomUUID(),
+            bankName: "",
+            accountNumber: "",
+            accountHolder: "",
+            sortCode: "",
+            swiftCode: "",
+            branchAddress: "",
+            isDefault: true,
+          },
+        ];
       }
 
-      const hasDefault = mapped.bankAccounts.some(a => a.isDefault);
+      const hasDefault = mapped.bankAccounts.some((a) => a.isDefault);
       if (!hasDefault) {
         mapped.bankAccounts[0].isDefault = true;
       }
@@ -484,18 +464,15 @@ onSuccess?.(form);
       setForm({
         ...mapped,
         terms: {
-          buying:
-            mapped.terms?.buying?.payment?.phases?.length
-              ? mapped.terms.buying
-              : companyBuyingTerms ?? emptySupplierForm.terms?.buying
-        }
+          buying: mapped.terms?.buying?.payment?.phases?.length
+            ? mapped.terms.buying
+            : (companyBuyingTerms ?? emptySupplierForm.terms?.buying),
+        },
       });
-
     } else {
       setForm({
         ...emptySupplierForm,
         dateOfAddition: new Date().toISOString().split("T")[0],
-
 
         bankAccounts: [
           {
@@ -506,13 +483,13 @@ onSuccess?.(form);
             sortCode: "",
             swiftCode: "",
             branchAddress: "",
-            isDefault: true, 
-          }
+            isDefault: true,
+          },
         ],
 
         terms: {
-          buying: companyBuyingTerms ?? emptySupplierForm.terms?.buying
-        }
+          buying: companyBuyingTerms ?? emptySupplierForm.terms?.buying,
+        },
       });
     }
 
@@ -537,11 +514,13 @@ onSuccess?.(form);
         if (!form.currency) emptyFields.push("Currency");
         if (!form.paymentTerms) emptyFields.push("Credit Days");
         if (!form.dateOfAddition) emptyFields.push("Date of Addition");
-        if (!form.openingBalance && form.openingBalance !== 0) emptyFields.push("Opening Balance");
+        if (!form.openingBalance && form.openingBalance !== 0)
+          emptyFields.push("Opening Balance");
 
-        const message = emptyFields.length > 0
-          ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
-          : "Please fix validation errors in Supplier tab";
+        const message =
+          emptyFields.length > 0
+            ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
+            : "Please fix validation errors in Supplier tab";
         showValidationError(message);
         return;
       }
@@ -554,11 +533,11 @@ onSuccess?.(form);
           emptyFields.push("Bank Accounts");
         } else {
           const invalid = form.bankAccounts.some(
-            acc =>
+            (acc) =>
               !acc.bankName ||
               !acc.accountNumber ||
               !acc.accountHolder ||
-              !acc.sortCode
+              !acc.sortCode,
           );
 
           if (invalid) {
@@ -566,15 +545,14 @@ onSuccess?.(form);
           }
         }
 
-
-        const message = emptyFields.length > 0
-          ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
-          : "Please fix validation errors in Payment tab";
+        const message =
+          emptyFields.length > 0
+            ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
+            : "Please fix validation errors in Payment tab";
         showValidationError(message);
         return;
       }
-    }
-    else if (activeTab === "address") {
+    } else if (activeTab === "address") {
       isValid = validateAddressTab();
       if (!isValid) {
         const emptyFields = [];
@@ -585,9 +563,10 @@ onSuccess?.(form);
         if (!form.province) emptyFields.push("Province");
         if (!form.billingPostalCode) emptyFields.push("Postal Code");
 
-        const message = emptyFields.length > 0
-          ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
-          : "Please fix validation errors in Address tab";
+        const message =
+          emptyFields.length > 0
+            ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
+            : "Please fix validation errors in Address tab";
         showValidationError(message);
         return;
       }
@@ -600,12 +579,7 @@ onSuccess?.(form);
 
   // Next Tab
   const goToNextTab = () => {
-    const tabs: SupplierTab[] = [
-      "supplier",
-      "payment",
-      "address",
-      "terms",
-    ];
+    const tabs: SupplierTab[] = ["supplier", "payment", "address", "terms"];
 
     const currentIndex = tabs.indexOf(activeTab);
 
@@ -625,6 +599,6 @@ onSuccess?.(form);
     goToNextTab,
     handleNext,
     errors,
-    handleTermsChange
+    handleTermsChange,
   };
 };

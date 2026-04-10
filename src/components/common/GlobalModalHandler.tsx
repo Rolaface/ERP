@@ -4,10 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import {
   useModalStore,
-  openCustomerModal,
-  ModalContext,
   MODAL_LAYER,
 } from "../../store/modalStore";
+import type { ModalInstance, ModalType } from "../../store/modalStore";
+import type { ModalSubmitHandler } from "../../types/modal";
 import { useQuickAdd } from "../../context/QuickAddContext";
 
 import CustomerModal from "../crm/CustomerModal";
@@ -22,6 +22,34 @@ import ItemsCategoryModal from "../inventory/ItemsCategoryModal";
 import WarehouseModal from "../inventory/WarehouseModal";
 import TaxTemplateModalComponent from "../inventory/TaxTemplateModal";
 import TaxCategoryModalComponent from "../inventory/TaxCategoryModal";
+import type { CustomerDetail } from "../../types/customer";
+import type { Supplier } from "../../types/Supply/supplier";
+import type { ItemInitialData } from "../inventory/ItemModal";
+import type { TaxCategoryFormData as TaxTemplateFormData } from "../../types/tax/taxTemplate";
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getInitialData = <T,>(value: unknown): T | null =>
+  isRecord(value) ? (value as T) : null;
+
+const getRecordInitialData = (
+  value: unknown,
+): Record<string, unknown> | null => (isRecord(value) ? value : null);
+
+const getModalSeedValue = (
+  value: unknown,
+  key: string,
+): string | number | undefined => {
+  if (!isRecord(value)) return undefined;
+  const seedValue = value[key];
+  return typeof seedValue === "string" || typeof seedValue === "number"
+    ? seedValue
+    : undefined;
+};
+
+const toQuickAddText = (value: unknown): string =>
+  typeof value === "string" || typeof value === "number" ? String(value) : "";
 
 const GlobalModalHandler: React.FC = () => {
   const { modals, closeModal, getModalContext } = useModalStore();
@@ -29,7 +57,7 @@ const GlobalModalHandler: React.FC = () => {
 
   useEffect(() => {
     if (pending) {
-      const entityTypeMap: Record<string, string> = {
+      const entityTypeMap: Partial<Record<string, ModalType>> = {
         invoice: "invoice",
         proforma: "proforma",
         quotation: "quotation",
@@ -45,12 +73,16 @@ const GlobalModalHandler: React.FC = () => {
 
       const modalType = entityTypeMap[pending.entityType];
       if (modalType) {
-        openCustomerModal(null, false, {
+        useModalStore.getState().openModal(modalType, null, false, {
           source: "quickAdd",
           fieldId: pending.fieldId,
           callback: pending.callback,
           onSuccess: (data) => {
-          completeQuickAdd({ id: data.id || data.customerId, name: data.name });
+            if (!isRecord(data)) return;
+            completeQuickAdd({
+              id: toQuickAddText(data.id || data.customerId),
+              name: toQuickAddText(data.name),
+            });
           },
         });
       }
@@ -58,7 +90,7 @@ const GlobalModalHandler: React.FC = () => {
     }
   }, [pending, completeQuickAdd]);
 
-  const renderModal = (modal: typeof modals[0]) => {
+  const renderModal = (modal: ModalInstance) => {
     const context = getModalContext(modal.id);
 
     const handleClose = () => {
@@ -68,14 +100,11 @@ const GlobalModalHandler: React.FC = () => {
       closeModal(modal.id);
     };
 
-    const handleSubmit = (data: any) => {
-      if (context?.onSuccess) {
-        context.onSuccess(data);
-      }
-      if (context?.callback) {
-        context.callback(data);
-      }
+    const handleSubmit: ModalSubmitHandler = async (data) => {
+      await context?.onSuccess?.(data);
+      await context?.callback?.(data);
       closeModal(modal.id);
+      return true;
     };
 
     switch (modal.type) {
@@ -87,7 +116,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={modal.initialData}
+            initialData={getInitialData<CustomerDetail>(modal.initialData)}
             isEditMode={modal.isEdit}
           />
         );
@@ -100,7 +129,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={modal.initialData}
+            initialData={getInitialData<Supplier>(modal.initialData)}
             isEditMode={modal.isEdit}
           />
         );
@@ -149,7 +178,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            poId={modal.initialData?.poId}
+            poId={getModalSeedValue(modal.initialData, "poId")}
           />
         );
 
@@ -161,7 +190,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            pId={modal.initialData?.pId}
+            pId={getModalSeedValue(modal.initialData, "pId")}
           />
         );
 
@@ -173,7 +202,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={modal.initialData}
+            initialData={getInitialData<ItemInitialData>(modal.initialData)}
             isEditMode={modal.isEdit}
           />
         );
@@ -186,7 +215,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={modal.initialData}
+            initialData={getRecordInitialData(modal.initialData)}
             isEditMode={modal.isEdit}
           />
         );
@@ -199,7 +228,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={modal.initialData}
+            initialData={getInitialData<TaxTemplateFormData>(modal.initialData)}
             isEditMode={modal.isEdit}
           />
         );
@@ -212,7 +241,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={modal.initialData}
+            initialData={getRecordInitialData(modal.initialData)}
             isEditMode={modal.isEdit}
           />
         );
@@ -224,8 +253,9 @@ const GlobalModalHandler: React.FC = () => {
             modalId={modal.id}
             isOpen={true}
             onClose={handleClose}
-            onSubmit={handleSubmit}
-            initialData={modal.initialData}
+            onSubmit={async (data) => {
+              await handleSubmit(data);
+            }}
           />
         );
 

@@ -15,7 +15,7 @@ export interface TaxCategoryFormData {
 interface TaxCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: TaxCategoryFormData) => Promise<void>;
+  onSubmit: (data: TaxCategoryFormData) => Promise<boolean>;
   modalId?: string;
 }
 
@@ -24,7 +24,7 @@ interface TaxCategoryModalProps {
 const TaxCategoryModal: React.FC<TaxCategoryModalProps> = ({
   isOpen,
   onClose,
-  onSave,
+  onSubmit,
   modalId,
 }) => {
 const resolvedModalId = useMemo(
@@ -62,14 +62,17 @@ const resolvedModalId = useMemo(
   };
 
   const handleSave = async () => {
-    if (!validate()) return;
+    if (!validate()) return false;
     setSubmitting(true);
     try {
-      await onSave({ title: title.trim(), disabled: !enabled });
-      resetDirty();
-      onClose();
+      const result = await onSubmit({ title: title.trim(), disabled: !enabled });
+      if (result) {
+        resetDirty();
+        onClose();
+      }
+      return result;
     } catch {
-      // Error shown by hook via showApiError
+      return false;
     } finally {
       setSubmitting(false);
     }
@@ -90,7 +93,7 @@ const resolvedModalId = useMemo(
         loading={submitting}
         onClick={handleSave}
       >
-        Save
+        Submit
       </Button>
     </>
   );

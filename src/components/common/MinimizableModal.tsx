@@ -219,14 +219,15 @@ const ModalShell: React.FC<ModalShellProps> = ({
           }}
           exit={{ opacity: 0, scale: 0.9, y: 32 }}
           transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-          className={`erp-modal-panel flex w-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-card ${
+          className={`erp-modal-panel flex min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-card ${
             !customWidth ? (MAX_WIDTH_CLASSES[maxWidth] ?? "max-w-4xl") : ""
           }`}
           style={{
             pointerEvents: "auto",
             height,
             width: customWidth || undefined,
-            maxWidth: customWidth ? "none" : undefined,
+            maxWidth: customWidth ? "calc(100vw - 32px)" : undefined,
+            maxHeight: "calc(100vh - 32px)",
             boxShadow: focused
               ? "0 28px 70px rgba(15,23,42,0.28), 0 0 0 1px rgba(15,23,42,0.06)"
               : "0 10px 28px rgba(15,23,42,0.14)",
@@ -293,7 +294,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
           </header>
 
           <section
-            className="flex-1 overflow-x-hidden overflow-y-auto bg-app px-4 py-3 text-sm text-main"
+            className="min-h-0 flex-1 overflow-x-auto overflow-y-auto bg-app px-4 py-3 text-sm text-main"
             style={{
               opacity: 1,
               transition: "background 0.2s ease",

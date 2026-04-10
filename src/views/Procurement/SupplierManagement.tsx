@@ -75,27 +75,33 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const fetchSuppliers = async () => {
-    try {
-      setLoading(true);
-      const res = await getSuppliers(page, pageSize, filters);
-      if (!res || res.status_code !== 200) return;
+const fetchSuppliers = async () => {
+  try {
+    setLoading(true);
 
-      const list = (res.data?.suppliers || []).map((supplier: any) => ({
-        ...supplier,
-        status: normalizeStatus(supplier.status),
-      }));
+    const res = await getSuppliers(page, pageSize, filters);
 
-      setAllSuppliers(list);
-      setTotalPages(res.data?.pagination?.total_pages || 1);
-      setTotalItems(res.data?.pagination?.total || 0);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (!res || res.status_code !== 200) return;
 
+    const list = (res.data || []).map((supplier: any) => {
+      const mapped = mapSupplierApi(supplier);
+
+      return {
+        ...mapped,
+        status: normalizeStatus(mapped.status),
+      };
+    });
+
+    setAllSuppliers(list);
+    setTotalPages(res.pagination?.total_pages || 1);
+    setTotalItems(res.pagination?.total || 0);
+
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setLoading(false);
+  }
+};
   useEffect(() => {
     fetchSuppliers();
   }, [page, pageSize, filters]);
@@ -105,10 +111,9 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       const res = await getSuppliers(1, 1000);
       if (!res || res.status_code !== 200) return;
 
-      const list = (res.data?.suppliers || []).map((supplier: any) => ({
-        ...supplier,
-        status: normalizeStatus(supplier.status),
-      }));
+   const list = (res.data || []).map((supplier: any) =>
+  mapSupplierApi(supplier)
+);
 
       setAllSuppliers(list);
     } catch (error) {
@@ -188,12 +193,12 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
 
   const columns: Column<Supplier>[] = [
     {
-      key: "supplierCode",
-      header: "Code",
+      key: "supplierID",
+      header: "ID",
       align: "left",
       render: (supplier) => (
         <span className="block truncate text-sm">
-          {supplier.supplierCode || "-"}
+          {supplier.supplierId|| "-"}
         </span>
       ),
       tooltip: (supplier) => supplier.supplierCode || "-",

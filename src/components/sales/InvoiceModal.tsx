@@ -6,7 +6,7 @@ import { showApiError, showValidationError } from "../../utils/alert";
 import { User, Mail, Phone } from "lucide-react";
 import CustomerSelect from "../selects/CustomerSelect";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
-import { Button } from "../../components/ui/modal/formComponent";
+import ModalFooter from "../common/ModalFooter";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
@@ -24,11 +24,12 @@ import AddressBlock from "../ui/modal/AddressBlock";
 import { formatDate } from "../../utils/dateFormatter";
 import Tooltip from "../Tooltip";
 import ItemTable from "../common/ItemTable";
+import type { ModalSubmitHandler } from "../../types/modal";
 
 interface InvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (data: any) => Promise<boolean> | boolean;
+  onSubmit?: ModalSubmitHandler;
   initialData?: any;
   mode?: "create" | "edit";
   modalId?: string;
@@ -72,18 +73,25 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     "terms",
   ];
 
-  const handleNext = () => {
+  const validateDetailsOrFocus = () => {
     try {
       actions.validateForm();
+      return true;
+    } catch (err: any) {
+      ui.setActiveTab("details");
+      showValidationError(err.message);
+      return false;
+    }
+  };
+
+  const handleNext = () => {
+    if (ui.activeTab === "details" && !validateDetailsOrFocus()) return;
 
       const currentIndex = tabs.indexOf(ui.activeTab as any);
 
       if (currentIndex < tabs.length - 1) {
         ui.setActiveTab(tabs[currentIndex + 1]);
       }
-    } catch (err: any) {
-      showValidationError(err.message);
-    }
   };
 
   useEffect(() => {
@@ -99,73 +107,47 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
   const showExportField = ui.isExport;
+  const handleSave = async () => {
+    if (submitting || !validateDetailsOrFocus()) return;
+
+    setSubmitting(true);
+    try {
+      const dummyEvent = {
+        preventDefault: () => {},
+      } as React.FormEvent;
+      const payload = await actions.handleSubmit(dummyEvent);
+      if (!payload) {
+        ui.setActiveTab("details");
+        showValidationError("Please fill all required fields correctly.");
+        return;
+      }
+
+      payload.invoiceCharges = (payload.invoiceCharges || []).filter(
+        (ch: any) => ch.charge_type?.trim() && Number(ch.amount) > 0,
+      );
+
+      const didSave = await onSubmit?.(payload);
+      if (didSave !== false) {
+        resetDirty();
+      }
+    } catch (err: any) {
+      showApiError(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const footerContent = (
-    <>
-      <Button
-        variant="secondary"
-        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-        type="button"
-        disabled={submitting}
-      >
-        Cancel
-      </Button>
-      <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          onClick={async () => {
-            resetDirty();
-            await actions.handleReset();
-          }}
-          type="button"
-          disabled={submitting}
-        >
-          Reset
-        </Button>
-        <Button
-          variant="primary"
-          type="button"
-          onClick={
-            ui.activeTab !== "terms"
-              ? handleNext
-              : async () => {
-                  if (submitting) return;
-                  setSubmitting(true);
-                  try {
-                   
-                    const dummyEvent = {
-                      preventDefault: () => {},
-                    } as React.FormEvent;
-                  const payload = await actions.handleSubmit(dummyEvent);
-                  payload.invoiceCharges = (payload.invoiceCharges || [])
-                  .filter(ch => ch.charge_type?.trim() && Number(ch.amount) > 0);
-                    if (!payload) {
-                      showValidationError(
-                        "Please fill all required fields correctly.",
-                      );
-                      setSubmitting(false);
-                      return;
-                    }
-                    const didSave = await onSubmit?.(payload);
-                    if (didSave) {
-                      resetDirty();
-                    }
-                  } catch (err: any) {
-                    showApiError(err);
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }
-          }
-          disabled={submitting}
-        >
-          {ui.activeTab === "terms"
-            ? submitting
-              ? "Submitting..."
-              : "Submit"
-            : "Next"}
-        </Button>
-      </div>
-    </>
+    <ModalFooter
+      onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+      onReset={async () => {
+        resetDirty();
+        await actions.handleReset();
+      }}
+      onSave={handleSave}
+      onNext={ui.activeTab === "terms" ? undefined : handleNext}
+      saving={submitting}
+    />
   );
 
   return (

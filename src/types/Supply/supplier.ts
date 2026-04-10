@@ -2,6 +2,7 @@ import type { TermSection } from "../termsAndCondition";
 
 export interface SupplierFormData {
   tpin?: string;
+  id?: string;  
   supplierName?: string;
   supplierCode?: string;
   taxCategory: string;

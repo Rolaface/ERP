@@ -6,26 +6,21 @@ import TermsAndCondition from "../TermsAndCondition";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import AddressBlock from "../ui/modal/AddressBlock";
 import CustomerGroupSearchSelect from "../selects/customergroupSelect";
-import { Card, Button } from "../ui/modal/formComponent";
+import { Card } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import { PaymentInfoTab } from "../../components/procurement/supply/PaymentInfoTab";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
+import ModalFooter from "../common/ModalFooter";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import {
   defaultSellingTerms,
   useCustomerForm,
 } from "../../hooks/Usecustomerform";
 import type { CustomerDetail } from "../../types/customer";
+import type { StandardModalProps } from "../../types/modal";
 
-interface CustomerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit?: (data: CustomerDetail) => void;
-  initialData?: CustomerDetail | null;
-  isEditMode?: boolean;
-  modalId?: string;
-}
+type CustomerModalProps = StandardModalProps<unknown, CustomerDetail>;
 
 const CustomerModal: React.FC<CustomerModalProps> = ({
   isOpen,
@@ -60,6 +55,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     handleNext,
     handleSubmitInternal,
     reset,
+    resetCurrentTab,
   } = useCustomerForm({ isOpen, isEditMode, initialData, onSubmit, onClose });
 
   const handleCloseWithWarning = () =>
@@ -69,43 +65,28 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       onClose();
     }, resolvedModalId);
 
-  const footer = (
-    <>
-      <Button variant="secondary" onClick={handleCloseWithWarning}>
-        Cancel
-      </Button>
-      <div className="flex gap-3">
-        <Button
-          variant="secondary"
-          onClick={() => {
-            resetDirty();
-            reset();
-          }}
-        >
-          Reset
-        </Button>
-        <Button
-          variant="primary"
-          loading={loading}
-          type="button"
-          onClick={async () => {
-            if (!isEditMode && activeTab !== "terms") {
-              handleNext();
-              return;
-            }
+  const tabs: ActiveTab[] = ["details", "bank", "address", "terms"];
+  const currentTabIndex = tabs.indexOf(activeTab);
 
-            resetDirty();
-            await handleSubmitInternal();
-          }}
-        >
-          {isEditMode
-            ? "Update Customer"
-            : activeTab === "terms"
-              ? "Submit"
-              : "Next"}
-        </Button>
-      </div>
-    </>
+  const handleSubmitForm = async () => {
+    const didSave = await handleSubmitInternal();
+    if (didSave) resetDirty();
+    return didSave;
+  };
+
+  const footer = (
+    <ModalFooter
+      onCancel={handleCloseWithWarning}
+      onReset={() => {
+        resetDirty();
+        resetCurrentTab();
+      }}
+      onSubmit={handleSubmitForm}
+      onNext={activeTab === "terms" ? undefined : handleNext}
+      currentTab={currentTabIndex}
+      totalTabs={tabs.length}
+      isSubmitting={loading}
+    />
   );
 
   return (

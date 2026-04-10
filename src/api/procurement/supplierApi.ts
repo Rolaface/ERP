@@ -38,7 +38,7 @@ export async function createSupplier(payload: any): Promise<any> {
 
 export async function getSupplierById(id: string | number): Promise<any> {
   const resp = await api.get(
-    `${SupplierAPI.getById}?supplierId=${id}`
+    `${SupplierAPI.getById}?id=${id}`
   );
   return resp.data;
 }

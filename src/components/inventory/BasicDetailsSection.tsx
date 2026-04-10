@@ -13,11 +13,12 @@ interface BasicDetailsSectionProps {
   loadingItemGroups: boolean;
   onFormChange: ItemFormChangeHandler;
   setField: ItemFieldSetter;
+  errors?: Partial<Record<keyof ItemFormData, string>>;
 }
 
 
 const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
-  ({ form, itemGroups, loadingItemGroups, onFormChange }) => {
+  ({ form, itemGroups, loadingItemGroups, onFormChange, errors }) => {
     const categoryPlaceholder = "Select Category";
 
     return (
@@ -43,6 +44,7 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           onChange={onFormChange}
 
           required
+          error={errors?.itemGroup}
           placeholder={loadingItemGroups ? "Loading..." : categoryPlaceholder}
         >
           {itemGroups.map((group) => (
@@ -59,6 +61,7 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           value={form.itemName ?? ""}
           onChange={onFormChange}
           required
+          error={errors?.itemName}
         />
 
         {/* Description */}
@@ -68,6 +71,7 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           value={form.description ?? ""}
           onChange={onFormChange}
           required
+          error={errors?.description}
         />
 
         {/* HSN Code */}
@@ -78,6 +82,7 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           onChange={onFormChange}
           placeholder="e.g. 84713010"
           required
+          error={errors?.itemClassCode}
         />
       </div>
     );

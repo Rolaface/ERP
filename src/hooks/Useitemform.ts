@@ -15,6 +15,7 @@ import type {
   ItemTaxRow,
   SupplierOption,
 } from "../components/inventory/itemModalTypes";
+import type { ModalSubmitHandler, ModalValidationError } from "../types/modal";
 import { getSupplierList } from "../api/lookupApi";
 import { showSuccess } from "../utils/alert";
 
@@ -50,7 +51,7 @@ interface UseItemFormProps {
   isOpen: boolean;
   isEditMode: boolean;
   initialData?: ItemNestedInitialData | null;
-  onSubmit?: (res: unknown) => void;
+  onSubmit?: ModalSubmitHandler;
   onClose: () => void;
 }
 
@@ -109,6 +110,17 @@ interface SaveItemResponse {
   message: string;
   data: string;
 }
+
+type ItemValidationError = ModalValidationError<ItemModalTab>;
+
+const itemDetailFields: Array<{ field: keyof ItemFormData; label: string }> = [
+  { field: "itemGroup", label: "Item Category" },
+  { field: "itemName", label: "Item Name" },
+  { field: "description", label: "Description" },
+  { field: "itemClassCode", label: "HSN Code" },
+  { field: "unitOfMeasureCd", label: "Unit of Measurement" },
+  { field: "originNationCode", label: "Country of Origin" },
+];
 export const emptyForm: ItemFormData = {
   id: "",
   itemName: "",
@@ -333,18 +345,8 @@ export const useItemForm = ({
     void fetchSuppliers();
   }, [fetchSuppliers, initialData, isEditMode, isOpen]);
 
-  const validateItemDetails = (): boolean => {
-    const requiredFields: Array<{ field: keyof ItemFormData; label: string }> =
-      [
-        { field: "itemGroup", label: "Item Category" },
-        { field: "itemName", label: "Item Name" },
-        { field: "description", label: "Description" },
-        { field: "itemClassCode", label: "HSN Code" },
-        { field: "unitOfMeasureCd", label: "Unit of Measurement" },
-        { field: "originNationCode", label: "Country of Origin" },
-      ];
-
-    for (const { field, label } of requiredFields) {
+  const getDetailsValidationError = (): ItemValidationError | null => {
+    for (const { field, label } of itemDetailFields) {
       const value = form[field];
       const stringValue =
         typeof value === "string" || typeof value === "number"
@@ -352,34 +354,69 @@ export const useItemForm = ({
           : "";
       const empty = stringValue.trim() === "";
 
-      if (empty) {
-        showValidationError(`${label} is required.`);
-        return false;
-      }
+      if (empty)
+        return {
+          tab: "details",
+          field,
+          message: `${label} is required.`,
+        };
     }
 
-    return true;
+    return null;
   };
 
-  const validateTaxDetails = (taxRows: ItemTaxRow[]): boolean => {
+  const getTaxValidationError = (
+    taxRows: ItemTaxRow[],
+  ): ItemValidationError | null => {
     if (taxRows.length === 0) {
-      showValidationError("At least one tax row is required.");
-      return false;
+      return {
+        tab: "taxDetails",
+        field: "taxRows",
+        message: "At least one tax row is required.",
+      };
     }
 
     for (const [index, row] of taxRows.entries()) {
       if (!row.taxCategory.trim()) {
-        showValidationError(`Tax Category is required in row ${index + 1}.`);
-        return false;
+        return {
+          tab: "taxDetails",
+          field: `taxRows.${index}.taxCategory`,
+          message: `Tax Category is required in row ${index + 1}.`,
+        };
       }
 
       if (!row.taxTemplate.trim()) {
-        showValidationError(`Tax Template is required in row ${index + 1}.`);
-        return false;
+        return {
+          tab: "taxDetails",
+          field: `taxRows.${index}.taxTemplate`,
+          message: `Tax Template is required in row ${index + 1}.`,
+        };
       }
     }
 
-    return true;
+    return null;
+  };
+
+  const getValidationErrorForTab = (
+    tab: ItemModalTab,
+    taxRows: ItemTaxRow[],
+  ): ItemValidationError | null => {
+    if (tab === "details") return getDetailsValidationError();
+    if (tab === "taxDetails") return getTaxValidationError(taxRows);
+    return null;
+  };
+
+  const getFirstValidationError = (
+    taxRows: ItemTaxRow[],
+  ): ItemValidationError | null => {
+    return getDetailsValidationError() || getTaxValidationError(taxRows);
+  };
+
+  const validateAndShow = (error: ItemValidationError | null): boolean => {
+    if (!error) return true;
+    setActiveTab(error.tab);
+    showValidationError(error.message);
+    return false;
   };
 
   const handleForm = (
@@ -402,31 +439,7 @@ export const useItemForm = ({
     onClose();
   };
 
-  const handleSubmit = async (
-    event: React.FormEvent,
-    taxRows: ItemTaxRow[],
-  ) => {
-    event.preventDefault();
-
-    if (activeTab === "details") {
-      if (!validateItemDetails()) return;
-      setActiveTab("taxDetails");
-      return;
-    }
-
-    if (activeTab === "taxDetails") {
-      if (!validateTaxDetails(taxRows)) return;
-      if (!isServiceItem) {
-        setActiveTab("inventoryDetails");
-        return;
-      }
-    }
-
-    if (!validateTaxDetails(taxRows)) {
-      setActiveTab("taxDetails");
-      return;
-    }
-
+  const saveItem = async (taxRows: ItemTaxRow[]): Promise<boolean> => {
     try {
       setLoading(true);
       showLoading(isEditMode ? "Updating item..." : "Creating item...");
@@ -446,12 +459,14 @@ export const useItemForm = ({
       if (!isSuccess) {
         closeSwal();
         showApiError(response.message || "Something went wrong");
-        return;
+        return false;
       }
 
       await showSuccess(response.message);
-      onSubmit?.(response.data);
+      const canClose = await onSubmit?.(response.data);
+      if (canClose === false) return false;
       handleClose();
+      return true;
     } catch (error) {
       closeSwal();
       showApiError(
@@ -459,9 +474,43 @@ export const useItemForm = ({
           ? error
           : (error as any)?.message?.message || "Something went wrong",
       );
+      return false;
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleNext = (taxRows: ItemTaxRow[]) => {
+    const error = getValidationErrorForTab(activeTab, taxRows);
+    if (!validateAndShow(error)) return;
+
+    if (activeTab === "details") {
+      setActiveTab("taxDetails");
+      return;
+    }
+
+    if (activeTab === "taxDetails" && !isServiceItem) {
+      setActiveTab("inventoryDetails");
+    }
+  };
+
+  const handleSave = async (
+    event: React.FormEvent | undefined,
+    taxRows: ItemTaxRow[],
+  ) => {
+    event?.preventDefault();
+
+    const error = getFirstValidationError(taxRows);
+    if (!validateAndShow(error)) return false;
+
+    return saveItem(taxRows);
+  };
+
+  const handleSubmit = async (
+    event: React.FormEvent,
+    taxRows: ItemTaxRow[],
+  ) => {
+    await handleSave(event, taxRows);
   };
 
   return {
@@ -475,6 +524,10 @@ export const useItemForm = ({
     reset,
     handleClose,
     handleSubmit,
+    handleSave,
+    handleNext,
+    getFirstValidationError,
+    getValidationErrorForTab,
     taxRows,
     setTaxRows,
     itemGroups,

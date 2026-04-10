@@ -9,7 +9,8 @@ import { ToolCase } from "lucide-react";
 import { getAllTemplates } from "../../api/TaxTemplateApi";
 import { useItemForm } from "../../hooks/Useitemform";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-import { Button } from "../ui/modal/formComponent";
+import type { StandardModalProps } from "../../types/modal";
+import ModalFooter from "../common/ModalFooter";
 import { MinimizableModal } from "../common/MinimizableModal";
 import AdditionalDetailsSection from "./AdditionalDetailsSection";
 import BasicDetailsSection from "./BasicDetailsSection";
@@ -23,19 +24,12 @@ import type {
   ItemTaxRow,
 } from "./itemModalTypes";
 
-interface ItemInitialData extends Partial<ItemFormData> {
+export interface ItemInitialData extends Partial<ItemFormData> {
   taxes?: ItemTaxRow[];
   taxInfo?: Partial<ItemTaxInfo> | Array<Partial<ItemTaxInfo>>;
 }
 
-interface ItemModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit?: (response: unknown) => void;
-  initialData?: ItemInitialData | null;
-  isEditMode?: boolean;
-  modalId?: string;
-}
+interface ItemModalProps extends StandardModalProps<unknown, ItemInitialData> {}
 
 interface TaxTemplateOption {
   label: string;
@@ -109,9 +103,12 @@ const ItemModal: React.FC<ItemModalProps> = ({
     setActiveTab,
     isServiceItem,
     handleForm,
-    reset,
     handleClose,
     handleSubmit,
+    handleSave,
+    handleNext,
+    getFirstValidationError,
+    getValidationErrorForTab,
     itemGroups,
     loadingItemGroups,
     suppliers,
@@ -120,6 +117,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([EMPTY_TAX_ROW]);
   const [taxPage, setTaxPage] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   /**
    * Cache: template value (name) → taxes array.
@@ -189,6 +187,12 @@ const ItemModal: React.FC<ItemModalProps> = ({
   const setField = useCallback(
     <K extends keyof ItemFormData>(field: K, value: ItemFormData[K]) => {
       setForm((previous) => ({ ...previous, [field]: value }));
+      setFieldErrors((previous) => {
+        if (!previous[field as string]) return previous;
+        const next = { ...previous };
+        delete next[field as string];
+        return next;
+      });
     },
     [setForm],
   );
@@ -215,6 +219,13 @@ const ItemModal: React.FC<ItemModalProps> = ({
           index === absoluteIndex ? { ...row, [field]: value } : row,
         ),
       );
+      setFieldErrors((previous) => {
+        const key = `taxRows.${absoluteIndex}.${field}`;
+        if (!previous[key]) return previous;
+        const next = { ...previous };
+        delete next[key];
+        return next;
+      });
     },
     [],
   );
@@ -267,36 +278,144 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   const handleReset = useCallback(() => {
     resetDirty();
-    reset();
-    setTaxRows([EMPTY_TAX_ROW]);
-    setTaxPage(0);
-  }, [reset, resetDirty]);
+    setFieldErrors({});
 
-  const submitLabel =
-    activeTab === "inventoryDetails" ||
-    (activeTab === "taxDetails" && isServiceItem)
-      ? "Submit"
-      : "Next";
+    if (activeTab === "taxDetails") {
+      setTaxRows([EMPTY_TAX_ROW]);
+      setTaxPage(0);
+      return;
+    }
 
-  if (!isOpen) return null;
+    setForm((previous) => {
+      if (activeTab === "inventoryDetails") {
+        return {
+          ...previous,
+          brand: "",
+          dimensionUnit: "",
+          weight: "",
+          weightUnit: "",
+          dimensionLength: "",
+          dimensionWidth: "",
+          dimensionHeight: "",
+          valuationMethod: "",
+          trackingMethod: "",
+          reorderLevel: "",
+          minStockLevel: "",
+          maxStockLevel: "",
+          expiryDate: "",
+          manufacturingDate: "",
+          shelfLifeInDays: "",
+          endOfLife: "",
+          trackInventory: false,
+          has_batch_no: false,
+          batchNo: "",
+          create_new_batch: false,
+          has_expiry_date: false,
+        };
+      }
+
+      return {
+        ...previous,
+        itemName: "",
+        itemGroup: "",
+        itemClassCode: "",
+        itemTypeCode: "",
+        originNationCode: "",
+        packagingUnitCode: "",
+        packingUnit: 1,
+        packingSize: 1,
+        svcCharge: "",
+        ins: "",
+        sellingPrice: "",
+        buyingPrice: "",
+        unitOfMeasureCd: "",
+        description: "",
+        sku: "",
+        taxPreference: "",
+        preferredVendor: "",
+        salesAccount: "",
+        purchaseAccount: "",
+        countryCode: "",
+      };
+    });
+  }, [activeTab, resetDirty, setForm]);
+
+  const handleFormChange = useCallback(
+    (
+      event: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
+      handleForm(event);
+      const { name } = event.target;
+      setFieldErrors((previous) => {
+        if (!previous[name]) return previous;
+        const next = { ...previous };
+        delete next[name];
+        return next;
+      });
+    },
+    [handleForm],
+  );
+
+  const showValidationError = useCallback((scope: "all" | "current") => {
+    const error =
+      scope === "all"
+        ? getFirstValidationError(taxRows)
+        : getValidationErrorForTab(activeTab, taxRows);
+    if (!error) {
+      setFieldErrors({});
+      return false;
+    }
+
+    setFieldErrors({ [error.field ?? error.tab]: error.message });
+    return true;
+  }, [activeTab, getFirstValidationError, getValidationErrorForTab, taxRows]);
+
+  const handleSaveClick = useCallback(async () => {
+    if (showValidationError("all")) {
+      await handleSave(undefined, taxRows);
+      return;
+    }
+
+    resetDirty();
+    await handleSave(undefined, taxRows);
+  }, [handleSave, resetDirty, showValidationError, taxRows]);
+
+  const handleNextClick = useCallback(() => {
+    if (!showValidationError("current")) {
+      setFieldErrors({});
+    }
+    handleNext(taxRows);
+  }, [handleNext, showValidationError, taxRows]);
+
+if (!isOpen) return null;
+
+  const tabs: ItemModalTab[] = isServiceItem
+    ? ["details", "taxDetails"]
+    : ["details", "taxDetails", "inventoryDetails"];
+  const currentTabIndex = tabs.indexOf(activeTab);
+
+  const handleFormSubmit = async () => {
+    const result = await handleSave(undefined, taxRows);
+    return result !== false;
+  };
 
   const footer = (
-    <div className="flex w-full justify-end gap-2">
-      <Button variant="secondary" type="button" onClick={handleCloseRequest}>
-        Cancel
-      </Button>
-      <Button variant="danger" type="button" onClick={handleReset}>
-        Reset
-      </Button>
-      <Button
-        form={itemFormId}
-        variant="primary"
-        type="submit"
-        loading={loading}
-      >
-        {submitLabel}
-      </Button>
-    </div>
+    <ModalFooter
+      onCancel={handleCloseRequest}
+      onReset={handleReset}
+      onSubmit={handleFormSubmit}
+      onNext={
+        activeTab === "inventoryDetails" ||
+        (activeTab === "taxDetails" && isServiceItem)
+          ? undefined
+          : handleNextClick
+      }
+      currentTab={currentTabIndex}
+      totalTabs={tabs.length}
+      isSubmitting={loading}
+    />
   );
 
   return (
@@ -374,16 +493,18 @@ const ItemModal: React.FC<ItemModalProps> = ({
                 form={form}
                 itemGroups={itemGroups}
                 loadingItemGroups={loadingItemGroups}
-                onFormChange={handleForm}
+                onFormChange={handleFormChange}
                 setField={setField}
+                errors={fieldErrors}
               />
 
               {/* Row 2: Packing Unit, UOM, SKU, Country, SVC Charge, Insurance, Taxable */}
               <AdditionalDetailsSection
                 form={form}
-                onFormChange={handleForm}
+                onFormChange={handleFormChange}
                 onToggleChange={handleToggleChange}
                 setField={setField}
+                errors={fieldErrors}
               />
 
               {/* Row 3: Sales & Purchase */}
@@ -391,7 +512,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
                 form={form}
                 suppliers={suppliers}
                 loadingSuppliers={loadingSuppliers}
-                onFormChange={handleForm}
+                onFormChange={handleFormChange}
               />
             </div>
           )}
@@ -409,6 +530,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
               onRemoveTaxRow={removeTaxRow}
               onPreviousPage={handlePreviousTaxPage}
               onNextPage={handleNextTaxPage}
+              errors={fieldErrors}
             />
           )}
 
@@ -416,7 +538,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
             <InventorySection
               form={form}
               isServiceItem={isServiceItem}
-              onFormChange={handleForm}
+              onFormChange={handleFormChange}
               setField={setField}
             />
           )}

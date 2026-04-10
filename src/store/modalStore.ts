@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { LucideIcon } from "lucide-react";
+import type { ModalCallback } from "../types/modal";
 
 export type ModalType =
   | "invoice"
@@ -13,13 +14,13 @@ export type ModalType =
   | "itemCategory"
   | "warehouse"
   | "taxTemplate"
-  |"taxCategory";
+  | "taxCategory";
 
 export interface ModalContext {
   source?: string;
   fieldId?: string;
-  callback?: (data: any) => void;
-  onSuccess?: (data: any) => void;
+  callback?: ModalCallback;
+  onSuccess?: ModalCallback;
 }
 
 export interface ModalMeta {
@@ -32,7 +33,7 @@ export interface ModalMeta {
 export interface ModalInstance {
   id: string;
   type: ModalType;
-  initialData?: any;
+  initialData?: unknown;
   isEdit: boolean;
   context?: ModalContext;
   meta?: ModalMeta;
@@ -63,7 +64,7 @@ interface ModalState {
 
   openModal: (
     type: ModalType,
-    initialData?: any,
+    initialData?: unknown,
     isEdit?: boolean,
     context?: ModalContext,
     meta?: ModalMeta
@@ -318,7 +319,7 @@ export const useModalMeta = (id: string) =>
   useModalStore((state) => state.getModalById(id)?.meta);
 
 export const openCustomerModal = (
-  initialData?: any,
+  initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta
@@ -328,7 +329,7 @@ export const openCustomerModal = (
     .openModal("customer", initialData, isEdit, context, meta);
 
 export const openSupplierModal = (
-  initialData?: any,
+  initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta
@@ -338,7 +339,7 @@ export const openSupplierModal = (
     .openModal("supplier", initialData, isEdit, context, meta);
 
 export const openInvoiceModal = (
-  initialData?: any,
+  initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta
@@ -348,7 +349,7 @@ export const openInvoiceModal = (
     .openModal("invoice", initialData, isEdit, context, meta);
 
 export const openQuotationModal = (
-  initialData?: any,
+  initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta
@@ -358,7 +359,7 @@ export const openQuotationModal = (
     .openModal("quotation", initialData, isEdit, context, meta);
 
 export const openItemModal = (
-  initialData?: any,
+  initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta
@@ -368,7 +369,7 @@ export const openItemModal = (
     .openModal("item", initialData, isEdit, context, meta);
 
 export const openItemCategoryModal = (
-  initialData?: any,
+  initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta
@@ -396,7 +397,7 @@ export const openPurchaseInvoiceModal = (
     .openModal("purchaseInvoice", { pId }, !!pId, context, meta);
 
 export const openProformaModal = (
-  initialData?: any,
+  initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta
@@ -406,7 +407,7 @@ export const openProformaModal = (
     .openModal("proforma", initialData, isEdit, context, meta);
 
 export const openTaxTemplateModal = (
-  initialData?: any,
+  initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta
@@ -416,7 +417,7 @@ export const openTaxTemplateModal = (
     .openModal("taxTemplate", initialData, isEdit, context, meta);
 
 export const openWarehouseModal = (
-  initialData?: any,
+  initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta
@@ -426,7 +427,7 @@ export const openWarehouseModal = (
     .openModal("warehouse", initialData, isEdit, context, meta);
 
 export const openTaxCategoryModal = (
-      initialData?: any,
+      initialData?: unknown,
       isEdit = false,
       context?: ModalContext,
       meta?: ModalMeta

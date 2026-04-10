@@ -4,7 +4,7 @@ import { getAllTaxCategories } from "../../api/taxCategoryApi";
 
 interface TaxCategorySelectProps {
   value?: string;
-  onChange: (value: string, option: { label: string; value: string }) => void;
+  onChange: (value: string) => void;
   error?: string;
   required?: boolean;
   disabled?: boolean;
@@ -17,7 +17,7 @@ const TaxCategorySelect: React.FC<TaxCategorySelectProps> = ({
   required,
   disabled,
 }) => {
-const fetchOptions = useCallback(async (search: string) => {
+  const fetchOptions = useCallback(async (search: string) => {
     try {
       const res = await getAllTaxCategories(1, 20, search || undefined);
       const list: { name: string; title: string }[] = res?.data ?? res?.data?.categories ?? [];
@@ -30,11 +30,15 @@ const fetchOptions = useCallback(async (search: string) => {
     }
   }, []);
 
-return (
+  const handleChange = useCallback((selectedValue: string, _option?: { label: string; value: string }) => {
+    onChange(selectedValue);
+  }, [onChange]);
+
+  return (
     <SearchSelect2
-      label=""
+      label="Tax Category"
       value={value}
-      onChange={onChange}
+      onChange={handleChange}
       fetchOptions={fetchOptions}
       placeholder="Search tax category..."
       error={error}

@@ -1,6 +1,5 @@
 import React from "react";
 import { Building2, DollarSign, MapPin, FileText } from "lucide-react";
-import { Button } from "../../ui/modal/formComponent";
 import { SupplierInfoTab } from "./SupplierInfoTab";
 import { useSupplierForm } from "../../../hooks/useSupplierForm";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
@@ -14,11 +13,12 @@ import TermsAndCondition from "../../TermsAndCondition";
 import type { TermSection } from "../../../types/termsAndCondition";
 import { PaymentInfoTab } from "./PaymentInfoTab";
 import { MinimizableModal } from "../../common/MinimizableModal";
+import ModalFooter from "../../common/ModalFooter";
 
 interface SupplierModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (data: SupplierFormData) => void;
+  onSubmit?: (data: SupplierFormData) => Promise<boolean>;
   initialData?: Supplier | null;
   isEditMode?: boolean;
   existingSupplierCodes?: string[];
@@ -51,7 +51,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     activeTab,
     setActiveTab,
     handleChange,
-    handleSubmit,
+    handleSubmit: handleFormSubmit,
     reset,
     handleNext,
     errors,
@@ -59,52 +59,40 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   } = useSupplierForm({
     initialData,
     isEditMode,
-    onSuccess: onSubmit,
+    onSuccess: async (data) => {
+      const result = await onSubmit?.(data);
+      return result ?? false;
+    },
     isOpen,
     existingSupplierCodes,
   });
 
-  const footer = (
-    <>
-      <Button variant="secondary" onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)} type="button">
-        Cancel
-      </Button>
+  const currentTabIndex = tabs.findIndex((t) => t.key === activeTab);
 
-      <div className="flex gap-3">
-        <Button
-          variant="secondary"
-          onClick={() => {
-            resetDirty();
-            reset();
-          }}
-          type="button"
-        >
-          Reset
-        </Button>
-        {activeTab !== "terms" ? (
-          <Button
-            variant="primary"
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleNext();
-            }}
-          >
-            Next →
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            loading={loading}
-            type="submit"
-            form="supplierForm"
-          >
-            {isEditMode ? "Update Supplier" : "Save Supplier"}
-          </Button>
-        )}
-      </div>
-    </>
+  const handleCloseRequest = () => {
+    handleCloseWithConfirm(onClose, resolvedModalId);
+  };
+
+  const handleResetTab = () => {
+    resetDirty();
+    reset();
+  };
+
+  const handleSubmitForm = async () => {
+    await handleFormSubmit(new Event("submit") as React.FormEvent);
+    return !loading;
+  };
+
+  const footer = (
+    <ModalFooter
+      onCancel={handleCloseRequest}
+      onReset={handleResetTab}
+      onSubmit={handleSubmitForm}
+      onNext={activeTab !== "terms" ? handleNext : undefined}
+      currentTab={currentTabIndex}
+      totalTabs={tabs.length}
+      isSubmitting={loading}
+    />
   );
 
   return (
@@ -127,11 +115,9 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
         id="supplierForm"
         onChange={() => markDirty()}
         onSubmit={(e) => {
-          const wrappedSubmit = async () => {
-            resetDirty();
-            await handleSubmit(e);
-          };
-          wrappedSubmit();
+          e.preventDefault();
+          resetDirty();
+          handleFormSubmit(e);
         }}
         noValidate
         className="h-full flex flex-col"

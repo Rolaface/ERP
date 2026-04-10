@@ -19,6 +19,7 @@ interface AdditionalDetailsSectionProps {
   onFormChange: ItemFormChangeHandler;
   onToggleChange: (name: string, value: string) => void;
   setField: ItemFieldSetter;
+  errors?: Partial<Record<keyof ItemFormData, string>>;
 }
 
 const isRolaCompany = (companyCode: string) => {
@@ -28,7 +29,7 @@ const isRolaCompany = (companyCode: string) => {
 
 
 const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
-  React.memo(({ form, onFormChange, onToggleChange, setField }) => {
+  React.memo(({ form, onFormChange, onToggleChange, setField, errors }) => {
     const { companyCode } = useCompanySelection();
     const useRolaLookups = isRolaCompany(companyCode);
     const fetchCountries = useRolaLookups ? getRolaCountries : getCountries;
@@ -80,6 +81,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
             onChange={(value) => setField("unitOfMeasureCd", value)}
             placeholder="Search..."
             required
+            error={errors?.unitOfMeasureCd}
           />
         </div>
 
@@ -111,6 +113,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
             onChange={(value) => setField("originNationCode", value)}
             placeholder="Search..."
             required
+            error={errors?.originNationCode}
           />
         </div>
 

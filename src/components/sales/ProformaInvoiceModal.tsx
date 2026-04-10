@@ -6,7 +6,7 @@ import {
   showValidationError,
 } from "../../utils/alert";
 import { User, Mail, Phone, Plus, Trash2 } from "lucide-react";
-import { Button } from "../../components/ui/modal/formComponent";
+import ModalFooter from "../common/ModalFooter";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import PaymentInfoBlock from "./PaymentInfoBlock";
 import { MinimizableModal } from "../common/MinimizableModal";
@@ -24,11 +24,12 @@ import {
   paymentMethodOptions,
   currencyOptions,
 } from "../../constants/invoice.constants";
+import type { ModalSubmitHandler } from "../../types/modal";
 
 interface ProformaInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: () => void;
+  onSubmit?: ModalSubmitHandler;
   initialData?: any;
   mode?: "create" | "edit";
   modalId?: string;
@@ -67,30 +68,34 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     "address",
     "terms",
   ];
-  const handleNext = () => {
+  const validateDetailsOrFocus = () => {
     try {
-      actions.validateForm(); // same validation as quotation
+      actions.validateForm();
+      return true;
+    } catch (err: any) {
+      ui.setActiveTab("details");
+      showValidationError(err.message);
+      return false;
+    }
+  };
+
+  const handleNext = () => {
+    if (ui.activeTab === "details" && !validateDetailsOrFocus()) return;
 
       const currentIndex = tabs.indexOf(ui.activeTab as any);
 
       if (currentIndex < tabs.length - 1) {
         ui.setActiveTab(tabs[currentIndex + 1]);
       }
-    } catch (err: any) {
-      showValidationError(err.message);
-    }
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (ui.activeTab !== "terms") {
-      handleNext();
-      return;
-    }
+  const handleSave = async () => {
+    if (!validateDetailsOrFocus()) return;
 
     try {
-      const payload = await actions.handleSubmit(e);
+      const payload = await actions.handleSubmit({
+        preventDefault: () => {},
+      } as React.FormEvent);
       if (!payload) return;
 
       let res;
@@ -103,8 +108,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
         // future API
         // res = await updateProformaInvoice(initialData.proformaId, payload)
-
-        console.log("Edit payload", payload);
 
         res = {
           status_code: 200,
@@ -121,13 +124,20 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
       showSuccess(res.message);
 
+      const canClose = await onSubmit?.(res);
+      if (canClose === false) return;
+
       resetDirty();
       actions.handleReset();
-      onSubmit?.();
       onClose();
     } catch (error: any) {
       showApiError(error);
     }
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleSave();
   };
 
   const handleClose = () => {
@@ -176,43 +186,15 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       }
       subtitle="Create and manage proforma invoice details"
       footer={
-        <>
-          <Button
-            variant="secondary"
-            onClick={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
-          >
-            Cancel
-          </Button>
-
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={async () => {
-                resetDirty();
-                await actions.handleReset();
-              }}
-            >
-              Reset
-            </Button>
-            <Button
-              variant="primary"
-              type="button"
-              onClick={() => {
-                if (ui.activeTab === "terms") {
-                  const form = document.getElementById("proforma-form");
-
-                  if (form instanceof HTMLFormElement) {
-                    form.requestSubmit();
-                  }
-                } else {
-                  handleNext();
-                }
-              }}
-            >
-              {ui.activeTab === "terms" ? "Submit" : "Next"}
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          onReset={async () => {
+            resetDirty();
+            await actions.handleReset();
+          }}
+          onSave={handleSave}
+          onNext={ui.activeTab === "terms" ? undefined : handleNext}
+        />
       }
       customWidth="83vw"
       height="82vh"

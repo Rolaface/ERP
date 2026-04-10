@@ -10,6 +10,7 @@ import { getCompanyById } from "../api/companySetupApi";
 import { createCustomer, updateCustomerByCustomerCode } from "../api/customerApi";
 import type { TermSection } from "../types/termsAndCondition";
 import type { CustomerDetail } from "../types/customer";
+import type { ModalSubmitHandler } from "../types/modal";
 
 const companyId = import.meta.env.VITE_COMPANY_ID;
 
@@ -285,7 +286,7 @@ export interface UseCustomerFormOptions {
   isOpen: boolean;
   isEditMode: boolean;
   initialData?: CustomerDetail | null;
-  onSubmit?: (data: CustomerDetail) => void;
+  onSubmit?: ModalSubmitHandler;
   onClose: () => void;
 }
 
@@ -446,12 +447,8 @@ export function useCustomerForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  // ─── Navigation ───────────────────────────────────────────────────────────
-
-  const tabs: ActiveTab[] = ["details", "bank", "address", "terms"];
-
-  const handleNext = () => {
-    if (activeTab === "details" && !validateDetailsTab()) {
+  const getValidationMessageForTab = (tab: ActiveTab): string => {
+    if (tab === "details") {
       const pc = form.contacts.find((c) => c.isPrimary);
       const missing: string[] = [];
       if (!form.type) missing.push("Customer Type");
@@ -462,14 +459,12 @@ export function useCustomerForm({
       if (!form.customerTaxCategory) missing.push("Tax Category");
       if (!form.currency) missing.push("Currency");
       if (!pc?.email) missing.push("Email");
-      showValidationError(
-        missing.length > 0
-          ? `Please fill in required fields: ${missing.join(", ")}`
-          : "Please fix validation errors in Details tab",
-      );
-      return;
+      return missing.length > 0
+        ? `Please fill in required fields: ${missing.join(", ")}`
+        : "Please fix validation errors in Details tab";
     }
-    if (activeTab === "address" && !validateAddressTab()) {
+
+    if (tab === "address") {
       const billing = form.addresses.find((a) => a.type === "Billing");
       const missing: string[] = [];
       if (!billing?.line1) missing.push("Address Line 1");
@@ -477,13 +472,49 @@ export function useCustomerForm({
       if (!billing?.state) missing.push("State");
       if (!billing?.country) missing.push("Country");
       if (!billing?.postalCode) missing.push("Postal Code");
-      showValidationError(
-        missing.length > 0
-          ? `Please fill in required fields: ${missing.join(", ")}`
-          : "Please fix validation errors in Address tab",
-      );
-      return;
+      return missing.length > 0
+        ? `Please fill in required fields: ${missing.join(", ")}`
+        : "Please fix validation errors in Address tab";
     }
+
+    return "";
+  };
+
+  const validateTab = (tab: ActiveTab): boolean => {
+    if (tab === "details") return validateDetailsTab();
+    if (tab === "address") return validateAddressTab();
+    setErrors({});
+    return true;
+  };
+
+  const validateCurrentTab = (): boolean => {
+    const isValid = validateTab(activeTab);
+    if (!isValid) showValidationError(getValidationMessageForTab(activeTab));
+    return isValid;
+  };
+
+  const validateAllTabs = (): boolean => {
+    if (!validateDetailsTab()) {
+      setActiveTab("details");
+      showValidationError(getValidationMessageForTab("details"));
+      return false;
+    }
+
+    if (!validateAddressTab()) {
+      setActiveTab("address");
+      showValidationError(getValidationMessageForTab("address"));
+      return false;
+    }
+
+    return true;
+  };
+
+  // ─── Navigation ───────────────────────────────────────────────────────────
+
+  const tabs: ActiveTab[] = ["details", "bank", "address", "terms"];
+
+  const handleNext = () => {
+    if (!validateCurrentTab()) return;
     const idx = tabs.indexOf(activeTab);
     if (idx < tabs.length - 1) { setActiveTab(tabs[idx + 1]); setAllowSubmit(false); }
   };
@@ -517,7 +548,9 @@ export function useCustomerForm({
   };
 
   const handleSubmitInternal = async () => {
-    if (submitRef.current || loading) return;
+    if (submitRef.current || loading) return false;
+
+    if (!validateAllTabs()) return false;
 
     submitRef.current = true;
     setLoading(true);
@@ -530,7 +563,7 @@ export function useCustomerForm({
         
         if (!idToUse) {
           showApiError(new Error("Customer ID is missing. Cannot update."));
-          return;
+          return false;
         }
 
         showLoading("Updating Customer...");
@@ -542,26 +575,17 @@ export function useCustomerForm({
         if (Object.keys(patchPayload).length === 0) {
           closeSwal();
           showSuccess("No changes detected");
-          return;
+          return false;
         }
 
         await updateCustomerByCustomerCode(idToUse, patchPayload);
 
         closeSwal();
         showSuccess("Customer updated successfully!");
+        const canClose = await onSubmit?.(payload);
+        if (canClose === false) return false;
         handleClose();
-        onSubmit?.(payload as any);
       } else {
-        if (!validateDetailsTab()) {
-          setActiveTab("details");
-          return;
-        }
-
-        if (!validateAddressTab()) {
-          setActiveTab("address");
-          return;
-        }
-
         showLoading("Creating Customer...");
 
         const res = await createCustomer(payload);
@@ -585,13 +609,16 @@ export function useCustomerForm({
             : apiMessage,
         );
 
-        onSubmit?.(createdCustomer as any);
+        const canClose = await onSubmit?.(createdCustomer);
+        if (canClose === false) return false;
         handleClose();
       }
 
+      return true;
     } catch (error) {
       closeSwal();
       showApiError(error);
+      return false;
 
     } finally {
       setLoading(false);
@@ -621,6 +648,56 @@ export function useCustomerForm({
     setActiveTab("details");
   };
 
+  const resetCurrentTab = () => {
+    const base = initialData
+      ? mapApiResponseToFormState(initialData, companySellingTerms)
+      : {
+          ...emptyForm,
+          terms: { selling: companySellingTerms ?? defaultSellingTerms },
+          sameAsBilling: true,
+        };
+
+    setErrors({});
+
+    if (activeTab === "details") {
+      setForm((prev) => ({
+        ...prev,
+        name: base.name,
+        type: base.type,
+        tpin: base.tpin,
+        currency: base.currency,
+        onboardingBalance: base.onboardingBalance,
+        displayName: base.displayName,
+        customerGroup: base.customerGroup,
+        customerTaxCategory: base.customerTaxCategory,
+        contacts: base.contacts,
+      }));
+      return;
+    }
+
+    if (activeTab === "bank") {
+      setForm((prev) => ({
+        ...prev,
+        accountNumber: base.accountNumber,
+      }));
+      return;
+    }
+
+    if (activeTab === "address") {
+      setForm((prev) => ({
+        ...prev,
+        addresses: base.addresses,
+        sameAsBilling: base.sameAsBilling,
+      }));
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      terms: base.terms,
+    }));
+  };
+
   // ─── Derived ──────────────────────────────────────────────────────────────
 
   const primaryContact = form.contacts.find((c) => c.isPrimary) ?? form.contacts[0];
@@ -633,5 +710,6 @@ export function useCustomerForm({
     primaryContact, billingAddress, shippingAddress, tabs,
     handleChange, handlePrimaryContactChange, handleAddressChange,
     setSameAsBilling, handleNext, handleSubmit, handleSubmitInternal, handleClose, reset,
+    validateCurrentTab, validateAllTabs, resetCurrentTab,
   };
 }

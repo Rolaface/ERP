@@ -17,6 +17,7 @@ import {
   closeSwal,
   showValidationError
 } from "../utils/alert";
+import type { ModalSubmitHandler } from "../types/modal";
 
 const getDefaultBank = (accounts: any[] = []) =>
   accounts.find((a) => (a.default === "1" || a.default === 1) && a.bankName?.trim()) ??
@@ -32,7 +33,7 @@ type NestedSection =
 export const useQuotationForm = (
   isOpen: boolean,
   onClose: () => void,
-  onSubmit?: (data: any) => void,
+  onSubmit?: ModalSubmitHandler,
   initialData?: any,
 ) => {
   type QuotationFormState = Invoice & {
