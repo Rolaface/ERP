@@ -44,8 +44,14 @@ export async function getSupplierById(id: string | number): Promise<any> {
 }
 
 
-export async function updateSupplier(payload: any): Promise<any> {
-  const resp: AxiosResponse = await api.patch(SupplierAPI.update, payload);
+export async function updateSupplier(
+  id: string | number,
+  payload: any
+): Promise<any> {
+  const resp: AxiosResponse = await api.patch(
+    `${SupplierAPI.update}?id=${id}`,
+    payload
+  );
   return resp.data;
 }
 

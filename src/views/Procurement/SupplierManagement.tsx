@@ -127,36 +127,48 @@ const fetchSuppliers = async () => {
     }
   };
 
-  const handleRowClick = async (supplier: Supplier) => {
-    if (!supplier.supplierId) return;
+ const handleRowClick = async (supplier: Supplier) => {
+  if (!supplier.supplierId) return;
 
-    try {
-      setLoading(true);
-      await ensureAllSuppliers();
-      const res = await getSupplierById(supplier.supplierId);
-      const mapped = mapSupplierApi(res.data || res);
-      setSelectedSupplier(mapped);
-      setViewMode("detail");
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    await ensureAllSuppliers();
 
+    const res = await getSupplierById(supplier.supplierId);
+
+    const data = res?.message?.data;
+    if (!data) return;
+
+    const mapped = mapSupplierApi(data);
+    setSelectedSupplier(mapped);
+    setViewMode("detail");
+  } finally {
+    setLoading(false);
+  }
+};
   const handleBack = () => {
     setViewMode("table");
     setSelectedSupplier(null);
   };
 
-  const handleEditSupplier = async (supplier: Supplier) => {
-    if (!supplier.supplierId) return;
+const handleEditSupplier = async (supplier: Supplier) => {
+  if (!supplier.supplierId) return;
 
-    setLoading(true);
-    const res = await getSupplierById(supplier.supplierId);
-    const mapped = mapSupplierApi(res.data || res);
+  setLoading(true);
+
+  const res = await getSupplierById(supplier.supplierId);
+  const data = res?.message?.data; // ✅ FIX
+
+  if (!data) {
     setLoading(false);
-    openSupplierEdit(supplier.supplierId, mapped);
-  };
+    return;
+  }
 
+  const mapped = mapSupplierApi(data);
+  setLoading(false);
+
+  openSupplierEdit(supplier.supplierId, mapped);
+};
   const handleEditFromDetail = (supplier: Supplier) => handleEditSupplier(supplier);
 
   const handleMakePayment = (supplier: Supplier) => {

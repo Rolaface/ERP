@@ -143,9 +143,6 @@ export const useSupplierForm = ({
       newErrors.paymentTerms = "Credit days is required";
     }
 
-    if (!form.dateOfAddition) {
-      newErrors.dateOfAddition = "Date of Addition is required";
-    }
 
     if (form.openingBalance === null || form.openingBalance === undefined) {
       newErrors.openingBalance = "Opening Balance is required";
@@ -376,7 +373,11 @@ export const useSupplierForm = ({
       const payload = mapSupplierToApi(formattedForm, initialData?.supplierId);
       let res: any;
       if (isEditMode) {
-        res = await updateSupplier(payload);
+        if (!initialData?.supplierId) {
+          showApiError("Supplier ID is required for update");
+          return;
+        }
+        res = await updateSupplier(initialData.supplierId, payload);
       } else {
         res = await createSupplier(payload);
       }

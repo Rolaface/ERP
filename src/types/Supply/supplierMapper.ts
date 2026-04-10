@@ -2,7 +2,9 @@ import { SupplierFormData, Supplier } from "../../types/Supply/supplier";
 import { emptySupplierForm } from "./supplier";
 
 export const mapSupplierApi = (d: any): Supplier => {
+  if (!d) return emptySupplierForm as Supplier;
   const contact = d.contacts?.[0] || {};
+  const address = d.addresses?.[0] || {};
 
   return {
     supplierId: d.id,
@@ -12,40 +14,42 @@ export const mapSupplierApi = (d: any): Supplier => {
     tpin: d.tpin || "",
     currency: d.currency || "",
 
-    phoneNo: contact.phone || "",
+    phoneNo: contact.mobile || contact.phone || "",
     alternateNo: "",
     emailId: contact.email || "",
     contactPerson:
       contact.fullName ||
       `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
 
-    billingAddressLine1: "",
-    billingAddressLine2: "",
-    district: "",
-    province: "",
-    billingCity: "",
-    billingCountry: "",
-    billingPostalCode: "",
+  
+    addresses: Array.isArray(d.addresses) ? d.addresses : [],
+
+    billingAddressLine1: address.line1 || "",
+    billingAddressLine2: address.line2 || "",
+    billingCity: address.city || "",
+    province: address.state || "",
+    billingPostalCode: address.postalCode || "",
+    billingCountry: address.country || "",
 
     openingBalance: 0,
     paymentTerms: "",
     dateOfAddition: "",
+
     status: d.status?.toLowerCase(),
 
     terms: {
-      buying: d?.terms?.buying || { payment: { phases: [] } }
+      buying: d?.terms?.buying || { payment: { phases: [] } },
     },
   };
 };
-
 export const mapSupplierToApi = (
   f: SupplierFormData,
-  supplierId?: string | number,
+  id?: string | number,
 ) => {
   const names = f.contactPerson?.split(" ") || [];
 
   return {
-    ...(supplierId ? { supplierId } : {}),
+    ...(id ? { id } : {}),
 
     name: f.supplierName,
     type: "Company",

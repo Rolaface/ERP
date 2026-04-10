@@ -2,20 +2,27 @@ import type { TermSection } from "../termsAndCondition";
 
 export interface SupplierFormData {
   tpin?: string;
-  id?: string;  
+  id?: string;
   supplierName?: string;
   supplierCode?: string;
   taxCategory: string;
   paymentTerms: string;
   currency?: string;
+  type?: string; //
+  supplierGroup?: string;
+  status?: string; //
+
   contactPerson?: string;
   phoneCode?: string;
   phoneNo?: string;
+
   alternateCode?: string;
   alternateNo?: string;
   emailId?: string;
+
   dateOfAddition?: string;
   openingBalance?: string | number;
+
   billingAddressLine1?: string;
   billingAddressLine2?: string;
   billingCity?: string;
@@ -23,13 +30,17 @@ export interface SupplierFormData {
   province?: string;
   billingCountry?: string;
   billingPostalCode?: string;
-    terms?: {
+
+  // ✅ RAW API SUPPORT (VERY IMPORTANT)
+  contacts?: any[];
+  addresses?: any[];
+
+  terms?: {
     buying?: TermSection;
   };
-  bankAccounts?: SupplierBankAccount[];
- 
-}
 
+  bankAccounts?: SupplierBankAccount[];
+}
 export interface SupplierBankAccount {
   id: string;
   bankName: string;
@@ -48,7 +59,12 @@ export const emptySupplierForm: SupplierFormData = {
   taxCategory: "",
   paymentTerms: "",
   currency: "",
- bankAccounts: [],
+  type: "",
+  supplierGroup: "",
+  status: "",
+  contacts: [],
+  addresses: [],
+  bankAccounts: [],
   contactPerson: "",
   phoneCode: "",
   phoneNo: "",
@@ -65,27 +81,18 @@ export const emptySupplierForm: SupplierFormData = {
   billingCountry: "",
   billingPostalCode: "",
   terms: {
-  buying: { payment: { phases: [] } }
-},
+    buying: { payment: { phases: [] } },
+  },
 };
 
-
-
-export type SupplierTab =
-  | "supplier"
-  | "payment"
-  | "address"
-  | "terms";
-
+export type SupplierTab = "supplier" | "payment" | "address" | "terms";
 
 export type SupplierStatus = "active" | "inactive";
-
 
 export type Supplier = SupplierFormData & {
   supplierId?: string;
   status?: SupplierStatus;
 };
-
 
 export interface Supplierr {
   id: string;
@@ -94,9 +101,3 @@ export interface Supplierr {
   email?: string;
   phone?: string;
 }
-
-
-
-
-
-

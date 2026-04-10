@@ -368,7 +368,7 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.get_suppliers`,
     getById: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.get_supplier_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.create_supplier`,
-    update: `${ERP_BASE}/api/method/erpnext.supplier.api.update_supplier`,
+    update: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.update_supplier`,
     delete: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.delete_supplier`,
     getStatement: `${ERP_BASE}/api/method/erpnext.supplier.statement.api.get_supplier_statement`,
     CreatePayment: `${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
