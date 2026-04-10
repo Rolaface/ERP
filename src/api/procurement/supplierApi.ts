@@ -57,7 +57,7 @@ export async function updateSupplier(
 
 export async function deleteSupplier(id: string | number): Promise<any> {
   const resp: AxiosResponse = await api.delete(SupplierAPI.delete, {
-    data: { supplierId: id },   
+    data: { id: id },   
   });
   return resp.data;
 }
