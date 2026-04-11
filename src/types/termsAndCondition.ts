@@ -3,7 +3,7 @@ export interface TermPhase {
   name: string;
   percentage: string;
   condition: string;
-  creditdays: string;
+  credit_days: string;
   isDelete?: number;
 }
 

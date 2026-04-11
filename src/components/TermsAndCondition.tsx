@@ -43,7 +43,7 @@ const emptyPhase = (): TermPhase => ({
   name: "",
   percentage: "",
   condition: "",
-  creditdays: "",
+  credit_days: "",
   isDelete: undefined,
 });
 
@@ -303,7 +303,7 @@ const getDueDate = (days: number) => {
     if (!isEditing) return;
 
     const total = currentPaymentPhases.reduce(
-      (sum, p) => sum + Number(p.creditdays || 0),
+      (sum, p) => sum + Number(p.credit_days || 0),
       0,
     );
 
@@ -369,7 +369,7 @@ const getDueDate = (days: number) => {
     updatePayment({ phases: next });
   };
   const totalCreditDays = currentPaymentPhases.reduce(
-    (sum, p) => sum + Number(p.creditdays || 0),
+    (sum, p) => sum + Number(p.credit_days || 0),
     0,
   );
   const renderPaymentTable = () => {
@@ -461,10 +461,10 @@ const getDueDate = (days: number) => {
                             type="number"
                             min="0"
                             className="w-16 flex-shrink-0 text-center bg-transparent border-b-2 border-primary outline-none text-sm font-semibold"
-                            value={p.creditdays}
+                            value={p.credit_days}
                             onChange={(e) =>
                               updatePhase(idx, {
-                                creditdays: e.target.value,
+                                credit_days: e.target.value,
                                 condition: e.target.value
                                   ? `Payable within ${e.target.value} days`
                                   : "",
@@ -473,7 +473,7 @@ const getDueDate = (days: number) => {
                           />
                         ) : (
                           <span className="text-sm font-medium">
-                            {p.creditdays || "—"}
+                            {p.credit_days || "—"}
                           </span>
                         )}
 
