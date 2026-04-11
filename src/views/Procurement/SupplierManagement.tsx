@@ -58,18 +58,16 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPI, setSelectedPI] = useState<any | null>(null);
 
-  const normalizeStatus = (status?: string) => {
-    if (!status) return "active";
-    const normalized = status.toLowerCase();
-    if (normalized === "unactive" || normalized === "inactive") {
-      return "inactive";
-    }
-    if (normalized === "active") {
-      return "active";
-    }
-    return "active";
-  };
+ const normalizeStatus = (status?: string) => {
+  if (!status) return "inactive";
 
+  const normalized = status.toLowerCase();
+
+  if (["inactive", "unactive"].includes(normalized)) return "inactive";
+  if (normalized === "active") return "active";
+
+  return "inactive";
+};
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));

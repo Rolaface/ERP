@@ -57,3 +57,16 @@ export async function getCustomerGroups(search?: string): Promise<any> {
   });
   return resp.data;
 }
+
+
+export async function getCustomerGroupTree(): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(CustomerAPI.grouptree);
+
+  const body = resp?.data?.message || resp?.data;
+
+  if (body?.status_code === 200) {
+    return body.data.customer_groups || [];
+  }
+
+  throw new Error(body?.message || "Failed to fetch customer group tree");
+}

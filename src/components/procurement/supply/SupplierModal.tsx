@@ -79,7 +79,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   };
 
   const handleSubmitForm = async () => {
-    await handleFormSubmit(new Event("submit") as React.FormEvent);
+    await handleFormSubmit(new Event("submit") as unknown as React.FormEvent);
     return !loading;
   };
 

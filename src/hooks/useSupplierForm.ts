@@ -140,10 +140,7 @@ export const useSupplierForm = ({
       newErrors.currency = "Currency is required";
     }
 
-    if (!form.paymentTerms) {
-      newErrors.paymentTerms = "Credit days is required";
-    }
-
+    
 
     if (form.openingBalance === null || form.openingBalance === undefined) {
       newErrors.openingBalance = "Opening Balance is required";
@@ -515,8 +512,8 @@ export const useSupplierForm = ({
         if (!form.phoneCode || !form.phoneNo) emptyFields.push("Phone Number");
         if (!form.emailId) emptyFields.push("Email");
         if (!form.currency) emptyFields.push("Currency");
-        if (!form.paymentTerms) emptyFields.push("Credit Days");
-        if (!form.dateOfAddition) emptyFields.push("Date of Addition");
+       
+       
         if (!form.openingBalance && form.openingBalance !== 0)
           emptyFields.push("Opening Balance");
 

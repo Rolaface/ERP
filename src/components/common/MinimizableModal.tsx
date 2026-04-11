@@ -71,12 +71,6 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
   );
 
   const minimized = modalMeta?.minimized ?? false;
-  const focused = useMemo(() => {
-    const visible = modals.filter((m) => !m.minimized);
-    if (!visible.length) return false;
-    const top = [...visible].sort((a, b) => b.focusOrder - a.focusOrder)[0];
-    return top.id === modalId;
-  }, [modals, modalId]);
 
   const layer = useMemo(() => {
     const visible = modals
@@ -93,8 +87,6 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
       panel: backdrop + MODAL_LAYER.modalPanelOffset,
     };
   }, [modals, modalId]);
-
-  const interactionLocked = swalDepth > 0;
 
   if (!isOpen) return null;
 
@@ -113,11 +105,8 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
             customWidth={customWidth}
             backdropZIndex={layer.backdrop}
             panelZIndex={layer.panel}
-            focused={focused}
-            interactionLocked={interactionLocked}
             onClose={onClose}
             onMinimize={() => minimizeModal(modalId)}
-            onFocus={() => bringToFront(modalId)}
           >
             {children}
           </ModalShell>
@@ -138,11 +127,8 @@ interface ModalShellProps {
   customWidth?: string;
   backdropZIndex: number;
   panelZIndex: number;
-  focused: boolean;
-  interactionLocked: boolean;
   onClose: () => void;
   onMinimize: () => void;
-  onFocus: () => void;
 }
 
 const ModalShell: React.FC<ModalShellProps> = ({
@@ -156,21 +142,10 @@ const ModalShell: React.FC<ModalShellProps> = ({
   customWidth,
   backdropZIndex,
   panelZIndex,
-  focused,
-  interactionLocked,
   onClose,
   onMinimize,
-  onFocus,
 }) => {
   const panelRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!focused || typeof document === "undefined") return;
-    const frame = window.requestAnimationFrame(() => {
-      panelRef.current?.focus({ preventScroll: true });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [focused]);
 
   if (typeof document === "undefined") return null;
 
@@ -182,14 +157,8 @@ const ModalShell: React.FC<ModalShellProps> = ({
           position: "fixed",
           inset: 0,
           zIndex: backdropZIndex,
-          cursor: !focused && !interactionLocked ? "pointer" : "default",
-          background: focused ? "rgba(15,23,42,0.32)" : "rgba(15,23,42,0.1)",
-          backdropFilter: focused ? "blur(2px)" : "none",
-          transition: "background 0.2s ease, backdrop-filter 0.2s ease",
-        }}
-        onMouseDown={(e) => {
-          if (e.target === e.currentTarget && !focused && !interactionLocked)
-            onFocus();
+          background: "rgba(15,23,42,0.32)",
+          backdropFilter: "blur(2px)",
         }}
       />
 
@@ -212,11 +181,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
           aria-modal="true"
           tabIndex={-1}
           initial={{ opacity: 0, scale: 0.96, y: 24 }}
-          animate={{
-            opacity: 1,
-            scale: focused ? 1 : 0.985,
-            y: 0,
-          }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 32 }}
           transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
           className={`erp-modal-panel flex min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-card ${
@@ -228,23 +193,11 @@ const ModalShell: React.FC<ModalShellProps> = ({
             width: customWidth || undefined,
             maxWidth: customWidth ? "calc(100vw - 32px)" : undefined,
             maxHeight: "calc(100vh - 32px)",
-            boxShadow: focused
-              ? "0 28px 70px rgba(15,23,42,0.28), 0 0 0 1px rgba(15,23,42,0.06)"
-              : "0 10px 28px rgba(15,23,42,0.14)",
-            transition: "box-shadow 0.2s ease, transform 0.2s ease",
-          }}
-          onMouseDown={() => {
-            if (!focused && !interactionLocked) onFocus();
+            boxShadow: "0 28px 70px rgba(15,23,42,0.28), 0 0 0 1px rgba(15,23,42,0.06)",
           }}
         >
-          <header
-            className="relative overflow-hidden bg-primary px-4 py-3"
-            style={{
-              opacity: focused ? 1 : 0.9,
-              transition: "opacity 0.2s ease",
-            }}
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)]" />
+<header className="relative overflow-hidden bg-primary px-4 py-3">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)" />
             <div className="relative flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {Icon && (
@@ -261,12 +214,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                {!focused && (
-                  <span className="mr-2 text-[9px] font-semibold tracking-[0.12em] text-white/60">
-                    CLICK TO FOCUS
-                  </span>
-                )}
+<div className="flex items-center gap-1">
                 <button
                   type="button"
                   aria-label="Minimize"
@@ -293,24 +241,12 @@ const ModalShell: React.FC<ModalShellProps> = ({
             </div>
           </header>
 
-          <section
-            className="min-h-0 flex-1 overflow-x-auto overflow-y-auto bg-app px-4 py-3 text-sm text-main"
-            style={{
-              opacity: 1,
-              transition: "background 0.2s ease",
-            }}
-          >
+          <section className="min-h-0 flex-1 overflow-x-auto overflow-y-auto bg-app px-4 py-3 text-sm text-main">
             {children}
           </section>
 
           {footer && (
-            <footer
-              className="flex shrink-0 items-center justify-between border-t border-[var(--border)] bg-app px-4 py-3"
-              style={{
-                opacity: 1,
-                transition: "background 0.2s ease",
-              }}
-            >
+            <footer className="flex shrink-0 items-center justify-between border-t border-[var(--border)] bg-app px-4 py-3">
               {footer}
             </footer>
           )}

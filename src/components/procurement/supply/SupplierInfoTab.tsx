@@ -108,7 +108,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               </Tooltip>
             </div>
 
-            <div className="col-span-1.5">
+            {/* <div className="col-span-1.5">
               <Tooltip content={form.paymentTerms ? `Payment Terms: ${form.paymentTerms}` : "Enter payment terms"}>
                 <CreditDaysInput
                   name="paymentTerms"
@@ -119,7 +119,7 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                   className="no-spinner"
                 />
               </Tooltip>
-            </div>
+            </div> */}
           </div>
         </div>
 

@@ -80,6 +80,7 @@ export const REFRESH_KEYS = {
   WAREHOUSE_LIST: "warehouse_list",
   TAX_TEMPLATE_LIST: "tax_template_list",
   TAX_CATEGORY_LIST: "tax_category_list",
+  SALES_TAX_LIST: "sales_tax_list",
   
   // Payment
   PAYMENT_LIST: "payment_list",

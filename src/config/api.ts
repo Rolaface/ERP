@@ -165,12 +165,13 @@ export const API = {
     getById: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.get_customer_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.create_customer`,
     update: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.update_customer`,
-    delete: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.delete_customer_by_id`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.delete_customer`,
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
     getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
-    group: `${ERP_BASE}/api/method/custom_api.api.search.get_customers_group`
+    group: `${ERP_BASE}/api/method/custom_api.api.search.get_customers_group`,
+    grouptree: `${ERP_BASE}/api/method/custom_api.api.customer_group_item_restriction.get_customer_group_tree`
   },
 
   /* =========================
@@ -212,6 +213,14 @@ export const API = {
     createTaxCategory: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.create`,
     updateTaxCategory: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.update`,
     deleteTaxCategory: `${ERP_BASE}/api/method/frappe.client.delete`
+  },
+
+  salesTax: {
+    createSalesTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.create_sales_tax_template`,
+    getsalesTemplates: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.get_sales_tax_templates`,
+    deleteSalesTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.delete_sales_tax_template`,
+
+
   },
 
   /* =========================
