@@ -22,6 +22,7 @@ import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 import { fireManagedSwal } from "../../utils/swalManager";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
 type OutletContextType = {
   openCustomerCreate: () => void;
@@ -38,6 +39,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     openCustomerEdit
   } =
     useOutletContext<OutletContextType>();
+
+  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
 
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -82,6 +86,13 @@ const fetchCustomers = async () => {
   useEffect(() => {
     fetchCustomers();
   }, [page, pageSize, taxCategory]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.CUSTOMER_LIST, () => {
+      fetchCustomers();
+    });
+    return () => unsubscribe();
+  }, [subscribeToRefresh, fetchCustomers]);
 
   const fetchAllCustomers = async () => {
     try {
@@ -128,7 +139,7 @@ const fetchCustomers = async () => {
       showLoading("Deleting Customer...");
       await deleteCustomerById(customerId);
       closeSwal();
-      setCustomers((prev) => prev.filter((customer) => customer.id !== customerId));
+      triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
       showSuccess("Customer deleted successfully.");
     } catch (error) {
       closeSwal();

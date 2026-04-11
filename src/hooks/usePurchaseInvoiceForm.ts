@@ -38,6 +38,7 @@ import {
   getPurchaseOrderById,
   getPurchaseOrders,
 } from "../api/procurement/PurchaseOrderApi";
+import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 interface UsePurchaseInvoiceFormProps {
@@ -774,6 +775,7 @@ useFieldDefault(
 
       showSuccess(res.message);
 
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.PURCHASE_INVOICE_LIST);
       onSuccess?.(res);
       onClose?.();
       reset();

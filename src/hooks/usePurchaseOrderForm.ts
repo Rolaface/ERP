@@ -29,7 +29,7 @@ import { getItemByItemCode } from "../api/itemApi";
 import { useFieldDefault } from "./useFieldDefault";
 import { fetchCostCenters, fetchProjects } from "../api/getAllApi";
 import { getAllWarehouses } from "../api/WarehouseApi";
-
+import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 interface UsePurchaseOrderFormProps {
@@ -598,6 +598,7 @@ useFieldDefault(
           : "Purchase Order Created"
       );
 
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.PURCHASE_ORDER_LIST);
       onSuccess?.(res);
       onClose?.();
       reset();

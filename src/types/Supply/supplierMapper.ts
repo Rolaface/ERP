@@ -1,3 +1,4 @@
+import { add } from "date-fns";
 import { SupplierFormData, Supplier } from "../../types/Supply/supplier";
 import { emptySupplierForm } from "./supplier";
 
@@ -21,7 +22,6 @@ export const mapSupplierApi = (d: any): Supplier => {
       contact.fullName ||
       `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
 
-  
     addresses: Array.isArray(d.addresses) ? d.addresses : [],
 
     billingAddressLine1: address.line1 || "",
@@ -30,7 +30,8 @@ export const mapSupplierApi = (d: any): Supplier => {
     province: address.state || "",
     billingPostalCode: address.postalCode || "",
     billingCountry: address.country || "",
-
+    billingCounty: address.county || "",
+    district: address.district || "", 
     openingBalance: 0,
     paymentTerms: "",
     dateOfAddition: "",
@@ -42,10 +43,7 @@ export const mapSupplierApi = (d: any): Supplier => {
     },
   };
 };
-export const mapSupplierToApi = (
-  f: SupplierFormData,
-  id?: string | number,
-) => {
+export const mapSupplierToApi = (f: SupplierFormData, id?: string | number) => {
   const names = f.contactPerson?.split(" ") || [];
 
   return {
@@ -80,8 +78,11 @@ export const mapSupplierToApi = (
         line2: f.billingAddressLine2 || "",
         city: f.billingCity,
         state: f.province,
+        county: f.billingCounty,
+        district: f.billingCounty,
         postalCode: f.billingPostalCode,
         country: f.billingCountry,
+
         isPrimary: true,
       },
     ],
@@ -147,6 +148,7 @@ export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
     province: s.province ?? "",
     billingPostalCode: s.billingPostalCode ?? "",
     billingCountry: s.billingCountry ?? "",
+    billingCounty: s.billingCounty ?? "",
     terms: {
       buying: s?.terms?.buying || emptySupplierForm.terms?.buying,
     },

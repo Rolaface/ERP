@@ -23,6 +23,7 @@ import { createSalesInvoice } from "../api/salesApi";
 import { createQuotation } from "../api/quotationApi";
 import { createItemGroupNode, renameItemGroup, updateItemGroupById } from "../api/itemGroupApi";
 import { createWarehouseNode, updateWarehouseById } from "../api/WarehouseApi";
+import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 
 const AppLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(true);
@@ -37,6 +38,7 @@ const AppLayout: React.FC = () => {
         return false;
       }
       showSuccess(response.message);
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
       return true;
     } catch (error: any) {
       showApiError(error);
@@ -52,6 +54,7 @@ const AppLayout: React.FC = () => {
         return false;
       }
       showSuccess("Quotation created successfully!");
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.QUOTATION_LIST);
       return true;
     } catch (error) {
       showApiError(error);
@@ -64,9 +67,11 @@ const AppLayout: React.FC = () => {
       if (isEdit) {
         await updateItemGroupById(payload.id, payload);
         showSuccess("Item group updated successfully!");
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.ITEM_CATEGORY_LIST);
       } else {
         await createItemGroupNode(payload);
         showSuccess("Item group created successfully!");
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.ITEM_CATEGORY_LIST);
       }
       onSuccess();
       return true;
@@ -112,6 +117,7 @@ const AppLayout: React.FC = () => {
         `Item Group ${payload.item_group_name} ${actionText} successfully`
       );
       
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.ITEM_CATEGORY_LIST);
       onSuccess();
       return true;
     } catch (error: any) {
@@ -139,6 +145,7 @@ const AppLayout: React.FC = () => {
         `Warehouse ${payload.warehouse_name} ${actionText} successfully`
       );
       
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.WAREHOUSE_LIST);
       onSuccess();
       return true;
     } catch (error: any) {

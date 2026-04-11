@@ -24,6 +24,7 @@ import ActionButton, {
 
 import type { Column } from "../../components/ui/Table/type";
 import type { ItemSummary, Item } from "../../types/item";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
 type OutletContextType = {
   openItemCreate: (context?: { onSuccess?: () => void }) => void;
@@ -64,6 +65,9 @@ const flattenItemDetail = (fullItem: any): Item => ({
 const Items: React.FC = () => {
   const { openItemCreate, openItemEdit } =
     useOutletContext<OutletContextType>();
+
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
 
   /* ── Table / list state ── */
   const [items, setItems] = useState<ItemSummary[]>([]);
@@ -151,6 +155,13 @@ const Items: React.FC = () => {
   useEffect(() => {
     void fetchItems();
   }, [fetchItems]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.ITEM_LIST, () => {
+      fetchItems();
+    });
+    return () => unsubscribe();
+  }, [subscribeToRefresh, fetchItems]);
 
   /* ── Fetch ALL items (no pagination) for the detail sidebar ── */
   const fetchAllItems = useCallback(async () => {
@@ -271,7 +282,7 @@ const confirmDelete = async () => {
       handleBack();
     }
 
-    await refetchItemData();
+    triggerRefresh(REFRESH_KEYS.ITEM_LIST);
 
   } catch (err: any) {
     showApiError(err);

@@ -18,6 +18,7 @@ import type { Supplier } from "../../types/Supply/supplier";
 import type { SupplierFilters } from "../../api/procurement/supplierApi";
 import { showApiError, showSuccess } from "../../utils/alert";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
 type OutletContextType = {
   openSupplierCreate: () => void;
@@ -31,6 +32,9 @@ interface Props {
 const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const { openSupplierCreate, openSupplierEdit } =
     useOutletContext<OutletContextType>();
+
+  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
 
   const handleAddSupplier = () => {
     if (openSupplierCreate) {
@@ -105,6 +109,13 @@ const fetchSuppliers = async () => {
   useEffect(() => {
     fetchSuppliers();
   }, [page, pageSize, filters]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.SUPPLIER_LIST, () => {
+      fetchSuppliers();
+    });
+    return () => unsubscribe();
+  }, [subscribeToRefresh, fetchSuppliers]);
 
   const fetchAllSuppliers = async () => {
     try {
@@ -194,7 +205,7 @@ const handleEditSupplier = async (supplier: Supplier) => {
       setLoading(true);
       await deleteSupplier(supplier.supplierId);
       showSuccess("Supplier deleted successfully");
-      await fetchSuppliers();
+      triggerRefresh(REFRESH_KEYS.SUPPLIER_LIST);
     } catch (err: any) {
       console.error("Delete failed", err);
       showApiError(err);

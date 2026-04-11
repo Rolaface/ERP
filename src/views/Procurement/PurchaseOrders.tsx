@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import PurchaseOrderView from "../../views/Procurement/purchaseorderview";
 import Table from "../../components/ui/Table/Table";
@@ -28,6 +28,7 @@ import { generatePurchaseOrderPDF } from "../../components/template/purchaseorde
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
 type OutletContextType = {
   openPOCreate: () => void;
@@ -161,6 +162,15 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   useEffect(() => {
     fetchOrders();
   }, [page, pageSize, filters]);
+
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.PURCHASE_ORDER_LIST, () => {
+      fetchOrders();
+    });
+    return () => unsubscribe();
+  }, [subscribeToRefresh, fetchOrders]);
 
   const handleMakePayment = (order: PurchaseOrder) => {
   if (order.status !== "Approved") {

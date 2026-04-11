@@ -29,9 +29,10 @@ export interface SupplierFormData {
   district?: string;
   province?: string;
   billingCountry?: string;
+  billingCounty?: string;
   billingPostalCode?: string;
 
-  // ✅ RAW API SUPPORT (VERY IMPORTANT)
+
   contacts?: any[];
   addresses?: any[];
 
@@ -79,6 +80,7 @@ export const emptySupplierForm: SupplierFormData = {
   district: "",
   province: "",
   billingCountry: "",
+  billingCounty: "",
   billingPostalCode: "",
   terms: {
     buying: { payment: { phases: [] } },

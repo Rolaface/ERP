@@ -90,7 +90,7 @@ export const AddressTab: React.FC<AddressTabProps> = ({
           <ModalInput
             label="District"
             name="district"
-            value={form.district}
+            value={form.district ||form.billingCounty}
             onChange={onChange}
             required
             error={errors.district}

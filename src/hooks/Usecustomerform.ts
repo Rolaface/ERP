@@ -11,6 +11,7 @@ import { createCustomer, updateCustomerByCustomerCode } from "../api/customerApi
 import type { TermSection } from "../types/termsAndCondition";
 import type { CustomerDetail } from "../types/customer";
 import type { ModalSubmitHandler } from "../types/modal";
+import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 
 const companyId = import.meta.env.VITE_COMPANY_ID;
 
@@ -582,6 +583,7 @@ export function useCustomerForm({
 
         closeSwal();
         showSuccess("Customer updated successfully!");
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
         const canClose = await onSubmit?.(payload);
         if (canClose === false) return false;
         handleClose();
@@ -609,6 +611,8 @@ export function useCustomerForm({
             : apiMessage,
         );
 
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
+        
         const canClose = await onSubmit?.(createdCustomer);
         if (canClose === false) return false;
         handleClose();

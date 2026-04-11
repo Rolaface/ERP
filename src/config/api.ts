@@ -161,10 +161,10 @@ export const API = {
    * CUSTOMER
    * ========================= */
   customer: {
-    getAll: `${ERP_BASE}/api/method/custom_api.api.customer.get_customers`,
-    getById: `${ERP_BASE}/api/method/custom_api.api.customer.get_customer_by_id`,
-    create: `${ERP_BASE}/api/method/custom_api.api.customer.create_customer`,
-    update: `${ERP_BASE}/api/method/custom_api.api.customer.update_customer`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.get_customers`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.get_customer_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.create_customer`,
+    update: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.update_customer`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.delete_customer_by_id`,
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,

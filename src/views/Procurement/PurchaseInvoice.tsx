@@ -29,6 +29,7 @@ const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import PurchaseInvoiceDetailModal, { type PurchaseInvoiceDetail } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
 
 interface Purchaseinvoice {
@@ -193,6 +194,15 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
   useEffect(() => {
     fetchInvoice();
   }, [page, pageSize, filters]);
+
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.PURCHASE_INVOICE_LIST, () => {
+      fetchInvoice();
+    });
+    return () => unsubscribe();
+  }, [subscribeToRefresh, fetchInvoice]);
 
   // ── Drawer: open + fetch (same as proforma/PO handleView)
   const handleViewClick = async (pId: string, e?: React.MouseEvent) => {

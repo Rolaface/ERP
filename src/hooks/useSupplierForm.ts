@@ -11,6 +11,7 @@ import { getCompanyById } from "../api/companySetupApi";
 const companyId = import.meta.env.VITE_COMPANY_ID;
 import type { TermSection } from "../types/termsAndCondition";
 import { createNewBankAccount } from "../api/BankAccountApi";
+import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 
 interface UseSupplierFormProps {
   initialData?: Supplier | null;
@@ -430,6 +431,7 @@ export const useSupplierForm = ({
         (isEditMode ? "Supplier Updated" : "Supplier Created");
 
       showSuccess(successMessage);
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.SUPPLIER_LIST);
       onSuccess?.(form);
     } catch (err: any) {
       showApiError(err);

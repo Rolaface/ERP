@@ -18,6 +18,7 @@ import type {
 import type { ModalSubmitHandler, ModalValidationError } from "../types/modal";
 import { getSupplierList } from "../api/lookupApi";
 import { showSuccess } from "../utils/alert";
+import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 
 interface ItemNestedInitialData extends Partial<ItemFormData> {
   vendorInfo?: Partial<
@@ -463,6 +464,7 @@ export const useItemForm = ({
       }
 
       await showSuccess(response.message);
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.ITEM_LIST);
       const canClose = await onSubmit?.(response.data);
       if (canClose === false) return false;
       handleClose();
