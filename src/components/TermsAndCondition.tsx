@@ -288,16 +288,13 @@ const TermsAndCondition: React.FC<Props> = ({
   const totalPercentage = getTotalPercentage(currentPaymentPhases);
   const isOverLimit = totalPercentage > 100;
 
-//due date 
-const getDueDate = (days: number) => {
-  if (!days) return "";
-
-  const today = new Date();
-  today.setDate(today.getDate() + days);
-
-  return today.toLocaleDateString("en-GB"); // 12/04/2026 format
-};
-
+  // due date
+  const getDueDate = (days: number) => {
+    if (!days) return "";
+    const today = new Date();
+    today.setDate(today.getDate() + days);
+    return today.toLocaleDateString("en-GB");
+  };
 
   useEffect(() => {
     if (!isEditing) return;
@@ -368,10 +365,12 @@ const getDueDate = (days: number) => {
     );
     updatePayment({ phases: next });
   };
+
   const totalCreditDays = currentPaymentPhases.reduce(
     (sum, p) => sum + Number(p.credit_days || 0),
     0,
   );
+
   const renderPaymentTable = () => {
     const payment = ensurePayment(currentTerms);
     const rawPhases = payment.phases as LocalPhase[];
@@ -380,12 +379,13 @@ const getDueDate = (days: number) => {
       <div className="space-y-4">
         <div className="border border-theme rounded-lg overflow-visible">
           <table className="w-full text-sm table-fixed">
+            {/* ── CHANGE 1: added Credit Days col ── */}
             <colgroup>
               <col style={{ width: 32 }} />
               <col style={{ width: 140 }} />
               <col style={{ width: 86 }} />
-
               <col />
+              <col style={{ width: 110 }} />
               <col style={{ width: 36 }} />
             </colgroup>
             <thead>
@@ -399,8 +399,13 @@ const getDueDate = (days: number) => {
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted">
                   %
                 </th>
+                {/* ── CHANGE 2: renamed Condition → Description ── */}
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted">
-                  Condition
+                  Description
+                </th>
+                {/* ── CHANGE 3: new Credit Days heading ── */}
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted">
+                  Credit Days
                 </th>
               </tr>
             </thead>
@@ -432,7 +437,7 @@ const getDueDate = (days: number) => {
                       )}
                     </td>
 
-                    {/* % cell — text turns red when over limit, zero DOM change */}
+                    {/* % cell — text turns red when over limit */}
                     <td className="px-3 py-2.5 overflow-hidden">
                       {isEditing ? (
                         <input
@@ -450,37 +455,47 @@ const getDueDate = (days: number) => {
                         <span className="text-sm">{p.percentage || "—"}</span>
                       )}
                     </td>
+
+                    {/* ── CHANGE 4: Description cell — free-text for p.condition ── */}
                     <td className="px-3 py-2.5 overflow-hidden">
-                      <div className="flex items-center gap-2 whitespace-nowrap">
-                       <span className="text-muted text-sm whitespace-nowrap flex-shrink-0">
-                          Payable within
+                      {isEditing ? (
+                        <input
+                          className="w-full bg-transparent text-muted outline-none text-sm"
+                          value={p.condition}
+                          placeholder="Enter description..."
+                          onChange={(e) =>
+                            updatePhase(idx, { condition: e.target.value })
+                          }
+                        />
+                      ) : (
+                        <span
+                          className="block truncate text-sm"
+                          title={p.condition}
+                        >
+                          {p.condition || "—"}
                         </span>
+                      )}
+                    </td>
 
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            min="0"
-                            className="w-16 flex-shrink-0 text-center bg-transparent border-b-2 border-primary outline-none text-sm font-semibold"
-                            value={p.credit_days}
-                            onChange={(e) =>
-                              updatePhase(idx, {
-                                credit_days: e.target.value,
-                                condition: e.target.value
-                                  ? `Payable within ${e.target.value} days`
-                                  : "",
-                              })
-                            }
-                          />
-                        ) : (
-                          <span className="text-sm font-medium">
-                            {p.credit_days || "—"}
-                          </span>
-                        )}
-
-                        <span className="text-muted text-sm whitespace-nowrap">
-                          days
+                    {/* ── CHANGE 5: Credit Days cell — number only, no inline label ── */}
+                    <td className="px-3 py-2.5 overflow-hidden">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          min="0"
+                          className="w-full text-center bg-transparent border-b-2 border-primary outline-none text-sm font-semibold text-main"
+                          value={p.credit_days}
+                          placeholder="—"
+                          onChange={(e) =>
+                            /* ── CHANGE 6: only update credit_days, not condition ── */
+                            updatePhase(idx, { credit_days: e.target.value })
+                          }
+                        />
+                      ) : (
+                        <span className="text-sm font-medium block text-center">
+                          {p.credit_days || "—"}
                         </span>
-                      </div>
+                      )}
                     </td>
 
                     <td className="px-3 py-2.5 text-center align-middle">
@@ -535,8 +550,8 @@ const getDueDate = (days: number) => {
               suffix="days"
               suffixKeyword="days"
               value={`Payment due within ${totalCreditDays} days ${
-  totalCreditDays ? `(Due on ${getDueDate(totalCreditDays)})` : ""
-}`}
+                totalCreditDays ? `(Due on ${getDueDate(totalCreditDays)})` : ""
+              }`}
               onChange={() => {}}
               disabled={true}
             />
