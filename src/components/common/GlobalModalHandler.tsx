@@ -2,10 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import {
-  useModalStore,
-  MODAL_LAYER,
-} from "../../store/modalStore";
+import { useModalStore, MODAL_LAYER } from "../../store/modalStore";
 import type { ModalInstance, ModalType } from "../../store/modalStore";
 import type { ModalSubmitHandler } from "../../types/modal";
 import { useQuickAdd } from "../../context/QuickAddContext";
@@ -20,12 +17,14 @@ import PurchaseInvoiceModal from "../procurement/PurchaseInvoiceModal";
 import ItemModal from "../inventory/ItemModal";
 import ItemsCategoryModal from "../inventory/ItemsCategoryModal";
 import WarehouseModal from "../inventory/WarehouseModal";
-import TaxTemplateModalComponent from "../inventory/TaxTemplateModal";
+import TaxTemplateModalComponent from "../../companies/taxMaintaince/TaxTemplateModal";
 import TaxCategoryModalComponent from "../inventory/TaxCategoryModal";
 import type { CustomerDetail } from "../../types/customer";
 import type { Supplier } from "../../types/Supply/supplier";
 import type { ItemInitialData } from "../inventory/ItemModal";
 import type { TaxCategoryFormData as TaxTemplateFormData } from "../../types/tax/taxTemplate";
+import SalesTaxTemplateModalComponent from "../../companies/taxMaintaince/SalesTempleteModal";
+import type { SalesTaxTemplateFormData } from "../../types/tax/salesTemplate";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -86,7 +85,6 @@ const GlobalModalHandler: React.FC = () => {
           },
         });
       }
-      
     }
   }, [pending, completeQuickAdd]);
 
@@ -258,6 +256,20 @@ const GlobalModalHandler: React.FC = () => {
             }}
           />
         );
+      case "salesTax":
+        return (
+          <SalesTaxTemplateModalComponent
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={getInitialData<SalesTaxTemplateFormData>(
+              modal.initialData,
+            )}
+            isEditMode={modal.isEdit}
+          />
+        );
 
       default:
         return null;
@@ -278,7 +290,7 @@ const MinimizedDrawer: React.FC = () => {
 
   const minimizedModals = useMemo(
     () => modals.filter((m) => m.minimized),
-    [modals]
+    [modals],
   );
 
   if (typeof document === "undefined" || minimizedModals.length === 0) {
@@ -333,7 +345,7 @@ const MinimizedDrawer: React.FC = () => {
         </div>
       </motion.div>
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 };
 

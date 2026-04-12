@@ -6,6 +6,13 @@ import { API, ERP_BASE } from "../config/api";
 const api = createAxiosInstance(ERP_BASE);
 export const TemplateAPI = API.salesTax;
 
+//  GET GL Accounts with optional search 
+export async function getGlAccounts(search?: string): Promise<any> {
+  const resp: AxiosResponse = await api.get(TemplateAPI.getTemplateGl, {
+    params: search ? { search } : {},
+  });
+  return resp.data;
+}
 
 
 export async function createTemplate(payload: any): Promise<any> {

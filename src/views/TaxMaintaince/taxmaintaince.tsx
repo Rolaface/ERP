@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { FaPercentage } from "react-icons/fa";
 import TaxTemplate from "../Inventory/TaxTemplate";
-import SalesTax from "./salesTax";
 import TaxCategory from "../Inventory/TaxCategory";
+import SalesTaxTemplate from "./Salestaxtemplate";
 import { FaFileInvoiceDollar } from "react-icons/fa";
 import { FaTags } from "react-icons/fa";
 
@@ -30,10 +30,16 @@ const Inventory: React.FC = () => {
         tabs={[
           {
             id: "taxTemplate",
-            label: "Item Tax Templates",
+            label: "Tax Templates",
             icon: <FaFileInvoiceDollar />,
           },
-          { id: "salesTax", label: "Sales Tax Templates", icon: <FaTags /> },
+
+          {
+            id: "salesTaxTemplate",
+            label: "Sales Tax Template",
+            icon: <FaFileInvoiceDollar />,
+          },
+
           { id: "taxCategory", label: "Tax Category", icon: <FaTags /> },
         ]}
         activeTab={activeTab}
@@ -42,7 +48,8 @@ const Inventory: React.FC = () => {
 
       <AppPageBody viewportLocked={isDashboardTab}>
         {activeTab === "taxTemplate" && <TaxTemplate />}
-        {activeTab === "salesTax" && <SalesTax />}
+
+        {activeTab === "salesTaxTemplate" && <SalesTaxTemplate />}
         {activeTab === "taxCategory" && <TaxCategory />}
       </AppPageBody>
     </AppPage>

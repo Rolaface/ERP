@@ -219,7 +219,7 @@ export const API = {
     createSalesTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.create_sales_tax_template`,
     getsalesTemplates: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.get_sales_tax_templates`,
     deleteSalesTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.delete_sales_tax_template`,
-
+    getTemplateGl:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
 
   },
 

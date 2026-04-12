@@ -438,3 +438,15 @@ export const openTaxCategoryModal = (
       useModalStore
         .getState()
         .openModal("taxCategory", initialData, isEdit, context, meta);
+
+export const openSalesTaxTemplateModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("salesTax", initialData, isEdit, context, meta);
+
+        
