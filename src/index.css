@@ -685,15 +685,17 @@
 .input-base {
   width: 100%;
   background: var(--input-bg);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: var(--input-radius);
+  padding: var(--input-padding-y) var(--input-padding-x);
+
   font-size: 14px;
   font-weight: 500;
+  color: var(--input-text);
 
   border: 1px solid var(--input-border);
   outline: none;
 
-  transition: all 0.2s ease;
+  transition: var(--input-transition);
 }
 
 .input-base:focus {
