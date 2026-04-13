@@ -127,7 +127,7 @@ export const ConditionCell: React.FC<ConditionCellProps> = ({
     <div className="flex items-center gap-1.5">
       {isCustom ? (
         <input
-          className="flex-1 min-w-0 bg-transparent text-muted outline-none border-b border-gray-300 focus:border-primary text-sm"
+          className="flex-1 min-w-0 bg-transparent text-muted outline-none border-b border-theme focus:border-primary text-sm"
           value={value}
           placeholder="Enter condition..."
           onChange={(e) => onChange(e.target.value)}
@@ -152,7 +152,7 @@ export const ConditionCell: React.FC<ConditionCellProps> = ({
         type="button"
         title={isCustom ? "Switch to days template" : "Switch to custom text"}
         onClick={toggle}
-        className="flex-shrink-0 text-gray-400 hover:text-primary transition-colors"
+        className="flex-shrink-0 text-muted hover:text-primary transition-colors"
       >
         {isCustom ? (
           <MdOutlineCalendarToday size={14} />
@@ -217,7 +217,7 @@ export const TemplateField: React.FC<TemplateFieldProps> = ({
     <div className="flex items-center gap-1.5 flex-1">
       {isCustom ? (
         <input
-          className="flex-1 bg-transparent text-muted outline-none border-b border-gray-300 focus:border-primary text-sm"
+          className="flex-1 bg-transparent text-muted outline-none border-b border-theme focus:border-primary text-sm"
           value={value}
           placeholder="Enter full text..."
           onChange={(e) => onChange(e.target.value)}
@@ -240,7 +240,7 @@ export const TemplateField: React.FC<TemplateFieldProps> = ({
         type="button"
         title={isCustom ? "Switch to template" : "Switch to custom text"}
         onClick={toggle}
-        className="flex-shrink-0 text-gray-400 hover:text-primary transition-colors"
+        className="flex-shrink-0 text-muted hover:text-primary transition-colors"
       >
         {isCustom ? (
           <MdOutlineCalendarToday size={14} />
@@ -283,12 +283,10 @@ const TermsAndCondition: React.FC<Props> = ({
   const getTotalPercentage = (phases: TermPhase[]) =>
     phases.reduce((sum, p) => sum + Number(p.percentage || 0), 0);
 
-  // Derived — no extra state, computed live from draft
   const currentPaymentPhases = ensurePayment(currentTerms).phases;
   const totalPercentage = getTotalPercentage(currentPaymentPhases);
   const isOverLimit = totalPercentage > 100;
 
-  // due date
   const getDueDate = (days: number) => {
     if (!days) return "";
     const today = new Date();
@@ -350,7 +348,6 @@ const TermsAndCondition: React.FC<Props> = ({
     });
   };
 
-  // Always update — never block keystrokes
   const updatePhase = (index: number, patch: Partial<TermPhase>) => {
     if (!isEditing) return;
     const phases = ensurePayment(currentTerms).phases;
@@ -379,7 +376,6 @@ const TermsAndCondition: React.FC<Props> = ({
       <div className="space-y-4">
         <div className="border border-theme rounded-lg overflow-visible">
           <table className="w-full text-sm table-fixed">
-            {/* ── CHANGE 1: added Credit Days col ── */}
             <colgroup>
               <col style={{ width: 32 }} />
               <col style={{ width: 140 }} />
@@ -390,21 +386,19 @@ const TermsAndCondition: React.FC<Props> = ({
             </colgroup>
             <thead>
               <tr className="table-head">
-                <th className="px-3 py-2 text-left text-xs font-medium text-muted">
+                <th className="px-3 py-2 text-left text-xs font-medium">
                   #
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-muted">
+                <th className="px-3 py-2 text-left text-xs font-medium">
                   Phase
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-muted">
+                <th className="px-3 py-2 text-left text-xs font-medium">
                   %
                 </th>
-                {/* ── CHANGE 2: renamed Condition → Description ── */}
-                <th className="px-3 py-2 text-left text-xs font-medium text-muted">
+                <th className="px-3 py-2 text-left text-xs font-medium">
                   Description
                 </th>
-                {/* ── CHANGE 3: new Credit Days heading ── */}
-                <th className="px-3 py-2 text-left text-xs font-medium text-muted">
+                <th className="px-3 py-2 text-left text-xs font-medium">
                   Credit Days
                 </th>
               </tr>
@@ -437,14 +431,14 @@ const TermsAndCondition: React.FC<Props> = ({
                       )}
                     </td>
 
-                    {/* % cell — text turns red when over limit */}
+                    {/* % cell — text turns danger color when over limit */}
                     <td className="px-3 py-2.5 overflow-hidden">
                       {isEditing ? (
                         <input
                           type="number"
                           min="0"
                           className={`w-full bg-transparent outline-none text-sm transition-colors duration-150 ${
-                            isOverLimit ? "text-red-500" : "text-muted"
+                            isOverLimit ? "text-danger" : "text-muted"
                           }`}
                           value={p.percentage}
                           onChange={(e) =>
@@ -456,7 +450,6 @@ const TermsAndCondition: React.FC<Props> = ({
                       )}
                     </td>
 
-                    {/* ── CHANGE 4: Description cell — free-text for p.condition ── */}
                     <td className="px-3 py-2.5 overflow-hidden">
                       {isEditing ? (
                         <input
@@ -477,7 +470,6 @@ const TermsAndCondition: React.FC<Props> = ({
                       )}
                     </td>
 
-                    {/* ── CHANGE 5: Credit Days cell — number only, no inline label ── */}
                     <td className="px-3 py-2.5 overflow-hidden">
                       {isEditing ? (
                         <input
@@ -487,7 +479,6 @@ const TermsAndCondition: React.FC<Props> = ({
                           value={p.credit_days}
                           placeholder="—"
                           onChange={(e) =>
-                            /* ── CHANGE 6: only update credit_days, not condition ── */
                             updatePhase(idx, { credit_days: e.target.value })
                           }
                         />
@@ -503,7 +494,7 @@ const TermsAndCondition: React.FC<Props> = ({
                         <button
                           type="button"
                           onClick={() => removePhase(idx)}
-                          className="flex items-center justify-center text-red-400 hover:text-red-600"
+                          className="flex items-center justify-center text-danger opacity-60 hover:opacity-100 transition-opacity"
                         >
                           <FaTrash size={11} />
                         </button>
@@ -516,13 +507,10 @@ const TermsAndCondition: React.FC<Props> = ({
           </table>
         </div>
 
-        {/*
-          Fixed-height slot directly below the table.
-          Always reserves 16px — nothing below ever shifts position.
-        */}
+        {/* Fixed-height slot for over-limit warning */}
         <div style={{ minHeight: 16 }} className="flex items-center">
           {isEditing && isOverLimit && (
-            <span className="text-red-500 text-xs">
+            <span className="text-danger text-xs">
               Total percentage cannot exceed 100% (currently {totalPercentage}%)
             </span>
           )}
@@ -649,7 +637,7 @@ const TermsAndCondition: React.FC<Props> = ({
         </div>
 
         {/* Content */}
-        <div className="p-5 bg-white min-h-[120px]">
+        <div className="p-5 bg-card min-h-[120px]">
           {activeKey === "payment"
             ? renderPaymentTable()
             : renderTextSection(activeKey, TABS[activeTab].label)}
@@ -677,7 +665,7 @@ const TermsAndCondition: React.FC<Props> = ({
                     : ""
                 }
                 className={`px-5 py-1.5 rounded-lg text-white text-sm font-medium flex items-center gap-1.5 transition-all duration-200 ${
-                  isOverLimit ? "bg-gray-300 cursor-not-allowed opacity-60" : ""
+                  isOverLimit ? "opacity-40 cursor-not-allowed" : ""
                 }`}
                 style={
                   !isOverLimit
@@ -685,7 +673,7 @@ const TermsAndCondition: React.FC<Props> = ({
                         background:
                           "linear-gradient(90deg, var(--primary) 0%, var(--primary-600) 100%)",
                       }
-                    : {}
+                    : { background: "var(--muted)" }
                 }
               >
                 <FaCheck size={11} /> Apply Changes
