@@ -206,6 +206,15 @@
   --table-head-text: #071025;
   --border: rgba(255, 255, 255, 0.1);
   --row-hover: rgba(255, 255, 255, 0.05);
+    --input-bg: #0f172a;
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-border-hover: rgba(255, 255, 255, 0.2);
+
+  --input-border-focus: var(--primary);
+  --input-focus-ring: rgba(96, 165, 250, 0.2);
+
+  --input-bg-filled: #111827;
+  --input-bg-error: rgba(220, 38, 38, 0.1);
 }
 
 :root[data-theme="corporate"] {
@@ -344,6 +353,14 @@
   --sidebar-text: #d4af37;
   --table-head: #121418;
   --table-head-text: var(--primary);
+  --input-bg: #1a1d23;
+  --input-border: #2a2f36;
+  --input-border-hover: #3a3f46;
+
+  --input-border-focus: var(--primary);
+  --input-focus-ring: rgba(212, 175, 55, 0.2);
+
+  --input-bg-filled: #22262d;
 }
 
 /* Clinical */
