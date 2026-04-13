@@ -1,190 +1,135 @@
-import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 
-type FormFieldProps = {
+type Props = {
   label?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  value?: string;
+  onChange?: (e: any) => void;
+  onKeyDown?: (e: any) => void;
 
   placeholder?: string;
-  error?: string;
-  helper?: string;
-  successText?: string;
-
   type?: string;
-  required?: boolean;
+
+  /* STATES */
+  error?: string | boolean;
+  success?: boolean;
   disabled?: boolean;
+  loading?: boolean;
 
-  inputRef?: React.RefObject<HTMLInputElement>;
-  onEnter?: () => void;
-
-  asyncStatus?: "idle" | "loading" | "taken" | "valid";
+  /* UX */
+  helperText?: string;
   rightElement?: React.ReactNode;
+
+  /* SYSTEM */
+  variant?: "outline" | "filled" | "ghost";
+  floatingLabel?: boolean;
+
+  inputRef?: React.Ref<HTMLInputElement>;
 };
 
 export default function FormFieldPro({
   label,
   value,
   onChange,
-  placeholder,
-  error,
-  helper,
-  successText,
+  onKeyDown,
+  placeholder = "",
   type = "text",
-  required = false,
-  disabled = false,
-  inputRef,
-  onEnter,
-  asyncStatus,
+
+  error,
+  success,
+  disabled,
+  loading,
+
+  helperText,
   rightElement,
-}: FormFieldProps) {
-  const hasError = Boolean(error);
-  const isFilled = value?.length > 0;
 
-  const isSuccess =
-    !hasError &&
-    isFilled &&
-    (!asyncStatus || asyncStatus === "valid");
+  variant = "outline",
+  floatingLabel = false,
 
-  /* ---------------- Unified Input Styles ---------------- */
-  const baseInput =
-    "input pr-10 rounded-xl transition-all duration-200";
+  inputRef, // ✅ FIX: destructured here
+}: Props) {
+  /* ---------------- CLASS BUILDER ---------------- */
+  const getInputClasses = () => {
+    let classes = "input-base";
 
-  const stateStyles = `
-    ${hasError ? "input-error" : ""}
-    ${isSuccess ? "border-green-400" : ""}
-    ${!hasError && !isSuccess ? "focus:border-primary" : ""}
-  `;
+    if (variant === "filled") classes += " input-filled";
+    if (variant === "ghost") classes += " input-ghost";
+
+    if (error) classes += " error";
+    else if (success) classes += " success";
+
+    return classes;
+  };
+
+  /* ---------------- RIGHT ICON ---------------- */
+  const renderRightIcon = () => {
+    if (loading) {
+      return <Loader2 className="animate-spin" size={16} />;
+    }
+
+    if (error) {
+      return <span style={{ color: "var(--danger)" }}>!</span>;
+    }
+
+    if (success) {
+      return <CheckCircle2 size={16} style={{ color: "var(--success)" }} />;
+    }
+
+    return rightElement;
+  };
 
   return (
-    <div className="form-group-v2">
-      {/* Label */}
-      {label && (
-        <label className="form-label-v2">
-          {label}
-          {required && " *"}
-        </label>
+    <div className="form-field">
+      {/* TOP LABEL */}
+      {label && !floatingLabel && (
+        <label className="form-label">{label}</label>
       )}
 
-      {/* Input Wrapper */}
-      <div className="relative">
+      <div className="input-wrapper">
         <motion.input
-          ref={inputRef}
-          type={type}
+          ref={inputRef} // ✅ now works
           value={value}
           onChange={onChange}
-          placeholder={placeholder}
+          onKeyDown={onKeyDown} // ✅ added
+          type={type}
+          placeholder={floatingLabel ? " " : placeholder}
           disabled={disabled}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && onEnter) onEnter();
-          }}
-          whileFocus={{
-            scale: 1.01,
-            boxShadow: "0 0 0 2px rgba(99,102,241,0.15)",
-          }}
-          className={`${baseInput} ${stateStyles}`}
+          className={getInputClasses()}
+          whileFocus={{ scale: 1.01 }}
         />
 
-        {/* Right Icon */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center">
-          {rightElement ? (
-            rightElement
-          ) : (
-            <AnimatePresence mode="wait">
-              {asyncStatus === "loading" && (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <Loader2 className="w-4 h-4 animate-spin text-muted" />
-                </motion.div>
-              )}
+        {/* FLOATING LABEL */}
+        {label && floatingLabel && (
+          <label className="floating-label">{label}</label>
+        )}
 
-              {asyncStatus === "taken" && (
-                <motion.div
-                  key="taken"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <AlertCircle className="w-4 h-4 text-danger" />
-                </motion.div>
-              )}
+        {/* RIGHT ICON */}
+        {(loading || success || error || rightElement) && (
+          <div
+            style={{
+              position: "absolute",
+              right: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            {renderRightIcon()}
+          </div>
+        )}
+      </div>
 
-              {isSuccess && (
-                <motion.div
-                  key="success"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                >
-                  <CheckCircle2 className="w-4 h-4 text-success" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
+      {/* HELPER / ERROR */}
+      {(helperText || error) && (
+        <div
+          className={`form-helper ${
+            error ? "error" : success ? "success" : ""
+          }`}
+        >
+          {typeof error === "string" ? error : helperText}
         </div>
-      </div>
-
-      {/* Feedback */}
-      <div className="min-h-[16px]">
-        <AnimatePresence mode="wait">
-          {hasError && (
-            <motion.p
-              key="error"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="form-helper-v2 text-danger"
-            >
-              {error}
-            </motion.p>
-          )}
-
-          {!hasError && asyncStatus === "loading" && (
-            <motion.p
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="form-helper-v2 text-muted"
-            >
-              Checking...
-            </motion.p>
-          )}
-
-          {!hasError && asyncStatus === "taken" && (
-            <motion.p
-              key="taken"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="form-helper-v2 text-danger"
-            >
-              Already exists
-            </motion.p>
-          )}
-
-          {isSuccess && successText && (
-            <motion.p
-              key="success"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="form-helper-v2 text-success"
-            >
-              {successText}
-            </motion.p>
-          )}
-
-          {!hasError && !isSuccess && helper && (
-            <motion.p
-              key="helper"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="form-helper-v2 text-muted"
-            >
-              {helper}
-            </motion.p>
-          )}
-        </AnimatePresence>
-      </div>
+      )}
     </div>
   );
 }
