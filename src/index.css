@@ -370,6 +370,7 @@
   --primary-600: #4338ca; /* indigo-700 */
   --primary-700: #3730a3; /* deeper hover */
 
+
   /* BACKGROUND SYSTEM */
   --bg: #f7f8fb; /* page gradient base */
   --card: #ffffff; /* clean white cards */
@@ -397,6 +398,18 @@
 
   /* SUCCESS SCREEN / ACCENTS */
   --accent-soft: #eef2ff; /* indigo-50 */
+
+  /* Form Input System */
+  --input-bg: #f8fafc;
+  --input-border: #e2e8f0;
+  --input-border-hover: #cbd5e1;
+
+  --input-border-focus: var(--primary);
+  --input-focus-ring: rgba(79, 70, 229, 0.15);
+
+  --input-bg-filled: #f1f5f9;
+
+  --input-bg-error: #fef2f2;
 }
 
 /* Layer Components */
