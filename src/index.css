@@ -75,7 +75,7 @@
   --form-radius: 16px;
   --form-padding: 24px;
   --form-max-width: 480px;
-
+  --form-min-height: 520px;
   --form-gap-field: 16px;
   --form-gap-micro: 6px;
 
@@ -591,14 +591,29 @@
   max-width: var(--form-max-width);
   width: 100%;
   margin: 0 auto;
+  position: relative;
 
   display: flex;
   flex-direction: column;
   gap: var(--form-gap-field);
 
+  min-height: var(--form-min-height);
+
   box-shadow:
     0px 4px 20px rgba(0,0,0,0.04),
     0px 10px 40px rgba(0,0,0,0.06);
+}
+
+.form-card--sm {
+  min-height: 480px;
+}
+
+.form-card--md {
+  min-height: 520px;
+}
+
+.form-card--lg {
+  min-height: 580px;
 }
 
 
