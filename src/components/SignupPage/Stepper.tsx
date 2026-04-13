@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 type StepperProps = {
   step: number;
   errorMessages?: Record<number, string>;
-  onStepChange?: (step: number) => void; // 👈 navigation
+  onStepChange?: (step: number) => void;
 };
 
 export default function Stepper({
@@ -19,12 +19,14 @@ export default function Stepper({
   return (
     <div className="w-full flex justify-center mb-12">
       <div className="w-full max-w-xl">
+        
+        {/* 🔓 Removed global non-interactive */}
         <div className="relative w-full flex items-center justify-between px-8">
           
           {/* ===== BASE LINE ===== */}
           <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gray-200 -translate-y-1/2 z-0" />
 
-          {/* ===== GRADIENT PROGRESS LINE (ANIMATED) ===== */}
+          {/* ===== PROGRESS LINE ===== */}
           <motion.div
             className="absolute top-1/2 left-0 h-[2px] bg-gradient-to-r from-blue-500 to-blue-600 -translate-y-1/2 z-10"
             initial={{ width: 0 }}
@@ -38,15 +40,23 @@ export default function Stepper({
 
             const isActive = step === s;
             const isCompleted = step > s;
+            const isClickable = s < step; // ✅ only past steps
+            const isLocked = s > step; // 🔒 future steps
             const hasError = Boolean(errorMessages[s]);
 
             return (
               <div
                 key={s}
-                onClick={() => onStepChange?.(s)} // 👈 click navigation
-                className="relative z-20 flex flex-col items-center group cursor-pointer"
+                onClick={() => {
+                  if (isClickable) onStepChange?.(s);
+                }}
+                className={`
+                  relative z-20 flex flex-col items-center group
+                  ${isClickable ? "cursor-pointer" : "cursor-default"}
+                  ${isLocked ? "opacity-40" : ""}
+                `}
               >
-                {/* ===== CIRCLE (WITH SPRING SCALE) ===== */}
+                {/* ===== CIRCLE ===== */}
                 <motion.div
                   animate={{
                     scale: isActive ? 1.15 : 1,
@@ -59,7 +69,7 @@ export default function Stepper({
                   className={`
                     relative flex items-center justify-center
                     rounded-full
-                    transition-colors duration-300
+                    transition-all duration-300
                     
                     ${
                       hasError
@@ -70,9 +80,10 @@ export default function Stepper({
                         ? "w-3 h-3 bg-white ring-4 ring-blue-100 shadow-sm"
                         : "w-3 h-3 bg-gray-200"
                     }
+
+                    ${isClickable ? "group-hover:scale-110" : ""}
                   `}
                 >
-                  {/* CONTENT */}
                   {hasError ? (
                     <AlertCircle size={10} className="text-red-600" />
                   ) : isCompleted ? (
@@ -103,6 +114,8 @@ export default function Stepper({
                         ? "text-gray-700"
                         : "text-gray-400"
                     }
+
+                    ${isClickable ? "group-hover:text-gray-900" : ""}
                   `}
                 >
                   {label}
