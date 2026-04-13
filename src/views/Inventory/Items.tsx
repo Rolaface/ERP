@@ -37,30 +37,48 @@ type OutletContextType = {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 
-const flattenItemDetail = (fullItem: any): Item => ({
-  ...fullItem,
-  taxCategory: fullItem.taxInfo?.taxCategory ?? fullItem.taxCategory ?? "",
-  taxPreference:
-    fullItem.taxInfo?.taxPreference ?? fullItem.taxPreference ?? "",
-  taxType: fullItem.taxInfo?.taxType ?? fullItem.taxType ?? "",
-  taxCode: fullItem.taxInfo?.taxCode ?? fullItem.taxCode ?? "",
-  taxPerct: fullItem.taxInfo?.taxPerct ?? fullItem.taxPerct ?? "",
-  preferredVendor:
-    fullItem.vendorInfo?.preferredVendor ?? fullItem.preferredVendor ?? "",
-  salesAccount: fullItem.vendorInfo?.salesAccount ?? fullItem.salesAccount ?? "",
-  purchaseAccount:
-    fullItem.vendorInfo?.purchaseAccount ?? fullItem.purchaseAccount ?? "",
-  minStockLevel:
-    fullItem.inventoryInfo?.minStockLevel ?? fullItem.minStockLevel ?? "",
-  maxStockLevel:
-    fullItem.inventoryInfo?.maxStockLevel ?? fullItem.maxStockLevel ?? "",
-  reorderLevel:
-    fullItem.inventoryInfo?.reorderLevel ?? fullItem.reorderLevel ?? "",
-  valuationMethod:
-    fullItem.inventoryInfo?.valuationMethod ?? fullItem.valuationMethod ?? "",
-  trackingMethod:
-    fullItem.inventoryInfo?.trackingMethod ?? fullItem.trackingMethod ?? "",
-});
+const flattenItemDetail = (fullItem: any): Item => {
+  if (!fullItem) return {} as Item;
+
+  const taxInfo = fullItem.taxInfo ?? [];
+
+  return {
+    ...fullItem,
+
+    taxCategory: Array.isArray(taxInfo)
+      ? taxInfo[0]?.taxCategory ?? fullItem.taxCategory ?? ""
+      : taxInfo?.taxCategory ?? fullItem.taxCategory ?? "",
+
+    taxPreference: fullItem.taxInfo?.taxPreference ?? fullItem.taxPreference ?? "",
+    taxType: fullItem.taxInfo?.taxType ?? fullItem.taxType ?? "",
+    taxCode: fullItem.taxInfo?.taxCode ?? fullItem.taxCode ?? "",
+    taxPerct: fullItem.taxInfo?.taxPerct ?? fullItem.taxPerct ?? "",
+
+    preferredVendor:
+      fullItem.vendorInfo?.preferredVendor ?? fullItem.preferredVendor ?? "",
+
+    salesAccount:
+      fullItem.vendorInfo?.salesAccount ?? fullItem.salesAccount ?? "",
+
+    purchaseAccount:
+      fullItem.vendorInfo?.purchaseAccount ?? fullItem.purchaseAccount ?? "",
+
+    minStockLevel:
+      fullItem.inventoryInfo?.minStockLevel ?? fullItem.minStockLevel ?? "",
+
+    maxStockLevel:
+      fullItem.inventoryInfo?.maxStockLevel ?? fullItem.maxStockLevel ?? "",
+
+    reorderLevel:
+      fullItem.inventoryInfo?.reorderLevel ?? fullItem.reorderLevel ?? "",
+
+    valuationMethod:
+      fullItem.inventoryInfo?.valuationMethod ?? fullItem.valuationMethod ?? "",
+
+    trackingMethod:
+      fullItem.inventoryInfo?.trackingMethod ?? fullItem.trackingMethod ?? "",
+  };
+};
 
 const Items: React.FC = () => {
   const { openItemCreate, openItemEdit } =
@@ -123,7 +141,9 @@ const Items: React.FC = () => {
 
       const flat = rawList.map((it: any) => ({
         ...it,
-        taxCategory: it.taxInfo?.taxCategory ?? "",
+        taxCategory: Array.isArray(it.taxInfo)
+  ? it.taxInfo[0]?.taxCategory ?? ""
+  : it.taxInfo?.taxCategory ?? "",
         taxPreference: it.taxInfo?.taxPreference ?? "",
         taxType: it.taxInfo?.taxType ?? "",
         taxCode: it.taxInfo?.taxCode ?? "",
@@ -170,7 +190,9 @@ const Items: React.FC = () => {
       const rawList = Array.isArray(res?.data?.data) ? res.data.data : [];
       const flat = rawList.map((it: any) => ({
         ...it,
-        taxCategory: it.taxInfo?.taxCategory ?? "",
+        taxCategory: Array.isArray(it.taxInfo)
+  ? it.taxInfo[0]?.taxCategory ?? ""
+  : it.taxInfo?.taxCategory ?? "",
         taxPreference: it.taxInfo?.taxPreference ?? "",
         taxType: it.taxInfo?.taxType ?? "",
         taxCode: it.taxInfo?.taxCode ?? "",
@@ -197,7 +219,14 @@ const Items: React.FC = () => {
 
     try {
       const res = await getItemByItemCode(activeSummary.id);
-      setSelectedItem(flattenItemDetail(res.data));
+     const itemData = res?.data?.data;
+
+if (!itemData) {
+  console.error("Invalid item response:", res);
+  return;
+}
+
+setSelectedItem(itemData);
     } catch (err) {
       console.error("Failed to refetch selected item", err);
     }
@@ -219,7 +248,11 @@ const Items: React.FC = () => {
     try {
       setDetailLoading(true);
       const res = await getItemByItemCode(summary.id);
-      setSelectedItem(flattenItemDetail(res.data));
+      const itemData = res?.data?.data;
+
+if (!itemData) return;
+
+setSelectedItem(itemData);
 
       // TODO: fetch invoice + stock data once APIs are ready
       // const [salesRes, purchaseRes] = await Promise.all([
@@ -297,7 +330,7 @@ const confirmDelete = async () => {
     if (!activeSummary) return;
     try {
       const res = await getItemByItemCode(activeSummary.id);
-      openItemEdit(activeSummary.id, res.data, { onSuccess: refetchItemData });
+      openItemEdit(activeSummary.id, res.data.data, { onSuccess: refetchItemData });
     } catch {
       showApiError("Unable to fetch item");
     }
@@ -335,14 +368,8 @@ const confirmDelete = async () => {
         <span className="truncate block max-w-[120px]">{i.itemGroup}</span>
       ),
     },
-    {
-      key: "taxCategory",
-      header: "Tax Category",
-      align: "left",
-      render: (i) => (
-        <span className="truncate block max-w-[100px]">{i.taxCategory}</span>
-      ),
-    },
+   
+  
     { key: "minStockLevel", header: "Min Stock", align: "right" },
     { key: "maxStockLevel", header: "Max Stock", align: "right" },
     {
@@ -358,7 +385,7 @@ const confirmDelete = async () => {
     {
       key: "sellingPrice",
       header: "Price",
-      align: "right",
+      align: "left",
       render: (i) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {i.sellingPrice}

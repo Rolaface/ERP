@@ -1,11 +1,9 @@
 import React from "react";
-import {
-  type SupplierFormData,
-} from "../../../types/Supply/supplier";
+import { type SupplierFormData } from "../../../types/Supply/supplier";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import { fetchCurrencyOptions } from "../../../utils/currencyOptions";
 import TaxCategorySelect from "../../selects/TaxCategorySelect";
-import { CreditDaysInput, ModalInput} from "../../ui/modal/modalComponent";
+import { CreditDaysInput, ModalInput } from "../../ui/modal/modalComponent";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import Tooltip from "../../Tooltip";
 
@@ -51,11 +49,26 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
   return (
     <section className="flex-1 overflow-y-auto p-4 space-y-6 bg-app">
       <div className="space-y-6">
-
         {/* Supplier Details Row - 5 fields: 3+3+3+2+1 = 12 */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">Supplier Details</h3>
+          <h3 className="text-sm font-semibold text-gray-700">
+            Supplier Details
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="col-span-3">
+              <Tooltip
+                content={form.supplierName || "Supplier name is required"}
+              >
+                <ModalInput
+                  label="Supplier Name"
+                  name="supplierName"
+                  value={form.supplierName}
+                  onChange={onChange}
+                  required
+                  error={errors.supplierName}
+                />
+              </Tooltip>
+            </div>
             <div className="col-span-3">
               <Tooltip content={form.tpin || "Enter Tax Id / TPIN"}>
                 <ModalInput
@@ -70,22 +83,16 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               </Tooltip>
             </div>
 
-            <div className="col-span-3">
-              <Tooltip content={form.supplierName || "Supplier name is required"}>
-                <ModalInput
-                  label="Supplier Name"
-                  name="supplierName"
-                  value={form.supplierName}
-                  onChange={onChange}
-                  required
-                  error={errors.supplierName}
-                />
-              </Tooltip>
-            </div>
-
             <div className="col-span-2">
-              <Tooltip content={form.taxCategory ? `Tax Category: ${form.taxCategory}` : "Select a tax category"}>
+              <Tooltip
+                content={
+                  form.taxCategory
+                    ? `Tax Category: ${form.taxCategory}`
+                    : "Select a tax category"
+                }
+              >
                 <TaxCategorySelect
+                  label="Tax Category"
                   value={form.taxCategory}
                   onChange={handleTaxCategoryChange}
                   error={errors.taxCategory}
@@ -95,7 +102,13 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
             </div>
 
             <div className="col-span-1.8">
-              <Tooltip content={form.currency ? `Currency: ${form.currency}` : "Select a currency"}>
+              <Tooltip
+                content={
+                  form.currency
+                    ? `Currency: ${form.currency}`
+                    : "Select a currency"
+                }
+              >
                 <SearchSelect2
                   label="Currency"
                   value={form.currency}
@@ -125,9 +138,10 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
 
         {/* Contact Details Row - 4 equal fields */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">Contact Details</h3>
+          <h3 className="text-sm font-semibold text-gray-700">
+            Contact Details
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
             <ModalInput
               label="Contact Person Name"
               name="contactPerson"
@@ -159,7 +173,9 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                       ? "0 0 0 3px rgba(239,68,68,0.18)"
                       : "0 0 0 3px rgba(37,99,235,0.16)";
                   }}
-                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = "";
+                  }}
                 />
                 <input
                   name="phoneNo"
@@ -178,12 +194,16 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                       ? "0 0 0 3px rgba(239,68,68,0.18)"
                       : "0 0 0 3px rgba(37,99,235,0.16)";
                   }}
-                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = "";
+                  }}
                 />
               </div>
               <div className="min-h-[14px] mt-1">
                 {errors.phoneNo && (
-                  <span className="text-[10px] text-danger">{errors.phoneNo}</span>
+                  <span className="text-[10px] text-danger">
+                    {errors.phoneNo}
+                  </span>
                 )}
               </div>
             </div>
@@ -210,7 +230,9 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                       ? "0 0 0 3px rgba(239,68,68,0.18)"
                       : "0 0 0 3px rgba(37,99,235,0.16)";
                   }}
-                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = "";
+                  }}
                 />
                 <input
                   name="alternateNo"
@@ -229,12 +251,16 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                       ? "0 0 0 3px rgba(239,68,68,0.18)"
                       : "0 0 0 3px rgba(37,99,235,0.16)";
                   }}
-                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = "";
+                  }}
                 />
               </div>
               <div className="min-h-[14px] mt-1">
                 {errors.alternateNo && (
-                  <span className="text-[10px] text-danger">{errors.alternateNo}</span>
+                  <span className="text-[10px] text-danger">
+                    {errors.alternateNo}
+                  </span>
                 )}
               </div>
             </div>
@@ -250,10 +276,8 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                 error={errors.emailId}
               />
             </Tooltip>
-
           </div>
         </div>
-
       </div>
     </section>
   );

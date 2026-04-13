@@ -1,4 +1,5 @@
 import React, { useState, Suspense, lazy } from "react";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import {
   FaBriefcase,
   FaChartPie,
@@ -204,8 +205,20 @@ const allTabs = [
   { id: "cashflow", label: "Cash Flow", icon: <FaBriefcase /> },
 ];
 
+const DEFAULT_TAB = "gl";
+
 const AccountingModule: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>("gl");
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
+  
+  const handleTabChange = (tabId: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", tabId);
+    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
+  };
+
   const [glSubTab, setGlSubTab] = useState<string>("chart");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
@@ -312,7 +325,23 @@ const AccountingModule: React.FC = () => {
       case "cashflow":
         return <CashFlow />;
       default:
-        return null;
+        return (
+          <GeneralLedger
+            glSubTab={glSubTab}
+            setGlSubTab={setGlSubTab}
+            accounts={accounts}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedFilter={selectedFilter}
+            setSelectedFilter={setSelectedFilter}
+            showFilterDropdown={showFilterDropdown}
+            setShowFilterDropdown={setShowFilterDropdown}
+            handleFilterSelect={handleFilterSelect}
+            getFilterLabel={getFilterLabel}
+            getFilterCount={getFilterCount}
+            journalEntries={journalEntries}
+          />
+        );
     }
   };
 
@@ -323,7 +352,7 @@ const AccountingModule: React.FC = () => {
         description="Core ledgers, reports, and finance operations in the shared ERP layout."
         icon={<FaBriefcase />}
       />
-      <AppTabs tabs={allTabs} activeTab={activeTab} onChange={setActiveTab} />
+      <AppTabs tabs={allTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody>
         <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>

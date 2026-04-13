@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { showApiError, showLoading, showSuccess, closeSwal } from "../../utils/alert";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { showApiError } from "../../utils/alert";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -26,8 +26,8 @@ interface TaxCategorySummary {
 const TaxCategory: React.FC = () => {
   const [categories, setCategories] = useState<TaxCategorySummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -36,21 +36,27 @@ const TaxCategory: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const mountedRef = useRef(true);
+  const prevSearchTermRef = useRef(searchTerm);
+
   const { createTaxCategoryEntry, updateStatus, deleteTaxCategoryEntry } =
     useTaxCategory();
 
   // ─── Fetch ──────────────────────────────────────────────────────────────────
 
   const fetchCategories = useCallback(async () => {
+    if (!mountedRef.current) return;
+    
+    setIsFetching(true);
     try {
-      setLoading(true);
       const res = await getAllTaxCategories(
         page,
         pageSize,
         searchTerm || undefined
       );
 
-      // API response shape: { data: [...], pagination: { total_count, total_pages, page, page_size } }
+      if (!mountedRef.current) return;
+
       const list: TaxCategorySummary[] = res?.data ?? [];
       const pagination = res?.pagination;
 
@@ -58,31 +64,48 @@ const TaxCategory: React.FC = () => {
       setTotalPages(pagination?.total_pages ?? 1);
       setTotalItems(pagination?.total_count ?? list.length);
     } catch (error) {
-      console.error("Error loading tax categories:", error);
-      showApiError(error);
+      if (mountedRef.current) {
+        showApiError(error);
+      }
     } finally {
-      setLoading(false);
-      setInitialLoad(false);
+      if (mountedRef.current) {
+        setIsFetching(false);
+        setIsInitialLoad(false);
+      }
     }
   }, [page, pageSize, searchTerm]);
 
+  // Initial fetch on mount only
   useEffect(() => {
+    mountedRef.current = true;
     fetchCategories();
-  }, [fetchCategories]);
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Fetch on page/size/search changes - with debounce for search
+  useEffect(() => {
+    if (isInitialLoad) return;
+    
+    const timer = setTimeout(() => {
+      fetchCategories();
+    }, searchTerm ? 300 : 0);
+    
+    return () => clearTimeout(timer);
+  }, [page, pageSize, searchTerm, isInitialLoad]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
-const handleCreate = async (formData: TaxCategoryFormData) => {
-  try {
-    await createTaxCategoryEntry(formData);
-    await fetchCategories();
-    return true;
-  } catch {
-    return false;
-  }
-};
-  // Status Toggle: Enable / Disable — replaces Edit in ActionMenu
-  const handleToggleStatus = async (row: TaxCategorySummary) => {
+  const handleCreate = useCallback(async (formData: TaxCategoryFormData) => {
+    try {
+      await createTaxCategoryEntry(formData);
+      await fetchCategories();
+      return true;
+    } catch {
+      return false;
+    }
+  }, [createTaxCategoryEntry, fetchCategories]);
+
+  const handleToggleStatus = useCallback(async (row: TaxCategorySummary) => {
     const newDisabled: 0 | 1 = row.disabled === 1 ? 0 : 1;
 
     const confirm = await fireManagedSwal({
@@ -103,9 +126,9 @@ const handleCreate = async (formData: TaxCategoryFormData) => {
     } catch {
       // error already shown inside hook
     }
-  };
+  }, [updateStatus, fetchCategories]);
 
-  const handleDelete = async (name: string, e: React.MouseEvent) => {
+  const handleDelete = useCallback(async (name: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
     const confirm = await fireManagedSwal({
@@ -126,11 +149,11 @@ const handleCreate = async (formData: TaxCategoryFormData) => {
     } catch {
       // error already shown inside hook
     }
-  };
+  }, [deleteTaxCategoryEntry, fetchCategories]);
 
   // ─── Columns ────────────────────────────────────────────────────────────────
 
-  const columns: Column<TaxCategorySummary>[] = [
+  const columns: Column<TaxCategorySummary>[] = useMemo(() => [
     {
       key: "title",
       header: "Title",
@@ -169,20 +192,19 @@ const handleCreate = async (formData: TaxCategoryFormData) => {
       render: (tc) => (
         <ActionGroup>
           <ActionMenu
-            // No onEdit — edit is not supported; only status toggle is allowed
             onDelete={(e) => handleDelete(tc.name, e as React.MouseEvent)}
             customActions={[
               {
                 label: tc.disabled ? "Enable" : "Disable",
                 onClick: () => handleToggleStatus(tc),
-                danger: !tc.disabled, // Disable action is red; Enable is normal
+                danger: !tc.disabled,
               },
             ]}
           />
         </ActionGroup>
       ),
     },
-  ];
+  ], [handleDelete, handleToggleStatus]);
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
@@ -192,7 +214,8 @@ const handleCreate = async (formData: TaxCategoryFormData) => {
         columns={columns}
         data={categories}
         showToolbar
-        loading={loading || initialLoad}
+        loading={isInitialLoad}
+        isFetching={isFetching}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);

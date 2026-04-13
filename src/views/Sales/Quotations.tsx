@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   showApiError,
@@ -57,10 +57,11 @@ const STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
 };
 const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
   const { openQuotationEdit } = useOutletContext<OutletContextType>();
+  const mountedRef = useRef(true);
 
   const [quotations, setQuotations]   = useState<QuotationSummary[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [company, setCompany]         = useState<any>(null);
 
   // ── Pagination state (server) 
@@ -73,7 +74,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const [sortBy, setSortBy] = useState("quotationNumber");
-const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ── Filter state (server) 
   const [status]   = useState("");
@@ -105,10 +106,11 @@ const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
   }, []);
 
 
-  const fetchQuotations = async () => {
+  const fetchQuotations = useCallback(async () => {
+    if (!mountedRef.current) return;
+    
+    setIsFetching(true);
     try {
-      setLoading(true);
-
       const res = await getAllQuotations(page, pageSize, {
         search:    searchTerm,
         status,
@@ -118,6 +120,8 @@ const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
         sortOrder,
       });
 
+      if (!mountedRef.current) return;
+
       if (!res || res.status_code !== 200) {
         setQuotations([]);
         return;
@@ -125,29 +129,41 @@ const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
       const raw = Array.isArray(res.data?.quotations) ? res.data.quotations : [];
 
-    setQuotations(raw.map((q: any) => ({
-  quotationNumber: q.id || "",
-  customerName: q.customerName || "N/A",
-  transactionDate: q.transactionDate || "",
-  validTill: q.validTill || "",
-  grandTotal: Number(q.grandTotal ?? 0),
-  currency: q.currency ,
-  status: q.invoiceStatus  || "Draft",   
-})));
+      setQuotations(raw.map((q: any) => ({
+    quotationNumber: q.id || "",
+    customerName: q.customerName || "N/A",
+    transactionDate: q.transactionDate || "",
+    validTill: q.validTill || "",
+    grandTotal: Number(q.grandTotal ?? 0),
+    currency: q.currency ,
+    status: q.invoiceStatus  || "Draft",   
+  })));
 
       setTotalPages(res.data?.pagination?.totalPages || 1);
       setTotalItems(res.data?.pagination?.total      || raw.length);
-
     } catch (err) {
       console.error("Error fetching quotations:", err);
-      setQuotations([]);
+      if (mountedRef.current) {
+        setQuotations([]);
+      }
     } finally {
-      setLoading(false);
-      setInitialLoad(false);
+      if (mountedRef.current) {
+        setIsFetching(false);
+        setIsInitialLoad(false);
+      }
     }
-  };
+  }, [page, pageSize, searchTerm, status, fromDate, toDate, sortBy, sortOrder]);
 
+  // Initial fetch on mount
   useEffect(() => {
+    mountedRef.current = true;
+    fetchQuotations();
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Refetch on dependency changes (not initial)
+  useEffect(() => {
+    if (isInitialLoad) return;
     fetchQuotations();
   }, [page, pageSize, searchTerm, status, fromDate, toDate, sortBy, sortOrder]);
 
@@ -498,7 +514,8 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
         columns={columns}
         data={quotations}
         rowKey={(row) => row.quotationNumber}
-        loading={loading || initialLoad}
+        loading={isInitialLoad}
+        isFetching={isFetching}
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => { setSearchTerm(q); setPage(1); }}

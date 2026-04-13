@@ -1,5 +1,5 @@
-import React, { useState, Suspense, lazy } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { Suspense, lazy, useMemo,useEffect } from "react";
+import { useOutletContext, useNavigate, useLocation } from "react-router-dom";
 import {
   FaBoxOpen,
   FaBoxes,
@@ -12,7 +12,6 @@ import {
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
-import PageLoader from "../../components/ui/PageLoader";
 import AppSkeleton from "../../components/ui/AppSkeleton";
 
 const Items = lazy(() => import("./Items"));
@@ -30,24 +29,48 @@ interface OutletContextType {
   openWarehouseEdit: (id: string, data?: any) => void;
 }
 
+const inventoryTabs = [
+  { id: "dashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
+  { id: "taxTemplates", label: "Tax Templates", icon: <FaBoxOpen /> },
+  { id: "items", label: "Items", icon: <FaBoxOpen /> },
+  { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
+  { id: "warehouse", label: "WareHouse", icon: <FaWarehouse /> },
+  { id: "stock", label: "Stock", icon: <FaBoxOpen /> },
+  { id: "import", label: "Import", icon: <FaBoxOpen /> },
+];
+
+const DEFAULT_TAB = "dashboard";
+
 const Inventory: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("inventorydashboard");
-  const isDashboardTab = activeTab === "inventorydashboard";
+  const navigate = useNavigate();
+  const location = useLocation();
   const { openWarehouseCreate, openWarehouseEdit } = useOutletContext<OutletContextType>();
 
-  const inventoryTabs = [
-    { id: "inventorydashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
-    { id: "taxTemplates", label: "Tax Templates", icon: <FaBoxOpen /> },
-    { id: "items", label: "Items", icon: <FaBoxOpen /> },
-    { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
-    { id: "warehouse", label: "WareHouse", icon: <FaWarehouse /> },
-    { id: "stock", label: "Stock", icon: <FaBoxOpen /> },
-    { id: "import", label: "Import", icon: <FaBoxOpen /> },
-  ];
+  const activeTab = useMemo(() => {
+    const path = location.pathname;
+    const base = "/inventory";
+    if (path === base || path === `${base}/`) {
+      return DEFAULT_TAB;
+    }
+    return path.replace(`${base}/`, "") || DEFAULT_TAB;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === "/inventory" || path === "/inventory/") {
+      navigate("/inventory/dashboard", { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  const isDashboardTab = activeTab === "dashboard";
+
+  const handleTabChange = (tabId: string) => {
+    navigate(`/inventory/${tabId}`, { replace: true });
+  };
 
   const renderTab = () => {
     switch (activeTab) {
-      case "inventorydashboard":
+      case "dashboard":
         return <InventoryDashboard />;
       case "items":
         return <Items />;
@@ -66,7 +89,7 @@ const Inventory: React.FC = () => {
       case "taxTemplates":
         return <TaxTemplate />;
       default:
-        return null;
+        return <InventoryDashboard />;
     }
   };
 
@@ -80,9 +103,7 @@ const Inventory: React.FC = () => {
       <AppTabs
         tabs={inventoryTabs}
         activeTab={activeTab}
-        onChange={(tabId) => {
-          setActiveTab(tabId);
-        }}
+        onChange={handleTabChange}
       />
       <AppPageBody viewportLocked={isDashboardTab}>
         <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>

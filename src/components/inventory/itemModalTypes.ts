@@ -33,7 +33,7 @@ export interface ItemFormData {
   itemGroup: string;
   itemClassCode: string;
   itemTypeCode: string;
-  originNationCode: string;
+  countryOfOrigin: string;
   packagingUnitCode: string;
   packingUnit: string | number;
   packingSize: string | number;

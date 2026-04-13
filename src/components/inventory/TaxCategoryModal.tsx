@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Tag } from "lucide-react";
 import { Button, Checkbox } from "../ui/modal/formComponent";
 import { ModalInput } from "../ui/modal/modalComponent";
@@ -21,7 +21,7 @@ interface TaxCategoryModalProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-const TaxCategoryModal: React.FC<TaxCategoryModalProps> = ({
+const TaxCategoryModal: React.FC<TaxCategoryModalProps> = React.memo(({
   isOpen,
   onClose,
   onSubmit,
@@ -29,7 +29,7 @@ const TaxCategoryModal: React.FC<TaxCategoryModalProps> = ({
 }) => {
 const resolvedModalId = useMemo(
   () => modalId || `tax-category-create-${Date.now()}`,
-  [] 
+  [modalId]
 );
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
@@ -42,13 +42,13 @@ const resolvedModalId = useMemo(
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setTitle("");
-      setEnabled(true);
-      setTitleError("");
-      setSubmitting(false);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
+    if (!isOpen) return;
+    setTitle("");
+    setEnabled(true);
+    setTitleError("");
+    setSubmitting(false);
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
   const validate = (): boolean => {
@@ -141,6 +141,6 @@ const resolvedModalId = useMemo(
       </div>
     </MinimizableModal>
   );
-};
+});
 
 export default TaxCategoryModal;

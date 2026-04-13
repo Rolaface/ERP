@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   getAllSalesInvoices,
@@ -55,11 +55,12 @@ interface InvoiceTableProps {
 
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const { openInvoiceEdit } = useOutletContext<OutletContextType>();
+  const mountedRef = useRef(true);
 
-  // ── Data
+  // ── Data with stale-while-revalidate pattern
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
 
   // ── PDF preview (kept — do not remove)
@@ -105,10 +106,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       .catch(() => console.error("Failed to load company data"));
   }, []);
 
-  // ── Fetch invoices
-  const fetchInvoices = async () => {
+  // ── Fetch invoices with stale-while-revalidate pattern
+  const fetchInvoices = useCallback(async () => {
+    if (!mountedRef.current) return;
+    
+    setIsFetching(true);
     try {
-      setLoading(true);
       const res = await getAllSalesInvoices(
         page,
         pageSize,
@@ -117,6 +120,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         searchTerm,
       );
       if (!res || res.status_code !== 200) return;
+
+      if (!mountedRef.current) return;
 
       const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
         invoiceNumber: inv.invoiceNumber,
@@ -138,12 +143,23 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || mapped.length);
     } finally {
-      setLoading(false);
-      setInitialLoad(false);
+      if (mountedRef.current) {
+        setIsFetching(false);
+        setIsInitialLoad(false);
+      }
     }
-  };
+  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
+  // Initial fetch on mount
   useEffect(() => {
+    mountedRef.current = true;
+    fetchInvoices();
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Refetch on dependencies (not initial)
+  useEffect(() => {
+    if (isInitialLoad) return;
     fetchInvoices();
   }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
@@ -485,7 +501,8 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
     }
   };
 
-  const columns: Column<InvoiceSummary>[] = [
+// Memoize columns to prevent re-renders
+  const columns: Column<InvoiceSummary>[] = useMemo(() => [
     {
       key: "invoiceNumber",
       header: "Invoice No",
@@ -622,7 +639,7 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
         </ActionGroup>
       ),
     },
-  ];
+  ], [handleEdit, handleDelete, handleView, handleDownload, handleReceivePayment, handleRowStatusChange, handlePreviewPDF]);
 
   return (
     <div className="h-full min-h-0">
@@ -630,7 +647,8 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
         columns={columns}
         data={invoices}
         rowKey={(row) => row.invoiceNumber}
-        loading={loading || initialLoad}
+        loading={isInitialLoad}
+        isFetching={isFetching}
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => {

@@ -1,5 +1,5 @@
-import React, { useState, Suspense, lazy } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { Suspense, lazy, useState } from "react";
+import { useOutletContext, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import ApprovalModal from "../../components/procurement/ApprovalModal";
 import {
   FaClipboardList,
@@ -43,28 +43,25 @@ type OutletContextType = {
   openPOEdit: (poId: string | number) => void;
 };
 
-const procurement = {
-  name: "Procurement",
-  icon: <FaShoppingBag />,
-  defaultTab: "procurementdashboard",
-  tabs: [
-    { id: "procurementdashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
-    { id: "supplier", label: "Supplier Management", icon: <FaLandmark /> },
-    { id: "payments", label: "Payments", icon: <FaCreditCard /> },
-    { id: "rfqs", label: "RFQs", icon: <FaFileSignature /> },
-    { id: "orders", label: "Purchase Orders", icon: <FaClipboardList /> },
-    { id: "approvals", label: "Approvals", icon: <FaCheckCircle /> },
-    { id: "purchase", label: "Purchase Invoice", icon: <FaTruckLoading /> },
-    {
-      id: "purchaseAnalytics",
-      label: "Purchase Analytics",
-      icon: <FaTruckLoading />,
-    },
-  ],
-};
+const procurementTabs = [
+  { id: "procurementdashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
+  { id: "supplier", label: "Supplier Management", icon: <FaLandmark /> },
+  { id: "payments", label: "Payments", icon: <FaCreditCard /> },
+  { id: "rfqs", label: "RFQs", icon: <FaFileSignature /> },
+  { id: "orders", label: "Purchase Orders", icon: <FaClipboardList /> },
+  { id: "approvals", label: "Approvals", icon: <FaCheckCircle /> },
+  { id: "purchase", label: "Purchase Invoice", icon: <FaTruckLoading /> },
+  { id: "purchaseAnalytics", label: "Purchase Analytics", icon: <FaTruckLoading /> },
+];
+
+const DEFAULT_TAB = "procurementdashboard";
 
 const Procurement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState(procurement.defaultTab);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
+  
   const isDashboardTab = activeTab === "procurementdashboard";
   const { openSupplierCreate, openPOCreate } =
     useOutletContext<OutletContextType>();
@@ -72,6 +69,12 @@ const Procurement: React.FC = () => {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showGRModal, setShowGRModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+
+  const handleTabChange = (tabId: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", tabId);
+    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
+  };
 
   const handleAdd = () => {
     if (activeTab === "supplier") openSupplierCreate();
@@ -100,18 +103,18 @@ const Procurement: React.FC = () => {
       case "purchaseAnalytics":
         return <PurchaseAnalytics />;
       default:
-        return null;
+        return <Dashboard />;
     }
   };
 
   return (
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
-        title={procurement.name}
+        title="Procurement"
         description="Supplier operations, approvals, and purchasing analytics in one layout system."
-        icon={procurement.icon}
+        icon={<FaShoppingBag />}
       />
-      <AppTabs tabs={procurement.tabs} activeTab={activeTab} onChange={setActiveTab} />
+      <AppTabs tabs={procurementTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody viewportLocked={isDashboardTab}>
         <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>

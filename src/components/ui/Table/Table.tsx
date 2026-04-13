@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, memo } from "react";
 import type { Column } from "./type";
 import ColumnSelector from "./ColumnSelector";
 import Pagination from "../../Pagination";
@@ -15,6 +15,7 @@ interface TableProps<T> {
   data: T[];
   rowKey?: (row: T) => string;
   loading?: boolean;
+  isFetching?: boolean;
   emptyMessage?: string;
   expandedRowRender?: (row: T) => React.ReactNode;
   onRowClick?: (item: T) => void;
@@ -104,6 +105,7 @@ function Table<T extends Record<string, any>>({
   data = [],
   rowKey,
   loading = false,
+  isFetching = false,
   emptyMessage = "No records found.",
   expandedRowRender,
   onRowClick,
@@ -147,7 +149,7 @@ function Table<T extends Record<string, any>>({
     onSortChange({ sortBy: colKey, sortOrder: newOrder });
   };
 
-  const getAlignment = (align?: "left" | "center" | "right"): string => {
+  const getAlignment = useMemo(() => (align?: "left" | "center" | "right"): string => {
     switch (align) {
       case "center":
         return "text-center";
@@ -156,7 +158,7 @@ function Table<T extends Record<string, any>>({
       default:
         return "text-left";
     }
-  };
+  }, []);
 
   return (
     <div
@@ -321,7 +323,17 @@ function Table<T extends Record<string, any>>({
                   </td>
                 </tr>
               ) : (
-                data.map((item, idx) => {
+                <>{/* Subtle fetching indicator - show only when isFetching and data exists */}
+                {isFetching && data.length > 0 && (
+                  <tr className="absolute top-0 left-0 right-0 z-20 h-full bg-white/30">
+                    <td colSpan={visibleColumns.length}>
+                      <div className="flex items-center justify-center py-1">
+                        <div className="h-1 w-20 rounded-full bg-primary/30 animate-pulse" />
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {data.map((item, idx) => {
                   const expandedContent = expandedRowRender?.(item);
                   const isExpanded = !!expandedContent;
 
@@ -430,7 +442,8 @@ function Table<T extends Record<string, any>>({
                       </tr>
                     </React.Fragment>
                   );
-                })
+                })}
+                </>
               )}
             </tbody>
           </table>
@@ -471,4 +484,4 @@ function Table<T extends Record<string, any>>({
   );
 }
 
-export default Table;
+export default memo(Table);

@@ -240,6 +240,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   }
                 >
                   <TaxCategorySelect
+                   label="Tax Category"
                     value={form.customerTaxCategory}
                     onChange={(value) =>
                       handleChange({

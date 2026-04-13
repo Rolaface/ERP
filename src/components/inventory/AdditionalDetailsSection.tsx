@@ -99,9 +99,9 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
         <div className="w-[160px] min-w-0">
           <SearchSelect2
             label="Country of origin"
-            value={form.originNationCode ?? ""}
-            fetchOptions={async () => {
-              const data = await fetchCountries();
+            value={form.countryOfOrigin ?? ""}
+            fetchOptions={async (q) => {
+  const data = await fetchCountries(q);
 
               const list = data?.data ?? [];
 
@@ -110,10 +110,10 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
                 value: item.name,
               }));
             }}
-            onChange={(value) => setField("originNationCode", value)}
+            onChange={(value) => setField("countryOfOrigin", value)}
             placeholder="Search..."
             required
-            error={errors?.originNationCode}
+            error={errors?.countryOfOrigin}
           />
         </div>
 

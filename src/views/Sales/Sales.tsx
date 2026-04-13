@@ -1,5 +1,5 @@
-import React, { useState, Suspense, lazy } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { Suspense, lazy, useMemo } from "react";
+import { useSearchParams, useNavigate, useLocation, useOutletContext } from "react-router-dom";
 import {
   FaMoneyBillWave,
   FaTachometerAlt,
@@ -41,7 +41,7 @@ type OutletContextType = {
 };
 
 const salesTabs = [
-  { id: "salesdashboard", label: "Dashboard", icon: <FaTachometerAlt  /> },
+  { id: "salesdashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
   { id: "quotations", label: "Quotations", icon: <FaFileInvoice /> },
   {
     id: "proformaInvoice",
@@ -55,12 +55,26 @@ const salesTabs = [
   { id: "salesAnalytics", label: "Sales Analytics", icon: <FaChartBar /> },
 ];
 
+const DEFAULT_TAB = "salesdashboard";
+
 const SalesModule: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("salesdashboard");
-  const [refreshKey] = useState(0);
-  const isDashboardTab = activeTab === "salesdashboard";
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { openInvoiceCreate, openProformaCreate, openQuotationCreate } =
     useOutletContext<OutletContextType>();
+  
+  // Get active tab from URL query param, default to dashboard
+  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
+  
+  const isDashboardTab = activeTab === "salesdashboard";
+
+  const handleTabChange = (tabId: string) => {
+    // Update URL with new tab, preserving other query params
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", tabId);
+    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
+  };
 
   const renderTab = () => {
     switch (activeTab) {
@@ -69,7 +83,7 @@ const SalesModule: React.FC = () => {
       case "quotations":
         return (
           <QuotationsTable
-            key={refreshKey}
+            key={activeTab}
             onAddQuotation={() => openQuotationCreate()}
             onExportQuotation={() => console.log("Export quotations")}
           />
@@ -77,7 +91,7 @@ const SalesModule: React.FC = () => {
       case "proformaInvoice":
         return (
           <ProformaInvoicesTable
-            refreshKey={refreshKey}
+            key={activeTab}
             onAddProformaInvoice={() => openProformaCreate()}
             onExportProformaInvoice={() => console.log("Export proforma invoices")}
           />
@@ -85,7 +99,7 @@ const SalesModule: React.FC = () => {
       case "invoices":
         return (
           <InvoiceTable
-            key={refreshKey}
+            key={activeTab}
             onAddInvoice={() => openInvoiceCreate()}
             onExportInvoice={() => console.log("Export invoices")}
           />
@@ -101,7 +115,7 @@ const SalesModule: React.FC = () => {
       case "salesAnalytics":
         return <SalesAnalytics />;
       default:
-        return null;
+        return <SalesDashboard />;
     }
   };
 
@@ -112,7 +126,7 @@ const SalesModule: React.FC = () => {
         description="Quotes, invoices and sales analytics in one workflow."
         icon={<FaMoneyBillWave />}
       />
-      <AppTabs tabs={salesTabs} activeTab={activeTab} onChange={setActiveTab} />
+      <AppTabs tabs={salesTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody viewportLocked={isDashboardTab}>
         <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>

@@ -48,34 +48,43 @@ const AppRoutes: React.FC = () => {
         <Route path="/reset" element={<ResetPassword />} />
 
         {/* Protected Routes */}
-<Route element={<ProtectedRoute />}>
-  <Route element={<AppLayout />}>
-    <Route path="/dashboard" element={<Dashboard />} />
-    <Route path="/sales" element={<SalesModule />} />
-    <Route path="/procurement" element={<ProcurementModule />} />
-    <Route path="/inventory" element={<InventoryModule />} />
-    <Route path="/accounting" element={<AccountingModule />} />
-    <Route path="/crm" element={<CrmModule />} />
-    <Route path="/settings" element={<Settings />} />
-    <Route path="/hr" element={<HrPayrollModule />} />
-    <Route path="/fasset" element={<FixedAssets />} />
-    <Route path="/companySetup" element={<CompanySetup />} />
-    <Route path="/userManagement" element={<UserManagement />} />
-    <Route path="/bank-account-setup" element={<BankAccountPage />} />
-    <Route path="/mode-of-payment-setup" element={<ModeOfPaymentPage />} />
-    <Route path="/payment-entry" element={<PaymentEntry />} />
-    <Route path="/currency-conversion" element={<CurrencyConversion />} />
-    <Route path="/customer-group" element={<CustomerGroup/>} />
-    <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    <Route path="/ledger" element={<GLView />} />
-    <Route path="/Tax-Maintenance" element={<TaxMaintenance />} />
-  </Route>
-</Route>
-
-
-
-        {/* Root redirect */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            
+            {/* Sales Module with sub-routes */}
+            <Route path="/sales" element={<SalesModule />} />
+            
+            {/* Procurement Module */}
+            <Route path="/procurement" element={<ProcurementModule />} />
+            
+            {/* Inventory Module */}
+            <Route path="/inventory" element={<Navigate to="/inventory/dashboard" replace />} />
+            <Route path="/inventory/:tab" element={<InventoryModule />} />
+            
+            {/* Accounting Module */}
+            <Route path="/accounting" element={<AccountingModule />} />
+            
+            {/* CRM Module */}
+            <Route path="/crm" element={<CrmModule />} />
+            
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/hr" element={<HrPayrollModule />} />
+            <Route path="/fasset" element={<FixedAssets />} />
+            <Route path="/companySetup" element={<CompanySetup />} />
+            <Route path="/userManagement" element={<UserManagement />} />
+            <Route path="/bank-account-setup" element={<BankAccountPage />} />
+            <Route path="/mode-of-payment-setup" element={<ModeOfPaymentPage />} />
+            <Route path="/payment-entry" element={<PaymentEntry />} />
+            <Route path="/currency-conversion" element={<CurrencyConversion />} />
+            <Route path="/customer-group" element={<CustomerGroup/>} />
+            <Route path="/ledger" element={<GLView />} />
+            <Route path="/Tax-Maintenance" element={<TaxMaintenance />} />
+            
+            {/* Catch-all for unknown routes - redirect to dashboard */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Route>
+        </Route>
       </Routes>
     </>
   );
