@@ -3,6 +3,7 @@ import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { getAllTaxCategories } from "../../api/taxCategoryApi";
 
 interface TaxCategorySelectProps {
+  label?: string;
   value?: string;
   onChange: (value: string) => void;
   error?: string;
@@ -11,6 +12,7 @@ interface TaxCategorySelectProps {
 }
 
 const TaxCategorySelect: React.FC<TaxCategorySelectProps> = ({
+  label,
   value,
   onChange,
   error,
@@ -36,7 +38,8 @@ const TaxCategorySelect: React.FC<TaxCategorySelectProps> = ({
 
   return (
     <SearchSelect2
-      label="Tax Category"
+
+      label={label || ""}
       value={value}
       onChange={handleChange}
       fetchOptions={fetchOptions}

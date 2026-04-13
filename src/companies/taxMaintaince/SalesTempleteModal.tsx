@@ -6,8 +6,12 @@ import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
+import TaxCategorySelect from "../../components/selects/TaxCategorySelect";
 
-import type { SalesTaxTemplateFormData, SalesTaxRow } from "../../types/tax/salesTemplate";
+import type {
+  SalesTaxTemplateFormData,
+  SalesTaxRow,
+} from "../../types/tax/salesTemplate";
 import {
   defaultSalesTaxForm,
   defaultSalesTaxRow,
@@ -43,24 +47,24 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
   const modals = useModalStore((state) => state.modals);
   const modal = useMemo(
     () => modals.find((m) => m.id === modalId),
-    [modals, modalId]
+    [modals, modalId],
   );
 
-const modalData = modal?.initialData as SalesTaxTemplateFormData | undefined;
+  const modalData = modal?.initialData as SalesTaxTemplateFormData | undefined;
 
-const [form, setForm] = useState<SalesTaxTemplateFormData>(
-  modalData ?? defaultSalesTaxForm
-);
+  const [form, setForm] = useState<SalesTaxTemplateFormData>(
+    modalData ?? defaultSalesTaxForm,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
 
   // ── Sync when modal opens / data changes ──────────────────────────────────
-useEffect(() => {
-  if (isOpen) {
-    setForm(modalData ?? defaultSalesTaxForm);
-  }
-}, [isOpen, modalData]);
+  useEffect(() => {
+    if (isOpen) {
+      setForm(modalData ?? defaultSalesTaxForm);
+    }
+  }, [isOpen, modalData]);
 
   const reset = () => {
     setForm(initialData ?? defaultSalesTaxForm);
@@ -70,7 +74,7 @@ useEffect(() => {
 
   // ── Field handlers ────────────────────────────────────────────────────────
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -83,12 +87,12 @@ useEffect(() => {
   const handleRowChange = (
     actualIdx: number,
     field: keyof SalesTaxRow,
-    value: string | number
+    value: string | number,
   ) => {
     setForm((prev) => ({
       ...prev,
       taxes: prev.taxes.map((row, i) =>
-        i === actualIdx ? { ...row, [field]: value } : row
+        i === actualIdx ? { ...row, [field]: value } : row,
       ),
     }));
   };
@@ -132,7 +136,7 @@ useEffect(() => {
   const totalRows = form.taxes.length;
   const paginatedRows = form.taxes.slice(
     page * ROWS_PER_PAGE,
-    (page + 1) * ROWS_PER_PAGE
+    (page + 1) * ROWS_PER_PAGE,
   );
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -161,7 +165,7 @@ useEffect(() => {
         ...form,
         disabled: form.disabled,
         taxes: form.taxes.map((row) => ({
-          name:row.name,
+          name: row.name,
           charge_type: row.charge_type,
           account_head: row.account_head.trim(),
           rate: Number(row.rate),
@@ -169,7 +173,7 @@ useEffect(() => {
           description: row.description.trim(),
         })),
       };
-        console.log("FORM TAXES", form.taxes);
+      console.log("FORM TAXES", form.taxes);
 
       if (modal?.context?.callback) {
         await modal.context.callback(payload);
@@ -223,11 +227,10 @@ useEffect(() => {
         className="h-full flex flex-col"
       >
         <div className="p-4 flex flex-col gap-4">
-
           {/* ── Header fields ─────────────────────────────────────────── */}
           <div className="grid grid-cols-12 gap-4 items-end">
             {/* Title */}
-            <div className="col-span-5">
+            <div className="col-span-6">
               <ModalInput
                 label="Title"
                 name="title"
@@ -241,12 +244,16 @@ useEffect(() => {
 
             {/* Tax Category */}
             <div className="col-span-4">
-              <ModalInput
-                label="Tax Category"
-                name="tax_category"
+              <TaxCategorySelect
+               label="Tax Category"
                 value={form.tax_category}
-                onChange={handleChange}
-                placeholder="Optional category"
+                onChange={(value) =>
+                  handleChange({
+                    target: { name: "Tax_Category", value },
+                  } as React.ChangeEvent<HTMLSelectElement>)
+                }
+                error={errors.taxcategory}
+                required
               />
             </div>
 
@@ -271,7 +278,9 @@ useEffect(() => {
 
           {/* ── Tax rows header ───────────────────────────────────────── */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-main">Tax / Charge Rows</span>
+            <span className="text-sm font-medium text-main">
+              Tax / Charge Rows
+            </span>
             <button
               type="button"
               onClick={addRow}
@@ -320,7 +329,7 @@ useEffect(() => {
                             handleRowChange(
                               actualIdx,
                               "charge_type",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           className="w-full text-xs bg-transparent border border-[var(--border)] rounded px-2 py-1.5 text-main focus:outline-none focus:border-primary"
@@ -347,7 +356,7 @@ useEffect(() => {
                             handleRowChange(
                               actualIdx,
                               "account_head",
-                              val || ""
+                              val || "",
                             )
                           }
                           fetchOptions={fetchGlOptions}
@@ -371,7 +380,7 @@ useEffect(() => {
                             handleRowChange(
                               actualIdx,
                               "rate",
-                              Number(e.target.value)
+                              Number(e.target.value),
                             )
                           }
                           error={errors[`rate_${actualIdx}`]}
@@ -391,7 +400,7 @@ useEffect(() => {
                             handleRowChange(
                               actualIdx,
                               "tax_amount",
-                              Number(e.target.value)
+                              Number(e.target.value),
                             )
                           }
                           error={errors[`tax_amount_${actualIdx}`]}
@@ -410,7 +419,7 @@ useEffect(() => {
                             handleRowChange(
                               actualIdx,
                               "description",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           className="w-full"
@@ -458,7 +467,6 @@ useEffect(() => {
               ))}
             </div>
           )}
-
         </div>
       </form>
     </MinimizableModal>

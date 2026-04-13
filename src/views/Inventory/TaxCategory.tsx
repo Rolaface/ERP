@@ -72,11 +72,15 @@ const TaxCategory: React.FC = () => {
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
-  const handleCreate = async (formData: TaxCategoryFormData) => {
+const handleCreate = async (formData: TaxCategoryFormData) => {
+  try {
     await createTaxCategoryEntry(formData);
     await fetchCategories();
-  };
-
+    return true;
+  } catch {
+    return false;
+  }
+};
   // Status Toggle: Enable / Disable — replaces Edit in ActionMenu
   const handleToggleStatus = async (row: TaxCategorySummary) => {
     const newDisabled: 0 | 1 = row.disabled === 1 ? 0 : 1;
@@ -214,7 +218,7 @@ const TaxCategory: React.FC = () => {
       <TaxCategoryModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleCreate}
+       onSubmit={handleCreate} 
       />
     </>
   );

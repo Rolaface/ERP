@@ -1,6 +1,6 @@
 // ─── Sales Tax Template Types ────────────────────────────────────────────────
 
-export type ChargeType = "Actual" | "On Net Total" | "On Previous Row Amount" | "On Previous Row Total";
+export type ChargeType = "Actual" | "On Net Total" | "On Previous Row Amount" | "On Previous Row Total"|"On Item Quantity";
 
 export interface SalesTaxRow {
   name?: string;                   // auto-generated / returned by API
@@ -68,4 +68,5 @@ export const CHARGE_TYPE_OPTIONS: { value: ChargeType; label: string }[] = [
   { value: "On Net Total", label: "On Net Total" },
   { value: "On Previous Row Amount", label: "On Previous Row Amount" },
   { value: "On Previous Row Total", label: "On Previous Row Total" },
+  { value: "On Item Quantity",label:"On Item Quantity"},
 ];

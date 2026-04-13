@@ -46,7 +46,10 @@ const TaxTooltipContent: React.FC<{ taxes: TemplateTax[] }> = ({ taxes }) => (
       Tax Breakdown
     </p>
     {taxes.map((t, i) => (
-      <div key={i} className="flex items-center justify-between gap-3 text-[11px]">
+      <div
+        key={i}
+        className="flex items-center justify-between gap-3 text-[11px]"
+      >
         <span className="truncate">{t.tax_type}</span>
         <span className="shrink-0 font-medium">{t.tax_rate}%</span>
       </div>
@@ -74,17 +77,17 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
 
     return (
       <div className="rounded-lg bg-card p-2 shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-visible">
           <table className="w-full table-fixed border-collapse text-[10px] leading-tight">
             <thead>
               <tr className="border-b border-theme">
                 <th className="w-[44px] px-2 py-1 text-left text-[11px] font-medium text-muted">
                   #
                 </th>
-                <th className="min-w-[220px] px-2 py-1 text-left text-[11px] font-medium text-muted">
+                <th className="min-w-[260px] px-2 py-1 text-left text-[11px] font-medium text-muted">
                   Tax Category
                 </th>
-                <th className="min-w-[220px] px-2 py-1 text-left text-[11px] font-medium text-muted">
+                <th className="min-w-[260px] px-2 py-1 text-left text-[11px] font-medium text-muted">
                   Tax Template
                 </th>
                 {/* Action column — only trash, no duplicate */}
@@ -120,7 +123,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                     </td>
 
                     <td className="min-w-[220px] px-1 py-1 align-middle">
-                      <div className="flex items-center h-[28px]">
+                      <div className="flex items-center min-h-[28px]">
                         <div
                           className={[
                             "w-full rounded",
@@ -132,7 +135,11 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                           <TaxCategorySelect
                             value={row.taxCategory}
                             onChange={(value) =>
-                              onTaxRowChange(absoluteIndex, "taxCategory", value)
+                              onTaxRowChange(
+                                absoluteIndex,
+                                "taxCategory",
+                                value,
+                              )
                             }
                           />
                         </div>
@@ -149,8 +156,12 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                         ].join(" ")}
                       >
                         {taxes && taxes.length > 0 ? (
-                          <Tooltip content={<TaxTooltipContent taxes={taxes} />}>
-                            <div className="w-full">{templateCell}</div>
+                          <Tooltip
+                            content={<TaxTooltipContent taxes={taxes} />}
+                          >
+                            <div className="relative z-50 w-full">
+                              {templateCell}
+                            </div>
                           </Tooltip>
                         ) : (
                           templateCell

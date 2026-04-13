@@ -94,8 +94,8 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
     if (open && wrapperRef.current) {
       const rect = wrapperRef.current.getBoundingClientRect();
       setDropdownPos({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
+        top: rect.bottom ,
+        left: rect.left ,
         width: rect.width,
       });
     }
@@ -125,6 +125,13 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
     }
   }, [value, open]);
 
+  // Initialize search with value on mount
+  useEffect(() => {
+    if (value && !search) {
+      setSearch(value);
+    }
+  }, [value]);
+
   useEffect(() => {
     if (open && inputRef.current) {
       inputRef.current.focus();
@@ -136,10 +143,11 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
   return (
     <>
       <div ref={wrapperRef} className="flex flex-col w-full">
-        <label className="text-[10px] font-medium mb-1">
-          {label}
-          {required && <span className="text-danger">*</span>}
-        </label>
+       {label && (
+  <label className="text-[10px] font-medium mb-1">
+    {label}
+  </label>
+)}
 
         <div className="relative w-full">
           <input
@@ -195,11 +203,11 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
             ref={dropdownRef}
             onMouseDown={(e) => e.preventDefault()} // prevent blur
             style={{
-              position: "absolute",
+              position: "fixed",
               top: dropdownPos.top,
               left: dropdownPos.left,
               width: dropdownPos.width,
-              zIndex: 9999,
+              zIndex: 99999,
             }}
             className="bg-white border rounded shadow-lg max-h-48 overflow-auto"
           >

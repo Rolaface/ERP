@@ -71,3 +71,13 @@ export async function updateSalesTemplate(
 
   return resp.data;
 }
+export async function updateTemplateStatus(
+  name: string,
+  disabled: 0 | 1
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(TemplateAPI.updateSalesTaxTemplate, {
+    name,
+    disabled,
+  });
+  return resp.data;
+}

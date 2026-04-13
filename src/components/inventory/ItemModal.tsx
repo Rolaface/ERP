@@ -373,13 +373,11 @@ const ItemModal: React.FC<ItemModalProps> = ({
   }, [activeTab, getFirstValidationError, getValidationErrorForTab, taxRows]);
 
   const handleSaveClick = useCallback(async () => {
-    if (showValidationError("all")) {
+    const hasError = showValidationError("all");
+    if (!hasError) {
+      resetDirty();
       await handleSave(undefined, taxRows);
-      return;
     }
-
-    resetDirty();
-    await handleSave(undefined, taxRows);
   }, [handleSave, resetDirty, showValidationError, taxRows]);
 
   const handleNextClick = useCallback(() => {

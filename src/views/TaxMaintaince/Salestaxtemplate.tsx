@@ -270,7 +270,7 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
       align: "center",
       render: (tc) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={() => {}} iconOnly />
+          
           <ActionMenu
             onEdit={(e) => handleEdit(tc, e as React.MouseEvent)}
             onDelete={(e) => handleDelete(tc.name, e as React.MouseEvent)}

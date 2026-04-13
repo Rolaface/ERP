@@ -26,7 +26,7 @@ const CashFlow = lazy(() => import("./CashFlow"));
 const AccountsReceivable = lazy(() => import("./AccountsReceivable"));
 const AccountsPayable = lazy(() => import("./AccountsPayable"));
 const FixedAssets = lazy(() => import("./FixedAssets"));
-import AppSkeleton from "../../components/ui/AppSkeleton";
+
 
 const Banking = lazy(() => import("./BankingModule"));
 

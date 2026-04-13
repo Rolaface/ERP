@@ -38,13 +38,13 @@ const PricingSection: React.FC<PricingSectionProps> = React.memo(
         />
 
         {/* Sales Account */}
-        <ModalInput
+        {/* <ModalInput
           label="Sales Account"
           name="salesAccount"
           value={form.salesAccount ?? ""}
           onChange={onFormChange}
           placeholder="e.g. 4000-Sales"
-        />
+        /> */}
 
         {/* Buying Price */}
         <ModalInput
@@ -58,13 +58,13 @@ const PricingSection: React.FC<PricingSectionProps> = React.memo(
         />
 
         {/* Purchase Account */}
-        <ModalInput
+        {/* <ModalInput
           label="Purchase Account"
           name="purchaseAccount"
           value={form.purchaseAccount ?? ""}
           onChange={onFormChange}
           placeholder="e.g. 5000-COGS"
-        />
+        /> */}
 
         {/* Preferred Vendor */}
         <ModalSelect

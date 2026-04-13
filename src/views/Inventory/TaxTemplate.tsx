@@ -267,7 +267,7 @@ const TaxTemplate: React.FC<Props> = () => {
       align: "center",
       render: (tc) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={() => { }} iconOnly />
+     
           <ActionMenu
             onEdit={(e) => handleEdit(tc, e as any)}
             onDelete={(e) => handleDelete(tc.name, e as any)}

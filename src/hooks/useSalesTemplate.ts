@@ -4,8 +4,8 @@ import {
   getAllTemplates,
   getGlAccounts,
   updateSalesTemplate,
-  // updateSalesTaxTemplateStatus,
-  deleteSalesTemplate, // ← correct name
+  updateTemplateStatus,
+  deleteSalesTemplate, 
 } from "../api/salesTaxTemplateApi";
 import {
   showLoading,
@@ -99,7 +99,7 @@ export const useSalesTaxTemplate = () => {
     setLoading(true);
     try {
       showLoading(disabled ? "Disabling..." : "Enabling...");
-      const res = await updateSalesTaxTemplateStatus(name, disabled);
+      const res = await updateTemplateStatus(name, disabled);
       closeSwal();
       showSuccess(
         disabled
