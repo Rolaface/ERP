@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, Suspense, lazy } from "react";
 import {
   FaBriefcase,
   FaChartPie,
@@ -10,21 +10,25 @@ import {
   FaWarehouse,
   FaUniversity,
 } from "react-icons/fa";
-import GeneralLedger from "./GeneralLedger";
-import TrialBalance from "./TrialBalance";
-import ProfitLoss from "./ProfitLoss";
-import BalanceSheet from "./BalanceSheet";
-import CashFlow from "./CashFlow";
-import AccountsReceivable from "./AccountsReceivable";
-import AccountsPayable from "./AccountsPayable";
-import FixedAssets from "./FixedAssets";
-import Banking from "./BankingModule";
 import {
   AppPage,
   AppPageBody,
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
+import AppSkeleton from "../../components/ui/AppSkeleton";
+
+const GeneralLedger = lazy(() => import("./GeneralLedger"));
+const TrialBalance = lazy(() => import("./TrialBalance"));
+const ProfitLoss = lazy(() => import("./ProfitLoss"));
+const BalanceSheet = lazy(() => import("./BalanceSheet"));
+const CashFlow = lazy(() => import("./CashFlow"));
+const AccountsReceivable = lazy(() => import("./AccountsReceivable"));
+const AccountsPayable = lazy(() => import("./AccountsPayable"));
+const FixedAssets = lazy(() => import("./FixedAssets"));
+import AppSkeleton from "../../components/ui/AppSkeleton";
+
+const Banking = lazy(() => import("./BankingModule"));
 
 type Account = {
   code: string;
@@ -241,16 +245,10 @@ const AccountingModule: React.FC = () => {
     setShowFilterDropdown(false);
   };
 
-  return (
-    <AppPage>
-      <AppPageHeader
-        title="Accounting"
-        description="Core ledgers, reports, and finance operations in the shared ERP layout."
-        icon={<FaBriefcase />}
-      />
-      <AppTabs tabs={allTabs} activeTab={activeTab} onChange={setActiveTab} />
-      <AppPageBody>
-        {activeTab === "gl" && (
+  const renderTab = () => {
+    switch (activeTab) {
+      case "gl":
+        return (
           <GeneralLedger
             glSubTab={glSubTab}
             setGlSubTab={setGlSubTab}
@@ -266,8 +264,9 @@ const AccountingModule: React.FC = () => {
             getFilterCount={getFilterCount}
             journalEntries={journalEntries}
           />
-        )}
-        {activeTab === "trial" && (
+        );
+      case "trial":
+        return (
           <TrialBalance
             trialBalance={trialBalance}
             totalDebit={totalDebit}
@@ -278,8 +277,9 @@ const AccountingModule: React.FC = () => {
             setReportYear={setReportYear}
             monthNames={monthNames}
           />
-        )}
-        {activeTab === "pl" && (
+        );
+      case "pl":
+        return (
           <ProfitLoss
             profitLoss={profitLoss}
             reportPeriod={reportPeriod}
@@ -290,8 +290,9 @@ const AccountingModule: React.FC = () => {
             setReportMonth={setReportMonth}
             monthNames={monthNames}
           />
-        )}
-        {activeTab === "balance" && (
+        );
+      case "balance":
+        return (
           <BalanceSheet
             balanceSheet={balanceSheet}
             reportYear={reportYear}
@@ -299,12 +300,32 @@ const AccountingModule: React.FC = () => {
             monthNames={monthNames}
             profitLoss={profitLoss}
           />
-        )}
-        {activeTab === "ar" && <AccountsReceivable />}
-        {activeTab === "ap" && <AccountsPayable />}
-        {activeTab === "fa" && <FixedAssets />}
-        {activeTab === "bank" && <Banking />}
-        {activeTab === "cashflow" && <CashFlow />}
+        );
+      case "ar":
+        return <AccountsReceivable />;
+      case "ap":
+        return <AccountsPayable />;
+      case "fa":
+        return <FixedAssets />;
+      case "bank":
+        return <Banking />;
+      case "cashflow":
+        return <CashFlow />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <AppPage>
+      <AppPageHeader
+        title="Accounting"
+        description="Core ledgers, reports, and finance operations in the shared ERP layout."
+        icon={<FaBriefcase />}
+      />
+      <AppTabs tabs={allTabs} activeTab={activeTab} onChange={setActiveTab} />
+      <AppPageBody>
+        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>
     </AppPage>
   );

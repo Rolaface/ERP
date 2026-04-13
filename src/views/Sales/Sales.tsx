@@ -1,14 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, Suspense, lazy } from "react";
 import { useOutletContext } from "react-router-dom";
-import QuotationsTable from "./Quotations";
-import InvoiceTable from "./Invoices";
-import ReportTable from "./Reports";
-import POS from "./POS";
-import SalesDashboard from "./SalesDashboard";
-import ProformaInvoicesTable from "./ProformaInvoice";
-import CreditNotesTable from "./CreditNotesTable";
-import DebitNotesTable from "./DebitNotesTable";
-import SalesAnalytics from "./SalesAnalytics";
 import {
   FaMoneyBillWave,
   FaTachometerAlt,
@@ -22,6 +13,17 @@ import {
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
+import AppSkeleton from "../../components/ui/AppSkeleton";
+
+const QuotationsTable = lazy(() => import("./Quotations"));
+const InvoiceTable = lazy(() => import("./Invoices"));
+const ReportTable = lazy(() => import("./Reports"));
+const POS = lazy(() => import("./POS"));
+const SalesDashboard = lazy(() => import("./SalesDashboard"));
+const ProformaInvoicesTable = lazy(() => import("./ProformaInvoice"));
+const CreditNotesTable = lazy(() => import("./CreditNotesTable"));
+const DebitNotesTable = lazy(() => import("./DebitNotesTable"));
+const SalesAnalytics = lazy(() => import("./SalesAnalytics"));
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -60,40 +62,47 @@ const SalesModule: React.FC = () => {
   const { openInvoiceCreate, openProformaCreate, openQuotationCreate } =
     useOutletContext<OutletContextType>();
 
-  const tabConfig: Record<string, { component: React.ReactNode }> = {
-    salesdashboard: { component: <SalesDashboard /> },
-    quotations: {
-      component: (
-        <QuotationsTable
-          key={refreshKey}
-          onAddQuotation={() => openQuotationCreate()}
-          onExportQuotation={() => console.log("Export quotations")}
-        />
-      ),
-    },
-    proformaInvoice: {
-      component: (
-        <ProformaInvoicesTable
-          refreshKey={refreshKey}
-          onAddProformaInvoice={() => openProformaCreate()}
-          onExportProformaInvoice={() => console.log("Export proforma invoices")}
-        />
-      ),
-    },
-    invoices: {
-      component: (
-        <InvoiceTable
-          key={refreshKey}
-          onAddInvoice={() => openInvoiceCreate()}
-          onExportInvoice={() => console.log("Export invoices")}
-        />
-      ),
-    },
-    pos: { component: <POS /> },
-    creditNotes: { component: <CreditNotesTable /> },
-    debitNotes: { component: <DebitNotesTable /> },
-    reports: { component: <ReportTable /> },
-    salesAnalytics: { component: <SalesAnalytics /> },
+  const renderTab = () => {
+    switch (activeTab) {
+      case "salesdashboard":
+        return <SalesDashboard />;
+      case "quotations":
+        return (
+          <QuotationsTable
+            key={refreshKey}
+            onAddQuotation={() => openQuotationCreate()}
+            onExportQuotation={() => console.log("Export quotations")}
+          />
+        );
+      case "proformaInvoice":
+        return (
+          <ProformaInvoicesTable
+            refreshKey={refreshKey}
+            onAddProformaInvoice={() => openProformaCreate()}
+            onExportProformaInvoice={() => console.log("Export proforma invoices")}
+          />
+        );
+      case "invoices":
+        return (
+          <InvoiceTable
+            key={refreshKey}
+            onAddInvoice={() => openInvoiceCreate()}
+            onExportInvoice={() => console.log("Export invoices")}
+          />
+        );
+      case "pos":
+        return <POS />;
+      case "creditNotes":
+        return <CreditNotesTable />;
+      case "debitNotes":
+        return <DebitNotesTable />;
+      case "reports":
+        return <ReportTable />;
+      case "salesAnalytics":
+        return <SalesAnalytics />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -105,7 +114,7 @@ const SalesModule: React.FC = () => {
       />
       <AppTabs tabs={salesTabs} activeTab={activeTab} onChange={setActiveTab} />
       <AppPageBody viewportLocked={isDashboardTab}>
-        {tabConfig[activeTab]?.component}
+        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>
     </AppPage>
   );

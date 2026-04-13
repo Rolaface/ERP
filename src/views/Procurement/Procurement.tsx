@@ -1,9 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, Suspense, lazy } from "react";
 import { useOutletContext } from "react-router-dom";
-import RFQsTable from "./Rfqs";
-import PurchaseOrdersTable from "./PurchaseOrders";
-import ApprovalsSection from "./Approvals";
-import Dashboard from "./ProcurementDashboard";
 import ApprovalModal from "../../components/procurement/ApprovalModal";
 import {
   FaClipboardList,
@@ -15,16 +11,22 @@ import {
   FaLandmark,
   FaCreditCard,
 } from "react-icons/fa";
-import SupplierManagement from "./SupplierManagement";
-import PurchaseInvoiceTable from "./PurchaseInvoice";
-import Payments from "./SupplierPayment";
-import PurchaseAnalytics from "./PurchaseAnalytics";
 import {
   AppPage,
   AppPageBody,
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
+import AppSkeleton from "../../components/ui/AppSkeleton";
+
+const RFQsTable = lazy(() => import("./Rfqs"));
+const PurchaseOrdersTable = lazy(() => import("./PurchaseOrders"));
+const ApprovalsSection = lazy(() => import("./Approvals"));
+const Dashboard = lazy(() => import("./ProcurementDashboard"));
+const SupplierManagement = lazy(() => import("./SupplierManagement"));
+const PurchaseInvoiceTable = lazy(() => import("./PurchaseInvoice"));
+const Payments = lazy(() => import("./SupplierPayment"));
+const PurchaseAnalytics = lazy(() => import("./PurchaseAnalytics"));
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -79,6 +81,29 @@ const Procurement: React.FC = () => {
     else if (activeTab === "invoicematching") setShowInvoiceModal(true);
   };
 
+  const renderTab = () => {
+    switch (activeTab) {
+      case "procurementdashboard":
+        return <Dashboard />;
+      case "supplier":
+        return <SupplierManagement onAdd={handleAdd} />;
+      case "rfqs":
+        return <RFQsTable onAdd={handleAdd} />;
+      case "orders":
+        return <PurchaseOrdersTable onAdd={handleAdd} />;
+      case "approvals":
+        return <ApprovalsSection onAdd={handleAdd} />;
+      case "purchase":
+        return <PurchaseInvoiceTable onAdd={handleAdd} />;
+      case "payments":
+        return <Payments />;
+      case "purchaseAnalytics":
+        return <PurchaseAnalytics />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
@@ -88,21 +113,16 @@ const Procurement: React.FC = () => {
       />
       <AppTabs tabs={procurement.tabs} activeTab={activeTab} onChange={setActiveTab} />
       <AppPageBody viewportLocked={isDashboardTab}>
-        {activeTab === "supplier" && <SupplierManagement onAdd={handleAdd} />}
-        {activeTab === "rfqs" && <RFQsTable onAdd={handleAdd} />}
-        {activeTab === "orders" && <PurchaseOrdersTable onAdd={handleAdd} />}
-        {activeTab === "approvals" && <ApprovalsSection onAdd={handleAdd} />}
-        {activeTab === "purchase" && <PurchaseInvoiceTable onAdd={handleAdd} />}
-        {activeTab === "procurementdashboard" && <Dashboard />}
-        {activeTab === "payments" && <Payments />}
-        {activeTab === "purchaseAnalytics" && <PurchaseAnalytics />}
+        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>
 
-      <ApprovalModal
-        isOpen={showApprovalModal}
-        onClose={() => setShowApprovalModal(false)}
-        onSubmit={(data) => console.log("New Approval:", data)}
-      />
+      {showApprovalModal && (
+        <ApprovalModal
+          isOpen={showApprovalModal}
+          onClose={() => setShowApprovalModal(false)}
+          onSubmit={(data) => console.log("New Approval:", data)}
+        />
+      )}
     </AppPage>
   );
 };

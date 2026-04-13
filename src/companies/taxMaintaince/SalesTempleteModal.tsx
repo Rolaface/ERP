@@ -17,7 +17,7 @@ import { getGlAccounts } from "../../api/salesTaxTemplateApi";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const ROWS_PER_PAGE = 3;
+const ROWS_PER_PAGE = 5;
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -46,21 +46,21 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
     [modals, modalId]
   );
 
-  const [form, setForm] = useState<SalesTaxTemplateFormData>(
-    initialData ?? defaultSalesTaxForm
-  );
+const modalData = modal?.initialData as SalesTaxTemplateFormData | undefined;
+
+const [form, setForm] = useState<SalesTaxTemplateFormData>(
+  modalData ?? defaultSalesTaxForm
+);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
 
   // ── Sync when modal opens / data changes ──────────────────────────────────
-  useEffect(() => {
-    if (isOpen) {
-      setForm(initialData ?? defaultSalesTaxForm);
-      setErrors({});
-      setPage(0);
-    }
-  }, [isOpen, initialData]);
+useEffect(() => {
+  if (isOpen) {
+    setForm(modalData ?? defaultSalesTaxForm);
+  }
+}, [isOpen, modalData]);
 
   const reset = () => {
     setForm(initialData ?? defaultSalesTaxForm);
@@ -161,6 +161,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
         ...form,
         disabled: form.disabled,
         taxes: form.taxes.map((row) => ({
+          name:row.name,
           charge_type: row.charge_type,
           account_head: row.account_head.trim(),
           rate: Number(row.rate),
@@ -168,6 +169,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
           description: row.description.trim(),
         })),
       };
+        console.log("FORM TAXES", form.taxes);
 
       if (modal?.context?.callback) {
         await modal.context.callback(payload);

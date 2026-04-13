@@ -11,6 +11,7 @@ import { fireManagedSwal } from "../../utils/swalManager";
 import { openSalesTaxTemplateModal } from "../../store/modalStore";
 import { getAllTemplates } from "../../api/salesTaxTemplateApi";
 import { useSalesTaxTemplate } from "../../hooks/useSalesTemplate";
+import { getSalesTemplateById } from "../../api/salesTaxTemplateApi";
 import type {
   SalesTaxTemplateSummary,
   SalesTaxTemplateFormData,
@@ -31,7 +32,7 @@ const SalesTaxTemplate: React.FC = () => {
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  // ✅ Hook — replaces all direct API calls, handles loading/toast/error internally
+ 
   const { createSalesTax, updateSalesTax, updateStatus, deleteSalesTax } =
     useSalesTaxTemplate();
 
@@ -89,21 +90,38 @@ const SalesTaxTemplate: React.FC = () => {
     );
   };
 
-  const openEdit = (row: SalesTaxTemplateSummary) => {
+const openEdit = async (row: SalesTaxTemplateSummary) => {
+  try {
+    setLoading(true);
+
+    const res = await getSalesTemplateById(row.name);
+    const data = res?.data;
+
     const formData: SalesTaxTemplateFormData = {
-      name: row.name,
-      title: row.title,
-      disabled: row.disabled,
-      tax_category: row.tax_category,
-      taxes: row.taxes.map((t) => ({ ...t })),
+      name: data?.name,
+      title: data?.title || "",
+      disabled: data?.disabled ?? 0,
+      tax_category: data?.tax_category || "",
+      taxes:
+        Array.isArray(data?.taxes) && data.taxes.length > 0
+          ? data.taxes.map((t: any) => ({
+              name: t.name,
+              charge_type: t.charge_type,
+              account_head: t.account_head || "",
+              rate: Number(t.rate) || 0,
+              tax_amount: Number(t.tax_amount) || 0,
+              description: t.description || "",
+            }))
+          : [{ charge_type: "On Net Total", account_head: "", rate: 0, tax_amount: 0, description: "" }],
     };
+
 
     openSalesTaxTemplateModal(
       formData,
       true,
       {
         callback: async (formData: SalesTaxTemplateFormData) => {
-          await updateSalesTax(formData); 
+          await updateSalesTax(formData);
           await fetchTemplates();
         },
       },
@@ -112,7 +130,12 @@ const SalesTaxTemplate: React.FC = () => {
         subtitle: "Update charges and tax rates",
       }
     );
-  };
+  } catch (error) {
+    showApiError(error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -159,7 +182,7 @@ const SalesTaxTemplate: React.FC = () => {
 
     if (!confirm.isConfirmed) return;
 
-    await deleteSalesTax(name); // ✅
+    await deleteSalesTax(name); 
     await fetchTemplates();
   };
 

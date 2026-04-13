@@ -1,11 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, Suspense, lazy } from "react";
 import { useOutletContext } from "react-router-dom";
-import CustomerManagement from "./CustomerManagement";
-import CRMDashboard from "./CRMDashboard";
-import CRMReports from "./Reports";
-import Leads from "./Leads";
-import SupportTickets from "./Support-tickets";
-import Payments from "./CustomerPayments";
 import {
   FaCreditCard,
   FaUsers,
@@ -19,6 +13,14 @@ import {
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
+import AppSkeleton from "../../components/ui/AppSkeleton";
+
+const CustomerManagement = lazy(() => import("./CustomerManagement"));
+const CRMDashboard = lazy(() => import("./CRMDashboard"));
+const CRMReports = lazy(() => import("./Reports"));
+const Leads = lazy(() => import("./Leads"));
+const SupportTickets = lazy(() => import("./Support-tickets"));
+const Payments = lazy(() => import("./CustomerPayments"));
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -122,6 +124,25 @@ const CRM: React.FC = () => {
     console.log("onAdd -> Ticket (parent handler called)");
   };
 
+  const renderTab = () => {
+    switch (activeTab) {
+      case "dashboard":
+        return <CRMDashboard />;
+      case "customer-managment":
+        return <CustomerManagement onAdd={handleAddCustomer} />;
+      case "leads":
+        return <Leads leads={crmModule.leads} onAdd={handleAddLead} />;
+      case "tickets":
+        return <SupportTickets tickets={crmModule.tickets} onAdd={handleAddTicket} />;
+      case "payments":
+        return <Payments />;
+      case "reports":
+        return <CRMReports />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
@@ -131,18 +152,7 @@ const CRM: React.FC = () => {
       />
       <AppTabs tabs={crmModule.tabs} activeTab={activeTab} onChange={setActiveTab} />
       <AppPageBody viewportLocked={isDashboardTab}>
-        {activeTab === "dashboard" && <CRMDashboard />}
-        {activeTab === "customer-managment" && (
-          <CustomerManagement onAdd={handleAddCustomer} />
-        )}
-        {activeTab === "leads" && (
-          <Leads leads={crmModule.leads} onAdd={handleAddLead} />
-        )}
-        {activeTab === "tickets" && (
-          <SupportTickets tickets={crmModule.tickets} onAdd={handleAddTicket} />
-        )}
-        {activeTab === "payments" && <Payments />}
-        {activeTab === "reports" && <CRMReports />}
+        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>
     </AppPage>
   );

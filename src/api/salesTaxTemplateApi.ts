@@ -37,13 +37,37 @@ export async function getAllTemplates(
 }
 
 export async function deleteSalesTemplate(name: string): Promise<any> {
-  const resp: AxiosResponse = await api.post(
+  const resp: AxiosResponse = await api.delete(
     TemplateAPI.deleteSalesTemplate,
     {
-      name,
-      doctype: "Sales Tax Template",
+      data: {
+        name,
+        doctype: "Sales Tax Template",
+      },
     }
   );
   return resp.data;
 }
+export async function getSalesTemplateById(name: string): Promise<any> {
+  const resp: AxiosResponse = await api.get(
+    TemplateAPI.getsalesTemplatesbyid,
+    {
+      params: { name },
+    }
+  );
+  return resp.data;
+}
+export async function updateSalesTemplate(
+  name: string,
+  payload: any
+): Promise<any> {
+  const resp: AxiosResponse = await api.patch(
+    TemplateAPI.updateSalesTaxTemplate, 
+    payload,
+    {
+      params: { name },
+    }
+  );
 
+  return resp.data;
+}

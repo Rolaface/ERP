@@ -1,10 +1,11 @@
 import { useState } from "react";
 import {
-    createTemplate,
-    getAllTemplates,
-    getGlAccounts,
-
-
+  createTemplate,
+  getAllTemplates,
+  getGlAccounts,
+  updateSalesTemplate,
+  // updateSalesTaxTemplateStatus,
+  deleteSalesTemplate, // ← correct name
 } from "../api/salesTaxTemplateApi";
 import {
   showLoading,
@@ -29,6 +30,7 @@ export const useSalesTaxTemplate = () => {
         disabled: form.disabled,
         tax_category: form.tax_category ?? "",
         taxes: form.taxes.map((row) => ({
+          name:row.name,
           charge_type: row.charge_type,
           account_head: row.account_head.trim(),
           rate: Number(row.rate),
@@ -51,6 +53,7 @@ export const useSalesTaxTemplate = () => {
 
   // ── Update ────────────────────────────────────────────────────────────────
   const updateSalesTax = async (
+
     form: SalesTaxTemplateFormData
   ): Promise<any> => {
     if (!form.name) {
@@ -60,20 +63,22 @@ export const useSalesTaxTemplate = () => {
     setLoading(true);
     try {
       showLoading("Updating Sales Tax Template...");
-      const payload = {
-        name: form.name,
-        title: form.title,
-        disabled: form.disabled,
-        tax_category: form.tax_category ?? "",
-        taxes: form.taxes.map((row) => ({
-          charge_type: row.charge_type,
-          account_head: row.account_head.trim(),
-          rate: Number(row.rate),
-          tax_amount: Number(row.tax_amount),
-          description: row.description.trim(),
-        })),
-      };
-      const res = await updateSalesTaxTemplate(form.name, payload);
+     const payload = {
+
+  title: form.title,
+  disabled: form.disabled,
+  tax_category: form.tax_category ?? "",
+  taxes: form.taxes.map((row) => ({
+    name:row.name,
+    charge_type: row.charge_type,
+    account_head: row.account_head.trim(),
+    rate: Number(row.rate),
+    tax_amount: Number(row.tax_amount),
+    description: row.description.trim(),
+  })),
+
+};
+      const res = await updateSalesTemplate(form.name, payload);
       closeSwal();
       showSuccess("Sales Tax Template updated successfully");
       return res;
@@ -120,7 +125,7 @@ export const useSalesTaxTemplate = () => {
     setLoading(true);
     try {
       showLoading("Deleting Sales Tax Template...");
-      const res = await deleteSalesTaxTemplate(name);
+      const res = await deleteSalesTemplate(name);
       closeSwal();
       showSuccess("Sales Tax Template deleted successfully");
       return res;

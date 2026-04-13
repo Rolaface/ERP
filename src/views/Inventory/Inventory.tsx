@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, Suspense, lazy } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   FaBoxOpen,
@@ -6,21 +6,24 @@ import {
   FaTachometerAlt,
   FaWarehouse,
 } from "react-icons/fa";
-import Items from "./Items";
-import Movements from "./Movements";
-import ItemsCategory from "./ItemsCategory";
-import WarehouseView from "./Warehouse";
-import Stock from "./Stock";
-import Import from "./Import";
-import TaxTemplate from "./TaxTemplate";
-import InventoryDashboard from "./InventoryDashboard";
-import TaxCategory from "./TaxCategory";
 import {
   AppPage,
   AppPageBody,
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
+import PageLoader from "../../components/ui/PageLoader";
+import AppSkeleton from "../../components/ui/AppSkeleton";
+
+const Items = lazy(() => import("./Items"));
+const Movements = lazy(() => import("./Movements"));
+const ItemsCategory = lazy(() => import("./ItemsCategory"));
+const WarehouseView = lazy(() => import("./Warehouse"));
+const Stock = lazy(() => import("./Stock"));
+const Import = lazy(() => import("./Import"));
+const TaxTemplate = lazy(() => import("./TaxTemplate"));
+const InventoryDashboard = lazy(() => import("./InventoryDashboard"));
+const TaxCategory = lazy(() => import("./TaxCategory"));
 
 interface OutletContextType {
   openWarehouseCreate: (initialData?: { parent: string }) => void;
@@ -42,6 +45,31 @@ const Inventory: React.FC = () => {
     { id: "import", label: "Import", icon: <FaBoxOpen /> },
   ];
 
+  const renderTab = () => {
+    switch (activeTab) {
+      case "inventorydashboard":
+        return <InventoryDashboard />;
+      case "items":
+        return <Items />;
+      case "taxCategory":
+        return <TaxCategory />;
+      case "itemsCategory":
+        return <ItemsCategory />;
+      case "warehouse":
+        return <WarehouseView openWarehouseCreate={openWarehouseCreate} openWarehouseEdit={openWarehouseEdit} />;
+      case "stock":
+        return <Stock />;
+      case "import":
+        return <Import />;
+      case "movements":
+        return <Movements />;
+      case "taxTemplates":
+        return <TaxTemplate />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
@@ -57,15 +85,7 @@ const Inventory: React.FC = () => {
         }}
       />
       <AppPageBody viewportLocked={isDashboardTab}>
-        {activeTab === "inventorydashboard" && <InventoryDashboard />}
-        {activeTab === "items" && <Items />}
-        {activeTab === "taxCategory" && <TaxCategory />}
-        {activeTab === "itemsCategory" && <ItemsCategory />}
-        {activeTab === "warehouse" && <WarehouseView openWarehouseCreate={openWarehouseCreate} openWarehouseEdit={openWarehouseEdit} />}
-        {activeTab === "stock" && <Stock />}
-        {activeTab === "import" && <Import />}
-        {activeTab === "movements" && <Movements />}
-        {activeTab === "taxTemplates" && <TaxTemplate />}
+        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>
     </AppPage>
   );

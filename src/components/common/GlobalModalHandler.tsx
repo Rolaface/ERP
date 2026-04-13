@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, Suspense, lazy } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -6,25 +6,31 @@ import { useModalStore, MODAL_LAYER } from "../../store/modalStore";
 import type { ModalInstance, ModalType } from "../../store/modalStore";
 import type { ModalSubmitHandler } from "../../types/modal";
 import { useQuickAdd } from "../../context/QuickAddContext";
-
-import CustomerModal from "../crm/CustomerModal";
-import SupplierModal from "../procurement/supply/SupplierModal";
-import InvoiceModal from "../sales/InvoiceModal";
-import ProformaInvoiceModal from "../sales/ProformaInvoiceModal";
-import QuotationModal from "../sales/QuotationModal";
-import PurchaseOrderModal from "../procurement/PurchaseOrderModal";
-import PurchaseInvoiceModal from "../procurement/PurchaseInvoiceModal";
-import ItemModal from "../inventory/ItemModal";
-import ItemsCategoryModal from "../inventory/ItemsCategoryModal";
-import WarehouseModal from "../inventory/WarehouseModal";
-import TaxTemplateModalComponent from "../../companies/taxMaintaince/TaxTemplateModal";
-import TaxCategoryModalComponent from "../inventory/TaxCategoryModal";
 import type { CustomerDetail } from "../../types/customer";
 import type { Supplier } from "../../types/Supply/supplier";
 import type { ItemInitialData } from "../inventory/ItemModal";
 import type { TaxCategoryFormData as TaxTemplateFormData } from "../../types/tax/taxTemplate";
-import SalesTaxTemplateModalComponent from "../../companies/taxMaintaince/SalesTempleteModal";
 import type { SalesTaxTemplateFormData } from "../../types/tax/salesTemplate";
+
+const CustomerModal = lazy(() => import("../crm/CustomerModal"));
+const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
+const InvoiceModal = lazy(() => import("../sales/InvoiceModal"));
+const ProformaInvoiceModal = lazy(() => import("../sales/ProformaInvoiceModal"));
+const QuotationModal = lazy(() => import("../sales/QuotationModal"));
+const PurchaseOrderModal = lazy(() => import("../procurement/PurchaseOrderModal"));
+const PurchaseInvoiceModal = lazy(() => import("../procurement/PurchaseInvoiceModal"));
+const ItemModal = lazy(() => import("../inventory/ItemModal"));
+const ItemsCategoryModal = lazy(() => import("../inventory/ItemsCategoryModal"));
+const WarehouseModal = lazy(() => import("../inventory/WarehouseModal"));
+const TaxTemplateModalComponent = lazy(() => import("../../companies/taxMaintaince/TaxTemplateModal"));
+const TaxCategoryModalComponent = lazy(() => import("../inventory/TaxCategoryModal"));
+const SalesTaxTemplateModalComponent = lazy(() => import("../../companies/taxMaintaince/SalesTempleteModal"));
+
+const modalFallback = (
+  <div className="flex items-center justify-center p-8">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -105,9 +111,15 @@ const GlobalModalHandler: React.FC = () => {
       return true;
     };
 
+    const wrappedModal = (modalContent: React.ReactNode) => (
+      <Suspense fallback={modalFallback}>
+        {modalContent}
+      </Suspense>
+    );
+
     switch (modal.type) {
       case "customer":
-        return (
+        return wrappedModal(
           <CustomerModal
             key={modal.id}
             modalId={modal.id}
@@ -120,7 +132,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "supplier":
-        return (
+        return wrappedModal(
           <SupplierModal
             key={modal.id}
             modalId={modal.id}
@@ -133,7 +145,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "invoice":
-        return (
+        return wrappedModal(
           <InvoiceModal
             key={modal.id}
             modalId={modal.id}
@@ -145,7 +157,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "proforma":
-        return (
+        return wrappedModal(
           <ProformaInvoiceModal
             key={modal.id}
             modalId={modal.id}
@@ -157,7 +169,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "quotation":
-        return (
+        return wrappedModal(
           <QuotationModal
             key={modal.id}
             modalId={modal.id}
@@ -169,7 +181,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "purchaseOrder":
-        return (
+        return wrappedModal(
           <PurchaseOrderModal
             key={modal.id}
             modalId={modal.id}
@@ -181,7 +193,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "purchaseInvoice":
-        return (
+        return wrappedModal(
           <PurchaseInvoiceModal
             key={modal.id}
             modalId={modal.id}
@@ -193,7 +205,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "item":
-        return (
+        return wrappedModal(
           <ItemModal
             key={modal.id}
             modalId={modal.id}
@@ -206,7 +218,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "itemCategory":
-        return (
+        return wrappedModal(
           <ItemsCategoryModal
             key={modal.id}
             modalId={modal.id}
@@ -219,7 +231,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "taxTemplate":
-        return (
+        return wrappedModal(
           <TaxTemplateModalComponent
             key={modal.id}
             modalId={modal.id}
@@ -232,7 +244,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "warehouse":
-        return (
+        return wrappedModal(
           <WarehouseModal
             key={modal.id}
             modalId={modal.id}
@@ -245,7 +257,7 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "taxCategory":
-        return (
+        return wrappedModal(
           <TaxCategoryModalComponent
             key={modal.id}
             modalId={modal.id}
@@ -257,7 +269,7 @@ const GlobalModalHandler: React.FC = () => {
           />
         );
       case "salesTax":
-        return (
+        return wrappedModal(
           <SalesTaxTemplateModalComponent
             key={modal.id}
             modalId={modal.id}
