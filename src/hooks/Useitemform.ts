@@ -120,7 +120,6 @@ const itemDetailFields: Array<{ field: keyof ItemFormData; label: string }> = [
   { field: "description", label: "Description" },
   { field: "itemClassCode", label: "HSN Code" },
   { field: "unitOfMeasureCd", label: "Unit of Measurement" },
-  { field: "originNationCode", label: "Country of Origin" },
 ];
 export const emptyForm: ItemFormData = {
   id: "",
@@ -129,6 +128,7 @@ export const emptyForm: ItemFormData = {
   itemClassCode: "",
   itemTypeCode: "",
   originNationCode: "",
+  countryOfOrigin:";",
   packagingUnitCode: "",
   packingUnit: 1,
   packingSize: 1,
@@ -190,7 +190,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   dimensionWidth: form.dimensionWidth,
   dimensionHeight: form.dimensionHeight,
   brand: form.brand,
-  countryOfOrigin: form.countryCode || form.originNationCode || "",
+  countryOfOrigin: form.countryCode ,
   vendorInfo: {
     preferredVendor: form.preferredVendor,
     salesAccount: form.salesAccount,
@@ -229,12 +229,12 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
 const mapApiToForm = (item: any) => {
   return {
     ...item,
-
     preferredVendor: item.vendorInfo?.preferredVendor || "",
 
     valuationMethod: item.inventoryInfo?.valuationMethod || "",
     trackingMethod: item.inventoryInfo?.trackingMethod || "",
     reorderLevel: item.inventoryInfo?.reorderLevel || "",
+    maxStockLevel: item.inventoryInfo?.maxStockLevel || "",
     minStockLevel: item.inventoryInfo?.minStockLevel || "",
 
     has_batch_no: item.batchInfo?.has_batch_no || false,

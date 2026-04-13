@@ -27,7 +27,6 @@ const isRolaCompany = (companyCode: string) => {
   return normalized === "ROLA" || normalized === "COMP-00004";
 };
 
-
 const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
   React.memo(({ form, onFormChange, onToggleChange, setField, errors }) => {
     const { companyCode } = useCompanySelection();
@@ -99,21 +98,24 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
         <div className="w-[160px] min-w-0">
           <SearchSelect2
             label="Country of origin"
-            value={form.countryOfOrigin ?? ""}
+            value={form.originNationCode ?? ""}
             fetchOptions={async (q) => {
-  const data = await fetchCountries(q);
+              const data = await fetchCountries();
 
               const list = data?.data ?? [];
 
-              return list.map((item: any) => ({
-                label: item.name,
-                value: item.name,
-              }));
+              return list
+                .filter((item: any) =>
+                  item.name.toLowerCase().includes(q.toLowerCase()),
+                )
+                .map((item: any) => ({
+                  label: item.name,
+                  value: item.name,
+                }));
             }}
-            onChange={(value) => setField("countryOfOrigin", value)}
+            onChange={(value) => setField("originNationCode", value)}
             placeholder="Search..."
-            required
-            error={errors?.countryOfOrigin}
+            error={errors?.originNationCode}
           />
         </div>
 

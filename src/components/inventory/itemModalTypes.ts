@@ -34,6 +34,7 @@ export interface ItemFormData {
   itemClassCode: string;
   itemTypeCode: string;
   countryOfOrigin: string;
+  originNationCode:string;
   packagingUnitCode: string;
   packingUnit: string | number;
   packingSize: string | number;

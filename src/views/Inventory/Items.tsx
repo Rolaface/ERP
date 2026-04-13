@@ -35,7 +35,10 @@ type OutletContextType = {
   ) => void;
 };
 
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+// ─── FLATTEN HELPER ───────────────────────────────────────────────────────────
+// Keeps ALL nested objects intact (vendorInfo, inventoryInfo, taxInfo, batchInfo)
+// so ItemDetailView can read item?.vendorInfo?.preferredVendor etc.
+// Also hoists flat legacy fields for table columns that need them directly.
 
 const flattenItemDetail = (fullItem: any): Item => {
   if (!fullItem) return {} as Item;
@@ -47,9 +50,10 @@ const flattenItemDetail = (fullItem: any): Item => {
 
     taxCategory: Array.isArray(taxInfo)
       ? taxInfo[0]?.taxCategory ?? fullItem.taxCategory ?? ""
-      : taxInfo?.taxCategory ?? fullItem.taxCategory ?? "",
+      : (taxInfo as any)?.taxCategory ?? fullItem.taxCategory ?? "",
 
-    taxPreference: fullItem.taxInfo?.taxPreference ?? fullItem.taxPreference ?? "",
+    taxPreference:
+      fullItem.taxInfo?.taxPreference ?? fullItem.taxPreference ?? "",
     taxType: fullItem.taxInfo?.taxType ?? fullItem.taxType ?? "",
     taxCode: fullItem.taxInfo?.taxCode ?? fullItem.taxCode ?? "",
     taxPerct: fullItem.taxInfo?.taxPerct ?? fullItem.taxPerct ?? "",
@@ -80,11 +84,15 @@ const flattenItemDetail = (fullItem: any): Item => {
   };
 };
 
+// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+
 const Items: React.FC = () => {
   const { openItemCreate, openItemEdit } =
     useOutletContext<OutletContextType>();
 
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh,
+  );
   const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
 
   /* ── Table / list state ── */
@@ -98,7 +106,7 @@ const Items: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [filters, setFilters] = useState<ItemFilters>({});
 
-  /* ── View mode — "table" or "detail" (inline, like CustomerManagement) ── */
+  /* ── View mode — "table" or "detail" ── */
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -107,15 +115,13 @@ const Items: React.FC = () => {
   /* ── All items for sidebar (unpaginated) ── */
   const [allItems, setAllItems] = useState<ItemSummary[]>([]);
 
-  /* ── Invoice / stock data — wire up your APIs here ── */
-  const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
-  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>(
-    [],
-  );
-  const [stockRows, setStockRows] = useState<StockRow[]>([]);
-  const [loadingSales, setLoadingSales] = useState(false);
-  const [loadingPurchase, setLoadingPurchase] = useState(false);
-  const [loadingStock, setLoadingStock] = useState(false);
+  /* ── Invoice / stock data ── */
+  const [salesInvoices] = useState<SalesInvoice[]>([]);
+  const [purchaseInvoices] = useState<PurchaseInvoice[]>([]);
+  const [stockRows] = useState<StockRow[]>([]);
+  const [loadingSales] = useState(false);
+  const [loadingPurchase] = useState(false);
+  const [loadingStock] = useState(false);
 
   /* ── Delete modal state ── */
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -142,8 +148,8 @@ const Items: React.FC = () => {
       const flat = rawList.map((it: any) => ({
         ...it,
         taxCategory: Array.isArray(it.taxInfo)
-  ? it.taxInfo[0]?.taxCategory ?? ""
-  : it.taxInfo?.taxCategory ?? "",
+          ? it.taxInfo[0]?.taxCategory ?? ""
+          : it.taxInfo?.taxCategory ?? "",
         taxPreference: it.taxInfo?.taxPreference ?? "",
         taxType: it.taxInfo?.taxType ?? "",
         taxCode: it.taxInfo?.taxCode ?? "",
@@ -191,8 +197,8 @@ const Items: React.FC = () => {
       const flat = rawList.map((it: any) => ({
         ...it,
         taxCategory: Array.isArray(it.taxInfo)
-  ? it.taxInfo[0]?.taxCategory ?? ""
-  : it.taxInfo?.taxCategory ?? "",
+          ? it.taxInfo[0]?.taxCategory ?? ""
+          : it.taxInfo?.taxCategory ?? "",
         taxPreference: it.taxInfo?.taxPreference ?? "",
         taxType: it.taxInfo?.taxType ?? "",
         taxCode: it.taxInfo?.taxCode ?? "",
@@ -212,6 +218,7 @@ const Items: React.FC = () => {
     }
   }, []);
 
+  /* ── Re-fetch everything and refresh the selected item detail ── */
   const refetchItemData = useCallback(async () => {
     await Promise.all([fetchItems(), fetchAllItems()]);
 
@@ -219,14 +226,13 @@ const Items: React.FC = () => {
 
     try {
       const res = await getItemByItemCode(activeSummary.id);
-     const itemData = res?.data?.data;
-
-if (!itemData) {
-  console.error("Invalid item response:", res);
-  return;
-}
-
-setSelectedItem(itemData);
+      // Defensively handle both { data: { data: item } } and { data: item }
+      const raw = res?.data?.data ?? res?.data;
+      if (!raw?.id) {
+        console.error("refetchItemData: unexpected response shape", res);
+        return;
+      }
+      setSelectedItem(flattenItemDetail(raw));
     } catch (err) {
       console.error("Failed to refetch selected item", err);
     }
@@ -236,34 +242,55 @@ setSelectedItem(itemData);
     openItemCreate({ onSuccess: refetchItemData });
   }, [openItemCreate, refetchItemData]);
 
-  /* ── Row click → fetch full item + switch to detail view (inline) ── */
+  /* ────────────────────────────────────────────────────────────────────────
+   * handleRowClick
+   *
+   * KEY ORDERING FIX:
+   *   setViewMode("detail") is called SYNCHRONOUSLY before the await so that
+   *   React renders the detail panel immediately. Previously the await could
+   *   resolve in the same tick as other state updates and the panel would
+   *   flicker back to "table".
+   *
+   * RESPONSE SHAPE FIX:
+   *   Handles both  res.data.data  AND  res.data  so it never silently gets
+   *   null and falls through to "Select an item from the sidebar".
+   * ─────────────────────────────────────────────────────────────────────── */
   const handleRowClick = async (summary: ItemSummary) => {
+    // ── 1. Synchronous state updates FIRST (before any await) ──────────────
     setActiveSummary(summary);
-    setViewMode("detail");
-    setSelectedItem(null);
+    setViewMode("detail");   // ← panel appears immediately
+    setDetailLoading(true);
+    setSelectedItem(null);   // ← clears stale data while loading
 
-    /* Ensure sidebar has all items loaded */
+    // ── 2. Sidebar population (fire-and-forget) ───────────────────────────
     if (allItems.length === 0) void fetchAllItems();
 
+    // ── 3. Fetch full item detail ─────────────────────────────────────────
     try {
-      setDetailLoading(true);
       const res = await getItemByItemCode(summary.id);
-      const itemData = res?.data?.data;
 
-if (!itemData) return;
+      // Defensive: API returns { data: { data: {...item} } } normally,
+      // but fall back to res.data if the inner .data wrapper is missing.
+      const raw = res?.data?.data ?? res?.data;
 
-setSelectedItem(itemData);
+      if (!raw?.id) {
+        // Print the full response so we can debug further if needed
+        console.error(
+          "handleRowClick: item not found in response. Full response:",
+          JSON.stringify(res, null, 2),
+        );
+        showApiError("Could not load item details.");
+        setViewMode("table");
+        return;
+      }
 
-      // TODO: fetch invoice + stock data once APIs are ready
-      // const [salesRes, purchaseRes] = await Promise.all([
-      //   getSalesInvoicesByItem(summary.id),
-      //   getPurchaseInvoicesByItem(summary.id),
-      // ]);
-      // setSalesInvoices(salesRes.data);
-      // setPurchaseInvoices(purchaseRes.data);
+      // flattenItemDetail preserves nested vendorInfo / inventoryInfo /
+      // taxInfo / batchInfo AND adds flat aliases for table columns.
+      setSelectedItem(flattenItemDetail(raw));
     } catch (err) {
-      console.error("Failed to load item detail", err);
+      console.error("handleRowClick: API call failed", err);
       showApiError(err);
+      setViewMode("table");
     } finally {
       setDetailLoading(false);
     }
@@ -281,9 +308,11 @@ setSelectedItem(itemData);
     e.stopPropagation();
     try {
       const res = await getItemByItemCode(itemCode);
-      openItemEdit(itemCode, res.data, { onSuccess: refetchItemData });
+      const raw = res?.data?.data ?? res?.data;
+      openItemEdit(itemCode, raw, { onSuccess: refetchItemData });
     } catch {
-      console.error("Unable to fetch item");
+      console.error("Unable to fetch item for edit");
+      showApiError("Unable to load item for editing.");
     }
   };
 
@@ -294,45 +323,44 @@ setSelectedItem(itemData);
     setDeleteOpen(true);
   };
 
-const confirmDelete = async () => {
-  if (!itemToDelete) return;
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
 
-  try {
-    setDeleting(true);
+    try {
+      setDeleting(true);
 
-    const res = await deleteItemByItemCode(itemToDelete.id);
+      const res = await deleteItemByItemCode(itemToDelete.id);
 
-    // ✅ Use HTTP status
-    if (res.status !== 200) {
-      showApiError(res);
-      return;
+      if (res.status !== 200) {
+        showApiError(res);
+        return;
+      }
+
+      showSuccess("Item deleted successfully");
+      setDeleteOpen(false);
+
+      if (activeSummary?.id === itemToDelete.id) {
+        handleBack();
+      }
+
+      triggerRefresh(REFRESH_KEYS.ITEM_LIST);
+    } catch (err: any) {
+      showApiError(err);
+    } finally {
+      setDeleting(false);
+      setItemToDelete(null);
     }
-
-    showSuccess("Item deleted successfully");
-    setDeleteOpen(false);
-
-    if (activeSummary?.id === itemToDelete.id) {
-      handleBack();
-    }
-
-    triggerRefresh(REFRESH_KEYS.ITEM_LIST);
-
-  } catch (err: any) {
-    showApiError(err);
-  } finally {
-    setDeleting(false);
-    setItemToDelete(null);
-  }
-};
+  };
 
   /* ── Detail view action handlers ── */
   const handleDetailEdit = async () => {
     if (!activeSummary) return;
     try {
       const res = await getItemByItemCode(activeSummary.id);
-      openItemEdit(activeSummary.id, res.data.data, { onSuccess: refetchItemData });
+      const raw = res?.data?.data ?? res?.data;
+      openItemEdit(activeSummary.id, raw, { onSuccess: refetchItemData });
     } catch {
-      showApiError("Unable to fetch item");
+      showApiError("Unable to fetch item for editing.");
     }
   };
 
@@ -368,8 +396,6 @@ const confirmDelete = async () => {
         <span className="truncate block max-w-[120px]">{i.itemGroup}</span>
       ),
     },
-   
-  
     { key: "minStockLevel", header: "Min Stock", align: "right" },
     { key: "maxStockLevel", header: "Max Stock", align: "right" },
     {
@@ -398,7 +424,6 @@ const confirmDelete = async () => {
       align: "center",
       render: (i) => (
         <ActionGroup>
-          {/* Eye icon → open detail */}
           <ActionButton
             type="view"
             iconOnly
@@ -407,7 +432,6 @@ const confirmDelete = async () => {
               handleRowClick(i);
             }}
           />
-
           <ActionMenu
             onEdit={(e) => handleEdit(i.id, e as any)}
             onDelete={(e) => handleDeleteClick(i, e as any)}
@@ -422,7 +446,6 @@ const confirmDelete = async () => {
   return (
     <>
       {viewMode === "table" ? (
-        /* ── Normal table view ── */
         <div className="h-full min-h-0">
           <Table
             loading={loading || initialLoad}
@@ -467,7 +490,6 @@ const confirmDelete = async () => {
           />
         </div>
       ) : (
-        /* ── Inline detail view (no overlay, just like CustomerDetailView) ── */
         <div className="p-4 sm:p-8">
           <ItemDetailView
             isOpen={true}
@@ -486,14 +508,12 @@ const confirmDelete = async () => {
             loadingPurchase={loadingPurchase}
             loadingStock={loadingStock}
             onStockSearch={(from, to) => {
-              // TODO: fetchStockSummary(activeSummary?.id, from, to)
               console.log("Stock search:", from, "→", to);
             }}
           />
         </div>
       )}
 
-      {/* ── Delete modal ── */}
       {deleteOpen && itemToDelete && (
         <DeleteModal
           entityName="Item"

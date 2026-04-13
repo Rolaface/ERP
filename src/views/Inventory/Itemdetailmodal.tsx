@@ -258,13 +258,11 @@ const DatePicker = ({
 const TaxCard = ({ tax, index }: { tax: TaxInfo; index: number }) => {
   const [open, setOpen] = useState(true);
 
-  // Aggregate total rate across all rates in this config
   const rates = tax?.taxRates ?? [];
   const totalRate = rates.reduce((sum, r) => sum + (r?.tax_rate ?? 0), 0);
 
   return (
     <div className="border border-theme rounded-xl overflow-hidden">
-      {/* Header row */}
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
@@ -296,7 +294,6 @@ const TaxCard = ({ tax, index }: { tax: TaxInfo; index: number }) => {
         </div>
       </button>
 
-      {/* Expanded rate rows */}
       {open && rates.length > 0 && (
         <div className="divide-y divide-theme">
           {rates.map((rate, ri) => (
@@ -368,14 +365,21 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     () => new Date().toISOString().split("T")[0],
   );
 
-  // ── Derived / mapped values from new API shape ───────────────────────────
-  const preferredVendor = item?.vendorInfo?.preferredVendor ?? "";
+  // ── Derived values — read from NESTED API shape ──────────────────────────
+  // After flattenItemDetail in Items.tsx, item still has vendorInfo /
+  // inventoryInfo / taxInfo / batchInfo as nested objects, so these all work.
+  const preferredVendor =
+    item?.vendorInfo?.preferredVendor ??
+    (item as any)?.preferredVendor ??
+    "";
+
   const inventory = item?.inventoryInfo;
-  const taxInfoList =
-    item?.taxInfo?.map((t) => ({
-      ...t,
-      taxRates: t.taxRates ?? [],
-    })) ?? [];
+
+  // taxInfo is always an array from the API; guard for edge-cases.
+  const taxInfoList: TaxInfo[] = Array.isArray(item?.taxInfo)
+    ? item!.taxInfo.map((t) => ({ ...t, taxRates: t.taxRates ?? [] }))
+    : [];
+
   const batchInfo = item?.batchInfo;
 
   const packingDisplay =
@@ -577,7 +581,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
               }`}
             >
               {tab.label}
-              {/* Badge: tax count on Tax Config tab */}
               {tab.key === "tax" && taxInfoList.length > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-black leading-none">
                   {taxInfoList.length}
@@ -692,34 +695,57 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         icon={<Building2 size={13} />}
                         label="Vendor & Accounts"
                       />
+                      {/* ✅ FIX: reads from vendorInfo (nested) with flat fallback */}
                       <DetailField
                         label="Preferred Vendor"
-                        value={preferredVendor}
+                        value={
+                          item.vendorInfo?.preferredVendor ??
+                          (item as any).preferredVendor
+                        }
+                      />
+                      <DetailField
+                        label="Vendor Name"
+                        value={(item.vendorInfo as any)?.preferredVendorName}
                       />
                     </div>
 
                     {/* Inventory */}
                     <div className="bg-card border border-theme rounded-2xl p-5">
                       <CardLabel icon={<Boxes size={13} />} label="Inventory" />
+                      {/* ✅ FIX: reads from inventoryInfo (nested) */}
                       <DetailField
                         label="Valuation Method"
-                        value={inventory?.valuationMethod}
+                        value={
+                          inventory?.valuationMethod ??
+                          (item as any).valuationMethod
+                        }
                       />
                       <DetailField
                         label="Tracking Method"
-                        value={inventory?.trackingMethod}
+                        value={
+                          inventory?.trackingMethod ??
+                          (item as any).trackingMethod
+                        }
                       />
                       <DetailField
                         label="Min Stock Level"
-                        value={inventory?.minStockLevel}
+                        value={
+                          inventory?.minStockLevel ??
+                          (item as any).minStockLevel
+                        }
                       />
                       <DetailField
                         label="Max Stock Level"
-                        value={inventory?.maxStockLevel}
+                        value={
+                          inventory?.maxStockLevel ??
+                          (item as any).maxStockLevel
+                        }
                       />
                       <DetailField
                         label="Reorder Level"
-                        value={inventory?.reorderLevel}
+                        value={
+                          inventory?.reorderLevel ?? (item as any).reorderLevel
+                        }
                       />
                     </div>
 
@@ -789,7 +815,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
               {/* ════ TAX CONFIG ══════════════════════════════════════════ */}
               {activeTab === "tax" && (
                 <div className="space-y-4">
-                  {/* Summary banner */}
                   <div className="bg-card border border-theme rounded-2xl p-4 flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                       <Percent size={18} />
@@ -872,7 +897,13 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                           ].map((h, i) => (
                             <th
                               key={i}
-                              className={`px-4 py-3 text-[10px] font-black text-muted uppercase tracking-widest whitespace-nowrap ${i >= 3 && i <= 5 ? "text-right" : i === 6 ? "text-center" : "text-left"}`}
+                              className={`px-4 py-3 text-[10px] font-black text-muted uppercase tracking-widest whitespace-nowrap ${
+                                i >= 3 && i <= 5
+                                  ? "text-right"
+                                  : i === 6
+                                    ? "text-center"
+                                    : "text-left"
+                              }`}
                             >
                               {h}
                             </th>
@@ -966,7 +997,13 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                           ].map((h, i) => (
                             <th
                               key={i}
-                              className={`px-4 py-3 text-[10px] font-black text-muted uppercase tracking-widest whitespace-nowrap ${i >= 3 && i <= 5 ? "text-right" : i === 6 ? "text-center" : "text-left"}`}
+                              className={`px-4 py-3 text-[10px] font-black text-muted uppercase tracking-widest whitespace-nowrap ${
+                                i >= 3 && i <= 5
+                                  ? "text-right"
+                                  : i === 6
+                                    ? "text-center"
+                                    : "text-left"
+                              }`}
                             >
                               {h}
                             </th>
