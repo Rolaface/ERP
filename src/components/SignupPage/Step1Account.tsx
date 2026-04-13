@@ -1,193 +1,189 @@
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
 import FormFieldPro from "../Form/FormFieldV2";
 import ButtonPro from "../Form/ButtonPro";
+import { Eye, EyeOff } from "lucide-react";
 
-/* ---------------- Utils ---------------- */
-const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
+const PERSONAL_DOMAINS = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"];
 
-/* ---------------- Password Field ---------------- */
-function PasswordField({ value, error, onChange, inputRef }: any) {
-  const [show, setShow] = useState(false);
+export default function Step1Account({ form, update, next }: any) {
+  const [showPassword, setShowPassword] = useState(false);
 
-  const rules = [
-    { label: "At least 8 characters", valid: value.length >= 8 },
-    { label: "One number", valid: /\d/.test(value) },
-    { label: "One uppercase letter", valid: /[A-Z]/.test(value) },
-  ];
-
-  const strength = rules.filter((r) => r.valid).length;
-
-  const strengthColor =
-    strength === 1
-      ? "#ef4444"
-      : strength === 2
-      ? "#f59e0b"
-      : strength === 3
-      ? "#22c55e"
-      : "#e5e7eb";
-
-  return (
-    <div className="space-y-2">
-      <FormFieldPro
-        label="Password"
-        value={value}
-        error={error}
-        type={show ? "text" : "password"}
-        onChange={onChange}
-        inputRef={inputRef}
-        placeholder="Create a strong password"
-        rightElement={
-          <button
-            type="button"
-            onClick={() => setShow((p) => !p)}
-            className="text-muted hover:text-primary transition-colors"
-          >
-            {show ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-        }
-      />
-
-      {/* Strength Bar */}
-      <div className="h-1 rounded-full bg-muted overflow-hidden">
-        <motion.div
-          className="h-full"
-          animate={{
-            width: `${(strength / 3) * 100}%`,
-            backgroundColor: strengthColor,
-          }}
-        />
-      </div>
-
-      {/* Rules */}
-      <div className="space-y-1">
-        {rules.map((r, i) => (
-          <div
-            key={i}
-            className={`text-[10px] ${
-              r.valid ? "text-success" : "text-muted"
-            }`}
-          >
-            {r.valid ? "✓" : "○"} {r.label}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ---------------- Main ---------------- */
-export default function Step1Account({ form, errors, update, next }: any) {
-  const emailRef = useRef<any>(null);
-  const passwordRef = useRef<any>(null);
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    password: false,
+  });
 
   const [emailStatus, setEmailStatus] = useState<
-    "idle" | "loading" | "taken" | "valid"
+    "idle" | "checking" | "valid" | "personal"
   >("idle");
 
-  const [loading, setLoading] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
-  /* ---------------- Email Async Validation ---------------- */
   useEffect(() => {
-    if (!form.email || !isValidEmail(form.email)) {
+    nameRef.current?.focus();
+  }, []);
+
+  /* ---------------- VALIDATION ---------------- */
+
+  const isNameValid = form.fullName?.length > 2;
+
+  const isEmailFormatValid =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email || "");
+
+  useEffect(() => {
+    if (!isEmailFormatValid) {
       setEmailStatus("idle");
       return;
     }
 
-    setEmailStatus("loading");
+    setEmailStatus("checking");
 
-    const timer = setTimeout(() => {
-      if (form.email.includes("test")) {
-        setEmailStatus("taken");
+    const timeout = setTimeout(() => {
+      const domain = form.email.split("@")[1];
+
+      if (PERSONAL_DOMAINS.includes(domain)) {
+        setEmailStatus("personal");
       } else {
         setEmailStatus("valid");
       }
-    }, 500);
+    }, 600);
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(timeout);
   }, [form.email]);
 
-  /* ---------------- Validation ---------------- */
-  const isValid =
-    form.fullName &&
-    form.email &&
-    form.password &&
-    !errors.fullName &&
-    !errors.password &&
-    emailStatus === "valid";
+  const password = form.password || "";
 
-  /* ---------------- Handle Continue ---------------- */
-  const handleContinue = async () => {
-    if (!isValid) return;
-
-    setLoading(true);
-
-    // simulate async (API / navigation)
-    setTimeout(() => {
-      setLoading(false);
-      next();
-    }, 600);
+  const rules = {
+    length: password.length >= 8,
+    number: /\d/.test(password),
+    uppercase: /[A-Z]/.test(password),
   };
 
+  const passedRules = Object.values(rules).filter(Boolean).length;
+
+  const getStrength = () => {
+    if (passedRules === 0) return "";
+    if (passedRules === 1) return "Weak";
+    if (passedRules === 2) return "Medium";
+    return "Strong";
+  };
+
+  const strength = getStrength();
+
+  const isFormValid =
+    isNameValid &&
+    isEmailFormatValid &&
+    passedRules >= 2;
+
+  const isCheckingEmail = emailStatus === "checking";
+
+  /* ---------------- UX FLOW ---------------- */
+
+  const handleKeyDown = (e: any, nextRef?: any) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (nextRef) nextRef.current?.focus();
+      else if (isFormValid) next();
+    }
+  };
+
+  /* ---------------- RENDER ---------------- */
+
   return (
-    <div className="form-card-v2 motion-scale-in space-y-6">
-      {/* Header */}
-      <div className="space-y-1">
-        <h2 className="form-title-v2">Create your account</h2>
-        <p className="form-subtitle-v2">
-          Get started in under a minute
-        </p>
-      </div>
+    <div className="form-section">
 
-      {/* Form Fields */}
-      <div className="space-y-4">
-        <FormFieldPro
-          label="Full Name"
-          value={form.fullName}
-          error={errors.fullName}
-          successText="Nice! That works"
-          placeholder="Enter your full name"
-          onChange={(e: any) => update("fullName", e.target.value)}
-          onEnter={() => emailRef.current?.focus()}
-        />
+      <FormFieldPro
+        label="Full Name"
+        value={form.fullName}
+        inputRef={nameRef}
+        onKeyDown={(e: any) => handleKeyDown(e, emailRef)}
+        onChange={(e: any) => {
+          update("fullName", e.target.value);
+          setTouched((t) => ({ ...t, name: true }));
+        }}
+        placeholder="Enter your name"
+        success={touched.name && isNameValid}
+        error={
+          touched.name && !isNameValid
+            ? "Name must be at least 3 characters"
+            : ""
+        }
+      />
 
-        <FormFieldPro
-          label="Work Email"
-          value={form.email}
-          error={errors.email}
-          successText="Perfect, email looks valid"
-          placeholder="you@company.com"
-          asyncStatus={emailStatus}
-          onChange={(e: any) => update("email", e.target.value)}
-          inputRef={emailRef}
-          onEnter={() => passwordRef.current?.focus()}
-        />
+      <FormFieldPro
+        label="Work Email"
+        value={form.email}
+        inputRef={emailRef}
+        onKeyDown={(e: any) => handleKeyDown(e, passwordRef)}
+        onChange={(e: any) => {
+          update("email", e.target.value);
+          setTouched((t) => ({ ...t, email: true }));
+        }}
+        placeholder="you@company.com"
+        success={touched.email && isEmailFormatValid}
+        loading={emailStatus === "checking"}
+        error={
+          touched.email && !isEmailFormatValid
+            ? "Enter a valid email address"
+            : ""
+        }
+        helperText={
+          touched.email && emailStatus === "personal"
+            ? "Use your work email for better collaboration"
+            : ""
+        }
+      />
 
-        <PasswordField
-          value={form.password}
-          error={errors.password}
-          onChange={(e: any) => update("password", e.target.value)}
-          inputRef={passwordRef}
-        />
-      </div>
+      <FormFieldPro
+        label="Password"
+        type={showPassword ? "text" : "password"}
+        value={form.password}
+        inputRef={passwordRef}
+        onKeyDown={(e: any) => handleKeyDown(e)}
+        onChange={(e: any) => {
+          update("password", e.target.value);
+          setTouched((t) => ({ ...t, password: true }));
+        }}
+        placeholder="Create password"
+        success={touched.password && passedRules >= 2}
+        error={
+          touched.password && passedRules < 2
+            ? "Password is too weak"
+            : ""
+        }
+        helperText={
+          touched.password && strength
+            ? `Strength: ${strength}`
+            : ""
+        }
+        rightElement={
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="icon-button"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        }
+      />
 
-      {/* CTA */}
-      <div className="space-y-2">
+      <div className="form-footer">
         <ButtonPro
-          onClick={handleContinue}
-          disabled={!isValid}
-          loading={loading}
-          rightIcon={<ArrowRight size={14} />}
-          fullWidth
+          type="button"
+          onClick={next}
+          disabled={!isFormValid || isCheckingEmail}
         >
           Continue
         </ButtonPro>
 
-        <p className="text-center text-[10px] text-muted uppercase">
-          No credit card required
+        <p className="form-helper" style={{ textAlign: "center" }}>
+          No credit card required • We respect your privacy
         </p>
       </div>
+
     </div>
   );
 }

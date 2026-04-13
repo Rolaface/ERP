@@ -1,5 +1,6 @@
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import FormFieldPro from "../Form/FormFieldV2";
+import ButtonPro from "../Form/ButtonPro";
 
 export default function Step2Workspace({
   form,
@@ -13,21 +14,15 @@ export default function Step2Workspace({
   timezones,
   currencyOptions,
 }: any) {
-  // ---------------- SEARCHABLE DROPDOWN STATE ----------------
-
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [highlightIndex, setHighlightIndex] = useState(0);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ---------------- FILTER ----------------
-
   const filteredCountries = countryList.filter((c: string) =>
     c.toLowerCase().includes(search.toLowerCase())
   );
-
-  // ---------------- CLICK OUTSIDE ----------------
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -43,8 +38,6 @@ export default function Step2Workspace({
     return () =>
       document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // ---------------- KEYBOARD NAV ----------------
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!isOpen) return;
@@ -72,118 +65,112 @@ export default function Step2Workspace({
     }
   };
 
-  // ---------------- RENDER ----------------
+  const isValid =
+    form.company &&
+    form.abbr &&
+    form.country &&
+    form.timezone &&
+    form.currency &&
+    form.fyStart &&
+    form.fyEnd &&
+    form.chartOfAccounts &&
+    !errors.company &&
+    !errors.abbr &&
+    !errors.fyStart &&
+    !errors.fyEnd;
 
   return (
-    <div className="form-card motion-scale-in">
-      {/* Header */}
-      <div className="form-header">
-        <h2 className="form-title">Workspace Setup</h2>
-        <p className="form-subtitle">
-          Configure your company environment
-        </p>
+    <div className="form-section">
+
+      {/* Company + Abbreviation */}
+      <div className="form-row">
+        <FormFieldPro
+          label="Company Name"
+          value={form.company}
+          error={errors.company}
+          placeholder="Acme Corporation"
+          onChange={(e: any) => update("company", e.target.value)}
+        />
+
+        <FormFieldPro
+          label="Abbreviation"
+          value={form.abbr}
+          error={errors.abbr}
+          placeholder="ACME"
+          onChange={(e: any) =>
+            update("abbr", e.target.value.toUpperCase())
+          }
+        />
       </div>
 
-      {/* Form Section */}
-      <div className="form-section">
+      {/* Country + Timezone + Currency (SINGLE ROW) */}
+      <div className="form-row">
 
-        {/* Company + Abbreviation */}
-        <div className="form-row">
-          <div className="form-group">
-            <label className="label">Company Name</label>
-            <input
-              className={`input ${errors.company ? "input-error" : ""}`}
-              value={form.company}
-              onChange={(e) => update("company", e.target.value)}
-              placeholder="Acme Corporation"
-            />
-            {errors.company && (
-              <p className="error-text">{errors.company}</p>
-            )}
-          </div>
+        {/* COUNTRY */}
+        <div className="relative" ref={dropdownRef}>
+          <FormFieldPro
+            label="Country"
+            value={isOpen ? search : form.country}
+            placeholder={
+              countriesLoading
+                ? "Loading countries..."
+                : "Search country..."
+            }
+            onChange={(e: any) => {
+              setSearch(e.target.value);
+              setIsOpen(true);
+              setHighlightIndex(0);
+            }}
+            onKeyDown={handleKeyDown}
+            disabled={countriesLoading}
+            error={countriesError}
+            helperText={countriesError ? countriesError : ""}
+            rightElement={
+              <div
+                className="absolute inset-0 cursor-pointer"
+                onClick={() => setIsOpen(true)}
+              />
+            }
+          />
 
-          <div className="form-group">
-            <label className="label">Abbreviation</label>
-            <input
-              className={`input ${errors.abbr ? "input-error" : ""}`}
-              value={form.abbr}
-              onChange={(e) => update("abbr", e.target.value.toUpperCase())}
-              placeholder="ACME"
-            />
-            {errors.abbr && (
-              <p className="error-text">{errors.abbr}</p>
-            )}
-          </div>
-        </div>
+          {isOpen && !countriesLoading && (
+            <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-xl border bg-card shadow-md">
+              {!countriesError && filteredCountries.length === 0 && (
+                <div className="p-3 text-sm text-muted">
+                  No countries found
+                </div>
+              )}
 
-        {/* 🌍 COUNTRY SEARCHABLE */}
-        <div className="form-group">
-          <label className="label">Country</label>
-
-          {/* Error */}
-          {countriesError && (
-            <p className="error-text mb-2">{countriesError}</p>
-          )}
-
-          <div className="relative" ref={dropdownRef}>
-            {/* Input */}
-            <input
-              className="input"
-              placeholder={
-                countriesLoading ? "Loading countries..." : "Search country..."
-              }
-              value={isOpen ? search : form.country}
-              onFocus={() => setIsOpen(true)}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setIsOpen(true);
-                setHighlightIndex(0);
-              }}
-              onKeyDown={handleKeyDown}
-              disabled={countriesLoading}
-            />
-
-            {/* Dropdown */}
-            {isOpen && !countriesLoading && (
-              <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-xl border bg-white shadow-lg">
-
-                {/* No results */}
-                {!countriesError && filteredCountries.length === 0 && (
-                  <div className="p-3 text-sm text-muted">
-                    No countries found
+              {!countriesError &&
+                filteredCountries.map((c: string, i: number) => (
+                  <div
+                    key={c}
+                    onClick={() => {
+                      update("country", c);
+                      setIsOpen(false);
+                      setSearch("");
+                    }}
+                    className={`px-3 py-2 cursor-pointer text-sm ${
+                      i === highlightIndex
+                        ? "row-hover"
+                        : "hover:row-hover"
+                    }`}
+                  >
+                    {c}
                   </div>
-                )}
-
-                {/* Options */}
-                {!countriesError &&
-                  filteredCountries.map((c: string, i: number) => (
-                    <div
-                      key={c}
-                      onClick={() => {
-                        update("country", c);
-                        setIsOpen(false);
-                        setSearch("");
-                      }}
-                      className={`px-3 py-2 cursor-pointer text-sm ${
-                        i === highlightIndex
-                          ? "bg-gray-100"
-                          : "hover:bg-gray-50"
-                      }`}
-                    >
-                      {c}
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
+                ))}
+            </div>
+          )}
         </div>
 
-        {/* Timezone + Currency */}
-        <div className="form-row">
-          <div className="form-group">
-            <label className="label">Timezone</label>
+        {/* TIMEZONE */}
+        <FormFieldPro
+          label="Timezone"
+          value={form.timezone}
+          onChange={(e: any) => update("timezone", e.target.value)}
+          rightElement={
             <select
-              className="input"
+              className="absolute inset-0 opacity-0 cursor-pointer"
               value={form.timezone}
               onChange={(e) => update("timezone", e.target.value)}
             >
@@ -191,12 +178,17 @@ export default function Step2Workspace({
                 <option key={t}>{t}</option>
               ))}
             </select>
-          </div>
+          }
+        />
 
-          <div className="form-group">
-            <label className="label">Currency</label>
+        {/* CURRENCY */}
+        <FormFieldPro
+          label="Currency"
+          value={form.currency}
+          onChange={(e: any) => update("currency", e.target.value)}
+          rightElement={
             <select
-              className="input"
+              className="absolute inset-0 opacity-0 cursor-pointer"
               value={form.currency}
               onChange={(e) => update("currency", e.target.value)}
             >
@@ -204,46 +196,49 @@ export default function Step2Workspace({
                 <option key={c}>{c}</option>
               ))}
             </select>
-          </div>
-        </div>
-
-        {/* Financial Year */}
-        <div className="form-group">
-          <label className="label">Financial Year</label>
-          <div className="form-row">
-            <input
-              type="date"
-              className={`input ${errors.fyStart ? "input-error" : ""}`}
-              value={form.fyStart}
-              onChange={(e) => update("fyStart", e.target.value)}
-            />
-            <input
-              type="date"
-              className={`input ${errors.fyEnd ? "input-error" : ""}`}
-              value={form.fyEnd}
-              onChange={(e) => update("fyEnd", e.target.value)}
-            />
-          </div>
-        </div>
+          }
+        />
       </div>
 
-      {/* Footer */}
-      <div className="form-footer flex gap-3">
-        <button
-          onClick={back}
-          className="btn btn-outline flex items-center gap-2"
-        >
-          <ArrowLeft size={14} />
-          Back
-        </button>
+      {/* Charts of Account */}
+      <FormFieldPro
+        label="Charts of Account"
+        value={form.chartOfAccounts || "Standard"}
+        onChange={(e: any) =>
+          update("chartOfAccounts", e.target.value)
+        }
+      />
 
-        <button
-          onClick={next}
-          className="btn btn-primary flex-1 flex items-center justify-center gap-2"
-        >
-          Continue
-          <ArrowRight size={16} />
-        </button>
+      {/* Financial Year */}
+      <div className="form-row">
+        <FormFieldPro
+          label="Financial Year From"
+          type="date"
+          value={form.fyStart}
+          onChange={(e: any) => update("fyStart", e.target.value)}
+          error={errors.fyStart}
+        />
+
+        <FormFieldPro
+          label="Financial Year To"
+          type="date"
+          value={form.fyEnd}
+          onChange={(e: any) => update("fyEnd", e.target.value)}
+          error={errors.fyEnd}
+        />
+      </div>
+
+      {/* CTA */}
+      <div className="form-footer">
+        <div className="flex gap-3">
+          <ButtonPro onClick={back}>
+            Back
+          </ButtonPro>
+
+          <ButtonPro onClick={next} disabled={!isValid}>
+            Continue
+          </ButtonPro>
+        </div>
       </div>
     </div>
   );
