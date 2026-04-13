@@ -71,6 +71,14 @@
 
 /* Form Tokens */
 :root {
+
+  --form-radius: 16px;
+  --form-padding: 24px;
+  --form-max-width: 480px;
+
+  --form-gap-field: 16px;
+  --form-gap-micro: 6px;
+
   /* Field Structure */
   --field-padding-x: 0.25rem;
   --field-padding-y: 0.75rem;
@@ -409,9 +417,7 @@
   --row-hover: #f1f5f9; /* subtle slate hover */
 
   /* OPTIONAL ENHANCEMENTS (matches your UI feel) */
-  --input-bg: #ffffff;
-  --input-border: #e5e7eb;
-  --input-focus: rgba(79, 70, 229, 0.2); /* indigo glow */
+  --input-focus-ring: rgba(79, 70, 229, 0.2); /* indigo glow */
 
   /* SUCCESS SCREEN / ACCENTS */
   --accent-soft: #eef2ff; /* indigo-50 */
@@ -497,37 +503,7 @@
     box-shadow: var(--shadow-md);
   }
 
-  /* Input Field */
-  .input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--field-border);
-    padding: var(--field-padding-y) var(--field-padding-x);
-    font-size: var(--text-md);
-    color: var(--text);
-
-    transition:
-      border-color var(--motion-fast) var(--ease-standard),
-      box-shadow var(--motion-fast) var(--ease-standard),
-      transform var(--motion-fast) var(--ease-standard);
-  }
-
-  .input::placeholder {
-    color: var(--muted);
-    opacity: 0.6;
-  }
-
-  .input:focus {
-    outline: none;
-    border-bottom: 1px solid var(--field-border-focus);
-    box-shadow: var(--focus-ring-primary);
-    transform: translateY(-1px);
-  }
-
-  .input-error {
-    border-bottom: 1px solid var(--field-border-error);
-  }
+  
 
   /* Label */
   .label {
@@ -553,17 +529,6 @@
     gap: 6px;
   }
 
-  /* Form Card */
-  .form-card {
-    background: linear-gradient(to bottom, var(--card), rgba(0, 0, 0, 0.02));
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 32px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-  }
 
   /* Higher-level composed UI */
   /* Form Section (group of fields) */
@@ -617,39 +582,10 @@
   }
 
 
-:root {
-  /* ---------------- SPACING SYSTEM ---------------- */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 12px;
-  --space-lg: 16px;
-  --space-xl: 24px;
-  --space-2xl: 32px;
-
-  /* ---------------- FORM SYSTEM ---------------- */
-  --form-gap-field: var(--space-lg);     /* between fields */
-  --form-gap-inner: var(--space-sm);     /* label → input */
-  --form-gap-micro: var(--space-xs);     /* input → helper */
-
-  --form-padding: 32px;
-  --form-radius: 28px;
-  --form-max-width: 420px;
-
-  /* ---------------- TYPOGRAPHY ---------------- */
-  --label-size: 11px;
-  --helper-size: 11px;
-
-  /* ---------------- COLORS (mapped to your tailwind theme) ---------------- */
-  --input-bg: #f5f3f4;
-  --input-border: transparent;
-  --input-focus: rgba(32, 67, 133, 0.2);
-
-  --text-muted: #6b7280;
-}
 
 /* ---------------- CARD ---------------- */
 .form-card {
-  background: white;
+  background: var(--card);
   border-radius: var(--form-radius);
   padding: var(--form-padding);
   max-width: var(--form-max-width);
@@ -665,12 +601,7 @@
     0px 10px 40px rgba(0,0,0,0.06);
 }
 
-/* ---------------- GROUP ---------------- */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--form-gap-inner);
-}
+
 
 /* ---------------- LABEL ---------------- */
 .form-label {
@@ -678,35 +609,185 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--muted);
+  margin-left: 4px;
 }
 
 /* ---------------- INPUT ---------------- */
 .input-base {
   width: 100%;
-  background: var(--input-bg);
-  border-radius: var(--input-radius);
-  padding: var(--input-padding-y) var(--input-padding-x);
 
+  /* Layout */
+  padding: var(--input-padding-y) var(--input-padding-x);
+  border-radius: var(--input-radius);
+
+  /* Typography */
   font-size: 14px;
   font-weight: 500;
   color: var(--input-text);
 
+  /* Visual */
+  background: var(--input-bg);
   border: 1px solid var(--input-border);
+
+  /* UX */
   outline: none;
+  transition: var(--input-transition);
+
+  /* Fix browser styles */
+  appearance: none;
+}
+
+/* =========================================
+   INPUT VARIANTS
+========================================= */
+
+/* Default = outline (already handled by .input-base) */
+
+/* Filled */
+.input-filled {
+  background: var(--input-bg-filled);
+  border-color: transparent;
+}
+
+.input-filled:hover {
+  background: var(--input-bg);
+}
+
+/* Ghost (minimal UI like Stripe inline fields) */
+.input-ghost {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--input-border);
+  border-radius: 0;
+}
+
+.input-ghost:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: none;
+}
+
+/* =========================================
+   FLOATING LABEL
+========================================= */
+
+.form-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Input wrapper needed */
+.input-wrapper {
+  position: relative;
+}
+
+/* Floating label */
+.floating-label {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--muted);
+  pointer-events: none;
 
   transition: var(--input-transition);
 }
 
-.input-base:focus {
-  box-shadow: 0 0 0 2px var(--input-focus);
+/* Move up on focus or when filled */
+.input-base:focus + .floating-label,
+.input-base:not(:placeholder-shown) + .floating-label {
+  top: 6px;
+  font-size: 11px;
+  color: var(--primary);
 }
+
+/* Background fix (for card overlap look) */
+.floating-label::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--card);
+  z-index: -1;
+  padding: 0 4px;
+}
+
+/* =========================================
+   VALIDATION STATES
+========================================= */
+
+/* ERROR */
+.input-base.error {
+  border-color: var(--input-border-error);
+  background: var(--input-bg-error);
+}
+
+.input-base.error:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+/* SUCCESS */
+.input-base.success {
+  border-color: var(--success);
+}
+
+.input-base.success:focus {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+/* Helper text variations */
+.form-helper.error {
+  color: var(--danger);
+}
+
+.form-helper.success {
+  color: var(--success);
+}
+
+/* Placeholder */
+.input-base::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+/* Hover */
+.input-base:hover {
+  border-color: var(--input-border-hover);
+}
+
+/* Focus (Stripe-level) */
+.input-base:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 3px var(--input-focus-ring);
+}
+
+/* Filled state */
+.input-base:not(:placeholder-shown) {
+  background: var(--input-bg-filled);
+}
+
+/* Error */
+.input-base.error {
+  border-color: var(--input-border-error);
+  background: var(--input-bg-error);
+}
+
+/* Disabled */
+.input-base:disabled {
+  background: var(--input-bg-disabled);
+  color: var(--input-text-disabled);
+  cursor: not-allowed;
+}
+
+
+
 
 /* ---------------- HELPER ---------------- */
 .form-helper {
   font-size: var(--helper-size);
   margin-top: var(--form-gap-micro);
-  color: var(--text-muted);
+  color: var(--muted);
 }
 
 }
@@ -767,6 +848,12 @@
 
   .motion-hover-scale:hover {
     transform: scale(var(--scale-hover));
+  }
+
+  /* ---------------- INTERACTION UTILITIES ---------------- */
+  .non-interactive {
+    cursor: default;
+    pointer-events: none;
   }
 }
 
@@ -924,65 +1011,6 @@ h4 {
 .nav-link.active {
   background: var(--primary-600);
   color: #fff;
-}
-
-/* form-field.css */
-.form-label {
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-
-.form-input {
-  height: 32px;
-  font-size: 14px;
-  padding: 0 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--card);
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1px var(--primary);
-}
-
-/* Input Fields & Forms */
-.login-page input,
-.signup-page input,
-.landing-page input,
-.login-page select,
-.signup-page select,
-.landing-page select,
-.login-page textarea,
-.signup-page textarea,
-.landing-page textarea {
-  width: 100%;
-  padding: var(--density-padding-md);
-  border: 1px solid var(--border);
-  border-radius: var(--density-radius);
-  background: var(--bg);
-  color: var(--text);
-  margin-bottom: var(--density-gap);
-  font-size: var(--text-md);
-  font-family: var(--font-body);
-}
-
-.login-page input:focus,
-.signup-page input:focus,
-.landing-page input:focus,
-.login-page select:focus,
-.signup-page select:focus,
-.landing-page select:focus,
-.login-page textarea:focus,
-.signup-page textarea:focus,
-.landing-page textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-  outline: none;
 }
 
 /* Form Buttons */
@@ -1148,13 +1176,6 @@ input[type=number]::-webkit-inner-spin-button {
 .bg-draft {
   background: #6b7280 !important;
   color: #f3f4f6 !important;
-}
-
-/* Chrome, Safari, Edge */
-.no-spinner::-webkit-outer-spin-button,
-.no-spinner::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
 }
 
 /* Firefox */
