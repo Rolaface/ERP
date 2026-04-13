@@ -94,6 +94,39 @@
 }
 
 /* =========================================
+   FORM TOKENS (THEME-AWARE)
+========================================= */
+:root {
+  /* ---------------- BASE INPUT ---------------- */
+  --input-bg: var(--input-bg-raw, #f8fafc);
+  --input-border: var(--input-border-raw, #e2e8f0);
+  --input-text: var(--text);
+
+  /* ---------------- STATES ---------------- */
+  --input-border-hover: var(--input-border-hover-raw, #cbd5e1);
+  --input-border-focus: var(--primary);
+  --input-focus-ring: var(--input-focus-ring-raw, rgba(99, 102, 241, 0.15));
+
+  --input-bg-filled: var(--input-bg-filled-raw, #f1f5f9);
+
+  /* ---------------- ERROR ---------------- */
+  --input-border-error: var(--danger);
+  --input-bg-error: var(--input-bg-error-raw, #fef2f2);
+
+  /* ---------------- DISABLED ---------------- */
+  --input-bg-disabled: #f1f5f9;
+  --input-text-disabled: #94a3b8;
+
+  /* ---------------- STRUCTURE ---------------- */
+  --input-radius: 12px;
+  --input-padding-x: 16px;
+  --input-padding-y: 14px;
+
+  /* ---------------- MOTION ---------------- */
+  --input-transition: all 0.2s ease;
+}
+
+/* =========================================
    MOTION TOKENS
    (Add BELOW Form Tokens)
 ========================================= */
@@ -552,6 +585,98 @@
   .form-row > * {
     flex: 1;
   }
+
+
+:root {
+  /* ---------------- SPACING SYSTEM ---------------- */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  /* ---------------- FORM SYSTEM ---------------- */
+  --form-gap-field: var(--space-lg);     /* between fields */
+  --form-gap-inner: var(--space-sm);     /* label → input */
+  --form-gap-micro: var(--space-xs);     /* input → helper */
+
+  --form-padding: 32px;
+  --form-radius: 28px;
+  --form-max-width: 420px;
+
+  /* ---------------- TYPOGRAPHY ---------------- */
+  --label-size: 11px;
+  --helper-size: 11px;
+
+  /* ---------------- COLORS (mapped to your tailwind theme) ---------------- */
+  --input-bg: #f5f3f4;
+  --input-border: transparent;
+  --input-focus: rgba(32, 67, 133, 0.2);
+
+  --text-muted: #6b7280;
+}
+
+/* ---------------- CARD ---------------- */
+.form-card {
+  background: white;
+  border-radius: var(--form-radius);
+  padding: var(--form-padding);
+  max-width: var(--form-max-width);
+  width: 100%;
+  margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-gap-field);
+
+  box-shadow:
+    0px 4px 20px rgba(0,0,0,0.04),
+    0px 10px 40px rgba(0,0,0,0.06);
+}
+
+/* ---------------- GROUP ---------------- */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-gap-inner);
+}
+
+/* ---------------- LABEL ---------------- */
+.form-label {
+  font-size: var(--label-size);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* ---------------- INPUT ---------------- */
+.input-base {
+  width: 100%;
+  background: var(--input-bg);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 500;
+
+  border: 1px solid var(--input-border);
+  outline: none;
+
+  transition: all 0.2s ease;
+}
+
+.input-base:focus {
+  box-shadow: 0 0 0 2px var(--input-focus);
+}
+
+/* ---------------- HELPER ---------------- */
+.form-helper {
+  font-size: var(--helper-size);
+  margin-top: var(--form-gap-micro);
+  color: var(--text-muted);
+}
+
 }
 
 @layer utilities {
