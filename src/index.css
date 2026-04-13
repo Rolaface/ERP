@@ -850,11 +850,15 @@
     transform: scale(var(--scale-hover));
   }
 
-  /* ---------------- INTERACTION UTILITIES ---------------- */
-  .non-interactive {
-    cursor: default;
-    pointer-events: none;
-  }
+  /* Interaction system */
+.non-interactive {
+  cursor: default;
+  pointer-events: none;
+}
+
+.cursor-default-only {
+  cursor: default;
+}
 }
 
 /* =========================================
