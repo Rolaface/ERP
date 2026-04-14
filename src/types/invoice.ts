@@ -22,8 +22,8 @@ export interface Invoice {
   lpoNumber?: string;
    updateStock?: boolean
   warehouse?: string
-  billingAddress: Address;
-  shippingAddress: Address;
+billingAddress: string;
+shippingAddress: string;
   paymentInformation: PaymentInformation;
   industryBases?: string;
   items: InvoiceItem[];
@@ -34,6 +34,12 @@ export interface Invoice {
     charge_type: string;
     amount: string;
   }[];
+  addresses?: {
+  companyBillingAddress?: any;
+  supplierAddress?: any;
+  shippingAddress?: any;
+  dispatchAddress?: any;
+};
 }
 
 export interface InvoiceSummary {

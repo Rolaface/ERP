@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { ToolCase } from "lucide-react";
 import { FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import { showApiError, showValidationError } from "../../utils/alert";
@@ -14,7 +13,6 @@ import WarehouseSelect from "../selects/WarehouseSelect";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { AddressTab } from "../procurement/purchaseinvoice/AddressTab";
-import { useAddressLogic } from "../../hooks/useAddressLogic";
 import {
   invoiceStatusOptions,
   currencySymbols,
@@ -22,11 +20,11 @@ import {
   currencyOptions,
 } from "../../constants/invoice.constants";
 import PaymentInfoBlock from "./PaymentInfoBlock";
-import AddressBlock from "../ui/modal/AddressBlock";
-import { formatDate } from "../../utils/dateFormatter";
 import Tooltip from "../Tooltip";
 import ItemTable from "../common/ItemTable";
 import type { ModalSubmitHandler } from "../../types/modal";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -36,7 +34,10 @@ interface InvoiceModalProps {
   mode?: "create" | "edit";
   modalId?: string;
 }
+
 const ITEMS_PER_PAGE = 5;
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const InvoiceModal: React.FC<InvoiceModalProps> = ({
   isOpen,
@@ -51,9 +52,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     (mode === "edit" && initialData?.invoiceNumber
       ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
       : `invoice-create-${Date.now()}`);
-  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [submitting, setSubmitting] = useState(false);
+
   const {
     formData,
     customerDetails,
@@ -69,12 +71,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     mode === "edit" ? "edit" : "invoice",
     initialData,
   );
+
   const primaryContact =
     customerDetails?.contacts?.find((c: any) => c.isPrimary) || {};
   const billingAddress =
     customerDetails?.addresses?.find((a: any) => a.type === "Billing") || {};
+  const [customShippingRule, setCustomShippingRule] = useState("");
+  const [customIncoterm, setCustomIncoterm] = useState("");
 
-  // Removed allowSubmit state, no longer needed.
   const tabs: Array<"details" | "address" | "otherCharges" | "terms"> = [
     "details",
     "address",
@@ -82,24 +86,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     "terms",
   ];
 
-  const validateDetailsOrFocus = () => {
-    try {
-      actions.validateForm();
-      return true;
-    } catch (err: any) {
-      ui.setActiveTab("details");
-      showValidationError(err.message);
-      return false;
-    }
-  };
-
-const handleNext = () => {
-  const currentIndex = tabs.indexOf(ui.activeTab as any);
-
-  if (currentIndex < tabs.length - 1) {
-    ui.setActiveTab(tabs[currentIndex + 1]);
-  }
-};
+  // Reset to details tab when modal opens
   useEffect(() => {
     if (isOpen) {
       ui.setActiveTab("details");
@@ -112,47 +99,80 @@ const handleNext = () => {
     !!formData.currencyCode &&
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
-  const showExportField = ui.isExport;
-  const handleSubmitForm = async () => {
-    if (submitting) return;
 
+  // ─── Submit handler ──────────────────────────────────────────────────────────
+  // Calls hook's handleSubmit (which validates + builds API payload), then
+  // passes the result up to the parent via onSubmit.
+
+  const handleSubmitForm = async () => {
+    console.log(">>> INVOICE MODAL: handleSubmitForm started, submitting =", submitting);
+    if (submitting) {
+      console.log(">>> INVOICE MODAL: Already submitting, returning early");
+      return;
+    }
+    
+    console.log(">>> INVOICE MODAL: Setting submitting to true");
     setSubmitting(true);
+    
     try {
-      const payload = await actions.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      console.log(">>> INVOICE MODAL: Calling actions.handleSubmit...");
+      // actions.handleSubmit validates and returns the mapped API payload
+      const payload = await actions.handleSubmit({
+        preventDefault: () => {},
+      } as React.FormEvent);
+
+      console.log(">>> INVOICE MODAL: actions.handleSubmit returned:", payload);
+      
       if (!payload) {
-        showValidationError("Please fill all required fields correctly.");
+        console.log(">>> INVOICE MODAL: No payload - validation failed! returning early WITHOUT closing modal");
+        // Validation error was already shown inside handleSubmit
         return;
       }
 
-      payload.invoiceCharges = (payload.invoiceCharges || []).filter(
-        (ch: any) => ch.charge_type?.trim() && Number(ch.amount) > 0,
-      );
-
+      console.log(">>> INVOICE MODAL: Payload valid, calling onSubmit prop...");
       const didSave = await onSubmit?.(payload);
+      console.log(">>> INVOICE MODAL: onSubmit returned:", didSave);
+      
       if (didSave !== false) {
+        console.log(">>> INVOICE MODAL: Save succeeded, calling resetDirty()");
         resetDirty();
+      } else {
+        console.log(">>> INVOICE MODAL: Save returned false, NOT calling resetDirty()");
       }
     } catch (err: any) {
+      console.error(">>> INVOICE MODAL: Submit error caught:", err);
       showApiError(err);
     } finally {
+      console.log(">>> INVOICE MODAL: Finally block, setting submitting to false");
       setSubmitting(false);
     }
   };
 
-const footerContent = (
+  const handleNext = () => {
+    const currentIndex = tabs.indexOf(ui.activeTab as any);
+    if (currentIndex < tabs.length - 1) {
+      ui.setActiveTab(tabs[currentIndex + 1]);
+    }
+  };
+
+  // ─── Footer ──────────────────────────────────────────────────────────────────
+
+  const footerContent = (
     <ModalFooter
       onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       onReset={async () => {
         resetDirty();
         await actions.handleReset();
       }}
-      onSave={handleSubmitForm}
+      onSubmit={handleSubmitForm}
       onNext={handleNext}
       currentTab={tabs.indexOf(ui.activeTab)}
       totalTabs={tabs.length}
       saving={submitting}
     />
   );
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <MinimizableModal
@@ -172,7 +192,7 @@ const footerContent = (
         autoComplete="off"
         onChange={() => markDirty()}
       >
-        {/* Tabs */}
+        {/* ── Tabs ── */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
             {(["details", "address", "otherCharges", "terms"] as const).map(
@@ -182,11 +202,11 @@ const footerContent = (
                   type="button"
                   onClick={() => ui.setActiveTab(tab)}
                   className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all 
-              ${
-                ui.activeTab === tab
-                  ? "text-primary border-b-[3px] border-primary"
-                  : "text-muted border-b-[3px] border-transparent hover:text-main"
-              }`}
+                    ${
+                      ui.activeTab === tab
+                        ? "text-primary border-b-[3px] border-primary"
+                        : "text-muted border-b-[3px] border-transparent hover:text-main"
+                    }`}
                 >
                   {tab === "details" && "Details"}
                   {tab === "address" && "Additional Details"}
@@ -198,22 +218,24 @@ const footerContent = (
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-3 ">
-          {/* DETAILS */}
+        {/* ── Tab Content ── */}
+        <div className="flex-1 overflow-y-auto px-5 py-3">
+
+          {/* ──────────── DETAILS ──────────── */}
           {ui.activeTab === "details" && (
             <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
-              <div className="">
+              {/* Top fields row */}
+              <div>
                 <div
-                  className={`grid ${
+                  className={`grid gap-3 items-start ${
                     showExchangeRate
-                      ? showExportField
+                      ? ui.isExport
                         ? "grid-cols-[220px_130px_130px_100px_80px_100px_90px_250px_100px]"
                         : "grid-cols-[220px_130px_130px_100px_100px_120px_120px_100px]"
-                      : showExportField
+                      : ui.isExport
                         ? "grid-cols-[220px_130px_130px_100px_80px_120px_140px_100px]"
                         : "grid-cols-[220px_130px_130px_100px_100px_120px_100px]"
-                  } gap-3 items-start`}
+                  }`}
                 >
                   <CustomerSelect
                     value={customerNameDisplay}
@@ -227,9 +249,7 @@ const footerContent = (
                     value={formData.dateOfInvoice}
                     required
                     onChange={(name, value) =>
-                      actions.handleInputChange({
-                        target: { name, value },
-                      } as any)
+                      actions.handleInputChange({ target: { name, value } } as any)
                     }
                   />
 
@@ -237,12 +257,10 @@ const footerContent = (
                     label="Due Date"
                     name="dueDate"
                     value={formData.dueDate}
-                    onChange={(name, value) =>
-                      actions.handleInputChange({
-                        target: { name, value },
-                      } as any)
-                    }
                     required
+                    onChange={(name, value) =>
+                      actions.handleInputChange({ target: { name, value } } as any)
+                    }
                   />
 
                   <ModalSelect
@@ -252,7 +270,7 @@ const footerContent = (
                     onChange={actions.handleInputChange}
                     options={[...currencyOptions]}
                     disabled
-                    className="w-full  border border-theme rounded text-[11px] text-main bg-card"
+                    className="w-full border border-theme rounded text-[11px] text-main bg-card"
                   />
 
                   {showExchangeRate && (
@@ -290,15 +308,14 @@ const footerContent = (
                     label="Payment Method"
                     name="paymentMethod"
                     value={formData.paymentInformation?.paymentMethod}
-                    onChange={(
-                      e: React.ChangeEvent<
-                        HTMLInputElement | HTMLSelectElement
-                      >,
-                    ) => actions.handleInputChange(e, "paymentInformation")}
+                    onChange={(e) =>
+                      actions.handleInputChange(e, "paymentInformation")
+                    }
                     options={[...paymentMethodOptions]}
                     required
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
+
                   <div className="flex items-end gap-4 min-w-[120px]">
                     <Tooltip
                       content={`Select Warehouse for the Invoice. Current selection: ${formData.warehouse || "N/A"}`}
@@ -307,19 +324,13 @@ const footerContent = (
                         className="w-[150px]"
                         name="warehouse"
                         value={formData.warehouse || ""}
-                        onChange={(e) => {
-                          actions.handleBulkItemChange(
-                            "warehouse",
-                            e.target.value,
-                          );
-                        }}
+                        onChange={(e) =>
+                          actions.handleBulkItemChange("warehouse", e.target.value)
+                        }
                         label="Warehouse"
                         onDefaultLoad={(firstWarehouse) => {
                           if (!formData.warehouse) {
-                            actions.handleBulkItemChange(
-                              "warehouse",
-                              firstWarehouse,
-                            );
+                            actions.handleBulkItemChange("warehouse", firstWarehouse);
                           }
                         }}
                       />
@@ -351,38 +362,10 @@ const footerContent = (
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   )}
-                  {/* {ui.isExport && (
-                    <ModalInput
-                      label="Customer Country"
-                      name="destnCountryCd"
-                      type="text"
-                      value={formData.destnCountryCd}
-                      onChange={actions.handleInputChange}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  )} */}
-                  {/* <ModalInput
-                  label="Shipping Charges"
-                  name="shippingCharges"
-                  value={formData.shippingCharges}
-                  onChange={actions.handleInputChange}
-                  placeholder="2000-"
-                  inputMode="numeric"
-                  className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                    <ModalInput
-                  label="Insurance Charges"
-                  name="insuranceCharges"
-                  value={formData.insuranceCharges}
-                  onChange={actions.handleInputChange}
-                  placeholder="2000-"
-                  inputMode="numeric"
-                  className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                  /> */}
                 </div>
               </div>
 
-              {/* ITEMS */}
+              {/* Items + Summary */}
               <div className="grid grid-cols-[4fr_1fr] gap-4 items-start">
                 <ItemTable
                   paginatedItems={paginatedItems}
@@ -393,43 +376,32 @@ const footerContent = (
                   ITEMS_PER_PAGE={ITEMS_PER_PAGE}
                 />
 
-                {/* RIGHT SIDE */}
+                {/* Right panel: Customer Details + Summary */}
                 <div className="col-span-1 sticky top-0 flex flex-col items-center gap-4 px-3 lg:px-4 h-fit">
+                  {/* Customer Details */}
                   <div className="bg-card rounded-lg p-2 w-[220px]">
                     <h3 className="text-[12px] font-semibold text-main mb-2">
                       Customer Details
                     </h3>
-
                     <div className="flex flex-col gap-2 text-xs">
-                      {/* NAME */}
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-muted" />
                         {customerDetails?.name ?? "Customer Name"}
                       </div>
-
-                      {/* EMAIL */}
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Mail size={12} />
                         {primaryContact?.email || customerDetails?.email || ""}
                       </div>
-
-                      {/* MOBILE */}
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Phone size={12} />
-                        {primaryContact?.mobile ||
-                          customerDetails?.mobile ||
-                          ""}
+                        {primaryContact?.mobile || customerDetails?.mobile || ""}
                       </div>
-
-                      {/* ✅ TAX CATEGORY */}
                       <div className="flex justify-between text-[10px] mt-1">
                         <span className="text-muted">Tax</span>
                         <span className="text-main font-medium">
                           {customerDetails?.customerTaxCategory || "-"}
                         </span>
                       </div>
-
-                      {/* ✅ COUNTRY */}
                       <div className="flex justify-between text-[10px]">
                         <span className="text-muted">Country</span>
                         <span className="text-main font-medium">
@@ -439,11 +411,11 @@ const footerContent = (
                     </div>
                   </div>
 
+                  {/* Summary */}
                   <div className="bg-card rounded-lg p-3 w-[220px]">
                     <h3 className="text-[13px] font-semibold text-main mb-2">
                       Summary
                     </h3>
-
                     <div className="flex flex-col gap-2">
                       <div className="flex justify-between text-xs">
                         <span className="text-muted">Total Items</span>
@@ -451,27 +423,18 @@ const footerContent = (
                           {formData.items.length}
                         </span>
                       </div>
-
                       <div className="flex justify-between text-xs">
                         <span className="text-muted">Subtotal</span>
                         <span className="font-medium text-main">
                           {symbol} {totals.subTotal.toFixed(2)}
                         </span>
                       </div>
-
                       <div className="flex justify-between text-xs">
                         <span className="text-muted">Total Tax</span>
                         <span className="font-medium text-main">
                           {symbol} {totals.totalTax.toFixed(2)}
                         </span>
                       </div>
-                      {/* <div className="flex justify-between text-xs">
-                        <span className="text-muted">Shipping Charges</span>
-                        <span className="font-medium text-main">
-                          {symbol} {formData.shippingCharges}
-                        </span>
-                      </div> */}
-
                       <div className="mt-2 p-2 bg-primary rounded-lg">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-semibold text-white">
@@ -489,16 +452,41 @@ const footerContent = (
             </div>
           )}
 
-          {/* TERMS */}
-          {ui.activeTab === "terms" && (
-            <div className="h-full w-full">
-              <TermsAndCondition
-                terms={formData.terms?.selling}
-                setTerms={actions.setTerms}
-                type="selling"
+          {/* ──────────── ADDITIONAL DETAILS (Address) ──────────── */}
+          {ui.activeTab === "address" && (
+            <div className="space-y-6 overflow-hidden">
+              {/* Payment Info */}
+              <PaymentInfoBlock
+                data={formData.paymentInformation}
+                onChange={(e) =>
+                  actions.handleInputChange(e, "paymentInformation")
+                }
+                paymentMethodOptions={paymentMethodOptions}
+                showPaymentMethod={false}
+              />
+
+              {/* Address boxes — incoterm/shipping stripped */}
+              <AddressTab
+                form={formData as any}
+                onFormChange={actions.handleInputChange as any}
+                supplierId={formData.customerId}
+                selected={ui.selected}
+                setSelected={ui.setSelected}
+                selectedIds={ui.selectedIds}
+                setSelectedIds={actions.setSelectedIds}
+                addresses={ui.addresses}
+                setAddresses={actions.setAddresses}
+                loading={ui.loading}
+                setLoading={actions.setLoading}
+                customShippingRule={customShippingRule}
+                setCustomShippingRule={setCustomShippingRule}
+                customIncoterm={customIncoterm}
+                setCustomIncoterm={setCustomIncoterm}
               />
             </div>
           )}
+
+          {/* ──────────── SHIPPING & OTHER CHARGES ──────────── */}
           {ui.activeTab === "otherCharges" && (
             <InvoiceChargesTab
               charges={formData.invoiceCharges || []}
@@ -510,53 +498,14 @@ const footerContent = (
             />
           )}
 
-          {/* ADDRESS */}
-          {ui.activeTab === "address" && (
-            <div className="space-y-6 overflow-hidden">
-              {/* PAYMENT INFO */}
-              <PaymentInfoBlock
-                data={formData.paymentInformation}
-                onChange={(
-                  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-                ) => actions.handleInputChange(e, "paymentInformation")}
-                paymentMethodOptions={paymentMethodOptions}
-                showPaymentMethod={false}
+          {/* ──────────── TERMS & CONDITIONS ──────────── */}
+          {ui.activeTab === "terms" && (
+            <div className="h-full w-full">
+              <TermsAndCondition
+                terms={formData.terms?.selling}
+                setTerms={actions.setTerms}
+                type="selling"
               />
-
-              {/* BILLING + SHIPPING */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Billing */}
-              <AddressTab
-                            form={form}
-                            onFormChange={(e: any) => handleFormChange(e)}
-                            customShippingRule={customShippingRule}
-                            setCustomShippingRule={setCustomShippingRule}
-                            customIncoterm={customIncoterm}
-                            setCustomIncoterm={setCustomIncoterm}
-                            supplierId={form.supplierId}
-                            selected={selected}
-                            setSelected={setSelected}
-                            selectedIds={selectedIds}
-                            setSelectedIds={setSelectedIds}
-                            addresses={addresses}
-                            setAddresses={setAddresses}
-                            loading={loading}
-                            setLoading={setLoading}
-                          />
-
-                {/* Shipping */}
-                <AddressBlock
-                  type="shipping"
-                  title="Shipping Address"
-                  subtitle="Delivery location"
-                  data={formData.shippingAddress}
-                  sameAsBilling={ui.sameAsBilling}
-                  onSameAsBillingChange={actions.handleSameAsBillingChange}
-                  onChange={(
-                    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-                  ) => actions.handleInputChange(e, "shippingAddress")}
-                />
-              </div>
             </div>
           )}
         </div>

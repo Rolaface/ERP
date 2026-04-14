@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, memo } from "react";
+import React, { useCallback, useEffect, useRef, memo, useState } from "react";
 import {
   MapPin,
   Truck,
@@ -9,30 +9,29 @@ import {
   Plus,
   Check,
 } from "lucide-react";
-import { ModalSelect, ModalInput } from "../../ui/modal/modalComponent";
 import type { PurchaseOrderFormData } from "../../../types/Supply/purchaseOrder";
 import type { PurchaseInvoiceFormData } from "../../../types/Supply/purchaseInvoice";
-import SearchSelect2 from "../../ui/modal/SearchSelect2";
-import { getShippingRules } from "../../../api/utils/shippingruleapi";
-import { getIncoterms } from "../../../api/utils/incotermApi";
 import {
   useAddressLogic,
   BOX_CONFIGS,
-  ApiAddress,
-  BoxType,
+  type ApiAddress,
+  type BoxType,
 } from "../../../hooks/useAddressLogic";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface AddressTabProps {
-  form: PurchaseOrderFormData | PurchaseInvoiceFormData;
+  form: PurchaseOrderFormData | PurchaseInvoiceFormData | any;
   onFormChange: (
     e:
       | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
       | { target: { name: string; value: any } },
   ) => void;
-  customShippingRule: string;
-  setCustomShippingRule: React.Dispatch<React.SetStateAction<string>>;
-  customIncoterm: string;
-  setCustomIncoterm: React.Dispatch<React.SetStateAction<string>>;
+  /** These props are kept for API compatibility but not rendered */
+  customShippingRule?: string;
+  setCustomShippingRule?: React.Dispatch<React.SetStateAction<string>>;
+  customIncoterm?: string;
+  setCustomIncoterm?: React.Dispatch<React.SetStateAction<string>>;
   supplierId?: string;
   companyId?: string;
   selected: Record<BoxType, ApiAddress | null>;
@@ -49,6 +48,8 @@ interface AddressTabProps {
   setLoading: React.Dispatch<React.SetStateAction<Record<BoxType, boolean>>>;
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function formatAddressPreview(addr: ApiAddress): string {
   const lines = [addr.addressLine1, addr.addressLine2]
     .filter(Boolean)
@@ -60,9 +61,10 @@ function formatAddressPreview(addr: ApiAddress): string {
 }
 
 function formatContactInfo(addr: ApiAddress): string {
-  const parts = [addr.phone, addr.email].filter(Boolean);
-  return parts.join(" · ");
+  return [addr.phone, addr.email].filter(Boolean).join(" · ");
 }
+
+// ─── AddressPicker ────────────────────────────────────────────────────────────
 
 const AddressPicker: React.FC<{
   addresses: ApiAddress[];
@@ -85,7 +87,7 @@ const AddressPicker: React.FC<{
         <Search size={12} className="text-sub shrink-0" />
         <input
           type="text"
-          placeholder="Search..."
+          placeholder="Search addresses..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="flex-1 bg-transparent text-xs text-main placeholder:text-sub outline-none"
@@ -106,10 +108,16 @@ const AddressPicker: React.FC<{
                 key={addr.id}
                 type="button"
                 onClick={() => onSelect(addr)}
-                className={`w-full text-left px-2 py-1.5 rounded flex items-center gap-2 transition-colors ${isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-card border border-transparent"}`}
+                className={`w-full text-left px-2 py-1.5 rounded flex items-center gap-2 transition-colors ${
+                  isSelected
+                    ? "bg-primary/10 border border-primary/30"
+                    : "hover:bg-card border border-transparent"
+                }`}
               >
                 <div
-                  className={`mt-0.5 shrink-0 w-3 h-3 rounded-full border flex items-center justify-center ${isSelected ? "bg-primary border-primary" : "border-theme"}`}
+                  className={`mt-0.5 shrink-0 w-3 h-3 rounded-full border flex items-center justify-center ${
+                    isSelected ? "bg-primary border-primary" : "border-theme"
+                  }`}
                 >
                   {isSelected && <Check size={6} className="text-white" />}
                 </div>
@@ -138,6 +146,8 @@ const AddressPicker: React.FC<{
   );
 });
 
+// ─── AddressBox ───────────────────────────────────────────────────────────────
+
 const AddressBox: React.FC<{
   config: {
     key: BoxType;
@@ -156,8 +166,12 @@ const AddressBox: React.FC<{
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node))
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
         setPickerOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -170,10 +184,12 @@ const AddressBox: React.FC<{
     },
     [onSelect],
   );
+
   const togglePicker = () => {
     if (!pickerOpen) onOpen();
     setPickerOpen((v) => !v);
   };
+
   const Icon = config.icon;
 
   return (
@@ -181,6 +197,7 @@ const AddressBox: React.FC<{
       ref={wrapperRef}
       className="bg-card border border-theme rounded-lg shadow-sm overflow-visible"
     >
+      {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 bg-app border-b border-theme rounded-t-lg">
         <div className="flex items-center gap-2">
           <div className="bg-primary/10 text-primary p-1.5 rounded">
@@ -191,11 +208,13 @@ const AddressBox: React.FC<{
         <button
           type="button"
           onClick={togglePicker}
-          className="p-0.5 rounded row-hover"
+          className="p-0.5 rounded hover:bg-card transition-colors text-muted"
         >
           {pickerOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
       </div>
+
+      {/* Body */}
       <div className="px-3 py-2">
         {selectedAddr ? (
           <div className="flex items-start gap-2">
@@ -214,11 +233,11 @@ const AddressBox: React.FC<{
               <p className="text-[10px] text-sub mt-0.5 leading-relaxed">
                 {formatAddressPreview(selectedAddr)}
               </p>
-              {selectedAddr.phone || selectedAddr.email ? (
+              {(selectedAddr.phone || selectedAddr.email) && (
                 <p className="text-[10px] text-primary mt-0.5">
                   {formatContactInfo(selectedAddr)}
                 </p>
-              ) : null}
+              )}
             </div>
             <button
               type="button"
@@ -238,6 +257,8 @@ const AddressBox: React.FC<{
           </button>
         )}
       </div>
+
+      {/* Picker dropdown */}
       {pickerOpen && (
         <div className="px-3 pb-3">
           <AddressPicker
@@ -252,32 +273,12 @@ const AddressBox: React.FC<{
   );
 });
 
-export const AddressTab: React.FC<AddressTabProps> = memo(({
-  form,
-  onFormChange,
-  customShippingRule,
-  setCustomShippingRule,
-  customIncoterm,
-  setCustomIncoterm,
-  supplierId,
-  companyId,
-  selected,
-  setSelected,
-  selectedIds,
-  setSelectedIds,
-  addresses,
-  setAddresses,
-  loading,
-  setLoading,
-}) => {
-  const [incotermLabel, setIncotermLabel] = useState("");
-  const [shippingLabel, setShippingLabel] = useState("");
-  const {
-    handleSelect,
-    loadAddresses,
-    handleCopyBillingToShipping,
-    handleCopySupplierToDispatch,
-  } = useAddressLogic({
+// ─── AddressTab (main export) ─────────────────────────────────────────────────
+
+export const AddressTab: React.FC<AddressTabProps> = memo(
+  ({
+    form,
+    onFormChange,
     supplierId,
     selected,
     setSelected,
@@ -287,211 +288,66 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
     setAddresses,
     loading,
     setLoading,
-    onFormChange,
-  });
-  //SHOW API FIRST VALUE DEFUALT
-  useEffect(() => {
-    const loadDefaultIncoterm = async () => {
-      const list = await getIncoterms("");
-
-      if (!list || list.length === 0) return;
-
-      const first = list[0];
-
-      onFormChange({
-        target: { name: "incoterm", value: first.value },
-      });
-
-      setIncotermLabel(first.label);
-    };
-
-    if (!incotermLabel) {
-      loadDefaultIncoterm();
-    }
-  }, [incotermLabel]);
-  //incoterm edit
-  useEffect(() => {
-    if (form.incoterm && !incotermLabel) {
-      const loadLabel = async () => {
-        const list = await getIncoterms("");
-
-        const found = list.find((i) => i.value === form.incoterm);
-        if (found) setIncotermLabel(found.label);
-      };
-
-      loadLabel();
-    }
-  }, [form.incoterm]);
-
-  //shipping
-  useEffect(() => {
-    const loadDefaultShipping = async () => {
-      const list = await getShippingRules("");
-
-      if (!list || list.length === 0) return;
-
-      const first = list[0];
-
-      onFormChange({
-        target: { name: "shippingRule", value: first.value },
-      });
-
-      setShippingLabel(first.label);
-    };
-
-    if (!shippingLabel) {
-      loadDefaultShipping();
-    }
-  }, [shippingLabel]);
-
-  const fetchShippingRules = async (q: string) => {
-    const list = await getShippingRules(q);
-
-    return list.map((item) => ({
-      label: item.label,
-      value: item.value,
-    }));
-  };
-  const handleResetShippingRule = useCallback(() => {
-    setCustomShippingRule("");
-    onFormChange({
-      target: { name: "shippingRule", value: "" },
+    // incoterm / shipping props accepted but intentionally not used
+  }) => {
+    const { handleSelect, loadAddresses } = useAddressLogic({
+      supplierId,
+      selected,
+      setSelected,
+      selectedIds,
+      setSelectedIds,
+      addresses,
+      setAddresses,
+      loading,
+      setLoading,
+      onFormChange,
     });
-  }, [setCustomShippingRule, onFormChange]);
-  const fetchIncoterms = async (q: string) => {
-    const list = await getIncoterms(q);
 
-    return list.map((item) => ({
-      label: item.label,
-      value: item.value,
-    }));
-  };
+    return (
+      <div className="space-y-4">
+        {/* Address grid: 2 columns, 2 rows */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3 pb-3">
+          {/* Left column */}
+          <div className="space-y-3">
+            <AddressBox
+              config={BOX_CONFIGS[0]} // companyBilling
+              addresses={addresses.companyBilling}
+              selectedAddr={selected.companyBilling}
+              loading={loading.companyBilling}
+              onSelect={(addr) => handleSelect("companyBilling", addr)}
+              onOpen={() => loadAddresses("companyBilling")}
+            />
+            <AddressBox
+              config={BOX_CONFIGS[1]} // supplierBilling
+              addresses={addresses.supplierBilling}
+              selectedAddr={selected.supplierBilling}
+              loading={loading.supplierBilling}
+              onSelect={(addr) => handleSelect("supplierBilling", addr)}
+              onOpen={() => loadAddresses("supplierBilling")}
+            />
+          </div>
 
-  const handleResetIncoterm = useCallback(() => {
-    setCustomIncoterm("");
-    onFormChange({
-      target: { name: "incoterm", value: "" },
-    });
-  }, [setCustomIncoterm, onFormChange]);
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-3 p-3">
-        <div className="relative">
-          <SearchSelect2
-            label="Shipping Rule"
-            value={form.shippingRule}
-            onChange={(val, option) => {
-              onFormChange({
-                target: { name: "shippingRule", value: val },
-              });
-
-              setShippingLabel(option.label);
-
-              if (val !== "OTHER") setCustomShippingRule("");
-            }}
-            fetchOptions={fetchShippingRules}
-          />
-          {form.shippingRule === "OTHER" && (
-            <div className="absolute inset-0 flex flex-col justify-end">
-              <div className="relative">
-                <ModalInput
-                  label=""
-                  placeholder="Enter custom"
-                  value={customShippingRule}
-                  onChange={(e) => setCustomShippingRule(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={handleResetShippingRule}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-sub hover:text-main text-xs px-1"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="relative">
-          <SearchSelect2
-            label="Incoterm"
-            value={incotermLabel}
-            onChange={(val, option) => {
-              onFormChange({
-                target: { name: "incoterm", value: val },
-              });
-
-              setIncotermLabel(option.label);
-
-              if (val !== "OTHER") setCustomIncoterm("");
-            }}
-            fetchOptions={fetchIncoterms}
-          />
-          {form.incoterm === "OTHER" && (
-            <div className="absolute inset-0 flex flex-col justify-end">
-              <div className="relative">
-                <ModalInput
-                  label=""
-                  placeholder="Enter custom"
-                  value={customIncoterm}
-                  onChange={(e) => setCustomIncoterm(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={handleResetIncoterm}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-sub hover:text-main text-xs px-1"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-        <ModalInput
-          label="Supplier Contact"
-          name="supplierContact"
-          value={form.supplierContact || ""}
-          onChange={onFormChange}
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3 pb-3">
-        <div className="space-y-3">
-          <AddressBox
-            config={BOX_CONFIGS[0]}
-            addresses={addresses.companyBilling}
-            selectedAddr={selected.companyBilling}
-            loading={loading.companyBilling}
-            onSelect={(addr) => handleSelect("companyBilling", addr)}
-            onOpen={() => loadAddresses("companyBilling")}
-          />
-          <AddressBox
-            config={BOX_CONFIGS[1]}
-            addresses={addresses.supplierBilling}
-            selectedAddr={selected.supplierBilling}
-            loading={loading.supplierBilling}
-            onSelect={(addr) => handleSelect("supplierBilling", addr)}
-            onOpen={() => loadAddresses("supplierBilling")}
-          />
-        </div>
-        <div className="space-y-3">
-          <AddressBox
-            config={BOX_CONFIGS[2]}
-            addresses={addresses.companyShipping}
-            selectedAddr={selected.companyShipping}
-            loading={loading.companyShipping}
-            onSelect={(addr) => handleSelect("companyShipping", addr)}
-            onOpen={() => loadAddresses("companyShipping")}
-          />
-          <AddressBox
-            config={BOX_CONFIGS[3]}
-            addresses={addresses.supplierDispatch}
-            selectedAddr={selected.supplierDispatch}
-            loading={loading.supplierDispatch}
-            onSelect={(addr) => handleSelect("supplierDispatch", addr)}
-            onOpen={() => loadAddresses("supplierDispatch")}
-          />
+          {/* Right column */}
+          <div className="space-y-3">
+            <AddressBox
+              config={BOX_CONFIGS[2]} // companyShipping
+              addresses={addresses.companyShipping}
+              selectedAddr={selected.companyShipping}
+              loading={loading.companyShipping}
+              onSelect={(addr) => handleSelect("companyShipping", addr)}
+              onOpen={() => loadAddresses("companyShipping")}
+            />
+            <AddressBox
+              config={BOX_CONFIGS[3]} // supplierDispatch
+              addresses={addresses.supplierDispatch}
+              selectedAddr={selected.supplierDispatch}
+              loading={loading.supplierDispatch}
+              onSelect={(addr) => handleSelect("supplierDispatch", addr)}
+              onOpen={() => loadAddresses("supplierDispatch")}
+            />
+          </div>
         </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);

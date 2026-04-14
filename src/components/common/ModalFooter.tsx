@@ -4,7 +4,7 @@ import { Button } from "../ui/modal/formComponent";
 export interface ModalFooterProps {
   onCancel: () => void;
   onReset?: () => void;
-  onSubmit?: () => Promise<boolean> | boolean;
+  onSubmit?: () => Promise<boolean | void> | boolean | void;
   onNext?: () => void;
   currentTab?: number;
   totalTabs?: number;
@@ -15,7 +15,7 @@ export interface ModalFooterProps {
   nextLabel?: string;
   submitDisabled?: boolean;
   resetDisabled?: boolean;
-  onSave?: () => Promise<boolean> | boolean;
+  onSave?: () => Promise<boolean | void> | boolean | void;
   saving?: boolean;
 }
 
@@ -50,13 +50,14 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
   const handleSaveClick = async () => {
     if (isSubmittingVal || submitDisabled) return;
     const result = handleSubmit?.();
-    if (result && typeof result.then === "function") {
+    if (result && typeof (result as Promise<any>).then === "function") {
       await result;
     }
   };
 
   return (
     <div className="flex w-full items-center justify-between gap-2">
+      {/* Left side: Cancel */}
       <Button
         variant="secondary"
         type="button"
@@ -66,6 +67,7 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
         {cancelLabel}
       </Button>
 
+      {/* Right side: Reset | Next | Submit */}
       <div className="flex items-center gap-2">
         {onReset && (
           <Button
@@ -78,25 +80,48 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
           </Button>
         )}
 
+        {/* Next is only shown when NOT on last tab */}
         {!isLastTab && onNext && (
           <Button
             variant="secondary"
             type="button"
             onClick={handleNextClick}
+            disabled={isSubmittingVal}
           >
             {nextLabel}
           </Button>
         )}
 
-        {isLastTab && handleSubmit && (
+        {/* Submit button - always visible when onSubmit is provided */}
+        {handleSubmit && (
           <Button
             variant="primary"
             type="button"
-            onClick={handleSaveClick}
+            onClick={() => {
+              console.log(">>> MODAL FOOTER: Button clicked, isSubmittingVal =", isSubmittingVal, ", submitDisabled =", submitDisabled);
+              if (isSubmittingVal || submitDisabled) {
+                console.log(">>> MODAL FOOTER: Blocked by isSubmittingVal or submitDisabled");
+                return;
+              }
+              console.log(">>> MODAL FOOTER: Calling handleSubmit function...");
+              try {
+                const result = handleSubmit();
+                console.log(">>> MODAL FOOTER: handleSubmit returned:", result);
+                if (result && typeof result.then === 'function') {
+                  result.then(() => {
+                    console.log(">>> MODAL FOOTER: Promise resolved");
+                  }).catch((err) => {
+                    console.log(">>> MODAL FOOTER: Promise rejected:", err);
+                  });
+                }
+              } catch (err) {
+                console.log(">>> MODAL FOOTER: handleSubmit threw error:", err);
+              }
+            }}
             loading={isSubmittingVal}
             disabled={submitDisabled}
           >
-            {submitLabel}
+            {isSubmittingVal ? "Saving..." : submitLabel}
           </Button>
         )}
       </div>
