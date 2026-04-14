@@ -6,6 +6,7 @@ import type { Invoice, InvoiceItem } from "../types/invoice";
 import { getRolaCountryList } from "../api/lookupApi";
 import { getItemByItemCode } from "../api/itemApi";
 import { getExchangeRate } from "../api/currencyExchangeApi";
+import type { ApiAddress, BoxType } from "../hooks/useAddressLogic";
 import {
   showApiError,
   showLoading,
@@ -116,6 +117,32 @@ export const useInvoiceForm = (
   const lastRateRef = useRef<number>(1);
   const enableExchange = mode === "invoice";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
+  const [selected, setSelected] = useState<Record<BoxType, ApiAddress | null>>({
+    companyBilling: null,
+    supplierBilling: null,
+    companyShipping: null,
+    supplierDispatch: null,
+  });
+
+  const [selectedIds, setSelectedIds] = useState<Record<BoxType, string>>({
+    companyBilling: "",
+    supplierBilling: "",
+    companyShipping: "",
+    supplierDispatch: "",
+  });
+
+  const [addresses, setAddresses] = useState<Record<BoxType, ApiAddress[]>>({
+    companyBilling: [],
+    supplierBilling: [],
+    companyShipping: [],
+    supplierDispatch: [],
+  });
+  const [loading, setLoading] = useState<Record<BoxType, boolean>>({
+    companyBilling: false,
+    supplierBilling: false,
+    companyShipping: false,
+    supplierDispatch: false,
+  });
   useEffect(() => {
     if (!isOpen) return;
 
@@ -432,11 +459,11 @@ export const useInvoiceForm = (
 
       if (!customerRes || customerRes?.message?.status_code !== 200) return;
 
-     const data = customerRes?.message?.data;
+      const data = customerRes?.message?.data;
 
       const company = companyRes?.data;
-   const invoiceType = data?.customerTaxCategory || "";
-setTaxCategory(invoiceType);
+      const invoiceType = data?.customerTaxCategory || "";
+      setTaxCategory(invoiceType);
 
       const countryLookupList = await getRolaCountryList();
 
@@ -445,40 +472,38 @@ setTaxCategory(invoiceType);
         name: c.country_name || c.name,
       }));
 
-
       setCustomerDetails(data);
-     setCustomerDetails({ ...data });
-     const billingAddressObj = data.addresses?.find(
-  (addr: any) => addr.type === "Billing"
-);
+      setCustomerDetails({ ...data });
+      const billingAddressObj = data.addresses?.find(
+        (addr: any) => addr.type === "Billing",
+      );
 
-const shippingAddressObj = data.addresses?.find(
-  (addr: any) => addr.type === "Shipping"
-);
+      const shippingAddressObj = data.addresses?.find(
+        (addr: any) => addr.type === "Shipping",
+      );
 
-const billing = {
-  line1: billingAddressObj?.line1 ?? "",
-  line2: billingAddressObj?.line2 ?? "",
-  postalCode: billingAddressObj?.postalCode ?? "",
-  city: billingAddressObj?.city ?? "",
-  state: billingAddressObj?.state ?? "",
-  country: billingAddressObj?.country ?? "",
-};
+      const billing = {
+        line1: billingAddressObj?.line1 ?? "",
+        line2: billingAddressObj?.line2 ?? "",
+        postalCode: billingAddressObj?.postalCode ?? "",
+        city: billingAddressObj?.city ?? "",
+        state: billingAddressObj?.state ?? "",
+        country: billingAddressObj?.country ?? "",
+      };
 
-const shippingFromCustomer = {
-  line1: shippingAddressObj?.line1 ?? "",
-  line2: shippingAddressObj?.line2 ?? "",
-  postalCode: shippingAddressObj?.postalCode ?? "",
-  city: shippingAddressObj?.city ?? "",
-  state: shippingAddressObj?.state ?? "",
-  country: shippingAddressObj?.country ?? "",
-};
+      const shippingFromCustomer = {
+        line1: shippingAddressObj?.line1 ?? "",
+        line2: shippingAddressObj?.line2 ?? "",
+        postalCode: shippingAddressObj?.postalCode ?? "",
+        city: shippingAddressObj?.city ?? "",
+        state: shippingAddressObj?.state ?? "",
+        country: shippingAddressObj?.country ?? "",
+      };
 
       const countryCode = getCountryCode(
-  formattedCountries,
-  shippingAddressObj?.country || billingAddressObj?.country
-);
-
+        formattedCountries,
+        shippingAddressObj?.country || billingAddressObj?.country,
+      );
 
       const paymentInformation = {
         paymentTerms:
@@ -494,13 +519,13 @@ const shippingFromCustomer = {
       };
 
       setFormData((prev) => {
-    let shipping = shippingFromCustomer;
+        let shipping = shippingFromCustomer;
 
-if (sameAsBilling) {
-  shipping = { ...billing };
-} else if (shippingEditedRef.current) {
-  shipping = prev.shippingAddress;
-}
+        if (sameAsBilling) {
+          shipping = { ...billing };
+        } else if (shippingEditedRef.current) {
+          shipping = prev.shippingAddress;
+        }
 
         return {
           ...prev,
@@ -512,12 +537,12 @@ if (sameAsBilling) {
           shippingAddress: shipping,
           paymentInformation,
           terms: {
-  selling:
-    data?.terms?.Selling ??
-    company?.terms?.selling ??
-    prev.terms?.selling ??
-    EMPTY_TERMS.selling,
-},
+            selling:
+              data?.terms?.Selling ??
+              company?.terms?.selling ??
+              prev.terms?.selling ??
+              EMPTY_TERMS.selling,
+          },
         };
       });
     } catch (err: any) {
@@ -1003,6 +1028,13 @@ if (sameAsBilling) {
           .toLowerCase() === "non-export",
       exchangeRateLoading: enableExchange ? exchangeRateLoading : false,
       exchangeRateError: enableExchange ? exchangeRateError : null,
+      setSelected,
+      selectedIds,
+
+      addresses,
+
+      loading,
+      selected,
     },
     actions: {
       validateForm,
@@ -1024,6 +1056,9 @@ if (sameAsBilling) {
       addOtherCharge,
       handleOtherChargeChange,
       removeOtherCharge,
+      setLoading,
+      setAddresses,
+      setSelectedIds,
     },
   };
 };

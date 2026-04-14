@@ -458,27 +458,7 @@ export const DetailsTab = ({
           </div>
 
 
-          <div className="w-[130px] ml-4">
-            <Tooltip content={form.status ? `Status: ${form.status}` : 'Select a status'}>
-            <ModalSelect
-              label="Status"
-              name="status"
-              value={form.status}
-              disabled
-              onChange={onFormChange}
-              options={[
-                { value: "Draft", label: "Draft" },
-                { value: "Return", label: "Return" },
-                { value: "Submitted", label: "Submitted" },
-                { value: "Paid", label: "Paid" },
-                { value: "Cancelled", label: "Cancelled" },
-                { value: "Internal Transfer", label: "Internal Transfer" },
-                { value: "Debit Note Issued", label: "Debit Note Issued" },
-                { value: "Party Paid", label: "Party Paid" },
-              ]}
-            />
-            </Tooltip>
-          </div>
+          
 
           <div className="w-[100px] ml-3">
             <Tooltip content={form.costCenter ? `Cost Center: ${form.costCenter}` : 'Select a cost center'}>
@@ -507,23 +487,7 @@ export const DetailsTab = ({
             </Tooltip>
           </div>
 
-          <div className="w-[110px] ml-3">
-            <Tooltip content={form.transactionProgress ? `Transaction Progress: ${form.transactionProgress}` : 'Select transaction progress'}>
-            <ModalSelect
-              label="Transaction Progress"
-              name="transactionProgress"
-              value={form.transactionProgress}
-              onChange={onFormChange}
-              required
-              options={[
-                { value: "APPROVED", label: "Approved" },
-                { value: "REFUNDED", label: "Refunded" },
-                { value: "TRANSFERRED", label: "Transferred" },
-                { value: "REJECTED", label: "Rejected" },
-              ]}
-            />
-            </Tooltip>
-          </div>
+          
 
           <div className="w-[110px] ml-2">
             <Tooltip content={form.paymentType ? `Payment Type: ${form.paymentType}` : 'Select payment type'}>
