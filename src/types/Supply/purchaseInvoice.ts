@@ -15,12 +15,10 @@ export interface ItemRow {
   expDate?: string;
   discount?: number;
   packingUnit?: number;
-packingSize?: number;
-requiresBatch?: boolean; 
-warehouse?: string;
-  
+  packingSize?: number;
+  requiresBatch?: boolean;
+  warehouse?: string;
 }
-
 
 export interface TaxRow {
   type: string;
@@ -64,7 +62,7 @@ export interface PurchaseInvoiceFormData {
   supplierId: string;
   supplierEmail?: string;
   supplierPhone?: string;
-  updateStock?: boolean;  
+  updateStock?: boolean;
 
   supplierCode: string;
   taxCategory: string;
@@ -83,9 +81,10 @@ export interface PurchaseInvoiceFormData {
   costCenter: string;
   project: string;
   useSupplierAddress?: boolean;
-useDispatchAddress?: boolean;
-useShippingAddress?: boolean;
-useCompanyBillingAddress?: boolean;
+  useDispatchAddress?: boolean;
+  useShippingAddress?: boolean;
+  useCompanyBillingAddress?: boolean;
+  selectedSupplierAddressIds: [];
 
   addresses: {
     supplierAddress: AddressBlock;
@@ -100,8 +99,8 @@ useCompanyBillingAddress?: boolean;
   totalQuantity: number;
   grandTotal: number;
   totalTax: number;
-subTotal: number;
-totalDiscount?: number;
+  subTotal: number;
+  totalDiscount?: number;
 
   roundedTotal: number;
   items: ItemRow[];
@@ -133,7 +132,7 @@ export const emptyItem: ItemRow = {
   description: "",
   packing: "",
   packingUnit: 0,
-packingSize: 0,
+  packingSize: 0,
   batchNo: "",
   mfgDate: "",
   expDate: "",
@@ -141,7 +140,6 @@ packingSize: 0,
   warehouse: "",
   requiresBatch: false,
 };
-
 
 export const emptyTaxRow: TaxRow = {
   type: "",
@@ -172,7 +170,6 @@ export const emptyAddress: AddressBlock = {
 };
 
 export const emptyPOForm: PurchaseInvoiceFormData = {
-  
   poNumber: "",
   date: "",
   supplier: "",
@@ -192,9 +189,10 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   costCenter: "",
   project: "",
   useSupplierAddress: true,
-useDispatchAddress: true,
-useShippingAddress: true,
-useCompanyBillingAddress: true,
+  useDispatchAddress: true,
+  useShippingAddress: true,
+  useCompanyBillingAddress: true,
+  selectedSupplierAddressIds: [],
 
   addresses: {
     supplierAddress: {
@@ -230,11 +228,10 @@ useCompanyBillingAddress: true,
   roundedTotal: 0,
   totalTax: 0,
 
-
   items: [{ ...emptyItem }],
   taxRows: [], // Start with empty array, user can add as needed
   paymentRows: [], // Start with empty array, user can add as needed
- warehouse: "",
+  warehouse: "",
   templateName: "",
   templateType: "",
   subject: "",

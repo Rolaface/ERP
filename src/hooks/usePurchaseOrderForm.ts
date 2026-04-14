@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import {
-  showApiError, showSuccess, showValidationError, showLoading,
+  showApiError,
+  showSuccess,
+  showValidationError,
+  showLoading,
   closeSwal,
 } from "../utils/alert";
 import type {
@@ -14,7 +17,7 @@ import {
   emptyItem,
   emptyTaxRow,
   emptyPaymentRow,
-  ItemRow
+  ItemRow,
 } from "../types/Supply/purchaseOrder";
 import { createPurchaseOrder } from "../api/procurement/PurchaseOrderApi";
 import { mapUIToCreatePO } from "../types/Supply/purchaseOrderMapper";
@@ -51,6 +54,34 @@ export const usePurchaseOrderForm = ({
   const [saving, setSaving] = useState(false);
   const [customShippingRule, setCustomShippingRule] = useState("");
   const [customIncoterm, setCustomIncoterm] = useState("");
+  const [addressSelected, setAddressSelected] = useState<Record<string, any>>({
+    companyBilling: null,
+    supplierBilling: null,
+    companyShipping: null,
+    supplierDispatch: null,
+  });
+  const [addressSelectedIds, setAddressSelectedIds] = useState<
+    Record<string, string>
+  >({
+    companyBilling: "",
+    supplierBilling: "",
+    companyShipping: "",
+    supplierDispatch: "",
+  });
+  const [addressList, setAddressList] = useState<Record<string, any[]>>({
+    companyBilling: [],
+    supplierBilling: [],
+    companyShipping: [],
+    supplierDispatch: [],
+  });
+  const [addressLoading, setAddressLoading] = useState<Record<string, boolean>>(
+    {
+      companyBilling: false,
+      supplierBilling: false,
+      companyShipping: false,
+      supplierDispatch: false,
+    },
+  );
   const [companyDefaults, setCompanyDefaults] = useState<{
     buyingTerms?: any;
     companyBillingAddress?: any;
@@ -83,8 +114,8 @@ export const usePurchaseOrderForm = ({
         const res = await getCompanyById(COMPANY_ID);
 
         const company =
-          res?.data?.data ||   // if wrapped
-          res?.data ||         // if semi wrapped
+          res?.data?.data || // if wrapped
+          res?.data || // if semi wrapped
           res;
 
         if (!company?.companyName) return;
@@ -122,7 +153,6 @@ export const usePurchaseOrderForm = ({
             companyBillingAddress,
           },
         }));
-
       } catch (e) {
         console.error("Failed to load company data", e);
       }
@@ -131,13 +161,12 @@ export const usePurchaseOrderForm = ({
     loadCompanyData();
   }, [isOpen, poId]);
 
-
   useEffect(() => {
     if (!form.requiredBy) return;
 
     setForm((prev) => {
       const updatedItems = prev.items.map((item) =>
-        item.requiredBy ? item : { ...item, requiredBy: prev.requiredBy }
+        item.requiredBy ? item : { ...item, requiredBy: prev.requiredBy },
       );
 
       return { ...prev, items: updatedItems };
@@ -149,7 +178,6 @@ export const usePurchaseOrderForm = ({
     if (!isOpen || !poId) return;
 
     const loadPO = async () => {
-
       try {
         const apiData = await getPurchaseOrderById(poId);
         const mapped = mapApiToUI(apiData);
@@ -199,7 +227,7 @@ export const usePurchaseOrderForm = ({
 
     const totalQuantity = form.items.reduce(
       (sum, item) => sum + Number(item.quantity || 0),
-      0
+      0,
     );
 
     setForm((prev) => ({
@@ -211,36 +239,31 @@ export const usePurchaseOrderForm = ({
     }));
   }, [form.items, form.taxRows]);
 
+  useFieldDefault(isOpen, form.costCenter, fetchCostCenters, (val) =>
+    setForm((prev) => ({ ...prev, costCenter: val })),
+  );
+
+  useFieldDefault(isOpen, form.project, fetchProjects, (val) =>
+    setForm((prev) => ({ ...prev, project: val })),
+  );
+
   useFieldDefault(
-  isOpen,
-  form.costCenter,
-  fetchCostCenters,
-  (val) => setForm((prev) => ({ ...prev, costCenter: val }))
-);
-
-useFieldDefault(
-  isOpen,
-  form.project,
-  fetchProjects,
-  (val) => setForm((prev) => ({ ...prev, project: val }))
-);
-
-useFieldDefault(
-  isOpen,
-  form.warehouse,
-  () => getAllWarehouses().then((list: string[]) =>
-    list.map((w) => ({ value: w, label: w }))
-  ),
-  (val) =>
-    setForm((prev) => ({
-      ...prev,
-      warehouse: val,
-      items: prev.items.map((item) => ({
-        ...item,
-        warehouse: item.warehouse?.trim() ? item.warehouse : val,
+    isOpen,
+    form.warehouse,
+    () =>
+      getAllWarehouses().then((list: string[]) =>
+        list.map((w) => ({ value: w, label: w })),
+      ),
+    (val) =>
+      setForm((prev) => ({
+        ...prev,
+        warehouse: val,
+        items: prev.items.map((item) => ({
+          ...item,
+          warehouse: item.warehouse?.trim() ? item.warehouse : val,
+        })),
       })),
-    }))
-);
+  );
 
   type AddressKey = keyof PurchaseOrderFormData["addresses"];
 
@@ -284,51 +307,76 @@ useFieldDefault(
   };
 
   const handleSupplierChange = async (sup: any) => {
-    if (!sup) return;
+    if (!sup?.id) return;
 
     try {
       const res = await getSupplierById(sup.id);
-      const supplier = res?.data;
+
+      const supplier = res?.message?.data;
+
       if (!supplier) return;
 
-      const destCode = "";
+      console.log("FULL SUPPLIER:", supplier);
 
-      setForm((p) => ({
-        ...p,
+      const primaryContact =
+        supplier.contacts?.find((c: any) => c.isPrimary) ||
+        supplier.contacts?.[0];
 
-        /*  BASIC SUPPLIER INFO  */
-        supplier: supplier.supplierName,
-        supplierId: supplier.supplierId,
-        supplierCode: supplier.supplierCode,
-        supplierEmail: supplier.emailId,
-        supplierPhone: supplier.phoneNo,
-        taxCategory: supplier.taxCategory || "",
+      const cleanPhone = (phone: string) =>
+        phone?.replace(/\+\d+\+/, "+") || "";
+      const primaryAddress =
+        supplier.addresses?.find((a: any) => a.isPrimary) ||
+        supplier.addresses?.[0];
 
-        /*   AUTO FETCHED FIELDS  */
-        currency: supplier.currency || p.currency,
-        supplierContact: supplier.contactPerson || "",
+      setForm((prev) => ({
+        ...prev,
 
-        /*  EXPORT HANDLING  */
-        destnCountryCd: "",
-        placeOfSupply: "",
+        supplier: supplier.name,
+        supplierId: supplier.id,
+        supplierCode: supplier.id,
 
-        /*  ADDRESS AUTO FILL  */
+        supplierEmail: primaryContact?.email || "",
+        supplierPhone: cleanPhone(
+          primaryContact?.mobile || primaryContact?.phone,
+        ),
+        supplierContact: primaryContact?.fullName || "",
+
+        currency: supplier.currency || prev.currency,
+        taxCategory: supplier.supplierTaxCategory || "",
         addresses: {
-          ...p.addresses,
-          supplierAddress: mapSupplierToAddress(
-            supplier,
-            p.addresses.supplierAddress,
-          ),
+          ...prev.addresses,
+
+          supplierAddress: {
+            ...prev.addresses.supplierAddress,
+
+            addressLine1: primaryAddress?.line1 || "",
+            addressLine2: primaryAddress?.line2 || "",
+            city: primaryAddress?.city || "",
+            state: primaryAddress?.state || "",
+            country: primaryAddress?.country || "",
+            postalCode: primaryAddress?.postalCode || "",
+          },
+
+          // OPTIONAL: auto copy to shipping also
+          shippingAddress: {
+            ...prev.addresses.shippingAddress,
+
+            addressLine1: primaryAddress?.line1 || "",
+            addressLine2: primaryAddress?.line2 || "",
+            city: primaryAddress?.city || "",
+            state: primaryAddress?.state || "",
+            country: primaryAddress?.country || "",
+            postalCode: primaryAddress?.postalCode || "",
+          },
         },
       }));
-    } catch (e) {
-      console.error("Supplier detail fetch failed", e);
+    } catch (err) {
+      console.error("Supplier fetch failed:", err);
     }
   };
-
   const handleItemChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-    idx: number
+    idx: number,
   ) => {
     const { name, value } = e.target;
     const isNum = ["quantity", "rate"].includes(name);
@@ -466,10 +514,8 @@ useFieldDefault(
         if (!item.itemCode) return `Row ${i + 1}: Item required`;
         if (!item.quantity || item.quantity <= 0)
           return `Row ${i + 1}: Quantity required`;
-        if (!item.rate || item.rate <= 0)
-          return `Row ${i + 1}: Rate required`;
-        if (!item.warehouse)
-          return `Row ${i + 1}: Warehouse required`;
+        if (!item.rate || item.rate <= 0) return `Row ${i + 1}: Rate required`;
+        if (!item.warehouse) return `Row ${i + 1}: Warehouse required`;
 
         if (!item.vatCd || !item.vatCd.trim())
           return `Row ${i + 1}: Tax Code required`;
@@ -478,17 +524,9 @@ useFieldDefault(
 
     if (tab === "address") {
       const supplier = form.addresses?.supplierAddress;
-      const dispatch = form.addresses?.dispatchAddress;
-      const shipping = form.addresses?.shippingAddress;
 
       if (!supplier?.addressLine1?.trim())
         return "Supplier Address Line 1 is required";
-
-      if (!dispatch?.addressLine1?.trim())
-        return "Dispatch Address Line 1 is required";
-
-      if (!shipping?.addressLine1?.trim())
-        return "Shipping Address Line 1 is required";
     }
 
     return null;
@@ -496,33 +534,41 @@ useFieldDefault(
 
   const handleItemSelect = async (itemId: string, idx: number) => {
     try {
-      const res = await getItemByItemCode(itemId);
+      const res = await getItemByItemCode(itemId, form.taxCategory);
       if (!res || res.status_code !== 200) return;
 
       const data = res.data;
 
+      const supplierTaxCategory = form.taxCategory;
+
+      const matchedTax = data.taxInfo?.find(
+        (t: any) => t.taxCategory === supplierTaxCategory,
+      );
+
+      const selectedTax = matchedTax || data.taxInfo?.[0];
+
+      const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
       setForm((prev) => {
         const items = [...prev.items];
 
         items[idx] = {
           ...items[idx],
+
           itemCode: data.id,
           itemName: data.itemName,
           description: data.description,
-          warehouse:
-            items[idx].warehouse ??
-            prev.warehouse ??
-            data.warehouse ??
-            "",
+
+          warehouse: items[idx].warehouse ?? prev.warehouse ?? "",
 
           rate: Number(data.buyingPrice ?? 0),
           uom: data.unitOfMeasureCd,
-          vatRate: Number(data.taxInfo?.taxPerct ?? 0),
-          vatCd: data.taxInfo?.taxCode ?? "",
-          requiredBy:
-            items[idx].requiredBy ??
-            prev.requiredBy ??
-            "",
+
+          vatRate: totalTaxRate,
+
+          vatCd: selectedTax?.taxName || "",
+
+          requiredBy: items[idx].requiredBy ?? prev.requiredBy ?? "",
+
           packingUnit: Number(data.packingUnit || 0),
           packingSize: Number(data.packingSize || 0),
           packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
@@ -534,7 +580,6 @@ useFieldDefault(
       console.error("Failed to fetch item details", err);
     }
   };
-
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
@@ -555,11 +600,8 @@ useFieldDefault(
     try {
       setSaving(true);
 
-
       showLoading(
-        isEditMode
-          ? "Updating Purchase Order..."
-          : "Saving Purchase Order..."
+        isEditMode ? "Updating Purchase Order..." : "Saving Purchase Order...",
       );
 
       const finalForm = {
@@ -568,10 +610,7 @@ useFieldDefault(
           form.shippingRule === "OTHER"
             ? customShippingRule
             : form.shippingRule,
-        incoterm:
-          form.incoterm === "OTHER"
-            ? customIncoterm
-            : form.incoterm,
+        incoterm: form.incoterm === "OTHER" ? customIncoterm : form.incoterm,
       };
 
       const payload = mapUIToCreatePO(finalForm);
@@ -584,7 +623,6 @@ useFieldDefault(
         res = await createPurchaseOrder(payload);
       }
 
-
       closeSwal();
 
       if (!res || ![200, 201].includes(res.status_code)) {
@@ -593,16 +631,15 @@ useFieldDefault(
       }
 
       showSuccess(
-        isEditMode
-          ? "Purchase Order Updated"
-          : "Purchase Order Created"
+        isEditMode ? "Purchase Order Updated" : "Purchase Order Created",
       );
 
-      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.PURCHASE_ORDER_LIST);
+      useDataRefreshStore
+        .getState()
+        .triggerRefresh(REFRESH_KEYS.PURCHASE_ORDER_LIST);
       onSuccess?.(res);
       onClose?.();
       reset();
-
     } catch (error: any) {
       closeSwal();
       showApiError(error);
@@ -617,14 +654,10 @@ useFieldDefault(
 
       terms: {
         ...(emptyPOForm.terms ?? {}),
-        buying:
-          companyDefaults.buyingTerms ??
-          emptyPOForm.terms?.buying,
+        buying: companyDefaults.buyingTerms ?? emptyPOForm.terms?.buying,
       },
 
-      currency:
-        companyDefaults.baseCurrency ??
-        emptyPOForm.currency,
+      currency: companyDefaults.baseCurrency ?? emptyPOForm.currency,
 
       addresses: {
         ...(emptyPOForm.addresses ?? {}),
@@ -665,6 +698,14 @@ useFieldDefault(
     customIncoterm,
     setCustomIncoterm,
     handleBulkItemChange,
-    saving
+    saving,
+    addressSelected,
+    setAddressSelected,
+    addressSelectedIds,
+    setAddressSelectedIds,
+    addressList,
+    setAddressList,
+    addressLoading,
+    setAddressLoading,
   };
 };

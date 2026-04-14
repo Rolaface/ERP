@@ -1,13 +1,12 @@
 import { ENV } from "./env";
 
-
 const getApiBaseUrl = (): string => {
   if (typeof window === "undefined") {
     return ENV.apiBaseUrl;
   }
 
   const { protocol, hostname } = window.location;
-  console.log("🚀 ~ getApiBaseUrl ~ protocol, hostname:", protocol, hostname)
+  console.log("🚀 ~ getApiBaseUrl ~ protocol, hostname:", protocol, hostname);
 
   // let hostname1 ="gbfn.erp.rolaface.com/"
 
@@ -21,20 +20,23 @@ const getApiBaseUrl = (): string => {
   }
 
   const hostSegments = hostname.split(".");
-  console.log("🚀 ~ getApiBaseUrl ~ hostSegments:", hostSegments)
+  console.log("🚀 ~ getApiBaseUrl ~ hostSegments:", hostSegments);
 
   if (hostSegments.length < 3) {
-    console.log("🚀 ~ getApiBaseUrl ~ hostSegments.length < 3:", hostSegments.length < 3)
+    console.log(
+      "🚀 ~ getApiBaseUrl ~ hostSegments.length < 3:",
+      hostSegments.length < 3,
+    );
     return ENV.apiBaseUrl;
   }
 
   const tenantSubdomain = hostSegments[0];
-  console.log("🚀 ~ getApiBaseUrl ~ tenantSubdomain:", tenantSubdomain)
+  console.log("🚀 ~ getApiBaseUrl ~ tenantSubdomain:", tenantSubdomain);
   const baseDomain = hostSegments.slice(-2).join(".");
-  console.log("🚀 ~ getApiBaseUrl ~ baseDomain:", baseDomain)
+  console.log("🚀 ~ getApiBaseUrl ~ baseDomain:", baseDomain);
 
   const isValidTenant = /^[a-z0-9-]+$/i.test(tenantSubdomain);
-  console.log("🚀 ~ getApiBaseUrl ~ isValidTenant:", isValidTenant)
+  console.log("🚀 ~ getApiBaseUrl ~ isValidTenant:", isValidTenant);
   if (!isValidTenant) {
     return ENV.apiBaseUrl;
   }
@@ -42,11 +44,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-
-
 // export const ERP_BASE = getApiBaseUrl();
 // export const ERP_BASE="";
-
 
 // export const ERP_BASE = ENV.apiBaseUrl;
 export const ERP_BASE = "";
@@ -101,11 +100,9 @@ export const API = {
     summary: `${ERP_BASE}/api/method/hrms.dashboards.main.api.summary`,
   },
 
-
-  Get:{
-    getAll:`${ERP_BASE}/api/method/frappe.desk.search.search_link`
+  Get: {
+    getAll: `${ERP_BASE}/api/method/frappe.desk.search.search_link`,
   },
-
 
   /* =========================
    * COMPANY
@@ -115,7 +112,7 @@ export const API = {
     getById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.get`,
     create: `${ERP_BASE}/api/method/erpnext.company-setup.setup.create_company_api`,
     // update: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_info`,
-    createSite: `https://api.master.rolaface.com/api/method/saas_provisioning.api.create_site`, 
+    createSite: `https://api.master.rolaface.com/api/method/saas_provisioning.api.create_site`,
     updateById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.update`,
     delete: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_api`,
     updateAccounts: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_accounts_company_info`,
@@ -154,8 +151,7 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
     update: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.update_currency_exchange?`,
     delete: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.delete_currency_exchange`,
-    get:`${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
-   
+    get: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
   },
   /* =========================
    * CUSTOMER
@@ -171,7 +167,7 @@ export const API = {
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
     getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
     group: `${ERP_BASE}/api/method/custom_api.api.search.get_customers_group`,
-    grouptree: `${ERP_BASE}/api/method/custom_api.api.customer_group_item_restriction.get_customer_group_tree`
+    grouptree: `${ERP_BASE}/api/method/custom_api.api.customer_group_item_restriction.get_customer_group_tree`,
   },
 
   /* =========================
@@ -197,32 +193,31 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_api.api.item.api.create`,
     update: `${ERP_BASE}/api/method/custom_api.api.item.api.update`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
-    brand: `${ERP_BASE}/api/method/frappe.desk.search.search_link`
+    brand: `${ERP_BASE}/api/method/frappe.desk.search.search_link`,
   },
-    /* =========================
+  /* =========================
    * TAX
    * ========================= */
 
-  tax:{
+  tax: {
     getTemplates: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get`,
     taxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.create_or_update_tax_template`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
-    getTemplateGl:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
-    updatestatus:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.update_item_template_tax_status`,
+    getTemplateGl: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
+    updatestatus: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.update_item_template_tax_status`,
     getAllTaxCategories: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.get`,
     createTaxCategory: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.create`,
     updateTaxCategory: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.update`,
-    deleteTaxCategory: `${ERP_BASE}/api/method/frappe.client.delete`
+    deleteTaxCategory: `${ERP_BASE}/api/method/frappe.client.delete`,
   },
 
   salesTax: {
     createSalesTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.create_sales_tax_template`,
     getsalesTemplates: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.get_sales_tax_templates`,
-    getsalesTemplatesbyid:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.get_sales_tax_template`,
+    getsalesTemplatesbyid: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.get_sales_tax_template`,
     deleteSalesTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.delete_sales_tax_template`,
-    getTemplateGl:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
-    updateSalesTaxTemplate:`${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_status`,
-
+    getTemplateGl: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
+    updateSalesTaxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_status`,
   },
 
   /* =========================
@@ -235,6 +230,10 @@ export const API = {
     update: `${ERP_BASE}/api/resource/Item Group`,
     rename: `${ERP_BASE}/api/method/frappe.rename_doc`,
     delete: `${ERP_BASE}/api/resource/Item Group`,
+  },
+
+  Address: {
+    getaddress: `${ERP_BASE}/api/method/custom_api.utils.address.api.get_address_list`,
   },
 
   /* =========================
@@ -353,11 +352,11 @@ export const API = {
    * PURCHASE ORDER
    * ========================= */
   purchaseOrder: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.get_purchase_orders`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.get`,
 
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.get_purchase_order`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.get_by_id`,
 
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.create_purchase_order`,
+    create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.create`,
 
     update: `${ERP_BASE}/api/method/erpnext.zra_client.update_purchase_order`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.update_po_status.update_purchase_order_status`,

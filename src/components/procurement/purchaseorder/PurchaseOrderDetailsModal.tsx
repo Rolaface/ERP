@@ -1,110 +1,7 @@
 import React from "react";
+import { PurchaseOrderDetail } from "../../../types/Supply/purchaseOrder"; // adjust path as needed
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-export interface PurchaseOrderDetail {
-  poId: string;
-  supplierName: string;
-  poDate: string;
-  requiredBy?: string;
-  currency: string;
-  conversionRate?: number;
-  status: string;
-  grandTotal?: number;
-  taxCategory?: string;
-  placeOfSupply?: string | null;
-  incoterm?: string;
-  project?: string;
-  costCenter?: string;
-  addresses?: {
-    supplierAddress?: {
-      addressId?: string;
-      addressTitle?: string;
-      addressType?: string;
-      addressLine1?: string;
-      addressLine2?: string;
-      city?: string;
-      state?: string;
-      country?: string;
-      postalCode?: string;
-      phone?: string;
-      email?: string;
-    };
-    dispatchAddress?: {
-      addressLine1?: string;
-      addressLine2?: string;
-      city?: string;
-      state?: string;
-      country?: string;
-      postalCode?: string;
-    } | null;
-    shippingAddress?: {
-      addressLine1?: string;
-      addressLine2?: string;
-      city?: string;
-      state?: string;
-      country?: string;
-      postalCode?: string;
-    } | null;
-  };
-  items?: Array<{
-    item_code?: string;
-    item_name?: string;
-    qty?: number;
-    uom?: string;
-    rate?: number;
-    amount?: number;
-    schedule_date?: string;
-    mfgDate?: string | null;
-    packingUnit?: string;
-    packingSize?: string;
-    batchNo?: string | null;
-    vatCd?: string;
-  }>;
-  tax?: {
-    type?: string;
-    taxRate?: string;
-    taxableAmount?: string;
-    taxAmount?: string;
-  };
-  summary?: {
-    totalQuantity?: number;
-    subTotal?: number;
-    taxTotal?: string;
-    grandTotal?: number;
-    roundingAdjustment?: number;
-    roundedTotal?: number;
-  };
-  terms?: {
-    terms?: {
-      buying?: {
-        general?: string;
-        delivery?: string;
-        cancellation?: string;
-        warranty?: string;
-        liability?: string;
-        payment?: {
-          dueDates?: string;
-          lateCharges?: string;
-          taxes?: string;
-          notes?: string;
-          phases?: Array<{
-            id?: string;
-            name?: string;
-            percentage?: string;
-            condition?: string;
-          }>;
-        };
-      };
-    };
-  };
-  metadata?: {
-    createdBy?: string;
-   
-    createdAt?: string;
-    updatedAt?: string;
-  };
-}
-
+// ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
   open: boolean;
   data: PurchaseOrderDetail | null;
@@ -118,8 +15,9 @@ interface Props {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (n?: number | string, currency = "INR") => {
+const fmt = (n?: number | string | null, currency = "INR") => {
   const num = typeof n === "string" ? parseFloat(n) : (n ?? 0);
+  if (isNaN(num)) return "—";
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency,
@@ -135,6 +33,17 @@ const fmtDate = (d?: string | null) =>
         year: "numeric",
       })
     : "—";
+
+/** Strip HTML tags from address display strings returned by the API */
+const stripHtml = (html?: string | null): string[] => {
+  if (!html) return [];
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+};
 
 const STATUS_MAP: Record<string, string> = {
   Draft: "bg-draft",
@@ -203,6 +112,59 @@ const S: React.FC<{ title: string }> = ({ title }) => (
   </div>
 );
 
+// Address card from display HTML string
+const AddressCard: React.FC<{
+  label: string;
+  html?: string | null;
+  name?: string;
+}> = ({ label, html, name }) => {
+  const lines = stripHtml(html);
+  if (!lines.length && !name) return null;
+  return (
+    <div
+      style={{
+        padding: "7px 9px",
+        borderRadius: 6,
+        background: "var(--bg)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: 9,
+          color: "var(--muted)",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.07em",
+          marginBottom: 3,
+        }}
+      >
+        {label}
+      </p>
+      {name && (
+        <p
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--text)",
+            marginBottom: 2,
+          }}
+        >
+          {name}
+        </p>
+      )}
+      {lines.map((l, i) => (
+        <p
+          key={i}
+          style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}
+        >
+          {l}
+        </p>
+      ))}
+    </div>
+  );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 const PurchaseOrderDetailModal: React.FC<Props> = ({
   open,
@@ -219,14 +181,24 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
 
   const items = data?.items ?? [];
   const currency = data?.currency ?? "INR";
-  const statusCls = STATUS_MAP[data?.status ?? "Draft"] ?? "bg-draft";
+  const status = data?.status ?? "Draft";
+  const statusCls = STATUS_MAP[status] ?? "bg-draft";
+
+  const buying = data?.terms?.buying;
   const phases =
-    data?.terms?.terms?.buying?.payment?.phases
-      ?.filter((p) => p?.percentage)
-      ?.slice(0, 3) ?? [];
-  const grandTotal = data?.summary?.grandTotal ?? data?.grandTotal ?? 0;
-  const subTotal = data?.summary?.subTotal ?? 0;
-  const taxTotal = parseFloat(data?.summary?.taxTotal ?? "0");
+    buying?.payment?.phases?.filter((p) => p?.percentage)?.slice(0, 3) ?? [];
+  const grandTotal = data?.grandTotal ?? 0;
+  const roundedTotal = data?.roundedTotal ?? grandTotal;
+  const totalTaxes = data?.totalTaxes ?? 0;
+  // subTotal derived: grandTotal - totalTaxes
+  const subTotal = grandTotal - totalTaxes;
+
+  // Address visibility
+  const hasAddresses =
+    data?.supplierAddressDisplay ||
+    data?.billingAddressDisplay ||
+    data?.shippingAddressDisplay ||
+    data?.dispatchAddressDisplay;
 
   return (
     <>
@@ -303,7 +275,6 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                 flexShrink: 0,
               }}
             >
-              {/* Shopping cart / PO icon */}
               <svg
                 width="14"
                 height="14"
@@ -347,7 +318,7 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                 borderRadius: 20,
               }}
             >
-              {data?.status ?? "Draft"}
+              {status}
             </span>
           </div>
 
@@ -473,7 +444,7 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: "1fr 1fr 1fr",
                   gap: 6,
                   marginBottom: 2,
                 }}
@@ -483,6 +454,7 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                     padding: "9px 11px",
                     borderRadius: 7,
                     background: "var(--primary)",
+                    gridColumn: "1/2",
                   }}
                 >
                   <p
@@ -538,6 +510,36 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                     {fmtDate(data.poDate)}
                   </p>
                 </div>
+                <div
+                  style={{
+                    padding: "9px 11px",
+                    borderRadius: 7,
+                    background: "var(--bg)",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "var(--muted)",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Delivery Date
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "var(--text)",
+                    }}
+                  >
+                    {fmtDate(data.deliveryDate)}
+                  </p>
+                </div>
               </div>
 
               {/* ── SUPPLIER & TRANSACTION ── */}
@@ -545,16 +547,13 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr auto",
+                  gridTemplateColumns: "1fr 1fr",
                   gap: 10,
                   marginBottom: 7,
                 }}
               >
                 <F label="Supplier" value={data.supplierName} />
-                <F
-                  label="Currency"
-                  value={`${data.currency}${data.conversionRate && data.conversionRate !== 1 ? ` · ${data.conversionRate}` : ""}`}
-                />
+                <F label="Supplier ID" value={data.supplierId} mono />
               </div>
               <div
                 style={{
@@ -563,16 +562,24 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                   gap: 8,
                 }}
               >
+                <F label="Currency" value={data.currency} />
                 <F label="Tax Category" value={data.taxCategory} />
-                <F label="Incoterm" value={data.incoterm} />
-                <F label="Project" value={data.project} />
+                <F label="Incoterms" value={data.incoterms} />
                 <F label="Cost Center" value={data.costCenter} />
               </div>
-              {data.placeOfSupply && (
-                <div style={{ marginTop: 7 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2,1fr)",
+                  gap: 8,
+                  marginTop: 7,
+                }}
+              >
+                <F label="Project" value={data.project} />
+                {data.placeOfSupply && (
                   <F label="Place of Supply" value={data.placeOfSupply} />
-                </div>
-              )}
+                )}
+              </div>
               {data.metadata && (
                 <div
                   style={{
@@ -587,101 +594,48 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                     label="Created At"
                     value={fmtDate(data.metadata.createdAt)}
                   />
-                  
+                  <F
+                    label="Updated At"
+                    value={fmtDate(data.metadata.updatedAt)}
+                  />
                 </div>
               )}
 
               {/* ── ADDRESSES ── */}
-              {data.addresses &&
-                (data.addresses.supplierAddress ||
-                  data.addresses.dispatchAddress ||
-                  data.addresses.shippingAddress) && (
-                  <>
-                    <S title="Addresses" />
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(3,1fr)",
-                        gap: 6,
-                      }}
-                    >
-                      {[
-                        {
-                          label: "Supplier",
-                          addr: data.addresses.supplierAddress,
-                        },
-                        {
-                          label: "Dispatch",
-                          addr: data.addresses.dispatchAddress,
-                        },
-                        {
-                          label: "Shipping",
-                          addr: data.addresses.shippingAddress,
-                        },
-                      ].map(({ label, addr }) =>
-                        addr ? (
-                          <div
-                            key={label}
-                            style={{
-                              padding: "7px 9px",
-                              borderRadius: 6,
-                              background: "var(--bg)",
-                              border: "1px solid var(--border)",
-                            }}
-                          >
-                            <p
-                              style={{
-                                fontSize: 9,
-                                color: "var(--muted)",
-                                fontWeight: 700,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.07em",
-                                marginBottom: 3,
-                              }}
-                            >
-                              {label}
-                            </p>
-                            {[
-                              addr.addressLine1,
-                              addr.city,
-                              [addr.state, addr.postalCode]
-                                .filter(Boolean)
-                                .join(", "),
-                              addr.country?.toUpperCase(),
-                            ]
-                              .filter(Boolean)
-                              .map((l, i) => (
-                                <p
-                                  key={i}
-                                  style={{
-                                    fontSize: 12,
-                                    color: "var(--text)",
-                                    lineHeight: 1.5,
-                                  }}
-                                >
-                                  {l}
-                                </p>
-                              ))}
-                            {"phone" in addr &&
-                              typeof (addr as any).phone === "string" && (
-                                <p
-                                  style={{
-                                    fontSize: 10,
-                                    color: "var(--muted)",
-                                    marginTop: 2,
-                                  }}
-                                >
-                                  {(addr as any).phone}
-                                </p>
-                              )}
-                          </div>
-                        ) : (
-                          <div key={label} />
-                        ),
-                      )}
-                    </div>
-                  </>
-                )}
+              {hasAddresses && (
+                <>
+                  <S title="Addresses" />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2,1fr)",
+                      gap: 6,
+                    }}
+                  >
+                    <AddressCard
+                      label="Supplier Address"
+                      html={data.supplierAddressDisplay}
+                    />
+                    <AddressCard
+                      label="Billing Address"
+                      name={data.billingAddress}
+                      html={data.billingAddressDisplay}
+                    />
+                    <AddressCard
+                      label="Shipping Address"
+                      name={data.shippingAddress}
+                      html={data.shippingAddressDisplay}
+                    />
+                    {data.dispatchAddressDisplay && (
+                      <AddressCard
+                        label="Dispatch Address"
+                        name={data.dispatchAddress}
+                        html={data.dispatchAddressDisplay}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
 
               {/* ── LINE ITEMS ── */}
               <S title="Line Items" />
@@ -695,7 +649,7 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "minmax(0,2fr) 60px 72px 88px 88px",
+                    gridTemplateColumns: "minmax(0,2fr) 60px 70px 88px 88px",
                     padding: "6px 10px",
                     background: "var(--table-head)",
                     color: "var(--table-head-text)",
@@ -712,154 +666,157 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                   <span style={{ textAlign: "right" }}>Rate</span>
                   <span style={{ textAlign: "right" }}>Amount</span>
                 </div>
-                {items.map((it, i) => (
-                  <div
-                    key={i}
-                    className="podm-irow"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "minmax(0,2fr) 60px 72px 88px 88px",
-                      padding: "7px 10px",
-                      gap: 4,
-                      borderTop: "1px solid var(--border)",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
+
+                {items.map((it, i) => {
+                  const amount = (it.quantity ?? 0) * (it.rate ?? 0);
+                  return (
+                    <div
+                      key={i}
+                      className="podm-irow"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "minmax(0,2fr) 60px 70px 88px 88px",
+                        padding: "7px 10px",
+                        gap: 4,
+                        borderTop: "1px solid var(--border)",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <p
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "var(--text)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {it.itemName || it.itemCode}
+                        </p>
+                        {it.itemName && it.itemCode && (
+                          <p
+                            style={{
+                              fontSize: 9,
+                              color: "var(--muted)",
+                              fontFamily: "monospace",
+                            }}
+                          >
+                            {it.itemCode}
+                          </p>
+                        )}
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 6,
+                            flexWrap: "wrap",
+                            marginTop: 2,
+                          }}
+                        >
+                          {it.itemTaxTemplate && (
+                            <span
+                              style={{
+                                fontSize: 9,
+                                background: "var(--bg)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 4,
+                                padding: "1px 5px",
+                                color: "var(--muted)",
+                              }}
+                            >
+                              Tax: {it.itemTaxTemplate}
+                            </span>
+                          )}
+                          {it.warehouse && (
+                            <span
+                              style={{
+                                fontSize: 9,
+                                background: "var(--bg)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 4,
+                                padding: "1px 5px",
+                                color: "var(--muted)",
+                              }}
+                            >
+                              {it.warehouse}
+                            </span>
+                          )}
+                          {it.requiredBy && (
+                            <span
+                              style={{
+                                fontSize: 9,
+                                background: "var(--bg)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 4,
+                                padding: "1px 5px",
+                                color: "var(--muted)",
+                              }}
+                            >
+                              By: {fmtDate(it.requiredBy)}
+                            </span>
+                          )}
+                          {(it.packingSize && it.packingSize !== "0.0") ||
+                          (it.packingUnit && it.packingUnit !== "0.0") ? (
+                            <span
+                              style={{
+                                fontSize: 9,
+                                background: "var(--bg)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 4,
+                                padding: "1px 5px",
+                                color: "var(--muted)",
+                              }}
+                            >
+                              Pack {it.packingSize}/{it.packingUnit}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
                       <p
                         style={{
                           fontSize: 12,
-                          fontWeight: 600,
+                          textAlign: "right",
                           color: "var(--text)",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          fontVariantNumeric: "tabular-nums",
                         }}
                       >
-                        {it.item_name || it.item_code}
+                        {(it.quantity ?? 0).toLocaleString()}
                       </p>
-                      {it.item_name && it.item_code && (
-                        <p
-                          style={{
-                            fontSize: 9,
-                            color: "var(--muted)",
-                            fontFamily: "monospace",
-                          }}
-                        >
-                          {it.item_code}
-                        </p>
-                      )}
-                      {/* Badges */}
-                      <div
+                      <p
                         style={{
-                          display: "flex",
-                          gap: 6,
-                          flexWrap: "wrap",
-                          marginTop: 2,
+                          fontSize: 11,
+                          textAlign: "center",
+                          color: "var(--muted)",
                         }}
                       >
-                        {it.vatCd && (
-                          <span
-                            style={{
-                              fontSize: 9,
-                              background: "var(--bg)",
-                              border: "1px solid var(--border)",
-                              borderRadius: 4,
-                              padding: "1px 5px",
-                              color: "var(--muted)",
-                              fontFamily: "monospace",
-                            }}
-                          >
-                            VAT: {it.vatCd}
-                          </span>
-                        )}
-                        {it.batchNo && (
-                          <span
-                            style={{
-                              fontSize: 9,
-                              background: "var(--bg)",
-                              border: "1px solid var(--border)",
-                              borderRadius: 4,
-                              padding: "1px 5px",
-                              color: "var(--muted)",
-                              fontFamily: "monospace",
-                            }}
-                          >
-                            Batch: {it.batchNo}
-                          </span>
-                        )}
-                        {(it.packingSize || it.packingUnit) && (
-                          <span
-                            style={{
-                              fontSize: 9,
-                              background: "var(--bg)",
-                              border: "1px solid var(--border)",
-                              borderRadius: 4,
-                              padding: "1px 5px",
-                              color: "var(--muted)",
-                            }}
-                          >
-                            Pack {it.packingSize}/{it.packingUnit}
-                          </span>
-                        )}
-                        {it.schedule_date && (
-                          <span
-                            style={{
-                              fontSize: 9,
-                              background: "var(--bg)",
-                              border: "1px solid var(--border)",
-                              borderRadius: 4,
-                              padding: "1px 5px",
-                              color: "var(--muted)",
-                            }}
-                          >
-                            Required By: {fmtDate(it.schedule_date)}
-                          </span>
-                        )}
-                      </div>
+                        {it.uom || "—"}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 12,
+                          textAlign: "right",
+                          color: "var(--text)",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {fmt(it.rate, currency)}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 12,
+                          textAlign: "right",
+                          fontWeight: 700,
+                          color: "var(--text)",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {fmt(amount, currency)}
+                      </p>
                     </div>
-                    <p
-                      style={{
-                        fontSize: 12,
-                        textAlign: "right",
-                        color: "var(--text)",
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {(it.qty ?? 0).toLocaleString()}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: 11,
-                        textAlign: "center",
-                        color: "var(--muted)",
-                      }}
-                    >
-                      {it.uom || "—"}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: 12,
-                        textAlign: "right",
-                        color: "var(--text)",
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {fmt(it.rate, currency)}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: 12,
-                        textAlign: "right",
-                        fontWeight: 700,
-                        color: "var(--text)",
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {fmt(it.amount, currency)}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {/* Totals */}
                 <div
@@ -877,19 +834,16 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                       label: "Subtotal",
                       val: fmt(subTotal, currency),
                       big: false,
-                      red: false,
                     },
                     {
-                      label: `Tax`,
-                      val: fmt(taxTotal, currency),
+                      label: "Tax",
+                      val: fmt(totalTaxes, currency),
                       big: false,
-                      red: false,
                     },
                     {
                       label: "Grand Total",
                       val: fmt(grandTotal, currency),
                       big: true,
-                      red: false,
                     },
                   ].map(({ label, val, big }) => (
                     <div
@@ -923,37 +877,36 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                       </span>
                     </div>
                   ))}
-                  {data.summary?.roundingAdjustment !== 0 &&
-                    data.summary?.roundingAdjustment != null && (
-                      <div
+                  {roundedTotal !== grandTotal && (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span
                         style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
+                          fontSize: 9,
+                          color: "var(--muted)",
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.07em",
                         }}
                       >
-                        <span
-                          style={{
-                            fontSize: 9,
-                            color: "var(--muted)",
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.07em",
-                          }}
-                        >
-                          Rounding
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            color: "var(--muted)",
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {fmt(data.summary.roundingAdjustment, currency)}
-                        </span>
-                      </div>
-                    )}
+                        Rounded Total
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: "var(--muted)",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {fmt(roundedTotal, currency)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1016,19 +969,41 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                         >
                           {phase.condition}
                         </p>
+                        {phase.credit_days && (
+                          <p
+                            style={{
+                              fontSize: 9,
+                              color: "var(--muted)",
+                              marginTop: 2,
+                            }}
+                          >
+                            Credit: {phase.credit_days} days
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
-                  {data.terms?.terms?.buying?.payment?.notes && (
+                  {buying?.payment?.dueDates && (
+                    <p
+                      style={{
+                        fontSize: 10,
+                        color: "var(--muted)",
+                        marginTop: 5,
+                      }}
+                    >
+                      Due Dates: {buying.payment.dueDates}
+                    </p>
+                  )}
+                  {buying?.payment?.notes && (
                     <p
                       style={{
                         fontSize: 10,
                         color: "var(--muted)",
                         fontStyle: "italic",
-                        marginTop: 5,
+                        marginTop: 3,
                       }}
                     >
-                      ※ {data.terms.terms.buying.payment.notes}
+                      ※ {buying.payment.notes}
                     </p>
                   )}
                 </>
@@ -1036,16 +1011,16 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
 
               {/* ── TERMS & CONDITIONS ── */}
               {(() => {
-                const b = data.terms?.terms?.buying;
-                if (!b) return null;
+                if (!buying) return null;
                 const rows = [
-                  { label: "Delivery", value: b.delivery },
-                  { label: "Cancellation", value: b.cancellation },
-                  { label: "Warranty", value: b.warranty },
-                  { label: "Liability", value: b.liability },
-                  { label: "Late Charges", value: b.payment?.lateCharges },
-                  { label: "Due Dates", value: b.payment?.dueDates },
-                  { label: "General", value: b.general },
+                  { label: "General", value: buying.general },
+                  { label: "Delivery", value: buying.delivery },
+                  { label: "Cancellation", value: buying.cancellation },
+                  { label: "Warranty", value: buying.warranty },
+                  { label: "Liability", value: buying.liability },
+                  { label: "Late Charges", value: buying.payment?.lateCharges },
+                  { label: "Due Dates", value: buying.payment?.dueDates },
+                  { label: "Taxes", value: buying.payment?.taxes },
                 ].filter((r) => r.value);
                 if (!rows.length) return null;
                 return (

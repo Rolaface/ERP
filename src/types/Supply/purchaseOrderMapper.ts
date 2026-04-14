@@ -1,7 +1,6 @@
 import { PurchaseOrderFormData, emptyPOForm } from "./purchaseOrder";
 import type { AddressBlock } from "./purchaseOrder";
 
-
 export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
   console.log("MAPPING PO TO BACKEND - Form items:", form.items);
 
@@ -62,7 +61,6 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       paymentAmount: Number(p.paymentAmount || 0),
     }));
 
-
   const payload: any = {
     supplierId: form.supplierId,
     currency: form.currency,
@@ -80,13 +78,17 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       taxesChargesTemplate: form.taxesChargesTemplate,
     }),
 
-    addresses: form.addresses,
+    supplier_address: form.addresses?.supplierAddress?.id || "",
+    shipping_address: form.addresses?.shippingAddress?.id || "",
+    dispatch_address: form.addresses?.dispatchAddress?.id || "",
+    billing_address: form.addresses?.companyBillingAddress?.id || "",
+    set_warehouse: form.warehouse || "",
 
     terms: {
       buying: form.terms?.buying || {},
     },
 
-    items: items, 
+    items: items,
 
     ...(taxes.length > 0 && { taxes }),
     ...(payments.length > 0 && { payments }),
