@@ -430,17 +430,13 @@ export const useInvoiceForm = (
         getCompanyById(COMPANY_ID),
       ]);
 
-      if (!customerRes || customerRes.status_code !== 200) return;
+      if (!customerRes || customerRes?.message?.status_code !== 200) return;
 
-      const data = customerRes.data;
+     const data = customerRes?.message?.data;
 
       const company = companyRes?.data;
-      const invoiceType = data.customerTaxCategory as
-        | "Export"
-        | "Non-Export"
-        | "Lpo";
-
-      setTaxCategory(invoiceType);
+   const invoiceType = data?.customerTaxCategory || "";
+setTaxCategory(invoiceType);
 
       const countryLookupList = await getRolaCountryList();
 
@@ -449,30 +445,40 @@ export const useInvoiceForm = (
         name: c.country_name || c.name,
       }));
 
-      const countryCode = getCountryCode(
-        formattedCountries,
-        data.shippingCountry || data.billingCountry,
-      );
 
       setCustomerDetails(data);
+     setCustomerDetails({ ...data });
+     const billingAddressObj = data.addresses?.find(
+  (addr: any) => addr.type === "Billing"
+);
 
-      const billing = {
-        line1: data.billingAddressLine1 ?? "",
-        line2: data.billingAddressLine2 ?? "",
-        postalCode: data.billingPostalCode ?? "",
-        city: data.billingCity ?? "",
-        state: data.billingState ?? "",
-        country: data.billingCountry ?? "",
-      };
+const shippingAddressObj = data.addresses?.find(
+  (addr: any) => addr.type === "Shipping"
+);
 
-      const shippingFromCustomer = {
-        line1: data.shippingAddressLine1 ?? "",
-        line2: data.shippingAddressLine2 ?? "",
-        postalCode: data.shippingPostalCode ?? "",
-        city: data.shippingCity ?? "",
-        state: data.shippingState ?? "",
-        country: data.shippingCountry ?? "",
-      };
+const billing = {
+  line1: billingAddressObj?.line1 ?? "",
+  line2: billingAddressObj?.line2 ?? "",
+  postalCode: billingAddressObj?.postalCode ?? "",
+  city: billingAddressObj?.city ?? "",
+  state: billingAddressObj?.state ?? "",
+  country: billingAddressObj?.country ?? "",
+};
+
+const shippingFromCustomer = {
+  line1: shippingAddressObj?.line1 ?? "",
+  line2: shippingAddressObj?.line2 ?? "",
+  postalCode: shippingAddressObj?.postalCode ?? "",
+  city: shippingAddressObj?.city ?? "",
+  state: shippingAddressObj?.state ?? "",
+  country: shippingAddressObj?.country ?? "",
+};
+
+      const countryCode = getCountryCode(
+  formattedCountries,
+  shippingAddressObj?.country || billingAddressObj?.country
+);
+
 
       const paymentInformation = {
         paymentTerms:
@@ -488,13 +494,13 @@ export const useInvoiceForm = (
       };
 
       setFormData((prev) => {
-        let shipping = prev.shippingAddress;
+    let shipping = shippingFromCustomer;
 
-        if (sameAsBilling) {
-          shipping = { ...billing };
-        } else if (!shippingEditedRef.current) {
-          shipping = shippingFromCustomer;
-        }
+if (sameAsBilling) {
+  shipping = { ...billing };
+} else if (shippingEditedRef.current) {
+  shipping = prev.shippingAddress;
+}
 
         return {
           ...prev,
@@ -506,11 +512,12 @@ export const useInvoiceForm = (
           shippingAddress: shipping,
           paymentInformation,
           terms: {
-            selling:
-              company?.terms?.selling ??
-              prev.terms?.selling ??
-              EMPTY_TERMS.selling,
-          },
+  selling:
+    data?.terms?.Selling ??
+    company?.terms?.selling ??
+    prev.terms?.selling ??
+    EMPTY_TERMS.selling,
+},
         };
       });
     } catch (err: any) {

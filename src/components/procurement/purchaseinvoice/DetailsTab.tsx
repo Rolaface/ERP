@@ -360,10 +360,13 @@ export const DetailsTab = ({
         <div className="flex flex-wrap gap-x-3 gap-y-3 items-end">
           <div className="w-[250px]">
             <Tooltip content={form.supplier ? `Supplier: ${form.supplier}` : 'Select a supplier'}>
-            <SupplierSelect
-              selectedId={form.supplierId}
-              onChange={onSupplierChange}
-            />
+           <SupplierSelect
+  selectedId={form.supplierId}
+  onChange={(s) => {
+    console.log("UI SELECT:", s);
+    onSupplierChange(s);
+  }}
+/>
             </Tooltip>
           </div>
 

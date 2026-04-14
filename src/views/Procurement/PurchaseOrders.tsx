@@ -10,6 +10,7 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import type { Column } from "../../components/ui/Table/type";
+import { createPurchaseInvoiceFromPO } from "../../api/procurement/PurchaseOrderApi";
 import {
   showApiError,
   showSuccess,
@@ -181,6 +182,27 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   setPaymentModalOpen(true);
 };
 
+const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
+  try {
+    showLoading("Creating Purchase Invoice...");
+
+    const res = await createPurchaseInvoiceFromPO(order.id);
+
+    if (!res || res.status !== 200) {
+      throw new Error("Failed to create invoice");
+    }
+
+    closeSwal();
+    showSuccess("Purchase Invoice created successfully");
+
+    // OPTIONAL: refresh table
+    fetchOrders();
+
+  } catch (err: any) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   const handleDrawerPdf = async (poId: string) => {
     setDrawerPdfLoading(true);
@@ -517,6 +539,14 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
         },
       ]
     : []),
+    ...(o.status === "Approved"
+  ? [
+      {
+        label: "Make Purchase Invoice",
+        onClick: () => handleCreateInvoiceFromPO(o),
+      },
+    ]
+  : []),
               ...(STATUS_TRANSITIONS[o.status as POStatus] ?? []).map(
                 (status) => ({
                   label: `Mark as ${status}`,

@@ -38,7 +38,9 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
   pId,
   modalId,
 }) => {
-  const resolvedModalId = modalId || (pId ? `purchase-invoice-edit-${pId}` : `purchase-invoice-create`);
+  const resolvedModalId =
+    modalId ||
+    (pId ? `purchase-invoice-edit-${pId}` : `purchase-invoice-create`);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const {
@@ -67,12 +69,23 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     customIncoterm,
     setCustomIncoterm,
     handleBulkItemChange,
-    saving
+    selected,
+    setSelected,
+    selectedIds,
+    setSelectedIds,
+    addresses,
+    setAddresses,
+    loading,
+    setLoading,
+    saving,
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
   const footer = (
     <>
-      <Button variant="secondary" onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}>
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+      >
         Cancel
       </Button>
       <div className="flex gap-2">
@@ -155,10 +168,11 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
                 key={key}
                 type="button"
                 onClick={() => setActiveTab(key)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === key
-                  ? "text-primary border-b-[3px] border-primary"
-                  : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
+                  activeTab === key
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                }`}
               >
                 {label}
               </button>
@@ -185,8 +199,6 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               usePO={usePO}
               onTogglePO={handleTogglePO}
               onBulkItemChange={handleBulkItemChange}
-
-
             />
           )}
 
@@ -231,11 +243,20 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           {activeTab === "address" && (
             <AddressTab
               form={form}
-              onFormChange={handleFormChange}
+              onFormChange={(e: any) => handleFormChange(e)}
               customShippingRule={customShippingRule}
               setCustomShippingRule={setCustomShippingRule}
               customIncoterm={customIncoterm}
               setCustomIncoterm={setCustomIncoterm}
+              supplierId={form.supplierId}
+              selected={selected}
+              setSelected={setSelected}
+              selectedIds={selectedIds}
+              setSelectedIds={setSelectedIds}
+              addresses={addresses}
+              setAddresses={setAddresses}
+              loading={loading}
+              setLoading={setLoading}
             />
           )}
 

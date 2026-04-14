@@ -128,7 +128,7 @@ export const emptyForm: ItemFormData = {
   itemClassCode: "",
   itemTypeCode: "",
   originNationCode: "",
-  countryOfOrigin:";",
+  countryOfOrigin:"",
   packagingUnitCode: "",
   packingUnit: 1,
   packingSize: 1,
@@ -190,7 +190,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   dimensionWidth: form.dimensionWidth,
   dimensionHeight: form.dimensionHeight,
   brand: form.brand,
-  countryOfOrigin: form.countryCode ,
+  countryOfOrigin: form.originNationCode ,
   vendorInfo: {
     preferredVendor: form.preferredVendor,
     salesAccount: form.salesAccount,
@@ -230,7 +230,7 @@ const mapApiToForm = (item: any) => {
   return {
     ...item,
     preferredVendor: item.vendorInfo?.preferredVendor || "",
-
+    originNationCode: item.countryOfOrigin || "", 
     valuationMethod: item.inventoryInfo?.valuationMethod || "",
     trackingMethod: item.inventoryInfo?.trackingMethod || "",
     reorderLevel: item.inventoryInfo?.reorderLevel || "",

@@ -7,6 +7,7 @@ import {
   showLoading,
   closeSwal,
 } from "../utils/alert";
+import type { ApiAddress, BoxType } from "../hooks/useAddressLogic";
 import type {
   PurchaseInvoiceFormData,
   POTab,
@@ -65,7 +66,32 @@ export const usePurchaseInvoiceForm = ({
   const [companyDefaults, setCompanyDefaults] = useState<
     Partial<PurchaseInvoiceFormData>
   >({});
+const [selected, setSelected] = useState<Record<BoxType, ApiAddress | null>>({
+  companyBilling: null,
+  supplierBilling: null,
+  companyShipping: null,
+  supplierDispatch: null,
+});
 
+const [selectedIds, setSelectedIds] = useState<Record<BoxType, string>>({
+  companyBilling: "",
+  supplierBilling: "",
+  companyShipping: "",
+  supplierDispatch: "",
+});
+
+const [addresses, setAddresses] = useState<Record<BoxType, ApiAddress[]>>({
+  companyBilling: [],
+  supplierBilling: [],
+  companyShipping: [],
+  supplierDispatch: [],
+});
+const [loading, setLoading] = useState<Record<BoxType, boolean>>({
+  companyBilling: false,
+  supplierBilling: false,
+  companyShipping: false,
+  supplierDispatch: false,
+});
   const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
     setForm((prev) => ({
       ...prev,
@@ -94,16 +120,12 @@ export const usePurchaseInvoiceForm = ({
       try {
         const res = await getCompanyById(COMPANY_ID);
 
-
         const company =
-          res?.data?.data || // if wrapped
-          res?.data || // if semi wrapped
-          res; // fallback
-
-
+          res?.data?.data ||
+          res?.data ||
+          res;
 
         if (!company?.companyName) {
-
           return;
         }
 
@@ -182,11 +204,8 @@ export const usePurchaseInvoiceForm = ({
       const vatRate = Number(item.vatRate || 0);
 
       const lineAmount = qty * rate;
-
       const discountAmount = lineAmount * (discount / 100);
-
       const netAmount = lineAmount - discountAmount;
-
       const taxAmount = netAmount * (vatRate / 100);
 
       sub += lineAmount;
@@ -211,27 +230,27 @@ export const usePurchaseInvoiceForm = ({
 
 
   useFieldDefault(
-  isOpen,
-  form.costCenter,
-  fetchCostCenters,
-  (val) => setForm((prev) => ({ ...prev, costCenter: val }))
-);
+    isOpen,
+    form.costCenter,
+    fetchCostCenters,
+    (val) => setForm((prev) => ({ ...prev, costCenter: val }))
+  );
 
-useFieldDefault(
-  isOpen,
-  form.project,
-  fetchProjects,
-  (val) => setForm((prev) => ({ ...prev, project: val }))
-);
+  useFieldDefault(
+    isOpen,
+    form.project,
+    fetchProjects,
+    (val) => setForm((prev) => ({ ...prev, project: val }))
+  );
 
-useFieldDefault(
-  isOpen,
-  form.warehouse,
-  () => getAllWarehouses().then((list: string[]) =>
-    list.map((w) => ({ value: w, label: w }))
-  ),
-  (val) => setForm((prev) => ({ ...prev, warehouse: val }))
-);
+  useFieldDefault(
+    isOpen,
+    form.warehouse,
+    () => getAllWarehouses().then((list: string[]) =>
+      list.map((w) => ({ value: w, label: w }))
+    ),
+    (val) => setForm((prev) => ({ ...prev, warehouse: val }))
+  );
 
   type AddressKey = keyof PurchaseInvoiceFormData["addresses"];
 
@@ -422,17 +441,12 @@ useFieldDefault(
             (sum: number, p: any) => sum + Number(p.allocated_amount || 0),
             0
           ),
-
-        // // SUMMARY
-        // totalQuantity: data.summary?.totalQuantity || 0,
-        // grandTotal: data.summary?.grandTotal || 0,
-        // roundingAdjustment: data.summary?.roundingAdjustment || 0,
-        // roundedTotal: data.summary?.roundedTotal || 0,
       }));
     } catch (e) {
       showApiError({ message: "Failed to load PO details" });
     }
   };
+
   const handleTogglePO = (checked: boolean) => {
     setUsePO(checked);
 
@@ -440,10 +454,10 @@ useFieldDefault(
       setForm((prev) => ({
         ...prev,
         poNumber: "",
-       // items: [{ ...emptyItem }],
       }));
     }
   };
+
   const handleFormChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -492,58 +506,59 @@ useFieldDefault(
     if (!sup) return;
 
     try {
-      const res = await getSupplierById(sup.id);
-      const supplier = res?.data;
+      const supplierId = sup.id || sup.value;
+
+      const res = await getSupplierById(supplierId);
+
+      // ── Correctly unwrap: API returns { message: { data: {...} } }
+      const supplier =
+        res?.message?.data ||   // ✅ primary path matching the API shape
+        res?.data?.message?.data ||
+        res?.data?.data ||
+        res?.data;
+
       if (!supplier) return;
 
-      // 1. Set supplier details
-      setForm((p) => ({
-        ...p,
-        supplier: supplier.supplierName,
-        supplierId: supplier.supplierId,
-        supplierCode: supplier.supplierCode,
-        supplierEmail: supplier.emailId,
-        supplierPhone: supplier.phoneNo,
-        taxCategory: supplier.taxCategory || "",
-        currency: supplier.currency || p.currency,
-        supplierContact: supplier.contactPerson || "",
-        destnCountryCd: "",
-        placeOfSupply: "",
-        addresses: {
-          ...p.addresses,
-          supplierAddress: mapSupplierToAddress(
-            supplier,
-            p.addresses.supplierAddress,
-          ),
-        },
-      }));
-      setPoLoading(true);
-      setPoList([]);
-      setUsePO(true);
+      // Primary contact
+      const primaryContact =
+        supplier.contacts?.find((c: any) => c.isPrimary) ||
+        supplier.contacts?.[0];
+
+      // Buying terms — API returns "Buying" (capital B)
+      const buyingTerms =
+        supplier.terms?.Buying ||
+        supplier.terms?.buying;
 
       setForm((prev) => ({
         ...prev,
-        poNumber: "",
-        items:
-          prev.items && prev.items.length > 0 ? prev.items : [{ ...emptyItem }],
+
+        supplier: supplier.name || "",
+        supplierId: supplier.id || "",
+        supplierCode: supplier.id || "",
+
+        supplierEmail: primaryContact?.email || "",
+        supplierPhone: primaryContact?.mobile || primaryContact?.phone || "",
+        supplierContact: primaryContact?.fullName || "",
+
+        taxCategory: supplier.supplierTaxCategory || prev.taxCategory,
+        currency: supplier.currency || prev.currency,
+
+        terms: buyingTerms
+          ? { buying: buyingTerms }
+          : prev.terms,
+
+        addresses: {
+          ...prev.addresses,
+          supplierAddress: mapSupplierToAddress(
+            supplier,
+            prev.addresses.supplierAddress
+          ),
+        },
       }));
 
-      try {
-        const poRes = await getPurchaseOrders(1, 100, {
-          supplier: supplier.supplierName,
-        });
-        if (poRes?.status_code === 200) {
-          setPoList(poRes.data || []);
-        } else {
-          setPoList([]);
-        }
-      } catch (err) {
-        setPoList([]);
-      } finally {
-        setPoLoading(false);
-      }
     } catch (e) {
-      console.error("Supplier detail fetch failed", e);
+      console.error("Supplier fetch failed", e);
+      showApiError({ message: "Failed to load supplier details" });
     }
   };
 
@@ -576,6 +591,7 @@ useFieldDefault(
       ],
     }));
   };
+
   const removeItem = (idx: number) => {
     if (form.items.length === 1) {
       showValidationError("At least one item is required");
@@ -638,12 +654,6 @@ useFieldDefault(
 
   const handleSaveTemplate = (html: string) => {
     setForm((p) => ({ ...p, messageHtml: html }));
-    console.log("Template saved:", {
-      name: form.templateName,
-      type: form.templateType,
-      subject: form.subject,
-      messageHtml: html,
-    });
   };
 
   const resetTemplate = () => {
@@ -738,7 +748,6 @@ useFieldDefault(
     try {
       setSaving(true);
 
-
       showLoading(
         isEditMode
           ? "Updating Purchase Invoice..."
@@ -764,7 +773,6 @@ useFieldDefault(
       } else {
         res = await createPurchaseInvoice(payload);
       }
-
 
       closeSwal();
 
@@ -798,11 +806,8 @@ useFieldDefault(
       },
       addresses: {
         supplierAddress: emptyPOForm.addresses.supplierAddress,
-
         dispatchAddress: emptyPOForm.addresses.dispatchAddress,
-
         shippingAddress: emptyPOForm.addresses.shippingAddress,
-
         companyBillingAddress:
           companyDefaults.addresses?.companyBillingAddress ??
           emptyPOForm.addresses.companyBillingAddress,
@@ -847,6 +852,14 @@ useFieldDefault(
     usePO,
     handleTogglePO,
     handleBulkItemChange,
-    saving
+    saving,
+    selected,
+setSelected,
+selectedIds,
+setSelectedIds,
+addresses,
+setAddresses,
+loading,
+setLoading,
   };
 };

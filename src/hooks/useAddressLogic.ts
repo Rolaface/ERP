@@ -31,30 +31,10 @@ interface AddressBoxConfig {
 }
 
 export const BOX_CONFIGS: AddressBoxConfig[] = [
-  {
-    key: "companyBilling",
-    title: "Company Billing",
-    icon: Building2,
-    addressType: "Billing",
-  },
-  {
-    key: "supplierBilling",
-    title: "Supplier Billing",
-    icon: MapPin,
-    addressType: "Billing",
-  },
-  {
-    key: "companyShipping",
-    title: "Company Shipping",
-    icon: Truck,
-    addressType: "Shipping",
-  },
-  {
-    key: "supplierDispatch",
-    title: "Supplier Dispatch",
-    icon: Truck,
-    addressType: "Dispatch",
-  },
+  { key: "companyBilling", title: "Company Billing", icon: Building2, addressType: "Billing" },
+  { key: "supplierBilling", title: "Supplier Billing", icon: MapPin, addressType: "Billing" },
+  { key: "companyShipping", title: "Company Shipping", icon: Truck, addressType: "Shipping" },
+  { key: "supplierDispatch", title: "Supplier Dispatch", icon: Truck, addressType: "Dispatch" },
 ];
 
 const prefixMap: Record<BoxType, string> = {
@@ -67,15 +47,11 @@ const prefixMap: Record<BoxType, string> = {
 interface UseAddressLogicOptions {
   supplierId?: string;
   selected: Record<BoxType, ApiAddress | null>;
-  setSelected: React.Dispatch<
-    React.SetStateAction<Record<BoxType, ApiAddress | null>>
-  >;
+  setSelected: React.Dispatch<React.SetStateAction<Record<BoxType, ApiAddress | null>>>;
   selectedIds: Record<BoxType, string>;
   setSelectedIds: React.Dispatch<React.SetStateAction<Record<BoxType, string>>>;
   addresses: Record<BoxType, ApiAddress[]>;
-  setAddresses: React.Dispatch<
-    React.SetStateAction<Record<BoxType, ApiAddress[]>>
-  >;
+  setAddresses: React.Dispatch<React.SetStateAction<Record<BoxType, ApiAddress[]>>>;
   loading: Record<BoxType, boolean>;
   setLoading: React.Dispatch<React.SetStateAction<Record<BoxType, boolean>>>;
   onFormChange: (e: React.ChangeEvent<HTMLInputElement> | any) => void;
@@ -100,55 +76,26 @@ export function useAddressLogic({
     supplierDispatch: "",
   });
 
+  // FIXED: Single batched call instead of 12 separate calls
   const applyAddressToForm = useCallback(
     (prefix: string, addr: ApiAddress) => {
       onFormChange({
-        target: { name: `addresses.${prefix}.id`, value: addr.id },
-      });
-      onFormChange({
-        target: { name: `addresses.${prefix}.addressTitle`, value: addr.title },
-      });
-      onFormChange({
         target: {
-          name: `addresses.${prefix}.addressType`,
-          value: addr.addressType,
+          name: `addresses.${prefix}`,
+          value: {
+            id: addr.id,
+            addressTitle: addr.title,
+            addressType: addr.addressType,
+            addressLine1: addr.addressLine1 ?? "",
+            addressLine2: addr.addressLine2 ?? "",
+            city: addr.city ?? "",
+            state: addr.state ?? "",
+            country: addr.country ?? "",
+            postalCode: addr.pincode ?? "",
+            phone: addr.phone ?? "",
+            email: addr.email ?? "",
+          },
         },
-      });
-      onFormChange({
-        target: {
-          name: `addresses.${prefix}.addressLine1`,
-          value: addr.addressLine1 ?? "",
-        },
-      });
-      onFormChange({
-        target: {
-          name: `addresses.${prefix}.addressLine2`,
-          value: addr.addressLine2 ?? "",
-        },
-      });
-      onFormChange({
-        target: { name: `addresses.${prefix}.city`, value: addr.city ?? "" },
-      });
-      onFormChange({
-        target: { name: `addresses.${prefix}.state`, value: addr.state ?? "" },
-      });
-      onFormChange({
-        target: {
-          name: `addresses.${prefix}.country`,
-          value: addr.country ?? "",
-        },
-      });
-      onFormChange({
-        target: {
-          name: `addresses.${prefix}.postalCode`,
-          value: addr.pincode ?? "",
-        },
-      });
-      onFormChange({
-        target: { name: `addresses.${prefix}.phone`, value: addr.phone ?? "" },
-      });
-      onFormChange({
-        target: { name: `addresses.${prefix}.email`, value: addr.email ?? "" },
       });
     },
     [onFormChange],
@@ -165,31 +112,21 @@ export function useAddressLogic({
 
   const loadAddresses = useCallback(
     async (boxKey: BoxType) => {
-      let params:
-        | { company: true }
-        | { supplier: string }
-        | { supplier: string; addressType: string };
+      let params: { company: true } | { supplier: string } | { supplier: string; addressType: string };
 
       if (boxKey === "companyBilling" || boxKey === "companyShipping") {
         params = { company: true };
       } else {
         if (!supplierId) return;
         const config = BOX_CONFIGS.find((c) => c.key === boxKey);
-
         if (boxKey === "supplierDispatch") {
-          params = {
-            supplier: supplierId,
-          };
+          params = { supplier: supplierId };
         } else {
-          params = {
-            supplier: supplierId,
-            addressType: config?.addressType || "Billing",
-          };
+          params = { supplier: supplierId, addressType: config?.addressType || "Billing" };
         }
       }
 
       const key = JSON.stringify(params);
-
       if (boxKey !== "supplierDispatch") {
         if (lastParamsRef.current[boxKey] === key) return;
         lastParamsRef.current[boxKey] = key;
@@ -198,26 +135,18 @@ export function useAddressLogic({
       setLoading((prev) => ({ ...prev, [boxKey]: true }));
 
       try {
-        let apiParams: {
-          company?: boolean;
-          supplierId?: string;
-          addressType?: string;
-        } = {};
-
+        const apiParams: { company?: boolean; supplierId?: string; addressType?: string } = {};
         if ("company" in params) {
           apiParams.company = true;
         } else {
           apiParams.supplierId = params.supplier;
-
-          if ("addressType" in params) {
-            apiParams.addressType = params.addressType;
-          }
+          if ("addressType" in params) apiParams.addressType = params.addressType;
         }
 
         const data = await getAddressList(apiParams);
         setAddresses((prev) => ({ ...prev, [boxKey]: data }));
 
-        if (data && data.length > 0) {
+        if (data?.length > 0) {
           const first = data[0];
           setSelected((prev) => ({ ...prev, [boxKey]: first }));
           setSelectedIds((prev) => ({ ...prev, [boxKey]: first.id }));
@@ -229,28 +158,15 @@ export function useAddressLogic({
         setLoading((prev) => ({ ...prev, [boxKey]: false }));
       }
     },
-    [
-      supplierId,
-      setSelected,
-      setSelectedIds,
-      setAddresses,
-      setLoading,
-      applyAddressToForm,
-    ],
+    [supplierId, setSelected, setSelectedIds, setAddresses, setLoading, applyAddressToForm],
   );
 
   const handleCopyBillingToShipping = useCallback(
     (checked: boolean) => {
       onFormChange({ target: { name: "useShippingAddress", value: checked } });
       if (checked && selected.companyBilling) {
-        setSelected((prev) => ({
-          ...prev,
-          companyShipping: prev.companyBilling,
-        }));
-        setSelectedIds((prev) => ({
-          ...prev,
-          companyShipping: prev.companyBilling.id,
-        }));
+        setSelected((prev) => ({ ...prev, companyShipping: prev.companyBilling }));
+        setSelectedIds((prev) => ({ ...prev, companyShipping: prev.companyBilling.id }));
         applyAddressToForm("shippingAddress", selected.companyBilling);
       }
     },
@@ -261,14 +177,8 @@ export function useAddressLogic({
     (checked: boolean) => {
       onFormChange({ target: { name: "useDispatchAddress", value: checked } });
       if (checked && selected.supplierBilling) {
-        setSelected((prev) => ({
-          ...prev,
-          supplierDispatch: prev.supplierBilling,
-        }));
-        setSelectedIds((prev) => ({
-          ...prev,
-          supplierDispatch: prev.supplierBilling.id,
-        }));
+        setSelected((prev) => ({ ...prev, supplierDispatch: prev.supplierBilling }));
+        setSelectedIds((prev) => ({ ...prev, supplierDispatch: prev.supplierBilling.id }));
         applyAddressToForm("dispatchAddress", selected.supplierBilling);
       }
     },
