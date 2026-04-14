@@ -67,15 +67,21 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
           <SearchSelect2
             label="UOM"
             value={form.unitOfMeasureCd ?? ""}
-            fetchOptions={async () => {
+            fetchOptions={async (q) => {
               const data = await fetchUoms();
 
               const list = data?.data ?? [];
 
-              return list.map((item: any) => ({
-                label: item.name ?? item.cdNm ?? "",
-                value: item.name ?? item.cdNm ?? "",
-              }));
+            return list
+  .filter((item: any) =>
+    (item.name ?? item.cdNm ?? "")
+      .toLowerCase()
+      .includes(q.toLowerCase()),
+  )
+  .map((item: any) => ({
+    label: item.name ?? item.cdNm ?? "",
+    value: item.name ?? item.cdNm ?? "",
+  }));
             }}
             onChange={(value) => setField("unitOfMeasureCd", value)}
             placeholder="Search..."
@@ -94,7 +100,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
           />
         </div>
 
-        {/* Country of Origin  */}
+       
         <div className="w-[160px] min-w-0">
           <SearchSelect2
             label="Country of origin"
