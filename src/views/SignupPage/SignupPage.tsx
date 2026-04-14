@@ -7,18 +7,6 @@ import SuccessScreen from "../../components/SignupPage/SuccessScreen";
 import { createSite } from "../../api/createSite";
 import { useCountries } from "../../hooks/useCountries";
 
-// ---------------- API TOGGLE ----------------
-const USE_MOCK_API = true;
-
-// ---------------- MOCK API ----------------
-const mockCreateSite = async () => {
-  return new Promise<{ message: { status: string } }>((resolve) => {
-    setTimeout(() => {
-      resolve({ message: { status: "accepted" } });
-    }, 1500);
-  });
-};
-
 // ---------------- HELPERS ----------------
 const generateAbbr = (name: string): string => {
   if (!name.trim()) return "";
@@ -110,23 +98,23 @@ export default function SignupPage() {
   };
 
   const validateStep2 = () => {
-  const err: Record<string, string> = {};
+    const err: Record<string, string> = {};
 
-  if (!form.company.trim()) err.company = "Required";
-  if (!form.abbr.trim()) err.abbr = "Required";
-  if (!form.country) err.country = "Required";
-  if (!form.timezone) err.timezone = "Required";
-  if (!form.currency) err.currency = "Required";
-  if (!form.fyStart) err.fyStart = "Required";
-  if (!form.fyEnd) err.fyEnd = "Required";
+    if (!form.company.trim()) err.company = "Required";
+    if (!form.abbr.trim()) err.abbr = "Required";
+    if (!form.country) err.country = "Required";
+    if (!form.timezone) err.timezone = "Required";
+    if (!form.currency) err.currency = "Required";
+    if (!form.fyStart) err.fyStart = "Required";
+    if (!form.fyEnd) err.fyEnd = "Required";
 
-  if (form.fyStart && form.fyEnd && form.fyStart >= form.fyEnd) {
-    err.fyEnd = "Invalid range";
-  }
+    if (form.fyStart && form.fyEnd && form.fyStart >= form.fyEnd) {
+      err.fyEnd = "Invalid range";
+    }
 
-  setErrors(err);
-  return Object.keys(err).length === 0;
-};
+    setErrors(err);
+    return Object.keys(err).length === 0;
+  };
 
   // ---------------- SUBMIT ----------------
 
@@ -135,24 +123,22 @@ export default function SignupPage() {
     setApiError("");
 
     try {
-      const res = USE_MOCK_API
-        ? await mockCreateSite()
-        : await createSite({
-            currency: form.currency,
-            country: form.country,
-            timezone: form.timezone,
-            language: "en",
-            full_name: form.fullName.trim(),
-            email: form.email.trim().toLowerCase(),
-            password: form.password,
-            company_name: form.company.trim(),
-            company_abbr: form.abbr.trim(),
-            chart_of_accounts: "Standard",
-            fy_start_date: form.fyStart,
-            fy_end_date: form.fyEnd,
-            setup_demo: 0,
-            apps: [],
-          });
+      const res = await createSite({
+        currency: form.currency,
+        country: form.country,
+        timezone: form.timezone,
+        language: "en",
+        full_name: form.fullName.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        company_name: form.company.trim(),
+        company_abbr: form.abbr.trim(),
+        chart_of_accounts: "Standard",
+        fy_start_date: form.fyStart,
+        fy_end_date: form.fyEnd,
+        setup_demo: 0,
+        apps: [],
+      });
 
       if (res?.message?.status === "accepted") setSuccess(true);
       else setApiError("Something went wrong");
@@ -175,7 +161,7 @@ export default function SignupPage() {
   // ---------------- RENDER ----------------
 
   return (
-   <div className="signup-page min-h-screen flex items-start justify-center px-4 pt-20">
+    <div className="signup-page min-h-screen flex items-start justify-center px-4 pt-20">
       <div className="w-full max-w-md">
 
         {/* 🔥 SINGLE CARD SHELL */}
@@ -188,8 +174,6 @@ export default function SignupPage() {
 
           {/* CONTENT */}
           <div className="px-6 pb-6 step-content">
-
-            
 
             {step === 1 && (
               <Step1Account
