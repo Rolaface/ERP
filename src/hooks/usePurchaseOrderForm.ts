@@ -143,10 +143,7 @@ export const usePurchaseOrderForm = ({
 
         setForm((prev) => ({
           ...prev,
-          terms: {
-            ...prev.terms,
-            buying: buyingTerms || prev.terms?.buying,
-          },
+         
           currency: baseCurrency || prev.currency,
           addresses: {
             ...prev.addresses,
@@ -186,34 +183,76 @@ useEffect(() => {
     setForm(mapped);
 
    
-   setAddressSelected({
+setAddressSelected({
   supplierBilling: mapped.addresses.supplierAddress.id
     ? {
-        value: mapped.addresses.supplierAddress.id,
-        label: mapped.addresses.supplierAddress.id, // temporary (can improve later)
+        id: mapped.addresses.supplierAddress.id,
+        title: mapped.addresses.supplierAddress.id,
+        addressType: "Billing",
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        state: "",
+        country: "",
+        pincode: "",
+        phone: "",
+        email: "",
       }
     : null,
 
   supplierDispatch: mapped.addresses.dispatchAddress.id
     ? {
-        value: mapped.addresses.dispatchAddress.id,
-        label: mapped.addresses.dispatchAddress.id,
+        id: mapped.addresses.dispatchAddress.id,
+        title: mapped.addresses.dispatchAddress.id,
+        addressType: "Dispatch",
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        state: "",
+        country: "",
+        pincode: "",
+        phone: "",
+        email: "",
       }
     : null,
 
   companyBilling: mapped.addresses.companyBillingAddress.id
     ? {
-        value: mapped.addresses.companyBillingAddress.id,
-        label: mapped.addresses.companyBillingAddress.id,
+        id: mapped.addresses.companyBillingAddress.id,
+        title: mapped.addresses.companyBillingAddress.id,
+        addressType: "Billing",
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        state: "",
+        country: "",
+        pincode: "",
+        phone: "",
+        email: "",
       }
     : null,
 
   companyShipping: mapped.addresses.shippingAddress.id
     ? {
-        value: mapped.addresses.shippingAddress.id,
-        label: mapped.addresses.shippingAddress.id,
+        id: mapped.addresses.shippingAddress.id,
+        title: mapped.addresses.shippingAddress.id,
+        addressType: "Shipping",
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        state: "",
+        country: "",
+        pincode: "",
+        phone: "",
+        email: "",
       }
     : null,
+});
+setAddressSelectedIds({
+  supplierBilling: mapped.addresses.supplierAddress.id || "",
+  supplierDispatch: mapped.addresses.dispatchAddress.id || "",
+  companyBilling: mapped.addresses.companyBillingAddress.id || "",
+  companyShipping: mapped.addresses.shippingAddress.id || "",
 });
 
   
@@ -386,6 +425,9 @@ const handleFormChange = (
           primaryContact?.mobile || primaryContact?.phone,
         ),
         supplierContact: primaryContact?.fullName || "",
+        terms: {
+  buying: supplier?.terms?.Buying || prev.terms?.buying,
+},
 
         currency: supplier.currency || prev.currency,
         taxCategory: supplier.supplierTaxCategory || "",
@@ -587,54 +629,60 @@ const handleFormChange = (
     return null;
   };
 
-  const handleItemSelect = async (itemId: string, idx: number) => {
-    try {
-      const res = await getItemByItemCode(itemId, form.taxCategory);
-      if (!res || res.status_code !== 200) return;
+const handleItemSelect = async (itemId: string, idx: number) => {
+  try {
+    const res = await getItemByItemCode(itemId, form.taxCategory);
+    if (!res || res.status_code !== 200) return;
 
-      const data = res.data;
+    const data = res.data;
 
-      const supplierTaxCategory = form.taxCategory;
+    const supplierTaxCategory = form.taxCategory?.trim();
 
-      const matchedTax = data.taxInfo?.find(
-        (t: any) => t.taxCategory === supplierTaxCategory,
-      );
+    let selectedTax = data.taxInfo?.find(
+      (t: any) =>
+        t.taxCategory?.toLowerCase() ===
+        supplierTaxCategory?.toLowerCase()
+    );
 
-      const selectedTax = matchedTax || data.taxInfo?.[0];
-
-      const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
-      setForm((prev) => {
-        const items = [...prev.items];
-
-        items[idx] = {
-          ...items[idx],
-
-          itemCode: data.id,
-          itemName: data.itemName,
-          description: data.description,
-
-          warehouse: items[idx].warehouse ?? prev.warehouse ?? "",
-
-          rate: Number(data.buyingPrice ?? 0),
-          uom: data.unitOfMeasureCd,
-
-          vatRate: totalTaxRate,
-
-          vatCd: selectedTax?.taxName || "",
-
-          requiredBy: items[idx].requiredBy ?? prev.requiredBy ?? "",
-
-          packingUnit: Number(data.packingUnit || 0),
-          packingSize: Number(data.packingSize || 0),
-          packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
-        };
-
-        return { ...prev, items };
-      });
-    } catch (err) {
-      console.error("Failed to fetch item details", err);
+    if (!selectedTax && data.taxInfo?.length) {
+      selectedTax = data.taxInfo[0];
     }
-  };
+
+    const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
+
+    setForm((prev) => {
+      const items = [...prev.items];
+
+      items[idx] = {
+        ...items[idx],
+
+        itemCode: data.id,
+        itemName: data.itemName,
+        description: data.description,
+
+        warehouse: items[idx].warehouse || prev.warehouse || "",
+
+        rate: Number(data.buyingPrice || 0),
+        uom: data.unitOfMeasureCd,
+
+        vatRate: totalTaxRate,
+        vatCd: selectedTax?.taxName || "",
+
+        taxCategory: selectedTax?.taxCategory || "",
+
+        requiredBy: items[idx].requiredBy || prev.requiredBy || "",
+
+        packingUnit: Number(data.packingUnit || 0),
+        packingSize: Number(data.packingSize || 0),
+        packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
+      };
+
+      return { ...prev, items };
+    });
+  } catch (err) {
+    console.error("Failed to fetch item details", err);
+  }
+};
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 

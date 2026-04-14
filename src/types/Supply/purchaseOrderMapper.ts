@@ -106,26 +106,42 @@ export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
   const api = apiResponse.data || apiResponse;
 
   // Map items - handle both field name variations
-  const items = (api.items || []).map((item: any) => {
-    const qty = Number(item.qty || item.quantity || 0);
-    const rate = Number(item.rate || item.price || 0); // Try both rate and price
-    const vatRate = Number(item.vatRate || item.taxPerct || 0);
+const items = (api.items || []).map((item: any) => {
+  const qty = Number(item.qty || item.quantity || 0);
+  const rate = Number(item.rate || item.price || 0);
 
-    return {
-      itemCode: item.item_code || item.itemCode || "",
-      itemName: item.item_name || item.itemName || "",
-      quantity: qty,
-      rate: rate,
-      uom: item.uom,
-      vatCd: item.vatCd || item.VatCd,
-      vatRate: vatRate,
-      requiredBy: item.requiredBy || api.deliveryDate || "",
-      warehouse: item.warehouse || "",
-      packingUnit: Number(item.packingUnit || 0),
-      packingSize: Number(item.packingSize || 0),
-      packing: item.packing || "",
-    };
-  });
+
+  const selectedTax =
+    item.taxInfo?.find(
+      (t: any) =>
+        t.taxCategory?.toLowerCase() ===
+        api.taxCategory?.toLowerCase()
+    ) || item.taxInfo?.[0];
+
+  const vatRate = Number(selectedTax?.totalTaxRate || 0);
+  const vatCd = selectedTax?.taxName || "";
+  // ✅ FIX END
+
+  return {
+    itemCode: item.item_code || item.itemCode || "",
+    itemName: item.item_name || item.itemName || "",
+
+    quantity: qty,
+    rate: rate,
+
+    uom: item.uom,
+
+    vatRate: vatRate,   
+    vatCd: vatCd,       
+
+    requiredBy: item.requiredBy || api.deliveryDate || "",
+    warehouse: item.warehouse || "",
+
+    packingUnit: Number(item.packingUnit || 0),
+    packingSize: Number(item.packingSize || 0),
+    packing: `(${item.packingUnit || 0}) x (${item.packingSize || 0})`,
+  };
+});
 
   // Tax rows
   const taxRows = (api.taxes || [])
