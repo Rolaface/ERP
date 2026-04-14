@@ -1,6 +1,4 @@
 import React from "react";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 export interface PurchaseInvoiceDetail {
   pId: string;
   supplierName: string;
@@ -124,7 +122,7 @@ interface Props {
   onClosePdf?: () => void;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const fmt = (n?: number | string, currency = "INR") => {
   const num = typeof n === "string" ? parseFloat(n) : (n ?? 0);
   return new Intl.NumberFormat("en-IN", {
@@ -143,6 +141,23 @@ const fmtDate = (d?: string | null) =>
       })
     : "—";
 
+    const parseAddress = (html?: string | null) => {
+  if (!html) return null;
+
+  const lines = html
+    .replace(/<br>/g, "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  return {
+    addressLine1: lines[0],
+    city: lines[2],
+    state: lines[3],
+    postalCode: lines[4],
+    country: lines[5],
+  };
+};
 const STATUS_MAP: Record<string, string> = {
   Draft: "bg-draft",
   Submitted: "bg-info",
@@ -236,9 +251,19 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
     data?.terms?.terms?.buying?.payment?.phases
       ?.filter((p) => p?.percentage)
       ?.slice(0, 3) ?? [];
-  const grandTotal = data?.summary?.grandTotal ?? data?.grandTotal ?? 0;
-  const subTotal = data?.summary?.subTotal ?? 0;
-  const taxTotal = parseFloat(data?.summary?.taxTotal ?? "0");
+  const grandTotal =
+  data?.summary?.grandTotal ??
+  data?.grandTotal ??
+  (data as any)?.grandTotal ??
+  0;
+  const subTotal =
+  data?.summary?.subTotal ??
+  ((data as any)?.grandTotal ?? 0) - ((data as any)?.totalTaxes ?? 0);
+  const taxTotal = parseFloat(
+  data?.summary?.taxTotal ??
+  (data as any)?.totalTaxes ??
+  "0"
+);
 
   return (
     <>
@@ -347,7 +372,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
               <p
                 style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}
               >
-                {data?.pId ?? "—"}
+                {data?.pId ?? (data as any)?.piId ?? "—"}
               </p>
             </div>
             <span
@@ -547,7 +572,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                       color: "var(--text)",
                     }}
                   >
-                    {fmtDate(data.pDate)}
+                    {fmtDate(data.pDate ?? (data as any)?.poDate)}
                   </p>
                 </div>
               </div>
@@ -574,8 +599,8 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
               >
                 <F label="Currency" value={data.currency} />
                 <F label="Tax Category" value={data.taxCategory} />
-                <F label="Incoterm" value={data.incoterm} />
-                <F label="Payment Method" value={data.paymentMethod} />
+                <F label="Incoterm" value={data.incoterm ?? (data as any)?.incoterms} />
+                <F label="Payment Method" value={data.paymentMethod ?? (data as any)?.paymentType} />
               </div>
               <div
                 style={{
@@ -621,10 +646,12 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
             )} */}
 
               {/* ── ADDRESSES ── */}
-              {data.addresses &&
-                (data.addresses.supplierAddress ||
-                  data.addresses.dispatchAddress ||
-                  data.addresses.shippingAddress) && (
+              {(
+  data.addresses ||
+  (data as any)?.supplierAddressDisplay ||
+  (data as any)?.shippingAddressDisplay ||
+  (data as any)?.dispatchAddressDisplay
+) && (
                   <>
                     <S title="Addresses" />
                     <div
@@ -635,19 +662,25 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                       }}
                     >
                       {[
-                        {
-                          label: "Supplier",
-                          addr: data.addresses.supplierAddress,
-                        },
-                        {
-                          label: "Dispatch",
-                          addr: data.addresses.dispatchAddress,
-                        },
-                        {
-                          label: "Shipping",
-                          addr: data.addresses.shippingAddress,
-                        },
-                      ].map(({ label, addr }) =>
+  {
+    label: "Supplier",
+    addr:
+      data.addresses?.supplierAddress ??
+      parseAddress((data as any)?.supplierAddressDisplay),
+  },
+  {
+    label: "Dispatch",
+    addr:
+      data.addresses?.dispatchAddress ??
+      parseAddress((data as any)?.dispatchAddressDisplay),
+  },
+  {
+    label: "Shipping",
+    addr:
+      data.addresses?.shippingAddress ??
+      parseAddress((data as any)?.shippingAddressDisplay),
+  },
+].map(({ label, addr }) =>
                         addr ? (
                           <div
                             key={label}
@@ -766,17 +799,18 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {it.item_name || it.item_code}
+                         {it.item_name || (it as any)?.itemName || (it as any)?.itemCode}
                       </p>
-                      {it.item_name && it.item_code && (
+                      {(it.item_name || (it as any)?.itemName) && 
+                       (it.item_code || (it as any)?.itemCode) && (
                         <p
                           style={{
                             fontSize: 9,
                             color: "var(--muted)",
                             fontFamily: "monospace",
                           }}
-                        >
-                          {it.item_code}
+                        > 
+                            {it.item_code || (it as any)?.itemCode}
                         </p>
                       )}
                       {/* Badges */}
@@ -818,7 +852,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                             Batch: {it.batchNo}
                           </span>
                         )}
-                        {(it.packingSize || it.packingUnit) && (
+                        {(it.packingSize || it.packingUnit || (it as any)?.packingSize || (it as any)?.packingUnit) && (
                           <span
                             style={{
                               fontSize: 9,
@@ -829,7 +863,8 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                               color: "var(--muted)",
                             }}
                           >
-                            Pack {it.packingSize}/{it.packingUnit}
+                            Pack {Math.floor(Number(it.packingSize ?? (it as any)?.packingSize) || 0)}*
+{Math.floor(Number(it.packingUnit ?? (it as any)?.packingUnit) || 0)}
                           </span>
                         )}
                         {it.schedule_date && (
@@ -856,7 +891,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
-                      {(it.qty ?? 0).toLocaleString()}
+                      {((it.qty ?? (it as any)?.quantity) ?? 0).toLocaleString()}
                     </p>
                     <p
                       style={{
@@ -865,7 +900,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                         color: "var(--muted)",
                       }}
                     >
-                      {it.packing || "—"}
+                      {it.packing || (it as any)?.uom || "—"}
                     </p>
                     <p
                       style={{
@@ -875,7 +910,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
-                      {fmt(it.rate, currency)}
+                      {fmt(it.rate ?? (it as any)?.rate, currency)}
                     </p>
                     <p
                       style={{
@@ -886,7 +921,11 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
-                      {fmt(it.amount, currency)}
+                      {fmt(
+  it.amount ??
+  ((it as any)?.quantity ?? 0) * ((it as any)?.rate ?? 0),
+  currency
+)}
                     </p>
                   </div>
                 ))}
