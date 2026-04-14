@@ -42,9 +42,9 @@ export const validatePO = (form: PurchaseOrderFormData): string[] => {
   }
 
   // ── 3. Supplier address ────────────────────────────────────────────────────
-  const supplierAddr = form.addresses?.supplierAddress;
-  if (!supplierAddr?.addressLine1?.trim())
-    errors.push("Supplier Address Line 1 is required");
+ const supplierAddr = form.addresses?.supplierAddress;
+if (!supplierAddr?.id)
+  errors.push("Supplier Address is required");
 
   return [...new Set(errors)]; // deduplicate
 };

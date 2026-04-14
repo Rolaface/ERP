@@ -19,7 +19,7 @@ import {
   emptyPaymentRow,
   ItemRow,
 } from "../types/Supply/purchaseOrder";
-import { createPurchaseOrder } from "../api/procurement/PurchaseOrderApi";
+import { createPurchaseOrder , updatePurchaseOrder,} from "../api/procurement/PurchaseOrderApi";
 import { mapUIToCreatePO } from "../types/Supply/purchaseOrderMapper";
 import { validatePO } from "./poValidator";
 import { getPurchaseOrderById } from "../api/procurement/PurchaseOrderApi";
@@ -186,83 +186,38 @@ useEffect(() => {
     setForm(mapped);
 
    
-    setAddressSelectedIds({
-      supplierBilling: mapped.addresses.supplierAddress.id || "",
-      supplierDispatch: mapped.addresses.dispatchAddress.id || "",
-      companyBilling: mapped.addresses.companyBillingAddress.id || "",
-      companyShipping: mapped.addresses.shippingAddress.id || "",
-    });
+   setAddressSelected({
+  supplierBilling: mapped.addresses.supplierAddress.id
+    ? {
+        value: mapped.addresses.supplierAddress.id,
+        label: mapped.addresses.supplierAddress.id, // temporary (can improve later)
+      }
+    : null,
+
+  supplierDispatch: mapped.addresses.dispatchAddress.id
+    ? {
+        value: mapped.addresses.dispatchAddress.id,
+        label: mapped.addresses.dispatchAddress.id,
+      }
+    : null,
+
+  companyBilling: mapped.addresses.companyBillingAddress.id
+    ? {
+        value: mapped.addresses.companyBillingAddress.id,
+        label: mapped.addresses.companyBillingAddress.id,
+      }
+    : null,
+
+  companyShipping: mapped.addresses.shippingAddress.id
+    ? {
+        value: mapped.addresses.shippingAddress.id,
+        label: mapped.addresses.shippingAddress.id,
+      }
+    : null,
+});
 
   
-    setAddressSelected({
-      supplierBilling: mapped.addresses.supplierAddress.id
-        ? {
-            id: mapped.addresses.supplierAddress.id,
-            title: mapped.addresses.supplierAddress.addressTitle || "",
-            addressLine1: "",
-            addressLine2: "",
-            city: "",
-            state: "",
-            country: "",
-            pincode: "",
-            email: "",
-            phone: "",
-            addressType: "Billing",
-            type: "Billing",
-          }
-        : null,
 
-      supplierDispatch: mapped.addresses.dispatchAddress.id
-        ? {
-            id: mapped.addresses.dispatchAddress.id,
-            title: "Dispatch",
-            addressLine1: "",
-            addressLine2: "",
-            city: "",
-            state: "",
-            country: "",
-            pincode: "",
-            email: "",
-            phone: "",
-            addressType: "Dispatch",
-            type: "Dispatch",
-          }
-        : null,
-
-      companyBilling: mapped.addresses.companyBillingAddress.id
-        ? {
-            id: mapped.addresses.companyBillingAddress.id,
-            title: "Company Billing",
-            addressLine1: "",
-            addressLine2: "",
-            city: "",
-            state: "",
-            country: "",
-            pincode: "",
-            email: "",
-            phone: "",
-            addressType: "Billing",
-            type: "Billing",
-          }
-        : null,
-
-      companyShipping: mapped.addresses.shippingAddress.id
-        ? {
-            id: mapped.addresses.shippingAddress.id,
-            title: "Shipping",
-            addressLine1: "",
-            addressLine2: "",
-            city: "",
-            state: "",
-            country: "",
-            pincode: "",
-            email: "",
-            phone: "",
-            addressType: "Shipping",
-            type: "Shipping",
-          }
-        : null,
-    });
 
     hasLoadedRef.current = true;
   };
@@ -370,6 +325,28 @@ const handleFormChange = (
 ) => {
   const { name, value } = e.target;
 
+  // Handle nested keys like "addresses.supplierAddress.id"
+  if (name.includes(".")) {
+    const keys = name.split(".");
+
+    setForm((prev) => {
+      const updated = { ...prev } as any;
+
+      let current = updated;
+      for (let i = 0; i < keys.length - 1; i++) {
+        current[keys[i]] = { ...current[keys[i]] };
+        current = current[keys[i]];
+      }
+
+      current[keys[keys.length - 1]] = value;
+
+      return updated;
+    });
+
+    return;
+  }
+
+  // Normal fields
   setForm((prev) => ({
     ...prev,
     [name]: value,
@@ -415,28 +392,37 @@ const handleFormChange = (
         addresses: {
           ...prev.addresses,
 
-          supplierAddress: {
-            ...prev.addresses.supplierAddress,
+      supplierAddress: {
+  ...prev.addresses.supplierAddress,
 
-            addressLine1: primaryAddress?.line1 || "",
-            addressLine2: primaryAddress?.line2 || "",
-            city: primaryAddress?.city || "",
-            state: primaryAddress?.state || "",
-            country: primaryAddress?.country || "",
-            postalCode: primaryAddress?.postalCode || "",
-          },
+  id:
+    prev.addresses.supplierAddress?.id ||
+    primaryAddress?.id ||
+    "",   
 
+  addressLine1: primaryAddress?.line1 || "",
+  addressLine2: primaryAddress?.line2 || "",
+  city: primaryAddress?.city || "",
+  state: primaryAddress?.state || "",
+  country: primaryAddress?.country || "",
+  postalCode: primaryAddress?.postalCode || "",
+},
           // OPTIONAL: auto copy to shipping also
-          shippingAddress: {
-            ...prev.addresses.shippingAddress,
+         shippingAddress: {
+  ...prev.addresses.shippingAddress,
 
-            addressLine1: primaryAddress?.line1 || "",
-            addressLine2: primaryAddress?.line2 || "",
-            city: primaryAddress?.city || "",
-            state: primaryAddress?.state || "",
-            country: primaryAddress?.country || "",
-            postalCode: primaryAddress?.postalCode || "",
-          },
+  id:
+    prev.addresses.shippingAddress?.id ||
+    primaryAddress?.id ||
+    "",
+
+  addressLine1: primaryAddress?.line1 || "",
+  addressLine2: primaryAddress?.line2 || "",
+  city: primaryAddress?.city || "",
+  state: primaryAddress?.state || "",
+  country: primaryAddress?.country || "",
+  postalCode: primaryAddress?.postalCode || "",
+},
         },
       }));
     } catch (err) {
@@ -594,8 +580,8 @@ const handleFormChange = (
     if (tab === "address") {
       const supplier = form.addresses?.supplierAddress;
 
-      if (!supplier?.addressLine1?.trim())
-        return "Supplier Address Line 1 is required";
+      if (!supplier?.id)
+  return "Supplier Address is required";
     }
 
     return null;

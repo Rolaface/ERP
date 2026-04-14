@@ -360,7 +360,7 @@ export const API = {
 
     create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.create`,
 
-    update: `${ERP_BASE}/api/method/erpnext.zra_client.update_purchase_order`,
+    update: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.update`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.update_po_status.update_purchase_order_status`,
   },
   //purchase invoice
