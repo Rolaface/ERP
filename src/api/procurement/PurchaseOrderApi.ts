@@ -119,3 +119,13 @@ export async function updatePurchaseOrder(
 
   return resp.data;
 }
+
+export async function createPurchaseInvoiceFromPO(
+  po_id: string
+): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    `${purchaseorderapi.createInvoiceFromPO}?po_id=${po_id}`
+  );
+
+  return resp.data;
+}

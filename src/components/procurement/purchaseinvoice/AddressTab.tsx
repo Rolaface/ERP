@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, memo } from "react";
 import {
   MapPin,
   Truck,
@@ -69,7 +69,7 @@ const AddressPicker: React.FC<{
   selectedId: string | null;
   onSelect: (addr: ApiAddress) => void;
   loading: boolean;
-}> = ({ addresses, selectedId, onSelect, loading }) => {
+}> = memo(({ addresses, selectedId, onSelect, loading }) => {
   const [query, setQuery] = useState("");
   const filtered = query.trim()
     ? addresses.filter(
@@ -136,7 +136,7 @@ const AddressPicker: React.FC<{
       </div>
     </div>
   );
-};
+});
 
 const AddressBox: React.FC<{
   config: {
@@ -150,7 +150,7 @@ const AddressBox: React.FC<{
   loading: boolean;
   onSelect: (addr: ApiAddress) => void;
   onOpen: () => void;
-}> = ({ config, addresses, selectedAddr, loading, onSelect, onOpen }) => {
+}> = memo(({ config, addresses, selectedAddr, loading, onSelect, onOpen }) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -250,9 +250,9 @@ const AddressBox: React.FC<{
       )}
     </div>
   );
-};
+});
 
-export const AddressTab: React.FC<AddressTabProps> = ({
+export const AddressTab: React.FC<AddressTabProps> = memo(({
   form,
   onFormChange,
   customShippingRule,
@@ -494,4 +494,4 @@ export const AddressTab: React.FC<AddressTabProps> = ({
       </div>
     </div>
   );
-};
+});

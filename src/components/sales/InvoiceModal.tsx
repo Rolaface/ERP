@@ -44,9 +44,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   mode = "create",
   modalId,
 }) => {
-  const resolvedModalId = modalId || (mode === "edit" && initialData?.invoiceNumber
-    ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
-    : `invoice-create-${Date.now()}`);
+  const resolvedModalId =
+    modalId ||
+    (mode === "edit" && initialData?.invoiceNumber
+      ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
+      : `invoice-create-${Date.now()}`);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const [submitting, setSubmitting] = useState(false);
@@ -65,6 +67,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     mode === "edit" ? "edit" : "invoice",
     initialData,
   );
+  const primaryContact =
+    customerDetails?.contacts?.find((c: any) => c.isPrimary) || {};
+  const billingAddress =
+    customerDetails?.addresses?.find((a: any) => a.type === "Billing") || {};
+
   // Removed allowSubmit state, no longer needed.
   const tabs: Array<"details" | "address" | "otherCharges" | "terms"> = [
     "details",
@@ -87,11 +94,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const handleNext = () => {
     if (ui.activeTab === "details" && !validateDetailsOrFocus()) return;
 
-      const currentIndex = tabs.indexOf(ui.activeTab as any);
+    const currentIndex = tabs.indexOf(ui.activeTab as any);
 
-      if (currentIndex < tabs.length - 1) {
-        ui.setActiveTab(tabs[currentIndex + 1]);
-      }
+    if (currentIndex < tabs.length - 1) {
+      ui.setActiveTab(tabs[currentIndex + 1]);
+    }
   };
 
   useEffect(() => {
@@ -151,7 +158,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   );
 
   return (
-   <MinimizableModal
+    <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
@@ -296,22 +303,29 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
                   <div className="flex items-end gap-4 min-w-[120px]">
-                    <Tooltip content={`Select Warehouse for the Invoice. Current selection: ${formData.warehouse || "N/A"}`}>
-                 <WarehouseSelect
-  className="w-[150px]"
-  name="warehouse"
-  value={formData.warehouse || ""}
-  onChange={(e) => {
-    actions.handleBulkItemChange("warehouse", e.target.value);
-  }}
-  label="Warehouse"
-
-  onDefaultLoad={(firstWarehouse) => {
-    if (!formData.warehouse) {
-      actions.handleBulkItemChange("warehouse", firstWarehouse);
-    }
-  }}
-/>
+                    <Tooltip
+                      content={`Select Warehouse for the Invoice. Current selection: ${formData.warehouse || "N/A"}`}
+                    >
+                      <WarehouseSelect
+                        className="w-[150px]"
+                        name="warehouse"
+                        value={formData.warehouse || ""}
+                        onChange={(e) => {
+                          actions.handleBulkItemChange(
+                            "warehouse",
+                            e.target.value,
+                          );
+                        }}
+                        label="Warehouse"
+                        onDefaultLoad={(firstWarehouse) => {
+                          if (!formData.warehouse) {
+                            actions.handleBulkItemChange(
+                              "warehouse",
+                              firstWarehouse,
+                            );
+                          }
+                        }}
+                      />
                     </Tooltip>
 
                     <label className="flex items-center gap-2 pb-1">
@@ -328,8 +342,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     </label>
                   </div>
 
-               
-
                   {ui.isLocal && (
                     <ModalInput
                       label="LPO Number"
@@ -342,7 +354,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   )}
-                     {/* {ui.isExport && (
+                  {/* {ui.isExport && (
                     <ModalInput
                       label="Customer Country"
                       name="destnCountryCd"
@@ -378,7 +390,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 <ItemTable
                   paginatedItems={paginatedItems}
                   ui={ui}
-                  
                   actions={actions}
                   formData={formData}
                   symbol={symbol}
@@ -393,52 +404,41 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     </h3>
 
                     <div className="flex flex-col gap-2 text-xs">
+                      {/* NAME */}
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-muted" />
                         {customerDetails?.name ?? "Customer Name"}
                       </div>
 
+                      {/* EMAIL */}
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Mail size={12} />
-                        {customerDetails?.email ?? "customer@gmail.com"}
+                        {primaryContact?.email || customerDetails?.email || ""}
                       </div>
 
+                      {/* MOBILE */}
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Phone size={12} />
-                        {customerDetails?.mobile_no ?? ""}
+                        {primaryContact?.mobile ||
+                          customerDetails?.mobile ||
+                          ""}
                       </div>
-                      {customerDetails && (
-                        <div className="bg-card rounded-lg ">
-                          <div className="flex items-center gap-10 text-xs">
-                            <span className="text-muted">Invoice Date</span>
-                            <span className="font-medium text-main">
-                              {formatDate(formData.dateOfInvoice)}
-                            </span>
-                          </div>
 
-                          <div className="flex flex-col gap-1">
-                            {/* Invoice Type */}
-                            <div className="flex items-center gap-19 text-xs">
-                              <span className="text-muted">Invoice Type</span>
-                              <span className="font-medium text-main">
-                                {formData.invoiceType}
-                              </span>
-                            </div>
+                      {/* ✅ TAX CATEGORY */}
+                      <div className="flex justify-between text-[10px] mt-1">
+                        <span className="text-muted">Tax</span>
+                        <span className="text-main font-medium">
+                          {customerDetails?.customerTaxCategory || "-"}
+                        </span>
+                      </div>
 
-                            {/* Destination Country – only for Export */}
-                            {formData.invoiceType === "Export" && (
-                              <div className="flex items-center gap-15 text-xs">
-                                <span className="text-muted">
-                                  Destination Country
-                                </span>
-                                <span className="font-medium text-main">
-                                  {formData.destnCountryCd || "-"}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      {/* ✅ COUNTRY */}
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-muted">Country</span>
+                        <span className="text-main font-medium">
+                          {billingAddress?.country || "-"}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -556,7 +556,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           )}
         </div>
       </form>
-   </MinimizableModal>
+    </MinimizableModal>
   );
 };
 

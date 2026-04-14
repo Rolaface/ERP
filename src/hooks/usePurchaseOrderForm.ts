@@ -1,4 +1,4 @@
-import { useState, useEffect ,useRef} from "react";
+import { useState, useEffect ,useRef, useMemo, useCallback} from "react";
 import {
   showApiError,
   showSuccess,
@@ -88,15 +88,12 @@ export const usePurchaseOrderForm = ({
     baseCurrency?: string;
   }>({});
 
-  const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
+  const handleBulkItemChange = useCallback((field: keyof ItemRow, value: string) => {
     setForm((prev) => ({
       ...prev,
-      items: prev.items.map((item) => ({
-        ...item,
-        [field]: value,
-      })),
+      items: prev.items.map((item) => ({ ...item, [field]: value })),
     }));
-  };
+  }, []);
   useEffect(() => {
     if (!isOpen) {
       setForm(emptyPOForm);
@@ -271,45 +268,26 @@ setAddressSelectedIds({
     setForm((prev) => ({ ...prev, date: today }));
   }, [isOpen, poId]);
 
-  // Calculate totals (Items + Taxes + Rounding)
-  useEffect(() => {
+  // Calculate totals (Items + Taxes + Rounding) - NO STATE UPDATE, pure derived value
+  const totals = useMemo(() => {
     let subTotal = 0;
     let totalTax = 0;
 
-    form.items.forEach((item) => {
+    for (const item of form.items) {
       const qty = Number(item.quantity || 0);
       const rate = Number(item.rate || 0);
       const vatRate = Number(item.vatRate || 0);
+      subTotal += qty * rate;
+      totalTax += (qty * rate * vatRate) / 100;
+    }
 
-      const lineAmount = qty * rate;
-      const taxAmount = (lineAmount * vatRate) / 100;
+    for (const t of form.taxRows) {
+      totalTax += (Number(t.amount || 0) * Number(t.taxRate || 0)) / 100;
+    }
 
-      subTotal += lineAmount;
-      totalTax += taxAmount;
-    });
+    const totalQuantity = form.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
-    const taxRowTotal = form.taxRows.reduce((sum, t) => {
-      const amount = Number(t.amount || 0);
-      const rate = Number(t.taxRate || 0);
-      return sum + (amount * rate) / 100;
-    }, 0);
-
-    totalTax += taxRowTotal;
-
-    const grandTotal = subTotal + totalTax;
-
-    const totalQuantity = form.items.reduce(
-      (sum, item) => sum + Number(item.quantity || 0),
-      0,
-    );
-
-    setForm((prev) => ({
-      ...prev,
-      totalQuantity,
-      subTotal,
-      totalTax,
-      grandTotal,
-    }));
+    return { subTotal, totalTax, grandTotal: subTotal + totalTax, totalQuantity };
   }, [form.items, form.taxRows]);
 
   useFieldDefault(isOpen, form.costCenter, fetchCostCenters, (val) =>
@@ -357,12 +335,25 @@ setAddressSelectedIds({
     }));
   };
 
-const handleFormChange = (
+const handleFormChange = useCallback((
   e:
     | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     | { target: { name: string; value: any } }
 ) => {
   const { name, value } = e.target;
+
+  // Handle batched address object update (single render instead of 12)
+  if (name.startsWith("addresses.") && typeof value === "object" && value !== null) {
+    const addressKey = name.replace("addresses.", "") as keyof PurchaseOrderFormData["addresses"];
+    setForm((prev) => ({
+      ...prev,
+      addresses: {
+        ...prev.addresses,
+        [addressKey]: { ...prev.addresses[addressKey], ...value },
+      },
+    }));
+    return;
+  }
 
   // Handle nested keys like "addresses.supplierAddress.id"
   if (name.includes(".")) {
@@ -385,12 +376,11 @@ const handleFormChange = (
     return;
   }
 
-  // Normal fields
   setForm((prev) => ({
     ...prev,
     [name]: value,
   }));
-};
+}, []);
   const handleSupplierChange = async (sup: any) => {
     if (!sup?.id) return;
 
@@ -471,93 +461,80 @@ const handleFormChange = (
       console.error("Supplier fetch failed:", err);
     }
   };
-  const handleItemChange = (
+  const handleItemChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     idx: number,
   ) => {
     const { name, value } = e.target;
-    const isNum = ["quantity", "rate"].includes(name);
-    const items = [...form.items];
-    items[idx] = {
-      ...items[idx],
-      [name]: isNum ? (value === "" ? "" : Number(value)) : value,
-    };
-    setForm((p) => ({ ...p, items }));
-  };
+    const isNum = name === "quantity" || name === "rate";
+    
+    setForm((p) => {
+      const newItems = p.items.map((item, i) => 
+        i !== idx ? item : { ...item, [name]: isNum ? (value === "" ? "" : Number(value)) : value }
+      );
+      return { ...p, items: newItems };
+    });
+  }, []);
 
-  const addItem = () => {
+  const addItem = useCallback(() => {
     setForm((p) => ({
       ...p,
       items: [
         ...p.items,
-        {
-          ...emptyItem,
-          warehouse: p.warehouse ?? "",
-          requiredBy: p.requiredBy || "",
-        },
+        { ...emptyItem, warehouse: p.warehouse ?? "", requiredBy: p.requiredBy || "" },
       ],
     }));
-  };
+  }, []);
 
-  const removeItem = (idx: number) => {
+  const removeItem = useCallback((idx: number) => {
     if (form.items.length === 1) {
       showValidationError("At least one item is required");
       return;
     }
     setForm((p) => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
-  };
+  }, [form.items.length]);
 
-  const duplicateItem = (absoluteIndex: number) => {
+  const duplicateItem = useCallback((absoluteIndex: number) => {
     setForm((prev) => {
       const source = prev.items[absoluteIndex];
       if (!source) return prev;
-
       const copy = { ...source };
       const newItems = [...prev.items];
       newItems.splice(absoluteIndex + 1, 0, copy);
-
       return { ...prev, items: newItems };
     });
-  };
+  }, []);
 
-  const handleTaxRowChange = (idx: number, key: keyof TaxRow, value: any) => {
-    const taxRows = [...form.taxRows];
-    taxRows[idx] = { ...taxRows[idx], [key]: value };
-    setForm((p) => ({ ...p, taxRows }));
-  };
+  const handleTaxRowChange = useCallback((idx: number, key: keyof TaxRow, value: any) => {
+    setForm((p) => ({
+      ...p,
+      taxRows: p.taxRows.map((row, i) => (i !== idx ? row : { ...row, [key]: value })),
+    }));
+  }, []);
 
-  const addTaxRow = () => {
+  const addTaxRow = useCallback(() => {
     setForm((p) => ({ ...p, taxRows: [...p.taxRows, { ...emptyTaxRow }] }));
-  };
+  }, []);
 
-  const removeTaxRow = (idx: number) => {
+  const removeTaxRow = useCallback((idx: number) => {
     setForm((p) => ({ ...p, taxRows: p.taxRows.filter((_, i) => i !== idx) }));
-  };
+  }, []);
 
-  const handlePaymentRowChange = (
-    idx: number,
-    key: keyof PaymentRow,
-    value: any,
-  ) => {
-    const paymentRows = [...form.paymentRows];
-    paymentRows[idx] = { ...paymentRows[idx], [key]: value };
-    setForm((p) => ({ ...p, paymentRows }));
-  };
-
-  const addPaymentRow = () => {
+  const handlePaymentRowChange = useCallback((idx: number, key: keyof PaymentRow, value: any) => {
     setForm((p) => ({
       ...p,
-      paymentRows: [...p.paymentRows, { ...emptyPaymentRow }],
+      paymentRows: p.paymentRows.map((row, i) => (i !== idx ? row : { ...row, [key]: value })),
     }));
-  };
+  }, []);
 
-  const removePaymentRow = (idx: number) => {
+  const addPaymentRow = useCallback(() => {
+    setForm((p) => ({ ...p, paymentRows: [...p.paymentRows, { ...emptyPaymentRow }] }));
+  }, []);
+
+  const removePaymentRow = useCallback((idx: number) => {
     if (form.paymentRows.length === 1) return;
-    setForm((p) => ({
-      ...p,
-      paymentRows: p.paymentRows.filter((_, i) => i !== idx),
-    }));
-  };
+    setForm((p) => ({ ...p, paymentRows: p.paymentRows.filter((_, i) => i !== idx) }));
+  }, [form.paymentRows.length]);
 
   const handleSaveTemplate = (html: string) => {
     setForm((p) => ({ ...p, messageHtml: html }));
@@ -773,7 +750,8 @@ const handleItemSelect = async (itemId: string, idx: number) => {
     setActiveTab("details");
   };
   return {
-    form,
+    form: { ...form, ...totals },
+    totals,
     activeTab,
     setActiveTab,
     handleFormChange,
