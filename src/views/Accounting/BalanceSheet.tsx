@@ -5,6 +5,11 @@ import {
   getBalanceSheet,
   type BalanceSheetFilters,
 } from "../../api/Accounting/AccountApi";
+
+import {
+  getCompanyCurrentFiscalYear
+} from "../../api/utils/frappeUtilsApi";
+
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
   AlertCircle,
@@ -101,7 +106,11 @@ const nf = (value: number | undefined | null, currency?: string): string => {
   return value < 0 ? `${prefix}-${formatted}` : `${prefix}${formatted}`;
 };
 
-const currentYear = new Date().getFullYear();
+const res = await getCompanyCurrentFiscalYear();
+
+const fiscalYear = res.data?.fiscal_year;
+const fiscalYearStartDate = res?.data?.start_date;
+const fiscalYearEndDate = res ?.data?.end_date;
 
 // ─── Date Utilities ───────────────────────────────────────────────────────────
 
@@ -123,13 +132,13 @@ const toApiDate = (inputDate: string): string => {
 
 const currentMonthStart = (): string => {
   const d = new Date();
-  return `01-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 };
 
 const currentMonthEnd = (): string => {
   const d = new Date();
   const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-  return `${String(last).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(last).padStart(2, "0")}`;
 };
 
 // ─── Filter types ─────────────────────────────────────────────────────────────
@@ -239,7 +248,7 @@ function FilterBar({
               mode,
               ...(mode === "Date Range"
                 ? { from_date: currentMonthStart(), to_date: currentMonthEnd() }
-                : { from_fiscal_year: currentYear, to_fiscal_year: currentYear }),
+                : { from_fiscal_year: fiscalYear, to_fiscal_year: fiscalYear }),
             }));
           }}
           className={inputClass}
@@ -402,8 +411,8 @@ const BalanceSheet: React.FC = () => {
   const [filters, setFilters] = useState<BSFilters>({
     mode: "Fiscal Year",
     periodicity: "Monthly",
-    from_fiscal_year: currentYear,
-    to_fiscal_year: currentYear,
+    from_fiscal_year: fiscalYear,
+    to_fiscal_year: fiscalYear,
     from_date: currentMonthStart(),
     to_date: currentMonthEnd(),
   });

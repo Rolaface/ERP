@@ -1,45 +1,38 @@
-import { PurchaseInvoiceFormData, emptyPOForm , TaxRow} from "./purchaseInvoice";
+import { PurchaseInvoiceFormData, emptyPOForm, TaxRow } from "./purchaseInvoice";
 import type { AddressBlock } from "./purchaseInvoice";
 
 
 export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
-  
 
   const validItems = form.items.filter((it) => {
     const hasCode = it.itemCode && it.itemCode.trim() !== "";
     const hasQty = it.quantity && Number(it.quantity) > 0;
     const hasRate = it.rate && Number(it.rate) > 0;
-    
-    
-    
-    return hasCode && hasQty && hasRate; 
+    return hasCode && hasQty && hasRate;
   });
 
+  const items = validItems.map((it) => {
+    const quantity = Number(it.quantity);
+    const rate = Number(it.rate);
+    const vatRate = Number(it.vatRate || 0);
 
-const items = validItems.map((it) => {
-  const quantity = Number(it.quantity);
-  const rate = Number(it.rate);
-  const vatRate = Number(it.vatRate || 0);
-
-  return {
-    itemCode: it.itemCode,
-    itemName: it.itemName || "",
-    quantity,
-    rate,
-    uom: it.uom || "",
-    vatCd: it.vatCd || "",
-    vatRate,
-    description: it.description || "",
-    packing: it.packing || "",
-    batchNo: it.batchNo || "",
-    mfgDate: it.mfgDate || "",
-    expDate: it.expDate || "",
-    discount: Number(it.discount || 0),
-    warehouse: form.updateStock ? (it.warehouse || "") : null,
-  };
-});
-
-
+    return {
+      itemCode: it.itemCode,
+      itemName: it.itemName || "",
+      quantity,
+      rate,
+      uom: it.uom || "",
+      vatCd: it.vatCd || "",
+      vatRate,
+      description: it.description || "",
+      packing: it.packing || "",
+      batchNo: it.batchNo || "",
+      mfgDate: it.mfgDate || "",
+      expDate: it.expDate || "",
+      discount: Number(it.discount || 0),
+      warehouse: form.updateStock ? (it.warehouse || "") : null,
+    };
+  });
 
   // Tax rows - only valid ones
   const taxes = form.taxRows
@@ -62,55 +55,49 @@ const items = validItems.map((it) => {
       paymentAmount: Number(p.paymentAmount || 0),
     }));
 
-;
+  const payload: any = {
+    rcptTyCd: "Local",
 
-const payload: any = {
-  rcptTyCd: "Local",
+    ...(form.poNumber && { lpoNumber: form.poNumber }),
 
-  ...(form.poNumber && { lpoNumber: form.poNumber }),
+    supplierId: form.supplierId,
+    supplierName: form.supplier,
+    supplierCode: form.supplierCode,
+    supplierContact: form.supplierContact,
+    updateStock: form.updateStock ?? true,
+    poDate: form.date,
+    ...(form.updateStock && form.warehouse && { warehouse: form.warehouse }),
+    currency: form.currency,
+    status: form.status,
 
-  supplierId: form.supplierId,
-  supplierName: form.supplier,
-  supplierCode: form.supplierCode,
-  supplierContact: form.supplierContact,
-  updateStock: form.updateStock ?? true, 
-  poDate: form.date,
-  ...(form.updateStock && form.warehouse && { warehouse: form.warehouse }),
-  currency: form.currency,
-  status: form.status,
+    taxCategory: form.taxCategory,
+    spplrInvcNo: form.supplierInvoiceNumber,
+    spplrInvcDt: form.supplierInvoiceDate,
+    paymentType: form.paymentType,
+    transactionProgress: form.transactionProgress,
 
- taxCategory: form.taxCategory,
-  spplrInvcNo: form.supplierInvoiceNumber,
-  spplrInvcDt: form.supplierInvoiceDate,
-  paymentType: form.paymentType,
-  transactionProgress: form.transactionProgress,
+    ...(form.costCenter && { costCenter: form.costCenter }),
+    ...(form.project && { project: form.project }),
 
-  ...(form.costCenter && { costCenter: form.costCenter }),
-  ...(form.project && { project: form.project }),
+    ...(form.shippingRule && { shippingRule: form.shippingRule }),
+    ...(form.incoterm && { incoterm: form.incoterm }),
+    ...(form.placeOfSupply && { placeOfSupply: form.placeOfSupply }),
+    ...(form.paymentTermsTemplate && { paymentTermsTemplate: form.paymentTermsTemplate }),
+    ...(form.taxesChargesTemplate && { taxesChargesTemplate: form.taxesChargesTemplate }),
 
-  ...(form.shippingRule && { shippingRule: form.shippingRule }),
-  ...(form.incoterm && { incoterm: form.incoterm }),
-  ...(form.placeOfSupply && { placeOfSupply: form.placeOfSupply }),
-  ...(form.paymentTermsTemplate && { paymentTermsTemplate: form.paymentTermsTemplate }),
-  ...(form.taxesChargesTemplate && { taxesChargesTemplate: form.taxesChargesTemplate }),
+    addresses: form.addresses,
 
-  addresses: form.addresses,
+    terms: {
+      buying: form.terms?.buying || {},
+    },
 
- terms: {
-  buying: form.terms?.buying || {},
-},
+    items,
 
-  items,
+    ...(taxes.length > 0 && { taxes }),
+    ...(payments.length > 0 && { payments }),
 
-  ...(taxes.length > 0 && { taxes }),
-  ...(payments.length > 0 && { payments }),
-
-  metadata: {
-
-  },
-};
-
-  
+    metadata: {},
+  };
 
   return payload;
 };
@@ -121,14 +108,11 @@ const payload: any = {
 export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
   const api = apiResponse.data || apiResponse;
 
-
   // Map items - handle both field name variations
   const items = (api.items || []).map((item: any) => {
     const qty = Number(item.qty || item.quantity || 0);
-    const rate = Number(item.rate || item.price || 0); // Try both rate and price
+    const rate = Number(item.rate || item.price || 0);
     const vatRate = Number(item.vatRate || item.taxPerct || 0);
-
-  
 
     return {
       itemCode: item.item_code || item.itemCode || "",
@@ -136,36 +120,33 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
       quantity: qty,
       rate: rate,
       uom: item.uom || "",
-      vatCd: item.vatCd || item.VatCd ,
+      vatCd: item.vatCd || item.VatCd,
       vatRate: vatRate,
       requiredBy: item.requiredBy || "",
     };
   });
 
- 
-let taxRows: TaxRow[] = [];
+  let taxRows: TaxRow[] = [];
 
-if (Array.isArray(api.taxes) && api.taxes.length > 0) {
-  taxRows = api.taxes
-    .filter((tax: any) => tax.type && tax.accountHead)
-    .map((tax: any) => ({
-      type: tax.type || "On Net Total",
-      accountHead: tax.accountHead || "",
-      taxRate: Number(tax.taxRate || 0),
-      amount: Number(tax.taxableAmount || 0),
-    }));
-}
-
-else if (api.tax) {
-  taxRows = [
-    {
-      type: api.tax.type || "On Net Total",
-      accountHead: api.tax.accountHead || "Tax",
-      taxRate: parseFloat(api.tax.taxRate || "0"),
-      amount: Number(api.tax.taxableAmount || 0),
-    },
-  ];
-}
+  if (Array.isArray(api.taxes) && api.taxes.length > 0) {
+    taxRows = api.taxes
+      .filter((tax: any) => tax.type && tax.accountHead)
+      .map((tax: any) => ({
+        type: tax.type || "On Net Total",
+        accountHead: tax.accountHead || "",
+        taxRate: Number(tax.taxRate || 0),
+        amount: Number(tax.taxableAmount || 0),
+      }));
+  } else if (api.tax) {
+    taxRows = [
+      {
+        type: api.tax.type || "On Net Total",
+        accountHead: api.tax.accountHead || "Tax",
+        taxRate: parseFloat(api.tax.taxRate || "0"),
+        amount: Number(api.tax.taxableAmount || 0),
+      },
+    ];
+  }
 
   // Addresses
   const addresses = {
@@ -205,14 +186,15 @@ else if (api.tax) {
     },
 
     companyBillingAddress:
-  api.addresses?.companyBillingAddress ||
-  emptyPOForm.addresses.companyBillingAddress,
+      api.addresses?.companyBillingAddress ||
+      emptyPOForm.addresses.companyBillingAddress,
   };
 
-  // Terms
+  // Terms — API returns "Buying" (capital B) from supplier, normalize both
   const buyingTerms =
     api.terms?.terms?.buying ||
     api.terms?.buying ||
+    api.terms?.Buying ||
     api.terms?.selling;
 
   const paymentPhases = buyingTerms?.payment?.phases || [];
@@ -234,12 +216,10 @@ else if (api.tax) {
   const taxRowTotal = taxRows.reduce((sum: number, tax: any) => {
     return sum + (tax.amount * tax.taxRate) / 100;
   }, 0);
-  
+
   const grandTotal = api.grandTotal || (subTotal + itemTaxTotal + taxRowTotal);
   const roundedTotal = Math.round(grandTotal);
   const roundingAdjustment = Number((roundedTotal - grandTotal).toFixed(2));
-
- 
 
   const mappedForm: PurchaseInvoiceFormData = {
     ...emptyPOForm,
@@ -255,12 +235,12 @@ else if (api.tax) {
     supplierPhone: api.phone || "",
     supplierContact: api.contactPerson || "",
 
-    currency: api.currency ,
+    currency: api.currency,
     status: api.status,
 
     costCenter: api.costCenter || "",
     project: api.project || "",
-    
+
     destnCountryCd: api.destnCountryCd || api.exportToCountry || "",
     shippingRule: api.shippingRule || "",
     incoterm: api.incoterm || "",
@@ -277,7 +257,7 @@ else if (api.tax) {
 
     totalQuantity: totalQuantity,
     grandTotal: grandTotal,
-    
+
     advanceAmount:
       (api.advances_payments || []).reduce(
         (sum: number, p: any) => sum + Number(p.allocated_amount || 0),
@@ -297,21 +277,44 @@ else if (api.tax) {
     acceptedTerms: {},
   };
 
-
   return mappedForm;
 };
 
-export const mapSupplierToAddress = (
-  supplier: any,
-  prev: AddressBlock
-): AddressBlock => ({
-  ...prev,
-  addressLine1: supplier?.billingAddressLine1 ?? "",
-  addressLine2: supplier?.billingAddressLine2 ?? "",
-  city: supplier?.billingCity ?? "",
-  state: supplier?.province ?? "",
-  country: supplier?.billingCountry ?? "",
-  postalCode: supplier?.billingPostalCode ?? "",
-  phone: supplier?.phoneNo ?? "",
-  email: supplier?.emailId ?? "",
-});
+/**
+ * Supplier API response → AddressBlock
+ * Handles the supplier address shape:
+ * { id, type, line1, line2, city, county, state, postalCode, country, isPrimary, isShipping }
+ */
+export const mapSupplierToAddress = (supplier: any, prev: AddressBlock): AddressBlock => {
+  // Find primary address, fall back to first
+  const addr =
+    supplier.addresses?.find((a: any) => a.isPrimary) ||
+    supplier.addresses?.[0];
+
+  if (!addr) return prev;
+
+  // Primary contact for phone/email
+  const primaryContact =
+    supplier.contacts?.find((c: any) => c.isPrimary) ||
+    supplier.contacts?.[0];
+
+  return {
+    addressTitle: supplier.name || prev.addressTitle,
+    // API returns "Billing" / "Shipping" in addr.type
+    addressType: (addr.type === "Shipping" ? "Shipping" : "Billing") as "Billing" | "Shipping",
+
+    // API uses line1 / line2 (not addressLine1 / addressLine2)
+    addressLine1: addr.line1 || "",
+    addressLine2: addr.line2 || "",
+
+    city: addr.city || "",
+    // API has both "county" and "state" — use state first, fall back to county
+    state: addr.state || addr.county || "",
+    country: addr.country || "",
+    postalCode: addr.postalCode || "",
+
+    // Pull phone/email from contacts, not address
+    phone: primaryContact?.mobile || primaryContact?.phone || "",
+    email: primaryContact?.email || "",
+  };
+};

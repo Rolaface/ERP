@@ -97,6 +97,7 @@ export interface ItemRow {
   rate: number;
   warehouse?: string;
   vatCd: string;
+  taxCategory:string;
   vatRate: number;
   packing?: string;
   packingUnit?: number;

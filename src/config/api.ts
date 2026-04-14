@@ -302,17 +302,17 @@ export const API = {
    * SALES / INVOICES
    * ========================= */
   invoice: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_sales_invoice`,
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_sales_invoice_by_id`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_sales_invoice`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoices`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoice_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.create_sales_invoice`,
 
-    updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.update_invoice_status`,
-    delete: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.delete_sales_invoice`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.delete_sales_invoice`,
     createCreditNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_credit_note_from_sales_invoice`,
     createDebitNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_debit_note_from_invoice`,
     getCreditNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_credit_notes`,
     getDebitNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_debit_notes`,
-    editInvoice: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.edit_sales_invoice`,
+    editInvoice: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
   },
 
   /* =========================
@@ -320,7 +320,8 @@ export const API = {
    * ========================= */
   stock: {
     getAll: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_stock_balance`,
-    stockReport: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_batch_wise_stock_report`,
+    stockReport: `${ERP_BASE}/api/method/custom_api.api.stock.api.get_batch_wise_stock_report`,
+    // stockReport: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_batch_wise_stock_report`,
     getbyId: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_stock_by_id`,
     //  getAllStockItems:'${ERP_BASE}/api'
 
@@ -362,13 +363,14 @@ export const API = {
 
     update: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.update`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.update_po_status.update_purchase_order_status`,
+    createInvoiceFromPO: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.create_pi_from_po`,
   },
   //purchase invoice
   purchaseIvoice: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.get_all_purchase_invoices`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get`,
 
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.get_purchase_invoice_by_id`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.create_purchase_invoice`,
+    create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.create`,
 
     updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.update_purchase_invoices_status`,
   },
@@ -433,7 +435,15 @@ export const API = {
    * SHIPPING AND INCOTERMS
    * ========================= */
   ShippingAPI:{getshipping:`${ERP_BASE}/api/method/custom_api.api.search.get_shipping_rules`,},
-  IncotermsApi:{getIncoterms:`${ERP_BASE}/api/method/custom_api.api.search.get_incoterms`,}
+  IncotermsApi:{getIncoterms:`${ERP_BASE}/api/method/custom_api.api.search.get_incoterms`,},
+
+  /* =========================
+   * UTILS
+   * ========================= */
+  frappeUtilsAPI:{
+    getCompanyCurrentFiscalYear:`${ERP_BASE}/api/method/custom_api.utils.frappe_utils.get_current_fiscal_year`,
+  },
+
 
 
 } as const;
