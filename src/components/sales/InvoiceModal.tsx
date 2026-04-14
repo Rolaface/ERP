@@ -13,6 +13,8 @@ import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import WarehouseSelect from "../selects/WarehouseSelect";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
+import { AddressTab } from "../procurement/purchaseinvoice/AddressTab";
+import { useAddressLogic } from "../../hooks/useAddressLogic";
 import {
   invoiceStatusOptions,
   currencySymbols,
@@ -91,16 +93,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     }
   };
 
-  const handleNext = () => {
-    if (ui.activeTab === "details" && !validateDetailsOrFocus()) return;
+const handleNext = () => {
+  const currentIndex = tabs.indexOf(ui.activeTab as any);
 
-    const currentIndex = tabs.indexOf(ui.activeTab as any);
-
-    if (currentIndex < tabs.length - 1) {
-      ui.setActiveTab(tabs[currentIndex + 1]);
-    }
-  };
-
+  if (currentIndex < tabs.length - 1) {
+    ui.setActiveTab(tabs[currentIndex + 1]);
+  }
+};
   useEffect(() => {
     if (isOpen) {
       ui.setActiveTab("details");
@@ -114,17 +113,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
   const showExportField = ui.isExport;
-  const handleSave = async () => {
-    if (submitting || !validateDetailsOrFocus()) return;
+  const handleSubmitForm = async () => {
+    if (submitting) return;
 
     setSubmitting(true);
     try {
-      const dummyEvent = {
-        preventDefault: () => {},
-      } as React.FormEvent;
-      const payload = await actions.handleSubmit(dummyEvent);
+      const payload = await actions.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
       if (!payload) {
-        ui.setActiveTab("details");
         showValidationError("Please fill all required fields correctly.");
         return;
       }
@@ -144,15 +139,17 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     }
   };
 
-  const footerContent = (
+const footerContent = (
     <ModalFooter
       onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       onReset={async () => {
         resetDirty();
         await actions.handleReset();
       }}
-      onSave={handleSave}
-      onNext={ui.activeTab === "terms" ? undefined : handleNext}
+      onSave={handleSubmitForm}
+      onNext={handleNext}
+      currentTab={tabs.indexOf(ui.activeTab)}
+      totalTabs={tabs.length}
       saving={submitting}
     />
   );
@@ -529,15 +526,23 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               {/* BILLING + SHIPPING */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Billing */}
-                <AddressBlock
-                  type="billing"
-                  title="Billing Address"
-                  subtitle="Invoice and payment details"
-                  data={formData.billingAddress}
-                  onChange={(
-                    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-                  ) => actions.handleInputChange(e, "billingAddress")}
-                />
+              <AddressTab
+                            form={form}
+                            onFormChange={(e: any) => handleFormChange(e)}
+                            customShippingRule={customShippingRule}
+                            setCustomShippingRule={setCustomShippingRule}
+                            customIncoterm={customIncoterm}
+                            setCustomIncoterm={setCustomIncoterm}
+                            supplierId={form.supplierId}
+                            selected={selected}
+                            setSelected={setSelected}
+                            selectedIds={selectedIds}
+                            setSelectedIds={setSelectedIds}
+                            addresses={addresses}
+                            setAddresses={setAddresses}
+                            loading={loading}
+                            setLoading={setLoading}
+                          />
 
                 {/* Shipping */}
                 <AddressBlock

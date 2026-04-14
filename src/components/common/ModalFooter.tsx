@@ -15,10 +15,8 @@ export interface ModalFooterProps {
   nextLabel?: string;
   submitDisabled?: boolean;
   resetDisabled?: boolean;
-  nextDisabled?: boolean;
   onSave?: () => Promise<boolean> | boolean;
   saving?: boolean;
-  showNext?: boolean;
 }
 
 const ModalFooter: React.FC<ModalFooterProps> = ({
@@ -35,16 +33,27 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
   nextLabel = "Next",
   submitDisabled,
   resetDisabled,
-  nextDisabled,
   onSave,
   saving,
-  showNext: showNextProp,
 }) => {
-  const isLastTab = currentTab >= totalTabs - 1;
-  const showNextButton = showNextProp !== false && (onNext !== undefined || !isLastTab);
-  const isNextDisabled = isLastTab || !!nextDisabled || (saving ?? isSubmitting ?? false);
+  const safeTotalTabs = Math.max(totalTabs, 1);
+  const isLastTab = currentTab >= safeTotalTabs - 1;
   const isSubmittingVal = saving ?? isSubmitting ?? false;
+
   const handleSubmit = onSubmit ?? onSave;
+
+  const handleNextClick = () => {
+    if (isSubmittingVal) return;
+    onNext?.();
+  };
+
+  const handleSaveClick = async () => {
+    if (isSubmittingVal || submitDisabled) return;
+    const result = handleSubmit?.();
+    if (result && typeof result.then === "function") {
+      await result;
+    }
+  };
 
   return (
     <div className="flex w-full items-center justify-between gap-2">
@@ -68,27 +77,26 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
             {resetLabel}
           </Button>
         )}
-        {handleSubmit && (
+
+        {!isLastTab && onNext && (
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={handleNextClick}
+          >
+            {nextLabel}
+          </Button>
+        )}
+
+        {isLastTab && handleSubmit && (
           <Button
             variant="primary"
             type="button"
-            onClick={handleSubmit}
+            onClick={handleSaveClick}
             loading={isSubmittingVal}
             disabled={submitDisabled}
           >
             {submitLabel}
-          </Button>
-        )}
-        {showNextButton && (
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={() => {
-              if (!isNextDisabled && onNext) onNext();
-            }}
-            disabled={isNextDisabled || !onNext}
-          >
-            {nextLabel}
           </Button>
         )}
       </div>

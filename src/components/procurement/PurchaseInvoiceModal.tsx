@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Building2, MapPin, FileText, Receipt } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
@@ -10,7 +10,7 @@ import TermsAndCondition from "../TermsAndCondition";
 import { usePurchaseInvoiceForm } from "../../hooks/usePurchaseInvoiceForm";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import type { POTab } from "../../types/Supply/purchaseInvoice";
-import { showValidationError } from "../../utils/alert";
+import { showApiError, showValidationError } from "../../utils/alert";
 
 interface PurchaseInvoiceModalProps {
   isOpen: boolean;
@@ -42,6 +42,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     modalId ||
     (pId ? `purchase-invoice-edit-${pId}` : `purchase-invoice-create`);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+  const [internalSaving, setInternalSaving] = useState(false);
 
   const {
     form,
@@ -77,8 +78,36 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     setAddresses,
     loading,
     setLoading,
-    saving,
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
+
+  const handleSubmitForm = async () => {
+    const error = validateTab(activeTab);
+    if (error) {
+      showValidationError(error);
+      return;
+    }
+
+    if (internalSaving) return;
+
+    setInternalSaving(true);
+    try {
+      resetDirty();
+      await handleSubmit();
+    } catch (err: any) {
+      showApiError(err);
+    } finally {
+      setInternalSaving(false);
+    }
+  };
+
+  const handleNextClick = () => {
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1]);
+    }
+  };
+
+  const isLastTab = activeTab === "terms";
 
   const footer = (
     <>
@@ -98,29 +127,23 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         >
           Reset
         </Button>
-        <Button
-          variant="primary"
-          type="submit"
-          form="purchaseInvoiceForm"
-          disabled={saving}
-        >
-          {saving
-            ? "Saving..."
-            : activeTab === "terms"
-              ? "Save Purchase Invoice"
-              : "Next"}
-        </Button>
+        {!isLastTab && (
+          <Button variant="secondary" onClick={handleNextClick}>
+            Next
+          </Button>
+        )}
+        {isLastTab && (
+          <Button
+            variant="primary"
+            onClick={handleSubmitForm}
+            disabled={internalSaving}
+          >
+            {internalSaving ? "Saving..." : "Submit"}
+          </Button>
+        )}
       </div>
     </>
   );
-
-  const handleNext = () => {
-    const currentIndex = tabOrder.indexOf(activeTab);
-
-    if (currentIndex < tabOrder.length - 1) {
-      setActiveTab(tabOrder[currentIndex + 1]);
-    }
-  };
 
   return (
     <MinimizableModal
@@ -138,27 +161,6 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         id="purchaseInvoiceForm"
         noValidate
         onChange={() => markDirty()}
-        onSubmit={(e) => {
-          e.preventDefault();
-
-          const error = validateTab(activeTab);
-
-          if (error) {
-            showValidationError(error);
-            return;
-          }
-
-          if (activeTab !== "terms") {
-            handleNext();
-            return;
-          }
-
-          const handleFormSubmit = async () => {
-            resetDirty();
-            await handleSubmit(e);
-          };
-          handleFormSubmit();
-        }}
         className="h-full flex flex-col"
       >
         <div className="bg-app border-b border-theme px-8 shrink-0">
