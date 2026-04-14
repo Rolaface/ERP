@@ -124,19 +124,19 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       if (!mountedRef.current) return;
 
       const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
-        invoiceNumber: inv.invoiceNumber,
+        invoiceNumber: inv.id,
         customerId: inv.customerId,
         customerName: inv.customerName,
         currency: inv.currency,
         exchangeRate: inv.exchangeRate,
         dueDate: inv.dueDate,
-        dateOfInvoice: new Date(inv.dateOfInvoice),
-        total: Number(inv.totalAmount),
+        dateOfInvoice: new Date(inv.invoiceDate),
+        total: Number(inv.total),
         outstandingAmount: inv.outstandingAmount ?? 0,
         totalTax: inv.totalTax,
-        invoiceStatus: inv.invoiceStatus,
+        invoiceStatus: inv.status,
         invoiceTypeParent: inv.invoiceTypeParent,
-        invoiceType: inv.invoiceType,
+        invoiceType: inv.taxCategory,
       }));
 
       setInvoices(mapped);
@@ -316,7 +316,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setDrawerData(null);
     try {
       const res = await getSalesInvoiceById(invoiceNumber);
-      if (res?.status_code === 200) setDrawerData(res.data as InvoiceDetail);
+      if (res?.message.status_code === 200) setDrawerData(res.message.data as InvoiceDetail);
     } finally {
       setDrawerLoading(false);
     }
@@ -359,6 +359,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       }
 
       const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
+      console.log("🚀 ~ handlePreviewPDF ~ invoiceRes:", invoiceRes)
       if (!invoiceRes || invoiceRes.status_code !== 200) {
         closeSwal();
         showApiError("Failed to load invoice");
