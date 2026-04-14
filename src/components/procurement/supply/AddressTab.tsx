@@ -48,17 +48,14 @@ export const AddressTab: React.FC<AddressTabProps> = ({
     loadCountries();
   }, []);
 
-
   const selectedCountry = countriesCache.find(
-    (c) => c.country_name === form.billingCountry
-  );;
+    (c) => c.country_name === form.billingCountry,
+  );
 
   return (
     <section className="flex-1 overflow-y-auto p-4 space-y-6 bg-app">
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-700">
-          Address Details
-        </h3>
+        <h3 className="text-sm font-semibold text-gray-700">Address Details</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
           <ModalInput
@@ -86,11 +83,10 @@ export const AddressTab: React.FC<AddressTabProps> = ({
             required
           />
 
-
           <ModalInput
             label="District"
             name="district"
-            value={form.district ||form.billingCounty}
+            value={form.district || form.billingCounty}
             onChange={onChange}
             required
             error={errors.district}
@@ -123,7 +119,7 @@ export const AddressTab: React.FC<AddressTabProps> = ({
                 .filter(
                   (c) =>
                     c?.country_name &&
-                    c.country_name.toLowerCase().includes(lowerQ)
+                    c.country_name.toLowerCase().includes(lowerQ),
                 )
                 .map((c) => ({
                   label: c.country_name,

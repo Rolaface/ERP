@@ -67,7 +67,8 @@ export const useSupplierForm = ({
       try {
         const res = await getCompanyById(companyId);
 
-        const buyingTerms = res?.data?.terms?.buying;
+        const buyingTerms =
+          res?.data?.terms?.Buying || res?.data?.terms?.buying;
 
         if (!buyingTerms) return;
 
@@ -140,8 +141,6 @@ export const useSupplierForm = ({
       newErrors.currency = "Currency is required";
     }
 
-    
-
     if (form.openingBalance === null || form.openingBalance === undefined) {
       newErrors.openingBalance = "Opening Balance is required";
     }
@@ -211,7 +210,7 @@ export const useSupplierForm = ({
         terms: {
           buying: mapped.terms?.buying?.payment?.phases?.length
             ? mapped.terms.buying
-            : prev.terms?.buying || emptySupplierForm.terms?.buying,
+            : (companyBuyingTerms ?? emptySupplierForm.terms?.buying),
         },
       }));
 
@@ -456,7 +455,11 @@ export const useSupplierForm = ({
         ];
       }
 
-      const hasDefault = mapped.bankAccounts.some((a) => a.isDefault);
+      const hasDefault = mapped.bankAccounts?.some((a) => a.isDefault);
+
+      if (!hasDefault && mapped.bankAccounts?.length) {
+        mapped.bankAccounts[0].isDefault = true;
+      }
       if (!hasDefault) {
         mapped.bankAccounts[0].isDefault = true;
       }
@@ -512,8 +515,7 @@ export const useSupplierForm = ({
         if (!form.phoneCode || !form.phoneNo) emptyFields.push("Phone Number");
         if (!form.emailId) emptyFields.push("Email");
         if (!form.currency) emptyFields.push("Currency");
-       
-       
+
         if (!form.openingBalance && form.openingBalance !== 0)
           emptyFields.push("Opening Balance");
 

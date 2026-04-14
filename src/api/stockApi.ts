@@ -23,7 +23,7 @@ export async function getAllStockEntries(
     },
   });
 
-  return resp.data; // 🔥 DO NOT strip .data
+  return resp.data; 
 }
 
 export async function getStockById(id: string): Promise<any> {

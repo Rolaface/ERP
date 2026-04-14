@@ -21,8 +21,8 @@ interface PurchaseOrderModalProps {
 
 const tabs: { key: POTab; icon: typeof Building2; label: string }[] = [
   { key: "details", icon: Building2, label: "Details" },
-  { key: "address", icon: MapPin,    label: "Address" },
-  { key: "terms",   icon: FileText,  label: "Terms"   },
+  { key: "address", icon: MapPin, label: "Address" },
+  { key: "terms", icon: FileText, label: "Terms" },
 ];
 
 const tabOrder: POTab[] = ["details", "address", "terms"];
@@ -34,7 +34,9 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
   poId,
   modalId,
 }) => {
-  const resolvedModalId = modalId || (poId ? `po-edit-${poId}-${Date.now()}` : `po-create-${Date.now()}`);
+  const resolvedModalId =
+    modalId ||
+    (poId ? `po-edit-${poId}-${Date.now()}` : `po-create-${Date.now()}`);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const {
@@ -48,7 +50,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     handleItemChange,
     addItem,
     removeItem,
-    duplicateItem,          // ← new
+    duplicateItem, // ← new
     handleTaxRowChange,
     addTaxRow,
     removeTaxRow,
@@ -64,6 +66,14 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     setCustomIncoterm,
     handleBulkItemChange,
     saving,
+    addressSelected,
+    setAddressSelected,
+    addressSelectedIds,
+    setAddressSelectedIds,
+    addressList,
+    setAddressList,
+    addressLoading,
+    setAddressLoading,
   } = usePurchaseOrderForm({ isOpen, onSuccess: onSubmit, onClose, poId });
 
   const handleNext = () => {
@@ -75,7 +85,10 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
 
   const footer = (
     <>
-      <Button variant="secondary" onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}>
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+      >
         Cancel
       </Button>
       <div className="flex gap-2">
@@ -122,8 +135,14 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
         onSubmit={(e) => {
           e.preventDefault();
           const error = validateTab(activeTab);
-          if (error) { showValidationError(error); return; }
-          if (activeTab !== "terms") { handleNext(); return; }
+          if (error) {
+            showValidationError(error);
+            return;
+          }
+          if (activeTab !== "terms") {
+            handleNext();
+            return;
+          }
           const handleFormSubmit = async () => {
             resetDirty();
             await handleSubmit(e);
@@ -153,7 +172,6 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
         </div>
 
         <section className="flex-1 overflow-y-auto p-4 space-y-6">
-
           {activeTab === "details" && (
             <DetailsTab
               form={form}
@@ -163,7 +181,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
               onItemChange={handleItemChange}
               onAddItem={addItem}
               onRemoveItem={removeItem}
-              onDuplicateItem={duplicateItem}   // ← wired
+              onDuplicateItem={duplicateItem} // ← wired
               getCurrencySymbol={getCurrencySymbol}
               onItemSelect={handleItemSelect}
               onBulkItemChange={handleBulkItemChange}
@@ -185,17 +203,29 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
             <AddressTab
               form={form}
               onFormChange={handleFormChange}
+              supplierId={form.supplierId}
+              companyId={form.company}
               customShippingRule={customShippingRule}
               setCustomShippingRule={setCustomShippingRule}
               customIncoterm={customIncoterm}
               setCustomIncoterm={setCustomIncoterm}
+              selected={addressSelected}
+              setSelected={setAddressSelected}
+              selectedIds={addressSelectedIds}
+              setSelectedIds={setAddressSelectedIds}
+              addresses={addressList}
+              setAddresses={setAddressList}
+              loading={addressLoading}
+              setLoading={setAddressLoading}
             />
           )}
 
           {activeTab === "terms" && (
             <TermsAndCondition
               terms={form.terms?.buying ?? null}
-              setTerms={(buying) => setForm((p) => ({ ...p, terms: { buying } }))}
+              setTerms={(buying) =>
+                setForm((p) => ({ ...p, terms: { buying } }))
+              }
               type="buying"
             />
           )}

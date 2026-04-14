@@ -31,7 +31,7 @@ interface DetailsTabProps {
   ) => void;
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
-  onDuplicateItem: (idx: number) => void;   // ← new, wired from hook
+  onDuplicateItem: (idx: number) => void; // ← new, wired from hook
   getCurrencySymbol: () => string;
   onBulkItemChange?: (field: keyof ItemRow, value: string) => void;
 
@@ -43,26 +43,45 @@ interface DetailsTabProps {
 
 const POColumnHeaders: React.FC = () => (
   <tr className="border-b border-theme">
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">#</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">Item Name</th>
-    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[120px]">
-      Packing <span className="ml-1 text-[9px] text-muted/60 font-normal">(unit × size)</span>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">
+      #
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">Required By</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
+      Item Name
+    </th>
+    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[120px]">
+      Packing{" "}
+      <span className="ml-1 text-[9px] text-muted/60 font-normal">
+        (unit × size)
+      </span>
+    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
+      Required By
+    </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
       Warehouse <span className="text-danger">*</span>
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">Qty</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">UOM</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
+      Qty
+    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
+      UOM
+    </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
       Rate <span className="text-danger">*</span>
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Tax(%)</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
+      Tax(%)
+    </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px] whitespace-nowrap">
       Tax Code <span className="text-danger">*</span>
     </th>
-    <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">Amount</th>
-    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[50px]">-</th>
+    <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">
+      Amount
+    </th>
+    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[50px]">
+      -
+    </th>
   </tr>
 );
 
@@ -107,7 +126,9 @@ export const DetailsTab = ({
     onBulkItemChange?.("requiredBy", (e.target as HTMLInputElement).value);
   };
 
-  const handleTopWarehouseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleTopWarehouseChange = (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
     onFormChange(e);
     onBulkItemChange?.("warehouse", e.target.value);
   };
@@ -147,7 +168,9 @@ export const DetailsTab = ({
         {/* Item Name */}
         <td className="px-2 py-1">
           <div className="w-[153px]">
-            <Tooltip content={it.itemName ? `Item: ${it.itemName}` : "Select an item"}>
+            <Tooltip
+              content={it.itemName ? `Item: ${it.itemName}` : "Select an item"}
+            >
               <POItemSelect
                 value={it.itemName}
                 selectedId={it.itemCode}
@@ -162,7 +185,9 @@ export const DetailsTab = ({
           <div className="flex items-center justify-center gap-1">
             <Tooltip content={`Packing Unit: ${it.packingUnit || "N/A"}`}>
               <input
-                type="number" name="packingUnit" value={it.packingUnit || ""}
+                type="number"
+                name="packingUnit"
+                value={it.packingUnit || ""}
                 onChange={(e) => onItemChange(e, i)}
                 className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
               />
@@ -170,7 +195,9 @@ export const DetailsTab = ({
             <span className="text-muted text-[10px] font-bold">×</span>
             <Tooltip content={`Packing Size: ${it.packingSize || "N/A"}`}>
               <input
-                type="number" name="packingSize" value={it.packingSize || ""}
+                type="number"
+                name="packingSize"
+                value={it.packingSize || ""}
                 onChange={(e) => onItemChange(e, i)}
                 className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
               />
@@ -181,10 +208,19 @@ export const DetailsTab = ({
         {/* Required By */}
         <td className="px-2 py-1">
           <div className="w-[125px]">
-            <Tooltip content={it.requiredBy ? `Required By: ${it.requiredBy}` : "Select a date"}>
+            <Tooltip
+              content={
+                it.requiredBy
+                  ? `Required By: ${it.requiredBy}`
+                  : "Select a date"
+              }
+            >
               <DatePickerInput
-                name="requiredBy" value={it.requiredBy || ""}
-                onChange={(name, value) => onItemChange({ target: { name, value } } as any, i)}
+                name="requiredBy"
+                value={it.requiredBy || ""}
+                onChange={(name, value) =>
+                  onItemChange({ target: { name, value } } as any, i)
+                }
               />
             </Tooltip>
           </div>
@@ -192,8 +228,14 @@ export const DetailsTab = ({
 
         {/* Warehouse */}
         <td className="px-2 py-1">
-          <Tooltip content={it.warehouse ? `Warehouse: ${it.warehouse}` : "Select a warehouse"}>
-            <WarehouseSelect compact value={it.warehouse || ""}
+          <Tooltip
+            content={
+              it.warehouse ? `Warehouse: ${it.warehouse}` : "Select a warehouse"
+            }
+          >
+            <WarehouseSelect
+              compact
+              value={it.warehouse || ""}
               onChange={(e) => onItemChange(e, i)}
             />
           </Tooltip>
@@ -201,9 +243,15 @@ export const DetailsTab = ({
 
         {/* Qty */}
         <td className="px-2 py-1">
-          <Tooltip content={it.quantity ? `Quantity: ${it.quantity}` : "Enter quantity"}>
+          <Tooltip
+            content={
+              it.quantity ? `Quantity: ${it.quantity}` : "Enter quantity"
+            }
+          >
             <input
-              type="number" name="quantity" value={it.quantity}
+              type="number"
+              name="quantity"
+              value={it.quantity}
               onChange={(e) => onItemChange(e, i)}
               className="w-[80px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -214,7 +262,9 @@ export const DetailsTab = ({
         <td className="px-2 py-1">
           <Tooltip content={it.uom ? `UOM: ${it.uom}` : "Unit of measure"}>
             <input
-              name="uom" value={it.uom} disabled
+              name="uom"
+              value={it.uom}
+              disabled
               onChange={(e) => onItemChange(e, i)}
               className="w-[60px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main"
             />
@@ -223,9 +273,13 @@ export const DetailsTab = ({
 
         {/* Rate */}
         <td className="px-2 py-1">
-          <Tooltip content={it.rate ? `Rate: ${symbol} ${it.rate}` : "Enter rate"}>
+          <Tooltip
+            content={it.rate ? `Rate: ${symbol} ${it.rate}` : "Enter rate"}
+          >
             <input
-              type="number" name="rate" value={it.rate}
+              type="number"
+              name="rate"
+              value={it.rate}
               onChange={(e) => onItemChange(e, i)}
               className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -236,7 +290,9 @@ export const DetailsTab = ({
         <td className="px-2 py-1">
           <Tooltip content={`VAT Rate: ${it.vatRate || "N/A"}`}>
             <input
-              type="number" name="vatRate" value={it.vatRate}
+              type="number"
+              name="vatRate"
+              value={it.vatRate}
               onChange={(e) => onItemChange(e, i)}
               className="w-[54px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -247,7 +303,8 @@ export const DetailsTab = ({
         <td className="px-2 py-1">
           <Tooltip content={`VAT Code: ${it.vatCd || "N/A"}`}>
             <input
-              name="vatCd" value={it.vatCd || ""}
+              name="vatCd"
+              value={it.vatCd || ""}
               onChange={(e) => onItemChange(e, i)}
               className="w-[46px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
             />
@@ -288,16 +345,21 @@ export const DetailsTab = ({
 
   return (
     <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
-
       {/* ── Top fields ────────────────────────────────────────────────────── */}
       <div className="bg-app">
         <div className="flex flex-wrap gap-x-2 gap-y-3 items-end mb-3">
-
           <div className="w-[240px]">
-            <Tooltip content={form.supplier ? `Supplier: ${form.supplier}` : "Select a supplier"}>
+            <Tooltip
+              content={
+                form.supplier
+                  ? `Supplier: ${form.supplier}`
+                  : "Select a supplier"
+              }
+            >
               <SupplierSelect
                 className="w-full"
                 selectedId={form.supplierId}
+                value={form.supplier}
                 onChange={onSupplierChange}
               />
             </Tooltip>
@@ -305,45 +367,67 @@ export const DetailsTab = ({
 
           <div className="w-[142px]">
             <DatePickerInput
-              label="Date" name="date" value={form.date} required
-              onChange={(name, value) => onFormChange({ target: { name, value } } as any)}
+              label="Date"
+              name="date"
+              value={form.date}
+              required
+              onChange={(name, value) =>
+                onFormChange({ target: { name, value } } as any)
+              }
             />
           </div>
 
           <div className="w-[135px]">
             <ModalSelect
-              label="Status" name="status" value={form.status}
-              disabled={!fromPO} onChange={onFormChange}
+              label="Status"
+              name="status"
+              value={form.status}
+              disabled={!fromPO}
+              onChange={onFormChange}
               options={[
-                { value: "Draft",                label: "Draft" },
-                { value: "On Hold",              label: "On Hold" },
-                { value: "To Receive and Bill",  label: "To Receive and Bill" },
-                { value: "To Receive",           label: "To Receive" },
-                { value: "To Bill",              label: "To Bill" },
-                { value: "Completed",            label: "Completed" },
-                { value: "Cancelled",            label: "Cancelled" },
-                { value: "Closed",               label: "Closed" },
+                { value: "Draft", label: "Draft" },
+                { value: "On Hold", label: "On Hold" },
+                { value: "To Receive and Bill", label: "To Receive and Bill" },
+                { value: "To Receive", label: "To Receive" },
+                { value: "To Bill", label: "To Bill" },
+                { value: "Completed", label: "Completed" },
+                { value: "Cancelled", label: "Cancelled" },
+                { value: "Closed", label: "Closed" },
               ]}
             />
           </div>
 
           <div className="w-[135px]">
-            <Tooltip content={form.costCenter ? `Cost Center: ${form.costCenter}` : "Select a cost center"}>
+            <Tooltip
+              content={
+                form.costCenter
+                  ? `Cost Center: ${form.costCenter}`
+                  : "Select a cost center"
+              }
+            >
               <CostCenterSelect
                 value={form.costCenter}
                 onChange={(val) =>
-                  onFormChange({ target: { name: "costCenter", value: val } } as React.ChangeEvent<HTMLInputElement>)
+                  onFormChange({
+                    target: { name: "costCenter", value: val },
+                  } as React.ChangeEvent<HTMLInputElement>)
                 }
               />
             </Tooltip>
           </div>
 
           <div className="w-[130px]">
-            <Tooltip content={form.project ? `Project: ${form.project}` : "Select a project"}>
+            <Tooltip
+              content={
+                form.project ? `Project: ${form.project}` : "Select a project"
+              }
+            >
               <ProjectSelect
                 value={form.project}
                 onChange={(val) =>
-                  onFormChange({ target: { name: "project", value: val } } as React.ChangeEvent<HTMLInputElement>)
+                  onFormChange({
+                    target: { name: "project", value: val },
+                  } as React.ChangeEvent<HTMLInputElement>)
                 }
               />
             </Tooltip>
@@ -351,7 +435,9 @@ export const DetailsTab = ({
 
           <div className="w-[135px]">
             <DatePickerInput
-              label="Required By" name="requiredBy" value={form.requiredBy}
+              label="Required By"
+              name="requiredBy"
+              value={form.requiredBy}
               onChange={(name, value) =>
                 handleTopRequiredByChange({ target: { name, value } } as any)
               }
@@ -359,20 +445,17 @@ export const DetailsTab = ({
           </div>
 
           <div className="w-[135px]">
-            <Tooltip content={form.warehouse ? `Warehouse: ${form.warehouse}` : "Select a warehouse"}>
+            <Tooltip
+              content={
+                form.warehouse
+                  ? `Warehouse: ${form.warehouse}`
+                  : "Select a warehouse"
+              }
+            >
               <WarehouseSelect
                 value={form.warehouse || ""}
                 onChange={handleTopWarehouseChange}
                 required
-              />
-            </Tooltip>
-          </div>
-
-          <div className="w-[135px]">
-            <Tooltip content={form.referenceNumber ? `Reference Code: ${form.referenceNumber}` : "Enter a reference code"}>
-              <ModalInput
-                label="Reference Code" name="referenceNumber"
-                value={form.referenceNumber} onChange={onFormChange}
               />
             </Tooltip>
           </div>
@@ -381,7 +464,6 @@ export const DetailsTab = ({
 
       {/* ── Main body ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-[4fr_1fr] gap-4">
-
         {/* Generic ItemTable with PO-specific columns */}
         <ItemTable
           title="Order Items"
@@ -397,9 +479,10 @@ export const DetailsTab = ({
 
         {/* ── Right panel: supplier details + summary ──────────────────── */}
         <div className="flex flex-col gap-2">
-
           <div className="bg-card rounded-lg p-2 w-[220px]">
-            <h3 className="text-[12px] font-semibold text-main mb-2">Supplier Details</h3>
+            <h3 className="text-[12px] font-semibold text-main mb-2">
+              Supplier Details
+            </h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5 text-xs text-main">
                 <User size={16} className="text-muted" />
@@ -415,15 +498,21 @@ export const DetailsTab = ({
               </div>
               {form.taxCategory && (
                 <div className="bg-card rounded-lg mt-1">
-                  <h3 className="text-[11px] font-semibold text-main mb-1">Order Information</h3>
+                  <h3 className="text-[11px] font-semibold text-main mb-1">
+                    Order Information
+                  </h3>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted">Tax Category</span>
-                      <span className="font-medium text-main">{form.taxCategory}</span>
+                      <span className="font-medium text-main">
+                        {form.taxCategory}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted">Currency</span>
-                      <span className="font-medium text-main">{form.currency || "-"}</span>
+                      <span className="font-medium text-main">
+                        {form.currency || "-"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -432,7 +521,9 @@ export const DetailsTab = ({
           </div>
 
           <div className="bg-card rounded-lg p-3 w-[220px]">
-            <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
+            <h3 className="text-[13px] font-semibold text-main mb-2">
+              Summary
+            </h3>
             <div className="flex flex-col gap-2">
               <div className="flex justify-between text-xs">
                 <span className="text-muted">Total Items</span>
@@ -440,7 +531,9 @@ export const DetailsTab = ({
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted">Total Quantity</span>
-                <span className="font-medium text-main">{form.totalQuantity}</span>
+                <span className="font-medium text-main">
+                  {form.totalQuantity}
+                </span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted">Subtotal</span>

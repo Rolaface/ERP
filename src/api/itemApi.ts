@@ -13,13 +13,12 @@ export interface ItemFilters {
 export async function getAllItems(
   page = 1,
   page_size = 10,
-  filters?: ItemFilters
+  filters?: ItemFilters,
 ): Promise<any> {
-
   const cleanedFilters = Object.fromEntries(
     Object.entries(filters || {}).filter(
-      ([_, v]) => v !== undefined && v !== ""
-    )
+      ([_, v]) => v !== undefined && v !== "",
+    ),
   );
 
   const resp: AxiosResponse = await api.get(ItemAPI.getAll, {
@@ -33,8 +32,14 @@ export async function getAllItems(
   return resp.data;
 }
 
-export async function getItemByItemCode(itemCode: string): Promise<any> {
-  const url = `${ItemAPI.getById}?id=${itemCode}`;
+export async function getItemByItemCode(
+  itemCode: string,
+  taxCategory?: string,
+): Promise<any> {
+  const url = `${ItemAPI.getById}?id=${itemCode}${
+    taxCategory ? `&taxCategory=${taxCategory}` : ""
+  }`;
+
   const resp: AxiosResponse = await api.get(url);
   return resp.data || null;
 }
@@ -64,9 +69,6 @@ export async function updateItemByItemCode(
   return resp.data;
 }
 
-
-
-
 interface LinkResult {
   value: string;
   description?: string;
@@ -77,23 +79,19 @@ interface LinkResponse {
   message: LinkResult[];
 }
 
-
 export async function getBrands(
   txt = "",
 ): Promise<Array<{ label: string; value: string }>> {
   try {
-    const resp: AxiosResponse<LinkResponse> = await api.get(
-      ItemAPI.brand,
-      {
-        params: {
-          doctype: "Brand",
-          txt,
-          ignore_user_permissions: 0,
-          reference_doctype: "Item",
-          page_length: 20,
-        },
+    const resp: AxiosResponse<LinkResponse> = await api.get(ItemAPI.brand, {
+      params: {
+        doctype: "Brand",
+        txt,
+        ignore_user_permissions: 0,
+        reference_doctype: "Item",
+        page_length: 20,
       },
-    );
+    });
 
     const results = resp.data?.message ?? [];
 

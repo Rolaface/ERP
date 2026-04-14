@@ -97,4 +97,13 @@ export async function updatePurchaseOrderStatus(
   return resp.data;
 }
 
-
+export async function deletePo(name: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    purchaseorderapi.delete,
+    {
+      name,
+      doctype: "Purchase Order",
+    }
+  );
+  return resp.data;
+}
