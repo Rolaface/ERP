@@ -7,16 +7,19 @@ import App from "./App.tsx";
 import { initTheme } from "../src/themes.ts";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"; 
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";    
-initTheme();
+import { ThemeProvider } from "./theme/ThemeProvider"; // ✅ added
 
+initTheme();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <LocalizationProvider dateAdapter={AdapterDayjs}>  
-    <BrowserRouter>
-      <App />
-      <Toaster position="top-right" richColors />
-    </BrowserRouter>
-     </LocalizationProvider>
+      <BrowserRouter>
+        <ThemeProvider> {/* ✅ wrapped */}
+          <App />
+          <Toaster position="top-right" richColors />
+        </ThemeProvider>
+      </BrowserRouter>
+    </LocalizationProvider>
   </StrictMode>,
 );
