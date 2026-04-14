@@ -66,18 +66,15 @@ export default function Step2Workspace({
   };
 
   const isValid =
-    form.company &&
-    form.abbr &&
-    form.country &&
-    form.timezone &&
-    form.currency &&
-    form.fyStart &&
-    form.fyEnd &&
-    form.chartOfAccounts &&
-    !errors.company &&
-    !errors.abbr &&
-    !errors.fyStart &&
-    !errors.fyEnd;
+  form.company.trim() &&
+  form.abbr.trim() &&
+  form.country &&
+  form.timezone &&
+  form.currency &&
+  form.fyStart &&
+  form.fyEnd &&
+  form.chartOfAccounts &&
+  Object.keys(errors).length === 0;
 
   return (
     <div className="form-section">
