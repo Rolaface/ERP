@@ -12,13 +12,14 @@ export async function createSalesInvoice(payload: any): Promise<any> {
 }
 
 export async function updateInvoiceStatus(
-  invoiceNumber: string,
-  status: string,
+  id: string,
+  action: string,
 ) {
-  const resp: AxiosResponse = await api.patch(InvoiceAPI.updateStatus, {
-    invoiceNumber,
-    invoiceStatus: status,
-  });
+  const resp: AxiosResponse = await api.patch(
+    InvoiceAPI.updateStatus,
+    { id, action }
+  );
+
   return resp.data;
 }
 

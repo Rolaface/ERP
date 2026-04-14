@@ -329,7 +329,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     try {
       if (!company) return;
       const res = await getSalesInvoiceById(invoiceNumber);
-      console.log("🚀 ~ handleDrawerPdf ~ res:", res)
       if (!res || res.message.status_code !== 200) return;
       const blobUrl = await generateInvoicePDF(
         res.message.data as Invoice,

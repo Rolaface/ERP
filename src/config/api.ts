@@ -306,7 +306,7 @@ export const API = {
     getById: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoice_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.create_sales_invoice`,
 
-    updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice_status`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.delete_sales_invoice`,
     createCreditNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_credit_note_from_sales_invoice`,
     createDebitNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_debit_note_from_invoice`,
