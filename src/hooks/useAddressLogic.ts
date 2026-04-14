@@ -167,24 +167,54 @@ export function useAddressLogic({
     async (boxKey: BoxType) => {
       let params:
         | { company: true }
-        | { supplierId: string; addressType: string };
+        | { supplier: string }
+        | { supplier: string; addressType: string };
 
       if (boxKey === "companyBilling" || boxKey === "companyShipping") {
         params = { company: true };
       } else {
         if (!supplierId) return;
         const config = BOX_CONFIGS.find((c) => c.key === boxKey);
-        params = { supplierId, addressType: config?.addressType || "Billing" };
+
+        if (boxKey === "supplierDispatch") {
+          params = {
+            supplier: supplierId,
+          };
+        } else {
+          params = {
+            supplier: supplierId,
+            addressType: config?.addressType || "Billing",
+          };
+        }
       }
 
       const key = JSON.stringify(params);
-      if (lastParamsRef.current[boxKey] === key) return;
-      lastParamsRef.current[boxKey] = key;
+
+      if (boxKey !== "supplierDispatch") {
+        if (lastParamsRef.current[boxKey] === key) return;
+        lastParamsRef.current[boxKey] = key;
+      }
 
       setLoading((prev) => ({ ...prev, [boxKey]: true }));
 
       try {
-        const data = await getAddressList(params);
+        let apiParams: {
+          company?: boolean;
+          supplierId?: string;
+          addressType?: string;
+        } = {};
+
+        if ("company" in params) {
+          apiParams.company = true;
+        } else {
+          apiParams.supplierId = params.supplier;
+
+          if ("addressType" in params) {
+            apiParams.addressType = params.addressType;
+          }
+        }
+
+        const data = await getAddressList(apiParams);
         setAddresses((prev) => ({ ...prev, [boxKey]: data }));
 
         if (data && data.length > 0) {

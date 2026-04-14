@@ -138,53 +138,57 @@ export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
     }));
 
   // Addresses
-  const addresses = {
-    supplierAddress: {
-      addressTitle: "Supplier Main Address",
-      addressType: "Billing" as const,
-      addressLine1: api.addresses?.supplierAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.supplierAddress?.addressLine2 || "",
-      city: api.addresses?.supplierAddress?.city || "",
-      state: api.addresses?.supplierAddress?.state || "",
-      country: api.addresses?.supplierAddress?.country || "",
-      postalCode: api.addresses?.supplierAddress?.postalCode || "",
-      phone: api.addresses?.supplierAddress?.phone || "",
-      email: api.addresses?.supplierAddress?.email || "",
-    },
+const addresses = {
+  supplierAddress: {
+    id: api.supplierAddress || "",
+    addressTitle: "Supplier Main Address",
+    addressType: "Billing" as const,
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+    phone: "",
+    email: "",
+  },
 
-    dispatchAddress: {
-      addressTitle: "Warehouse Dispatch",
-      addressType: "Shipping" as const,
-      addressLine1: api.addresses?.dispatchAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.dispatchAddress?.addressLine2 || "",
-      city: api.addresses?.dispatchAddress?.city || "",
-      state: api.addresses?.dispatchAddress?.state || "",
-      country: api.addresses?.dispatchAddress?.country || "",
-      postalCode: api.addresses?.dispatchAddress?.postalCode || "",
-    },
+  dispatchAddress: {
+    id: api.dispatchAddress || "",
+    addressTitle: "Warehouse Dispatch",
+    addressType: "Shipping" as const,
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+  },
 
-    shippingAddress: {
-      addressTitle: "Customer Delivery Address",
-      addressType: "Shipping" as const,
-      addressLine1: api.addresses?.shippingAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.shippingAddress?.addressLine2 || "",
-      city: api.addresses?.shippingAddress?.city || "",
-      state: api.addresses?.shippingAddress?.state || "",
-      country: api.addresses?.shippingAddress?.country || "",
-      postalCode: api.addresses?.shippingAddress?.postalCode || "",
-    },
+  shippingAddress: {
+    id: api.shippingAddress || "",
+    addressTitle: "Customer Delivery Address",
+    addressType: "Shipping" as const,
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+  },
 
-    companyBillingAddress: {
-      addressTitle: "Company HQ Billing",
-      addressType: "Billing" as const,
-      addressLine1: api.addresses?.companyBillingAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.companyBillingAddress?.addressLine2 || "",
-      city: api.addresses?.companyBillingAddress?.city || "",
-      state: api.addresses?.companyBillingAddress?.state || "",
-      country: api.addresses?.companyBillingAddress?.country || "",
-      postalCode: api.addresses?.companyBillingAddress?.postalCode || "",
-    },
-  };
+  companyBillingAddress: {
+    id: api.billingAddress || "",
+    addressTitle: "Company HQ Billing",
+    addressType: "Billing" as const,
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+  },
+};
 
   // TermS
 

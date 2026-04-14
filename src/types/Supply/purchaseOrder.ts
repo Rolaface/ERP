@@ -249,7 +249,7 @@ export const emptyPOForm: PurchaseOrderFormData = {
   currency: "",
   status: "Draft",
   destnCountryCd: "",
-  shippingRule: "STANDARD",
+  shippingRule: "",
   incoterm: "EXW",
   taxesChargesTemplate: "",
   costCenter: "",

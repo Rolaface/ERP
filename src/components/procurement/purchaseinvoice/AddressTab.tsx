@@ -12,6 +12,9 @@ import {
 import { ModalSelect, ModalInput } from "../../ui/modal/modalComponent";
 import type { PurchaseOrderFormData } from "../../../types/Supply/purchaseOrder";
 import type { PurchaseInvoiceFormData } from "../../../types/Supply/purchaseInvoice";
+import SearchSelect2 from "../../ui/modal/SearchSelect2";
+import { getShippingRules } from "../../../api/utils/shippingruleapi";
+import { getIncoterms } from "../../../api/utils/incotermApi";
 import {
   useAddressLogic,
   BOX_CONFIGS,
@@ -22,7 +25,9 @@ import {
 interface AddressTabProps {
   form: PurchaseOrderFormData | PurchaseInvoiceFormData;
   onFormChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e:
+      | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+      | { target: { name: string; value: any } },
   ) => void;
   customShippingRule: string;
   setCustomShippingRule: React.Dispatch<React.SetStateAction<string>>;
@@ -263,6 +268,8 @@ export const AddressTab: React.FC<AddressTabProps> = ({
   loading,
   setLoading,
 }) => {
+  const [incotermLabel, setIncotermLabel] = useState("");
+  const [shippingLabel, setShippingLabel] = useState("");
   const {
     handleSelect,
     loadAddresses,
@@ -280,46 +287,108 @@ export const AddressTab: React.FC<AddressTabProps> = ({
     setLoading,
     onFormChange,
   });
+  //SHOW API FIRST VALUE DEFUALT
+  useEffect(() => {
+    const loadDefaultIncoterm = async () => {
+      const list = await getIncoterms("");
 
+      if (!list || list.length === 0) return;
+
+      const first = list[0];
+
+      onFormChange({
+        target: { name: "incoterm", value: first.value },
+      });
+
+      setIncotermLabel(first.label);
+    };
+
+    if (!incotermLabel) {
+      loadDefaultIncoterm();
+    }
+  }, [incotermLabel]);
+  //incoterm edit
+  useEffect(() => {
+    if (form.incoterm && !incotermLabel) {
+      const loadLabel = async () => {
+        const list = await getIncoterms("");
+
+        const found = list.find((i) => i.value === form.incoterm);
+        if (found) setIncotermLabel(found.label);
+      };
+
+      loadLabel();
+    }
+  }, [form.incoterm]);
+
+  //shipping
+  useEffect(() => {
+    const loadDefaultShipping = async () => {
+      const list = await getShippingRules("");
+
+      if (!list || list.length === 0) return;
+
+      const first = list[0];
+
+      onFormChange({
+        target: { name: "shippingRule", value: first.value },
+      });
+
+      setShippingLabel(first.label);
+    };
+
+    if (!shippingLabel) {
+      loadDefaultShipping();
+    }
+  }, [shippingLabel]);
+
+  const fetchShippingRules = async (q: string) => {
+    const list = await getShippingRules(q);
+
+    return list.map((item) => ({
+      label: item.label,
+      value: item.value,
+    }));
+  };
   const handleResetShippingRule = useCallback(() => {
     setCustomShippingRule("");
     onFormChange({
       target: { name: "shippingRule", value: "" },
-    } as React.ChangeEvent<HTMLSelectElement>);
+    });
   }, [setCustomShippingRule, onFormChange]);
+  const fetchIncoterms = async (q: string) => {
+    const list = await getIncoterms(q);
+
+    return list.map((item) => ({
+      label: item.label,
+      value: item.value,
+    }));
+  };
 
   const handleResetIncoterm = useCallback(() => {
     setCustomIncoterm("");
     onFormChange({
       target: { name: "incoterm", value: "" },
-    } as React.ChangeEvent<HTMLSelectElement>);
+    });
   }, [setCustomIncoterm, onFormChange]);
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-4 gap-3 p-3">
         <div className="relative">
-          <ModalSelect
+          <SearchSelect2
             label="Shipping Rule"
-            name="shippingRule"
-            value={form.shippingRule || ""}
-            onChange={(e) => {
-              onFormChange(e);
-              if (e.target.value !== "OTHER") setCustomShippingRule("");
+            value={form.shippingRule}
+            onChange={(val, option) => {
+              onFormChange({
+                target: { name: "shippingRule", value: val },
+              });
+
+              setShippingLabel(option.label);
+
+              if (val !== "OTHER") setCustomShippingRule("");
             }}
-            options={[
-              { value: "STANDARD", label: "Standard Shipping" },
-              { value: "EXPRESS", label: "Express Shipping" },
-              { value: "OVERNIGHT", label: "Overnight Shipping" },
-              { value: "SAME_DAY", label: "Same Day Delivery" },
-              { value: "ECONOMY", label: "Economy Shipping" },
-              { value: "FREIGHT", label: "Freight" },
-              { value: "SEA", label: "Sea Freight" },
-              { value: "AIR", label: "Air Freight" },
-              { value: "ROAD", label: "Road Transport" },
-              { value: "PICKUP", label: "Self Pickup" },
-              { value: "OTHER", label: "Others" },
-            ]}
+            fetchOptions={fetchShippingRules}
           />
           {form.shippingRule === "OTHER" && (
             <div className="absolute inset-0 flex flex-col justify-end">
@@ -342,22 +411,19 @@ export const AddressTab: React.FC<AddressTabProps> = ({
           )}
         </div>
         <div className="relative">
-          <ModalSelect
+          <SearchSelect2
             label="Incoterm"
-            name="incoterm"
-            value={form.incoterm || ""}
-            onChange={(e) => {
-              onFormChange(e);
-              if (e.target.value !== "OTHER") setCustomIncoterm("");
+            value={incotermLabel}
+            onChange={(val, option) => {
+              onFormChange({
+                target: { name: "incoterm", value: val },
+              });
+
+              setIncotermLabel(option.label);
+
+              if (val !== "OTHER") setCustomIncoterm("");
             }}
-            options={[
-              { value: "EXW", label: "EXW – Ex Works" },
-              { value: "FCA", label: "FCA – Free Carrier" },
-              { value: "FOB", label: "FOB – Free On Board" },
-              { value: "CFR", label: "CFR – Cost and Freight" },
-              { value: "CIF", label: "CIF – Cost, Insurance & Freight" },
-              { value: "OTHER", label: "Others" },
-            ]}
+            fetchOptions={fetchIncoterms}
           />
           {form.incoterm === "OTHER" && (
             <div className="absolute inset-0 flex flex-col justify-end">
@@ -385,12 +451,7 @@ export const AddressTab: React.FC<AddressTabProps> = ({
           value={form.supplierContact || ""}
           onChange={onFormChange}
         />
-        <ModalInput
-          label="Place of Supply"
-          name="placeOfSupply"
-          value={form.placeOfSupply || ""}
-          onChange={onFormChange}
-        />
+       
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3 pb-3">
         <div className="space-y-3">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect ,useRef} from "react";
 import {
   showApiError,
   showSuccess,
@@ -174,22 +174,101 @@ export const usePurchaseOrderForm = ({
   }, [form.requiredBy]);
 
   // Load PO Data in Edit Mode
-  useEffect(() => {
-    if (!isOpen || !poId) return;
+const hasLoadedRef = useRef(false);
 
-    const loadPO = async () => {
-      try {
-        const apiData = await getPurchaseOrderById(poId);
-        const mapped = mapApiToUI(apiData);
+useEffect(() => {
+  if (!isOpen || !poId || hasLoadedRef.current) return;
 
-        setForm(mapped);
-      } catch (err) {
-        console.error("PO Load Error", err);
-      }
-    };
+  const loadPO = async () => {
+    const apiData = await getPurchaseOrderById(poId);
+    const mapped = mapApiToUI(apiData);
 
-    loadPO();
-  }, [isOpen, poId]);
+    setForm(mapped);
+
+   
+    setAddressSelectedIds({
+      supplierBilling: mapped.addresses.supplierAddress.id || "",
+      supplierDispatch: mapped.addresses.dispatchAddress.id || "",
+      companyBilling: mapped.addresses.companyBillingAddress.id || "",
+      companyShipping: mapped.addresses.shippingAddress.id || "",
+    });
+
+  
+    setAddressSelected({
+      supplierBilling: mapped.addresses.supplierAddress.id
+        ? {
+            id: mapped.addresses.supplierAddress.id,
+            title: mapped.addresses.supplierAddress.addressTitle || "",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            country: "",
+            pincode: "",
+            email: "",
+            phone: "",
+            addressType: "Billing",
+            type: "Billing",
+          }
+        : null,
+
+      supplierDispatch: mapped.addresses.dispatchAddress.id
+        ? {
+            id: mapped.addresses.dispatchAddress.id,
+            title: "Dispatch",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            country: "",
+            pincode: "",
+            email: "",
+            phone: "",
+            addressType: "Dispatch",
+            type: "Dispatch",
+          }
+        : null,
+
+      companyBilling: mapped.addresses.companyBillingAddress.id
+        ? {
+            id: mapped.addresses.companyBillingAddress.id,
+            title: "Company Billing",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            country: "",
+            pincode: "",
+            email: "",
+            phone: "",
+            addressType: "Billing",
+            type: "Billing",
+          }
+        : null,
+
+      companyShipping: mapped.addresses.shippingAddress.id
+        ? {
+            id: mapped.addresses.shippingAddress.id,
+            title: "Shipping",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            country: "",
+            pincode: "",
+            email: "",
+            phone: "",
+            addressType: "Shipping",
+            type: "Shipping",
+          }
+        : null,
+    });
+
+    hasLoadedRef.current = true;
+  };
+
+  loadPO();
+}, [isOpen, poId]);
 
   // Set default date on create mode
   useEffect(() => {
@@ -284,28 +363,18 @@ export const usePurchaseOrderForm = ({
     }));
   };
 
-  const handleFormChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    const { name, value } = e.target;
+const handleFormChange = (
+  e:
+    | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    | { target: { name: string; value: any } }
+) => {
+  const { name, value } = e.target;
 
-    if (name.startsWith("addresses.")) {
-      const parts = name.split(".") as [
-        "addresses",
-        AddressKey,
-        keyof AddressBlock,
-      ];
-
-      const [, key, field] = parts;
-      updateAddress(key, field, value);
-      return;
-    }
-
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
+  setForm((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
   const handleSupplierChange = async (sup: any) => {
     if (!sup?.id) return;
 

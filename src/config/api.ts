@@ -1,3 +1,4 @@
+import { ShippingAPI } from "../api/utils/shippingruleapi";
 import { ENV } from "./env";
 
 const getApiBaseUrl = (): string => {
@@ -355,6 +356,7 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.get`,
 
     getById: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.get_by_id`,
+    delete:`${ERP_BASE}/api/method/frappe.client.delete`,
 
     create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.create`,
 
@@ -427,4 +429,11 @@ export const API = {
     getCurrency: `${ERP_BASE}/api/method/custom_api.api.search.get_currencies`,
     getItemGroups: `${ERP_BASE}/api/method/custom_api.api.search.get_item_groups`,
   },
+    /* =========================
+   * SHIPPING AND INCOTERMS
+   * ========================= */
+  ShippingAPI:{getshipping:`${ERP_BASE}/api/method/custom_api.api.search.get_shipping_rules`,},
+  IncotermsApi:{getIncoterms:`${ERP_BASE}/api/method/custom_api.api.search.get_incoterms`,}
+
+
 } as const;

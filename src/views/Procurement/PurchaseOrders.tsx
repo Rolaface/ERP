@@ -17,7 +17,7 @@ import {
 } from "../../utils/alert";
 import {
   getPurchaseOrders,
-  updatePurchaseOrderStatus,
+  updatePurchaseOrderStatus,deletePo
 } from "../../api/procurement/PurchaseOrderApi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -34,9 +34,7 @@ type OutletContextType = {
   openPOCreate: () => void;
   openPOEdit: (poId: string | number) => void;
 };
-import PurchaseOrderDetailModal, {
-  type PurchaseOrderDetail,
-} from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
+import PurchaseOrderDetailModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 
 interface PurchaseOrder {
@@ -96,7 +94,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
   // ── Drawer (same pattern as ProformaInvoicesTable)
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(
+  const [drawerData, setDrawerData] = useState< | null>(
     null,
   );
   const [drawerLoading, setDrawerLoading] = useState(false);
@@ -257,16 +255,38 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     openPOEdit(order.id);
   };
 
-  const handleDelete = (order: PurchaseOrder, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm(`Delete Purchase Order "${order.id}"?`)) {
-    }
-  };
+const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
+  e.stopPropagation();
 
-  const handleCloseModal = () => setModalOpen(false);
-  const handlePOSaved = async () => {
+  const confirmDelete = window.confirm(
+    `Delete Purchase Order "${order.id}"?`
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    showLoading("Deleting Purchase Order...");
+
+    const res = await deletePo(order.id); // 👈 API call
+
+    if (!res || res.status_code !== 200) {
+      closeSwal();
+      showApiError(res);
+      return;
+    }
+
+    closeSwal();
+    showSuccess(res.message || "Purchase Order deleted successfully");
+
+    
     await fetchOrders();
-  };
+
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
+
 
   // ── Export all pages
   const fetchAllPOsForExport = async () => {
