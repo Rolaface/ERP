@@ -329,9 +329,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     try {
       if (!company) return;
       const res = await getSalesInvoiceById(invoiceNumber);
-      if (!res || res.status_code !== 200) return;
+      console.log("🚀 ~ handleDrawerPdf ~ res:", res)
+      if (!res || res.message.status_code !== 200) return;
       const blobUrl = await generateInvoicePDF(
-        res.data as Invoice,
+        res.message.data as Invoice,
         company,
         "bloburl",
       );
@@ -690,7 +691,7 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
         onViewPdf={() =>
-          drawerData && handleDrawerPdf(drawerData.invoiceNumber)
+          drawerData && handleDrawerPdf(drawerData.id)
         }
         onDownload={() =>
           drawerData &&

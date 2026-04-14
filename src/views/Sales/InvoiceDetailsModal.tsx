@@ -39,7 +39,7 @@ export interface InvoiceDetail {
     packingUnit?: string;
   }>;
   terms?: {
-    Selling?: {
+    selling?: {
       general?: string;
       delivery?: string;
       cancellation?: string;
@@ -319,23 +319,6 @@ const fobTotal = grandTotal - totalCharges;
             )}
 
             {/* ── ADDRESSES ── */}
-            {/* {(data.billingAddress || data.shippingAddress) && (<>
-              <S title="Addresses" />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                {[{ label: "Billing", addr: data.billingAddress }, { label: "Shipping", addr: data.shippingAddress }].map(({ label, addr }) =>
-                  addr ? (
-                    <div key={label} style={{ padding: "7px 9px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)" }}>
-                      <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{label}</p>
-                      {[addr.line1, addr.city, [addr.state, addr.postalCode].filter(Boolean).join(", "), addr.country?.toUpperCase()]
-                        .filter(Boolean)
-                        .map((l, i) => <p key={i} style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>{l}</p>)}
-                    </div>
-                  ) : <div key={label} />
-                )}
-              </div>
-            </>)} */}
-
-            {/* ── ADDRESSES ── */}
               {hasAddresses && (
                 <>
                   <S title="Addresses" />
@@ -460,7 +443,7 @@ const fobTotal = grandTotal - totalCharges;
             {data.paymentInformation && (<>
               <S title="Payment Information" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-                <F label="Payment Terms"  value={data.paymentInformation.paymentTerms} />
+                <F label="Payment Terms"  value={data.terms?.selling.payment.notes} />
                 <F label="Method"         value={data.paymentInformation.paymentMethod} />
                 <F label="Bank"           value={data.paymentInformation.bankName} />
                 {data.paymentInformation.accountNumber && <F label="Account No." value={data.paymentInformation.accountNumber} mono />}

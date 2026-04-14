@@ -138,7 +138,7 @@ const payL: string[] = ([
      invoice?.paymentInformation?.swiftCode
     ? `SWIFT: ${invoice.paymentInformation.swiftCode}`
     : null,
-  `Payment Terms: ${invoice?.paymentInformation?.paymentTerms ?? "-"}`,
+  `Payment Terms: ${invoice?.terms?.selling.payment.notes ?? "-"}`,
 ] as (string | null)[]).filter(Boolean) as string[];
 
   const calcBH = (lines: string[], hasBold = false) => {
@@ -184,7 +184,7 @@ const payL: string[] = ([
 
   const metaCols = [
     { label: "Customer TPIN", value: invoice?.customerTpin || "-" },
-    { label: "Invoice Type",  value: invoice?.invoiceType  || "-" },
+    { label: "Invoice Type",  value: invoice?.tax_category  || "-" },
     { label: "Currency",      value: cur },
     { label: "Due Date",      value: fmtDate(invoice?.dueDate) },
   ];
