@@ -17,14 +17,15 @@ const px = (path: string): string => {
 
 const fmt2 = (n: any) => Number(n ?? 0).toFixed(2);
 
-const addrBlock = (a: any): string[] => {
-  if (!a) return [];
-  return [
-    [a.addressLine1, a.addressLine2].filter(Boolean).join(", "),
-    [a.city, a.state, a.postalCode].filter(Boolean).join(", "),
-    a.country ? a.country.toUpperCase() : "",
-  ].filter(Boolean);
+// ✅ NEW: Parse HTML address display strings (e.g. "Line1<br>\nLine2<br>...")
+const parseAddressDisplay = (html: string): string[] => {
+  if (!html) return [];
+  return html
+    .split(/<br\s*\/?>/i)          // split on <br> or <br/>
+    .map((l) => l.replace(/\n/g, "").trim())
+    .filter(Boolean);
 };
+
 const fmtDate = (dateStr: any) => {
   if (!dateStr) return "-";
   const d = new Date(dateStr);
@@ -147,7 +148,7 @@ export const generatePurchaseOrderPDF = async (
 
   const metaLines = [
     `PO Date: ${fmtDate(po.poDate)}`,
-    `Incoterm: ${po.incoterm ?? "-"}`,
+    `Incoterm: ${po.incoterms ?? "-"}`,            // ✅ was: po.incoterm
     `Currency: ${cur}`,
   ];
 
@@ -162,14 +163,12 @@ export const generatePurchaseOrderPDF = async (
   const gap = 3;
   const colW = (W - M * 2 - gap * 2) / 3;
 
-  const supplierL = addrBlock(po?.addresses?.supplierAddress);
-  const dispatchL = addrBlock(po?.addresses?.dispatchAddress);
-  const shippingL = addrBlock(po?.addresses?.shippingAddress);
+  // ✅ NEW: Parse addresses from HTML display strings
+  const supplierL = parseAddressDisplay(po.supplierAddressDisplay);
+  const dispatchL = parseAddressDisplay(po.dispatchAddressDisplay);
+  const shippingL = parseAddressDisplay(po.shippingAddressDisplay);
 
-  if (po?.addresses?.supplierAddress?.email)
-    supplierL.push(`Email: ${po.addresses.supplierAddress.email}`);
-  if (po?.addresses?.supplierAddress?.phone)
-    supplierL.push(`Phone: ${po.addresses.supplierAddress.phone}`);
+  // ✅ REMOVED: supplierAddress.email / .phone — not available in new API response
 
   const calcBoxH = (lines: string[], hasBoldTop = false) => {
     let h = BOX_HDR + PAD * 2;
@@ -253,16 +252,24 @@ export const generatePurchaseOrderPDF = async (
         item.packingUnit && item.packingSize
           ? `${item.packingUnit}×${item.packingSize}`
           : "-";
+
+      // ✅ Computed: amount = quantity * rate (not in API response)
+      const amount = Number(item.quantity ?? 0) * Number(item.rate ?? 0);
+
+      // ✅ Tax info from taxInfo array
+      const taxName = item.taxInfo?.[0]?.taxName ?? "-";
+      const taxRate = item.taxInfo?.[0]?.totalTaxRate ?? "0";
+
       return [
         idx + 1,
-        item.item_name ?? "-",
-        fmtDate(item.schedule_date),
+        item.itemName ?? "-",                        // ✅ was: item.item_name
+        fmtDate(item.requiredBy),                    // ✅ was: item.schedule_date
         packing,
-        Math.round(Number(item.qty ?? 0)),
+        Math.round(Number(item.quantity ?? 0)),      // ✅ was: item.qty
         item.uom ?? "-",
         fmt2(item.rate),
-        `${item.vatCd ?? "-"} (${item.vatRate ?? "0"}%)`,
-        fmt2(item.amount),
+        `${taxName} (${taxRate}%)`,                  // ✅ was: item.vatCd / item.vatRate
+        fmt2(amount),                                // ✅ was: item.amount (computed)
       ];
     }),
     styles: {
@@ -306,11 +313,10 @@ export const generatePurchaseOrderPDF = async (
   const tblY = (doc as any).lastAutoTable.finalY;
 
   const SEC_Y = tblY;
-
-  const subTotal = Number(po?.summary?.subTotal ?? 0);
-  const taxTotal = Number(po?.summary?.taxTotal ?? 0);
-  const grandTotal = Number(po?.summary?.grandTotal ?? 0);
-  const rounding = Number(po?.summary?.roundingAdjustment ?? 0);
+  const grandTotal  = Number(po.roundedTotal ?? 0);
+  const taxTotal    = Number(po.totalTaxes ?? 0);
+  const subTotal    = grandTotal - taxTotal;                       
+  const rounding    = Number(po.roundingAdjustment ?? 0);     
 
   const ROW_H = 6;
 
@@ -370,7 +376,8 @@ export const generatePurchaseOrderPDF = async (
   const SIGN_W = LABEL_W + TOTAL_W;
   let termsY = SIG_Y;
 
-  const buying = po?.terms?.terms?.buying;
+
+  const buying = po?.terms?.buying;
   const termW = SIGN_X - M;
   const termTW = termW - 14;
   const tLines: string[] = [];
@@ -388,12 +395,16 @@ export const generatePurchaseOrderPDF = async (
       if (p.notes) tLines.push(`Notes: ${p.notes}`);
       p.phases?.forEach((ph: any, i: number) => {
         const phaseName = ph.name ?? "Phase";
-        const percent = ph.percentage ?? "0";
-        const condition = ph.condition ?? "";
+const percent = ph.percentage ?? "0";
+const condition = ph.condition ?? "";
+const description = ph.description ?? "";
 
-        tLines.push(
-          `${i + 1}. ${phaseName} — ${percent}%${condition ? ` (${condition})` : ""}`,
-        );
+let line = `${i + 1}. ${phaseName} — ${percent}%`;
+
+if (description) line += ` | ${description}`;
+if (condition) line += ` (${condition})`;
+
+tLines.push(line);
       });
     }
   }
@@ -404,7 +415,7 @@ export const generatePurchaseOrderPDF = async (
   });
   const tBH = Math.max(24, tH + 4);
 
-  const signatureStartY = termsY + tBH - 46;
+   const signatureStartY = sumEndY + 6;
 
   doc.setFillColor(...ERP_BLUE);
   doc.rect(SIGN_X, signatureStartY, SIGN_W, 6, "F");
