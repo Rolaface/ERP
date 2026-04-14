@@ -501,7 +501,7 @@ export const DetailsTab = ({
               options={[
                 { value: "CASH", label: "CASH" },
                 { value: "CREDIT", label: "CREDIT" },
-                { value: "Bank transfer", label: "Bank transfer" },
+                { value: "Bank Draft", label: "Bank Draft" },
                 { value: "CASH/CREDIT", label: "CASH/CREDIT" },
                 { value: "BANK CHECK", label: "BANK CHECK" },
                 { value: "MOBILE MONEY", label: "Mobile Money" },

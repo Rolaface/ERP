@@ -370,7 +370,7 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get`,
 
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.get_purchase_invoice_by_id`,
-    create: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.create_sales_invoice`,
+    create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.create`,
 
     updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.update_purchase_invoices_status`,
   },
