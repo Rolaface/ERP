@@ -105,5 +105,17 @@ export async function deletePo(name: string): Promise<any> {
       doctype: "Purchase Order",
     }
   );
+  return resp;
+}
+
+export async function updatePurchaseOrder(
+  id: string | number,
+  payload: any
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${purchaseorderapi.update}?id=${id}`, 
+    payload
+  );
+
   return resp.data;
 }

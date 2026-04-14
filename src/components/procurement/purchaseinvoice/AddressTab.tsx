@@ -200,11 +200,13 @@ const AddressBox: React.FC<{
         {selectedAddr ? (
           <div className="flex items-start gap-2">
             <div className="mt-0.5 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-[10px] font-semibold">
-              {selectedAddr.title.charAt(0).toUpperCase()}
+              {(selectedAddr.title || selectedAddr.id || "?")
+                .charAt(0)
+                .toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-main truncate">
-                {selectedAddr.title}
+                {selectedAddr.title || selectedAddr.id}
                 <span className="ml-1.5 text-[9px] px-1 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                   {selectedAddr.addressType}
                 </span>
@@ -451,7 +453,6 @@ export const AddressTab: React.FC<AddressTabProps> = ({
           value={form.supplierContact || ""}
           onChange={onFormChange}
         />
-       
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3 pb-3">
         <div className="space-y-3">

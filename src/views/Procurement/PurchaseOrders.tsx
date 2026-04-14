@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import PurchaseOrderView from "../../views/Procurement/purchaseorderview";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
+import { fireManagedSwal } from "../../utils/swalManager";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -258,35 +259,37 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
   e.stopPropagation();
 
-  const confirmDelete = window.confirm(
-    `Delete Purchase Order "${order.id}"?`
-  );
+  const confirm = await fireManagedSwal({
+    icon: "warning",
+    title: "Are you sure?",
+    text: `Delete Purchase Order ${order.id}?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, delete",
+  });
 
-  if (!confirmDelete) return;
+  if (!confirm.isConfirmed) return;
 
   try {
     showLoading("Deleting Purchase Order...");
 
-    const res = await deletePo(order.id); // 👈 API call
+    const res = await deletePo(order.id);
 
-    if (!res || res.status_code !== 200) {
-      closeSwal();
-      showApiError(res);
-      return;
+   
+    if (res.status < 200 || res.status >= 300) {
+      throw new Error("Delete failed");
     }
 
     closeSwal();
-    showSuccess(res.message || "Purchase Order deleted successfully");
+    showSuccess("Purchase Order deleted successfully");
 
-    
     await fetchOrders();
-
   } catch (error) {
     closeSwal();
     showApiError(error);
   }
 };
-
 
   // ── Export all pages
   const fetchAllPOsForExport = async () => {
