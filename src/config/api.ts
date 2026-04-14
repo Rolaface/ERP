@@ -433,7 +433,15 @@ export const API = {
    * SHIPPING AND INCOTERMS
    * ========================= */
   ShippingAPI:{getshipping:`${ERP_BASE}/api/method/custom_api.api.search.get_shipping_rules`,},
-  IncotermsApi:{getIncoterms:`${ERP_BASE}/api/method/custom_api.api.search.get_incoterms`,}
+  IncotermsApi:{getIncoterms:`${ERP_BASE}/api/method/custom_api.api.search.get_incoterms`,},
+
+  /* =========================
+   * UTILS
+   * ========================= */
+  frappeUtilsAPI:{
+    getCompanyCurrentFiscalYear:`${ERP_BASE}/api/method/custom_api.utils.frappe_utils.get_current_fiscal_year`,
+  },
+
 
 
 } as const;
