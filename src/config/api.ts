@@ -45,13 +45,11 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-
-
-export const ERP_BASE = getApiBaseUrl();
-console.log("🚀 ~ ERP_BASE:", ERP_BASE)
+// export const ERP_BASE = getApiBaseUrl();
+// console.log("🚀 ~ ERP_BASE:", ERP_BASE)
 
 // export const ERP_BASE = ENV.apiBaseUrl;
-// export const ERP_BASE = "";
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -115,8 +113,9 @@ export const API = {
     getById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.get`,
     create: `${ERP_BASE}/api/method/erpnext.company-setup.setup.create_company_api`,
     // update: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_info`,
-    createSite: `${ERP_BASE}/api/method/saas_provisioning.api.create_site`, 
-    updateById: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_api`,
+    createSite: `${ERP_BASE}/api/method/saas_provisioning.api.create_site`,
+    updateById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.update`,
+
     delete: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_api`,
     updateAccounts: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_accounts_company_info`,
     updateCompanyFiles: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.upload_company_documents`,
@@ -359,7 +358,7 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.get`,
 
     getById: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.get_by_id`,
-    delete:`${ERP_BASE}/api/method/frappe.client.delete`,
+    delete: `${ERP_BASE}/api/method/frappe.client.delete`,
 
     create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.create`,
 
@@ -375,7 +374,7 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.create`,
 
     updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.update_purchase_invoices_status`,
-    delete:`${ERP_BASE}/api/method/frappe.client.delete`
+    delete: `${ERP_BASE}/api/method/frappe.client.delete`,
   },
 
   /* =========================
@@ -434,19 +433,20 @@ export const API = {
     getCurrency: `${ERP_BASE}/api/method/custom_api.api.search.get_currencies`,
     getItemGroups: `${ERP_BASE}/api/method/custom_api.api.search.get_item_groups`,
   },
-    /* =========================
+  /* =========================
    * SHIPPING AND INCOTERMS
    * ========================= */
-  ShippingAPI:{getshipping:`${ERP_BASE}/api/method/custom_api.api.search.get_shipping_rules`,},
-  IncotermsApi:{getIncoterms:`${ERP_BASE}/api/method/custom_api.api.search.get_incoterms`,},
+  ShippingAPI: {
+    getshipping: `${ERP_BASE}/api/method/custom_api.api.search.get_shipping_rules`,
+  },
+  IncotermsApi: {
+    getIncoterms: `${ERP_BASE}/api/method/custom_api.api.search.get_incoterms`,
+  },
 
   /* =========================
    * UTILS
    * ========================= */
-  frappeUtilsAPI:{
-    getCompanyCurrentFiscalYear:`${ERP_BASE}/api/method/custom_api.utils.frappe_utils.get_current_fiscal_year`,
+  frappeUtilsAPI: {
+    getCompanyCurrentFiscalYear: `${ERP_BASE}/api/method/custom_api.utils.frappe_utils.get_current_fiscal_year`,
   },
-
-
-
 } as const;
