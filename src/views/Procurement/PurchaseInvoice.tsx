@@ -11,6 +11,7 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import { getPurchaseInvoices } from "../../api/procurement/PurchaseInvoiceApi";
 import { updatePurchaseinvoiceStatus } from "../../api/procurement/PurchaseInvoiceApi";
+import { deletePi } from "../../api/procurement/PurchaseInvoiceApi";
 import {
   showApiError,
   showSuccess,
@@ -30,6 +31,7 @@ import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import PurchaseInvoiceDetailModal, { type PurchaseInvoiceDetail } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 
 interface Purchaseinvoice {
@@ -283,10 +285,37 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
     openPIEdit(invoice.pId);
   };
 
-  const handleDelete = (invoice: Purchaseinvoice, e: React.MouseEvent) => {
+  const handleDelete = async (invoice: Purchaseinvoice, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Delete Purchase Invoice "${invoice.pId}"?`)) {
-    }
+    const confirm = await fireManagedSwal({
+        icon: "warning",
+        title: "Are you sure?",
+        text: `Delete Purchase Invoice ${invoice.pId}?`,
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, delete",
+      });
+    
+      if (!confirm.isConfirmed) return;
+
+      try {
+        showLoading("Deleting Purchase Invoice...");
+
+        const res = await deletePi(invoice.pId);
+       
+        if (res.status < 200 || res.status >= 300) {
+          throw new Error("Delete failed");
+        }
+
+        closeSwal();
+        showSuccess("Purchase Invoice deleted successfully");
+
+        await fetchInvoice();
+      } catch (error) {
+        closeSwal();
+        showApiError(error);
+      }
   };
 
   const handlePISaved = async () => { await fetchInvoice(); };

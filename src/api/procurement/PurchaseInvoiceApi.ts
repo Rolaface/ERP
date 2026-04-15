@@ -77,3 +77,14 @@ export async function updatePurchaseinvoiceStatus(
 
   return resp.data;
 }
+
+export async function deletePi(name: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    purchaseinvoiceapi.delete,
+    {
+      name,
+      doctype: "Purchase Invoice",
+    }
+  );
+  return resp;
+}
