@@ -39,12 +39,18 @@ type OutletContextType = {
 };
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
-  Draft: ["Rejected", "Approved"],
-  Rejected: ["Draft", "Approved"],
+  Draft: ["Approved"],
   Paid: [],
-  Cancelled: ["Draft"],
+  Cancelled: ["Amend"],
   Approved: ["Paid", "Cancelled"],
 };
+// const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
+//   Draft: ["Rejected", "Approved"],
+//   Rejected: ["Draft", "Approved"],
+//   Paid: [],
+//   Cancelled: ["Draft"],
+//   Approved: ["Paid", "Cancelled"],
+// };
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
 
@@ -484,10 +490,9 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
       showLoading("Deleting invoice...");
 
       const res = await deleteSalesInvoiceById(invoiceNumber);
-
-      if (!res || res.status_code !== 200) {
+      if (!res.message || res.message.status_code !== 200) {
         closeSwal();
-        showApiError(res?.message || "Failed to delete invoice");
+        showApiError(res?.message.message || "Failed to delete invoice");
         return;
       }
 
