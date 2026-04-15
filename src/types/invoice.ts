@@ -16,11 +16,12 @@ export interface Invoice {
   exchangeRt: string;
   dateOfInvoice: string;
   dueDate: string;
-  invoiceStatus: InvoiceStatus;
-  invoiceType: string;
+  
+  taxCategory: string;
   destnCountryCd?: string;
   lpoNumber?: string;
-   updateStock?: boolean
+  mode?: string;
+  updateStock?: boolean
   warehouse?: string
 billingAddress: string;
 shippingAddress: string;
@@ -33,7 +34,9 @@ shippingAddress: string;
   invoiceCharges: {
     charge_type: string;
     amount: string;
+    rate:string;
   }[];
+  salesTaxTemplate:string;
   addresses?: {
   companyBillingAddress?: any;
   supplierAddress?: any;

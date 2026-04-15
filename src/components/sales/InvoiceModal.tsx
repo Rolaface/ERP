@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
-import { showApiError, showValidationError } from "../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showValidationError,
+} from "../../utils/alert";
+import Select from "../ui/Select";
+import { createSalesInvoice } from "../../api/salesApi";
 import { User, Mail, Phone } from "lucide-react";
 import CustomerSelect from "../selects/CustomerSelect";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
@@ -12,7 +18,9 @@ import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import WarehouseSelect from "../selects/WarehouseSelect";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
-import { AddressTab } from "../procurement/purchaseinvoice/AddressTab";
+import { InvoiceAddressTab } from "./InvoiceAddressTab";
+import { getAllModeOfPayment } from "../../api/BankAccountApi";
+import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import {
   invoiceStatusOptions,
   currencySymbols,
@@ -55,6 +63,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [submitting, setSubmitting] = useState(false);
+  const [paymentOptions, setPaymentOptions] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const {
     formData,
@@ -104,46 +114,52 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   // Calls hook's handleSubmit (which validates + builds API payload), then
   // passes the result up to the parent via onSubmit.
 
+  const handleModeFetchOptions = async (q: string) => {
+    const res = await getAllModeOfPayment(1, 10, q || "", 1);
+
+    return res.data.map((item) => ({
+      label: item.name,
+      value: item.name,
+      meta: item,
+    }));
+  };
+  const handleModeChange = (_: string, option: any) => {
+    actions.handleInputChange({
+      target: {
+        name: "mode",
+        value: option?.value || "",
+      },
+    } as any);
+  };
   const handleSubmitForm = async () => {
-    console.log(">>> INVOICE MODAL: handleSubmitForm started, submitting =", submitting);
-    if (submitting) {
-      console.log(">>> INVOICE MODAL: Already submitting, returning early");
-      return;
-    }
-    
-    console.log(">>> INVOICE MODAL: Setting submitting to true");
+    if (submitting) return;
+
     setSubmitting(true);
-    
+
     try {
-      console.log(">>> INVOICE MODAL: Calling actions.handleSubmit...");
-      // actions.handleSubmit validates and returns the mapped API payload
       const payload = await actions.handleSubmit({
         preventDefault: () => {},
       } as React.FormEvent);
 
-      console.log(">>> INVOICE MODAL: actions.handleSubmit returned:", payload);
-      
-      if (!payload) {
-        console.log(">>> INVOICE MODAL: No payload - validation failed! returning early WITHOUT closing modal");
-        // Validation error was already shown inside handleSubmit
-        return;
-      }
+      if (!payload) return;
 
-      console.log(">>> INVOICE MODAL: Payload valid, calling onSubmit prop...");
-      const didSave = await onSubmit?.(payload);
-      console.log(">>> INVOICE MODAL: onSubmit returned:", didSave);
-      
-      if (didSave !== false) {
-        console.log(">>> INVOICE MODAL: Save succeeded, calling resetDirty()");
+      const response = await createSalesInvoice(payload);
+
+      if (!response) return;
+
+      const res = response?.message;
+
+      if (res?.status_code === 201) {
+        showSuccess(`${res?.message} (ID: ${res?.data?.invoiceId})`);
+
         resetDirty();
+        onClose();
       } else {
-        console.log(">>> INVOICE MODAL: Save returned false, NOT calling resetDirty()");
+        showApiError(res?.message || "Something went wrong");
       }
-    } catch (err: any) {
-      console.error(">>> INVOICE MODAL: Submit error caught:", err);
+    } catch (err) {
       showApiError(err);
     } finally {
-      console.log(">>> INVOICE MODAL: Finally block, setting submitting to false");
       setSubmitting(false);
     }
   };
@@ -220,7 +236,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
         {/* ── Tab Content ── */}
         <div className="flex-1 overflow-y-auto px-5 py-3">
-
           {/* ──────────── DETAILS ──────────── */}
           {ui.activeTab === "details" && (
             <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
@@ -249,7 +264,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     value={formData.dateOfInvoice}
                     required
                     onChange={(name, value) =>
-                      actions.handleInputChange({ target: { name, value } } as any)
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
                     }
                   />
 
@@ -259,7 +276,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     value={formData.dueDate}
                     required
                     onChange={(name, value) =>
-                      actions.handleInputChange({ target: { name, value } } as any)
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
                     }
                   />
 
@@ -294,26 +313,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     </div>
                   )}
 
-                  <ModalSelect
-                    label="Invoice Status"
-                    name="invoiceStatus"
-                    value={formData.invoiceStatus}
-                    onChange={actions.handleInputChange}
-                    options={[...invoiceStatusOptions]}
-                    required
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                  />
-
-                  <ModalSelect
-                    label="Payment Method"
-                    name="paymentMethod"
-                    value={formData.paymentInformation?.paymentMethod}
-                    onChange={(e) =>
-                      actions.handleInputChange(e, "paymentInformation")
-                    }
-                    options={[...paymentMethodOptions]}
-                    required
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                  <SearchSelect2
+                    label="Mode of Payment"
+                    value={formData.mode ?? ""}
+                    onChange={handleModeChange}
+                    fetchOptions={handleModeFetchOptions}
                   />
 
                   <div className="flex items-end gap-4 min-w-[120px]">
@@ -325,12 +329,18 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                         name="warehouse"
                         value={formData.warehouse || ""}
                         onChange={(e) =>
-                          actions.handleBulkItemChange("warehouse", e.target.value)
+                          actions.handleBulkItemChange(
+                            "warehouse",
+                            e.target.value,
+                          )
                         }
                         label="Warehouse"
                         onDefaultLoad={(firstWarehouse) => {
                           if (!formData.warehouse) {
-                            actions.handleBulkItemChange("warehouse", firstWarehouse);
+                            actions.handleBulkItemChange(
+                              "warehouse",
+                              firstWarehouse,
+                            );
                           }
                         }}
                       />
@@ -394,7 +404,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Phone size={12} />
-                        {primaryContact?.mobile || customerDetails?.mobile || ""}
+                        {primaryContact?.mobile ||
+                          customerDetails?.mobile ||
+                          ""}
                       </div>
                       <div className="flex justify-between text-[10px] mt-1">
                         <span className="text-muted">Tax</span>
@@ -466,22 +478,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               />
 
               {/* Address boxes — incoterm/shipping stripped */}
-              <AddressTab
-                form={formData as any}
-                onFormChange={actions.handleInputChange as any}
-                supplierId={formData.customerId}
-                selected={ui.selected}
-                setSelected={ui.setSelected}
-                selectedIds={ui.selectedIds}
-                setSelectedIds={actions.setSelectedIds}
-                addresses={ui.addresses}
-                setAddresses={actions.setAddresses}
-                loading={ui.loading}
-                setLoading={actions.setLoading}
-                customShippingRule={customShippingRule}
-                setCustomShippingRule={setCustomShippingRule}
-                customIncoterm={customIncoterm}
-                setCustomIncoterm={setCustomIncoterm}
+              <InvoiceAddressTab
+                customerId={formData.customerId}
+                formData={formData}
+                onFormChange={actions.handleInputChange}
               />
             </div>
           )}
@@ -495,6 +495,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               onAdd={actions.addOtherCharge}
               onChange={actions.handleOtherChargeChange}
               onRemove={actions.removeOtherCharge}
+              selectedTemplate={formData.salesTaxTemplate}
+              onTemplateSelect={actions.handleTemplateSelect}
             />
           )}
 

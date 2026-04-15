@@ -97,27 +97,10 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
           <Button
             variant="primary"
             type="button"
-            onClick={() => {
-              console.log(">>> MODAL FOOTER: Button clicked, isSubmittingVal =", isSubmittingVal, ", submitDisabled =", submitDisabled);
-              if (isSubmittingVal || submitDisabled) {
-                console.log(">>> MODAL FOOTER: Blocked by isSubmittingVal or submitDisabled");
-                return;
-              }
-              console.log(">>> MODAL FOOTER: Calling handleSubmit function...");
-              try {
-                const result = handleSubmit();
-                console.log(">>> MODAL FOOTER: handleSubmit returned:", result);
-                if (result && typeof result.then === 'function') {
-                  result.then(() => {
-                    console.log(">>> MODAL FOOTER: Promise resolved");
-                  }).catch((err) => {
-                    console.log(">>> MODAL FOOTER: Promise rejected:", err);
-                  });
-                }
-              } catch (err) {
-                console.log(">>> MODAL FOOTER: handleSubmit threw error:", err);
-              }
-            }}
+            onClick={async () => {
+  if (isSubmittingVal || submitDisabled) return;
+  await handleSubmit?.();
+}}
             loading={isSubmittingVal}
             disabled={submitDisabled}
           >

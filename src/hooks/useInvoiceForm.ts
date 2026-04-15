@@ -6,11 +6,8 @@ import type { Invoice, InvoiceItem } from "../types/invoice";
 import { getRolaCountryList } from "../api/lookupApi";
 import { getItemByItemCode } from "../api/itemApi";
 import { getExchangeRate } from "../api/currencyExchangeApi";
-import type { ApiAddress, BoxType } from "../hooks/useAddressLogic";
-import {
-  showApiError,
-  showValidationError,
-} from "../utils/alert";
+
+import { showApiError, showValidationError } from "../utils/alert";
 import {
   DEFAULT_INVOICE_FORM,
   EMPTY_ITEM,
@@ -59,7 +56,10 @@ const NUM_FIELDS = [
 // ─── Payload Builder ──────────────────────────────────────────────────────────
 // Maps internal formData → new API payload shape
 
-export function buildInvoicePayload(formData: Invoice, totals: { subTotal: number; totalTax: number; grandTotal: number }) {
+export function buildInvoicePayload(
+  formData: Invoice,
+  totals: { subTotal: number; totalTax: number; grandTotal: number },
+) {
   const items = formData.items
     .filter((it) => it.itemCode)
     .map((item) => ({
@@ -78,36 +78,30 @@ export function buildInvoicePayload(formData: Invoice, totals: { subTotal: numbe
       vatCode: item.vatCode ?? "",
     }));
 
-  // Map invoiceCharges → taxes array (new API shape)
-  const taxes = (formData.invoiceCharges || [])
-    .filter((ch) => ch.charge_type?.trim() && Number(ch.amount) > 0)
-    .map((ch) => ({
-      accountHead: ch.charge_type,
-      amount: Number(ch.amount),
-    }));
-
   return {
     customerId: formData.customerId,
     currency: formData.currencyCode,
     exchangeRate: formData.exchangeRt ?? "1",
     postingDate: formData.dateOfInvoice,
     dueDate: formData.dueDate,
-    tax_category: formData.invoiceType ?? "",
+    tax_category: formData.taxCategory,
     updateStock: formData.updateStock ?? true,
-    paymentMode: formData.paymentInformation?.paymentMethod ?? "",
+    paymentMode: formData.mode,
     warehouse: formData.warehouse ?? "",
     billingAddress: formData.billingAddress ?? "",
     shippingAddress: formData.shippingAddress ?? "",
-    ...(formData.invoiceType === "Export"
+    ...(formData.taxCategory === "Export"
       ? { destnCountryCd: formData.destnCountryCd ?? "" }
       : {}),
     ...(formData.lpoNumber ? { lpoNumber: formData.lpoNumber } : {}),
     paymentInformation: formData.paymentInformation,
-    taxes,
+    salesTaxTemplate: formData.salesTaxTemplate || "",
     items,
     terms: formData.terms,
-    invoiceStatus: formData.invoiceStatus,
-    ...(formData.invoiceNumber ? { invoiceNumber: formData.invoiceNumber } : {}),
+
+    ...(formData.invoiceNumber
+      ? { invoiceNumber: formData.invoiceNumber }
+      : {}),
     // Computed totals
     subTotal: totals.subTotal,
     totalTax: totals.totalTax,
@@ -130,12 +124,7 @@ export const useInvoiceForm = (
     ...DEFAULT_INVOICE_FORM,
     terms: { ...EMPTY_TERMS },
     invoiceCharges: [],
-    addresses: {
-      companyBillingAddress: {},
-      supplierAddress: {},
-      shippingAddress: {},
-      dispatchAddress: {},
-    },
+    addresses: {},
   });
 
   // Set today's date on open
@@ -166,45 +155,19 @@ export const useInvoiceForm = (
   const [activeTab, setActiveTab] = useState<
     "details" | "address" | "otherCharges" | "terms"
   >("details");
-  const [taxCategory, setTaxCategory] = useState<string | undefined>("");
+
   const [isShippingOpen, setIsShippingOpen] = useState(false);
   const [sameAsBilling, setSameAsBilling] = useState(true);
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
-  const [exchangeRateError, setExchangeRateError] = useState<string | null>(null);
+  const [exchangeRateError, setExchangeRateError] = useState<string | null>(
+    null,
+  );
 
   const shippingEditedRef = useRef(false);
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const enableExchange = mode === "invoice";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
-
-  const [selected, setSelected] = useState<Record<BoxType, ApiAddress | null>>({
-    companyBilling: null,
-    supplierBilling: null,
-    companyShipping: null,
-    supplierDispatch: null,
-  });
-
-  const [selectedIds, setSelectedIds] = useState<Record<BoxType, string>>({
-    companyBilling: "",
-    supplierBilling: "",
-    companyShipping: "",
-    supplierDispatch: "",
-  });
-
-  const [addresses, setAddresses] = useState<Record<BoxType, ApiAddress[]>>({
-    companyBilling: [],
-    supplierBilling: [],
-    companyShipping: [],
-    supplierDispatch: [],
-  });
-
-  const [loading, setLoading] = useState<Record<BoxType, boolean>>({
-    companyBilling: false,
-    supplierBilling: false,
-    companyShipping: false,
-    supplierDispatch: false,
-  });
 
   // Load edit data
   useEffect(() => {
@@ -245,12 +208,10 @@ export const useInvoiceForm = (
           const dueDate = calculateDueDate(prev.dateOfInvoice, paymentTerms);
           return {
             ...prev,
-            invoiceStatus:
-              prev.invoiceStatus ||
-              (mode === "proforma" ? "Draft" : prev.invoiceStatus),
+
             invoiceType:
-              prev.invoiceType ||
-              (mode === "proforma" ? "Non-Export" : prev.invoiceType),
+              prev.taxCategory ||
+              (mode === "proforma" ? "Non-Export" : prev.taxCategory),
             dueDate: prev.dueDate || dueDate,
             terms: {
               selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
@@ -259,8 +220,10 @@ export const useInvoiceForm = (
               ...prev.paymentInformation,
               paymentTerms,
               bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-              accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-              routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+              accountNumber:
+                getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+              routingNumber:
+                getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
               swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
             },
           };
@@ -276,7 +239,9 @@ export const useInvoiceForm = (
   // Exchange rate auto-fetch
   useEffect(() => {
     if (!isOpen || !enableExchange) return;
-    const code = String(formData.currencyCode ?? "").trim().toUpperCase();
+    const code = String(formData.currencyCode ?? "")
+      .trim()
+      .toUpperCase();
     const base = baseCurrency.trim().toUpperCase();
     if (!code || !base || code === base) {
       setExchangeRateLoading(false);
@@ -317,7 +282,9 @@ export const useInvoiceForm = (
         setExchangeRateLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [
     isOpen,
     formData.currencyCode,
@@ -339,7 +306,9 @@ export const useInvoiceForm = (
   // ─── Validation ─────────────────────────────────────────────────────────────
 
   const validateForm = (): boolean => {
-    const invoiceType = String(formData.invoiceType ?? "").trim().toLowerCase();
+    const invoiceType = String(formData.taxCategory ?? "")
+      .trim()
+      .toLowerCase();
 
     if (!formData.customerId) {
       throw new Error("Please select a customer");
@@ -370,24 +339,7 @@ export const useInvoiceForm = (
         setPage(Math.floor(idx / ITEMS_PER_PAGE));
         throw new Error(`Item ${idx + 1}: Price must be greater than 0`);
       }
-      if (it.qty !== undefined && Number(it.quantity) > Number(it.qty)) {
-        setPage(Math.floor(idx / ITEMS_PER_PAGE));
-        throw new Error(
-          `Item ${idx + 1}: Quantity (${it.quantity}) exceeds available stock (${it.qty}) for batch ${it.batchNo || "N/A"}`,
-        );
-      }
     });
-
-    if (invoiceType === "lpo") {
-      const lpoNumber = String(formData.lpoNumber ?? "").trim();
-      if (!/^\d{10}$/.test(lpoNumber)) {
-        throw new Error("LPO Number must be exactly 10 digits");
-      }
-    }
-
-    if (formData.invoiceType === "Export" && !formData.destnCountryCd) {
-      throw new Error("Please enter Export To Country");
-    }
 
     return true;
   };
@@ -395,7 +347,9 @@ export const useInvoiceForm = (
   // ─── Input handlers ─────────────────────────────────────────────────────────
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
     section?: NestedSection,
   ) => {
     const { name, value } = e.target;
@@ -404,20 +358,6 @@ export const useInvoiceForm = (
       setFormData((prev) => ({
         ...prev,
         updateStock: (e.target as HTMLInputElement).checked,
-      }));
-      return;
-    }
-
-    if (name.startsWith("addresses.")) {
-      const key = name.split(".")[1];
-      const addr = value as unknown as ApiAddress;
-      setFormData((prev) => ({
-        ...prev,
-        addresses: { ...prev.addresses, [key]: addr },
-        ...(key === "companyBillingAddress" && { billingAddress: addr?.id || "" }),
-        ...(key === "shippingAddress" && { shippingAddress: addr?.id || "" }),
-        ...(key === "supplierAddress" && { supplierAddress: addr?.id || "" }),
-        ...(key === "dispatchAddress" && { dispatchAddress: addr?.id || "" }),
       }));
       return;
     }
@@ -433,7 +373,11 @@ export const useInvoiceForm = (
     } else {
       if (name === "currencyCode") {
         if (!enableExchange) {
-          setFormData((prev) => ({ ...prev, currencyCode: value, exchangeRt: "1" }));
+          setFormData((prev) => ({
+            ...prev,
+            currencyCode: value,
+            exchangeRt: "1",
+          }));
           return;
         }
         setExchangeRateLoading(true);
@@ -442,7 +386,9 @@ export const useInvoiceForm = (
         return;
       }
       if (name === "lpoNumber") {
-        const digitsOnly = String(value ?? "").replace(/\D/g, "").slice(0, 10);
+        const digitsOnly = String(value ?? "")
+          .replace(/\D/g, "")
+          .slice(0, 10);
         setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
         return;
       }
@@ -468,7 +414,13 @@ export const useInvoiceForm = (
     return "";
   };
 
-  const handleCustomerSelect = async ({ name, id }: { name: string; id: string }) => {
+  const handleCustomerSelect = async ({
+    name,
+    id,
+  }: {
+    name: string;
+    id: string;
+  }) => {
     setCustomerNameDisplay(name);
     setFormData((p) => ({ ...p, customerId: id }));
 
@@ -481,8 +433,11 @@ export const useInvoiceForm = (
       if (!customerRes || customerRes?.message?.status_code !== 200) return;
       const data = customerRes?.message?.data;
       const company = companyRes?.data;
-      const invoiceType = data?.customerTaxCategory || "";
-      setTaxCategory(invoiceType);
+      const taxCategory = data?.customerTaxCategory || "";
+      setFormData((prev) => ({
+        ...prev,
+        taxCategory,
+      }));
 
       const countryLookupList = await getRolaCountryList();
       const formattedCountries = countryLookupList.map((c: any) => ({
@@ -491,8 +446,12 @@ export const useInvoiceForm = (
       }));
 
       setCustomerDetails({ ...data });
-      const billingAddressObj = data.addresses?.find((addr: any) => addr.type === "Billing");
-      const shippingAddressObj = data.addresses?.find((addr: any) => addr.type === "Shipping");
+      const billingAddressObj = data.addresses?.find(
+        (addr: any) => addr.type === "Billing",
+      );
+      const shippingAddressObj = data.addresses?.find(
+        (addr: any) => addr.type === "Shipping",
+      );
       const countryCode = getCountryCode(
         formattedCountries,
         shippingAddressObj?.country || billingAddressObj?.country,
@@ -501,7 +460,8 @@ export const useInvoiceForm = (
       const paymentInformation = {
         paymentTerms:
           company?.terms?.selling?.payment?.dueDates ??
-          data.paymentInformation?.paymentTerms ?? "",
+          data.paymentInformation?.paymentTerms ??
+          "",
         paymentMethod: "01",
         bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
         accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
@@ -511,12 +471,15 @@ export const useInvoiceForm = (
 
       setFormData((prev) => {
         const billingId = billingAddressObj?.id || "";
-        const shippingId = sameAsBilling ? billingId : shippingAddressObj?.id || "";
+        const shippingId = sameAsBilling
+          ? billingId
+          : shippingAddressObj?.id || "";
         return {
           ...prev,
           currencyCode: data.currency || prev.currencyCode,
-          destnCountryCd: invoiceType === "Export" ? countryCode : prev.destnCountryCd,
-          invoiceType,
+          destnCountryCd:
+            taxCategory === "Export" ? countryCode : prev.destnCountryCd,
+          taxCategory,
           billingAddress: billingId,
           shippingAddress: shippingId,
           paymentInformation,
@@ -535,63 +498,53 @@ export const useInvoiceForm = (
     }
   };
 
-  const handleItemSelect = async (index: number, itemId: string) => {
-    const currentItem = formData.items[index];
-    if (enableExchange && exchangeRateLoading) {
-      showValidationError("Please wait for exchange rate to load...");
-      return;
-    }
-    if (currentItem?._fromInvoice) {
-      setFormData((prev) => {
-        const items = [...prev.items];
-        items[index] = { ...items[index], itemCode: itemId, _fromInvoice: false };
-        return { ...prev, items };
-      });
-      return;
-    }
-
+  const handleItemSelect = async (itemId: string, idx: number) => {
     try {
-      const res = await getItemByItemCode(itemId);
+      const res = await getItemByItemCode(
+        itemId,
+        formData.taxCategory || customerDetails?.customerTaxCategory,
+      );
+
       if (!res || res.status_code !== 200) return;
+
       const data = res.data;
 
+      const selectedTax =
+        data.taxInfo?.find(
+          (t: any) =>
+            t.taxCategory?.toLowerCase() ===
+            formData.taxCategory?.toLowerCase(),
+        ) || data.taxInfo?.[0];
+
+      const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
+
       setFormData((prev) => {
         const items = [...prev.items];
-        const resolvedId = String(data?.id ?? itemId).trim();
-        const currentCode = String(items[index]?.itemCode ?? "").trim();
-        if (currentCode && currentCode === resolvedId) return prev;
 
-        const apiSellingPrice = Number(data.sellingPrice);
-        const base = baseCurrency.trim().toUpperCase();
-        const convertedPrice =
-          enableExchange && prev.currencyCode?.trim().toUpperCase() !== base
-            ? apiSellingPrice / Number(prev.exchangeRt || 1)
-            : apiSellingPrice;
+        items[idx] = {
+          ...items[idx],
 
-        items[index] = {
-          ...items[index],
-          itemCode: resolvedId,
-          description: data.description ?? data.itemName ?? "",
-          price: Number(convertedPrice),
-          vatRate: Number(data.taxInfo?.taxPerct ?? 0),
-          vatCode: data.taxInfo?.taxCode ?? "",
-          quantity: Number(items[index].quantity) || 1,
-          discount: Number(items[index].discount) || 0,
-          batchNo: data.batchInfo?.has_batch_no ? (data.batchInfo?.batchNo ?? "") : "",
-          packingUnit: data.packingUnit ?? "",
-          packingSize: data.packingSize ?? "",
-          mfgDate: data.batchInfo?.manufacturingDate ?? "",
-          expDate: data.batchInfo?.expiryDate ?? "",
+          itemCode: data.id,
+          description: data.description,
+          price: Number(data.sellingPrice || 0),
+
+          vatRate: totalTaxRate,
+          vatCode: selectedTax?.taxName || "", // ✅ SAME AS PO
+
+          warehouse: items[idx].warehouse || prev.warehouse || "",
         };
+
         return { ...prev, items };
       });
-    } catch (err: any) {
-      console.error("Failed to fetch item details", err);
-      showApiError("Failed to load item details");
+    } catch (err) {
+      console.error("Item fetch failed", err);
     }
   };
 
-  const handleItemChange = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleItemChange = (
+    idx: number,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const { name, value } = e.target;
     const isNum = NUM_FIELDS.includes(name);
 
@@ -599,7 +552,12 @@ export const useInvoiceForm = (
       const items = [...prev.items];
       let nextValue: any = value;
       if (isNum) {
-        nextValue = value === "" ? "" : (Number.isFinite(Number(value)) ? Number(value) : "");
+        nextValue =
+          value === ""
+            ? ""
+            : Number.isFinite(Number(value))
+              ? Number(value)
+              : "";
       }
       const updatedItem = { ...items[idx], [name]: nextValue };
       const start = Number(updatedItem.boxStart || 0);
@@ -609,7 +567,9 @@ export const useInvoiceForm = (
         const prevEnd = Number(items[idx - 1]?.boxEnd || 0);
         const expected = prevEnd + 1;
         if (prevEnd > 0 && start !== expected && start > expected) {
-          showValidationError(`Row ${idx + 1}: Box must start from ${expected}`);
+          showValidationError(
+            `Row ${idx + 1}: Box must start from ${expected}`,
+          );
           return prev;
         }
       }
@@ -620,6 +580,13 @@ export const useInvoiceForm = (
       }
       return { ...prev, items };
     });
+  };
+  //charge temeplete--------------------
+  const handleTemplateSelect = (templateName: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      salesTaxTemplate: templateName,
+    }));
   };
 
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
@@ -642,11 +609,18 @@ export const useInvoiceForm = (
   const addOtherCharge = () => {
     setFormData((prev: any) => ({
       ...prev,
-      invoiceCharges: [...(prev.invoiceCharges || []), { charge_type: "", amount: "" }],
+      invoiceCharges: [
+        ...(prev.invoiceCharges || []),
+        { charge_type: "", amount: "" },
+      ],
     }));
   };
 
-  const handleOtherChargeChange = (index: number, field: string, value: any) => {
+  const handleOtherChargeChange = (
+    index: number,
+    field: string,
+    value: any,
+  ) => {
     setFormData((prev: any) => {
       const updated = [...(prev.invoiceCharges || [])];
       updated[index] = { ...updated[index], [field]: value };
@@ -657,7 +631,9 @@ export const useInvoiceForm = (
   const removeOtherCharge = (index: number) => {
     setFormData((prev: any) => ({
       ...prev,
-      invoiceCharges: prev.invoiceCharges.filter((_: any, i: number) => i !== index),
+      invoiceCharges: prev.invoiceCharges.filter(
+        (_: any, i: number) => i !== index,
+      ),
     }));
   };
 
@@ -669,7 +645,11 @@ export const useInvoiceForm = (
         const lastEnd = Number(items[items.length - 1]?.boxEnd || 0);
         start = lastEnd ? lastEnd + 1 : 1;
       }
-      items.push({ ...EMPTY_ITEM, boxStart: start, warehouse: prev.warehouse || "" });
+      items.push({
+        ...EMPTY_ITEM,
+        boxStart: start,
+        warehouse: prev.warehouse || "",
+      });
       setPage(Math.floor((items.length - 1) / ITEMS_PER_PAGE));
       return { ...prev, items };
     });
@@ -703,7 +683,7 @@ export const useInvoiceForm = (
       invoiceNumber: invoice.invoiceNumber,
       customerId: invoice.customerId ?? prev.customerId,
       invoiceType: invoice.invoiceType ?? "",
-      invoiceStatus: invoice.invoiceStatus ?? "",
+
       currencyCode: invoice.currencyCode,
       dateOfInvoice: invoice.dateOfInvoice,
       exchangeRt:
@@ -716,7 +696,8 @@ export const useInvoiceForm = (
       shippingAddress: invoice.shippingAddress ?? prev.shippingAddress,
       paymentInformation: invoice.paymentInformation ?? prev.paymentInformation,
       invoiceCharges:
-        Array.isArray(invoice.invoiceCharges) && invoice.invoiceCharges.length > 0
+        Array.isArray(invoice.invoiceCharges) &&
+        invoice.invoiceCharges.length > 0
           ? invoice.invoiceCharges.map((ch: any) => ({
               charge_type: ch.charge_type ?? "",
               amount: String(ch.amount ?? ""),
@@ -792,8 +773,10 @@ export const useInvoiceForm = (
             ...DEFAULT_INVOICE_FORM.paymentInformation,
             paymentTerms,
             bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-            accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-            routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+            accountNumber:
+              getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+            routingNumber:
+              getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
             swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
           },
           shippingAddress: DEFAULT_INVOICE_FORM.billingAddress || "",
@@ -809,7 +792,7 @@ export const useInvoiceForm = (
     lastRateRef.current = 1;
     setCustomerDetails(null);
     setCustomerNameDisplay("");
-    setTaxCategory("");
+
     setSameAsBilling(true);
     setPage(0);
     setActiveTab("details");
@@ -822,7 +805,11 @@ export const useInvoiceForm = (
     e.preventDefault();
     try {
       validateForm();
-      const payload = buildInvoicePayload(formData, { subTotal, totalTax, grandTotal });
+      const payload = buildInvoicePayload(formData, {
+        subTotal,
+        totalTax,
+        grandTotal,
+      });
       return payload;
     } catch (error: any) {
       showValidationError(error?.message || "Validation error");
@@ -874,8 +861,7 @@ export const useInvoiceForm = (
       setPage,
       activeTab,
       setActiveTab,
-      taxCategory,
-      setTaxCategory,
+
       isShippingOpen,
       setIsShippingOpen,
       sameAsBilling,
@@ -885,18 +871,19 @@ export const useInvoiceForm = (
       chargeCount: formData.invoiceCharges.length,
       itemCount: formData.items.length,
       isExport:
-        String(formData.invoiceType ?? "").trim().toLowerCase() === "export",
+        String(formData.taxCategory ?? "")
+          .trim()
+          .toLowerCase() === "export",
       isLocal:
-        String(formData.invoiceType ?? "").trim().toLowerCase() === "lpo",
+        String(formData.taxCategory ?? "")
+          .trim()
+          .toLowerCase() === "lpo",
       isNonExport:
-        String(formData.invoiceType ?? "").trim().toLowerCase() === "non-export",
+        String(formData.taxCategory ?? "")
+          .trim()
+          .toLowerCase() === "non-export",
       exchangeRateLoading: enableExchange ? exchangeRateLoading : false,
       exchangeRateError: enableExchange ? exchangeRateError : null,
-      setSelected,
-      selectedIds,
-      addresses,
-      loading,
-      selected,
     },
     actions: {
       validateForm,
@@ -916,9 +903,7 @@ export const useInvoiceForm = (
       addOtherCharge,
       handleOtherChargeChange,
       removeOtherCharge,
-      setLoading,
-      setAddresses,
-      setSelectedIds,
+      handleTemplateSelect,
     },
   };
 };

@@ -23,24 +23,35 @@ export interface Address {
 export async function getAddressList(options: {
   company?: boolean;
   supplierId?: string;
+  customerId?: string;
   addressType?: string;
 }): Promise<Address[]> {
   try {
-    let params: { company: true } | { supplier: string; addressType: string };
+    let params: any = {};
 
     if (options.company === true) {
       params = { company: true };
-    } else {
-      if (!options.supplierId) return [];
+    } 
+    else if (options.customerId) {
+      params = {
+        customer: options.customerId,
+        addressType: options.addressType || "",
+      };
+    } 
+    else if (options.supplierId) {
       params = {
         supplier: options.supplierId,
         addressType: options.addressType || "",
       };
+    } 
+    else {
+      return [];
     }
 
     const resp: AxiosResponse = await api.get(AddressAPI.getaddress, {
       params,
     });
+
     return resp.data?.data ?? [];
   } catch (error) {
     console.error("getAddressList error:", error);
