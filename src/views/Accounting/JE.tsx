@@ -11,44 +11,43 @@ import {
   Trash2,
   Plus,
   Eye,
-  FileText
+  FileText,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
-// Assuming you have this modal from the previous step
 import JournalEntryModal from "../../components/JournalEntries/JournalEntriesModal";
-
-// NOTE: You will need to import your actual API method and types
-// import { getJournalEntries } from "../../api/Accounting/JournalEntryApi";
+import { getJournalEntries } from "../../api/Accounting/JournalEntryApi";
 
 export interface JETabProps {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
 }
 
-// --- Mock Types (Replace with your actual types) ---
 export interface JournalEntry {
-  name: string; // Usually the Document ID, e.g., "ACC-JV-2023-0001"
-  posting_date: string;
-  total_debit: number;
-  total_credit: number;
-  docstatus: number; // 0 = Draft, 1 = Submitted, 2 = Cancelled
+  name: string; 
+  posting_date?: string;
+  total_debit?: number;
+  total_credit?: number;
+  docstatus?: number; // 0 = Draft, 1 = Submitted, 2 = Cancelled
   user_remark?: string;
 }
 
+// Frappe API response wrapper
 export interface JEResponse {
-  message: {
+  data?: JournalEntry[];
+  message?: {
     status_code: number;
     data: JournalEntry[];
   };
 }
-// ---------------------------------------------------
 
 function matchJENode(node: JournalEntry, term: string): boolean {
   const t = term.toLowerCase();
   return (
     node.name.toLowerCase().includes(t) ||
     (node.user_remark || "").toLowerCase().includes(t) ||
-    node.posting_date.includes(t)
+    (node.posting_date || "").includes(t)
   );
 }
 
@@ -135,6 +134,8 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
 };
 
 // ─── Main Component ────────────────────────────────────────────────────────
+const PAGE_SIZE = 20;
+
 const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [jeData, setJeData] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,35 +143,61 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [showNewModal, setShowNewModal] = useState(false);
   const navigate = useNavigate();
 
+  // --- Pagination States ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
   const fetchJE = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // REPLACE WITH YOUR ACTUAL API CALL:
-      // const res: JEResponse = await getJournalEntries();
+      // 1. Define the exact fields we need from Frappe
+      const fields = [
+        "name",
+        "posting_date",
+        "total_debit",
+        "total_credit",
+        "docstatus",
+        "user_remark"
+      ];
+
+      // 2. Calculate the starting index for the Frappe query
+      const limitStart = (currentPage - 1) * PAGE_SIZE;
+
+      // 3. Optional: If you want server-side search instead of client-side, you'd add this:
+      // const filters = searchTerm ? [["name", "like", `%${searchTerm}%`]] : undefined;
+
+      const res = await getJournalEntries(
+        fields, 
+        undefined, // Pass filters here if using server-side search
+        limitStart, 
+        PAGE_SIZE
+      );
       
-      // Mocking an API response for now:
-      const res = { message: { status_code: 200, data: [] } }; 
-      
-      if (res?.message?.status_code === 200 && res.message.data) {
-        setJeData(res.message.data);
+      const entriesData = res?.data || res?.message?.data;
+
+      if (Array.isArray(entriesData)) {
+        setJeData(entriesData);
+        // If we received exactly the PAGE_SIZE, there's likely a next page
+        setHasMore(entriesData.length === PAGE_SIZE);
       } else {
         setError("Failed to load journal entries.");
+        setJeData([]);
+        setHasMore(false);
       }
     } catch (err: any) {
-      setError(
-        err?.message || "An error occurred while fetching journal entries.",
-      );
+      setError(err?.message || "An error occurred while fetching journal entries.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentPage]); // Re-run when currentPage changes
 
+  // Fetch data whenever the page changes
   useEffect(() => {
     fetchJE();
   }, [fetchJE]);
 
-  if (loading) {
+  if (loading && jeData.length === 0) {
     return (
       <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col items-center justify-center py-24 gap-3 shadow-sm">
         <Loader2 size={28} className="animate-spin text-primary" />
@@ -181,7 +208,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     );
   }
 
-  if (error) {
+  if (error && jeData.length === 0) {
     return (
       <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col items-center justify-center py-24 gap-4 shadow-sm">
         <AlertCircle size={28} className="text-danger" />
@@ -248,7 +275,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       align: "right",
       render: (row: JournalEntry) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {row.total_debit.toFixed(2)}
+          {(row.total_debit || 0).toFixed(2)}
         </code>
       ),
     },
@@ -258,7 +285,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       align: "right",
       render: (row: JournalEntry) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {row.total_credit.toFixed(2)}
+          {(row.total_credit || 0).toFixed(2)}
         </code>
       ),
     },
@@ -307,38 +334,72 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   ];
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       <JournalEntryModal
         isOpen={showNewModal}
         onClose={() => setShowNewModal(false)}
-        onSuccess={fetchJE}
+        onSuccess={() => {
+          setCurrentPage(1); // Reset to first page to see new entry
+          fetchJE();
+        }}
       />
-      <ExpandableTreeTable<JournalEntry>
-        columns={jeColumns}
-        data={jeData}
-        childrenKey="children" // Can remain even if flat, it will just ignore it
-        nodeKey={(node) => node.name}
-        showToolbar
-        searchValue={searchTerm}
-        onSearch={setSearchTerm}
-        toolbarPlaceholder="Search journal entries..."
-        showExpandControls={false} // Disabled since list is flat
-        onRefresh={fetchJE}
-        matchNode={matchJENode}
-        loading={loading}
-        emptyMessage="No journal entries found."
-        extraFilters={
+      
+      <div className="relative">
+        {loading && (
+          <div className="absolute inset-0 z-10 bg-white/50 flex items-center justify-center rounded-2xl backdrop-blur-[1px]">
+            <Loader2 size={24} className="animate-spin text-primary" />
+          </div>
+        )}
+        <ExpandableTreeTable<JournalEntry>
+          columns={jeColumns}
+          data={jeData}
+          childrenKey="children" 
+          nodeKey={(node) => node.name}
+          showToolbar
+          searchValue={searchTerm}
+          onSearch={setSearchTerm}
+          toolbarPlaceholder="Search journal entries..."
+          showExpandControls={false} 
+          onRefresh={fetchJE}
+          matchNode={matchJENode}
+          loading={false} // Handled via our custom overlay above so it doesn't unmount the table
+          emptyMessage="No journal entries found."
+          extraFilters={
+            <button
+              type="button"
+              onClick={() => setShowNewModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
+            >
+              <Plus size={13} />
+              New Entry
+            </button>
+          }
+        />
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between px-2">
+        <span className="text-xs text-muted">
+          Showing page <span className="font-semibold text-main">{currentPage}</span>
+        </span>
+        <div className="flex items-center gap-2">
           <button
-            type="button"
-            onClick={() => setShowNewModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1 || loading}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-main hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
           >
-            <Plus size={13} />
-            New Entry
+            <ChevronLeft size={14} /> Previous
           </button>
-        }
-      />
-    </>
+          <button
+            onClick={() => setCurrentPage(p => p + 1)}
+            disabled={!hasMore || loading}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-main hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+          >
+            Next <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

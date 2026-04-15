@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
-import {
-  ModalInput,
-} from "../../components/ui/modal/modalComponent";
+import { ModalInput, ModalSelect } from "../../components/ui/modal/modalComponent"; // <-- Added ModalSelect
 import { FileText, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
-
-// Assuming you will create a hook similar to useCoaLogic for this modal's state
 import { useJournalEntryLogic } from "../../hooks/useJournalEntriesLogic";
 
 interface JournalEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  entryId?: string | null;
 }
 
 const ITEMS_PER_PAGE = 4;
@@ -21,13 +18,14 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  entryId,
 }) => {
   const {
     form,
-    entries, // Array of table row objects
+    entries,
     loading,
     errors,
-    totals, // { debit: number, credit: number }
+    totals,
     handleChange,
     handleEntryChange,
     handleAddRow,
@@ -37,31 +35,27 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   } = useJournalEntryLogic(() => {
     onSuccess();
     onClose();
-  });
+  }, entryId || undefined);
 
-  // --- Pagination State & Logic ---
+  // --- Pagination Logic ---
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(entries.length / ITEMS_PER_PAGE);
 
-  // Safety check: if rows are deleted and the current page becomes empty, go back a page
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
     }
   }, [entries.length, currentPage, totalPages]);
 
-  // Calculate which entries to show on the current page
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const currentEntries = entries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Custom handler to add 2 rows at once and jump to the newest page
   const handleAddDoubleRow = () => {
     handleAddRow();
     handleAddRow();
     const newTotalLength = entries.length + 2;
     setCurrentPage(Math.ceil(newTotalLength / ITEMS_PER_PAGE));
   };
-  // --------------------------------
 
   const footer = (
     <>
@@ -78,7 +72,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
           loading={loading}
           onClick={handleSubmit}
         >
-          Save Entry
+          {entryId ? "Update Entry" : "Save Entry"}
         </Button>
       </div>
     </>
@@ -88,8 +82,8 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="New Journal Entry"
-      subtitle="Create a new manual journal entry"
+      title={entryId ? `Edit Entry: ${entryId}` : "New Journal Entry"}
+      subtitle={entryId ? "Update existing manual journal entry" : "Create a new manual journal entry"}
       icon={FileText}
       footer={footer}
       customWidth="70vw" 
@@ -97,10 +91,9 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
     >
       <div className="flex flex-col gap-6 py-3 px-1">
         
-        {/* TOP SECTION: Meta Fields */}
+        {/* TOP SECTION */}
         <div className="flex flex-row items-start gap-6 w-full">
-          {/* Posting Date */}
-          <div className="flex flex-col gap-1 w-1/4 min-w-[150px]">
+          <div className="flex flex-col gap-1">
             <ModalInput
               label="Posting Date"
               name="postingDate"
@@ -112,7 +105,6 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
             />
           </div>
 
-          {/* User Remarks */}
           <div className="flex flex-col gap-1 flex-1">
             <ModalInput
               label="User Remarks"
@@ -124,7 +116,6 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
             />
           </div>
 
-          {/* Is Opening Checkbox */}
           <div className="flex flex-col gap-1 justify-center mt-7 min-w-max">
             <label className="flex items-center gap-2 cursor-pointer w-fit">
               <input
@@ -136,18 +127,15 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
               />
               <span className="text-sm font-medium text-main">Is Opening Entry</span>
             </label>
-            <p className="text-xs text-muted mt-1 leading-relaxed">
-              Check if for opening balances.
-            </p>
           </div>
         </div>
 
-        {/* MIDDLE SECTION: Line Items Table */}
+        {/* MIDDLE SECTION */}
         <div className="flex flex-col gap-3 mt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-main">Entry Lines</h3>
             <Button variant="secondary" type="button" onClick={handleAddDoubleRow} className="text-xs py-1 px-2 flex items-center gap-1">
-              <Plus size={14} /> Add Row
+              <Plus size={14} /> Add Rows
             </Button>
           </div>
           
@@ -157,43 +145,44 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-3 py-2 font-medium">Account</th>
-                    <th className="px-3 py-2 font-medium w-24">CCY</th>
+                    <th className="px-3 py-2 font-medium w-20">CCY</th>
+                    {/* Added Type column for Dr/Cr selection */}
+                    <th className="px-3 py-2 font-medium w-20">Type</th> 
                     <th className="px-3 py-2 font-medium w-32">Amount</th>
                     <th className="px-3 py-2 font-medium w-32">Party Type</th>
                     <th className="px-3 py-2 font-medium">Party</th>
-                    <th className="px-3 py-2 font-medium w-24">Exc. Rate</th>
+                    <th className="px-3 py-2 font-medium w-20">Exc. Rate</th>
                     <th className="px-3 py-2 font-medium">Remark</th>
                     <th className="px-3 py-2 font-medium w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentEntries.map((entry, index) => {
-                    // Calculate the true index of the item in the master array
                     const actualIndex = startIndex + index;
-                    
                     return (
                       <tr key={actualIndex} className="border-b border-gray-100 last:border-none">
+                        <td className="px-2 py-1"><ModalInput label="" name={`account-${actualIndex}`} value={entry.account} onChange={(e) => handleEntryChange(actualIndex, 'account', e.target.value)} /></td>
+                        <td className="px-2 py-1"><ModalInput label="" name={`ccy-${actualIndex}`} value={entry.ccy} onChange={(e) => handleEntryChange(actualIndex, 'ccy', e.target.value)} /></td>
+                        
+                        {/* The Dr / Cr Dropdown */}
                         <td className="px-2 py-1">
-                          <ModalInput label="" name={`account-${actualIndex}`} value={entry.account} onChange={(e) => handleEntryChange(actualIndex, 'account', e.target.value)} />
+                          <ModalSelect 
+                             label="" 
+                             name={`type-${actualIndex}`} 
+                             value={entry.entryType} 
+                             onChange={(e) => handleEntryChange(actualIndex, 'entryType', e.target.value)}
+                             options={[
+                               { label: 'Dr', value: 'Dr' },
+                               { label: 'Cr', value: 'Cr' },
+                             ]}
+                          />
                         </td>
-                        <td className="px-2 py-1">
-                          <ModalInput label="" name={`ccy-${actualIndex}`} value={entry.ccy} onChange={(e) => handleEntryChange(actualIndex, 'ccy', e.target.value)} />
-                        </td>
-                        <td className="px-2 py-1">
-                          <ModalInput label="" name={`amount-${actualIndex}`} type="number" value={entry.amount} onChange={(e) => handleEntryChange(actualIndex, 'amount', e.target.value)} />
-                        </td>
-                        <td className="px-2 py-1">
-                          <ModalInput label="" name={`partyType-${actualIndex}`} value={entry.partyType} onChange={(e) => handleEntryChange(actualIndex, 'partyType', e.target.value)} />
-                        </td>
-                        <td className="px-2 py-1">
-                          <ModalInput label="" name={`party-${actualIndex}`} value={entry.party} onChange={(e) => handleEntryChange(actualIndex, 'party', e.target.value)} />
-                        </td>
-                        <td className="px-2 py-1">
-                          <ModalInput label="" name={`exchangeRate-${actualIndex}`} type="number" value={entry.exchangeRate} onChange={(e) => handleEntryChange(actualIndex, 'exchangeRate', e.target.value)} />
-                        </td>
-                        <td className="px-2 py-1">
-                          <ModalInput label="" name={`remark-${actualIndex}`} value={entry.remark} onChange={(e) => handleEntryChange(actualIndex, 'remark', e.target.value)} />
-                        </td>
+
+                        <td className="px-2 py-1"><ModalInput label="" name={`amount-${actualIndex}`} type="number" value={entry.amount} onChange={(e) => handleEntryChange(actualIndex, 'amount', e.target.value)} /></td>
+                        <td className="px-2 py-1"><ModalInput label="" name={`partyType-${actualIndex}`} value={entry.partyType} onChange={(e) => handleEntryChange(actualIndex, 'partyType', e.target.value)} /></td>
+                        <td className="px-2 py-1"><ModalInput label="" name={`party-${actualIndex}`} value={entry.party} onChange={(e) => handleEntryChange(actualIndex, 'party', e.target.value)} /></td>
+                        <td className="px-2 py-1"><ModalInput label="" name={`exchangeRate-${actualIndex}`} type="number" value={entry.exchangeRate} onChange={(e) => handleEntryChange(actualIndex, 'exchangeRate', e.target.value)} /></td>
+                        <td className="px-2 py-1"><ModalInput label="" name={`remark-${actualIndex}`} value={entry.remark} onChange={(e) => handleEntryChange(actualIndex, 'remark', e.target.value)} /></td>
                         <td className="px-2 py-1 text-center">
                           <button type="button" onClick={() => handleRemoveRow(actualIndex)} className="text-red-500 hover:text-red-700 transition-colors">
                             <Trash2 size={16} />
@@ -206,40 +195,22 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
               </table>
             </div>
 
-            {/* Pagination Controls */}
             {entries.length > ITEMS_PER_PAGE && (
               <div className="flex items-center justify-between px-4 py-2 border-t border-gray-200 bg-gray-50/50 rounded-b-md">
                 <span className="text-xs text-muted">
                   Showing <span className="font-medium text-main">{startIndex + 1}</span> to <span className="font-medium text-main">{Math.min(startIndex + ITEMS_PER_PAGE, entries.length)}</span> of <span className="font-medium text-main">{entries.length}</span> entries
                 </span>
-                
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(p => p - 1)}
-                    disabled={currentPage === 1}
-                    className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-main"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span className="text-xs font-medium text-main">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(p => p + 1)}
-                    disabled={currentPage === totalPages}
-                    className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-main"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
+                  <button type="button" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-main"><ChevronLeft size={16} /></button>
+                  <span className="text-xs font-medium text-main">Page {currentPage} of {totalPages}</span>
+                  <button type="button" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages} className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-main"><ChevronRight size={16} /></button>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* BOTTOM SECTION: Totals */}
+        {/* BOTTOM SECTION */}
         <div className="flex justify-between items-center bg-gray-50 p-4 rounded-md border border-gray-200 mt-2">
           <div className="flex flex-col">
             <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Debit</span>
