@@ -45,11 +45,13 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE="";
+
+
+export const ERP_BASE = getApiBaseUrl();
+console.log("🚀 ~ ERP_BASE:", ERP_BASE)
 
 // export const ERP_BASE = ENV.apiBaseUrl;
-export const ERP_BASE = "";
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -113,8 +115,8 @@ export const API = {
     getById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.get`,
     create: `${ERP_BASE}/api/method/erpnext.company-setup.setup.create_company_api`,
     // update: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_info`,
-    createSite: `https://api.master.rolaface.com/api/method/saas_provisioning.api.create_site`,
-    updateById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.update`,
+    createSite: `${ERP_BASE}/api/method/saas_provisioning.api.create_site`, 
+    updateById: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_api`,
     delete: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_api`,
     updateAccounts: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_accounts_company_info`,
     updateCompanyFiles: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.upload_company_documents`,
