@@ -114,7 +114,7 @@ export const API = {
     getById: `${ERP_BASE}/api/method/erpnext.company-setup.setup.get_company_api`,
     create: `${ERP_BASE}/api/method/erpnext.company-setup.setup.create_company_api`,
     // update: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_info`,
-    createSite: `https://api.master.rolaface.com/api/method/saas_provisioning.api.create_site`, 
+    createSite: `${ERP_BASE}/api/method/saas_provisioning.api.create_site`, 
     updateById: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_api`,
     delete: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_api`,
     updateAccounts: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_accounts_company_info`,
