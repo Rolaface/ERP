@@ -386,6 +386,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                           error={errors[`rate_${actualIdx}`]}
                           className="w-full no-spinner"
                           placeholder="0.00"
+                          disabled={row.charge_type === "Actual"}
                         />
                       </td>
 
@@ -406,6 +407,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                           error={errors[`tax_amount_${actualIdx}`]}
                           className="w-full no-spinner"
                           placeholder="0.00"
+                          disabled={row.charge_type !== "Actual"}
                         />
                       </td>
 
