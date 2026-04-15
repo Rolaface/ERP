@@ -67,6 +67,7 @@ export interface PurchaseInvoiceFormData {
   supplierCode: string;
   taxCategory: string;
   supplierContact: string;
+  supplierContactDisplay?: string;
   paymentType: string;
   transactionProgress: string;
   supplierInvoiceNumber: string;
@@ -174,6 +175,7 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   date: "",
   supplier: "",
   supplierContact: "",
+  supplierContactDisplay: "",
   taxCategory: "",
   currency: "",
   status: "Draft",

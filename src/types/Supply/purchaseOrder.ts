@@ -151,6 +151,7 @@ export interface PurchaseOrderFormData {
   supplierCode: string;
   taxCategory: string;
   supplierContact: string;
+  supplierContactDisplay?: string;
   destnCountryCd: string;
   shippingRule: string;
   incoterm: string;
@@ -191,6 +192,7 @@ export interface PurchaseOrderFormData {
   terms?: {
     buying: TermSection;
   };
+  
   itemTerms: ItemTerms[];
   acceptedTerms: Record<string, boolean>;
   paymentRows: PaymentRow[];
@@ -211,6 +213,7 @@ export const emptyItem: ItemRow = {
   packingUnit: 0,
   packingSize: 0,
   description: "",
+  taxCategory: "",
 };
 
 export const emptyTaxRow: TaxRow = {
@@ -246,6 +249,7 @@ export const emptyPOForm: PurchaseOrderFormData = {
   date: "",
   supplier: "",
   supplierContact: "",
+  supplierContactDisplay: "",
   taxCategory: "",
   currency: "",
   status: "Draft",

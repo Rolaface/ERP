@@ -1,4 +1,4 @@
-import { useState, useEffect ,useRef, useMemo, useCallback} from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   showApiError,
   showSuccess,
@@ -19,7 +19,10 @@ import {
   emptyPaymentRow,
   ItemRow,
 } from "../types/Supply/purchaseOrder";
-import { createPurchaseOrder , updatePurchaseOrder,} from "../api/procurement/PurchaseOrderApi";
+import {
+  createPurchaseOrder,
+  updatePurchaseOrder,
+} from "../api/procurement/PurchaseOrderApi";
 import { mapUIToCreatePO } from "../types/Supply/purchaseOrderMapper";
 import { validatePO } from "./poValidator";
 import { getPurchaseOrderById } from "../api/procurement/PurchaseOrderApi";
@@ -88,12 +91,15 @@ export const usePurchaseOrderForm = ({
     baseCurrency?: string;
   }>({});
 
-  const handleBulkItemChange = useCallback((field: keyof ItemRow, value: string) => {
-    setForm((prev) => ({
-      ...prev,
-      items: prev.items.map((item) => ({ ...item, [field]: value })),
-    }));
-  }, []);
+  const handleBulkItemChange = useCallback(
+    (field: keyof ItemRow, value: string) => {
+      setForm((prev) => ({
+        ...prev,
+        items: prev.items.map((item) => ({ ...item, [field]: value })),
+      }));
+    },
+    [],
+  );
   useEffect(() => {
     if (!isOpen) {
       setForm(emptyPOForm);
@@ -140,7 +146,7 @@ export const usePurchaseOrderForm = ({
 
         setForm((prev) => ({
           ...prev,
-         
+
           currency: baseCurrency || prev.currency,
           addresses: {
             ...prev.addresses,
@@ -168,98 +174,94 @@ export const usePurchaseOrderForm = ({
   }, [form.requiredBy]);
 
   // Load PO Data in Edit Mode
-const hasLoadedRef = useRef(false);
+  const hasLoadedRef = useRef(false);
 
-useEffect(() => {
-  if (!isOpen || !poId || hasLoadedRef.current) return;
+  useEffect(() => {
+    if (!isOpen || !poId || hasLoadedRef.current) return;
 
-  const loadPO = async () => {
-    const apiData = await getPurchaseOrderById(poId);
-    const mapped = mapApiToUI(apiData);
+    const loadPO = async () => {
+      const apiData = await getPurchaseOrderById(poId);
+      const mapped = mapApiToUI(apiData);
 
-    setForm(mapped);
+      setForm(mapped);
 
-   
-setAddressSelected({
-  supplierBilling: mapped.addresses.supplierAddress.id
-    ? {
-        id: mapped.addresses.supplierAddress.id,
-        title: mapped.addresses.supplierAddress.id,
-        addressType: "Billing",
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        country: "",
-        pincode: "",
-        phone: "",
-        email: "",
-      }
-    : null,
+      setAddressSelected({
+        supplierBilling: mapped.addresses.supplierAddress.id
+          ? {
+              id: mapped.addresses.supplierAddress.id,
+              title: mapped.addresses.supplierAddress.id,
+              addressType: "Billing",
+              addressLine1: "",
+              addressLine2: "",
+              city: "",
+              state: "",
+              country: "",
+              pincode: "",
+              phone: "",
+              email: "",
+            }
+          : null,
 
-  supplierDispatch: mapped.addresses.dispatchAddress.id
-    ? {
-        id: mapped.addresses.dispatchAddress.id,
-        title: mapped.addresses.dispatchAddress.id,
-        addressType: "Dispatch",
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        country: "",
-        pincode: "",
-        phone: "",
-        email: "",
-      }
-    : null,
+        supplierDispatch: mapped.addresses.dispatchAddress.id
+          ? {
+              id: mapped.addresses.dispatchAddress.id,
+              title: mapped.addresses.dispatchAddress.id,
+              addressType: "Dispatch",
+              addressLine1: "",
+              addressLine2: "",
+              city: "",
+              state: "",
+              country: "",
+              pincode: "",
+              phone: "",
+              email: "",
+            }
+          : null,
 
-  companyBilling: mapped.addresses.companyBillingAddress.id
-    ? {
-        id: mapped.addresses.companyBillingAddress.id,
-        title: mapped.addresses.companyBillingAddress.id,
-        addressType: "Billing",
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        country: "",
-        pincode: "",
-        phone: "",
-        email: "",
-      }
-    : null,
+        companyBilling: mapped.addresses.companyBillingAddress.id
+          ? {
+              id: mapped.addresses.companyBillingAddress.id,
+              title: mapped.addresses.companyBillingAddress.id,
+              addressType: "Billing",
+              addressLine1: "",
+              addressLine2: "",
+              city: "",
+              state: "",
+              country: "",
+              pincode: "",
+              phone: "",
+              email: "",
+            }
+          : null,
 
-  companyShipping: mapped.addresses.shippingAddress.id
-    ? {
-        id: mapped.addresses.shippingAddress.id,
-        title: mapped.addresses.shippingAddress.id,
-        addressType: "Shipping",
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        country: "",
-        pincode: "",
-        phone: "",
-        email: "",
-      }
-    : null,
-});
-setAddressSelectedIds({
-  supplierBilling: mapped.addresses.supplierAddress.id || "",
-  supplierDispatch: mapped.addresses.dispatchAddress.id || "",
-  companyBilling: mapped.addresses.companyBillingAddress.id || "",
-  companyShipping: mapped.addresses.shippingAddress.id || "",
-});
+        companyShipping: mapped.addresses.shippingAddress.id
+          ? {
+              id: mapped.addresses.shippingAddress.id,
+              title: mapped.addresses.shippingAddress.id,
+              addressType: "Shipping",
+              addressLine1: "",
+              addressLine2: "",
+              city: "",
+              state: "",
+              country: "",
+              pincode: "",
+              phone: "",
+              email: "",
+            }
+          : null,
+      });
+      setAddressSelectedIds({
+        supplierBilling: mapped.addresses.supplierAddress.id || "",
+        supplierDispatch: mapped.addresses.dispatchAddress.id || "",
+        companyBilling: mapped.addresses.companyBillingAddress.id || "",
+        companyShipping: mapped.addresses.shippingAddress.id || "",
+      });
 
-  
+      hasLoadedRef.current = true;
+    };
 
-
-    hasLoadedRef.current = true;
-  };
-
-  loadPO();
-}, [isOpen, poId]);
+    loadPO();
+  }, [isOpen, poId]);
 
   // Set default date on create mode
   useEffect(() => {
@@ -285,9 +287,17 @@ setAddressSelectedIds({
       totalTax += (Number(t.amount || 0) * Number(t.taxRate || 0)) / 100;
     }
 
-    const totalQuantity = form.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+    const totalQuantity = form.items.reduce(
+      (sum, item) => sum + Number(item.quantity || 0),
+      0,
+    );
 
-    return { subTotal, totalTax, grandTotal: subTotal + totalTax, totalQuantity };
+    return {
+      subTotal,
+      totalTax,
+      grandTotal: subTotal + totalTax,
+      totalQuantity,
+    };
   }, [form.items, form.taxRows]);
 
   useFieldDefault(isOpen, form.costCenter, fetchCostCenters, (val) =>
@@ -335,52 +345,62 @@ setAddressSelectedIds({
     }));
   };
 
-const handleFormChange = useCallback((
-  e:
-    | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    | { target: { name: string; value: any } }
-) => {
-  const { name, value } = e.target;
+  const handleFormChange = useCallback(
+    (
+      e:
+        | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+        | { target: { name: string; value: any } },
+    ) => {
+      const { name, value } = e.target;
 
-  // Handle batched address object update (single render instead of 12)
-  if (name.startsWith("addresses.") && typeof value === "object" && value !== null) {
-    const addressKey = name.replace("addresses.", "") as keyof PurchaseOrderFormData["addresses"];
-    setForm((prev) => ({
-      ...prev,
-      addresses: {
-        ...prev.addresses,
-        [addressKey]: { ...prev.addresses[addressKey], ...value },
-      },
-    }));
-    return;
-  }
-
-  // Handle nested keys like "addresses.supplierAddress.id"
-  if (name.includes(".")) {
-    const keys = name.split(".");
-
-    setForm((prev) => {
-      const updated = { ...prev } as any;
-
-      let current = updated;
-      for (let i = 0; i < keys.length - 1; i++) {
-        current[keys[i]] = { ...current[keys[i]] };
-        current = current[keys[i]];
+      // Handle batched address object update (single render instead of 12)
+      if (
+        name.startsWith("addresses.") &&
+        typeof value === "object" &&
+        value !== null
+      ) {
+        const addressKey = name.replace(
+          "addresses.",
+          "",
+        ) as keyof PurchaseOrderFormData["addresses"];
+        setForm((prev) => ({
+          ...prev,
+          addresses: {
+            ...prev.addresses,
+            [addressKey]: { ...prev.addresses[addressKey], ...value },
+          },
+        }));
+        return;
       }
 
-      current[keys[keys.length - 1]] = value;
+      // Handle nested keys like "addresses.supplierAddress.id"
+      if (name.includes(".")) {
+        const keys = name.split(".");
 
-      return updated;
-    });
+        setForm((prev) => {
+          const updated = { ...prev } as any;
 
-    return;
-  }
+          let current = updated;
+          for (let i = 0; i < keys.length - 1; i++) {
+            current[keys[i]] = { ...current[keys[i]] };
+            current = current[keys[i]];
+          }
 
-  setForm((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-}, []);
+          current[keys[keys.length - 1]] = value;
+
+          return updated;
+        });
+
+        return;
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    },
+    [],
+  );
   const handleSupplierChange = async (sup: any) => {
     if (!sup?.id) return;
 
@@ -414,85 +434,96 @@ const handleFormChange = useCallback((
         supplierPhone: cleanPhone(
           primaryContact?.mobile || primaryContact?.phone,
         ),
-        supplierContact: primaryContact?.fullName || "",
+        supplierContact: primaryContact?.id || supplier.contactPerson || "",
+        supplierContactDisplay:
+          primaryContact?.name || supplier.contactDisplay || "",
         terms: {
-  buying: supplier?.terms?.Buying || prev.terms?.buying,
-},
+          buying: supplier?.terms?.Buying || prev.terms?.buying,
+        },
 
         currency: supplier.currency || prev.currency,
         taxCategory: supplier.supplierTaxCategory || "",
         addresses: {
           ...prev.addresses,
 
-      supplierAddress: {
-  ...prev.addresses.supplierAddress,
+          supplierAddress: {
+            ...prev.addresses.supplierAddress,
 
-  id:
-    prev.addresses.supplierAddress?.id ||
-    primaryAddress?.id ||
-    "",   
+            id: prev.addresses.supplierAddress?.id || primaryAddress?.id || "",
 
-  addressLine1: primaryAddress?.line1 || "",
-  addressLine2: primaryAddress?.line2 || "",
-  city: primaryAddress?.city || "",
-  state: primaryAddress?.state || "",
-  country: primaryAddress?.country || "",
-  postalCode: primaryAddress?.postalCode || "",
-},
-          // OPTIONAL: auto copy to shipping also
-         shippingAddress: {
-  ...prev.addresses.shippingAddress,
+            addressLine1: primaryAddress?.line1 || "",
+            addressLine2: primaryAddress?.line2 || "",
+            city: primaryAddress?.city || "",
+            state: primaryAddress?.state || "",
+            country: primaryAddress?.country || "",
+            postalCode: primaryAddress?.postalCode || "",
+          },
 
-  id:
-    prev.addresses.shippingAddress?.id ||
-    primaryAddress?.id ||
-    "",
+          shippingAddress: {
+            ...prev.addresses.shippingAddress,
 
-  addressLine1: primaryAddress?.line1 || "",
-  addressLine2: primaryAddress?.line2 || "",
-  city: primaryAddress?.city || "",
-  state: primaryAddress?.state || "",
-  country: primaryAddress?.country || "",
-  postalCode: primaryAddress?.postalCode || "",
-},
+            id: prev.addresses.shippingAddress?.id || primaryAddress?.id || "",
+
+            addressLine1: primaryAddress?.line1 || "",
+            addressLine2: primaryAddress?.line2 || "",
+            city: primaryAddress?.city || "",
+            state: primaryAddress?.state || "",
+            country: primaryAddress?.country || "",
+            postalCode: primaryAddress?.postalCode || "",
+          },
         },
       }));
     } catch (err) {
       console.error("Supplier fetch failed:", err);
     }
   };
-  const handleItemChange = useCallback((
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-    idx: number,
-  ) => {
-    const { name, value } = e.target;
-    const isNum = name === "quantity" || name === "rate";
-    
-    setForm((p) => {
-      const newItems = p.items.map((item, i) => 
-        i !== idx ? item : { ...item, [name]: isNum ? (value === "" ? "" : Number(value)) : value }
-      );
-      return { ...p, items: newItems };
-    });
-  }, []);
+  const handleItemChange = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+      idx: number,
+    ) => {
+      const { name, value } = e.target;
+      const isNum = name === "quantity" || name === "rate";
+
+      setForm((p) => {
+        const newItems = p.items.map((item, i) =>
+          i !== idx
+            ? item
+            : {
+                ...item,
+                [name]: isNum ? (value === "" ? "" : Number(value)) : value,
+              },
+        );
+        return { ...p, items: newItems };
+      });
+    },
+    [],
+  );
 
   const addItem = useCallback(() => {
     setForm((p) => ({
       ...p,
       items: [
         ...p.items,
-        { ...emptyItem, warehouse: p.warehouse ?? "", requiredBy: p.requiredBy || "" },
+        {
+          ...emptyItem,
+          warehouse: p.warehouse ?? "",
+          requiredBy: p.requiredBy || "",
+        },
       ],
     }));
   }, []);
 
-  const removeItem = useCallback((idx: number) => {
-    if (form.items.length === 1) {
-      showValidationError("At least one item is required");
-      return;
-    }
-    setForm((p) => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
-  }, [form.items.length]);
+  const removeItem = useCallback(
+    (idx: number) => {
+      if (form.items.length === 1) {
+        showValidationError("At least one item is required");
+        return;
+      }
+      setForm((p) => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
+    },
+    [form.items.length],
+  );
 
   const duplicateItem = useCallback((absoluteIndex: number) => {
     setForm((prev) => {
@@ -505,12 +536,17 @@ const handleFormChange = useCallback((
     });
   }, []);
 
-  const handleTaxRowChange = useCallback((idx: number, key: keyof TaxRow, value: any) => {
-    setForm((p) => ({
-      ...p,
-      taxRows: p.taxRows.map((row, i) => (i !== idx ? row : { ...row, [key]: value })),
-    }));
-  }, []);
+  const handleTaxRowChange = useCallback(
+    (idx: number, key: keyof TaxRow, value: any) => {
+      setForm((p) => ({
+        ...p,
+        taxRows: p.taxRows.map((row, i) =>
+          i !== idx ? row : { ...row, [key]: value },
+        ),
+      }));
+    },
+    [],
+  );
 
   const addTaxRow = useCallback(() => {
     setForm((p) => ({ ...p, taxRows: [...p.taxRows, { ...emptyTaxRow }] }));
@@ -520,21 +556,35 @@ const handleFormChange = useCallback((
     setForm((p) => ({ ...p, taxRows: p.taxRows.filter((_, i) => i !== idx) }));
   }, []);
 
-  const handlePaymentRowChange = useCallback((idx: number, key: keyof PaymentRow, value: any) => {
+  const handlePaymentRowChange = useCallback(
+    (idx: number, key: keyof PaymentRow, value: any) => {
+      setForm((p) => ({
+        ...p,
+        paymentRows: p.paymentRows.map((row, i) =>
+          i !== idx ? row : { ...row, [key]: value },
+        ),
+      }));
+    },
+    [],
+  );
+
+  const addPaymentRow = useCallback(() => {
     setForm((p) => ({
       ...p,
-      paymentRows: p.paymentRows.map((row, i) => (i !== idx ? row : { ...row, [key]: value })),
+      paymentRows: [...p.paymentRows, { ...emptyPaymentRow }],
     }));
   }, []);
 
-  const addPaymentRow = useCallback(() => {
-    setForm((p) => ({ ...p, paymentRows: [...p.paymentRows, { ...emptyPaymentRow }] }));
-  }, []);
-
-  const removePaymentRow = useCallback((idx: number) => {
-    if (form.paymentRows.length === 1) return;
-    setForm((p) => ({ ...p, paymentRows: p.paymentRows.filter((_, i) => i !== idx) }));
-  }, [form.paymentRows.length]);
+  const removePaymentRow = useCallback(
+    (idx: number) => {
+      if (form.paymentRows.length === 1) return;
+      setForm((p) => ({
+        ...p,
+        paymentRows: p.paymentRows.filter((_, i) => i !== idx),
+      }));
+    },
+    [form.paymentRows.length],
+  );
 
   const handleSaveTemplate = (html: string) => {
     setForm((p) => ({ ...p, messageHtml: html }));
@@ -599,67 +649,65 @@ const handleFormChange = useCallback((
     if (tab === "address") {
       const supplier = form.addresses?.supplierAddress;
 
-      if (!supplier?.id)
-  return "Supplier Address is required";
+      if (!supplier?.id) return "Supplier Address is required";
     }
 
     return null;
   };
 
-const handleItemSelect = async (itemId: string, idx: number) => {
-  try {
-    const res = await getItemByItemCode(itemId, form.taxCategory);
-    if (!res || res.status_code !== 200) return;
+  const handleItemSelect = async (itemId: string, idx: number) => {
+    try {
+      const res = await getItemByItemCode(itemId, form.taxCategory);
+      if (!res || res.status_code !== 200) return;
 
-    const data = res.data;
+      const data = res.data;
 
-    const supplierTaxCategory = form.taxCategory?.trim();
+      const supplierTaxCategory = form.taxCategory?.trim();
 
-    let selectedTax = data.taxInfo?.find(
-      (t: any) =>
-        t.taxCategory?.toLowerCase() ===
-        supplierTaxCategory?.toLowerCase()
-    );
+      let selectedTax = data.taxInfo?.find(
+        (t: any) =>
+          t.taxCategory?.toLowerCase() === supplierTaxCategory?.toLowerCase(),
+      );
 
-    if (!selectedTax && data.taxInfo?.length) {
-      selectedTax = data.taxInfo[0];
+      if (!selectedTax && data.taxInfo?.length) {
+        selectedTax = data.taxInfo[0];
+      }
+
+      const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
+
+      setForm((prev) => {
+        const items = [...prev.items];
+
+        items[idx] = {
+          ...items[idx],
+
+          itemCode: data.id,
+          itemName: data.itemName,
+          description: data.description,
+
+          warehouse: items[idx].warehouse || prev.warehouse || "",
+
+          rate: Number(data.buyingPrice || 0),
+          uom: data.unitOfMeasureCd,
+
+          vatRate: totalTaxRate,
+          vatCd: selectedTax?.taxName || "",
+
+          taxCategory: selectedTax?.taxCategory || "",
+
+          requiredBy: items[idx].requiredBy || prev.requiredBy || "",
+
+          packingUnit: Number(data.packingUnit || 0),
+          packingSize: Number(data.packingSize || 0),
+          packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
+        };
+
+        return { ...prev, items };
+      });
+    } catch (err) {
+      console.error("Failed to fetch item details", err);
     }
-
-    const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
-
-    setForm((prev) => {
-      const items = [...prev.items];
-
-      items[idx] = {
-        ...items[idx],
-
-        itemCode: data.id,
-        itemName: data.itemName,
-        description: data.description,
-
-        warehouse: items[idx].warehouse || prev.warehouse || "",
-
-        rate: Number(data.buyingPrice || 0),
-        uom: data.unitOfMeasureCd,
-
-        vatRate: totalTaxRate,
-        vatCd: selectedTax?.taxName || "",
-
-        taxCategory: selectedTax?.taxCategory || "",
-
-        requiredBy: items[idx].requiredBy || prev.requiredBy || "",
-
-        packingUnit: Number(data.packingUnit || 0),
-        packingSize: Number(data.packingSize || 0),
-        packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
-      };
-
-      return { ...prev, items };
-    });
-  } catch (err) {
-    console.error("Failed to fetch item details", err);
-  }
-};
+  };
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
