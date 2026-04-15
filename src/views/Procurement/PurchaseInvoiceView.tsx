@@ -712,6 +712,7 @@ const PurchaseInvoiceView: React.FC<PurchaseInvoiceViewProps> = ({
                       {formatCurrency(Number(piData.summary.taxTotal))}
                     </span>
                   </div>
+                  
 
                   <div
                     className="pt-2 border-theme"

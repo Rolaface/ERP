@@ -1,8 +1,9 @@
 import React from "react";
 export interface PurchaseInvoiceDetail {
-  pId: string;
+  piId: string;
   supplierName: string;
   spplrInvcNo?: string;
+  spplrInvcDate?: string;
   pDate: string;
   requiredBy?: string;
   currency: string;
@@ -247,24 +248,30 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
   const items = data?.items ?? [];
   const currency = data?.currency ?? "INR";
   const statusCls = STATUS_MAP[data?.status ?? "Draft"] ?? "bg-draft";
-  const phases =
-    data?.terms?.terms?.buying?.payment?.phases
-      ?.filter((p) => p?.percentage)
-      ?.slice(0, 3) ?? [];
+ const buying =
+  (data as any)?.terms?.buying ??
+  data?.terms?.terms?.buying;
+
+const phases =
+  buying?.payment?.phases
+    ?.filter((p) => p?.percentage)
+    ?.slice(0, 3) ?? [];
   const grandTotal =
   data?.summary?.grandTotal ??
   data?.grandTotal ??
   (data as any)?.grandTotal ??
   0;
-  const subTotal =
+ const subTotal =
   data?.summary?.subTotal ??
-  ((data as any)?.grandTotal ?? 0) - ((data as any)?.totalTaxes ?? 0);
-  const taxTotal = parseFloat(
+  (data?.grandTotal ?? 0) - Number((data as any)?.totalTaxes ?? 0);
+ const taxTotal = Number(
   data?.summary?.taxTotal ??
   (data as any)?.totalTaxes ??
-  "0"
+  0
 );
-
+const rounding =
+  data?.summary?.roundingAdjustment ??
+  ((data as any)?.roundedTotal ?? 0) - (data?.grandTotal ?? 0);
   return (
     <>
       {/* Backdrop */}
@@ -572,7 +579,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                       color: "var(--text)",
                     }}
                   >
-                    {fmtDate(data.pDate ?? (data as any)?.poDate)}
+                    {fmtDate(data.pDate ?? (data as any)?.piDate ?? (data as any)?.poDate)}
                   </p>
                 </div>
               </div>
@@ -582,13 +589,14 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: "1fr 1fr 1fr",
                   gap: 10,
                   marginBottom: 7,
                 }}
               >
                 <F label="Supplier" value={data.supplierName} />
                 <F label="Supplier Invoice No" value={data.spplrInvcNo} mono />
+                <F label="Supplier Invoice Date" value={fmtDate(data.spplrInvcDate ?? (data as any)?.spplrInvcDt)}/>
               </div>
               <div
                 style={{
@@ -942,22 +950,36 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                   }}
                 >
                   {[
-                    {
-                      label: "Subtotal",
-                      val: fmt(subTotal, currency),
-                      big: false,
-                    },
-                    {
-                      label: `Tax`,
-                      val: fmt(taxTotal, currency),
-                      big: false,
-                    },
-                    {
-                      label: "Grand Total",
-                      val: fmt(grandTotal, currency),
-                      big: true,
-                    },
-                  ].map(({ label, val, big }) => (
+  {
+    label: "Subtotal",
+    val: fmt(subTotal, currency),
+    big: false,
+  },
+  {
+    label: "Tax",
+    val: fmt(taxTotal, currency),
+    big: false,
+  },
+  ...(rounding !== 0
+    ? [
+        {
+          label: "Rounding",
+          val: `${rounding < 0 ? "-" : "+"}${fmt(Math.abs(rounding), currency)}`,
+          big: false,
+        },
+      ]
+    : []),
+  {
+    label: "Grand Total",
+    val: fmt(
+      data?.summary?.roundedTotal ??
+        (data as any)?.roundedTotal ??
+        grandTotal,
+      currency
+    ),
+    big: true,
+  },
+].map(({ label, val, big }) => (
                     <div
                       key={label}
                       style={{
@@ -1085,7 +1107,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                       </div>
                     ))}
                   </div>
-                  {data.terms?.terms?.buying?.payment?.notes && (
+                  {buying?.payment?.notes && (
                     <p
                       style={{
                         fontSize: 10,
@@ -1094,7 +1116,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                         marginTop: 5,
                       }}
                     >
-                      ※ {data.terms.terms.buying.payment.notes}
+                      {buying?.payment?.notes}
                     </p>
                   )}
                 </>
@@ -1102,7 +1124,9 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
 
               {/* ── TERMS & CONDITIONS ── */}
               {(() => {
-                const b = data.terms?.terms?.buying;
+                const b =
+  (data as any)?.terms?.buying ??
+  data.terms?.terms?.buying;
                 if (!b) return null;
                 const rows = [
                   { label: "Delivery", value: b.delivery },

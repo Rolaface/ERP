@@ -538,7 +538,7 @@ const [loading, setLoading] = useState<Record<BoxType, boolean>>({
 
         supplierEmail: primaryContact?.email || "",
         supplierPhone: primaryContact?.mobile || primaryContact?.phone || "",
-        supplierContact: primaryContact?.fullName || "",
+        supplierContact: primaryContact?.id || "",
 
         taxCategory: supplier.supplierTaxCategory || prev.taxCategory,
         currency: supplier.currency || prev.currency,

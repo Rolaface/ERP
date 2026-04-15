@@ -72,7 +72,7 @@ export interface PurchaseInvoiceFormData {
   supplierInvoiceNumber: string;
   supplierInvoiceDate: string;
 
-  destnCountryCd: string; // New field for Export country
+  destnCountryCd: string; 
   shippingRule: string;
   incoterm: string;
   taxesChargesTemplate: string;

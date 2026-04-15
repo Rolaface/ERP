@@ -538,7 +538,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
         }}
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
-        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.pId)}
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.piId)}
         onDownload={() =>
           drawerData && company &&
           generatePurchaseInvoicePDF(drawerData, company, "save")
