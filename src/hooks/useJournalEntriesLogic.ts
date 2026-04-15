@@ -14,18 +14,20 @@ export interface JournalEntryForm {
 }
 
 export interface JournalEntryLine {
-  name?: string; 
+  name?: string;
   account: string;
   ccy: string;
-  entryType: "Dr" | "Cr"; // Explicitly track Debit or Credit
-  amount: string;         // Always a positive absolute number in UI
+  entryType: "Dr" | "Cr";
+  amount: string;
   partyType: string;
   party: string;
   exchangeRate: string;
   remark: string;
 }
 
-export type JournalEntryErrors = Partial<Record<keyof JournalEntryForm, string>>;
+export type JournalEntryErrors = Partial<
+  Record<keyof JournalEntryForm, string>
+>;
 
 const emptyForm = (): JournalEntryForm => ({
   postingDate: new Date().toISOString().split("T")[0],
@@ -36,7 +38,7 @@ const emptyForm = (): JournalEntryForm => ({
 const emptyEntry = (): JournalEntryLine => ({
   account: "",
   ccy: "",
-  entryType: "Dr", // Defaulting to Dr
+  entryType: "Dr",
   amount: "",
   partyType: "",
   party: "",
@@ -44,18 +46,20 @@ const emptyEntry = (): JournalEntryLine => ({
   remark: "",
 });
 
-export const useJournalEntryLogic = (onSuccess?: () => void, entryId?: string) => {
+export const useJournalEntryLogic = (
+  onSuccess?: () => void,
+  entryId?: string
+) => {
   const [form, setForm] = useState<JournalEntryForm>(emptyForm());
-  
-  // Default: Row 1 is Debit, Row 2 is Credit
+
   const [entries, setEntries] = useState<JournalEntryLine[]>([
     { ...emptyEntry(), entryType: "Dr" },
-    { ...emptyEntry(), entryType: "Cr" }
+    { ...emptyEntry(), entryType: "Cr" },
   ]);
+
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<JournalEntryErrors>({});
 
-  // --- Fetch Existing Entry for Edit Mode ---
   const loadEntry = useCallback(async (id: string) => {
     try {
       setLoading(true);
@@ -64,34 +68,46 @@ export const useJournalEntryLogic = (onSuccess?: () => void, entryId?: string) =
 
       if (data) {
         setForm({
-          postingDate: data.postingDate || data.posting_date,
-          isOpening: data.isOpening || data.is_opening === "Yes",
-          remarks: data.remark || data.user_remark || "",
+          postingDate: data.posting_date || data.postingDate,
+          isOpening: data.is_opening === "Yes" || data.isOpening,
+          remarks: data.user_remark || data.remark || "",
         });
 
-        if (data.accounts && Array.isArray(data.accounts)) {
-          const loadedEntries = data.accounts.map((acc: any): JournalEntryLine => {
-            const debit = acc.debit || acc.debit_in_account_currency || 0;
-            const credit = acc.credit || acc.credit_in_account_currency || 0;
-            const isDebit = debit > 0;
-            const amountVal = isDebit ? debit : credit;
+        if (Array.isArray(data.accounts)) {
+          const loadedEntries = data.accounts.map(
+            (acc: any): JournalEntryLine => {
+              const debit =
+                acc.debit_in_account_currency || acc.debit || 0;
+              const credit =
+                acc.credit_in_account_currency || acc.credit || 0;
 
-            return {
-              name: acc.name,
-              account: acc.account,
-              ccy: acc.currency || acc.account_currency || "",
-              entryType: isDebit ? "Dr" : "Cr",
-              amount: amountVal.toString(),
-              partyType: acc.partyType || acc.party_type || "",
-              party: acc.party || "",
-              exchangeRate: (acc.exchangeRate || acc.exchange_rate || 1).toString(),
-              remark: acc.remark || acc.user_remark || "",
-            };
-          });
-          setEntries(loadedEntries.length > 0 ? loadedEntries : [
-            { ...emptyEntry(), entryType: "Dr" },
-            { ...emptyEntry(), entryType: "Cr" }
-          ]);
+              const isDebit = debit > 0;
+              const amountVal = isDebit ? debit : credit;
+
+              return {
+                name: acc.name,
+                account: acc.account,
+                ccy: acc.account_currency || acc.currency || "",
+                entryType: isDebit ? "Dr" : "Cr",
+                amount: amountVal.toString(),
+                partyType: acc.party_type || acc.partyType || "",
+                party: acc.party || "",
+                exchangeRate: (
+                  acc.exchange_rate || acc.exchangeRate || 1
+                ).toString(),
+                remark: acc.user_remark || acc.remark || "",
+              };
+            }
+          );
+
+          setEntries(
+            loadedEntries.length > 0
+              ? loadedEntries
+              : [
+                  { ...emptyEntry(), entryType: "Dr" },
+                  { ...emptyEntry(), entryType: "Cr" },
+                ]
+          );
         }
       }
     } catch (err: any) {
@@ -102,109 +118,149 @@ export const useJournalEntryLogic = (onSuccess?: () => void, entryId?: string) =
   }, []);
 
   useEffect(() => {
-    if (entryId) {
-      loadEntry(entryId);
-    } else {
-      reset();
-    }
+    if (entryId) loadEntry(entryId);
+    else reset();
   }, [entryId, loadEntry]);
 
-  // --- Calculations & Handlers ---
   const totals = useMemo(() => {
     let debit = 0;
     let credit = 0;
+
     entries.forEach((entry) => {
       const val = Math.abs(parseFloat(entry.amount)) || 0;
       if (entry.entryType === "Dr") debit += val;
-      else if (entry.entryType === "Cr") credit += val;
+      if (entry.entryType === "Cr") credit += val;
     });
+
     return { debit, credit };
   }, [entries]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target;
-    const val = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
+    const val =
+      type === "checkbox"
+        ? (e.target as HTMLInputElement).checked
+        : value;
+
     setForm((prev) => ({ ...prev, [name]: val }));
-    if (errors[name as keyof JournalEntryForm]) setErrors((prev) => ({ ...prev, [name]: undefined }));
+
+    if (errors[name as keyof JournalEntryForm]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
-  const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: string) => {
+  const handleEntryChange = (
+    index: number,
+    field: keyof JournalEntryLine,
+    value: string
+  ) => {
     setEntries((prev) => {
       const newEntries = [...prev];
       newEntries[index] = { ...newEntries[index], [field]: value };
-      
-      // Auto-fill Credit amount if first row Debit is entered
-      if (index === 0 && field === "amount" && newEntries.length >= 2 && !prev[1].amount) {
-         newEntries[1] = { ...newEntries[1], amount: value };
+
+      if (
+        index === 0 &&
+        field === "amount" &&
+        newEntries.length >= 2 &&
+        !prev[1].amount
+      ) {
+        newEntries[1] = { ...newEntries[1], amount: value };
       }
-      
+
       return newEntries;
     });
   };
 
-  const handleAddRow = () => setEntries((prev) => [...prev, { ...emptyEntry(), entryType: "Dr" }]);
-  const handleRemoveRow = (index: number) => setEntries((prev) => prev.filter((_, i) => i !== index));
+  const handleAddRow = () =>
+    setEntries((prev) => [...prev, { ...emptyEntry(), entryType: "Dr" }]);
+
+  const handleRemoveRow = (index: number) =>
+    setEntries((prev) => prev.filter((_, i) => i !== index));
 
   const validate = (): boolean => {
     const newErrors: JournalEntryErrors = {};
-    if (!form.postingDate) newErrors.postingDate = "Posting Date is required";
+
+    if (!form.postingDate)
+      newErrors.postingDate = "Posting Date is required";
+
     setErrors(newErrors);
 
-    if (entries.filter(e => e.account.trim()).length < 2) {
-      showApiError("A journal entry requires at least two valid rows.");
+    const validRows = entries.filter((e) => e.account.trim());
+
+    if (validRows.length < 2) {
+      showApiError("Minimum two rows required");
       return false;
     }
+
     if (totals.debit === 0 && totals.credit === 0) {
-      showApiError("Total Debit and Credit cannot be zero.");
+      showApiError("Amounts cannot be zero");
       return false;
     }
-    if (Math.abs(totals.debit - totals.credit) > 0.01) { 
-      showApiError(`Entries do not balance. Difference: ${Math.abs(totals.debit - totals.credit).toFixed(2)}`);
+
+    if (Math.abs(totals.debit - totals.credit) > 0.01) {
+      showApiError("Debit and Credit must match");
       return false;
     }
+
     return Object.keys(newErrors).length === 0;
   };
 
-  // --- API Integrations ---
   const handleSubmit = async () => {
     if (!validate()) return;
 
     try {
       setLoading(true);
-      const validEntries = entries.filter((e) => e.account.trim() !== "");
-      
+
+      const validEntries = entries.filter((e) => e.account.trim());
+
       const payload = {
-        postingDate: form.postingDate,
-        isOpening: form.isOpening,
-        remark: form.remarks.trim(),
+        posting_date: form.postingDate,
+        voucher_type: "Journal Entry",
+        is_opening: form.isOpening ? "Yes" : "No",
+        user_remark: form.remarks,
+        multi_currency: 1,
+
         accounts: validEntries.map((entry) => {
           const val = Math.abs(parseFloat(entry.amount)) || 0;
+
           return {
-            ...(entry.name ? { name: entry.name } : {}), 
+            ...(entry.name ? { name: entry.name } : {}),
+
             account: entry.account,
-            partyType: entry.partyType || undefined,
+            account_currency: entry.ccy || undefined,
+            exchange_rate: parseFloat(entry.exchangeRate) || 1,
+
+            debit_in_account_currency:
+              entry.entryType === "Dr" ? val : 0,
+
+            credit_in_account_currency:
+              entry.entryType === "Cr" ? val : 0,
+
+            party_type: entry.partyType || undefined,
             party: entry.party || undefined,
-            currency: entry.ccy || undefined,
-            exchangeRate: parseFloat(entry.exchangeRate) || 1,
-            // Automatically splits based on Dr/Cr selection
-            debit: entry.entryType === "Dr" ? val : 0,
-            credit: entry.entryType === "Cr" ? val : 0,
-            remark: entry.remark || undefined,
+
+            user_remark: entry.remark || undefined,
           };
         }),
       };
 
       if (entryId) {
         await updateJournalEntryById(entryId, payload);
-        showSuccess("Journal Entry updated successfully");
+        showSuccess("Updated successfully");
       } else {
-        await createJournalEntry(payload as any); 
-        showSuccess("Journal Entry created successfully");
+        await createJournalEntry(payload as any);
+        showSuccess("Created successfully");
       }
-      
+
       onSuccess?.();
     } catch (err: any) {
-      showApiError(err?.response?.data?.message || err?.message || "Failed to save journal entry.");
+      showApiError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to save"
+      );
     } finally {
       setLoading(false);
     }
@@ -213,10 +269,10 @@ export const useJournalEntryLogic = (onSuccess?: () => void, entryId?: string) =
   const deleteEntry = async (id: string) => {
     try {
       await deleteJournalEntryById(id);
-      showSuccess("Journal Entry deleted successfully");
+      showSuccess("Deleted successfully");
       onSuccess?.();
     } catch (err: any) {
-       showApiError(err?.response?.data?.message || err?.message || "Failed to delete entry.");
+      showApiError(err?.message || "Delete failed");
     }
   };
 
@@ -224,14 +280,23 @@ export const useJournalEntryLogic = (onSuccess?: () => void, entryId?: string) =
     setForm(emptyForm());
     setEntries([
       { ...emptyEntry(), entryType: "Dr" },
-      { ...emptyEntry(), entryType: "Cr" }
+      { ...emptyEntry(), entryType: "Cr" },
     ]);
     setErrors({});
   };
 
   return {
-    form, entries, loading, errors, totals,
-    handleChange, handleEntryChange, handleAddRow, handleRemoveRow,
-    handleSubmit, deleteEntry, reset,
+    form,
+    entries,
+    loading,
+    errors,
+    totals,
+    handleChange,
+    handleEntryChange,
+    handleAddRow,
+    handleRemoveRow,
+    handleSubmit,
+    deleteEntry,
+    reset,
   };
 };
