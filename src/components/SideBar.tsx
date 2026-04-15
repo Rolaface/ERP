@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  FaChartBar,
+  FaTachometerAlt ,
   FaMoneyBillWave,
+  FaMoneyBill,
   FaUsers,
   FaShoppingBag,
   FaBoxes,
@@ -13,28 +14,64 @@ import {
   FaBars,
   FaChevronDown,
   FaChevronUp,
-    FaExchangeAlt,
-     FaReceipt,
-     FaUsersCog 
+  FaExchangeAlt,
+  FaReceipt,
+  FaUsersCog,
+  FaSignOutAlt,
+  FaUniversity,
+  FaPercentage
 } from "react-icons/fa";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
 import { useAuth } from "../context/AuthContext";
-import { FaSignOutAlt } from "react-icons/fa";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 import { useCompanyStore } from "../store/companyStore";
+import { MODAL_LAYER } from "../store/modalStore";
 
+/* ── Menu config ── */
 
 const menuItems = [
-  { name: "Dashboard", to: "/dashboard", icon: <FaChartBar /> },
-  { name: "Sales", to: "/sales", icon: <FaMoneyBillWave /> },
-  { name: "Customer", to: "/crm", icon: <FaUsers /> },
-  { name: "Procurement", to: "/procurement", icon: <FaShoppingBag /> },
-  { name: "Inventory", to: "/inventory", icon: <FaBoxes /> },
-  { name: "Accounting", to: "/accounting", icon: <FaBriefcase /> },
-  { name: "Human Resource", to: "/hr", icon: <FaUserTie /> },
-  // { name: "Fixed Assets", to: "/fasset", icon: <FaWarehouse /> },
+  { name: "Dashboard",      to: "/dashboard",   icon: <FaTachometerAlt  /> },
+  { name: "Sales",          to: "/sales",       icon: <FaMoneyBillWave /> },
+  { name: "Customer",       to: "/crm",         icon: <FaUsers /> },
+  { name: "Procurement",    to: "/procurement", icon: <FaShoppingBag /> },
+  { name: "Inventory",      to: "/inventory",   icon: <FaBoxes /> },
+  { name: "Accounting",     to: "/accounting",  icon: <FaBriefcase /> },
+  { name: "Human Resource", to: "/hr",          icon: <FaUserTie /> },
 ];
+
+const settingsItems = [
+  { to: "/companySetup",          label: "Company Setup",       icon: <FaBuilding /> },
+  { to: "/userManagement",        label: "User Management",     icon: <FaUsers /> },
+  { to: "/bank-account-setup",    label: "Bank Account",        icon: <FaUniversity /> },
+  { to: "/mode-of-payment-setup", label: "Mode of Payment",     icon: <FaMoneyBill /> },
+  { to: "/payment-entry",         label: "Payment Entry",       icon: <FaReceipt /> },
+  { to: "/currency-conversion",   label: "Currency Exchange",   icon: <FaExchangeAlt /> },
+  { to: "/customer-group",        label: "Customer Group",      icon: <FaUsersCog /> },
+  { to: "/Tax-Maintenance",       label:"Tax Maintenance",      icon:<FaPercentage />},
+  { to: "/settings",              label: "General Settings",    icon: <FaCog /> },
+];
+
+/* ── Tooltip ── */
+
+function Tooltip({ label }: { label: string }) {
+  return (
+    <span
+      className="
+        pointer-events-none absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2
+        whitespace-nowrap rounded-lg border border-[var(--border)] bg-card
+        px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-main
+        opacity-0 shadow-xl transition-all duration-150
+        group-hover:opacity-100
+      "
+      style={{ zIndex: 9999 }}
+    >
+      {label}
+    </span>
+  );
+}
+
+/* ── Props ── */
 
 interface SidebarProps {
   open: boolean;
@@ -43,228 +80,213 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const setCompanyInfo = useCompanyStore((s) => s.setCompanyInfo); 
+  const setCompanyInfo = useCompanyStore((s) => s.setCompanyInfo);
   const location = useLocation();
-  const [company, setCompany] = useState<{
-    name: string;
-    logo?: string;
-  } | null>(null);
-
+  const [company, setCompany] = useState<{ name: string; logo?: string } | null>(null);
   const { logout } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
 
+  /* derive user initials */
+  const username = localStorage.getItem("username") || "Admin User";
+  const userInitials = username
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  /* company initials fallback */
+  const companyInitials = company?.name
+    ? company.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : "CO";
 
   useEffect(() => {
     const loadCompany = async () => {
       try {
         const COMPANY_ID = import.meta.env.VITE_COMPANY_ID as string;
-        if (!COMPANY_ID) {
-          console.warn("No COMPANY_ID in env");
-          return;
-        }
+        if (!COMPANY_ID) return;
         const res = await getCompanyById(COMPANY_ID);
         const data = res?.data;
-
         setCompany({
           name: data?.companyName || "Company",
           logo: data?.documents?.companyLogoUrl
             ? `${ERP_BASE}${data.documents.companyLogoUrl}`
             : undefined,
         });
-         setCompanyInfo(
-      data?.companyName ?? "",
-      data?.financialConfig?.baseCurrency ?? ""
-    );
+        setCompanyInfo(
+          data?.companyName ?? "",
+          data?.financialConfig?.baseCurrency ?? ""
+        );
       } catch (err) {
         console.error("Failed to load company:", err);
       }
     };
-
     loadCompany();
   }, []);
 
-  // const handleLogout = () => {
-  //   localStorage.removeItem("authToken");
-  //   navigate("/login");
-  // };
-
-  const settingsRoutes = ["/settings", "/companySetup", "/userManagement"];
-  const isSettingsRoute = settingsRoutes.some((p) =>
-    location.pathname.startsWith(p),
+  const isSettingsRoute = ["/settings", "/companySetup", "/userManagement"].some((p) =>
+    location.pathname.startsWith(p)
   );
+
+
+  /* close settings submenu when sidebar collapses */
+  useEffect(() => {
+    if (!open) setSettingsOpen(false);
+  }, [open]);
 
   return (
     <>
-      <div
-        className={`flex flex-col h-screen bg-sidebar fixed z-50 shadow-2xl transition-all duration-300 border-r border-[var(--border)] overflow-hidden ${open ? "w-64" : "w-20"
-          }`}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 flex flex-col
+          border-r border-[var(--border)] bg-sidebar
+          transition-[width] duration-300 ease-out overflow-hidden
+          ${open ? "w-[var(--app-sidebar-width)]" : "w-[var(--app-sidebar-width-collapsed)]"}
+        `}
+        style={{ zIndex: MODAL_LAYER.sidebar }}
       >
-        {/* 1. HEADER */}
-        <div className="flex items-center justify-between p-4 h-16 shrink-0 border-b border-[var(--border)]">
-          <div className="flex items-center overflow-hidden">
-            {open && (
-              <h2 className="text-2xl font-bold text-primary truncate">ERP</h2>
-            )}
+
+        {/* ── Top bar ── */}
+        <div className="flex h-[var(--app-topbar-height)] shrink-0 items-center justify-between border-b border-[var(--border)] px-3">
+          {/* Logo / brand */}
+          <div
+            className={`
+              flex items-center gap-2 overflow-hidden
+              transition-all duration-300
+              ${open ? "opacity-100 w-auto" : "opacity-0 w-0 pointer-events-none"}
+            `}
+          >
+            <span className="text-xl font-black tracking-tight text-primary select-none">ERP</span>
           </div>
+
+          {/* Hamburger */}
           <button
             type="button"
             onClick={() => setOpen(!open)}
-            className="p-2 rounded-lg text-2xl text-muted hover:text-primary transition shrink-0"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-row-hover hover:text-primary transition"
+            title={open ? "Collapse sidebar" : "Expand sidebar"}
           >
-            <FaBars />
+            <FaBars className="text-base" />
           </button>
         </div>
 
-        {company && (
-          <div className="px-4 py-3 border-b border-[var(--border)]">
+        {/* ── Company badge ── */}
+        <div className={`shrink-0 border-b border-[var(--border)] transition-all duration-300 ${open ? "px-4 py-4" : "px-2 py-3"}`}>
+          <div className={`flex items-center gap-3 ${open ? "" : "justify-center"}`}>
+            {/* Logo box — always visible, size changes */}
             <div
-              className={`flex items-center gap-3 ${open ? "justify-start" : "justify-center"
-                }`}
+              className={`
+                flex shrink-0 items-center justify-center overflow-hidden
+                rounded-xl border border-[var(--border)] bg-card font-bold text-primary
+                transition-all duration-300
+                ${open ? "h-11 w-11 text-sm" : "h-10 w-10 text-sm"}
+              `}
             >
-              {/* Logo */}
-              <div className="w-15 h-15 rounded-full border border-[var(--border)] flex items-center justify-center overflow-hidden">
-                {company.logo ? (
-                  <img
-                    src={company.logo}
-                    alt="Company Logo"
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <span className="text-sm font-bold text-primary">
-                    {company.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .slice(0, 2)}
-                  </span>
-                )}
-              </div>
-
-              {/* Name */}
-              {open && (
-                <div className="flex flex-col min-w-0">
-                  <span className="text-lg font-bold text-primary truncate">
-                    {company.name}
-                  </span>
-                </div>
+              {company?.logo ? (
+                <img
+                  src={company.logo}
+                  alt="Company Logo"
+                  className="h-full w-full object-contain p-0.5"
+                />
+              ) : (
+                <span>{companyInitials}</span>
               )}
             </div>
-          </div>
-        )}
 
-        {/* 2. MIDDLE - SCROLLABLE AREA */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1 custom-scrollbar">
+            {/* Company name — only when expanded */}
+            <div
+              className={`
+                flex flex-col min-w-0
+                transition-all duration-200
+                ${open ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden pointer-events-none"}
+              `}
+            >
+              <span className="truncate text-sm font-bold text-main leading-tight">
+                {company?.name ?? "Loading…"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Nav ── */}
+        <nav className="custom-scrollbar flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden px-2 py-3">
+
           {menuItems.map((item) => (
             <NavLink
               key={item.name}
               to={item.to}
               className={({ isActive }) =>
-                `nav-link group relative flex items-center h-11 rounded-xl transition-all duration-200 shrink-0 ${isActive ? "active shadow-sm" : "hover:bg-row-hover"
-                }`
+                `group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
+                ${isActive ? "bg-primary/10 text-primary font-semibold" : "text-muted hover:bg-row-hover hover:text-main"}`
               }
             >
-              {/* Center Icon */}
-              <div className="flex items-center justify-center min-w-[48px] shrink-0">
-                <span className="text-xl nav-icon">{item.icon}</span>
-              </div>
+              {/* Icon — always centred in a fixed-width cell */}
+              <span className={`flex h-10 shrink-0 items-center justify-center text-[17px] transition-all duration-300 ${open ? "w-10" : "w-full"}`}>
+                {item.icon}
+              </span>
 
-              {/* Text hidden when collapsed, no wrap */}
+              {/* Label */}
               <span
-                className={`font-semibold text-sm nav-text whitespace-nowrap transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0 invisible"}`}
+                className={`
+                  truncate text-[14px] font-semibold tracking-tight transition-all duration-200 pr-3
+                  ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
+                `}
               >
                 {item.name}
               </span>
 
               {/* Tooltip when collapsed */}
-              {!open && (
-                <span className="absolute left-16 bg-card text-main border border-[var(--border)] text-[10px] uppercase font-bold tracking-widest px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 whitespace-nowrap shadow-xl translate-x-2 group-hover:translate-x-0">
-                  {item.name}
-                </span>
-              )}
+              {!open && <Tooltip label={item.name} />}
             </NavLink>
           ))}
 
-          {/* Settings Group */}
-          <div className="pt-2">
+          {/* ── Settings group ── */}
+          <div className="pt-1">
             <button
               type="button"
-              onClick={() => setSettingsOpen(!settingsOpen)}
-              className={`nav-link group relative flex items-center h-11 w-full rounded-xl transition-all shrink-0 ${settingsOpen || isSettingsRoute ? "active" : "hover:bg-row-hover"
-                }`}
+              onClick={() => open && setSettingsOpen((v) => !v)}
+              title={!open ? "Settings" : undefined}
+              className={`
+                group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
+                ${settingsOpen || isSettingsRoute ? "bg-primary/10 text-primary font-semibold" : "text-muted hover:bg-row-hover hover:text-main"}
+              `}
             >
-              <div className="flex items-center justify-center min-w-[48px] shrink-0">
-                <FaCog className="text-xl nav-icon" />
-              </div>
+              <span className={`flex h-10 shrink-0 items-center justify-center text-[17px] transition-all duration-300 ${open ? "w-10" : "w-full"}`}>
+                <FaCog />
+              </span>
 
               <span
-                className={`font-semibold text-sm nav-text whitespace-nowrap transition-opacity duration-200 flex-1 text-left ${open ? "opacity-100" : "opacity-0 invisible"}`}
+                className={`
+                  flex-1 truncate text-left text-[14px] font-semibold tracking-tight transition-all duration-200
+                  ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
+                `}
               >
                 Settings
               </span>
 
               {open && (
-                <span className="mr-2 opacity-50 shrink-0">
-                  {settingsOpen ? (
-                    <FaChevronUp className="text-xs" />
-                  ) : (
-                    <FaChevronDown className="text-xs" />
-                  )}
+                <span className="mr-2 shrink-0 opacity-50 text-xs">
+                  {settingsOpen ? <FaChevronUp /> : <FaChevronDown />}
                 </span>
               )}
+
+              {!open && <Tooltip label="Settings" />}
             </button>
 
+            {/* Submenu — only when expanded */}
             {open && settingsOpen && (
-              <div className="ml-6 mt-1 space-y-1 border-l-2 border-[var(--border)] pl-2">
-                {[
-                  {
-                    to: "/companySetup",
-                    label: "Company Setup",
-                    icon: <FaBuilding />,
-                  },
-                  {
-                    to: "/userManagement",
-                    label: "User Management",
-                    icon: <FaUsers />,
-                  },
-                  {
-  to: "/bank-account-setup",
-  label: "Bank Account Setup",
-  icon: <FaBars />
-},
-{
-  to: "/mode-of-payment-setup",
-  label: "Mode of Payment Setup",
-  icon: <FaMoneyBillWave />
-},
-{
-  to: "/payment-entry",
-  label: "Payment Entry",
-  icon: < FaReceipt />
-},
-{
-  to: "/currency-conversion",
-  label: "Currency Exchange",
-  icon: <FaExchangeAlt />
-},
-{
-  to: "/customer-group",
-  label: "Customer Group",
-  icon: <FaUsersCog/>
-},
-                  { to: "/settings", label: "General Settings", icon: <FaCog /> },
-                ].map((sub) => (
+              <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-[var(--border)] pl-3">
+                {settingsItems.map((sub) => (
                   <NavLink
                     key={sub.to}
                     to={sub.to}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 py-2 px-3 rounded-lg text-xs font-bold transition-all ${isActive
-                        ? "bg-primary text-white shadow-sm"
-                        : "text-muted hover:bg-row-hover hover:text-primary"
-                      }`
+                      `flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all
+                      ${isActive ? "bg-primary text-white shadow-sm" : "text-muted hover:bg-row-hover hover:text-primary"}`
                     }
                   >
-                    <span className="text-base shrink-0">{sub.icon}</span>
-                    <span className="whitespace-nowrap">{sub.label}</span>
+                    <span className="shrink-0 text-sm">{sub.icon}</span>
+                    <span className="truncate">{sub.label}</span>
                   </NavLink>
                 ))}
               </div>
@@ -272,55 +294,47 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           </div>
         </nav>
 
-        {/* 3. BOTTOM USER SECTION  */}
-        <div className="p-4 border-t border-[var(--border)] shrink-0 bg-sidebar">
-          <div
-            className={`flex items-center ${open ? "justify-between" : "flex-col gap-4"
-              }`}
-          >
-            {/* LEFT SIDE: Avatar + Name */}
-            <div className="flex items-center gap-3 relative group">
-              <div className="w-10 h-10 shrink-0 rounded-full bg-primary text-white font-bold flex items-center justify-center shadow-sm">
-                {(() => {
-                  const name = localStorage.getItem("username") || "User";
-                  return name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()
-                    .slice(0, 2);
-                })()}
+        {/* ── User footer ── */}
+        <div className="shrink-0 border-t border-[var(--border)] px-2 py-3">
+          <div className={`flex items-center gap-2 ${open ? "" : "flex-col"}`}>
+
+            {/* Avatar */}
+            <div className="relative group">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white text-xs font-black shadow-sm select-none">
+                {userInitials}
               </div>
-
-              {open && (
-                <div className="flex flex-col leading-tight min-w-0">
-                  <span className="font-bold text-main text-sm truncate">
-                    {localStorage.getItem("username") || "Admin User"}
-                  </span>
-                  <span className="text-muted text-[10px] uppercase font-black tracking-tighter">
-                    Administrator
-                  </span>
-                </div>
-              )}
-
-              {!open && (
-                <span className="absolute left-12 bg-card text-main text-xs px-3 py-1 rounded shadow-xl border border-[var(--border)] opacity-0 group-hover:opacity-100 whitespace-nowrap transition z-50">
-                  {localStorage.getItem("username") || "User"}
-                </span>
-              )}
+              {!open && <Tooltip label={username} />}
             </div>
 
-            {/* RIGHT SIDE: Logout Menu */}
+            {/* Name + role — expanded only */}
+            <div
+              className={`
+                flex min-w-0 flex-1 flex-col leading-tight
+                transition-all duration-200
+                ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden pointer-events-none"}
+              `}
+            >
+              <span className="truncate text-sm font-bold text-main">{username}</span>
+              <span className="text-[10px] font-black uppercase tracking-tight text-muted">
+                Administrator
+              </span>
+            </div>
+
+            {/* Logout */}
             <button
               onClick={() => setLogoutOpen(true)}
-              className="p-2 rounded-lg text-danger hover:bg-row-hover transition"
+              className={`
+                flex shrink-0 items-center justify-center rounded-lg p-2
+                text-danger hover:bg-red-50 dark:hover:bg-red-950/30 transition
+                ${!open ? "w-9 h-9" : ""}
+              `}
               title="Logout"
             >
-              <FaSignOutAlt />
+              <FaSignOutAlt className="text-sm" />
             </button>
           </div>
         </div>
-      </div>
+      </aside>
 
       <LogoutConfirmModal
         open={logoutOpen}
@@ -330,7 +344,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           await logout();
         }}
       />
-
     </>
   );
 };

@@ -40,7 +40,7 @@ const GeneralLedger: React.FC<Props> = ({
   journalEntries,
 }) => {
   return (
-    <div className="p-6 bg-app">
+    <div className=" bg-app">
       {/* Sub-tabs */}
       <div className="flex gap-6 border-b border-[var(--border)] mb-6">
         <button

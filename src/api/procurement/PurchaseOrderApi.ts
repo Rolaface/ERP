@@ -97,4 +97,35 @@ export async function updatePurchaseOrderStatus(
   return resp.data;
 }
 
+export async function deletePo(name: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    purchaseorderapi.delete,
+    {
+      name,
+      doctype: "Purchase Order",
+    }
+  );
+  return resp;
+}
 
+export async function updatePurchaseOrder(
+  id: string | number,
+  payload: any
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${purchaseorderapi.update}?id=${id}`, 
+    payload
+  );
+
+  return resp.data;
+}
+
+export async function createPurchaseInvoiceFromPO(
+  po_id: string
+): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    `${purchaseorderapi.createInvoiceFromPO}?po_id=${po_id}`
+  );
+
+  return resp.data;
+}

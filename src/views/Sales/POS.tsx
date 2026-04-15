@@ -42,7 +42,7 @@ const POS: React.FC = () => {
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [checkoutModals, setCheckoutModals] = useState<{ id: string }[]>([]);
 
   const totalRevenue = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
@@ -84,7 +84,7 @@ const POS: React.FC = () => {
 
   const handleCheckoutOpen = () => {
     if (!cart.length) return alert("Cart is empty!");
-    setModalOpen(true);
+    setCheckoutModals((prev) => [...prev, { id: `pos-checkout-${Date.now()}` }]);
   };
 
   const handleCheckoutConfirm = (checkoutData: any) => {
@@ -98,7 +98,7 @@ const POS: React.FC = () => {
       }),
     );
     clearCart();
-    setModalOpen(false);
+    setCheckoutModals([]);
   };
 
   const filteredProducts = products.filter(
@@ -232,12 +232,15 @@ const POS: React.FC = () => {
         </div>
       </div>
       {/* POS Modal for checkout */}
-      <PosModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        cart={cart}
-        onSave={handleCheckoutConfirm}
-      />
+      {checkoutModals.map((modal) => (
+        <PosModal
+          key={modal.id}
+          isOpen={true}
+          onClose={() => setCheckoutModals((prev) => prev.filter((m) => m.id !== modal.id))}
+          cart={cart}
+          onSave={handleCheckoutConfirm}
+        />
+      ))}
     </div>
   );
 };

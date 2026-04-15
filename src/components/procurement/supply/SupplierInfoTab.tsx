@@ -1,11 +1,9 @@
 import React from "react";
-import {
-  type SupplierFormData,
-} from "../../../types/Supply/supplier";
+import { type SupplierFormData } from "../../../types/Supply/supplier";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import { fetchCurrencyOptions } from "../../../utils/currencyOptions";
 import TaxCategorySelect from "../../selects/TaxCategorySelect";
-import { CreditDaysInput, ModalInput} from "../../ui/modal/modalComponent";
+import { CreditDaysInput, ModalInput } from "../../ui/modal/modalComponent";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import Tooltip from "../../Tooltip";
 
@@ -36,121 +34,114 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
   onChange,
   errors = {},
 }) => {
+  const handleTaxCategoryChange = (val: string) => {
+    onChange({
+      target: { name: "taxCategory", value: val },
+    } as React.ChangeEvent<HTMLSelectElement>);
+  };
+
+  const handleCurrencyChange = (value: string) => {
+    onChange({
+      target: { name: "currency", value },
+    } as React.ChangeEvent<HTMLSelectElement>);
+  };
+
   return (
     <section className="flex-1 overflow-y-auto p-4 space-y-6 bg-app">
       <div className="space-y-6">
-
-        {/* Supplier Details */}
+        {/* Supplier Details Row - 5 fields: 3+3+3+2+1 = 12 */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">Supplier Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-            <Tooltip content={form.tpin || "Enter Tax Id / TPIN"}>
-              <ModalInput
-                label="Tax Id / TPIN"
-                name="tpin"
-                value={form.tpin}
-                onChange={onChange}
-                placeholder="Enter TPIN"
-                error={errors.tpin}
-                required
-              />
-            </Tooltip>
+          <h3 className="text-sm font-semibold text-gray-700">
+            Supplier Details
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="col-span-3">
+              <Tooltip
+                content={form.supplierName || "Supplier name is required"}
+              >
+                <ModalInput
+                  label="Supplier Name"
+                  name="supplierName"
+                  value={form.supplierName}
+                  onChange={onChange}
+                  required
+                  error={errors.supplierName}
+                />
+              </Tooltip>
+            </div>
+            <div className="col-span-3">
+              <Tooltip content={form.tpin || "Enter Tax Id / TPIN"}>
+                <ModalInput
+                  label="Tax Id / TPIN"
+                  name="tpin"
+                  value={form.tpin}
+                  onChange={onChange}
+                  placeholder="Enter TPIN"
+                  error={errors.tpin}
+                  required
+                />
+              </Tooltip>
+            </div>
 
-            <Tooltip content={form.supplierName || "Supplier name is required"}>
-              <ModalInput
-                label="Supplier Name"
-                name="supplierName"
-                value={form.supplierName}
-                onChange={onChange}
-                required
-                error={errors.supplierName}
-              />
-            </Tooltip>
-
-            <Tooltip content={form.supplierCode || "Supplier code is auto generated"}>
-              <ModalInput
-                label="Supplier Code"
-                name="supplierCode"
-                value={form.supplierCode}
-                onChange={onChange}
-                placeholder="Auto generated"
-              />
-            </Tooltip>
-
-            <Tooltip content={form.taxCategory ? `Tax Category: ${form.taxCategory}` : "Select a tax category"}>
-              <TaxCategorySelect
-                value={form.taxCategory}
-                onChange={(val) =>
-                  onChange({
-                    target: { name: "taxCategory", value: val },
-                  } as React.ChangeEvent<HTMLSelectElement>)
+            <div className="col-span-2">
+              <Tooltip
+                content={
+                  form.taxCategory
+                    ? `Tax Category: ${form.taxCategory}`
+                    : "Select a tax category"
                 }
-                error={errors.taxCategory}
-                required
-              />
-            </Tooltip>
+              >
+                <TaxCategorySelect
+                  label="Tax Category"
+                  value={form.taxCategory}
+                  onChange={handleTaxCategoryChange}
+                  error={errors.taxCategory}
+                  required
+                />
+              </Tooltip>
+            </div>
+
+            <div className="col-span-1.8">
+              <Tooltip
+                content={
+                  form.currency
+                    ? `Currency: ${form.currency}`
+                    : "Select a currency"
+                }
+              >
+                <SearchSelect2
+                  label="Currency"
+                  value={form.currency}
+                  onChange={handleCurrencyChange}
+                  fetchOptions={fetchCurrencyOptions}
+                  placeholder="Search..."
+                  required
+                  error={errors.currency}
+                />
+              </Tooltip>
+            </div>
+
+            {/* <div className="col-span-1.5">
+              <Tooltip content={form.paymentTerms ? `Payment Terms: ${form.paymentTerms}` : "Enter payment terms"}>
+                <CreditDaysInput
+                  name="paymentTerms"
+                  value={form.paymentTerms}
+                  onChange={onChange}
+                  required
+                  error={errors.paymentTerms}
+                  className="no-spinner"
+                />
+              </Tooltip>
+            </div> */}
           </div>
         </div>
 
-        {/* Financial Details */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-          <Tooltip content={form.currency ? `Currency: ${form.currency}` : "Select a currency"}>
-            <SearchSelect2
-              label="Currency"
-              value={form.currency}
-              onChange={(value) =>
-                onChange({
-                  target: { name: "currency", value },
-                } as React.ChangeEvent<HTMLSelectElement>)
-              }
-              fetchOptions={fetchCurrencyOptions}
-              placeholder="Search currency..."
-              required
-              error={errors.currency}
-            />
-          </Tooltip>
-
-          <Tooltip content={form.openingBalance ? `Opening Balance: ${form.openingBalance}` : "Enter opening balance"}>
-            <ModalInput
-              label="Opening Balance"
-              name="openingBalance"
-              type="number"
-              value={form.openingBalance}
-              onChange={onChange}
-              error={errors.openingBalance}
-              className="no-spinner"
-            />
-          </Tooltip>
-
-          <Tooltip content={form.paymentTerms ? `Payment Terms: ${form.paymentTerms}` : "Enter payment terms"}>
-            <CreditDaysInput
-              name="paymentTerms"
-              value={form.paymentTerms}
-              onChange={onChange}
-              required
-              error={errors.paymentTerms}
-              className="no-spinner"
-            />
-          </Tooltip>
-
-          <Tooltip content={form.dateOfAddition ? `Date of Addition: ${form.dateOfAddition}` : "Select date of addition"}>
-            <DatePickerInput
-              label="Date of Addition"
-              name="dateOfAddition"
-              value={form.dateOfAddition}
-              onChange={(name, value) =>
-                onChange({ target: { name, value } } as any)
-              }
-              required
-            />
-          </Tooltip>
-        </div>
-
-        {/* Contact Details */}
+        {/* Contact Details Row - 4 equal fields */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">Contact Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-
+          <h3 className="text-sm font-semibold text-gray-700">
+            Contact Details
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <ModalInput
               label="Contact Person Name"
               name="contactPerson"
@@ -182,7 +173,9 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                       ? "0 0 0 3px rgba(239,68,68,0.18)"
                       : "0 0 0 3px rgba(37,99,235,0.16)";
                   }}
-                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = "";
+                  }}
                 />
                 <input
                   name="phoneNo"
@@ -201,12 +194,16 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                       ? "0 0 0 3px rgba(239,68,68,0.18)"
                       : "0 0 0 3px rgba(37,99,235,0.16)";
                   }}
-                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = "";
+                  }}
                 />
               </div>
               <div className="min-h-[14px] mt-1">
                 {errors.phoneNo && (
-                  <span className="text-[10px] text-danger">{errors.phoneNo}</span>
+                  <span className="text-[10px] text-danger">
+                    {errors.phoneNo}
+                  </span>
                 )}
               </div>
             </div>
@@ -233,7 +230,9 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                       ? "0 0 0 3px rgba(239,68,68,0.18)"
                       : "0 0 0 3px rgba(37,99,235,0.16)";
                   }}
-                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = "";
+                  }}
                 />
                 <input
                   name="alternateNo"
@@ -252,12 +251,16 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                       ? "0 0 0 3px rgba(239,68,68,0.18)"
                       : "0 0 0 3px rgba(37,99,235,0.16)";
                   }}
-                  onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = "";
+                  }}
                 />
               </div>
               <div className="min-h-[14px] mt-1">
                 {errors.alternateNo && (
-                  <span className="text-[10px] text-danger">{errors.alternateNo}</span>
+                  <span className="text-[10px] text-danger">
+                    {errors.alternateNo}
+                  </span>
                 )}
               </div>
             </div>
@@ -273,10 +276,8 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                 error={errors.emailId}
               />
             </Tooltip>
-
           </div>
         </div>
-
       </div>
     </section>
   );

@@ -23,7 +23,7 @@ export async function getAllStockEntries(
     },
   });
 
-  return resp.data; // 🔥 DO NOT strip .data
+  return resp.data; 
 }
 
 export async function getStockById(id: string): Promise<any> {
@@ -48,12 +48,14 @@ export async function getStockReport(
   page: number,
   page_size: number,
   search?: string,
+  taxCategory?: string, 
 ): Promise<any> {
-  const resp: AxiosResponse = await api.get(StockAPI.stockReport, {
+  const resp = await api.get(StockAPI.stockReport, {
     params: {
       page,
       page_size,
       search,
+      taxCategory: taxCategory ?? "", 
     },
   });
 

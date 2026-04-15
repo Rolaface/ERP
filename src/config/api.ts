@@ -1,5 +1,5 @@
+import { ShippingAPI } from "../api/utils/shippingruleapi";
 import { ENV } from "./env";
-
 
 const getApiBaseUrl = (): string => {
   if (typeof window === "undefined") {
@@ -7,7 +7,7 @@ const getApiBaseUrl = (): string => {
   }
 
   const { protocol, hostname } = window.location;
-  console.log("🚀 ~ getApiBaseUrl ~ protocol, hostname:", protocol, hostname)
+  console.log("🚀 ~ getApiBaseUrl ~ protocol, hostname:", protocol, hostname);
 
   // let hostname1 ="gbfn.erp.rolaface.com/"
 
@@ -21,20 +21,23 @@ const getApiBaseUrl = (): string => {
   }
 
   const hostSegments = hostname.split(".");
-  console.log("🚀 ~ getApiBaseUrl ~ hostSegments:", hostSegments)
+  console.log("🚀 ~ getApiBaseUrl ~ hostSegments:", hostSegments);
 
   if (hostSegments.length < 3) {
-    console.log("🚀 ~ getApiBaseUrl ~ hostSegments.length < 3:", hostSegments.length < 3)
+    console.log(
+      "🚀 ~ getApiBaseUrl ~ hostSegments.length < 3:",
+      hostSegments.length < 3,
+    );
     return ENV.apiBaseUrl;
   }
 
   const tenantSubdomain = hostSegments[0];
-  console.log("🚀 ~ getApiBaseUrl ~ tenantSubdomain:", tenantSubdomain)
+  console.log("🚀 ~ getApiBaseUrl ~ tenantSubdomain:", tenantSubdomain);
   const baseDomain = hostSegments.slice(-2).join(".");
-  console.log("🚀 ~ getApiBaseUrl ~ baseDomain:", baseDomain)
+  console.log("🚀 ~ getApiBaseUrl ~ baseDomain:", baseDomain);
 
   const isValidTenant = /^[a-z0-9-]+$/i.test(tenantSubdomain);
-  console.log("🚀 ~ getApiBaseUrl ~ isValidTenant:", isValidTenant)
+  console.log("🚀 ~ getApiBaseUrl ~ isValidTenant:", isValidTenant);
   if (!isValidTenant) {
     return ENV.apiBaseUrl;
   }
@@ -100,25 +103,23 @@ export const API = {
     summary: `${ERP_BASE}/api/method/hrms.dashboards.main.api.summary`,
   },
 
-
-  Get:{
-    getAll:`${ERP_BASE}/api/method/frappe.desk.search.search_link`
+  Get: {
+    getAll: `${ERP_BASE}/api/method/frappe.desk.search.search_link`,
   },
-
 
   /* =========================
    * COMPANY
    * ========================= */
   company: {
     getAll: `${ERP_BASE}/api/method/erpnext.company-setup.setup.get_companies_api`,
-    getById: `${ERP_BASE}/api/method/erpnext.company-setup.setup.get_company_api`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.get`,
     create: `${ERP_BASE}/api/method/erpnext.company-setup.setup.create_company_api`,
     // update: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_info`,
     createSite: `${ERP_BASE}/api/method/saas_provisioning.api.create_site`, 
     updateById: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_api`,
     delete: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_api`,
     updateAccounts: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_accounts_company_info`,
-    updateCompanyFiles: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_company_files`,
+    updateCompanyFiles: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.upload_company_documents`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
   Account: {
@@ -153,21 +154,23 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
     update: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.update_currency_exchange?`,
     delete: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.delete_currency_exchange`,
-    get:`${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`
+    get: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
   },
   /* =========================
    * CUSTOMER
    * ========================= */
   customer: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.get_all_customers_api`,
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.get_customer_by_id`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.create_customer_api`,
-    update: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.update_customer_by_id`,
-    delete: `${ERP_BASE}/api/method/erpnext.zra_client.customer.customer.delete_customer_by_id`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.get_customers`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.get_customer_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.create_customer`,
+    update: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.update_customer`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.delete_customer`,
     getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
     getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
+    group: `${ERP_BASE}/api/method/custom_api.api.search.get_customers_group`,
+    grouptree: `${ERP_BASE}/api/method/custom_api.api.customer_group_item_restriction.get_customer_group_tree`,
   },
 
   /* =========================
@@ -188,22 +191,52 @@ export const API = {
    * ITEM
    * ========================= */
   item: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.get_all_items_api`,
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.get_item_by_id_api`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.create_item_api`,
-    update: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.update_item_api`,
-    delete: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.delete_item_by_id`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.item.api.get`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.item.api.get_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.item.api.create`,
+    update: `${ERP_BASE}/api/method/custom_api.api.item.api.update`,
+    delete: `${ERP_BASE}/api/method/frappe.client.delete`,
+    brand: `${ERP_BASE}/api/method/frappe.desk.search.search_link`,
+  },
+  /* =========================
+   * TAX
+   * ========================= */
+
+  tax: {
+    getTemplates: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get`,
+    taxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.create_or_update_tax_template`,
+    delete: `${ERP_BASE}/api/method/frappe.client.delete`,
+    getTemplateGl: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
+    updatestatus: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.update_item_template_tax_status`,
+    getAllTaxCategories: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.get`,
+    createTaxCategory: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.create`,
+    updateTaxCategory: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.tax_category.api.update`,
+    deleteTaxCategory: `${ERP_BASE}/api/method/frappe.client.delete`,
+  },
+
+  salesTax: {
+    createSalesTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.create_sales_tax_template`,
+    getsalesTemplates: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.get_sales_tax_templates`,
+    getsalesTemplatesbyid: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.get_sales_tax_template`,
+    deleteSalesTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.delete_sales_tax_template`,
+    getTemplateGl: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
+    updateSalesTaxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_status`,
   },
 
   /* =========================
    * ITEM GROUP
    * ========================= */
   itemGroup: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.get_all_item_groups_api`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.item_group.get_item_group_tree`,
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.get_item_group_by_id_api`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.create_item_group_api`,
-    update: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.update_item_group_api`,
-    delete: `${ERP_BASE}/api/method/erpnext.zra_client.item.item.delete_item_group`,
+    create: `${ERP_BASE}/api/method/frappe.desk.treeview.add_node`,
+    update: `${ERP_BASE}/api/resource/Item Group`,
+    rename: `${ERP_BASE}/api/method/frappe.rename_doc`,
+    delete: `${ERP_BASE}/api/resource/Item Group`,
+  },
+
+  Address: {
+    getaddress: `${ERP_BASE}/api/method/custom_api.utils.address.api.get_address_list`,
   },
 
   /* =========================
@@ -271,17 +304,17 @@ export const API = {
    * SALES / INVOICES
    * ========================= */
   invoice: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_sales_invoice`,
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_sales_invoice_by_id`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_sales_invoice`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoices`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoice_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.create_sales_invoice`,
 
-    updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.update_invoice_status`,
-    delete: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.delete_sales_invoice`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice_status`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.delete_sales_invoice`,
     createCreditNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_credit_note_from_sales_invoice`,
     createDebitNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_debit_note_from_invoice`,
     getCreditNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_credit_notes`,
     getDebitNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_debit_notes`,
-    editInvoice: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.edit_sales_invoice`,
+    editInvoice: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
   },
 
   /* =========================
@@ -289,7 +322,8 @@ export const API = {
    * ========================= */
   stock: {
     getAll: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_stock_balance`,
-    stockReport: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_batch_wise_stock_report`,
+    stockReport: `${ERP_BASE}/api/method/custom_api.api.stock.api.get_batch_wise_stock_report`,
+    // stockReport: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_batch_wise_stock_report`,
     getbyId: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_stock_by_id`,
     //  getAllStockItems:'${ERP_BASE}/api'
 
@@ -302,10 +336,10 @@ export const API = {
    * WAREHOUSE
    * ========================= */
   warehouse: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.get_all_warehouses`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.create_warehouse_api`,
-    update: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.update_warehouse_api`,
-    delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.warehouse.delete_warehouse_api`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_warehouse_tree`,
+    create: `${ERP_BASE}/api/method/erpnext.stock.doctype.warehouse.warehouse.add_node`,
+    update: `${ERP_BASE}/api/resource/Warehouse`,
+    delete: `${ERP_BASE}/api/resource/Warehouse`,
     getAllWarehouses: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
   },
 
@@ -322,34 +356,37 @@ export const API = {
    * PURCHASE ORDER
    * ========================= */
   purchaseOrder: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.get_purchase_orders`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.get`,
 
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.get_purchase_order`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.get_by_id`,
+    delete:`${ERP_BASE}/api/method/frappe.client.delete`,
 
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.order.create_purchase_order`,
+    create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.create`,
 
-    update: `${ERP_BASE}/api/method/erpnext.zra_client.update_purchase_order`,
+    update: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.update`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.update_po_status.update_purchase_order_status`,
+    createInvoiceFromPO: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.create_pi_from_po`,
   },
   //purchase invoice
   purchaseIvoice: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.get_all_purchase_invoices`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get`,
 
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.get_purchase_invoice_by_id`,
-    create: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.create_purchase_invoice`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.create`,
 
     updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.update_purchase_invoices_status`,
+    delete:`${ERP_BASE}/api/method/frappe.client.delete`
   },
 
   /* =========================
    * SUPPLIER
    * ========================= */
   supplier: {
-    getAll: `${ERP_BASE}/api/method/erpnext.supplier.api.get_suppliers`,
-    getById: `${ERP_BASE}/api/method/erpnext.supplier.api.get_supplier_details_id`,
-    create: `${ERP_BASE}/api/method/erpnext.supplier.api.create_supplier`,
-    update: `${ERP_BASE}/api/method/erpnext.supplier.api.update_supplier`,
-    delete: `${ERP_BASE}/api/method/erpnext.supplier.api.delete_supplier`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.get_suppliers`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.get_supplier_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.create_supplier`,
+    update: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.update_supplier`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.delete_supplier`,
     getStatement: `${ERP_BASE}/api/method/erpnext.supplier.statement.api.get_supplier_statement`,
     CreatePayment: `${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
   },
@@ -394,5 +431,22 @@ export const API = {
     getCompanyCostCenter: `${ERP_BASE}/api/method/custom_api.api.search.get_cost_centers`,
     getCustomer: `${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
     getSupplier: `${ERP_BASE}/api/method/custom_api.api.search.get_suppliers`,
+    getCurrency: `${ERP_BASE}/api/method/custom_api.api.search.get_currencies`,
+    getItemGroups: `${ERP_BASE}/api/method/custom_api.api.search.get_item_groups`,
   },
+    /* =========================
+   * SHIPPING AND INCOTERMS
+   * ========================= */
+  ShippingAPI:{getshipping:`${ERP_BASE}/api/method/custom_api.api.search.get_shipping_rules`,},
+  IncotermsApi:{getIncoterms:`${ERP_BASE}/api/method/custom_api.api.search.get_incoterms`,},
+
+  /* =========================
+   * UTILS
+   * ========================= */
+  frappeUtilsAPI:{
+    getCompanyCurrentFiscalYear:`${ERP_BASE}/api/method/custom_api.utils.frappe_utils.get_current_fiscal_year`,
+  },
+
+
+
 } as const;

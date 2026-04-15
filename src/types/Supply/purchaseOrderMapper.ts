@@ -1,7 +1,6 @@
 import { PurchaseOrderFormData, emptyPOForm } from "./purchaseOrder";
 import type { AddressBlock } from "./purchaseOrder";
 
-
 export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
   console.log("MAPPING PO TO BACKEND - Form items:", form.items);
 
@@ -34,8 +33,6 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       ...(it.warehouse && { warehouse: it.warehouse }),
     };
   });
-
-  // Tax rows - only valid ones
   const taxes = form.taxRows
     .filter(
       (t) =>
@@ -51,7 +48,6 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       taxableAmount: Number(t.amount || 0),
     }));
 
-  // Payment rows
   const payments = form.paymentRows
     .filter((p) => p.paymentTerm && p.paymentTerm.trim() !== "")
     .map((p) => ({
@@ -62,9 +58,9 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       paymentAmount: Number(p.paymentAmount || 0),
     }));
 
-
   const payload: any = {
     supplierId: form.supplierId,
+    contactPerson: form.supplierContact,
     currency: form.currency,
     status: form.status,
     taxCategory: form.taxCategory,
@@ -80,13 +76,17 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       taxesChargesTemplate: form.taxesChargesTemplate,
     }),
 
-    addresses: form.addresses,
+    supplier_address: form.addresses?.supplierAddress?.id || "",
+    shipping_address: form.addresses?.shippingAddress?.id || "",
+    dispatch_address: form.addresses?.dispatchAddress?.id || "",
+    billing_address: form.addresses?.companyBillingAddress?.id || "",
+    set_warehouse: form.warehouse || "",
 
     terms: {
       buying: form.terms?.buying || {},
     },
 
-    items: items, 
+    items: items,
 
     ...(taxes.length > 0 && { taxes }),
     ...(payments.length > 0 && { payments }),
@@ -96,34 +96,41 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
 
   return payload;
 };
-
-/**
- * Backend API → UI Form
- */
 export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
   const api = apiResponse.data || apiResponse;
+const items = (api.items || []).map((item: any) => {
+  const qty = Number(item.qty || item.quantity || 0);
+  const rate = Number(item.rate || item.price || 0);
+  const selectedTax =
+    item.taxInfo?.find(
+      (t: any) =>
+        t.taxCategory?.toLowerCase() ===
+        api.taxCategory?.toLowerCase()
+    ) || item.taxInfo?.[0];
 
-  // Map items - handle both field name variations
-  const items = (api.items || []).map((item: any) => {
-    const qty = Number(item.qty || item.quantity || 0);
-    const rate = Number(item.rate || item.price || 0); // Try both rate and price
-    const vatRate = Number(item.vatRate || item.taxPerct || 0);
+  const vatRate = Number(selectedTax?.totalTaxRate || 0);
+  const vatCd = selectedTax?.taxName || "";
 
-    return {
-      itemCode: item.item_code || item.itemCode || "",
-      itemName: item.item_name || item.itemName || "",
-      quantity: qty,
-      rate: rate,
-      uom: item.uom,
-      vatCd: item.vatCd || item.VatCd,
-      vatRate: vatRate,
-      requiredBy: item.requiredBy || api.deliveryDate || "",
-      warehouse: item.warehouse || "",
-      packingUnit: Number(item.packingUnit || 0),
-      packingSize: Number(item.packingSize || 0),
-      packing: item.packing || "",
-    };
-  });
+  return {
+    itemCode: item.item_code || item.itemCode || "",
+    itemName: item.item_name || item.itemName || "",
+
+    quantity: qty,
+    rate: rate,
+
+    uom: item.uom,
+
+    vatRate: vatRate,   
+    vatCd: vatCd,       
+
+    requiredBy: item.requiredBy || api.deliveryDate || "",
+    warehouse: item.warehouse || "",
+
+    packingUnit: Number(item.packingUnit || 0),
+    packingSize: Number(item.packingSize || 0),
+    packing: `(${item.packingUnit || 0}) x (${item.packingSize || 0})`,
+  };
+});
 
   // Tax rows
   const taxRows = (api.taxes || [])
@@ -136,53 +143,57 @@ export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
     }));
 
   // Addresses
-  const addresses = {
-    supplierAddress: {
-      addressTitle: "Supplier Main Address",
-      addressType: "Billing" as const,
-      addressLine1: api.addresses?.supplierAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.supplierAddress?.addressLine2 || "",
-      city: api.addresses?.supplierAddress?.city || "",
-      state: api.addresses?.supplierAddress?.state || "",
-      country: api.addresses?.supplierAddress?.country || "",
-      postalCode: api.addresses?.supplierAddress?.postalCode || "",
-      phone: api.addresses?.supplierAddress?.phone || "",
-      email: api.addresses?.supplierAddress?.email || "",
-    },
+const addresses = {
+  supplierAddress: {
+    id: api.supplierAddress || "",
+    addressTitle: "Supplier Main Address",
+    addressType: "Billing" as const,
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+    phone: "",
+    email: "",
+  },
 
-    dispatchAddress: {
-      addressTitle: "Warehouse Dispatch",
-      addressType: "Shipping" as const,
-      addressLine1: api.addresses?.dispatchAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.dispatchAddress?.addressLine2 || "",
-      city: api.addresses?.dispatchAddress?.city || "",
-      state: api.addresses?.dispatchAddress?.state || "",
-      country: api.addresses?.dispatchAddress?.country || "",
-      postalCode: api.addresses?.dispatchAddress?.postalCode || "",
-    },
+  dispatchAddress: {
+    id: api.dispatchAddress || "",
+    addressTitle: "Warehouse Dispatch",
+    addressType: "Shipping" as const,
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+  },
 
-    shippingAddress: {
-      addressTitle: "Customer Delivery Address",
-      addressType: "Shipping" as const,
-      addressLine1: api.addresses?.shippingAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.shippingAddress?.addressLine2 || "",
-      city: api.addresses?.shippingAddress?.city || "",
-      state: api.addresses?.shippingAddress?.state || "",
-      country: api.addresses?.shippingAddress?.country || "",
-      postalCode: api.addresses?.shippingAddress?.postalCode || "",
-    },
+  shippingAddress: {
+    id: api.shippingAddress || "",
+    addressTitle: "Customer Delivery Address",
+    addressType: "Shipping" as const,
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+  },
 
-    companyBillingAddress: {
-      addressTitle: "Company HQ Billing",
-      addressType: "Billing" as const,
-      addressLine1: api.addresses?.companyBillingAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.companyBillingAddress?.addressLine2 || "",
-      city: api.addresses?.companyBillingAddress?.city || "",
-      state: api.addresses?.companyBillingAddress?.state || "",
-      country: api.addresses?.companyBillingAddress?.country || "",
-      postalCode: api.addresses?.companyBillingAddress?.postalCode || "",
-    },
-  };
+  companyBillingAddress: {
+    id: api.billingAddress || "",
+    addressTitle: "Company HQ Billing",
+    addressType: "Billing" as const,
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+  },
+};
 
   // TermS
 
@@ -230,10 +241,11 @@ export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
     supplierCode: api.supplierCode || "",
     supplierEmail: api.emailId || api.email || "",
     supplierPhone: api.phone || "",
-    supplierContact: api.contactPerson || "",
+    supplierContact: api.contactPerson || "",        
+    supplierContactDisplay: api.contactDisplay || "",
 
-    currency: api.currency || "INR",
-    status: api.status || "Draft",
+    currency: api.currency || "",
+    status: api.status || "",
     costCenter: api.costCenter || "",
     project: api.project || "",
 

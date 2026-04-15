@@ -58,7 +58,7 @@ const DebitNotesTable: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // ── Modals ────────────────────────────────────────────────────────────────
-  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [createModals, setCreateModals] = useState<{ id: string }[]>([]);
   const [detailsOpen, setDetailsOpen]         = useState(false);
   const [detailsId, setDetailsId]             = useState<string | null>(null);
 
@@ -231,7 +231,7 @@ const DebitNotesTable: React.FC = () => {
   ];
 
   return (
-    <div className="p-8">
+    <div className="h-full min-h-0">
       <Table
         columns={columns}
         data={data}
@@ -242,7 +242,7 @@ const DebitNotesTable: React.FC = () => {
         onSearch={(q) => { setSearchTerm(q); setPage(1); }}
         enableAdd
         addLabel="Add Debit Note"
-        onAdd={() => setOpenCreateModal(true)}
+        onAdd={() => setCreateModals((prev) => [...prev, { id: `debit-note-create-${Date.now()}` }])}
         emptyMessage="No debit notes found"
         enableColumnSelector
         enableExport
@@ -266,16 +266,19 @@ const DebitNotesTable: React.FC = () => {
         onOpenReceiptPdf={handleOpenReceipt}
       />
 
-      <CreateDebitNoteModal
-        isOpen={openCreateModal}
-        onClose={() => setOpenCreateModal(false)}
-        onSubmit={(payload) => {
-          console.log("Debit Note Payload:", payload);
-          setOpenCreateModal(false);
-          fetchDebitNotes();
-        }}
-        invoiceId={data.length > 0 ? data[0].invoiceNo : ""}
-      />
+      {createModals.map((modal) => (
+        <CreateDebitNoteModal
+          key={modal.id}
+          isOpen={true}
+          onClose={() => setCreateModals((prev) => prev.filter((m) => m.id !== modal.id))}
+          onSubmit={(payload) => {
+            console.log("Debit Note Payload:", payload);
+            setCreateModals((prev) => prev.filter((m) => m.id !== modal.id));
+            fetchDebitNotes();
+          }}
+          invoiceId={data.length > 0 ? data[0].invoiceNo : ""}
+        />
+      ))}
     </div>
   );
 };

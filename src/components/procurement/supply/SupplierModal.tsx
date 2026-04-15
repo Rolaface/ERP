@@ -1,9 +1,8 @@
 import React from "react";
 import { Building2, DollarSign, MapPin, FileText } from "lucide-react";
-import Modal from "../../ui/modal/modal";
-import { Button } from "../../ui/modal/formComponent";
 import { SupplierInfoTab } from "./SupplierInfoTab";
 import { useSupplierForm } from "../../../hooks/useSupplierForm";
+import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import type {
   SupplierTab,
   SupplierFormData,
@@ -13,14 +12,17 @@ import { AddressTab } from "./AddressTab";
 import TermsAndCondition from "../../TermsAndCondition";
 import type { TermSection } from "../../../types/termsAndCondition";
 import { PaymentInfoTab } from "./PaymentInfoTab";
+import { MinimizableModal } from "../../common/MinimizableModal";
+import ModalFooter from "../../common/ModalFooter";
 
 interface SupplierModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (data: SupplierFormData) => void;
+  onSubmit?: (data: SupplierFormData) => Promise<boolean>;
   initialData?: Supplier | null;
   isEditMode?: boolean;
   existingSupplierCodes?: string[];
+  modalId?: string;
 }
 
 const tabs: { key: SupplierTab; icon: typeof Building2; label: string }[] = [
@@ -37,14 +39,19 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   initialData,
   isEditMode = false,
   existingSupplierCodes = [],
+  modalId,
 }) => {
+  const resolvedModalId = modalId || (isEditMode && initialData?.id
+    ? `supplier-edit-${initialData.id}-${Date.now()}`
+    : `supplier-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     form,
     loading,
     activeTab,
     setActiveTab,
     handleChange,
-    handleSubmit,
+    handleSubmit: handleFormSubmit,
     reset,
     handleNext,
     errors,
@@ -52,51 +59,47 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   } = useSupplierForm({
     initialData,
     isEditMode,
-    onSuccess: onSubmit,
+    onSuccess: async (data) => {
+      const result = await onSubmit?.(data);
+      return result ?? false;
+    },
     isOpen,
     existingSupplierCodes,
   });
 
-  const footer = (
-    <>
-      <Button variant="secondary" onClick={onClose} type="button">
-        Cancel
-      </Button>
+  const currentTabIndex = tabs.findIndex((t) => t.key === activeTab);
 
-      <div className="flex gap-3">
-        <Button variant="secondary" onClick={reset} type="button">
-          Reset
-        </Button>
-        {activeTab !== "terms" ? (
-          <Button
-            variant="primary"
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleNext();
-            }}
-          >
-            Next →
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            loading={loading}
-            type="submit"
-            form="supplierForm"
-          >
-            {isEditMode ? "Update Supplier" : "Save Supplier"}
-          </Button>
-        )}
-      </div>
-    </>
+  const handleCloseRequest = () => {
+    handleCloseWithConfirm(onClose, resolvedModalId);
+  };
+
+  const handleResetTab = () => {
+    resetDirty();
+    reset();
+  };
+
+  const handleSubmitForm = async () => {
+    await handleFormSubmit(new Event("submit") as unknown as React.FormEvent);
+    return !loading;
+  };
+
+  const footer = (
+    <ModalFooter
+      onCancel={handleCloseRequest}
+      onReset={handleResetTab}
+      onSubmit={handleSubmitForm}
+      onNext={activeTab !== "terms" ? handleNext : undefined}
+      currentTab={currentTabIndex}
+      totalTabs={tabs.length}
+      isSubmitting={loading}
+    />
   );
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={isEditMode ? "Edit Supplier" : "Add New Supplier"}
       subtitle={
         isEditMode
@@ -110,7 +113,12 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     >
       <form
         id="supplierForm"
-        onSubmit={handleSubmit}
+        onChange={() => markDirty()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          resetDirty();
+          handleFormSubmit(e);
+        }}
         noValidate
         className="h-full flex flex-col"
       >
@@ -167,7 +175,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
           )}
         </div>
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import PurchaseInvoiceView from "../../views/Procurement/PurchaseInvoiceView";
-import PurchaseInvoiceModal from "../../components/procurement/PurchaseInvoiceModal";
 // Shared UI Table Components
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
@@ -11,6 +11,7 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import { getPurchaseInvoices } from "../../api/procurement/PurchaseInvoiceApi";
 import { updatePurchaseinvoiceStatus } from "../../api/procurement/PurchaseInvoiceApi";
+import { deletePi } from "../../api/procurement/PurchaseInvoiceApi";
 import {
   showApiError,
   showSuccess,
@@ -29,7 +30,8 @@ const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import PurchaseInvoiceDetailModal, { type PurchaseInvoiceDetail } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
-import Tooltip from "../../components/Tooltip";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 
 interface Purchaseinvoice {
@@ -86,7 +88,13 @@ const invoiceStatusOptions = [
 
 const CRITICAL_STATUSES: PIStatus[] = ["Debit Note Issued", "Cancelled"];
 
+type OutletContextType = {
+  openPICreate: () => void;
+  openPIEdit: (pId: string | number) => void;
+};
+
 const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) => {
+  const { openPICreate, openPIEdit } = useOutletContext<OutletContextType>();
   const [orders, setOrders] = useState<Purchaseinvoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -94,7 +102,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [modalOpen, setModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
@@ -190,6 +197,15 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
     fetchInvoice();
   }, [page, pageSize, filters]);
 
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.PURCHASE_INVOICE_LIST, () => {
+      fetchInvoice();
+    });
+    return () => unsubscribe();
+  }, [subscribeToRefresh, fetchInvoice]);
+
   // ── Drawer: open + fetch (same as proforma/PO handleView)
   const handleViewClick = async (pId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -254,8 +270,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
   // ── Modal handlers
   const handleAddClick = () => {
     setSelectedInvoice(null);
-    setModalOpen(true);
-    onAdd?.();
+    openPICreate();
   };
 
   const handleEdit = (invoice: Purchaseinvoice, e: React.MouseEvent) => {
@@ -267,16 +282,42 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
     }
 
     setSelectedInvoice(invoice);
-    setModalOpen(true);
+    openPIEdit(invoice.pId);
   };
 
-  const handleDelete = (invoice: Purchaseinvoice, e: React.MouseEvent) => {
+  const handleDelete = async (invoice: Purchaseinvoice, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Delete Purchase Invoice "${invoice.pId}"?`)) {
-    }
+    const confirm = await fireManagedSwal({
+        icon: "warning",
+        title: "Are you sure?",
+        text: `Delete Purchase Invoice ${invoice.pId}?`,
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, delete",
+      });
+    
+      if (!confirm.isConfirmed) return;
+
+      try {
+        showLoading("Deleting Purchase Invoice...");
+
+        const res = await deletePi(invoice.pId);
+       
+        if (res.status < 200 || res.status >= 300) {
+          throw new Error("Delete failed");
+        }
+
+        closeSwal();
+        showSuccess("Purchase Invoice deleted successfully");
+
+        await fetchInvoice();
+      } catch (error) {
+        closeSwal();
+        showApiError(error);
+      }
   };
 
-  const handleCloseModal = () => setModalOpen(false);
   const handlePISaved = async () => { await fetchInvoice(); };
 
   // ── Export
@@ -393,37 +434,31 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
       header: "Amount",
       align: "left",
       render: (o) => (
-        <Tooltip content={Number(o.amount || 0).toFixed(2)}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {Number(o.amount || 0).toFixed(2)}
-          </code>
-        </Tooltip>
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          {Number(o.amount || 0).toFixed(2)}
+        </code>
       ),
-    },
-     {
-      key: "amount",
+},
+    {
+      key: "grandTotalWithTax",
       header: "Amount with Tax",
       align: "left",
       render: (o) => (
-        <Tooltip content={Number(o.grandTotalWithTax || 0).toFixed(2)}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {Number(o.grandTotalWithTax || 0).toFixed(2)}
-          </code>
-        </Tooltip>
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          {Number(o.grandTotalWithTax || 0).toFixed(2)}
+        </code>
       ),
-    },
+},
     {
      key: "outstanding_amount",
      header: "Outstanding",
      align: "left",
      render: (o) => (
-        <Tooltip content={Number(o.outstanding_amount || 0).toFixed(2)}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {Number(o.outstanding_amount || 0).toFixed(2)}
-          </code>
-        </Tooltip>
-      ),
-    },
+       <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+         {Number(o.outstanding_amount || 0).toFixed(2)}
+       </code>
+     ),
+},
     {
       key: "status",
       header: "Status",
@@ -477,7 +512,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
   ];
 
   return (
-    <div className="p-6">
+    <div className="h-full min-h-0">
       <Table
         columns={columns}
         data={orders}
@@ -532,7 +567,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
         }}
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
-        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.pId)}
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.piId)}
         onDownload={() =>
           drawerData && company &&
           generatePurchaseInvoicePDF(drawerData, company, "save")
@@ -560,14 +595,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
         }}
       />
 
-      {/* ── Add / Edit modal ── */}
-      <PurchaseInvoiceModal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-        pId={selectedInvoice?.pId}
-        onSubmit={handlePISaved}
-      />
-
       {/* ── View modal —   ── */}
       {viewModalOpen && selectedInvoice && (
         <PurchaseInvoiceView
@@ -575,7 +602,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
           onClose={() => setViewModalOpen(false)}
           onEdit={() => {
             setViewModalOpen(false);
-            setModalOpen(true);
+            openPIEdit(selectedInvoice.pId);
           }}
         />
 

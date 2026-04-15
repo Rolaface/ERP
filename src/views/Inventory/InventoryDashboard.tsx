@@ -174,7 +174,7 @@ const InventoryDashboard: React.FC = () => {
   );
 
   return (
-    <div className="bg-app px-4 sm:px-6 pb-6 pt-3">
+    <div className="bg-app pb-6 pt-3">
       <div className="max-w-[1600px] mx-auto flex flex-col">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-4">
           {chartsLoading

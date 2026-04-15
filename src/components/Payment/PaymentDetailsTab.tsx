@@ -226,7 +226,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     const run = async () => {
       const [details] = await Promise.all([
         fetchPartyDetails(
-          form.partyName,
+          form.partyId,
           form.partyType as
           | "Supplier"
           | "Customer"
@@ -302,7 +302,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         return;
       }
 
-      onFormChange({ partyName: option.label });
+      onFormChange({ partyId: option.value,  partyName: option.label});
 
       if (partyType !== "Supplier" && partyType !== "Customer") return;
 

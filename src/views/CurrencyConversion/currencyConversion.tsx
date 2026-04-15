@@ -202,7 +202,7 @@ const CurrencyConversion: React.FC = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
           <FaExchangeAlt className="text-primary" />
-          Currency Exchange List
+          Currency Exchange
         </h1>
       </div>
 

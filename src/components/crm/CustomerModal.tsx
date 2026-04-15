@@ -1,554 +1,99 @@
-import React, { useState, useEffect } from "react";
-import Modal from "../ui/modal/modal";
-import TaxCategorySelect from "../selects/TaxCategorySelect";
+import React from "react";
+import { Building2, DollarSign, FileText, MapPin, User } from "lucide-react";
 import Tooltip from "../Tooltip";
-import {
-  showApiError,
-  showSuccess,
-  closeSwal,
-  showLoading,
-  showValidationError,
-} from "../../utils/alert";
-import { getCompanyById } from "../../api/companySetupApi";
-const companyId = import.meta.env.VITE_COMPANY_ID;
-import { Card, Button } from "../ui/modal/formComponent";
-import { fetchCurrencyOptions } from "../../utils/currencyOptions";
+import TaxCategorySelect from "../selects/TaxCategorySelect";
 import TermsAndCondition from "../TermsAndCondition";
-import type { TermSection } from "../../types/termsAndCondition";
-import { User, Building2, MapPin, FileText, DollarSign } from "lucide-react";
-import { PaymentInfoTab } from "../../components/procurement/supply/PaymentInfoTab";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
-import {
-  createCustomer,
-  updateCustomerByCustomerCode,
-} from "../../api/customerApi";
 import AddressBlock from "../ui/modal/AddressBlock";
-import type { CustomerDetail } from "../../types/customer";
+import CustomerGroupSearchSelect from "../selects/customergroupSelect";
+import { Card } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
-const defaultSellingTerms: TermSection = {
-  general: "",
-  delivery: "",
-  cancellation: "",
-  warranty: "",
-  liability: "",
-  payment: {
-    dueDates: "",
-    lateCharges: "",
-    taxes: "",
-    notes: "",
-    phases: [],
-  },
-};
+import { PaymentInfoTab } from "../../components/procurement/supply/PaymentInfoTab";
+import { fetchCurrencyOptions } from "../../utils/currencyOptions";
+import { MinimizableModal } from "../../components/common/MinimizableModal";
+import ModalFooter from "../common/ModalFooter";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
+import {
+  defaultSellingTerms,
+  useCustomerForm,
+} from "../../hooks/Usecustomerform";
+import type { CustomerDetail } from "../../types/customer";
+import type { StandardModalProps } from "../../types/modal";
 
-const emptyForm: CustomerDetail & { sameAsBilling: boolean } = {
-  id: "",
-  name: "",
-  type: "",
-  tpin: "",
-  currency: "",
-  onboardingBalance: 0,
-  mobileCode: "",
-  mobile: "",
-  contactPerson: "",
-  displayName: "",
-  email: "",
-  customerGroup: "",
-  accountNumber: "",
-  status: "Active",
-  customerTaxCategory: "",
-  billingAddressLine1: "",
-  billingAddressLine2: "",
-  billingPostalCode: "",
-  billingCity: "",
-  billingState: "",
-  billingCountry: "",
+type CustomerModalProps = StandardModalProps<unknown, CustomerDetail>;
 
-  shippingAddressLine1: "",
-  shippingAddressLine2: "",
-  shippingPostalCode: "",
-  shippingCity: "",
-  shippingState: "",
-  shippingCountry: "",
+const CustomerModal: React.FC<CustomerModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+  isEditMode = false,
+  modalId,
+}) => {
+  const resolvedModalId =
+    modalId ||
+    (isEditMode && initialData?.id
+      ? `customer-edit-${initialData.id}-${Date.now()}`
+      : `customer-create-${Date.now()}`);
 
-  terms: {
-    selling: defaultSellingTerms,
-  },
-  sameAsBilling: true,
-};
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
-const CustomerModal: React.FC<{
-  isOpen: boolean;
+  const {
+    form,
+    setForm,
+    errors,
+    loading,
+    activeTab,
+    setActiveTab,
+    primaryContact,
+    billingAddress,
+    shippingAddress,
+    handleChange,
+    handlePrimaryContactChange,
+    handleAddressChange,
+    setSameAsBilling,
+    handleNext,
+    handleSubmitInternal,
+    reset,
+    resetCurrentTab,
+  } = useCustomerForm({ isOpen, isEditMode, initialData, onSubmit, onClose });
 
-  onClose: () => void;
-  onSubmit?: (data: CustomerDetail) => void;
-  initialData?: CustomerDetail | null;
-  isEditMode?: boolean;
-}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false }) => {
-  const [form, setForm] = useState<CustomerDetail & { sameAsBilling: boolean }>(
-    emptyForm,
-  );
-  const [errors, setErrors] = useState<{
-    type?: string;
-    name?: string;
-    tpin?: string;
-    mobile?: string;
-    email?: string;
-    customerGroup?: string;
-    currency?: string;
-    displayName?: string;
-    contactPerson?: string;
-    customerTaxCategory?: string;
-    accountNumber?: string;
-    billingAddressLine1?: string;
-    billingPostalCode?: string;
-    billingCity?: string;
-    billingState?: string;
-    billingCountry?: string;
-  }>({});
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "details" | "address" | "terms" | "bank"
-  >("details");
-  const [allowSubmit, setAllowSubmit] = useState(false);
-  const [companySellingTerms, setCompanySellingTerms] =
-    useState<TermSection | null>(null);
+  const handleCloseWithWarning = () =>
+    handleCloseWithConfirm(() => {
+      resetDirty();
+      reset();
+      onClose();
+    }, resolvedModalId);
 
-  useEffect(() => {
-    if (!isOpen || !companyId || isEditMode) return;
+  const tabs: ActiveTab[] = ["details", "bank", "address", "terms"];
+  const currentTabIndex = tabs.indexOf(activeTab);
 
-    const loadCompanyTerms = async () => {
-      try {
-        const res = await getCompanyById(companyId);
-
-        const sellingTerms = res?.data?.terms?.selling;
-
-        if (!sellingTerms) return;
-
-        setCompanySellingTerms(sellingTerms);
-
-        setForm((prev) => ({
-          ...prev,
-          terms: {
-            ...prev.terms,
-            selling: sellingTerms,
-          },
-        }));
-      } catch (err) {
-        console.error("Failed to load company terms", err);
-      }
-    };
-
-    loadCompanyTerms();
-  }, [companyId, isOpen, isEditMode]);
-
-  useEffect(() => {
-    if (initialData) {
-      const splitMobile = (mobile?: string) => {
-        if (!mobile) return { code: "", number: "" };
-
-        const countryCodes = ["+91", "+260", "+1", "+44"]; // add as needed
-
-        const matchedCode = countryCodes.find((code) =>
-          mobile.startsWith(code),
-        );
-
-        if (matchedCode) {
-          return {
-            code: matchedCode,
-            number: mobile.slice(matchedCode.length),
-          };
-        }
-
-        return {
-          code: "",
-          number: mobile,
-        };
-      };
-
-      const mobile = splitMobile(initialData.mobile);
-
-      setForm({
-        ...initialData,
-        terms: initialData.terms ?? {
-          selling: companySellingTerms ?? defaultSellingTerms,
-        },
-        mobileCode: mobile.code,
-        mobile: mobile.number,
-        sameAsBilling: !isEditMode,
-      });
-    } else {
-      setForm(emptyForm);
-    }
-
-    setActiveTab("details");
-    setLoading(false);
-    setAllowSubmit(false);
-    setErrors({});
-  }, [initialData, isOpen]);
-
-  useEffect(() => {
-    if (!form.displayName) {
-      if (form.name) {
-        setForm((prev) => ({ ...prev, displayName: form.name }));
-      } else if (form.contactPerson) {
-        setForm((prev) => ({ ...prev, displayName: form.contactPerson }));
-      }
-    }
-  }, [form.name, form.contactPerson]);
-
-  useEffect(() => {
-    if (form.sameAsBilling) {
-      setForm((prev) => ({
-        ...prev,
-        shippingAddressLine1: prev.billingAddressLine1,
-        shippingAddressLine2: prev.billingAddressLine2,
-        shippingPostalCode: prev.billingPostalCode,
-        shippingCity: prev.billingCity,
-        shippingState: prev.billingState,
-        shippingCountry: prev.billingCountry,
-      }));
-    }
-  }, [
-    form.sameAsBilling,
-    form.billingAddressLine1,
-    form.billingAddressLine2,
-    form.billingPostalCode,
-    form.billingCity,
-    form.billingState,
-    form.billingCountry,
-  ]);
-
-  const tabs: Array<"details" | "bank" | "address" | "terms"> = [
-    "details",
-    "bank",
-    "address",
-    "terms",
-  ];
-  const validateDetailsTab = (): boolean => {
-    const newErrors: typeof errors = {};
-
-    // Validate Type
-    if (!form.type || form.type === "") {
-      newErrors.type = "Type is required";
-    }
-
-    // Validate Customer Name
-    if (!form.name || form.name.trim() === "") {
-      newErrors.name = "Customer name is required";
-    }
-
-    // Validate Contact Person
-    if (!form.contactPerson || form.contactPerson.trim() === "") {
-      newErrors.contactPerson = "Contact person is required";
-    }
-
-    // Validate TPIN
-    if (!form.tpin || form.tpin.trim() === "") {
-      newErrors.tpin = "TPIN is required";
-    }
-
-    if (!form.mobileCode || !form.mobile) {
-      newErrors.mobile = "Mobile number is required";
-    }
-
-    // Validate Tax Category
-    if (!form.customerTaxCategory || form.customerTaxCategory === "") {
-      newErrors.customerTaxCategory = "Tax category is required";
-    }
-
-    // Validate Currency
-    if (!form.currency || form.currency === "") {
-      newErrors.currency = "Currency is required";
-    }
-
-    // Validate Email
-    if (!form.email || form.email.trim() === "") {
-      newErrors.email = "Email is required";
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(form.email)) {
-        newErrors.email = "Invalid email format";
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleSubmitForm = async () => {
+    const didSave = await handleSubmitInternal();
+    if (didSave) resetDirty();
+    return didSave;
   };
 
-  const validateAddressTab = (): boolean => {
-    const newErrors: typeof errors = {};
-
-    // Validate Billing Address Line 1 (required)
-    if (!form.billingAddressLine1 || form.billingAddressLine1.trim() === "") {
-      newErrors.billingAddressLine1 = "Billing address line 1 is required";
-    }
-
-    // Line 2 is optional - no validation
-
-    // Validate Postal Code (required)
-    if (!form.billingPostalCode || form.billingPostalCode.trim() === "") {
-      newErrors.billingPostalCode = "Postal code is required";
-    }
-
-    // Validate City (required)
-    if (!form.billingCity || form.billingCity.trim() === "") {
-      newErrors.billingCity = "City is required";
-    }
-
-    // Validate State (required)
-    if (!form.billingState || form.billingState.trim() === "") {
-      newErrors.billingState = "State is required";
-    }
-
-    // Validate Country (required)
-    if (!form.billingCountry || form.billingCountry.trim() === "") {
-      newErrors.billingCountry = "Country is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleNext = () => {
-    if (activeTab === "details") {
-      const isValid = validateDetailsTab();
-
-      if (!isValid) {
-        const emptyFields = [];
-
-        if (!form.type) emptyFields.push("Customer Type");
-        if (!form.name) emptyFields.push("Customer Name");
-        if (!form.contactPerson) emptyFields.push("Contact Person");
-        if (!form.tpin) emptyFields.push("TPIN");
-        if (!form.mobileCode || !form.mobile) emptyFields.push("Mobile Number");
-        if (!form.customerTaxCategory) emptyFields.push("Tax Category");
-        if (!form.currency) emptyFields.push("Currency");
-        if (!form.email) emptyFields.push("Email");
-
-        const message =
-          emptyFields.length > 0
-            ? `Please fill in required fields: ${emptyFields.join(", ")}`
-            : "Please fix validation errors in Details tab";
-
-        showValidationError(message);
-        return;
-      }
-    }
-
-    if (activeTab === "address") {
-      const isValid = validateAddressTab();
-
-      if (!isValid) {
-        const emptyFields = [];
-
-        if (!form.billingAddressLine1) emptyFields.push("Address Line 1");
-        if (!form.billingCity) emptyFields.push("City");
-        if (!form.billingState) emptyFields.push("State");
-        if (!form.billingCountry) emptyFields.push("Country");
-        if (!form.billingPostalCode) emptyFields.push("Postal Code");
-
-        const message =
-          emptyFields.length > 0
-            ? `Please fill in required fields: ${emptyFields.join(", ")}`
-            : "Please fix validation errors in Address tab";
-
-        showValidationError(message);
-        return;
-      }
-    }
-
-    const currentIndex = tabs.indexOf(activeTab);
-
-    if (currentIndex < tabs.length - 1) {
-      setActiveTab(tabs[currentIndex + 1]);
-      setAllowSubmit(false);
-    }
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    if (name === "bankAccounts") {
-      setForm((prev) => ({ ...prev, bankAccounts: value as any }));
-      return;
-    }
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: name === "onboardingBalance" ? Number(value) : value,
-    }));
-
-    // Clear errors when user starts typing
-    if (errors[name as keyof typeof errors]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }));
-    }
-
-    // 🔹 Email validation
-    if (name === "email" && value) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(value)) {
-        setErrors((prev) => ({
-          ...prev,
-          email: "Invalid email format",
-        }));
-      }
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // For new customers, only allow submission from the Terms tab (last tab)
-    if (!isEditMode && activeTab !== "terms") {
-      handleNext();
-      return;
-    }
-
-    // Prevent auto-submission when just navigating to terms tab
-    if (!isEditMode && !allowSubmit) {
-      return;
-    }
-
-    // Validate all tabs before submission
-    if (!isEditMode) {
-      if (!validateDetailsTab()) {
-        setActiveTab("details"); // Go back to details tab if validation fails
-        return;
-      }
-      if (!validateAddressTab()) {
-        setActiveTab("address"); // Go back to address tab if validation fails
-        return;
-      }
-    }
-
-    if (loading) return; // prevent double submit
-
-    setLoading(true);
-
-    const formattedForm = {
-      ...form,
-      mobile: (() => {
-        const raw = `${form.mobile || ""}`.replace(/^\+?\d{1,4}/, "");
-        return `${form.mobileCode || ""}${raw}`;
-      })(),
-    };
-
-    const { sameAsBilling, mobileCode, ...cleanForm } = formattedForm;
-
-    const payload: CustomerDetail = {
-      ...cleanForm,
-    };
-
-    try {
-      //  Loading
-      showLoading(isEditMode ? "Updating Customer..." : "Creating Customer...");
-
-      if (isEditMode && initialData?.id) {
-        await updateCustomerByCustomerCode(initialData.id, payload);
-      } else {
-        await createCustomer(payload);
-      }
-
-      //  Success
-      closeSwal();
-
-      showSuccess(
-        isEditMode
-          ? "Customer updated successfully!"
-          : "Customer created successfully!",
-      );
-
-      onSubmit?.(payload);
-      handleClose();
-    } catch (error) {
-      console.error("Customer save error:", error);
-
-      closeSwal();
-      showApiError(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClose = () => {
-    if (loading) return;
-
-    setForm({
-      ...emptyForm,
-      terms: {
-        selling: companySellingTerms ?? defaultSellingTerms,
-      },
-      sameAsBilling: true,
-    });
-
-    setErrors({});
-    setActiveTab("details");
-    onClose();
-  };
-  const reset = () => {
-    if (initialData) {
-      setForm({
-        ...initialData,
-        terms: initialData.terms ?? {
-          selling: companySellingTerms ?? defaultSellingTerms,
-        },
-        sameAsBilling: false,
-      });
-    } else {
-      setForm({
-        ...emptyForm,
-        terms: {
-          selling: companySellingTerms ?? defaultSellingTerms,
-        },
-        sameAsBilling: true,
-      });
-    }
-
-    setErrors({});
-    setActiveTab("details");
-  };
-  // Footer content
   const footer = (
-    <>
-      <Button variant="secondary" onClick={handleClose}>
-        Cancel
-      </Button>
-      <div className="flex gap-3">
-        <Button variant="secondary" onClick={reset}>
-          Reset
-        </Button>
-
-        <Button
-          variant="primary"
-          loading={loading}
-          type={!isEditMode && activeTab !== "terms" ? "button" : "submit"}
-          form={
-            !isEditMode && activeTab !== "terms" ? undefined : "customerForm"
-          }
-          onClick={
-            !isEditMode && activeTab !== "terms"
-              ? handleNext
-              : () => setAllowSubmit(true)
-          }
-        >
-          {isEditMode
-            ? "Update Customer"
-            : activeTab === "terms"
-              ? "Submit"
-              : "Next"}
-        </Button>
-      </div>
-    </>
+    <ModalFooter
+      onCancel={handleCloseWithWarning}
+      onReset={() => {
+        resetDirty();
+        resetCurrentTab();
+      }}
+      onSubmit={handleSubmitForm}
+      onNext={activeTab === "terms" ? undefined : handleNext}
+      currentTab={currentTabIndex}
+      totalTabs={tabs.length}
+      isSubmitting={loading}
+    />
   );
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={handleCloseWithWarning}
       title={isEditMode ? "Edit Customer" : "Add New Customer"}
       subtitle={
         isEditMode
@@ -562,10 +107,10 @@ const CustomerModal: React.FC<{
     >
       <form
         id="customerForm"
-        onSubmit={handleSubmit}
+        onChange={() => markDirty()}
+        onSubmit={(e) => e.preventDefault()}
         className="h-full flex flex-col"
       >
-        {/* Tabs - Sticky Header */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
             {(["details", "bank", "address", "terms"] as const).map((tab) => (
@@ -573,20 +118,16 @@ const CustomerModal: React.FC<{
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2
-          ${
-            activeTab === tab
-              ? "text-primary border-b-[3px] border-primary"
-              : "text-muted border-b-[3px] border-transparent hover:text-main"
-          }`}
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
+                  activeTab === tab
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                }`}
               >
-                {/* ICONS KEPT FROM LOGIC 1 */}
                 {tab === "details" && <User className="w-4 h-4" />}
                 {tab === "bank" && <DollarSign className="w-4 h-4" />}
                 {tab === "terms" && <FileText className="w-4 h-4" />}
                 {tab === "address" && <MapPin className="w-4 h-4" />}
-
-                {/* LABELS */}
                 {tab === "details"
                   ? "Details"
                   : tab === "bank"
@@ -599,8 +140,7 @@ const CustomerModal: React.FC<{
           </div>
         </div>
 
-        {/* Scrollable Content Area */}
-        <div className=" px-4 py-2 bg-app mt-5">
+        <div className="px-4 py-2 bg-app mt-5">
           {activeTab === "details" && (
             <Card
               title="Basic Information"
@@ -622,6 +162,7 @@ const CustomerModal: React.FC<{
                     <option value="Company">Company</option>
                   </ModalSelect>
                 </Tooltip>
+
                 <Tooltip content={form.name || "Enter full name"}>
                   <ModalInput
                     label="Customer Name"
@@ -634,15 +175,30 @@ const CustomerModal: React.FC<{
                   />
                 </Tooltip>
 
-                <Tooltip content={form.contactPerson || "Primary contact"}>
+                <Tooltip content={primaryContact?.firstName || "Primary contact"}>
                   <ModalInput
-                    label="Contact Person Name"
-                    name="contactPerson"
-                    value={form.contactPerson}
-                    onChange={handleChange}
+                    label="Contact Person First Name"
+                    name="firstName"
+                    value={primaryContact?.firstName ?? ""}
+                    onChange={handlePrimaryContactChange}
                     required
                     placeholder="Primary contact"
-                    error={errors.contactPerson}
+                    error={errors.contactFirstName}
+                  />
+                </Tooltip>
+
+                <Tooltip
+                  content={
+                    primaryContact?.lastName || "Primary contact last name"
+                  }
+                >
+                  <ModalInput
+                    label="Contact Person Last Name"
+                    name="lastName"
+                    value={primaryContact?.lastName ?? ""}
+                    onChange={handlePrimaryContactChange}
+                    placeholder="Primary contact last name"
+                    error={errors.contactLastName}
                   />
                 </Tooltip>
 
@@ -655,15 +211,14 @@ const CustomerModal: React.FC<{
                     required
                     options={[
                       { value: "", label: "Select Display Name" },
+                      { value: form.name, label: form.name || "Customer Name" },
                       {
-                        value: form.name,
-                        label: form.name || "Customer Name",
+                        value: primaryContact?.firstName ?? "",
+                        label: primaryContact?.firstName
+                          ? `${primaryContact.firstName} ${primaryContact.lastName}`.trim()
+                          : "Contact Person",
                       },
-                      {
-                        value: form.contactPerson,
-                        label: form.contactPerson || "Contact Person",
-                      },
-                    ].filter((o) => o.value)} // removes empty invalid options
+                    ].filter((option) => option.value)}
                   />
                 </Tooltip>
 
@@ -680,13 +235,16 @@ const CustomerModal: React.FC<{
                 </Tooltip>
 
                 <Tooltip
-                  content={form.customerTaxCategory || "Select Tax Category"}
+                  content={
+                    form.customerTaxCategory || "Select Tax Category"
+                  }
                 >
                   <TaxCategorySelect
+                   label="Tax Category"
                     value={form.customerTaxCategory}
-                    onChange={(val) =>
+                    onChange={(value) =>
                       handleChange({
-                        target: { name: "customerTaxCategory", value: val },
+                        target: { name: "customerTaxCategory", value },
                       } as React.ChangeEvent<HTMLSelectElement>)
                     }
                     error={errors.customerTaxCategory}
@@ -710,7 +268,7 @@ const CustomerModal: React.FC<{
                   />
                 </Tooltip>
 
-                <Tooltip content={form.onboardingBalance || "0.00"}>
+                <Tooltip content={String(form.onboardingBalance || "0.00")}>
                   <ModalInput
                     label="Onboard Balance"
                     name="onboardingBalance"
@@ -722,73 +280,69 @@ const CustomerModal: React.FC<{
                   />
                 </Tooltip>
 
-                {/* Email + Mobile - span full width as a separate row */}
-               <div className="col-span-4 grid grid-cols-4 gap-5">
+                <div className="col-span-4 grid grid-cols-4 gap-5">
+                  <ModalInput
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={primaryContact?.email ?? ""}
+                    onChange={handlePrimaryContactChange}
+                    required
+                    placeholder="email@example.com"
+                    error={errors.contactEmail}
+                  />
 
-  {/* Col 1: Email */}
-  <ModalInput
-    label="Email"
-    name="email"
-    type="email"
-    value={form.email}
-    onChange={handleChange}
-    required
-    placeholder="email@example.com"
-    error={errors.email}
-  />
+                  <div className="flex flex-col min-w-0">
+                    <span className="block text-[10px] font-medium text-main mb-1">
+                      Mobile <span className="text-danger">*</span>
+                    </span>
+                    <div className="flex">
+                      <input
+                        name="mobileCode"
+                        value={primaryContact?.mobileCode ?? ""}
+                        onChange={handlePrimaryContactChange}
+                        placeholder="+"
+                        className={[
+                          "w-[50px] py-1 px-2 border rounded-l text-[11px] text-main bg-card transition-all",
+                          errors.contactMobile
+                            ? "border-danger"
+                            : "border-[var(--border)] hover:border-primary/40",
+                        ].join(" ")}
+                      />
+                      <input
+                        name="mobile"
+                        type="tel"
+                        value={primaryContact?.mobile ?? ""}
+                        onChange={handlePrimaryContactChange}
+                        placeholder="Enter mobile number"
+                        className={[
+                          "flex-1 py-1 px-2 border-t border-b border-r rounded-r text-[11px] text-main bg-card transition-all",
+                          errors.contactMobile
+                            ? "border-danger"
+                            : "border-[var(--border)] hover:border-primary/40",
+                        ].join(" ")}
+                      />
+                    </div>
+                    {errors.contactMobile && (
+                      <span className="text-[10px] text-danger mt-1">
+                        {errors.contactMobile}
+                      </span>
+                    )}
+                  </div>
 
-  {/* Col 2: Mobile */}
-  <div className="flex flex-col min-w-0">
-    <span className="block text-[10px] font-medium text-main mb-1">
-      Mobile <span className="text-danger">*</span>
-    </span>
-    <div className="flex">
-      <input
-        name="mobileCode"
-        value={form.mobileCode}
-        onChange={handleChange}
-        placeholder="+"
-        className={[
-          "w-[50px] py-1 px-2 border rounded-l text-[11px] text-main bg-card transition-all",
-          errors.mobile
-            ? "border-danger"
-            : "border-[var(--border)] hover:border-primary/40",
-        ].join(" ")}
-      />
-      <input
-        name="mobile"
-        type="tel"
-        value={form.mobile}
-        onChange={handleChange}
-        placeholder="Enter mobile number"
-        className={[
-          "flex-1 py-1 px-2 border-t border-b border-r rounded-r text-[11px] text-main bg-card transition-all",
-          errors.mobile
-            ? "border-danger"
-            : "border-[var(--border)] hover:border-primary/40",
-        ].join(" ")}
-      />
-    </div>
-    {errors.mobile && (
-      <span className="text-[10px] text-danger mt-1">{errors.mobile}</span>
-    )}
-  </div>
-
-  {/* Col 3: Customer Group */}
-  <ModalInput
-    label="Customer Group"
-    name="customerGroup"
-    value={form.customerGroup}
-    onChange={handleChange}
-    placeholder="Enter customer group"
-  />
-
-  {/* Col 4: Empty or future field */}
-
-</div>
+                  <CustomerGroupSearchSelect
+                    value={form.customerGroup}
+                    onChange={(value) =>
+                      handleChange({
+                        target: { name: "customerGroup", value },
+                      } as React.ChangeEvent<HTMLSelectElement>)
+                    }
+                  />
+                </div>
               </div>
             </Card>
           )}
+
           {activeTab === "bank" && (
             <PaymentInfoTab
               form={form as any}
@@ -805,9 +359,9 @@ const CustomerModal: React.FC<{
             <TermsAndCondition
               terms={form.terms?.selling || defaultSellingTerms}
               setTerms={(updated) =>
-                setForm((p) => ({
-                  ...p,
-                  terms: { ...p.terms, selling: updated },
+                setForm((prev) => ({
+                  ...prev,
+                  terms: { ...prev.terms, selling: updated },
                 }))
               }
               type="selling"
@@ -816,60 +370,33 @@ const CustomerModal: React.FC<{
 
           {activeTab === "address" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Billing Address */}
-
               <AddressBlock
                 type="billing"
                 title="Billing Address"
                 subtitle="Invoice and payment details"
                 data={{
-                  line1: form.billingAddressLine1 ?? "",
-                  line2: form.billingAddressLine2 ?? "",
-                  postalCode: form.billingPostalCode ?? "",
-                  city: form.billingCity ?? "",
-                  state: form.billingState ?? "",
-                  country: form.billingCountry ?? "",
+                  line1: billingAddress?.line1 ?? "",
+                  line2: billingAddress?.line2 ?? "",
+                  postalCode: billingAddress?.postalCode ?? "",
+                  city: billingAddress?.city ?? "",
+                  state: billingAddress?.state ?? "",
+                  country: billingAddress?.country ?? "",
                 }}
                 errors={{
-                  line1: errors.billingAddressLine1,
+                  line1: errors.billingLine1,
                   postalCode: errors.billingPostalCode,
                   city: errors.billingCity,
                   state: errors.billingState,
                   country: errors.billingCountry,
                 }}
-                onChange={(e) => {
-                  const { name, value } = e.target;
-
-                  const map: Record<string, keyof typeof form> = {
-                    line1: "billingAddressLine1",
-                    line2: "billingAddressLine2",
-                    postalCode: "billingPostalCode",
-                    city: "billingCity",
-                    state: "billingState",
-                    country: "billingCountry",
-                  };
-
-                  setForm((prev) => ({
-                    ...prev,
-                    [map[name]]: value,
-                  }));
-
-                  // Clear error when user types
-                  if (errors[map[name] as keyof typeof errors]) {
-                    setErrors((prev) => ({
-                      ...prev,
-                      [map[name]]: undefined,
-                    }));
-                  }
-                }}
+                onChange={(e) => handleAddressChange("Billing", e)}
               />
 
-              {/* Shipping Address */}
               <Tooltip
                 content={
-                  form.shippingAddressLine1 ||
-                  form.shippingCity ||
-                  form.shippingCountry ||
+                  shippingAddress?.line1 ||
+                  shippingAddress?.city ||
+                  shippingAddress?.country ||
                   "Shipping Address"
                 }
               >
@@ -878,44 +405,24 @@ const CustomerModal: React.FC<{
                   title="Shipping Address"
                   subtitle="Delivery location"
                   data={{
-                    line1: form.shippingAddressLine1 ?? "",
-                    line2: form.shippingAddressLine2 ?? "",
-                    postalCode: form.shippingPostalCode ?? "",
-                    city: form.shippingCity ?? "",
-                    state: form.shippingState ?? "",
-                    country: form.shippingCountry ?? "",
+                    line1: shippingAddress?.line1 ?? "",
+                    line2: shippingAddress?.line2 ?? "",
+                    postalCode: shippingAddress?.postalCode ?? "",
+                    city: shippingAddress?.city ?? "",
+                    state: shippingAddress?.state ?? "",
+                    country: shippingAddress?.country ?? "",
                   }}
                   sameAsBilling={form.sameAsBilling}
-                  onSameAsBillingChange={(checked) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      sameAsBilling: checked,
-                    }))
-                  }
-                  onChange={(e) => {
-                    const { name, value } = e.target;
-
-                    const map: Record<string, keyof typeof form> = {
-                      line1: "shippingAddressLine1",
-                      line2: "shippingAddressLine2",
-                      postalCode: "shippingPostalCode",
-                      city: "shippingCity",
-                      state: "shippingState",
-                      country: "shippingCountry",
-                    };
-
-                    setForm((prev) => ({
-                      ...prev,
-                      [map[name]]: value,
-                    }));
-                  }}
+                  onSameAsBillingChange={setSameAsBilling}
+                  onChange={(e) => handleAddressChange("Shipping", e)}
                 />
               </Tooltip>
             </div>
           )}
         </div>
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
+
 export default CustomerModal;

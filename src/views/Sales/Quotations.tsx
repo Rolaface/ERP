@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   showApiError,
   showSuccess,
@@ -22,13 +23,16 @@ import { saveAs } from "file-saver";
 import { generateQuotationPDF } from "../../components/template/quotation/QuotationTemplate1";
 import PdfPreviewModal from "./PdfPreviewModal";
 import { deleteQuotationById } from "../../api/quotationApi";
-import Swal from "sweetalert2";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import QuotationDetailModal, { QuotationDetail } from "./Quotationdetailmodal";
-import QuotationModal from "../../components/sales/QuotationModal";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
+type OutletContextType = {
+  openQuotationCreate: () => void;
+  openQuotationEdit: (quotationId: string, data: any) => void;
+};
 
 const SORT_FIELD_MAP: Record<string, string> = {
   quotationNumber: "id",
@@ -52,11 +56,12 @@ const STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
 
 };
 const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
-
+  const { openQuotationEdit } = useOutletContext<OutletContextType>();
+  const mountedRef = useRef(true);
 
   const [quotations, setQuotations]   = useState<QuotationSummary[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [company, setCompany]         = useState<any>(null);
 
   // ── Pagination state (server) 
@@ -69,7 +74,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const [sortBy, setSortBy] = useState("quotationNumber");
-const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ── Filter state (server) 
   const [status]   = useState("");
@@ -90,8 +95,6 @@ const [detailData, setDetailData] = useState<QuotationDetail | null>(null);
 const [detailLoading, setDetailLoading] = useState(false);
 const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
 const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
-const [editOpen, setEditOpen] = useState(false);
-const [editQuotation, setEditQuotation] = useState<any>(null);
 
   // ── Fetch company once 
   useEffect(() => {
@@ -103,10 +106,11 @@ const [editQuotation, setEditQuotation] = useState<any>(null);
   }, []);
 
 
-  const fetchQuotations = async () => {
+  const fetchQuotations = useCallback(async () => {
+    if (!mountedRef.current) return;
+    
+    setIsFetching(true);
     try {
-      setLoading(true);
-
       const res = await getAllQuotations(page, pageSize, {
         search:    searchTerm,
         status,
@@ -116,6 +120,8 @@ const [editQuotation, setEditQuotation] = useState<any>(null);
         sortOrder,
       });
 
+      if (!mountedRef.current) return;
+
       if (!res || res.status_code !== 200) {
         setQuotations([]);
         return;
@@ -123,29 +129,41 @@ const [editQuotation, setEditQuotation] = useState<any>(null);
 
       const raw = Array.isArray(res.data?.quotations) ? res.data.quotations : [];
 
-    setQuotations(raw.map((q: any) => ({
-  quotationNumber: q.id || "",
-  customerName: q.customerName || "N/A",
-  transactionDate: q.transactionDate || "",
-  validTill: q.validTill || "",
-  grandTotal: Number(q.grandTotal ?? 0),
-  currency: q.currency ,
-  status: q.invoiceStatus  || "Draft",   
-})));
+      setQuotations(raw.map((q: any) => ({
+    quotationNumber: q.id || "",
+    customerName: q.customerName || "N/A",
+    transactionDate: q.transactionDate || "",
+    validTill: q.validTill || "",
+    grandTotal: Number(q.grandTotal ?? 0),
+    currency: q.currency ,
+    status: q.invoiceStatus  || "Draft",   
+  })));
 
       setTotalPages(res.data?.pagination?.totalPages || 1);
       setTotalItems(res.data?.pagination?.total      || raw.length);
-
     } catch (err) {
       console.error("Error fetching quotations:", err);
-      setQuotations([]);
+      if (mountedRef.current) {
+        setQuotations([]);
+      }
     } finally {
-      setLoading(false);
-      setInitialLoad(false);
+      if (mountedRef.current) {
+        setIsFetching(false);
+        setIsInitialLoad(false);
+      }
     }
-  };
+  }, [page, pageSize, searchTerm, status, fromDate, toDate, sortBy, sortOrder]);
 
+  // Initial fetch on mount
   useEffect(() => {
+    mountedRef.current = true;
+    fetchQuotations();
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Refetch on dependency changes (not initial)
+  useEffect(() => {
+    if (isInitialLoad) return;
     fetchQuotations();
   }, [page, pageSize, searchTerm, status, fromDate, toDate, sortBy, sortOrder]);
 
@@ -209,8 +227,7 @@ const handleEdit = async (quotationNumber: string, e?: React.MouseEvent) => {
 
     closeSwal();
 
-    setEditQuotation(res.data);
-    setEditOpen(true);
+    openQuotationEdit(quotationNumber, res.data);
 
   } catch (err) {
     closeSwal();
@@ -273,7 +290,7 @@ const handlePreviewQuotationPDF = async (
 const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
   e?.stopPropagation();
 
-  const result = await Swal.fire({
+  const result = await fireManagedSwal({
     icon: "warning",
     title: "Are you sure?",
     text: `Delete quotation ${quotationNumber}?`,
@@ -492,12 +509,13 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
 
 
   return (
-    <div className="p-8">
+    <div className="h-full min-h-0">
       <Table
         columns={columns}
         data={quotations}
         rowKey={(row) => row.quotationNumber}
-        loading={loading || initialLoad}
+        loading={isInitialLoad}
+        isFetching={isFetching}
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => { setSearchTerm(q); setPage(1); }}
@@ -545,19 +563,6 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
   onViewPdf={() => detailData && handleDrawerPdf(detailData.id)}
   onDownload={() => detailData && company && generateQuotationPDF(detailData, company, "save")}
   onClosePdf={() => { if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl); setDrawerPdfUrl(null); }}
-/>
-
-<QuotationModal
-  isOpen={editOpen}
-  onClose={() => {
-    setEditOpen(false);
-    setEditQuotation(null);
-  }}
-  initialData={editQuotation}
-  mode="edit"
-  onSubmit={() => {
-    fetchQuotations();
-  }}
 />
     </div>
   );

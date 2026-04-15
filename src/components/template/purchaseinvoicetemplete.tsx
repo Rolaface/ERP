@@ -20,12 +20,42 @@ const px = (path: string): string => {
 const fmt2 = (n: any) => Number(n ?? 0).toFixed(2);
 
 const addrBlock = (a: any): string[] => {
-  if (!a) return [];
-  return [
-    [a.addressLine1, a.addressLine2].filter(Boolean).join(", "),
-    [a.city, a.state, a.postalCode].filter(Boolean).join(", "),
-    a.country ? a.country.toUpperCase() : "",
-  ].filter(Boolean);
+  if (!a || typeof a.addressLine1 !== "string") return [];
+
+  const raw = a.addressLine1
+    .replace(/<br>/g, "\n")
+    .split("\n")
+    .map((l: string) => l.trim())
+    .filter(Boolean);
+
+  const result: string[] = [];
+
+  for (let i = 0; i < raw.length; i++) {
+    const line = raw[i];
+    const next = raw[i + 1];
+
+    // ✅ Merge AREA + CITY (e.g. "Clement Town Cantt" + "DEHRADUN")
+    if (
+      line &&
+      next &&
+      next === next.toUpperCase() &&
+      /^[A-Za-z ]+$/.test(line)
+    ) {
+      result.push(`${line}, ${next}`);
+      i++;
+      continue;
+    }
+
+    if (line && next && /^\d{5,6}$/.test(line) && /^[A-Za-z ]+$/.test(next)) {
+      result.push(`${line}, ${next}`);
+      i++;
+      continue;
+    }
+
+    result.push(line);
+  }
+
+  return result;
 };
 
 const fmtDate = (dateStr: any) => {
@@ -125,7 +155,7 @@ export const generatePurchaseInvoicePDF = async (
   doc.text("PURCHASE INVOICE", MR, 14, { align: "right" });
 
   doc.setFontSize(10);
-  doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
+  doc.text(pi.piId ?? "-", MR, 20, { align: "right" });
 
   const badgeLabel = "PURCHASE INVOICE";
   doc.setFont("helvetica", "bold");
@@ -143,15 +173,14 @@ export const generatePurchaseInvoicePDF = async (
     align: "right",
   });
   doc.setTextColor(...INK);
-  doc.text(pi.pId ?? "-", MR, 20, { align: "right" });
+  doc.text(pi.piId ?? "-", MR, 20, { align: "right" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...INK_SOFT);
   const metaLines = [
-    `Invoice Date: ${fmtDate(pi.pDate)}`,
-    `Payment Method: ${pi.paymentMethod ?? "-"}`,
-    `Status: ${pi.status ?? "-"}`,
+    `Invoice Date: ${fmtDate(pi.piDate)}`,
+    `Payment Method: ${pi.paymentType ?? "-"}`,
   ];
   metaLines.forEach((line, i) => {
     doc.text(line, MR, 26 + i * 4, { align: "right" });
@@ -164,14 +193,9 @@ export const generatePurchaseInvoicePDF = async (
   const gap = 3;
   const colW = (W - M * 2 - gap * 2) / 3;
 
-  const supplierL = addrBlock(pi?.addresses?.supplierAddress);
-  const dispatchL = addrBlock(pi?.addresses?.dispatchAddress);
-  const shippingL = addrBlock(pi?.addresses?.shippingAddress);
-
-  if (pi?.addresses?.supplierAddress?.email)
-    supplierL.push(`Email: ${pi.addresses.supplierAddress.email}`);
-  if (pi?.addresses?.supplierAddress?.phone)
-    supplierL.push(`Phone: ${pi.addresses.supplierAddress.phone}`);
+  const supplierL = addrBlock({ addressLine1: pi?.supplierAddressDisplay });
+  const dispatchL = addrBlock({ addressLine1: pi?.dispatchAddressDisplay });
+  const shippingL = addrBlock({ addressLine1: pi?.shippingAddressDisplay });
 
   const calcBoxH = (lines: string[], hasBoldTop = false) => {
     let h = BOX_HDR + PAD * 2;
@@ -245,7 +269,7 @@ export const generatePurchaseInvoicePDF = async (
         pi?.lpoNumber ?? "-",
         pi?.spplrInvcNo ?? "-",
         pi?.taxCategory ?? "-",
-        pi?.incoterm ?? "-",
+        pi?.incoterms ?? "-",
         pi?.shippingRule ?? "-",
       ],
     ],
@@ -309,21 +333,23 @@ export const generatePurchaseInvoicePDF = async (
       ],
     ],
     body: pi.items.map((item: any, idx: number) => {
-      const packing = item.packing ?? "-";
-      return [
-        idx + 1,
-        item.item_name ?? "-",
-        item.batchNo ?? "-",
-        item.warehouse ?? "-",
-        fmtDate(item.mfgDate),
-        fmtDate(item.expDate),
-        packing,
-        Number(item.qty ?? 0),
-        item.uom ?? "-",
-        fmt2(item.rate),
-        `${item.VatCd ?? "-"} (${item.vatRate ?? "0"}%)`,
-        fmt2(item.amount),
-      ];
+      const packing = `${item.packingSize ?? "-"} x ${item.packingUnit ?? "-"}`;
+
+      const tax = item.taxInfo?.[0];
+
+     return [
+  idx + 1,
+  item.itemName ?? "-",
+  item.batchNo ?? "-",
+  item.warehouse ?? "-",
+  fmtDate(item.mfgDate),   
+  fmtDate(item.expDate),   
+  Number(item.quantity ?? 0),
+  item.uom ?? "-",
+  fmt2(item.rate),
+  `${tax?.taxName ?? "-"} (${tax?.totalTaxRate ?? 0}%)`,
+  fmt2((item.quantity ?? 0) * (item.rate ?? 0)),
+];
     }),
     styles: {
       fontSize: 7.5,
@@ -368,10 +394,9 @@ export const generatePurchaseInvoicePDF = async (
 
   const LABEL_X = AMOUNT_COL_X - 4;
 
-  const subTotal = Number(pi?.summary?.subTotal ?? 0);
-  const taxTotal = Number(pi?.summary?.taxTotal ?? 0);
-  const grandTotal = Number(pi?.summary?.grandTotal ?? 0);
-  const rounding = Number(pi?.summary?.roundingAdjustment ?? 0);
+  const subTotal = Number((pi?.grandTotal ?? 0) - (pi?.totalTaxes ?? 0));
+  const taxTotal = Number(pi?.totalTaxes ?? 0);
+  const rounding = Number((pi?.roundedTotal ?? 0) - (pi?.grandTotal ?? 0));
   const taxRate = pi?.tax?.taxRate ?? "-";
 
   doc.setFont("helvetica", "normal");
@@ -393,7 +418,7 @@ export const generatePurchaseInvoicePDF = async (
       [`${fmt2(subTotal)} ${cur}`],
       [`${fmt2(taxTotal)} ${cur}`],
       [`${fmt2(rounding)} ${cur}`],
-      [`${fmt2(grandTotal)} ${cur}`],
+      [`${fmt2(pi.roundedTotal)} ${cur}`],
     ],
     styles: {
       fontSize: 8,
@@ -422,7 +447,7 @@ export const generatePurchaseInvoicePDF = async (
   const SIGN_W = LABEL_W + TOTAL_W;
 
   let termsY = SIG_Y;
-  const buying = pi?.terms?.terms?.buying;
+  const buying = pi?.terms?.buying;
   const termW = SIGN_X - M;
   const termTW = termW - 14;
   const tLines: string[] = [];
@@ -440,9 +465,9 @@ export const generatePurchaseInvoicePDF = async (
       if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
       if (p.notes) tLines.push(`Notes: ${p.notes}`);
       p.phases?.forEach((ph: any, i: number) => {
-        const phaseName = ph.phaseName ?? ph.name ?? `Phase ${i + 1}`;
+        const phaseName = ph.name ?? `Phase ${i + 1}`;
         const percent = ph.percentage ?? 0;
-        const condition = ph.condition ?? "";
+        const condition = `${ph.condition ?? ""} (Within ${ph.credit_days ?? 0} days)`;
         tLines.push(`${phaseName}: ${percent}% — ${condition}`);
       });
     }
@@ -460,7 +485,7 @@ export const generatePurchaseInvoicePDF = async (
     termsY = 16;
   }
 
-  const signatureStartY = termsY + tBH - 46;
+  const signatureStartY = termsY + tBH + 6;
 
   doc.setFillColor(...ERP_BLUE);
   doc.rect(SIGN_X, signatureStartY, SIGN_W, 6, "F");
@@ -534,6 +559,6 @@ export const generatePurchaseInvoicePDF = async (
   }
 
   return resultType === "save"
-    ? doc.save(`Purchase_Invoice_${pi.pId}.pdf`)
+    ? doc.save(`Purchase_Invoice_${pi.piId}.pdf`)
     : doc.output("bloburl");
 };

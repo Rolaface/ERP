@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Plus, Trash2, FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import { useQuotationForm } from "../../hooks/useQuotationForm";
-import { Button } from "../../components/ui/modal/formComponent";
 import { ModalSelect, ModalInput } from "../ui/modal/modalComponent";
 import CustomerSelect from "../selects/CustomerSelect";
 import ItemSelect from "../selects/ItemSelect";
-import Modal from "../../components/ui/modal/modal";
+import { MinimizableModal } from "../common/MinimizableModal";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { User, Mail, Phone } from "lucide-react";
 import AddressBlock from "../ui/modal/AddressBlock";
 import PaymentInfoBlock from "./PaymentInfoBlock";
@@ -17,13 +17,16 @@ import {
   paymentMethodOptions,
   currencyOptions,
 } from "../../constants/invoice.constants";
+import ModalFooter from "../common/ModalFooter";
+import type { ModalSubmitHandler } from "../../types/modal";
 
 interface QuotationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: () => void;
+  onSubmit?: ModalSubmitHandler;
   initialData?: any;
   mode?: "create" | "edit";
+  modalId?: string;
 }
 const QuotationModal: React.FC<QuotationModalProps> = ({
   isOpen,
@@ -31,8 +34,13 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   onSubmit,
   initialData,
   mode = "create",
+  modalId,
 }) => {
-  if (!isOpen) return null;
+  const resolvedModalId = modalId || (mode === "edit" && initialData?.id
+    ? `quotation-edit-${initialData.id}-${Date.now()}`
+    : `quotation-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+ 
 
   const {
     formData,
@@ -50,6 +58,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     "terms",
   ];
   const handleNext = () => {
+    if (ui.activeTab === "details" && !actions.validateDetails()) return;
+
     const currentIndex = tabs.indexOf(ui.activeTab as any);
     if (currentIndex < tabs.length - 1) {
       ui.setActiveTab(tabs[currentIndex + 1]);
@@ -57,6 +67,26 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   };
 
   const symbol = currencySymbols[formData.currencyCode] || "";
+
+const handleSave = async (e?: React.FormEvent) => {
+  e?.preventDefault();
+
+  if (!actions.validateDetails()) {
+    ui.setActiveTab("details");
+    return false;
+  }
+
+  const didSubmit = await actions.handleSubmit({
+    preventDefault: () => {},
+  } as React.FormEvent);
+
+  if (didSubmit) {
+    resetDirty();
+    onClose();
+  }
+
+  return didSubmit;
+};
 
 const handleFormSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -78,37 +108,28 @@ const handleFormSubmit = async (e: React.FormEvent) => {
   }
 
   if (ui.activeTab === "terms") {
-    await actions.handleSubmit(e);
+    await handleSave(e);
   }
 };
 
 
   const footerContent = (
-    <>
-      <Button variant="secondary" onClick={onClose} type="button">
-        Cancel
-      </Button>
-      <div className="flex gap-2">
-        <Button variant="secondary" onClick={actions.handleReset} type="button">
-          Reset
-        </Button>
-        <Button
-  variant="primary"
-  type="button"
-  onClick={(e: React.MouseEvent) =>
-    handleFormSubmit(e as unknown as React.FormEvent)
-  }
->
-  {ui.activeTab === "terms" ? "Submit" : "Next"}
-</Button>
-      </div>
-    </>
+    <ModalFooter
+      onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+      onReset={() => {
+        resetDirty();
+        actions.handleReset();
+      }}
+      onSave={() => void handleSave()}
+      onNext={ui.activeTab === "terms" ? undefined : handleNext}
+    />
   );
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title="Create Quotation"
       subtitle="Create and manage quotation details"
       icon={FileText}
@@ -116,7 +137,12 @@ const handleFormSubmit = async (e: React.FormEvent) => {
       customWidth="82vw"
       height="82vh"
     >
-      <form id="quotationForm" onSubmit={handleFormSubmit} className="h-full flex flex-col">
+      <form
+        id="quotationForm"
+        onSubmit={handleFormSubmit}
+        onChange={() => markDirty()}
+        className="h-full flex flex-col"
+      >
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
@@ -666,7 +692,7 @@ const handleFormSubmit = async (e: React.FormEvent) => {
           )}
         </div>
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

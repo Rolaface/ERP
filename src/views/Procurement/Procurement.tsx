@@ -1,8 +1,5 @@
-import React, { useState } from "react";
-import RFQsTable from "./Rfqs";
-import PurchaseOrdersTable from "./PurchaseOrders";
-import ApprovalsSection from "./Approvals";
-import Dashboard from "./ProcurementDashboard";
+import React, { Suspense, lazy, useState } from "react";
+import { useOutletContext, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import ApprovalModal from "../../components/procurement/ApprovalModal";
 import {
   FaClipboardList,
@@ -14,105 +11,122 @@ import {
   FaLandmark,
   FaCreditCard,
 } from "react-icons/fa";
-import SupplierManagement from "./SupplierManagement";
-import SupplierModal from "../../components/procurement/supply/SupplierModal";
-import PurchaseInvoiceTable from "./PurchaseInvoice";
-import Payments from "./SupplierPayment";
-import PurchaseAnalytics from "./PurchaseAnalytics";
+import {
+  AppPage,
+  AppPageBody,
+  AppPageHeader,
+  AppTabs,
+} from "../../components/ui/app-shell";
+import AppSkeleton from "../../components/ui/AppSkeleton";
 
-const procurement = {
-  name: "Procurement",
-  icon: <FaShoppingBag />,
-  defaultTab: "procurementdashboard",
-  tabs: [
-    {
-      id: "procurementdashboard",
-      name: "Dashboard",
-      icon: <FaTachometerAlt />,
-    },
-    { id: "supplier", name: "Supplier Management", icon: <FaLandmark /> },
-    { id: "payments", name: "Payments", icon: <FaCreditCard /> },
-    { id: "rfqs", name: "RFQs", icon: <FaFileSignature /> },
-    { id: "orders", name: "Purchase Orders", icon: <FaClipboardList /> },
-    { id: "approvals", name: "Approvals", icon: <FaCheckCircle /> },
-    // {
-    //   id: "invoicematching",
-    //   name: "Invoice Matching",
-    //   icon: <FaFileInvoiceDollar />,
-    // },
-    { id: "purchase", name: "Purchase Invoice", icon: <FaTruckLoading /> },
-    {
-      id: "purchaseAnalytics",
-      name: "Purchase Analytics",
-      icon: <FaTruckLoading />,
-    },
-  ],
+const RFQsTable = lazy(() => import("./Rfqs"));
+const PurchaseOrdersTable = lazy(() => import("./PurchaseOrders"));
+const ApprovalsSection = lazy(() => import("./Approvals"));
+const Dashboard = lazy(() => import("./ProcurementDashboard"));
+const SupplierManagement = lazy(() => import("./SupplierManagement"));
+const PurchaseInvoiceTable = lazy(() => import("./PurchaseInvoice"));
+const Payments = lazy(() => import("./SupplierPayment"));
+const PurchaseAnalytics = lazy(() => import("./PurchaseAnalytics"));
+
+type OutletContextType = {
+  openInvoiceCreate: () => void;
+  openInvoiceEdit: (invoiceNumber: string, data: any) => void;
+  openProformaCreate: () => void;
+  openProformaEdit: (proformaId: string, data: any) => void;
+  openQuotationCreate: () => void;
+  openQuotationEdit: (quotationId: string, data: any) => void;
+  openCustomerCreate: () => void;
+  openCustomerEdit: (id: string, data: any) => void;
+  openSupplierCreate: () => void;
+  openSupplierEdit: (id: string, data: any) => void;
+  openPOCreate: () => void;
+  openPOEdit: (poId: string | number) => void;
 };
 
+const procurementTabs = [
+  { id: "procurementdashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
+  { id: "supplier", label: "Supplier Management", icon: <FaLandmark /> },
+  { id: "payments", label: "Payments", icon: <FaCreditCard /> },
+  { id: "rfqs", label: "RFQs", icon: <FaFileSignature /> },
+  { id: "orders", label: "Purchase Orders", icon: <FaClipboardList /> },
+  { id: "approvals", label: "Approvals", icon: <FaCheckCircle /> },
+  { id: "purchase", label: "Purchase Invoice", icon: <FaTruckLoading /> },
+  { id: "purchaseAnalytics", label: "Purchase Analytics", icon: <FaTruckLoading /> },
+];
+
+const DEFAULT_TAB = "procurementdashboard";
+
 const Procurement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState(procurement.defaultTab);
-  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
+  
+  const isDashboardTab = activeTab === "procurementdashboard";
+  const { openSupplierCreate, openPOCreate } =
+    useOutletContext<OutletContextType>();
+
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showGRModal, setShowGRModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
+  const handleTabChange = (tabId: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", tabId);
+    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
+  };
+
   const handleAdd = () => {
-    if (activeTab === "supplier") setShowSupplierModal(true);
+    if (activeTab === "supplier") openSupplierCreate();
+    else if (activeTab === "orders") openPOCreate();
     else if (activeTab === "approvals") setShowApprovalModal(true);
     else if (activeTab === "goodsreceipt") setShowGRModal(true);
     else if (activeTab === "invoicematching") setShowInvoiceModal(true);
   };
 
+  const renderTab = () => {
+    switch (activeTab) {
+      case "procurementdashboard":
+        return <Dashboard />;
+      case "supplier":
+        return <SupplierManagement onAdd={handleAdd} />;
+      case "rfqs":
+        return <RFQsTable onAdd={handleAdd} />;
+      case "orders":
+        return <PurchaseOrdersTable onAdd={handleAdd} />;
+      case "approvals":
+        return <ApprovalsSection onAdd={handleAdd} />;
+      case "purchase":
+        return <PurchaseInvoiceTable onAdd={handleAdd} />;
+      case "payments":
+        return <Payments />;
+      case "purchaseAnalytics":
+        return <PurchaseAnalytics />;
+      default:
+        return <Dashboard />;
+    }
+  };
+
   return (
-    <div className="p-6 bg-app ">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
-          <span>{procurement.icon}</span> {procurement.name}
-        </h2>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-4">
-        {procurement.tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors ${
-              activeTab === tab.id
-                ? "text-primary border-b-2 border-current"
-                : "text-muted hover:text-main"
-            }`}
-          >
-            <span>{tab.icon}</span> {tab.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      <div>
-        {activeTab === "supplier" && <SupplierManagement onAdd={handleAdd} />}
-        {activeTab === "rfqs" && <RFQsTable onAdd={handleAdd} />}
-        {activeTab === "orders" && <PurchaseOrdersTable onAdd={handleAdd} />}
-        {activeTab === "approvals" && <ApprovalsSection onAdd={handleAdd} />}
-        {activeTab === "purchase" && <PurchaseInvoiceTable onAdd={handleAdd} />}
-        {activeTab === "procurementdashboard" && <Dashboard />}
-        {activeTab === "payments" && <Payments />}
-        {activeTab === "purchaseAnalytics" && <PurchaseAnalytics />}
-      </div>
-
-      {/* Modals */}
-      <SupplierModal
-        isOpen={showSupplierModal}
-        onClose={() => setShowSupplierModal(false)}
-        onSubmit={(data) => console.log("New RFQ:", data)}
+    <AppPage viewportLocked={isDashboardTab}>
+      <AppPageHeader
+        title="Procurement"
+        description="Supplier operations, approvals, and purchasing analytics in one layout system."
+        icon={<FaShoppingBag />}
       />
-      <ApprovalModal
-        isOpen={showApprovalModal}
-        onClose={() => setShowApprovalModal(false)}
-        onSubmit={(data) => console.log("New Approval:", data)}
-      />
-    </div>
+      <AppTabs tabs={procurementTabs} activeTab={activeTab} onChange={handleTabChange} />
+      <AppPageBody viewportLocked={isDashboardTab}>
+        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
+      </AppPageBody>
+
+      {showApprovalModal && (
+        <ApprovalModal
+          isOpen={showApprovalModal}
+          onClose={() => setShowApprovalModal(false)}
+          onSubmit={(data) => console.log("New Approval:", data)}
+        />
+      )}
+    </AppPage>
   );
 };
 

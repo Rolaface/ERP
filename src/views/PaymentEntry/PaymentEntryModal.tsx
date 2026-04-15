@@ -399,7 +399,7 @@ useEffect(() => {
       const response = await createPaymentEntry(payload);
 
       closeSwal();
-      showSuccess(response.message ?? "Payment Entry created successfully.");
+      showSuccess(response.message);
       onSuccess?.(response.data?.modeOfPaymentId ?? "");
       onClose();
     } catch (err: any) {

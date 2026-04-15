@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   getAllSalesInvoices,
   updateInvoiceStatus,
@@ -29,9 +30,13 @@ import {
 import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import Swal from "sweetalert2";
-import InvoiceModal from "../../components/sales/InvoiceModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+import { fireManagedSwal } from "../../utils/swalManager";
+
+type OutletContextType = {
+  openInvoiceCreate: () => void;
+  openInvoiceEdit: (invoiceNumber: string, data: any) => void;
+};
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   Draft: ["Rejected", "Approved"],
@@ -49,17 +54,17 @@ interface InvoiceTableProps {
 }
 
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
-  // ── Data
+  const { openInvoiceEdit } = useOutletContext<OutletContextType>();
+  const mountedRef = useRef(true);
+
+  // ── Data with stale-while-revalidate pattern
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
 
   // ── PDF preview (kept — do not remove)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  // Edit state
-  const [editOpen, setEditOpen] = useState(false);
-  const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
 
@@ -101,10 +106,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       .catch(() => console.error("Failed to load company data"));
   }, []);
 
-  // ── Fetch invoices
-  const fetchInvoices = async () => {
+  // ── Fetch invoices with stale-while-revalidate pattern
+  const fetchInvoices = useCallback(async () => {
+    if (!mountedRef.current) return;
+    
+    setIsFetching(true);
     try {
-      setLoading(true);
       const res = await getAllSalesInvoices(
         page,
         pageSize,
@@ -114,32 +121,45 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       );
       if (!res || res.status_code !== 200) return;
 
+      if (!mountedRef.current) return;
+
       const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
-        invoiceNumber: inv.invoiceNumber,
+        invoiceNumber: inv.id,
         customerId: inv.customerId,
         customerName: inv.customerName,
         currency: inv.currency,
         exchangeRate: inv.exchangeRate,
         dueDate: inv.dueDate,
-        dateOfInvoice: new Date(inv.dateOfInvoice),
-        total: Number(inv.totalAmount),
+        dateOfInvoice: new Date(inv.invoiceDate),
+        total: Number(inv.total),
         outstandingAmount: inv.outstandingAmount ?? 0,
         totalTax: inv.totalTax,
-        invoiceStatus: inv.invoiceStatus,
+        invoiceStatus: inv.status,
         invoiceTypeParent: inv.invoiceTypeParent,
-        invoiceType: inv.invoiceType,
+        invoiceType: inv.taxCategory,
       }));
 
       setInvoices(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || mapped.length);
     } finally {
-      setLoading(false);
-      setInitialLoad(false);
+      if (mountedRef.current) {
+        setIsFetching(false);
+        setIsInitialLoad(false);
+      }
     }
-  };
+  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
+  // Initial fetch on mount
   useEffect(() => {
+    mountedRef.current = true;
+    fetchInvoices();
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Refetch on dependencies (not initial)
+  useEffect(() => {
+    if (isInitialLoad) return;
     fetchInvoices();
   }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
@@ -235,8 +255,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
       closeSwal();
 
-      setEditInvoice(res.data);
-      setEditOpen(true);
+      openInvoiceEdit(invoiceNumber, res.data);
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -297,7 +316,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setDrawerData(null);
     try {
       const res = await getSalesInvoiceById(invoiceNumber);
-      if (res?.status_code === 200) setDrawerData(res.data as InvoiceDetail);
+      if (res?.message.status_code === 200) setDrawerData(res.message.data as InvoiceDetail);
     } finally {
       setDrawerLoading(false);
     }
@@ -310,9 +329,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     try {
       if (!company) return;
       const res = await getSalesInvoiceById(invoiceNumber);
-      if (!res || res.status_code !== 200) return;
+      if (!res || res.message.status_code !== 200) return;
       const blobUrl = await generateInvoicePDF(
-        res.data as Invoice,
+        res.message.data as Invoice,
         company,
         "bloburl",
       );
@@ -340,14 +359,15 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       }
 
       const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
-      if (!invoiceRes || invoiceRes.status_code !== 200) {
+      console.log("🚀 ~ handlePreviewPDF ~ invoiceRes:", invoiceRes)
+      if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
         closeSwal();
         showApiError("Failed to load invoice");
         return;
       }
 
       const blobUrl = await generateInvoicePDF(
-        invoiceRes.data,
+        invoiceRes.message.data,
         company,
         "bloburl",
       );
@@ -373,13 +393,13 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       }
 
       const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
-      if (!invoiceRes || invoiceRes.status_code !== 200) {
+      if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
         closeSwal();
         showApiError("Failed to load invoice");
         return;
       }
 
-      await generateInvoicePDF(invoiceRes.data as Invoice, company, "save");
+      await generateInvoicePDF(invoiceRes.message.data as Invoice, company, "save");
       closeSwal();
       showSuccess("Invoice downloaded successfully!");
     } catch (err: any) {
@@ -401,7 +421,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     status: InvoiceStatus,
   ) => {
     if (CRITICAL_STATUSES.includes(status)) {
-      const result = await Swal.fire({
+      const result = await fireManagedSwal({
         icon: "warning",
         title: "Confirm Status Change",
         text: `Mark invoice ${invoiceNumber} as ${status}?`,
@@ -447,7 +467,7 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
   const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    const result = await Swal.fire({
+    const result = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
       text: `Delete invoice ${invoiceNumber}?`,
@@ -482,7 +502,8 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
     }
   };
 
-  const columns: Column<InvoiceSummary>[] = [
+// Memoize columns to prevent re-renders
+  const columns: Column<InvoiceSummary>[] = useMemo(() => [
     {
       key: "invoiceNumber",
       header: "Invoice No",
@@ -619,15 +640,16 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
         </ActionGroup>
       ),
     },
-  ];
+  ], [handleEdit, handleDelete, handleView, handleDownload, handleReceivePayment, handleRowStatusChange, handlePreviewPDF]);
 
   return (
-    <div className="p-8">
+    <div className="h-full min-h-0">
       <Table
         columns={columns}
         data={invoices}
         rowKey={(row) => row.invoiceNumber}
-        loading={loading || initialLoad}
+        loading={isInitialLoad}
+        isFetching={isFetching}
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => {
@@ -668,7 +690,7 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
         onViewPdf={() =>
-          drawerData && handleDrawerPdf(drawerData.invoiceNumber)
+          drawerData && handleDrawerPdf(drawerData.id)
         }
         onDownload={() =>
           drawerData &&
@@ -713,45 +735,6 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
               }
             : undefined
         }
-      />
-
-      <InvoiceModal
-        isOpen={editOpen}
-        onClose={() => {
-          setEditOpen(false);
-          setEditInvoice(null);
-        }}
-        mode="edit"
-        initialData={editInvoice}
-        onSubmit={async (data) => {
-          try {
-            if (!editInvoice?.invoiceNumber) {
-              showApiError("Invalid invoice selected");
-              return;
-            }
-
-            showLoading("Updating invoice...");
-
-            const res = await editSalesInvoice(editInvoice.invoiceNumber, data);
-
-            closeSwal();
-
-            if (!res || res.status_code !== 200) {
-              showApiError(res?.message || "Failed to update invoice");
-              return;
-            }
-
-            showSuccess("Invoice updated successfully");
-
-            setEditOpen(false);
-            setEditInvoice(null);
-
-            fetchInvoices();
-          } catch (err) {
-            closeSwal();
-            showApiError(err);
-          }
-        }}
       />
     </div>
   );

@@ -1,42 +1,62 @@
+// ─── UPDATED TYPES TO MATCH API RESPONSE ────────────────────────────────────
+
+export interface TaxRate {
+  tax_type: string;
+  tax_rate: number;
+}
+
+export interface TaxInfo {
+  taxCategory: string;
+  taxName: string;
+  taxRates: TaxRate[];
+}
+
+export interface BatchInfo {
+  has_batch_no: boolean;
+  has_expiry_date: boolean;
+}
+
 export interface Item {
   id: string;
   itemName: string;
   itemGroup: string;
   itemClassCode: string;
-  itemTypeCode: string;
-  originNationCode: string;
-  packagingUnitCode: string;
-  svcCharge: string;
-  ins: string;
+  unitOfMeasureCd: string;
   sellingPrice: number;
   buyingPrice: number;
-  unitOfMeasureCd: string;
-  description: string;
-  sku: string;
-  taxPreference: string;
-  preferredVendor: string;
-  salesAccount: string;
-  purchaseAccount: string;
-  taxType: string;
-  taxCode: string;
-  taxName: string;
-  taxDescription: string;
-  taxPerct: string;
-  dimensionUnit: string;
-  weight: string;
-  valuationMethod: string;
-  trackingMethod: string;
-  reorderLevel: string;
-  minStockLevel: string;
-  maxStockLevel: string;
   brand: string;
+  description: string;
+  weight: string;
   weightUnit: string;
-  dimensionLength: string;
-  dimensionWidth: string;
-  dimensionHeight: string;
-  taxCategory: string;
-  packingSize: string;
-  packingUnit: string;
+  countryOfOrigin: string;
+  dimensionLength: number;
+  dimensionWidth: number;
+  dimensionHeight: number;
+  packingUnit: number;
+  packingSize: number;
+
+  // Nested objects from API
+  vendorInfo: {
+    preferredVendor: string;
+  };
+  taxInfo: TaxInfo[];
+  inventoryInfo: {
+    valuationMethod: string;
+    trackingMethod: string;
+    reorderLevel: string;
+    minStockLevel: string;
+    maxStockLevel: string;
+  };
+  batchInfo: BatchInfo;
+
+  // Legacy flat fields (kept for backward compat, may be undefined)
+  sku?: string;
+  svcCharge?: string;
+  ins?: string;
+  taxPreference?: string;
+  originNationCode?: string;
+  itemTypeCode?: string;
+  dimensionUnit?: string;
 }
 
 export interface ItemSummary {

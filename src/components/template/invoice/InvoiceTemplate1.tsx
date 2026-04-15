@@ -106,12 +106,12 @@ export const generateInvoicePDF = async (
 
  
   doc.setTextColor(...INK);
-  doc.text(`Invoice No.: ${invoice.invoiceNumber ?? "-"}`, MR, 20, { align: "right" });
+  doc.text(`Invoice No.: ${invoice.id ?? "-"}`, MR, 20, { align: "right" });
 
 
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...INK_SOFT);
   [
-    `Invoice Date: ${fmtDate(invoice.dateOfInvoice)}`,
+    `Invoice Date: ${fmtDate(invoice.postingDate)}`,
   ].forEach((l, i) => doc.text(l, MR, 26 + i * 4, { align: "right" }));
 
   const AY    = 40;
@@ -121,8 +121,17 @@ export const generateInvoicePDF = async (
   const gap   = 3;
   const bColW = (W - M * 2 - gap * 2) / 3;
 
-  const billL = addrBlock(invoice?.billingAddress);
-  const shipL = addrBlock(invoice?.shippingAddress);
+  const stripHtml = (html?: string | null): string[] => {
+  if (!html) return [];
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+};
+  const billL = stripHtml(invoice?.billingAddress);
+  const shipL = stripHtml(invoice?.shippingAddress);
   if (invoice?.billingAddress?.email) billL.push(`Email: ${invoice.billingAddress.email}`);
   if (invoice?.billingAddress?.phone) billL.push(`Phone: ${invoice.billingAddress.phone}`);
 
@@ -138,7 +147,7 @@ const payL: string[] = ([
      invoice?.paymentInformation?.swiftCode
     ? `SWIFT: ${invoice.paymentInformation.swiftCode}`
     : null,
-  `Payment Terms: ${invoice?.paymentInformation?.paymentTerms ?? "-"}`,
+  `Payment Terms: ${invoice?.terms?.selling.payment.notes ?? "-"}`,
 ] as (string | null)[]).filter(Boolean) as string[];
 
   const calcBH = (lines: string[], hasBold = false) => {
@@ -184,7 +193,7 @@ const payL: string[] = ([
 
   const metaCols = [
     { label: "Customer TPIN", value: invoice?.customerTpin || "-" },
-    { label: "Invoice Type",  value: invoice?.invoiceType  || "-" },
+    { label: "Invoice Type",  value: invoice?.tax_category  || "-" },
     { label: "Currency",      value: cur },
     { label: "Due Date",      value: fmtDate(invoice?.dueDate) },
   ];
@@ -218,7 +227,7 @@ const payL: string[] = ([
     ]],
     body: invoice.items.map((item: any, idx: number) => {
       const qty     = Number(item.quantity ?? 0);
-      const rate    = Number(item.price    ?? 0);
+      const rate    = Number(item.rate    ?? 0);
       //const disc    = Number(item.discount ?? 0);
       //const discAbs = Math.abs(disc);
       const gross   = qty * rate;
@@ -228,6 +237,9 @@ const payL: string[] = ([
         ? `${item.packingUnit}×${item.packingSize}` : "-";
       const batchShort = (item.batchNo || "-").length > 18
         ? (item.batchNo as string).slice(0, 16) + ".." : (item.batchNo || "-");
+
+      const taxName = item.taxInfo?.[0]?.taxName ?? "-";
+      const taxRate = item.taxInfo?.[0]?.totalTaxRate ?? "0";
 
       return [
         idx + 1,
@@ -241,9 +253,7 @@ const payL: string[] = ([
         fmt2(rate),
         // discAbs > 0 ? `${discPct.toFixed(1)}%` : "0%",
         "-",
-        item.vatCode
-          ? `${item.vatCode}`
-          : "-",
+        `${taxName} (${taxRate}%)`,
         fmt2(net),
       ];
     }),
@@ -289,7 +299,7 @@ const payL: string[] = ([
   let gross = 0, discTotal = 0;
   invoice.items.forEach((i: any) => {
     const q = Number(i.quantity ?? 0);
-    const p = Number(i.price    ?? 0);
+    const p = Number(i.rate    ?? 0);
     // const d = Math.abs(Number(i.discount ?? 0));
     gross     += q * p;
     // discTotal += d;
@@ -299,8 +309,8 @@ const payL: string[] = ([
 //     (a: number, i: any) => a + Number(i.vatTaxableAmount ?? 0), 0);
 //   const taxTotal    = taxableRaw > 0 ? taxableRaw : 0;
 //  const grandTotal  = gross - discTotal + taxTotal;
-const taxTotal = Number(invoice.taxTotal ?? 0);
-  const grandTotal  = gross + taxTotal;
+const taxTotal = Number(invoice.total_tax ?? 0);
+  const grandTotal  = Number(invoice.grand_total ?? 0);
 
   
   const otherCharges = (invoice?.invoiceCharges || []).reduce(

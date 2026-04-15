@@ -1,292 +1,342 @@
-import { PurchaseInvoiceFormData, emptyPOForm , TaxRow} from "./purchaseInvoice";
+import {
+  PurchaseInvoiceFormData,
+  emptyPOForm,
+  TaxRow,
+} from "./purchaseInvoice";
 import type { AddressBlock } from "./purchaseInvoice";
 
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
 
-export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
-  
+const num = (v: any) => Number(v || 0);
 
-  const validItems = form.items.filter((it) => {
-    const hasCode = it.itemCode && it.itemCode.trim() !== "";
-    const hasQty = it.quantity && Number(it.quantity) > 0;
-    const hasRate = it.rate && Number(it.rate) > 0;
-    
-    
-    
-    return hasCode && hasQty && hasRate; 
-  });
+const str = (v: any) => (v ? String(v).trim() : "");
 
+/** Resolve address ID from flat root key OR nested object */
+const resolveAddressId = (flat: any, nested: any): string =>
+  str(flat) || str(nested?.id) || "";
 
-const items = validItems.map((it) => {
-  const quantity = Number(it.quantity);
-  const rate = Number(it.rate);
-  const vatRate = Number(it.vatRate || 0);
-
-  return {
-    itemCode: it.itemCode,
-    itemName: it.itemName || "",
-    quantity,
-    rate,
-    uom: it.uom || "",
-    vatCd: it.vatCd || "",
-    vatRate,
-    description: it.description || "",
-    packing: it.packing || "",
-    batchNo: it.batchNo || "",
-    mfgDate: it.mfgDate || "",
-    expDate: it.expDate || "",
-    discount: Number(it.discount || 0),
-    warehouse: form.updateStock ? (it.warehouse || "") : null,
-  };
+/** Build an empty AddressBlock skeleton with an id */
+const skeletonAddress = (
+  id: string,
+  title: string,
+  type: "Billing" | "Shipping",
+  source?: any,
+): AddressBlock => ({
+  id,
+  addressTitle: title,
+  addressType: type,
+  addressLine1: str(source?.addressLine1),
+  addressLine2: str(source?.addressLine2),
+  city: str(source?.city),
+  state: str(source?.state),
+  country: str(source?.country),
+  postalCode: str(source?.postalCode),
+  phone: str(source?.phone),
+  email: str(source?.email),
 });
 
+// ─────────────────────────────────────────────
+// UI → API  (Create / Update payload)
+// ─────────────────────────────────────────────
 
+export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
+  // ── Items ──────────────────────────────────
+  const items = form.items
+    .filter(
+      (it) =>
+        it.itemCode?.trim() &&
+        Number(it.quantity) > 0 &&
+        Number(it.rate) > 0,
+    )
+    .map((it) => ({
+      itemCode: it.itemCode,
+      itemName: str(it.itemName),
+      quantity: num(it.quantity),
+      rate: num(it.rate),
+      uom: str(it.uom),
+      vatCd: str(it.vatCd),
+      vatRate: num(it.vatRate),
+      description: str(it.description),
+      packing: str(it.packing),
+      batchNo: str(it.batchNo),
+      mfgDate: str(it.mfgDate),
+      expDate: str(it.expDate),
+      discount: num(it.discount),
+      warehouse: form.updateStock ? str(it.warehouse) : null,
+    }));
 
-  // Tax rows - only valid ones
+  // ── Taxes ──────────────────────────────────
   const taxes = form.taxRows
-    .filter((t) => t.type && t.type.trim() !== "" && t.accountHead && t.accountHead.trim() !== "")
+    .filter((t) => t.type?.trim() && t.accountHead?.trim())
     .map((t) => ({
       type: t.type,
       accountHead: t.accountHead,
-      taxRate: Number(t.taxRate || 0),
-      taxableAmount: Number(t.amount || 0),
+      taxRate: num(t.taxRate),
+      taxableAmount: num(t.amount),
     }));
 
-  // Payment rows
+  // ── Payments ───────────────────────────────
   const payments = form.paymentRows
-    .filter((p) => p.paymentTerm && p.paymentTerm.trim() !== "")
+    .filter((p) => p.paymentTerm?.trim())
     .map((p) => ({
       paymentTerm: p.paymentTerm,
       description: p.description,
       dueDate: p.dueDate,
-      invoicePortion: Number(p.invoicePortion || 0),
-      paymentAmount: Number(p.paymentAmount || 0),
+      invoicePortion: num(p.invoicePortion),
+      paymentAmount: num(p.paymentAmount),
     }));
 
-;
+  // ── Payload ────────────────────────────────
+  const payload: Record<string, any> = {
+    rcptTyCd: "Local",
 
-const payload: any = {
-  rcptTyCd: "Local",
+    supplierId: form.supplierId,
+    supplierName: form.supplier,
+    supplierCode: form.supplierCode,
+    supplierContact: form.supplierContact,
 
-  ...(form.poNumber && { lpoNumber: form.poNumber }),
+    updateStock: form.updateStock ?? true,
+    poDate: form.date,
 
-  supplierId: form.supplierId,
-  supplierName: form.supplier,
-  supplierCode: form.supplierCode,
-  supplierContact: form.supplierContact,
-  updateStock: form.updateStock ?? true, 
-  poDate: form.date,
-  ...(form.updateStock && form.warehouse && { warehouse: form.warehouse }),
-  currency: form.currency,
-  status: form.status,
+    currency: form.currency,
+    status: form.status,
+    taxCategory: form.taxCategory,
 
- taxCategory: form.taxCategory,
-  spplrInvcNo: form.supplierInvoiceNumber,
-  spplrInvcDt: form.supplierInvoiceDate,
-  paymentType: form.paymentType,
-  transactionProgress: form.transactionProgress,
+    spplrInvcNo: form.supplierInvoiceNumber,
+    spplrInvcDt: form.supplierInvoiceDate,
+    paymentType: form.paymentType,
+    transactionProgress: form.transactionProgress,
 
-  ...(form.costCenter && { costCenter: form.costCenter }),
-  ...(form.project && { project: form.project }),
+    // Address — send only the ID string, same as Purchase Order
+    supplier_address: form.addresses?.supplierAddress?.id || "",
+    shipping_address: form.addresses?.shippingAddress?.id || "",
+    dispatch_address: form.addresses?.dispatchAddress?.id || "",
+    billing_address: form.addresses?.companyBillingAddress?.id || "",
 
-  ...(form.shippingRule && { shippingRule: form.shippingRule }),
-  ...(form.incoterm && { incoterm: form.incoterm }),
-  ...(form.placeOfSupply && { placeOfSupply: form.placeOfSupply }),
-  ...(form.paymentTermsTemplate && { paymentTermsTemplate: form.paymentTermsTemplate }),
-  ...(form.taxesChargesTemplate && { taxesChargesTemplate: form.taxesChargesTemplate }),
+    terms: {
+      buying: form.terms?.buying || {},
+    },
 
-  addresses: form.addresses,
+    items,
+    metadata: {},
 
- terms: {
-  buying: form.terms?.buying || {},
-},
-
-  items,
-
-  ...(taxes.length > 0 && { taxes }),
-  ...(payments.length > 0 && { payments }),
-
-  metadata: {
-
-  },
-};
-
-  
+    // Optional fields — only included when truthy
+    lpoNumber: form.poNumber || "",
+    ...(form.updateStock && form.warehouse && { warehouse: form.warehouse }),
+    ...(form.costCenter && { costCenter: form.costCenter }),
+    ...(form.project && { project: form.project }),
+    ...(form.shippingRule && { shippingRule: form.shippingRule }),
+    ...(form.incoterm && { incoterm: form.incoterm }),
+    ...(form.placeOfSupply && { placeOfSupply: form.placeOfSupply }),
+    ...(form.paymentTermsTemplate && {
+      paymentTermsTemplate: form.paymentTermsTemplate,
+    }),
+    ...(form.taxesChargesTemplate && {
+      taxesChargesTemplate: form.taxesChargesTemplate,
+    }),
+    ...(taxes.length > 0 && { taxes }),
+    ...(payments.length > 0 && { payments }),
+  };
 
   return payload;
 };
 
-/**
- * Backend API → UI Form
- */
+// ─────────────────────────────────────────────
+// API → UI  (Load / Edit)
+// ─────────────────────────────────────────────
+
 export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
-  const api = apiResponse.data || apiResponse;
+  const api = apiResponse?.data || apiResponse;
 
-
-  // Map items - handle both field name variations
+  // ── Items ──────────────────────────────────
   const items = (api.items || []).map((item: any) => {
-    const qty = Number(item.qty || item.quantity || 0);
-    const rate = Number(item.rate || item.price || 0); // Try both rate and price
-    const vatRate = Number(item.vatRate || item.taxPerct || 0);
-
-  
+    const selectedTax =
+      item.taxInfo?.find(
+        (t: any) =>
+          t.taxCategory?.toLowerCase() === api.taxCategory?.toLowerCase(),
+      ) || item.taxInfo?.[0];
 
     return {
-      itemCode: item.item_code || item.itemCode || "",
-      itemName: item.item_name || item.itemName || "",
-      quantity: qty,
-      rate: rate,
-      uom: item.uom || "",
-      vatCd: item.vatCd || item.VatCd ,
-      vatRate: vatRate,
-      requiredBy: item.requiredBy || "",
+      itemCode: str(item.item_code || item.itemCode),
+      itemName: str(item.item_name || item.itemName),
+      quantity: num(item.qty || item.quantity),
+      rate: num(item.rate || item.price),
+      uom: str(item.uom),
+      vatCd: str(item.vatCd || item.VatCd || selectedTax?.taxName),
+      vatRate: num(item.vatRate || item.taxPerct || selectedTax?.totalTaxRate),
+      description: str(item.description),
+      packing: str(item.packing),
+      batchNo: str(item.batchNo),
+      mfgDate: str(item.mfgDate),
+      expDate: str(item.expDate),
+      discount: num(item.discount),
+      warehouse: str(item.warehouse),
+      packingUnit: num(item.packingUnit),
+      packingSize: num(item.packingSize),
+      requiresBatch: Boolean(item.has_batch_no),
+      requiredBy: str(item.requiredBy),
     };
   });
 
- 
-let taxRows: TaxRow[] = [];
+  // ── Tax rows ───────────────────────────────
+  let taxRows: TaxRow[] = [];
 
-if (Array.isArray(api.taxes) && api.taxes.length > 0) {
-  taxRows = api.taxes
-    .filter((tax: any) => tax.type && tax.accountHead)
-    .map((tax: any) => ({
-      type: tax.type || "On Net Total",
-      accountHead: tax.accountHead || "",
-      taxRate: Number(tax.taxRate || 0),
-      amount: Number(tax.taxableAmount || 0),
-    }));
-}
+  if (Array.isArray(api.taxes) && api.taxes.length > 0) {
+    taxRows = api.taxes
+      .filter((t: any) => t.type && t.accountHead)
+      .map((t: any) => ({
+        type: str(t.type) || "On Net Total",
+        accountHead: str(t.accountHead),
+        taxRate: num(t.taxRate),
+        amount: num(t.taxableAmount),
+      }));
+  } else if (api.tax) {
+    taxRows = [
+      {
+        type: str(api.tax.type) || "On Net Total",
+        accountHead: str(api.tax.accountHead) || "Tax",
+        taxRate: num(api.tax.taxRate),
+        amount: num(api.tax.taxableAmount),
+      },
+    ];
+  }
 
-else if (api.tax) {
-  taxRows = [
-    {
-      type: api.tax.type || "On Net Total",
-      accountHead: api.tax.accountHead || "Tax",
-      taxRate: parseFloat(api.tax.taxRate || "0"),
-      amount: Number(api.tax.taxableAmount || 0),
-    },
-  ];
-}
+  // ── Addresses ──────────────────────────────
+  // Backend returns flat ID strings at root level:
+  //   api.supplier_address, api.shipping_address, api.dispatch_address, api.billing_address
+  // AND optionally a nested api.addresses object with full details.
+  // We resolve the ID from the flat root first (same as PO mapper),
+  // then fill display fields from the nested object if present.
 
-  // Addresses
   const addresses = {
-    supplierAddress: {
-      addressTitle: "Supplier Main Address",
-      addressType: "Billing" as const,
-      addressLine1: api.addresses?.supplierAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.supplierAddress?.addressLine2 || "",
-      city: api.addresses?.supplierAddress?.city || "",
-      state: api.addresses?.supplierAddress?.state || "",
-      country: api.addresses?.supplierAddress?.country || "",
-      postalCode: api.addresses?.supplierAddress?.postalCode || "",
-      phone: api.addresses?.supplierAddress?.phone || "",
-      email: api.addresses?.supplierAddress?.email || "",
-    },
+    supplierAddress: skeletonAddress(
+      resolveAddressId(api.supplier_address, api.addresses?.supplierAddress),
+      "Supplier Main Address",
+      "Billing",
+      api.addresses?.supplierAddress,
+    ),
 
-    dispatchAddress: {
-      addressTitle: "Warehouse Dispatch",
-      addressType: "Shipping" as const,
-      addressLine1: api.addresses?.dispatchAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.dispatchAddress?.addressLine2 || "",
-      city: api.addresses?.dispatchAddress?.city || "",
-      state: api.addresses?.dispatchAddress?.state || "",
-      country: api.addresses?.dispatchAddress?.country || "",
-      postalCode: api.addresses?.dispatchAddress?.postalCode || "",
-    },
+    dispatchAddress: skeletonAddress(
+      resolveAddressId(api.dispatch_address, api.addresses?.dispatchAddress),
+      "Warehouse Dispatch",
+      "Shipping",
+      api.addresses?.dispatchAddress,
+    ),
 
-    shippingAddress: {
-      addressTitle: "Customer Delivery Address",
-      addressType: "Shipping" as const,
-      addressLine1: api.addresses?.shippingAddress?.addressLine1 || "",
-      addressLine2: api.addresses?.shippingAddress?.addressLine2 || "",
-      city: api.addresses?.shippingAddress?.city || "",
-      state: api.addresses?.shippingAddress?.state || "",
-      country: api.addresses?.shippingAddress?.country || "",
-      postalCode: api.addresses?.shippingAddress?.postalCode || "",
-    },
+    shippingAddress: skeletonAddress(
+      resolveAddressId(api.shipping_address, api.addresses?.shippingAddress),
+      "Customer Delivery Address",
+      "Shipping",
+      api.addresses?.shippingAddress,
+    ),
 
-    companyBillingAddress:
-  api.addresses?.companyBillingAddress ||
-  emptyPOForm.addresses.companyBillingAddress,
+    companyBillingAddress: skeletonAddress(
+      resolveAddressId(
+        api.billing_address,
+        api.addresses?.companyBillingAddress,
+      ),
+      "Company HQ Billing",
+      "Billing",
+      api.addresses?.companyBillingAddress,
+    ),
   };
 
-  // Terms
+  // ── Terms & Payment rows ───────────────────
   const buyingTerms =
     api.terms?.terms?.buying ||
     api.terms?.buying ||
+    api.terms?.Buying ||
     api.terms?.selling;
 
-  const paymentPhases = buyingTerms?.payment?.phases || [];
-  const paymentRows = paymentPhases.map((phase: any) => ({
-    paymentTerm: phase.name || "",
-    description: phase.condition || "",
-    dueDate: "",
-    invoicePortion: Number(phase.percentage || 0),
-    paymentAmount: (api.grandTotal * Number(phase.percentage || 0)) / 100,
-  }));
+  const paymentRows = (buyingTerms?.payment?.phases || []).map(
+    (phase: any) => ({
+      paymentTerm: str(phase.name),
+      description: str(phase.condition),
+      dueDate: "",
+      invoicePortion: num(phase.percentage),
+      paymentAmount: (num(api.grandTotal) * num(phase.percentage)) / 100,
+    }),
+  );
 
-  // Totals
-  const totalQuantity = items.reduce((sum: number, item: any) => sum + item.quantity, 0);
-  const subTotal = items.reduce((sum: number, item: any) => sum + (item.quantity * item.rate), 0);
-  const itemTaxTotal = items.reduce((sum: number, item: any) => {
-    const base = item.quantity * item.rate;
-    return sum + (base * (item.vatRate || 0)) / 100;
-  }, 0);
-  const taxRowTotal = taxRows.reduce((sum: number, tax: any) => {
-    return sum + (tax.amount * tax.taxRate) / 100;
-  }, 0);
-  
-  const grandTotal = api.grandTotal || (subTotal + itemTaxTotal + taxRowTotal);
+  // ── Totals ─────────────────────────────────
+  const totalQuantity = items.reduce(
+    (s: number, i: any) => s + i.quantity,
+    0,
+  );
+  const subTotal = items.reduce(
+    (s: number, i: any) => s + i.quantity * i.rate,
+    0,
+  );
+  const itemTaxTotal = items.reduce(
+    (s: number, i: any) => s + (i.quantity * i.rate * i.vatRate) / 100,
+    0,
+  );
+  const taxRowTotal = taxRows.reduce(
+    (s: number, t: any) => s + (t.amount * t.taxRate) / 100,
+    0,
+  );
+
+  const grandTotal = num(api.grandTotal) || subTotal + itemTaxTotal + taxRowTotal;
   const roundedTotal = Math.round(grandTotal);
   const roundingAdjustment = Number((roundedTotal - grandTotal).toFixed(2));
 
- 
+  const advanceAmount = (api.advances_payments || []).reduce(
+    (s: number, p: any) => s + num(p.allocated_amount),
+    0,
+  );
 
+  // ── Mapped form ────────────────────────────
   const mappedForm: PurchaseInvoiceFormData = {
     ...emptyPOForm,
 
-    poNumber: api.lpoNumber || "",
-    date: api.poDate || "",
-    taxCategory: api.taxCategory || "",
+    poNumber: str(api.lpoNumber),
+    date: str(api.poDate),
+    taxCategory: str(api.taxCategory),
     updateStock: api.updateStock ?? true,
-    supplier: api.supplierName || "",
-    supplierId: api.supplierId || "",
-    supplierCode: api.supplierCode || "",
-    supplierEmail: api.emailId || api.email || "",
-    supplierPhone: api.phone || "",
-    supplierContact: api.contactPerson || "",
 
-    currency: api.currency ,
-    status: api.status,
+    supplier: str(api.supplierName),
+    supplierId: str(api.supplierId),
+    supplierCode: str(api.supplierCode),
+    supplierEmail: str(api.emailId || api.email),
+    supplierPhone: str(api.phone),
+    supplierContact: str(api.contactPerson),
 
-    costCenter: api.costCenter || "",
-    project: api.project || "",
-    
-    destnCountryCd: api.destnCountryCd || api.exportToCountry || "",
-    shippingRule: api.shippingRule || "",
-    incoterm: api.incoterm || "",
-    placeOfSupply: api.placeOfSupply || "",
-    taxesChargesTemplate: api.taxesChargesTemplate || "",
-    paymentTermsTemplate: api.paymentTermsTemplate || "",
+    currency: str(api.currency),
+    status: str(api.status),
+    costCenter: str(api.costCenter),
+    project: str(api.project),
+
+    destnCountryCd: str(api.destnCountryCd || api.exportToCountry),
+    shippingRule: str(api.shippingRule),
+    incoterm: str(api.incoterm),
+    placeOfSupply: str(api.placeOfSupply),
+    taxesChargesTemplate: str(api.taxesChargesTemplate),
+    paymentTermsTemplate: str(api.paymentTermsTemplate),
+
+    supplierInvoiceNumber: str(api.spplrInvcNo),
+    supplierInvoiceDate: str(api.spplrInvcDt),
+    paymentType: str(api.paymentType),
+    transactionProgress: str(api.transactionProgress),
+
+    warehouse: str(api.warehouse),
 
     terms: buyingTerms ? { buying: buyingTerms } : undefined,
+    addresses,
 
-    addresses: addresses,
     items: items.length > 0 ? items : [{ ...emptyPOForm.items[0] }],
-    taxRows: taxRows.length > 0 ? taxRows : [],
-    paymentRows: paymentRows.length > 0 ? paymentRows : [],
+    taxRows,
+    paymentRows,
 
-    totalQuantity: totalQuantity,
-    grandTotal: grandTotal,
-    
-    advanceAmount:
-      (api.advances_payments || []).reduce(
-        (sum: number, p: any) => sum + Number(p.allocated_amount || 0),
-        0
-      ),
+    totalQuantity,
+    subTotal,
+    grandTotal,
+    advanceAmount,
+    roundingAdjustment,
+    roundedTotal,
 
-    roundingAdjustment: roundingAdjustment,
-    roundedTotal: roundedTotal,
-
+    // Email template (not persisted from API)
     templateName: "",
     templateType: "",
     subject: "",
@@ -297,21 +347,38 @@ else if (api.tax) {
     acceptedTerms: {},
   };
 
-
   return mappedForm;
 };
 
+// ─────────────────────────────────────────────
+// Supplier API → AddressBlock
+// ─────────────────────────────────────────────
+
 export const mapSupplierToAddress = (
   supplier: any,
-  prev: AddressBlock
-): AddressBlock => ({
-  ...prev,
-  addressLine1: supplier?.billingAddressLine1 ?? "",
-  addressLine2: supplier?.billingAddressLine2 ?? "",
-  city: supplier?.billingCity ?? "",
-  state: supplier?.province ?? "",
-  country: supplier?.billingCountry ?? "",
-  postalCode: supplier?.billingPostalCode ?? "",
-  phone: supplier?.phoneNo ?? "",
-  email: supplier?.emailId ?? "",
-});
+  prev: AddressBlock,
+): AddressBlock => {
+  const addr =
+    supplier.addresses?.find((a: any) => a.isPrimary) ||
+    supplier.addresses?.[0];
+
+  if (!addr) return prev;
+
+  const primaryContact =
+    supplier.contacts?.find((c: any) => c.isPrimary) ||
+    supplier.contacts?.[0];
+
+  return {
+    id: str(addr.id),
+    addressTitle: str(supplier.name) || prev.addressTitle,
+    addressType: addr.type === "Shipping" ? "Shipping" : "Billing",
+    addressLine1: str(addr.line1),
+    addressLine2: str(addr.line2),
+    city: str(addr.city),
+    state: str(addr.state || addr.county),
+    country: str(addr.country),
+    postalCode: str(addr.postalCode),
+    phone: str(primaryContact?.mobile || primaryContact?.phone),
+    email: str(primaryContact?.email),
+  };
+};

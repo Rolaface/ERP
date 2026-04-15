@@ -1,221 +1,136 @@
-import React, { useState } from "react";
-
-import QuotationsTable from "./Quotations";
-import InvoiceTable from "./Invoices";
-import ReportTable from "./Reports";
-import POS from "./POS";
-import SalesDashboard from "./SalesDashboard";
-import ProformaInvoicesTable from "./ProformaInvoice";
-
-import QuotationModal from "../../components/sales/QuotationModal";
-import InvoiceModal from "../../components/sales/InvoiceModal";
-import ProformaInvoiceModal from "../../components/sales/ProformaInvoiceModal";
-import PosModal from "../../components/sales/PosModal";
-import { showApiError, showSuccess } from "../../utils/alert";
-import { createSalesInvoice } from "../../api/salesApi";
-import { createQuotation } from "../../api/quotationApi";
-import CreditNotesTable from "./CreditNotesTable";
-import DebitNotesTable from "./DebitNotesTable";
-import SalesAnalytics from "./SalesAnalytics";
-
+import React, { Suspense, lazy, useMemo } from "react";
+import { useSearchParams, useNavigate, useLocation, useOutletContext } from "react-router-dom";
 import {
   FaMoneyBillWave,
-  FaCalendarAlt,
+  FaTachometerAlt,
   FaFileInvoice,
   FaFileInvoiceDollar,
   FaChartBar,
 } from "react-icons/fa";
+import {
+  AppPage,
+  AppPageBody,
+  AppPageHeader,
+  AppTabs,
+} from "../../components/ui/app-shell";
+import AppSkeleton from "../../components/ui/AppSkeleton";
 
-type ModalType = null | "quotation" | "invoice" | "proforma" | "pos";
+const QuotationsTable = lazy(() => import("./Quotations"));
+const InvoiceTable = lazy(() => import("./Invoices"));
+const ReportTable = lazy(() => import("./Reports"));
+const POS = lazy(() => import("./POS"));
+const SalesDashboard = lazy(() => import("./SalesDashboard"));
+const ProformaInvoicesTable = lazy(() => import("./ProformaInvoice"));
+const CreditNotesTable = lazy(() => import("./CreditNotesTable"));
+const DebitNotesTable = lazy(() => import("./DebitNotesTable"));
+const SalesAnalytics = lazy(() => import("./SalesAnalytics"));
+
+type OutletContextType = {
+  openInvoiceCreate: () => void;
+  openInvoiceEdit: (invoiceNumber: string, data: any) => void;
+  openProformaCreate: () => void;
+  openProformaEdit: (proformaId: string, data: any) => void;
+  openQuotationCreate: () => void;
+  openQuotationEdit: (quotationId: string, data: any) => void;
+  openCustomerCreate: () => void;
+  openCustomerEdit: (id: string, data: any) => void;
+  openSupplierCreate: () => void;
+  openSupplierEdit: (id: string, data: any) => void;
+  openPOCreate: () => void;
+  openPOEdit: (poId: string | number) => void;
+};
 
 const salesTabs = [
-  { id: "salesdashboard", name: "Dashboard", icon: <FaCalendarAlt /> },
-  { id: "quotations", name: "Quotations", icon: <FaFileInvoice /> },
+  { id: "salesdashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
+  { id: "quotations", label: "Quotations", icon: <FaFileInvoice /> },
   {
     id: "proformaInvoice",
-    name: "Proforma Invoice",
+    label: "Proforma Invoice",
     icon: <FaFileInvoiceDollar />,
   },
-  { id: "invoices", name: "Invoices", icon: <FaFileInvoiceDollar /> },
-
-  { id: "creditNotes", name: "Credit Notes", icon: <FaFileInvoiceDollar /> },
-  { id: "debitNotes", name: "Debit Notes", icon: <FaFileInvoiceDollar /> },
-
-  // { id: "pos", name: "POS", icon: <FaCashRegister /> },
-  { id: "reports", name: "Reports", icon: <FaChartBar /> },
-  { id: "salesAnalytics", name: "Sales Analytics", icon: <FaChartBar /> },
+  { id: "invoices", label: "Invoices", icon: <FaFileInvoiceDollar /> },
+  { id: "creditNotes", label: "Credit Notes", icon: <FaFileInvoiceDollar /> },
+  { id: "debitNotes", label: "Debit Notes", icon: <FaFileInvoiceDollar /> },
+  { id: "reports", label: "Reports", icon: <FaChartBar /> },
+  { id: "salesAnalytics", label: "Sales Analytics", icon: <FaChartBar /> },
 ];
 
+const DEFAULT_TAB = "salesdashboard";
+
 const SalesModule: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("salesdashboard");
-  const [openModal, setOpenModal] = useState<ModalType>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { openInvoiceCreate, openProformaCreate, openQuotationCreate } =
+    useOutletContext<OutletContextType>();
+  
+  // Get active tab from URL query param, default to dashboard
+  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
+  
+  const isDashboardTab = activeTab === "salesdashboard";
 
-  const TAB_CONFIG: Record<
-    string,
-    { component: React.ReactNode; onAdd?: () => void }
-  > = {
-    salesdashboard: {
-      component: <SalesDashboard />,
-    },
-    quotations: {
-      component: (
-        <QuotationsTable
-          key={refreshKey}
-          onAddQuotation={() => setOpenModal("quotation")}
-          onExportQuotation={() => {
-            console.log("Export quotations");
-          }}
-        />
-      ),
-    },
-    proformaInvoice: {
-      component: (
-        <ProformaInvoicesTable
-          refreshKey={refreshKey}
-          onAddProformaInvoice={() => setOpenModal("proforma")}
-          onExportProformaInvoice={() => {
-            console.log("Export proforma invoices");
-          }}
-        />
-      ),
-    },
-    invoices: {
-      component: (
-        <InvoiceTable
-          key={refreshKey}
-          onAddInvoice={() => setOpenModal("invoice")}
-          onExportInvoice={() => {
-            console.log("Export invoices");
-          }}
-        />
-      ),
-    },
-
-    pos: {
-      component: <POS />,
-      onAdd: () => setOpenModal("pos"),
-    },
-    creditNotes: {
-      component: <CreditNotesTable />,
-    },
-
-    debitNotes: {
-      component: <DebitNotesTable />,
-    },
-
-    reports: {
-      component: <ReportTable />,
-    },
-    salesAnalytics: {
-      component: <SalesAnalytics />,
-    },
+  const handleTabChange = (tabId: string) => {
+    // Update URL with new tab, preserving other query params
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", tabId);
+    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
   };
 
-  const handleInvoiceSubmit = async (payload: any) => {
-    console.log("[Sales] handleInvoiceSubmit called");
-    try {
-      const response = await createSalesInvoice(payload);
-
-      if (!response || ![200, 201].includes(response.status_code)) {
-        showApiError(response);
-        return;
-      }
-
-      showSuccess(response.message || "Invoice created successfully");
-
-      setOpenModal(null); // Ensure modal closes immediately after success
-      setRefreshKey((prev) => prev + 1);
-    } catch (error: any) {
-      showApiError(error);
+  const renderTab = () => {
+    switch (activeTab) {
+      case "salesdashboard":
+        return <SalesDashboard />;
+      case "quotations":
+        return (
+          <QuotationsTable
+            key={activeTab}
+            onAddQuotation={() => openQuotationCreate()}
+            onExportQuotation={() => console.log("Export quotations")}
+          />
+        );
+      case "proformaInvoice":
+        return (
+          <ProformaInvoicesTable
+            key={activeTab}
+            onAddProformaInvoice={() => openProformaCreate()}
+            onExportProformaInvoice={() => console.log("Export proforma invoices")}
+          />
+        );
+      case "invoices":
+        return (
+          <InvoiceTable
+            key={activeTab}
+            onAddInvoice={() => openInvoiceCreate()}
+            onExportInvoice={() => console.log("Export invoices")}
+          />
+        );
+      case "pos":
+        return <POS />;
+      case "creditNotes":
+        return <CreditNotesTable />;
+      case "debitNotes":
+        return <DebitNotesTable />;
+      case "reports":
+        return <ReportTable />;
+      case "salesAnalytics":
+        return <SalesAnalytics />;
+      default:
+        return <SalesDashboard />;
     }
   };
-
-  const handleQuotationSubmit = async (payload: any) => {
-    try {
-      const response = await createQuotation(payload);
-
-      if (!response || ![200, 201].includes(response.status_code)) {
-        throw response;
-      }
-
-      setRefreshKey((prev) => prev + 1);
-      setOpenModal(null);
-    } catch (error: any) {
-      throw error;
-    }
-  };
-
-  const handleProformaCreated = () => {
-    setRefreshKey((prev) => prev + 1);
-    setOpenModal(null);
-  };
-
-  const tab = TAB_CONFIG[activeTab];
 
   return (
-    <div className="p-6 bg-app">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
-          <FaMoneyBillWave /> Sales
-        </h2>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-4">
-        {salesTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors ${
-              activeTab === tab.id
-                ? "text-primary border-b-2 border-current"
-                : "text-muted hover:text-main"
-            }`}
-          >
-            {tab.icon}
-            {tab.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      <div className="">
-        {tab?.onAdd && (
-          <div className="flex items-center justify-end gap-4 mb-4">
-            {/* Add button if needed */}
-          </div>
-        )}
-
-        {tab?.component}
-      </div>
-
-      {/* Modals */}
-      <QuotationModal
-        isOpen={openModal === "quotation"}
-        onClose={() => setOpenModal(null)}
-        onSubmit={handleQuotationSubmit}
+    <AppPage viewportLocked={isDashboardTab}>
+      <AppPageHeader
+        title="Sales"
+        description="Quotes, invoices and sales analytics in one workflow."
+        icon={<FaMoneyBillWave />}
       />
-
-      <InvoiceModal
-        isOpen={openModal === "invoice"}
-        onClose={() => setOpenModal(null)}
-        onSubmit={handleInvoiceSubmit}
-      />
-
-      <ProformaInvoiceModal
-        isOpen={openModal === "proforma"}
-        onClose={() => setOpenModal(null)}
-        onSubmit={handleProformaCreated}
-      />
-
-      <PosModal
-        isOpen={openModal === "pos"}
-        onClose={() => setOpenModal(null)}
-        onSave={(data) => console.log("POS", data)}
-      />
-    </div>
+      <AppTabs tabs={salesTabs} activeTab={activeTab} onChange={handleTabChange} />
+      <AppPageBody viewportLocked={isDashboardTab}>
+        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
+      </AppPageBody>
+    </AppPage>
   );
 };
 

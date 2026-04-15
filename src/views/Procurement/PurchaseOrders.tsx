@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from "react";
-import PurchaseOrderModal from "../../components/procurement/PurchaseOrderModal";
+import React, { useState, useEffect, useCallback } from "react";
+import { useOutletContext } from "react-router-dom";
 import PurchaseOrderView from "../../views/Procurement/purchaseorderview";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
+import { fireManagedSwal } from "../../utils/swalManager";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import type { Column } from "../../components/ui/Table/type";
+import { createPurchaseInvoiceFromPO } from "../../api/procurement/PurchaseOrderApi";
 import {
   showApiError,
   showSuccess,
@@ -17,7 +19,7 @@ import {
 } from "../../utils/alert";
 import {
   getPurchaseOrders,
-  updatePurchaseOrderStatus,
+  updatePurchaseOrderStatus,deletePo
 } from "../../api/procurement/PurchaseOrderApi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -28,11 +30,14 @@ import { generatePurchaseOrderPDF } from "../../components/template/purchaseorde
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
-import PurchaseOrderDetailModal, {
-  type PurchaseOrderDetail,
-} from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+
+type OutletContextType = {
+  openPOCreate: () => void;
+  openPOEdit: (poId: string | number) => void;
+};
+import PurchaseOrderDetailModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
-import Tooltip from "../../components/Tooltip";
 
 interface PurchaseOrder {
   id: string;
@@ -68,6 +73,8 @@ const statusOptions = [
 ];
 
 const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
+  const { openPOEdit } = useOutletContext<OutletContextType>();
+  
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -81,7 +88,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
   const [company, setCompany] = useState<any | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(null);
+  const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(null);
 
   // ── PDF preview modal (kept — do not remove)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -89,7 +96,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
 
   // ── Drawer (same pattern as ProformaInvoicesTable)
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(
+  const [drawerData, setDrawerData] = useState< | null>(
     null,
   );
   const [drawerLoading, setDrawerLoading] = useState(false);
@@ -156,6 +163,15 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
     fetchOrders();
   }, [page, pageSize, filters]);
 
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.PURCHASE_ORDER_LIST, () => {
+      fetchOrders();
+    });
+    return () => unsubscribe();
+  }, [subscribeToRefresh, fetchOrders]);
+
   const handleMakePayment = (order: PurchaseOrder) => {
   if (order.status !== "Approved") {
     showApiError("Only Approved purchase orders can have payments");
@@ -166,6 +182,27 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   setPaymentModalOpen(true);
 };
 
+const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
+  try {
+    showLoading("Creating Purchase Invoice...");
+
+    const res = await createPurchaseInvoiceFromPO(order.id);
+
+    if (!res || res.status_code !== 201) {
+      throw new Error("Failed to create invoice");
+    }
+
+    closeSwal();
+    showSuccess("Purchase Invoice created successfully");
+
+    // OPTIONAL: refresh table
+    fetchOrders();
+
+  } catch (err: any) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   const handleDrawerPdf = async (poId: string) => {
     setDrawerPdfLoading(true);
@@ -226,9 +263,8 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
 
   // ── Modal handlers
   const handleAddClick = () => {
-    setSelectedOrder(null);
-    setModalOpen(true);
-    onAdd?.();
+    console.log("OPEN PURCHASE MODAL");
+    openPOEdit(0); // This will create a new PO (poId is undefined)
   };
 
   const handleEdit = (order: PurchaseOrder, e: React.MouseEvent) => {
@@ -239,20 +275,43 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
       return;
     }
 
-    setSelectedOrder(order);
-    setModalOpen(true);
+    openPOEdit(order.id);
   };
 
-  const handleDelete = (order: PurchaseOrder, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm(`Delete Purchase Order "${order.id}"?`)) {
+const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
+  e.stopPropagation();
+
+  const confirm = await fireManagedSwal({
+    icon: "warning",
+    title: "Are you sure?",
+    text: `Delete Purchase Order ${order.id}?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, delete",
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  try {
+    showLoading("Deleting Purchase Order...");
+
+    const res = await deletePo(order.id);
+
+   
+    if (res.status < 200 || res.status >= 300) {
+      throw new Error("Delete failed");
     }
-  };
 
-  const handleCloseModal = () => setModalOpen(false);
-  const handlePOSaved = async () => {
+    closeSwal();
+    showSuccess("Purchase Order deleted successfully");
+
     await fetchOrders();
-  };
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
 
   // ── Export all pages
   const fetchAllPOsForExport = async () => {
@@ -385,11 +444,9 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   header: "PO ID",
   align: "left",
   render: (o) => (
-    <Tooltip content={o.id}>
-      <span className="truncate max-w-[120px] block">
-        {o.id || "—"}
-      </span>
-    </Tooltip>
+    <span className="truncate max-w-[120px] block">
+      {o.id || "—"}
+    </span>
   ),
 },
     {
@@ -397,11 +454,9 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   header: "Reference Code",
   align: "left",
   render: (o) => (
-    <Tooltip content={o.referenceNumber}>
-      <span className="truncate max-w-[140px] block">
-        {o.referenceNumber || "—"}
-      </span>
-    </Tooltip>
+    <span className="truncate max-w-[140px] block">
+      {o.referenceNumber || "—"}
+    </span>
   ),
 },
    {
@@ -409,11 +464,9 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   header: "Supplier",
   align: "left",
   render: (o) => (
-    <Tooltip content={o.supplier}>
-      <span className="truncate max-w-[160px] block">
-        {o.supplier || "—"}
-      </span>
-    </Tooltip>
+    <span className="truncate max-w-[160px] block">
+      {o.supplier || "—"}
+    </span>
   ),
 },
   {
@@ -421,9 +474,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   header: "Date",
   align: "left",
   render: (o) => (
-    <Tooltip content={o.date}>
-      <span>{o.date || "—"}</span>
-    </Tooltip>
+    <span>{o.date || "—"}</span>
   ),
 },
     {
@@ -431,11 +482,9 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
       header: "Amount",
       align: "right",
       render: (o) => (
-        <Tooltip content={Number(o.amount || 0).toFixed(2)}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {Number(o.amount || 0).toFixed(2)}
-          </code>
-        </Tooltip>
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          {Number(o.amount || 0).toFixed(2)}
+        </code>
       ),
     },
     {
@@ -449,9 +498,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   header: "Delivery Date",
   align: "left",
   render: (o) => (
-    <Tooltip content={o.deliveryDate}>
-      <span>{o.deliveryDate || "—"}</span>
-    </Tooltip>
+    <span>{o.deliveryDate || "—"}</span>
   ),
 },
     {
@@ -492,6 +539,14 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
         },
       ]
     : []),
+    ...(o.status === "Approved"
+  ? [
+      {
+        label: "Make Purchase Invoice",
+        onClick: () => handleCreateInvoiceFromPO(o),
+      },
+    ]
+  : []),
               ...(STATUS_TRANSITIONS[o.status as POStatus] ?? []).map(
                 (status) => ({
                   label: `Mark as ${status}`,
@@ -507,7 +562,7 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
   ];
 
   return (
-    <div className="p-6">
+    <div className="h-full min-h-0">
       <Table
         columns={columns}
         data={orders}
@@ -553,13 +608,6 @@ const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(nul
         }
       />
 
-
-      <PurchaseOrderModal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-        poId={selectedOrder?.id}
-        onSubmit={handlePOSaved}
-      />
 
 
       <PurchaseOrderDetailModal

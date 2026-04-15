@@ -1,35 +1,16 @@
 import React, { useState, useEffect } from "react";
-import {
-  updateItemGroupById,
-  createItemGroup,
-} from "../../api/itemCategoryApi";
-import { getRolaUOMs } from "../../api/itemZraApi";
-import { showApiError, showValidationError } from "../../utils/alert";
-import ItemGenericSelect from "../selects/ItemGenericSelect";
-import Modal from "../ui/modal/modal";
+import { showValidationError, showApiError } from "../../utils/alert";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
+import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
-import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
-
-/* 
-   Default Form State
- */
+import { Layers } from "lucide-react";
+import type { CreateItemGroupPayload } from "../../api/itemGroupApi";
 
 const emptyForm = {
-  id: "",
-  groupName: "",
-  description: "",
-  salesAccount: "",
-  sellingPrice: "",
-  unitOfMeasurement: "",
-  itemType: "",
+  item_group_name: "",
+  is_group: "0",
+  parent: "",
 };
-
-const itemTypeOptions = [
-  { value: "1", label: "Raw Material" },
-  { value: "2", label: "Finished Product" },
-  { value: "3", label: "Service" },
-];
-
 
 const inputClass =
   "h-8 rounded-md border border-theme bg-card text-main text-sm px-2.5 w-full " +
@@ -37,47 +18,39 @@ const inputClass =
 
 const labelClass =
   "text-[11px] font-medium uppercase tracking-wide text-muted";
-/* 
-   Component
- */
+
 
 const ItemsCategoryModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (data: Record<string, any>) => void;
-  initialData?: Record<string, any> | null;
+  onSubmit?: (data: CreateItemGroupPayload) => void;
+  initialData?: Record<string, any> | null; 
   isEditMode?: boolean;
-}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false }) => {
+  modalId?: string;
+}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false, modalId }) => {
+  const resolvedModalId = modalId || (isEditMode && initialData?.name
+    ? `item-group-edit-${initialData.name}-${Date.now()}`
+    : `item-group-create-${Date.now()}`);
+    
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"details" | "pricing">("details");
-
-  /* 
-     Load Data (Edit Safe)
-  ──────────────────────────────── */
-
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
         setForm({
-          ...emptyForm,
-          ...initialData,
+          item_group_name: initialData.item_group_name || "",
+          is_group: initialData.is_group !== undefined ? String(initialData.is_group) : "0",
+          parent: initialData.parent || initialData.parent_item_group || "",
         });
       } else {
         setForm(emptyForm);
       }
-      setActiveTab("details");
     }
   }, [isOpen, initialData]);
 
-  /* 
-     Change Handler
-  ──────────────────────────────── */
-
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -86,49 +59,38 @@ const ItemsCategoryModal: React.FC<{
     }));
   };
 
-  /* 
-     Submit
-  ──────────────────────────────── */
-const validateForm = () => {
-  if (!form.itemType) {
-    setActiveTab("details");
-    showValidationError("Item Type is required.");
-    return false;
-  }
-
-  if (!form.groupName?.trim()) {
-    setActiveTab("details");
-    showValidationError("Category Name is required.");
-    return false;
-  }
-
-  return true;
-};
+  const validateForm = () => {
+    if (!form.item_group_name?.trim()) {
+      showValidationError("Item Group Name is required.");
+      return false;
+    }
+    if (!form.parent?.trim() && !isEditMode) {
+      showValidationError("Parent Item Group is required.");
+      return false;
+    }
+    return true;
+  };
 
 const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-   if (loading) return; 
-  if (!validateForm()) return;
+    if (loading) return;
+    if (!validateForm()) return;
 
-  setLoading(true);
+    setLoading(true);
 
     try {
-      const payload: any = { ...form };
+      const payload: CreateItemGroupPayload = {
+        item_group_name: form.item_group_name.trim(),
+        is_group: Number(form.is_group) as 0 | 1,
+        parent: form.parent.trim(),
+        doctype: "Item Group",
+        is_root: "false",
+      };
 
-      if (!isEditMode) delete payload.id;
-
-      let response;
-
-      if (isEditMode && initialData?.id) {
-        response = await updateItemGroupById(initialData.id, payload);
-      } else {
-        response = await createItemGroup(payload);
-      }
-
-      if (!response || ![200, 201].includes(response.status_code)) {
-        showApiError(response);
-        return;
+      if (isEditMode && initialData?.name) {
+        payload.id = initialData.name;
+        payload.original_name = initialData.name;
       }
 
       onSubmit?.(payload);
@@ -140,188 +102,105 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
   };
 
-  /* 
-     Reset
-  ──────────────────────────────── */
-
   const reset = () => {
     if (initialData) {
-      setForm({ ...emptyForm, ...initialData });
+      setForm({
+        item_group_name: initialData.item_group_name || "",
+        is_group: initialData.is_group !== undefined ? String(initialData.is_group) : "0",
+        parent: initialData.parent || initialData.parent_item_group || "",
+      });
     } else {
       setForm(emptyForm);
     }
   };
 
-const handleClose = () => {
-  setForm(emptyForm);
-  setActiveTab("details");
-  setLoading(false);
-  onClose();
-};
+  const handleClose = () => {
+    setForm(emptyForm);
+    setLoading(false);
+    onClose();
+  };
 
   if (!isOpen) return null;
 
-  /* 
-     UI
-  ──────────────────────────────── */
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={handleClose}
-      title={isEditMode ? "Edit Item Category" : "Add Item Category"}
-      subtitle="Manage category configuration"
-      customWidth="55vw"
+      onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+      title={isEditMode ? "Edit Item Group" : "Add Item Group"}
+      subtitle="Manage Item Group Hierarchy"
+      icon={Layers}
+      customWidth="35vw"
       height="45vh"
     >
-      <form onSubmit={handleSubmit} noValidate className="h-full flex flex-col">
+      <form onChange={() => markDirty()} onSubmit={handleSubmit} noValidate className="h-full flex flex-col">
 
-        {/* ───── Tabs ───── */}
-        <div className="border-b border-theme px-6 bg-app shrink-0">
-          <div className="flex gap-6">
-            {[
-              { key: "details", label: "Category Details" },
-              { key: "pricing", label: "Pricing & Accounts" },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() =>
-                  setActiveTab(tab.key as "details" | "pricing")
-                }
-                className={`py-3 text-xs font-semibold tracking-wide transition-all ${
-                  activeTab === tab.key
-                    ? "text-primary border-b-2 border-primary"
-                    : "text-muted border-b-2 border-transparent hover:text-main"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ───── Content ───── */}
         <section className="flex-1 overflow-y-auto p-6 bg-app">
-
-          {/* DETAILS TAB */}
-          {activeTab === "details" && (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5">
-
-          <label className="flex flex-col gap-0.5">
-  <span className={labelClass}>
-    Item Type <span className="text-danger">*</span>
-  </span>
-
-  <select
-    name="itemType"
-    value={form.itemType}
-    onChange={handleChange}
-    required
-    className={inputClass}
-  >
-    <option value="">Select Type</option>
-    {itemTypeOptions.map((opt) => (
-      <option key={opt.value} value={opt.value}>
-        {opt.label}
-      </option>
-    ))}
-  </select>
-</label>
-
-             <label className="flex flex-col gap-0.5">
-  <span className={labelClass}>
-    Category Name <span className="text-danger">*</span>
-  </span>
-
-  <input
-    type="text"
-    name="groupName"
-    value={form.groupName}
-    onChange={handleChange}
-    required
-    className={inputClass}
-  />
-</label>
-
-              <label className="flex flex-col gap-0.5">
-  <span className={labelClass}>Description</span>
-
-  <input
-    type="text"
-    name="description"
-    value={form.description}
-    onChange={handleChange}
-    className={inputClass}
-  />
-</label>
-
-                <ItemGenericSelect
-                  label="UOM"
-                  value={form.unitOfMeasurement}
-                  fetchData={getRolaUOMs}
-                  variant="modal"
-                  onChange={(item) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      unitOfMeasurement: item?.id || "",
-                    }))
-                  }
-                />
-              </div>
-            </>
-          )}
-
-          {/* PRICING TAB */}
-          {activeTab === "pricing" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5">
-
-        <label className="flex flex-col gap-0.5">
-  <span className={labelClass}>Selling Price</span>
-
-  <input
-    type="number"
-    name="sellingPrice"
-    value={form.sellingPrice}
-    onChange={handleChange}
-    className={`${inputClass} no-spinner`}
-  />
-</label>
+          <div className="grid grid-cols-1 gap-5">
 
             <label className="flex flex-col gap-0.5">
-  <span className={labelClass}>Sales Account</span>
+              <span className={labelClass}>
+                Parent Group <span className="text-danger">*</span>
+              </span>
+              <input
+                type="text"
+                name="parent"
+                value={form.parent}
+                onChange={handleChange}
+                placeholder="e.g. All Item Groups, Services..."
+                required
+                className={inputClass}
+                // disabled={isEditMode}
+              />
+            </label>
 
-  <input
-    type="text"
-    name="salesAccount"
-    value={form.salesAccount}
-    onChange={handleChange}
-    className={inputClass}
-  />
-</label>
+            <label className="flex flex-col gap-0.5">
+              <span className={labelClass}>
+                Item Group Name <span className="text-danger">*</span>
+              </span>
+              <input
+                type="text"
+                name="item_group_name"
+                value={form.item_group_name}
+                onChange={handleChange}
+                required
+                className={inputClass}
+              />
+            </label>
 
-            </div>
-          )}
+            <label className="flex flex-col gap-0.5">
+              <span className={labelClass}>Group Node</span>
+              <select
+                name="is_group"
+                value={form.is_group}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="0">Leaf Node (Contains Items)</option>
+                <option value="1">Group Node (Contains Sub-Groups)</option>
+              </select>
+            </label>
+
+          </div>
         </section>
 
-        {/* ───── Footer ───── */}
         <div className="flex justify-end gap-3 border-t border-theme px-6 py-4 bg-app shrink-0">
-          <Button variant="secondary" type="button" onClick={handleClose}>
+          <Button variant="secondary" type="button" onClick={() => handleCloseWithConfirm(handleClose, resolvedModalId)}>
             Cancel
           </Button>
 
-          <Button variant="ghost" type="button" onClick={reset}>
+          <Button variant="ghost" type="button" onClick={() => { resetDirty(); reset(); }}>
             Reset
           </Button>
 
           <Button variant="primary" type="submit" loading={loading}>
-            {isEditMode ? "Update Category" : "Save Category"}
+            {isEditMode ? "Update Group" : "Save Group"}
           </Button>
         </div>
 
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 
