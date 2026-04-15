@@ -104,12 +104,13 @@ const GlobalModalHandler: React.FC = () => {
       closeModal(modal.id);
     };
 
-    const handleSubmit: ModalSubmitHandler = async (data) => {
-      await context?.onSuccess?.(data);
-      await context?.callback?.(data);
-      closeModal(modal.id);
-      return true;
-    };
+const handleSubmit: ModalSubmitHandler = async (data) => {
+  await context?.onSuccess?.(data);
+
+  await context?.callback?.(data);
+
+  return true;
+};
 
     const wrappedModal = (modalContent: React.ReactNode) => (
       <Suspense fallback={modalFallback}>
@@ -135,6 +136,7 @@ const GlobalModalHandler: React.FC = () => {
         return wrappedModal(
           <SupplierModal
             key={modal.id}
+
             modalId={modal.id}
             isOpen={true}
             onClose={handleClose}

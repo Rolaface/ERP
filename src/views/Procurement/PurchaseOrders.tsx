@@ -188,7 +188,7 @@ const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
 
     const res = await createPurchaseInvoiceFromPO(order.id);
 
-    if (!res || res.status !== 200) {
+    if (!res || res.status_code !== 201) {
       throw new Error("Failed to create invoice");
     }
 

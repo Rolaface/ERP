@@ -56,10 +56,9 @@ export const DEFAULT_INVOICE_FORM: Invoice = {
   exchangeRt: "1",
   dateOfInvoice: "",
   dueDate: "",
-  invoiceStatus: "Draft",
-  invoiceType: "Non-Export",
   destnCountryCd: "",
   lpoNumber: "",
+  taxCategory: "",
 
    updateStock: true,
   warehouse: "",

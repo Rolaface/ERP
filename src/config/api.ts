@@ -373,6 +373,7 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.create`,
 
     updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.update_purchase_invoices_status`,
+    delete:`${ERP_BASE}/api/method/frappe.client.delete`
   },
 
   /* =========================
