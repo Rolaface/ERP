@@ -166,6 +166,7 @@ export interface PurchaseOrderFormData {
   useShippingAddress: boolean;
   useCompanyBillingAddress: boolean;
   addresses: {
+    
     supplierAddress: AddressBlock;
     dispatchAddress: AddressBlock;
     shippingAddress: AddressBlock;
@@ -207,6 +208,7 @@ export const emptyItem: ItemRow = {
   rate: 0,
   vatCd: "",
   vatRate: 0,
+  taxCategory:"",
   packing: "",
   packingUnit: 0,
   packingSize: 0,

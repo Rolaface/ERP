@@ -71,8 +71,8 @@ export const mapSupplierApi = (d: any): Supplier => {
     // ── Terms — API sends terms.Buying (capital B); keep BOTH keys so that
     //    SupplierDetailView (reads Buying) and forms (read buying) both work ─
     terms: {
-      Buying: d.terms?.Buying ?? null,
-      buying: d.terms?.Buying ?? d.terms?.buying ?? { payment: { phases: [] } },
+      buying: d.terms?.buying ?? null,
+      buying: d.terms?.buying ?? d.terms?.buying ?? { payment: { phases: [] } },
     },
   } as Supplier;
 };
@@ -126,7 +126,7 @@ export const mapSupplierToApi = (f: SupplierFormData, id?: string | number) => {
 
     // API expects terms.Buying (capital B)
     terms: {
-      Buying: f.terms?.buying ?? f.terms?.buying ?? { payment: { phases: [] } },
+      buying: f.terms?.buying ?? f.terms?.buying ?? { payment: { phases: [] } },
     },
   };
 };
@@ -219,7 +219,7 @@ export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
     terms: {
       buying:
         s.terms?.buying ??
-        (s.terms as any)?.Buying ??
+        (s.terms as any)?.buying ??
         emptySupplierForm.terms?.buying,
     },
   };

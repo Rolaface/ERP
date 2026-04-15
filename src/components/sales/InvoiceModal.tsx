@@ -384,6 +384,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   formData={formData}
                   symbol={symbol}
                   ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                  taxCategory={formData.taxCategory || customerDetails?.customerTaxCategory}
                 />
 
                 {/* Right panel: Customer Details + Summary */}

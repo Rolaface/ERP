@@ -416,7 +416,7 @@ const handleFormChange = useCallback((
         ),
         supplierContact: primaryContact?.fullName || "",
         terms: {
-  buying: supplier?.terms?.Buying || prev.terms?.buying,
+  buying: supplier?.terms?.buying || prev.terms?.buying,
 },
 
         currency: supplier.currency || prev.currency,

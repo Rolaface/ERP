@@ -41,6 +41,7 @@ export interface PaymentRow {
 }
 
 export type AddressBlock = {
+  id:string;
   addressTitle: string;
   addressType: "Billing" | "Shipping";
   addressLine1: string;
@@ -183,7 +184,7 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   taxesChargesTemplate: "",
   supplierInvoiceNumber: "",
   supplierInvoiceDate: "",
-  paymentType: "Bank transfer",
+  paymentType: "",
   transactionProgress: "APPROVED",
   updateStock: true,
   costCenter: "",

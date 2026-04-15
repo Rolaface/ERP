@@ -6,6 +6,7 @@ import type {
 } from "../../../types/Supply/purchaseInvoice";
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
+import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import WarehouseSelect from "../../selects/WarehouseSelect";
 import DatePickerInput from "../../calendar/DatePickerInput";
@@ -13,7 +14,9 @@ import CostCenterSelect from "../../selects/CostCenterSelect";
 import ProjectSelect from "../../selects/ProjectSelect";
 import Tooltip from "../../Tooltip";
 import ItemTable from "../../common/ItemTable";
+
 import type { ItemTableActions, ItemTableUI } from "../../common/ItemTable";
+import { getAllModeOfPayment } from "../../../api/BankAccountApi";
 
 interface DetailsTabProps {
   form: PurchaseInvoiceFormData;
@@ -42,28 +45,51 @@ const ITEMS_PER_PAGE = 5;
 
 const PIColumnHeaders: React.FC = () => (
   <tr className="border-b border-theme">
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">#</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">Item</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[76px]">Description</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">
+      #
+    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
+      Item
+    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[76px]">
+      Description
+    </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
-      Packing <span className="ml-1 text-[9px] font-normal text-muted/60">(unit × size)</span>
+      Packing{" "}
+      <span className="ml-1 text-[9px] font-normal text-muted/60">
+        (unit × size)
+      </span>
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
       Batch No{" "}
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">Qty</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">Mfg Date</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">Expiry Date</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">
+      Qty
+    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
+      Mfg Date
+    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
+      Expiry Date
+    </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px] whitespace-nowrap">
       Unit Price <span className="text-danger">*</span>
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">Warehouse</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Dis (%)</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">Tax</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">
+      Warehouse
+    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
+      Dis (%)
+    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
+      Tax
+    </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px] whitespace-nowrap">
       Tax Code <span className="text-danger">*</span>
     </th>
-    <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[80px]">Amount</th>
+    <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[80px]">
+      Amount
+    </th>
     <th className="w-[30px]" />
   </tr>
 );
@@ -90,6 +116,50 @@ export const DetailsTab = ({
   const symbol = getCurrencySymbol();
 
   const [page, setPage] = useState(0);
+  const handleModeFetchOptions = async (q: string) => {
+
+  const res = await getAllModeOfPayment(1, 10, q || "", 1);
+
+  const list = res?.data?.modeOfPayments || res?.data || [];
+
+  return list.map((item: any) => ({
+    label: item.name || item.modeOfPayment,
+    value: item.name || item.modeOfPayment,
+    meta: item,
+  }));
+};
+  const handleModeChange = (_: string, option: any) => {
+  onFormChange({
+    target: {
+      name: "paymentType", 
+      value: option?.label || option?.value || "", 
+    },
+  } as any);
+};
+useEffect(() => {
+  const setDefaultMode = async () => {
+    try {
+      const res = await getAllModeOfPayment(1, 10, "", 1);
+
+      const list = res?.data?.modeOfPayments || res?.data || [];
+
+      if (list.length && !form.paymentType) {
+        const first = list[0];
+
+        onFormChange({
+          target: {
+            name: "paymentType",
+            value: first.name || first.modeOfPayment,
+          },
+        } as any);
+      }
+    } catch (err) {
+      console.error("Default mode fetch failed", err);
+    }
+  };
+
+  setDefaultMode();
+}, []);
   const handleTopWarehouseChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -147,6 +217,8 @@ export const DetailsTab = ({
     const taxAmount = netAmount * (vatRate / 100);
 
     const amount = netAmount + taxAmount;
+    
+    
 
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
@@ -155,7 +227,9 @@ export const DetailsTab = ({
         {/* ITEM */}
         <td className="px-2 py-1">
           <div className="w-[125px]">
-            <Tooltip content={it.itemName ? `Item: ${it.itemName}` : 'Select an item'}>
+            <Tooltip
+              content={it.itemName ? `Item: ${it.itemName}` : "Select an item"}
+            >
               <POItemSelect
                 value={it.itemName}
                 selectedId={it.itemCode}
@@ -167,7 +241,7 @@ export const DetailsTab = ({
 
         {/* DESCRIPTION */}
         <td className="px-2 py-1">
-          <Tooltip content={it.description || 'Enter item description'}>
+          <Tooltip content={it.description || "Enter item description"}>
             <input
               name="description"
               value={it.description || ""}
@@ -359,14 +433,20 @@ export const DetailsTab = ({
       <div className="bg-app">
         <div className="flex flex-wrap gap-x-3 gap-y-3 items-end">
           <div className="w-[250px]">
-            <Tooltip content={form.supplier ? `Supplier: ${form.supplier}` : 'Select a supplier'}>
-           <SupplierSelect
-  selectedId={form.supplierId}
-  onChange={(s) => {
-    console.log("UI SELECT:", s);
-    onSupplierChange(s);
-  }}
-/>
+            <Tooltip
+              content={
+                form.supplier
+                  ? `Supplier: ${form.supplier}`
+                  : "Select a supplier"
+              }
+            >
+              <SupplierSelect
+                selectedId={form.supplierId}
+                onChange={(s) => {
+                  console.log("UI SELECT:", s);
+                  onSupplierChange(s);
+                }}
+              />
             </Tooltip>
           </div>
 
@@ -381,35 +461,47 @@ export const DetailsTab = ({
 
             <div className="flex-1">
               {usePO ? (
-                <Tooltip content={form.poNumber ? `PO Number: ${form.poNumber}` : 'Select a PO'}>
-                <ModalSelect
-                  label=""
-                  name="poNumber"
-                  value={form.poNumber}
-                  placeholder="Select PO"
-                  options={(poList || [])
-                    .filter((po) => po.status === "Approved")
-                    .map((po) => ({
-                      label: po.poId,
-                      value: po.poId,
-                    }))}
-                  onChange={(e) => {
-                    const selected = poList.find(
-                      (p) => p.poId === e.target.value,
-                    );
-                    if (selected) onPOSelect(selected);
-                  }}
-                />
+                <Tooltip
+                  content={
+                    form.poNumber
+                      ? `PO Number: ${form.poNumber}`
+                      : "Select a PO"
+                  }
+                >
+                  <ModalSelect
+                    label=""
+                    name="poNumber"
+                    value={form.poNumber}
+                    placeholder="Select PO"
+                    options={(poList || [])
+                      .filter((po) => po.status === "Approved")
+                      .map((po) => ({
+                        label: po.poId,
+                        value: po.poId,
+                      }))}
+                    onChange={(e) => {
+                      const selected = poList.find(
+                        (p) => p.poId === e.target.value,
+                      );
+                      if (selected) onPOSelect(selected);
+                    }}
+                  />
                 </Tooltip>
               ) : (
-                <Tooltip content={form.poNumber ? `PO Number: ${form.poNumber}` : 'Enter PO number manually'}>
-                <ModalInput
-                  label=""
-                  name="poNumber"
-                  placeholder="PO No."
-                  value={form.poNumber}
-                  onChange={onFormChange}
-                />
+                <Tooltip
+                  content={
+                    form.poNumber
+                      ? `PO Number: ${form.poNumber}`
+                      : "Enter PO number manually"
+                  }
+                >
+                  <ModalInput
+                    label=""
+                    name="poNumber"
+                    placeholder="PO No."
+                    value={form.poNumber}
+                    onChange={onFormChange}
+                  />
                 </Tooltip>
               )}
             </div>
@@ -417,120 +509,140 @@ export const DetailsTab = ({
 
           <div className="w-[135px] ml-2">
             <span className="block h-5"></span> {/* Spacer for alignment */}
-            <Tooltip content={form.supplierInvoiceNumber ? `Supplier Invoice No: ${form.supplierInvoiceNumber}` : 'Enter supplier invoice number'}>
-            <ModalInput
-              label="Supplier Invoice No"
-              name="supplierInvoiceNumber"
-              value={form.supplierInvoiceNumber}
-              onChange={onFormChange}
-              required
-            />
+            <Tooltip
+              content={
+                form.supplierInvoiceNumber
+                  ? `Supplier Invoice No: ${form.supplierInvoiceNumber}`
+                  : "Enter supplier invoice number"
+              }
+            >
+              <ModalInput
+                label="Supplier Invoice No"
+                name="supplierInvoiceNumber"
+                value={form.supplierInvoiceNumber}
+                onChange={onFormChange}
+                required
+              />
             </Tooltip>
           </div>
           <div className="w-[140px] ml-2">
-            <Tooltip content={form.supplierInvoiceDate ? `Supplier Invoice Date: ${form.supplierInvoiceDate}` : 'Enter supplier invoice date'}>
-            <DatePickerInput
-              label="Supplier Invoice Date"
-              name="supplierInvoiceDate"
-              value={form.supplierInvoiceDate || ""}
-              onChange={(name, value) =>
-                onFormChange({
-                  target: { name, value },
-                } as any)
+            <Tooltip
+              content={
+                form.supplierInvoiceDate
+                  ? `Supplier Invoice Date: ${form.supplierInvoiceDate}`
+                  : "Enter supplier invoice date"
               }
-            />
+            >
+              <DatePickerInput
+                label="Supplier Invoice Date"
+                name="supplierInvoiceDate"
+                value={form.supplierInvoiceDate || ""}
+                onChange={(name, value) =>
+                  onFormChange({
+                    target: { name, value },
+                  } as any)
+                }
+              />
             </Tooltip>
           </div>
           <div className="w-[128px] ml-2">
-            <Tooltip content={form.date ? `Date: ${form.date}` : 'Enter date'}>
-            <DatePickerInput
-              label="Date"
-              name="date"
-              value={form.date}
-              required
-              onChange={(name, value) =>
-                onFormChange({
-                  target: { name, value },
-                } as any)
-              }
-            />
-            </Tooltip>
-          </div>
-
-
-          
-
-          <div className="w-[100px] ml-3">
-            <Tooltip content={form.costCenter ? `Cost Center: ${form.costCenter}` : 'Select a cost center'}>
-            <CostCenterSelect
-              value={form.costCenter}
-              onChange={(val) =>
-                onFormChange({
-                  target: { name: "costCenter", value: val },
-                } as React.ChangeEvent<HTMLInputElement>)
-              }
-            />
+            <Tooltip content={form.date ? `Date: ${form.date}` : "Enter date"}>
+              <DatePickerInput
+                label="Date"
+                name="date"
+                value={form.date}
+                required
+                onChange={(name, value) =>
+                  onFormChange({
+                    target: { name, value },
+                  } as any)
+                }
+              />
             </Tooltip>
           </div>
 
           <div className="w-[100px] ml-3">
-            <Tooltip content={form.project ? `Project: ${form.project}` : 'Select a project'}>
-
-            <ProjectSelect
-              value={form.project}
-              onChange={(val) =>
-                onFormChange({
-                  target: { name: "project", value: val },
-                } as React.ChangeEvent<HTMLInputElement>)
+            <Tooltip
+              content={
+                form.costCenter
+                  ? `Cost Center: ${form.costCenter}`
+                  : "Select a cost center"
               }
-            />
+            >
+              <CostCenterSelect
+                value={form.costCenter}
+                onChange={(val) =>
+                  onFormChange({
+                    target: { name: "costCenter", value: val },
+                  } as React.ChangeEvent<HTMLInputElement>)
+                }
+              />
             </Tooltip>
           </div>
 
-          
+          <div className="w-[100px] ml-3">
+            <Tooltip
+              content={
+                form.project ? `Project: ${form.project}` : "Select a project"
+              }
+            >
+              <ProjectSelect
+                value={form.project}
+                onChange={(val) =>
+                  onFormChange({
+                    target: { name: "project", value: val },
+                  } as React.ChangeEvent<HTMLInputElement>)
+                }
+              />
+            </Tooltip>
+          </div>
 
           <div className="w-[110px] ml-2">
-            <Tooltip content={form.paymentType ? `Payment Type: ${form.paymentType}` : 'Select payment type'}>
-
-            <ModalSelect
-              label="Payment Type"
-              name="paymentType"
-              value={form.paymentType}
-              required
-              onChange={onFormChange}
-              options={[
-                { value: "CASH", label: "CASH" },
-                { value: "CREDIT", label: "CREDIT" },
-                { value: "Bank Draft", label: "Bank Draft" },
-                { value: "CASH/CREDIT", label: "CASH/CREDIT" },
-                { value: "BANK CHECK", label: "BANK CHECK" },
-                { value: "MOBILE MONEY", label: "Mobile Money" },
-                { value: "DEBIT & CREDIT CARD", label: "Card" },
-                { value: "OTHER", label: "Other" },
-              ]}
-            />
+            <Tooltip
+              content={
+                form.paymentType
+                  ? `Payment Type: ${form.paymentType}`
+                  : "Select payment type"
+              }
+            >
+              <SearchSelect2
+                label="Mode of Payment"
+                value={form.paymentType ?? ""}
+                onChange={handleModeChange}
+                fetchOptions={handleModeFetchOptions}
+              />
             </Tooltip>
           </div>
           <div className="w-[110px]">
-              <Tooltip content={form.warehouse ? `Warehouse: ${form.warehouse}` : 'Select a warehouse'}>
-            <WarehouseSelect
-              name="warehouse"
-              value={form.warehouse || ""}
-              onChange={handleTopWarehouseChange}
-              required={form.updateStock}
-              disabled={!form.updateStock}
-            />
+            <Tooltip
+              content={
+                form.warehouse
+                  ? `Warehouse: ${form.warehouse}`
+                  : "Select a warehouse"
+              }
+            >
+              <WarehouseSelect
+                name="warehouse"
+                value={form.warehouse || ""}
+                onChange={handleTopWarehouseChange}
+                required={form.updateStock}
+                disabled={!form.updateStock}
+              />
             </Tooltip>
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <Tooltip content={form.updateStock ? 'Update Stock: Yes' : 'Update Stock: No'}>
-            <input
-              type="checkbox"
-              name="updateStock"
-              checked={form.updateStock ?? false}
-              onChange={onFormChange}
-              className="w-3.5 h-3.5 accent-primary"
-            />
+            <Tooltip
+              content={
+                form.updateStock ? "Update Stock: Yes" : "Update Stock: No"
+              }
+            >
+              <input
+                type="checkbox"
+                name="updateStock"
+                checked={form.updateStock ?? false}
+                onChange={onFormChange}
+                className="w-3.5 h-3.5 accent-primary"
+              />
             </Tooltip>
 
             <span className="text-xs text-main">Update Stock</span>
@@ -638,9 +750,9 @@ export const DetailsTab = ({
                 </span>
               </div>
               <div className="border-t border-theme my-1"></div>
-              
+
               <div className="flex justify-between text-sm font-semibold">
-                <span className="text-main">Advance amount  </span>
+                <span className="text-main">Advance amount </span>
                 <span className="text-main">
                   {symbol} {form.advanceAmount?.toFixed(2) || "0.00"}
                 </span>

@@ -4,7 +4,7 @@ import { getCompanyById } from "../api/companySetupApi";
 import type { TermSection } from "../types/termsAndCondition";
 import type { Invoice, InvoiceItem } from "../types/invoice";
 import { getRolaCountryList } from "../api/lookupApi";
-import { getItemByItemCode } from "../api/itemApi";
+
 import { getExchangeRate } from "../api/currencyExchangeApi";
 
 import { showApiError, showValidationError } from "../utils/alert";
@@ -166,6 +166,7 @@ export const useInvoiceForm = (
   const shippingEditedRef = useRef(false);
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
+  const customerTaxCategoryRef = useRef<string>("");
   const enableExchange = mode === "invoice";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
 
@@ -434,6 +435,7 @@ export const useInvoiceForm = (
       const data = customerRes?.message?.data;
       const company = companyRes?.data;
       const taxCategory = data?.customerTaxCategory || "";
+      customerTaxCategoryRef.current = taxCategory;
       setFormData((prev) => ({
         ...prev,
         taxCategory,
@@ -498,48 +500,6 @@ export const useInvoiceForm = (
     }
   };
 
-  const handleItemSelect = async (itemId: string, idx: number) => {
-    try {
-      const res = await getItemByItemCode(
-        itemId,
-        formData.taxCategory || customerDetails?.customerTaxCategory,
-      );
-
-      if (!res || res.status_code !== 200) return;
-
-      const data = res.data;
-
-      const selectedTax =
-        data.taxInfo?.find(
-          (t: any) =>
-            t.taxCategory?.toLowerCase() ===
-            formData.taxCategory?.toLowerCase(),
-        ) || data.taxInfo?.[0];
-
-      const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
-
-      setFormData((prev) => {
-        const items = [...prev.items];
-
-        items[idx] = {
-          ...items[idx],
-
-          itemCode: data.id,
-          description: data.description,
-          price: Number(data.sellingPrice || 0),
-
-          vatRate: totalTaxRate,
-          vatCode: selectedTax?.taxName || "", // ✅ SAME AS PO
-
-          warehouse: items[idx].warehouse || prev.warehouse || "",
-        };
-
-        return { ...prev, items };
-      });
-    } catch (err) {
-      console.error("Item fetch failed", err);
-    }
-  };
 
   const handleItemChange = (
     idx: number,
@@ -790,6 +750,7 @@ export const useInvoiceForm = (
     shippingEditedRef.current = false;
     lastCurrencyRef.current = baseCurrency;
     lastRateRef.current = 1;
+    customerTaxCategoryRef.current = "";
     setCustomerDetails(null);
     setCustomerNameDisplay("");
 
@@ -889,7 +850,7 @@ export const useInvoiceForm = (
       validateForm,
       handleInputChange,
       handleCustomerSelect,
-      handleItemSelect,
+      
       handleItemChange,
       updateItemDirectly,
       addItem,

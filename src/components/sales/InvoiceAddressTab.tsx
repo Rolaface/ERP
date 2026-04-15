@@ -137,7 +137,11 @@ const AddressBox = memo(
         <div className="p-2">
           {selected ? (
             <div>
-              <div className="text-xs font-medium">{selected.title}</div>
+              <div className="text-xs font-medium">
+  {typeof selected.title === "string"
+    ? selected.title
+    : JSON.stringify(selected.title)}
+</div>
               <div className="text-[10px] text-muted">
                 {formatAddressPreview(selected)}
               </div>
@@ -214,7 +218,7 @@ export const InvoiceAddressTab: React.FC<Props> = ({
 const selectedBilling =
   billingList.find((a) => a.id === formData.billingAddress) ||
   (formData.billingAddress
-    ? { id: formData.billingAddress, title: formData.billingAddress }
+    ? { id: formData.billingAddress, title: String(formData.billingAddress) }
     : null);
  
     //shipping block 

@@ -104,10 +104,10 @@ export interface SupplierFormData {
   contacts?: SupplierContact[];
   addresses?: SupplierAddress[];
 
-  // terms — forms use `buying` (lowercase); API sends/expects `Buying` (capital)
+ 
   terms?: {
     buying?: BuyingTerms | TermSection;
-    Buying?: BuyingTerms;   // capital B — preserved from API response
+    Buying?: BuyingTerms; 
   };
 
   bankAccounts?: SupplierBankAccount[];

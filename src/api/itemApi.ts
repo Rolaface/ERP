@@ -36,11 +36,13 @@ export async function getItemByItemCode(
   itemCode: string,
   taxCategory?: string,
 ): Promise<any> {
-  const url = `${ItemAPI.getById}?id=${itemCode}${
-    taxCategory ? `&taxCategory=${taxCategory}` : ""
-  }`;
+  const resp: AxiosResponse = await api.get(ItemAPI.getById, {
+    params: {
+      id: itemCode,
+      taxCategory: taxCategory ?? "",
+    },
+  });
 
-  const resp: AxiosResponse = await api.get(url);
   return resp.data || null;
 }
 
