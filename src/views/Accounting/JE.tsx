@@ -13,11 +13,17 @@ import {
   Eye,
   FileText,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CheckCircle
 } from "lucide-react";
-
+import DeleteModal from "../../components/actionModal/DeleteModal";
 import JournalEntryModal from "../../components/JournalEntries/JournalEntriesModal";
-import { getJournalEntries } from "../../api/Accounting/JournalEntryApi";
+import { 
+  getJournalEntries, 
+  deleteJournalEntryById, 
+  submitJournalEntry // Make sure this is exported from your API file
+} from "../../api/Accounting/JournalEntryApi";
+import { showApiError, showSuccess } from "../../utils/alert";
 
 export interface JETabProps {
   searchTerm: string;
@@ -33,7 +39,6 @@ export interface JournalEntry {
   user_remark?: string;
 }
 
-// Frappe API response wrapper
 export interface JEResponse {
   data?: JournalEntry[];
   message?: {
@@ -140,7 +145,17 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [jeData, setJeData] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // --- Delete Modal States ---
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  
+  // --- Form Modal States ---
   const [showNewModal, setShowNewModal] = useState(false);
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
+  
   const navigate = useNavigate();
 
   // --- Pagination States ---
@@ -151,7 +166,6 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Define the exact fields we need from Frappe
       const fields = [
         "name",
         "posting_date",
@@ -161,24 +175,13 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         "user_remark"
       ];
 
-      // 2. Calculate the starting index for the Frappe query
       const limitStart = (currentPage - 1) * PAGE_SIZE;
 
-      // 3. Optional: If you want server-side search instead of client-side, you'd add this:
-      // const filters = searchTerm ? [["name", "like", `%${searchTerm}%`]] : undefined;
-
-      const res = await getJournalEntries(
-        fields, 
-        undefined, // Pass filters here if using server-side search
-        limitStart, 
-        PAGE_SIZE
-      );
-      
+      const res = await getJournalEntries(fields, undefined, limitStart, PAGE_SIZE);
       const entriesData = res?.data || res?.message?.data;
 
       if (Array.isArray(entriesData)) {
         setJeData(entriesData);
-        // If we received exactly the PAGE_SIZE, there's likely a next page
         setHasMore(entriesData.length === PAGE_SIZE);
       } else {
         setError("Failed to load journal entries.");
@@ -190,12 +193,53 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage]); // Re-run when currentPage changes
+  }, [currentPage]);
 
-  // Fetch data whenever the page changes
   useEffect(() => {
     fetchJE();
   }, [fetchJE]);
+
+  // --- Handlers for Actions ---
+  const handleOpenModal = (id?: string, mode: "create" | "edit" | "view" = "create") => {
+    setSelectedEntryId(id || null);
+    setModalMode(mode);
+    setShowNewModal(true);
+  };
+
+  const handleSubmitEntry = async (id: string) => {
+    try {
+      setLoading(true);
+      await submitJournalEntry(id);
+      showSuccess(`Entry ${id} has been submitted successfully.`);
+      fetchJE();
+    } catch (err: any) {
+      showApiError(err?.response?.data?.message || err?.message || "Failed to submit entry.");
+      setLoading(false);
+    }
+  };
+
+  // Triggered when user clicks "Delete" from dropdown
+  const initiateDelete = (id: string) => {
+    setItemToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  // Triggered when user confirms deletion inside DeleteModal
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      setDeleting(true);
+      await deleteJournalEntryById(itemToDelete);
+      showSuccess(`Entry ${itemToDelete} has been successfully deleted/cancelled.`);
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
+      fetchJE();
+    } catch (err: any) {
+      showApiError(err?.response?.data?.message || err?.message || "Failed to delete entry.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (loading && jeData.length === 0) {
     return (
@@ -301,28 +345,33 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     },
     {
       key: "actions",
-      header: "",
+      header: "Actions",
       align: "right",
       render: (row: JournalEntry) => {
         const actions: MenuAction[] = [
           {
             label: "View Entry",
             icon: <Eye size={12} />,
-            onClick: () => console.log("View", row.name),
+            onClick: () => handleOpenModal(row.name, "view"),
           },
           ...(row.docstatus === 0
             ? [
                 {
+                  label: "Submit",
+                  icon: <CheckCircle size={12} className="text-success" />,
+                  onClick: () => handleSubmitEntry(row.name),
+                },
+                {
                   label: "Edit",
                   icon: <Pencil size={12} />,
-                  onClick: () => console.log("Edit", row.name),
+                  onClick: () => handleOpenModal(row.name, "edit"),
                 },
               ]
             : []),
           {
             label: row.docstatus === 1 ? "Cancel Entry" : "Delete",
             icon: <Trash2 size={12} />,
-            onClick: () => console.log("Delete/Cancel", row.name),
+            onClick: () => initiateDelete(row.name), 
             danger: true,
             dividerBefore: true,
           },
@@ -335,11 +384,19 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Ensure JournalEntryModal supports `isReadOnly`.
+        When isReadOnly={true}, you should disable inputs and hide the submit buttons inside it.
+      */}
       <JournalEntryModal
         isOpen={showNewModal}
-        onClose={() => setShowNewModal(false)}
+        entryId={selectedEntryId}
+        isReadOnly={modalMode === "view"} 
+        onClose={() => {
+          setShowNewModal(false);
+          setSelectedEntryId(null);
+        }}
         onSuccess={() => {
-          setCurrentPage(1); // Reset to first page to see new entry
+          if (!selectedEntryId) setCurrentPage(1);
           fetchJE();
         }}
       />
@@ -362,12 +419,12 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
           showExpandControls={false} 
           onRefresh={fetchJE}
           matchNode={matchJENode}
-          loading={false} // Handled via our custom overlay above so it doesn't unmount the table
+          loading={false} 
           emptyMessage="No journal entries found."
           extraFilters={
             <button
               type="button"
-              onClick={() => setShowNewModal(true)}
+              onClick={() => handleOpenModal(undefined, "create")}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
             >
               <Plus size={13} />
@@ -399,6 +456,21 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
           </button>
         </div>
       </div>
+      
+      {/* Properly formatted DeleteModal */}
+      {deleteModalOpen && itemToDelete && (
+        <DeleteModal
+          entityName="Journal Entry"
+          entityId={itemToDelete}
+          entityDisplayName={itemToDelete}
+          isLoading={deleting}
+          onClose={() => { 
+            setDeleteModalOpen(false); 
+            setItemToDelete(null); 
+          }}
+          onDelete={confirmDelete}
+        />
+      )}
     </div>
   );
 };

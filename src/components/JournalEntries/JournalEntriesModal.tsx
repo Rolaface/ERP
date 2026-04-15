@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
-import { ModalInput, ModalSelect } from "../../components/ui/modal/modalComponent"; // <-- Added ModalSelect
+import { ModalInput, ModalSelect } from "../../components/ui/modal/modalComponent";
 import { FileText, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useJournalEntryLogic } from "../../hooks/useJournalEntriesLogic";
 
@@ -10,6 +10,7 @@ interface JournalEntryModalProps {
   onClose: () => void;
   onSuccess: () => void;
   entryId?: string | null;
+  isReadOnly?: boolean; // Fixed the TypeScript error!
 }
 
 const ITEMS_PER_PAGE = 4;
@@ -19,6 +20,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   onClose,
   onSuccess,
   entryId,
+  isReadOnly = false, // Default to false
 }) => {
   const {
     form,
@@ -26,6 +28,11 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
     loading,
     errors,
     totals,
+    accountOptions,
+    partyTypeOptions,
+    customerOptions,
+    supplierOptions,
+    currencyOptions,
     handleChange,
     handleEntryChange,
     handleAddRow,
@@ -60,21 +67,25 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   const footer = (
     <>
       <Button variant="secondary" type="button" onClick={onClose}>
-        Cancel
+        {isReadOnly ? "Close" : "Cancel"}
       </Button>
-      <div className="flex gap-3">
-        <Button variant="secondary" type="button" onClick={() => { reset(); setCurrentPage(1); }}>
-          Reset
-        </Button>
-        <Button
-          variant="primary"
-          type="button"
-          loading={loading}
-          onClick={handleSubmit}
-        >
-          {entryId ? "Update Entry" : "Save Entry"}
-        </Button>
-      </div>
+      
+      {/* Hide action buttons if in View Mode */}
+      {!isReadOnly && (
+        <div className="flex gap-3">
+          <Button variant="secondary" type="button" onClick={() => { reset(); setCurrentPage(1); }}>
+            Reset
+          </Button>
+          <Button
+            variant="primary"
+            type="button"
+            loading={loading}
+            onClick={handleSubmit}
+          >
+            {entryId ? "Update Entry" : "Save Entry"}
+          </Button>
+        </div>
+      )}
     </>
   );
 
@@ -82,8 +93,8 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={entryId ? `Edit Entry: ${entryId}` : "New Journal Entry"}
-      subtitle={entryId ? "Update existing manual journal entry" : "Create a new manual journal entry"}
+      title={isReadOnly ? `View Entry: ${entryId}` : entryId ? `Edit Entry: ${entryId}` : "New Journal Entry"}
+      subtitle={isReadOnly ? "Viewing journal entry details" : entryId ? "Update existing manual journal entry" : "Create a new manual journal entry"}
       icon={FileText}
       footer={footer}
       customWidth="70vw" 
@@ -93,7 +104,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
         
         {/* TOP SECTION */}
         <div className="flex flex-row items-start gap-6 w-full">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 w-1/4 min-w-[150px]">
             <ModalInput
               label="Posting Date"
               name="postingDate"
@@ -102,6 +113,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
               onChange={handleChange}
               required
               error={errors.postingDate}
+              disabled={isReadOnly}
             />
           </div>
 
@@ -113,17 +125,19 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
               onChange={handleChange}
               placeholder="Enter remarks for this journal entry..."
               error={errors.remarks}
+              disabled={isReadOnly}
             />
           </div>
 
           <div className="flex flex-col gap-1 justify-center mt-7 min-w-max">
-            <label className="flex items-center gap-2 cursor-pointer w-fit">
+            <label className={`flex items-center gap-2 w-fit ${isReadOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}>
               <input
                 type="checkbox"
                 name="isOpening"
                 checked={form.isOpening}
                 onChange={handleChange}
                 className="w-4 h-4 accent-primary"
+                disabled={isReadOnly}
               />
               <span className="text-sm font-medium text-main">Is Opening Entry</span>
             </label>
@@ -134,9 +148,13 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
         <div className="flex flex-col gap-3 mt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-main">Entry Lines</h3>
-            <Button variant="secondary" type="button" onClick={handleAddDoubleRow} className="text-xs py-1 px-2 flex items-center gap-1">
-              <Plus size={14} /> Add Rows
-            </Button>
+            
+            {/* Hide Add Rows button if in View Mode */}
+            {!isReadOnly && (
+              <Button variant="secondary" type="button" onClick={handleAddDoubleRow} className="text-xs py-1 px-2 flex items-center gap-1">
+                <Plus size={14} /> Add Rows
+              </Button>
+            )}
           </div>
           
           <div className="w-full border border-gray-200 rounded-md">
@@ -144,27 +162,51 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
               <table className="w-full text-left text-sm text-main whitespace-nowrap">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-3 py-2 font-medium">Account</th>
-                    <th className="px-3 py-2 font-medium w-20">CCY</th>
-                    {/* Added Type column for Dr/Cr selection */}
+                    <th className="px-3 py-2 font-medium w-48">Account</th>
+                    <th className="px-3 py-2 font-medium w-24">CCY</th>
                     <th className="px-3 py-2 font-medium w-20">Type</th> 
                     <th className="px-3 py-2 font-medium w-32">Amount</th>
                     <th className="px-3 py-2 font-medium w-32">Party Type</th>
-                    <th className="px-3 py-2 font-medium">Party</th>
-                    <th className="px-3 py-2 font-medium w-20">Exc. Rate</th>
+                    <th className="px-3 py-2 font-medium w-48">Party</th>
+                    <th className="px-3 py-2 font-medium w-10">Exc. Rate</th>
                     <th className="px-3 py-2 font-medium">Remark</th>
-                    <th className="px-3 py-2 font-medium w-10"></th>
+                    {!isReadOnly && <th className="px-3 py-2 font-medium w-10"></th>}
                   </tr>
                 </thead>
                 <tbody>
                   {currentEntries.map((entry, index) => {
                     const actualIndex = startIndex + index;
+                    const isDropdown = entry.partyType === "Customer" || entry.partyType === "Supplier";
+                    
+                    let rowPartyOptions = [{ label: "Select", value: "" }];
+                    if (entry.partyType === "Customer") {
+                        rowPartyOptions = [{ label: "Select Customer", value: "" }, ...customerOptions];
+                    } else if (entry.partyType === "Supplier") {
+                        rowPartyOptions = [{ label: "Select Supplier", value: "" }, ...supplierOptions];
+                    }
+                    
                     return (
                       <tr key={actualIndex} className="border-b border-gray-100 last:border-none">
-                        <td className="px-2 py-1"><ModalInput label="" name={`account-${actualIndex}`} value={entry.account} onChange={(e) => handleEntryChange(actualIndex, 'account', e.target.value)} /></td>
-                        <td className="px-2 py-1"><ModalInput label="" name={`ccy-${actualIndex}`} value={entry.ccy} onChange={(e) => handleEntryChange(actualIndex, 'ccy', e.target.value)} /></td>
-                        
-                        {/* The Dr / Cr Dropdown */}
+                        <td className="px-2 py-1">
+                          <ModalSelect 
+                             label="" 
+                             name={`account-${actualIndex}`} 
+                             value={entry.account} 
+                             onChange={(e) => handleEntryChange(actualIndex, 'account', e.target.value)}
+                             options={[{ label: "Select", value: "" }, ...accountOptions]}
+                             disabled={isReadOnly}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <ModalSelect 
+                             label="" 
+                             name={`ccy-${actualIndex}`} 
+                             value={entry.ccy} 
+                             onChange={(e) => handleEntryChange(actualIndex, 'ccy', e.target.value)}
+                             options={[{ label: "Select", value: "" }, ...currencyOptions]}
+                             disabled={isReadOnly}
+                          />
+                        </td>
                         <td className="px-2 py-1">
                           <ModalSelect 
                              label="" 
@@ -175,19 +217,79 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                                { label: 'Dr', value: 'Dr' },
                                { label: 'Cr', value: 'Cr' },
                              ]}
+                             disabled={isReadOnly}
                           />
                         </td>
-
-                        <td className="px-2 py-1"><ModalInput label="" name={`amount-${actualIndex}`} type="number" value={entry.amount} onChange={(e) => handleEntryChange(actualIndex, 'amount', e.target.value)} /></td>
-                        <td className="px-2 py-1"><ModalInput label="" name={`partyType-${actualIndex}`} value={entry.partyType} onChange={(e) => handleEntryChange(actualIndex, 'partyType', e.target.value)} /></td>
-                        <td className="px-2 py-1"><ModalInput label="" name={`party-${actualIndex}`} value={entry.party} onChange={(e) => handleEntryChange(actualIndex, 'party', e.target.value)} /></td>
-                        <td className="px-2 py-1"><ModalInput label="" name={`exchangeRate-${actualIndex}`} type="number" value={entry.exchangeRate} onChange={(e) => handleEntryChange(actualIndex, 'exchangeRate', e.target.value)} /></td>
-                        <td className="px-2 py-1"><ModalInput label="" name={`remark-${actualIndex}`} value={entry.remark} onChange={(e) => handleEntryChange(actualIndex, 'remark', e.target.value)} /></td>
-                        <td className="px-2 py-1 text-center">
-                          <button type="button" onClick={() => handleRemoveRow(actualIndex)} className="text-red-500 hover:text-red-700 transition-colors">
-                            <Trash2 size={16} />
-                          </button>
+                        <td className="px-2 py-1">
+                          <ModalInput 
+                             label="" 
+                             name={`amount-${actualIndex}`} 
+                             type="number" 
+                             value={entry.amount} 
+                             onChange={(e) => handleEntryChange(actualIndex, 'amount', e.target.value)} 
+                             disabled={isReadOnly}
+                          />
                         </td>
+                        <td className="px-2 py-1">
+                           <ModalSelect 
+                             label="" 
+                             name={`partyType-${actualIndex}`} 
+                             value={entry.partyType} 
+                             onChange={(e) => handleEntryChange(actualIndex, 'partyType', e.target.value)}
+                             options={[{ label: "Select", value: "" }, ...partyTypeOptions]}
+                             disabled={isReadOnly}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          {isDropdown ? (
+                            <ModalSelect 
+                              label="" 
+                              name={`party-${actualIndex}`} 
+                              value={entry.party} 
+                              onChange={(e) => handleEntryChange(actualIndex, 'party', e.target.value)}
+                              options={rowPartyOptions}
+                              disabled={isReadOnly}
+                            />
+                          ) : (
+                            <ModalInput 
+                              label="" 
+                              name={`party-${actualIndex}`} 
+                              value={entry.party} 
+                              onChange={(e) => handleEntryChange(actualIndex, 'party', e.target.value)}
+                              placeholder="Enter Party Name"
+                              disabled={isReadOnly}
+                            />
+                          )}
+                        </td>
+                        <td className="px-2 py-1">
+                          <ModalInput 
+                             label="" 
+                             name={`exchangeRate-${actualIndex}`} 
+                             type="number" 
+                             value={entry.exchange_rate} 
+                             onChange={(e) => handleEntryChange(actualIndex, 'exchange_rate', e.target.value)} 
+                             disabled={isReadOnly}
+                             className="w-full"
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <ModalInput 
+                             label="" 
+                             name={`remark-${actualIndex}`} 
+                             value={entry.remark} 
+                             onChange={(e) => handleEntryChange(actualIndex, 'remark', e.target.value)} 
+                             disabled={isReadOnly}
+                          />
+                        </td>
+                        
+                        {/* Hide Trash Button if in View Mode */}
+                        {!isReadOnly && (
+                          <td className="px-2 py-1 text-center">
+                            <button type="button" onClick={() => handleRemoveRow(actualIndex)} className="text-red-500 hover:text-red-700 transition-colors">
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}

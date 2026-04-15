@@ -149,6 +149,7 @@ export const API = {
   },
 
   journalEntry: {
+    getByIdOnly: `${ERP_BASE}/api/resource`,
     create: `${ERP_BASE}/api/resource/Journal Entry`,
     getAll: `${ERP_BASE}/api/resource/Journal Entry`,
     getById: `${ERP_BASE}/api/resource/Journal Entry`,

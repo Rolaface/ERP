@@ -96,3 +96,9 @@ export async function cancelJournalEntry(id: string): Promise<any> {
   });
   return resp.data;
 }
+
+export async function getComponentById(id: string): Promise<any> {
+  const url = `${JournalEntryAPI.getByIdOnly}/${encodeURIComponent(id)}`;
+  const resp: AxiosResponse = await api.get(url);
+  return resp.data;
+}

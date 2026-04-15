@@ -5,7 +5,9 @@ import {
   updateJournalEntryById,
   deleteJournalEntryById,
   getJournalEntryById,
+  getComponentById,
 } from "../api/Accounting/JournalEntryApi";
+import { getSupplierList, getCustomerList, getCurrencyList } from "../api/lookupApi";
 
 export interface JournalEntryForm {
   postingDate: string;
@@ -14,20 +16,18 @@ export interface JournalEntryForm {
 }
 
 export interface JournalEntryLine {
-  name?: string;
+  name?: string; 
   account: string;
   ccy: string;
-  entryType: "Dr" | "Cr";
-  amount: string;
+  entryType: "Dr" | "Cr"; 
+  amount: string;         
   partyType: string;
   party: string;
-  exchangeRate: string;
+  exchange_rate: string;
   remark: string;
 }
 
-export type JournalEntryErrors = Partial<
-  Record<keyof JournalEntryForm, string>
->;
+export type JournalEntryErrors = Partial<Record<keyof JournalEntryForm, string>>;
 
 const emptyForm = (): JournalEntryForm => ({
   postingDate: new Date().toISOString().split("T")[0],
@@ -42,72 +42,117 @@ const emptyEntry = (): JournalEntryLine => ({
   amount: "",
   partyType: "",
   party: "",
-  exchangeRate: "1",
+  exchange_rate: "1",
   remark: "",
 });
 
-export const useJournalEntryLogic = (
-  onSuccess?: () => void,
-  entryId?: string
-) => {
-  const [form, setForm] = useState<JournalEntryForm>(emptyForm());
+// A bulletproof mapper to dig through Frappe's nested response wrappers
+const mapOptions = (res: any) => {
+  const data = 
+    res?.data?.message?.data || 
+    res?.data?.message || 
+    res?.data?.data || 
+    res?.message?.data || 
+    res?.data || 
+    res || 
+    [];
+    
+  return Array.isArray(data)
+    ? data.map((item: any) => {
+        // Fallbacks for different Frappe doctypes
+        const optionValue = item.value || item.name || item.currency_name || "Unknown";
+        return {
+          label: optionValue,
+          value: optionValue,
+        };
+      })
+    : [];
+};
 
+export const useJournalEntryLogic = (onSuccess?: () => void, entryId?: string) => {
+  const [form, setForm] = useState<JournalEntryForm>(emptyForm());
   const [entries, setEntries] = useState<JournalEntryLine[]>([
     { ...emptyEntry(), entryType: "Dr" },
-    { ...emptyEntry(), entryType: "Cr" },
+    { ...emptyEntry(), entryType: "Cr" }
   ]);
-
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<JournalEntryErrors>({});
 
+  const [accountOptions, setAccountOptions] = useState<{label: string, value: string}[]>([]);
+  const [partyTypeOptions, setPartyTypeOptions] = useState<{label: string, value: string}[]>([]);
+  const [customerOptions, setCustomerOptions] = useState<{label: string, value: string}[]>([]);
+  const [supplierOptions, setSupplierOptions] = useState<{label: string, value: string}[]>([]);
+  const [currencyOptions, setCurrencyOptions] = useState<{label: string, value: string}[]>([]);
+
+  // 1. Fetch standard lookups on mount
+  useEffect(() => {
+    const fetchInitialOptions = async () => {
+      try {
+        const [accRes, ptRes, currRes] = await Promise.all([
+          getComponentById("Account").catch(() => null),
+          getComponentById("Party Type").catch(() => null),
+          getCurrencyList().catch(() => null)
+        ]);
+
+        setAccountOptions(mapOptions(accRes));
+        setPartyTypeOptions(mapOptions(ptRes));
+        setCurrencyOptions(mapOptions(currRes));
+      } catch (err) {
+        console.error("Failed to fetch dropdown options", err);
+      }
+    };
+    fetchInitialOptions();
+  }, []);
+
+  // 2. Fetch Existing Entry (Edit/View Mode)
   const loadEntry = useCallback(async (id: string) => {
     try {
       setLoading(true);
       const res = await getJournalEntryById(id);
-      const data = res?.data || res?.message;
+      
+      // Dig out the document object properly
+      const doc = res?.data?.data || res?.data?.message || res?.data || res?.message;
 
-      if (data) {
+      if (doc) {
         setForm({
-          postingDate: data.posting_date || data.postingDate,
-          isOpening: data.is_opening === "Yes" || data.isOpening,
-          remarks: data.user_remark || data.remark || "",
+          postingDate: doc.postingDate || doc.posting_date,
+          isOpening: doc.isOpening || doc.is_opening === "Yes",
+          remarks: doc.remark || doc.user_remark || "",
         });
 
-        if (Array.isArray(data.accounts)) {
-          const loadedEntries = data.accounts.map(
-            (acc: any): JournalEntryLine => {
-              const debit =
-                acc.debit_in_account_currency || acc.debit || 0;
-              const credit =
-                acc.credit_in_account_currency || acc.credit || 0;
+        if (doc.accounts && Array.isArray(doc.accounts)) {
+          const loadedEntries = doc.accounts.map((acc: any): JournalEntryLine => {
+            // Frappe might return debit_in_account_currency as 0 but debit with the base amount
+            const debit = acc.debit_in_account_currency || acc.debit || 0;
+            const credit = acc.credit_in_account_currency || acc.credit || 0;
+            const isDebit = debit > 0;
+            const amountVal = isDebit ? debit : credit;
 
-              const isDebit = debit > 0;
-              const amountVal = isDebit ? debit : credit;
-
-              return {
+            return {
                 name: acc.name,
-                account: acc.account,
+                account: acc.account || "",
                 ccy: acc.account_currency || acc.currency || "",
                 entryType: isDebit ? "Dr" : "Cr",
                 amount: amountVal.toString(),
                 partyType: acc.party_type || acc.partyType || "",
                 party: acc.party || "",
-                exchangeRate: (
-                  acc.exchange_rate || acc.exchangeRate || 1
-                ).toString(),
+                exchange_rate: (acc.exchange_rate || acc.exchangeRate || 1).toString(),
                 remark: acc.user_remark || acc.remark || "",
               };
-            }
-          );
+          });
+          
+          setEntries(loadedEntries.length > 0 ? loadedEntries : [
+            { ...emptyEntry(), entryType: "Dr" },
+            { ...emptyEntry(), entryType: "Cr" }
+          ]);
 
-          setEntries(
-            loadedEntries.length > 0
-              ? loadedEntries
-              : [
-                  { ...emptyEntry(), entryType: "Dr" },
-                  { ...emptyEntry(), entryType: "Cr" },
-                ]
-          );
+          // Lazy load customers/suppliers if the loaded entry already contains them
+          if (loadedEntries.some((e) => e.partyType === "Customer")) {
+            getCustomerList().then(r => setCustomerOptions(mapOptions(r))).catch(() => null);
+          }
+          if (loadedEntries.some((e) => e.partyType === "Supplier")) {
+            getSupplierList().then(r => setSupplierOptions(mapOptions(r))).catch(() => null);
+          }
         }
       }
     } catch (err: any) {
@@ -125,122 +170,93 @@ export const useJournalEntryLogic = (
   const totals = useMemo(() => {
     let debit = 0;
     let credit = 0;
-
     entries.forEach((entry) => {
       const val = Math.abs(parseFloat(entry.amount)) || 0;
       if (entry.entryType === "Dr") debit += val;
-      if (entry.entryType === "Cr") credit += val;
+      else if (entry.entryType === "Cr") credit += val;
     });
-
     return { debit, credit };
   }, [entries]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    const val =
-      type === "checkbox"
-        ? (e.target as HTMLInputElement).checked
-        : value;
-
+    const val = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
     setForm((prev) => ({ ...prev, [name]: val }));
+    if (errors[name as keyof JournalEntryForm]) setErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
 
-    if (errors[name as keyof JournalEntryForm]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
+  const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: string) => {
+    setEntries((prev) => {
+      const newEntries = [...prev];
+      const updatedRow = { ...newEntries[index], [field]: value };
+      
+      if (field === "partyType") {
+        updatedRow.party = ""; 
+      }
+
+      if (index === 0 && field === "amount" && newEntries.length >= 2 && !prev[1].amount) {
+         newEntries[1] = { ...newEntries[1], amount: value };
+      }
+      
+      newEntries[index] = updatedRow;
+      return newEntries;
+    });
+
+    // 3. LAZY LOAD: Trigger API call only when user explicitly selects Customer or Supplier
+    if (field === "partyType") {
+      if (value === "Customer" && customerOptions.length === 0) {
+        getCustomerList().then((res) => setCustomerOptions(mapOptions(res))).catch(console.error);
+      } else if (value === "Supplier" && supplierOptions.length === 0) {
+        getSupplierList().then((res) => setSupplierOptions(mapOptions(res))).catch(console.error);
+      }
     }
   };
 
-  const handleEntryChange = (
-    index: number,
-    field: keyof JournalEntryLine,
-    value: string
-  ) => {
-    setEntries((prev) => {
-      const newEntries = [...prev];
-      newEntries[index] = { ...newEntries[index], [field]: value };
-
-      if (
-        index === 0 &&
-        field === "amount" &&
-        newEntries.length >= 2 &&
-        !prev[1].amount
-      ) {
-        newEntries[1] = { ...newEntries[1], amount: value };
-      }
-
-      return newEntries;
-    });
-  };
-
-  const handleAddRow = () =>
-    setEntries((prev) => [...prev, { ...emptyEntry(), entryType: "Dr" }]);
-
-  const handleRemoveRow = (index: number) =>
-    setEntries((prev) => prev.filter((_, i) => i !== index));
+  const handleAddRow = () => setEntries((prev) => [...prev, { ...emptyEntry(), entryType: "Dr" }]);
+  const handleRemoveRow = (index: number) => setEntries((prev) => prev.filter((_, i) => i !== index));
 
   const validate = (): boolean => {
     const newErrors: JournalEntryErrors = {};
-
-    if (!form.postingDate)
-      newErrors.postingDate = "Posting Date is required";
-
+    if (!form.postingDate) newErrors.postingDate = "Posting Date is required";
     setErrors(newErrors);
 
-    const validRows = entries.filter((e) => e.account.trim());
-
-    if (validRows.length < 2) {
-      showApiError("Minimum two rows required");
+    if (entries.filter(e => e.account.trim()).length < 2) {
+      showApiError("A journal entry requires at least two valid rows.");
       return false;
     }
-
     if (totals.debit === 0 && totals.credit === 0) {
-      showApiError("Amounts cannot be zero");
+      showApiError("Total Debit and Credit cannot be zero.");
       return false;
     }
-
-    if (Math.abs(totals.debit - totals.credit) > 0.01) {
-      showApiError("Debit and Credit must match");
+    if (Math.abs(totals.debit - totals.credit) > 0.01) { 
+      showApiError(`Entries do not balance. Difference: ${Math.abs(totals.debit - totals.credit).toFixed(2)}`);
       return false;
     }
-
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validate()) return;
-
     try {
       setLoading(true);
-
-      const validEntries = entries.filter((e) => e.account.trim());
-
+      const validEntries = entries.filter((e) => e.account.trim() !== "");
+      
       const payload = {
         posting_date: form.postingDate,
-        voucher_type: "Journal Entry",
         is_opening: form.isOpening ? "Yes" : "No",
-        user_remark: form.remarks,
-        multi_currency: 1,
-
+        user_remark: form.remarks.trim(),
+        multi_currency: 1, 
         accounts: validEntries.map((entry) => {
           const val = Math.abs(parseFloat(entry.amount)) || 0;
-
           return {
-            ...(entry.name ? { name: entry.name } : {}),
-
+            ...(entry.name ? { name: entry.name } : {}), 
             account: entry.account,
             account_currency: entry.ccy || undefined,
-            exchange_rate: parseFloat(entry.exchangeRate) || 1,
-
-            debit_in_account_currency:
-              entry.entryType === "Dr" ? val : 0,
-
-            credit_in_account_currency:
-              entry.entryType === "Cr" ? val : 0,
-
+            exchange_rate: parseFloat(entry.exchange_rate) || 1,
+            debit_in_account_currency: entry.entryType === "Dr" ? val : 0,
+            credit_in_account_currency: entry.entryType === "Cr" ? val : 0,
             party_type: entry.partyType || undefined,
             party: entry.party || undefined,
-
             user_remark: entry.remark || undefined,
           };
         }),
@@ -248,19 +264,15 @@ export const useJournalEntryLogic = (
 
       if (entryId) {
         await updateJournalEntryById(entryId, payload);
-        showSuccess("Updated successfully");
+        showSuccess("Journal Entry updated successfully");
       } else {
-        await createJournalEntry(payload as any);
-        showSuccess("Created successfully");
+        await createJournalEntry(payload as any); 
+        showSuccess("Journal Entry created successfully");
       }
-
+      
       onSuccess?.();
     } catch (err: any) {
-      showApiError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Failed to save"
-      );
+      showApiError(err?.response?.data?.message || err?.message || "Failed to save journal entry.");
     } finally {
       setLoading(false);
     }
@@ -269,34 +281,23 @@ export const useJournalEntryLogic = (
   const deleteEntry = async (id: string) => {
     try {
       await deleteJournalEntryById(id);
-      showSuccess("Deleted successfully");
+      showSuccess("Journal Entry deleted successfully");
       onSuccess?.();
     } catch (err: any) {
-      showApiError(err?.message || "Delete failed");
+       showApiError(err?.response?.data?.message || err?.message || "Failed to delete entry.");
     }
   };
 
   const reset = () => {
     setForm(emptyForm());
-    setEntries([
-      { ...emptyEntry(), entryType: "Dr" },
-      { ...emptyEntry(), entryType: "Cr" },
-    ]);
+    setEntries([{ ...emptyEntry(), entryType: "Dr" }, { ...emptyEntry(), entryType: "Cr" }]);
     setErrors({});
   };
 
   return {
-    form,
-    entries,
-    loading,
-    errors,
-    totals,
-    handleChange,
-    handleEntryChange,
-    handleAddRow,
-    handleRemoveRow,
-    handleSubmit,
-    deleteEntry,
-    reset,
+    form, entries, loading, errors, totals,
+    accountOptions, partyTypeOptions, customerOptions, supplierOptions, currencyOptions,
+    handleChange, handleEntryChange, handleAddRow, handleRemoveRow,
+    handleSubmit, deleteEntry, reset,
   };
 };
