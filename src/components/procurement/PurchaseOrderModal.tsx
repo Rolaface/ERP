@@ -103,9 +103,22 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
         </Button>
         <Button
           variant="primary"
-          type="submit"
-          form="purchaseOrderForm"
+          type={activeTab === "terms" ? "submit" : "button"}
+          form={activeTab === "terms" ? "purchaseOrderForm" : undefined}
           disabled={saving}
+          onClick={
+            activeTab !== "terms"
+              ? (e) => {
+                  e.preventDefault();
+                  const error = validateTab(activeTab);
+                  if (error) {
+                    showValidationError(error);
+                    return;
+                  }
+                  handleNext();
+                }
+              : undefined
+          }
         >
           {saving
             ? "Saving..."

@@ -329,7 +329,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     try {
       if (!company) return;
       const res = await getSalesInvoiceById(invoiceNumber);
-      console.log("🚀 ~ handleDrawerPdf ~ res:", res)
       if (!res || res.message.status_code !== 200) return;
       const blobUrl = await generateInvoicePDF(
         res.message.data as Invoice,
@@ -361,14 +360,14 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
       const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
       console.log("🚀 ~ handlePreviewPDF ~ invoiceRes:", invoiceRes)
-      if (!invoiceRes || invoiceRes.status_code !== 200) {
+      if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
         closeSwal();
         showApiError("Failed to load invoice");
         return;
       }
 
       const blobUrl = await generateInvoicePDF(
-        invoiceRes.data,
+        invoiceRes.message.data,
         company,
         "bloburl",
       );
@@ -394,13 +393,13 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       }
 
       const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
-      if (!invoiceRes || invoiceRes.status_code !== 200) {
+      if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
         closeSwal();
         showApiError("Failed to load invoice");
         return;
       }
 
-      await generateInvoicePDF(invoiceRes.data as Invoice, company, "save");
+      await generateInvoicePDF(invoiceRes.message.data as Invoice, company, "save");
       closeSwal();
       showSuccess("Invoice downloaded successfully!");
     } catch (err: any) {
