@@ -249,7 +249,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                 value={form.tax_category}
                 onChange={(value) =>
                   handleChange({
-                    target: { name: "Tax_Category", value },
+                    target: { name: "tax_category", value },
                   } as React.ChangeEvent<HTMLSelectElement>)
                 }
                 error={errors.taxcategory}
