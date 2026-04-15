@@ -33,8 +33,6 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       ...(it.warehouse && { warehouse: it.warehouse }),
     };
   });
-
-  // Tax rows - only valid ones
   const taxes = form.taxRows
     .filter(
       (t) =>
@@ -50,7 +48,6 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       taxableAmount: Number(t.amount || 0),
     }));
 
-  // Payment rows
   const payments = form.paymentRows
     .filter((p) => p.paymentTerm && p.paymentTerm.trim() !== "")
     .map((p) => ({
@@ -63,6 +60,7 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
 
   const payload: any = {
     supplierId: form.supplierId,
+    contactPerson: form.supplierContact,
     currency: form.currency,
     status: form.status,
     taxCategory: form.taxCategory,
@@ -98,19 +96,11 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
 
   return payload;
 };
-
-/**
- * Backend API → UI Form
- */
 export const mapApiToUI = (apiResponse: any): PurchaseOrderFormData => {
   const api = apiResponse.data || apiResponse;
-
-  // Map items - handle both field name variations
 const items = (api.items || []).map((item: any) => {
   const qty = Number(item.qty || item.quantity || 0);
   const rate = Number(item.rate || item.price || 0);
-
-
   const selectedTax =
     item.taxInfo?.find(
       (t: any) =>
@@ -120,7 +110,6 @@ const items = (api.items || []).map((item: any) => {
 
   const vatRate = Number(selectedTax?.totalTaxRate || 0);
   const vatCd = selectedTax?.taxName || "";
-  // ✅ FIX END
 
   return {
     itemCode: item.item_code || item.itemCode || "",
@@ -252,10 +241,11 @@ const addresses = {
     supplierCode: api.supplierCode || "",
     supplierEmail: api.emailId || api.email || "",
     supplierPhone: api.phone || "",
-    supplierContact: api.contactPerson || "",
+    supplierContact: api.contactPerson || "",        
+    supplierContactDisplay: api.contactDisplay || "",
 
-    currency: api.currency || "INR",
-    status: api.status || "Draft",
+    currency: api.currency || "",
+    status: api.status || "",
     costCenter: api.costCenter || "",
     project: api.project || "",
 
