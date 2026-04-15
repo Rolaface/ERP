@@ -7,7 +7,10 @@ import {
   showValidationError,
 } from "../utils/alert";
 import { getCompanyById } from "../api/companySetupApi";
-import { createCustomer, updateCustomerByCustomerCode } from "../api/customerApi";
+import {
+  createCustomer,
+  updateCustomerByCustomerCode,
+} from "../api/customerApi";
 import type { TermSection } from "../types/termsAndCondition";
 import type { CustomerDetail } from "../types/customer";
 import type { ModalSubmitHandler } from "../types/modal";
@@ -18,6 +21,7 @@ const companyId = import.meta.env.VITE_COMPANY_ID;
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface ContactEntry {
+  id?: string;
   firstName: string;
   lastName: string;
   designation: string;
@@ -31,6 +35,7 @@ export interface ContactEntry {
 }
 
 export interface AddressEntry {
+  id?: string;
   type: "Billing" | "Shipping";
   line1: string;
   line2: string;
@@ -172,6 +177,7 @@ export function mapApiResponseToFormState(
     contacts = data.contacts.map((c: any) => {
       const mob = splitMobile(c.mobile);
       return {
+        id: c.id,
         firstName: c.firstName ?? "",
         lastName: c.lastName ?? "",
         designation: c.designation ?? "",
@@ -183,18 +189,19 @@ export function mapApiResponseToFormState(
         phone: c.phone ?? "",
         isPrimary: c.isPrimary ?? false,
         isBilling: c.isBilling ?? false,
+        
       };
     });
   } else {
     const mob = splitMobile(data.mobile);
     contacts = [{
-      ...defaultContact,
-      firstName: data.contactPerson ?? "",
-      email: data.email ?? "",
-      mobileCode: mob.code,
-      mobile: mob.number,
-      isPrimary: true,
-      isBilling: true,
+        ...defaultContact,
+        firstName: data.contactPerson ?? "",
+        email: data.email ?? "",
+        mobileCode: mob.code,
+        mobile: mob.number,
+        isPrimary: true,
+        isBilling: true,
     }];
   }
 
@@ -202,6 +209,7 @@ export function mapApiResponseToFormState(
   let addresses: AddressEntry[];
   if (data.addresses && data.addresses.length > 0) {
     addresses = data.addresses.map((a: any) => ({
+      id: a.id,
       type: a.type ?? "Billing",
       line1: a.line1 ?? "",
       line2: a.line2 ?? "",
@@ -211,8 +219,10 @@ export function mapApiResponseToFormState(
       country: a.country ?? "",
       isPrimary: a.isPrimary ?? false,
     }));
-    if (!addresses.some((a) => a.type === "Billing")) addresses.unshift({ ...defaultBillingAddress });
-    if (!addresses.some((a) => a.type === "Shipping")) addresses.push({ ...defaultShippingAddress });
+    if (!addresses.some((a) => a.type === "Billing"))
+      addresses.unshift({ ...defaultBillingAddress });
+    if (!addresses.some((a) => a.type === "Shipping"))
+      addresses.push({ ...defaultShippingAddress });
   } else {
     addresses = [
       {
@@ -253,7 +263,9 @@ export function mapApiResponseToFormState(
     contacts,
     addresses,
     sameAsBilling: false,
-    terms: data.terms ?? { selling: companySellingTerms ?? defaultSellingTerms },
+    terms: data.terms ?? {
+      selling: companySellingTerms ?? defaultSellingTerms,
+    },
   };
 }
 
@@ -262,21 +274,43 @@ export function mapApiResponseToFormState(
  */
 export function buildPayload(form: CustomerFormState): Record<string, any> {
   const { sameAsBilling, id, ...rest } = form;
+  const contacts = form.contacts.map(
+    ({ mobileCode, mobile, id, ...contact }) => ({
+      ...(id ? { id } : {}), // ✅ only send if exists
+      ...contact,
+      mobile: mobile ? `${mobileCode}${mobile}` : "",
+    }),
+  );
 
-  const contacts = form.contacts.map(({ mobileCode, mobile, ...contact }) => ({
-    ...contact,
-    mobile: mobile ? `${mobileCode}${mobile}` : "",
-  }));
+let addresses = form.addresses.map((addr) => ({
+  ...(addr.id ? { id: addr.id } : {}),
+  type: addr.type, 
+  line1: addr.line1,
+  line2: addr.line2,
+  city: addr.city,
+  state: addr.state,
+  postalCode: addr.postalCode,
+  country: addr.country,
+  isPrimary: addr.isPrimary,
+}));
+ if (sameAsBilling) {
+  const billing = addresses.find((a) => a.type === "Billing");
 
-  let addresses = [...form.addresses];
-  if (sameAsBilling) {
-    const billing = addresses.find((a) => a.type === "Billing");
-    addresses = addresses.map((a) =>
-      a.type === "Shipping" && billing
-        ? { ...billing, type: "Shipping" as const, isPrimary: false }
-        : a,
-    );
-  }
+  addresses = addresses.map((a) =>
+    a.type === "Shipping" && billing
+      ? {
+          ...a, 
+          line1: billing.line1,
+          line2: billing.line2,
+          city: billing.city,
+          state: billing.state,
+          postalCode: billing.postalCode,
+          country: billing.country,
+          isPrimary: false,
+        }
+      : a
+  );
+}
 
   return { ...rest, contacts, addresses };
 }
@@ -303,7 +337,8 @@ export function useCustomerForm({
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("details");
   const [allowSubmit, setAllowSubmit] = useState(false);
-  const [companySellingTerms, setCompanySellingTerms] = useState<TermSection | null>(null);
+  const [companySellingTerms, setCompanySellingTerms] =
+    useState<TermSection | null>(null);
   const submitRef = useRef(false);
 
   // ── Load company terms (create mode only) ─────────────────────────────────
@@ -315,7 +350,10 @@ export function useCustomerForm({
         const sellingTerms = res?.data?.terms?.selling;
         if (!sellingTerms) return;
         setCompanySellingTerms(sellingTerms);
-        setForm((prev) => ({ ...prev, terms: { ...prev.terms, selling: sellingTerms } }));
+        setForm((prev) => ({
+          ...prev,
+          terms: { ...prev.terms, selling: sellingTerms },
+        }));
       } catch (err) {
         console.error("Failed to load company terms", err);
       }
@@ -326,14 +364,21 @@ export function useCustomerForm({
   // ── Populate form from initialData ────────────────────────────────────────
   useEffect(() => {
     if (initialData) {
-      const mapped = mapApiResponseToFormState(initialData, companySellingTerms);
+      const mapped = mapApiResponseToFormState(
+        initialData,
+        companySellingTerms,
+      );
       const newId = initialData?.id || mapped.id || form.id;
       setForm({
         ...mapped,
         id: newId,
       });
     } else {
-      setForm({ ...emptyForm, terms: { selling: companySellingTerms ?? defaultSellingTerms }, sameAsBilling: true });
+      setForm({
+        ...emptyForm,
+        terms: { selling: companySellingTerms ?? defaultSellingTerms },
+        sameAsBilling: true,
+      });
     }
     setActiveTab("details");
     setLoading(false);
@@ -345,8 +390,11 @@ export function useCustomerForm({
   useEffect(() => {
     if (!form.displayName) {
       const primary = form.contacts.find((c) => c.isPrimary);
-      const derivedName = form.name || (primary ? `${primary.firstName} ${primary.lastName}`.trim() : "");
-      if (derivedName) setForm((prev) => ({ ...prev, displayName: derivedName }));
+      const derivedName =
+        form.name ||
+        (primary ? `${primary.firstName} ${primary.lastName}`.trim() : "");
+      if (derivedName)
+        setForm((prev) => ({ ...prev, displayName: derivedName }));
     }
   }, [form.name, form.contacts]);
 
@@ -358,7 +406,18 @@ export function useCustomerForm({
     setForm((prev) => ({
       ...prev,
       addresses: prev.addresses.map((a) =>
-        a.type === "Shipping" ? { ...billing, type: "Shipping" as const, isPrimary: false } : a,
+        a.type === "Shipping"
+          ? {
+  ...a, 
+  line1: billing.line1,
+  line2: billing.line2,
+  city: billing.city,
+  state: billing.state,
+  postalCode: billing.postalCode,
+  country: billing.country,
+  isPrimary: false,
+}
+          : a,
       ),
     }));
   }, [
@@ -373,25 +432,38 @@ export function useCustomerForm({
 
   // ─── Field handlers ───────────────────────────────────────────────────────
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: name === "onboardingBalance" ? Number(value) : value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "onboardingBalance" ? Number(value) : value,
+    }));
     if (errors[name as keyof CustomerFormErrors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
-  const handlePrimaryContactChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handlePrimaryContactChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
-      contacts: prev.contacts.map((c) => (c.isPrimary ? { ...c, [name]: value } : c)),
+      contacts: prev.contacts.map((c) =>
+        c.isPrimary ? { ...c, [name]: value } : c,
+      ),
     }));
     if (name === "email" && value) {
       const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      setErrors((prev) => ({ ...prev, contactEmail: ok ? undefined : "Invalid email format" }));
+      setErrors((prev) => ({
+        ...prev,
+        contactEmail: ok ? undefined : "Invalid email format",
+      }));
     }
-    const errKey = `contact${name.charAt(0).toUpperCase() + name.slice(1)}` as keyof CustomerFormErrors;
+    const errKey =
+      `contact${name.charAt(0).toUpperCase() + name.slice(1)}` as keyof CustomerFormErrors;
     if (errors[errKey]) setErrors((prev) => ({ ...prev, [errKey]: undefined }));
   };
 
@@ -401,17 +473,25 @@ export function useCustomerForm({
   ) => {
     const { name, value } = e.target;
     const fieldMap: Record<string, keyof AddressEntry> = {
-      line1: "line1", line2: "line2", postalCode: "postalCode",
-      city: "city", state: "state", country: "country",
+      line1: "line1",
+      line2: "line2",
+      postalCode: "postalCode",
+      city: "city",
+      state: "state",
+      country: "country",
     };
     const key = fieldMap[name] ?? (name as keyof AddressEntry);
     setForm((prev) => ({
       ...prev,
-      addresses: prev.addresses.map((a) => (a.type === addressType ? { ...a, [key]: value } : a)),
+      addresses: prev.addresses.map((a) =>
+        a.type === addressType ? { ...a, [key]: value } : a,
+      ),
     }));
     if (addressType === "Billing") {
-      const errKey = `billing${name.charAt(0).toUpperCase() + name.slice(1)}` as keyof CustomerFormErrors;
-      if (errors[errKey]) setErrors((prev) => ({ ...prev, [errKey]: undefined }));
+      const errKey =
+        `billing${name.charAt(0).toUpperCase() + name.slice(1)}` as keyof CustomerFormErrors;
+      if (errors[errKey])
+        setErrors((prev) => ({ ...prev, [errKey]: undefined }));
     }
   };
 
@@ -426,12 +506,16 @@ export function useCustomerForm({
     if (!form.type) newErrors.type = "Type is required";
     if (!form.name?.trim()) newErrors.name = "Customer name is required";
     if (!form.tpin?.trim()) newErrors.tpin = "TPIN is required";
-    if (!form.customerTaxCategory) newErrors.customerTaxCategory = "Tax category is required";
+    if (!form.customerTaxCategory)
+      newErrors.customerTaxCategory = "Tax category is required";
     if (!form.currency) newErrors.currency = "Currency is required";
-    if (!pc?.firstName?.trim()) newErrors.contactFirstName = "First name is required";
-    if (!pc?.mobileCode || !pc?.mobile) newErrors.contactMobile = "Mobile number is required";
+    if (!pc?.firstName?.trim())
+      newErrors.contactFirstName = "First name is required";
+    if (!pc?.mobileCode || !pc?.mobile)
+      newErrors.contactMobile = "Mobile number is required";
     if (!pc?.email?.trim()) newErrors.contactEmail = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pc.email)) newErrors.contactEmail = "Invalid email format";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pc.email))
+      newErrors.contactEmail = "Invalid email format";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -439,11 +523,14 @@ export function useCustomerForm({
   const validateAddressTab = (): boolean => {
     const newErrors: CustomerFormErrors = {};
     const billing = form.addresses.find((a) => a.type === "Billing");
-    if (!billing?.line1?.trim()) newErrors.billingLine1 = "Billing address line 1 is required";
-    if (!billing?.postalCode?.trim()) newErrors.billingPostalCode = "Postal code is required";
+    if (!billing?.line1?.trim())
+      newErrors.billingLine1 = "Billing address line 1 is required";
+    if (!billing?.postalCode?.trim())
+      newErrors.billingPostalCode = "Postal code is required";
     if (!billing?.city?.trim()) newErrors.billingCity = "City is required";
     if (!billing?.state?.trim()) newErrors.billingState = "State is required";
-    if (!billing?.country?.trim()) newErrors.billingCountry = "Country is required";
+    if (!billing?.country?.trim())
+      newErrors.billingCountry = "Country is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -517,7 +604,10 @@ export function useCustomerForm({
   const handleNext = () => {
     if (!validateCurrentTab()) return;
     const idx = tabs.indexOf(activeTab);
-    if (idx < tabs.length - 1) { setActiveTab(tabs[idx + 1]); setAllowSubmit(false); }
+    if (idx < tabs.length - 1) {
+      setActiveTab(tabs[idx + 1]);
+      setAllowSubmit(false);
+    }
   };
 
   function getPatchPayload(original: any, updated: any) {
@@ -561,7 +651,7 @@ export function useCustomerForm({
 
       if (isEditMode) {
         const idToUse = form.id || initialData?.id;
-        
+
         if (!idToUse) {
           showApiError(new Error("Customer ID is missing. Cannot update."));
           return false;
@@ -571,7 +661,9 @@ export function useCustomerForm({
 
         const originalForm = mapApiResponseToFormState(initialData!, null);
         const originalPayload = buildPayload(originalForm);
-        const patchPayload = getPatchPayload(originalPayload, payload);
+      const patchPayload = {
+  ...payload,
+};
 
         if (Object.keys(patchPayload).length === 0) {
           closeSwal();
@@ -583,7 +675,9 @@ export function useCustomerForm({
 
         closeSwal();
         showSuccess("Customer updated successfully!");
-        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
+        useDataRefreshStore
+          .getState()
+          .triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
         const canClose = await onSubmit?.(payload);
         if (canClose === false) return false;
         handleClose();
@@ -596,7 +690,8 @@ export function useCustomerForm({
 
         // Backend response shape:
         // { message: { status_code, status, message, data: { customerId } } }
-        const apiMessage = res?.message?.message ?? "Customer created successfully.";
+        const apiMessage =
+          res?.message?.message ?? "Customer created successfully.";
         const customerId = res?.message?.data?.customerId ?? "";
 
         const createdCustomer = {
@@ -606,13 +701,13 @@ export function useCustomerForm({
         };
 
         showSuccess(
-          customerId
-            ? `${apiMessage}\nCustomer ID: ${customerId}`
-            : apiMessage,
+          customerId ? `${apiMessage}\nCustomer ID: ${customerId}` : apiMessage,
         );
 
-        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
-        
+        useDataRefreshStore
+          .getState()
+          .triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
+
         const canClose = await onSubmit?.(createdCustomer);
         if (canClose === false) return false;
         handleClose();
@@ -623,7 +718,6 @@ export function useCustomerForm({
       closeSwal();
       showApiError(error);
       return false;
-
     } finally {
       setLoading(false);
       submitRef.current = false;
@@ -634,7 +728,11 @@ export function useCustomerForm({
 
   const handleClose = () => {
     if (loading) return;
-    setForm({ ...emptyForm, terms: { selling: companySellingTerms ?? defaultSellingTerms }, sameAsBilling: true });
+    setForm({
+      ...emptyForm,
+      terms: { selling: companySellingTerms ?? defaultSellingTerms },
+      sameAsBilling: true,
+    });
     setErrors({});
     setActiveTab("details");
     onClose();
@@ -642,11 +740,18 @@ export function useCustomerForm({
 
   const reset = () => {
     if (initialData) {
-      const mapped = mapApiResponseToFormState(initialData, companySellingTerms);
+      const mapped = mapApiResponseToFormState(
+        initialData,
+        companySellingTerms,
+      );
       const newId = initialData?.id || mapped.id || form.id;
       setForm({ ...mapped, id: newId });
     } else {
-      setForm({ ...emptyForm, terms: { selling: companySellingTerms ?? defaultSellingTerms }, sameAsBilling: true });
+      setForm({
+        ...emptyForm,
+        terms: { selling: companySellingTerms ?? defaultSellingTerms },
+        sameAsBilling: true,
+      });
     }
     setErrors({});
     setActiveTab("details");
@@ -704,16 +809,37 @@ export function useCustomerForm({
 
   // ─── Derived ──────────────────────────────────────────────────────────────
 
-  const primaryContact = form.contacts.find((c) => c.isPrimary) ?? form.contacts[0];
-  const billingAddress = form.addresses.find((a) => a.type === "Billing") ?? form.addresses[0];
-  const shippingAddress = form.addresses.find((a) => a.type === "Shipping") ?? form.addresses[1];
+  const primaryContact =
+    form.contacts.find((c) => c.isPrimary) ?? form.contacts[0];
+  const billingAddress =
+    form.addresses.find((a) => a.type === "Billing") ?? form.addresses[0];
+  const shippingAddress =
+    form.addresses.find((a) => a.type === "Shipping") ?? form.addresses[1];
 
   return {
-    form, setForm, errors, loading,
-    activeTab, setActiveTab, allowSubmit, setAllowSubmit,
-    primaryContact, billingAddress, shippingAddress, tabs,
-    handleChange, handlePrimaryContactChange, handleAddressChange,
-    setSameAsBilling, handleNext, handleSubmit, handleSubmitInternal, handleClose, reset,
-    validateCurrentTab, validateAllTabs, resetCurrentTab,
+    form,
+    setForm,
+    errors,
+    loading,
+    activeTab,
+    setActiveTab,
+    allowSubmit,
+    setAllowSubmit,
+    primaryContact,
+    billingAddress,
+    shippingAddress,
+    tabs,
+    handleChange,
+    handlePrimaryContactChange,
+    handleAddressChange,
+    setSameAsBilling,
+    handleNext,
+    handleSubmit,
+    handleSubmitInternal,
+    handleClose,
+    reset,
+    validateCurrentTab,
+    validateAllTabs,
+    resetCurrentTab,
   };
 }
