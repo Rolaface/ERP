@@ -49,7 +49,7 @@ export default function Step2Workspace({
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // ✅ FIXED: now actually uses countryCode
+
   // 🌍 GLOBAL ISO-BASED AUTO MAPPING
   const getAutoData = (countryCode: string) => {
     try {
@@ -98,6 +98,23 @@ export default function Step2Workspace({
     }
   };
 
+  const handleFYMonthChange = (month: string) => {
+    const currentYear = new Date().getFullYear();
+
+    const start = `${currentYear}-${month}-01`;
+
+    const startDate = new Date(start);
+
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + 1);
+    endDate.setDate(endDate.getDate() - 1);
+
+    const end = endDate.toISOString().split("T")[0];
+
+    update("fyStart", start);
+    update("fyEnd", end);
+  };
+
   const currencySymbols: any = {
     INR: "₹",
     USD: "$",
@@ -116,6 +133,21 @@ export default function Step2Workspace({
     "USD", "EUR", "GBP", "INR", "JPY", "CNY", "AUD", "CAD", "CHF", "SGD",
     "AED", "NZD", "ZAR", "SEK", "NOK", "DKK", "HKD", "KRW", "THB",
     "MYR", "IDR", "PHP", "BRL", "MXN",
+  ];
+
+  const months = [
+    { label: "January", value: "01" },
+    { label: "February", value: "02" },
+    { label: "March", value: "03" },
+    { label: "April", value: "04" },
+    { label: "May", value: "05" },
+    { label: "June", value: "06" },
+    { label: "July", value: "07" },
+    { label: "August", value: "08" },
+    { label: "September", value: "09" },
+    { label: "October", value: "10" },
+    { label: "November", value: "11" },
+    { label: "December", value: "12" },
   ];
 
   const currencies =
@@ -391,8 +423,33 @@ export default function Step2Workspace({
 
       {/* Financial Year */}
       <div className="form-row">
-        <FormFieldPro label="Financial Year From" type="date" value={form.fyStart} onChange={(e: any) => update("fyStart", e.target.value)} />
-        <FormFieldPro label="Financial Year To" type="date" value={form.fyEnd} onChange={(e: any) => update("fyEnd", e.target.value)} />
+        <FormFieldPro
+          label="Financial Year From"
+          value={
+            form.fyStart
+              ? new Date(form.fyStart).toLocaleString("en-US", { month: "long" })
+              : ""
+          }
+          rightElement={
+            <select
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              onChange={(e) => handleFYMonthChange(e.target.value)}
+            >
+              <option value="">Select month</option>
+              {months.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          }
+        />
+
+        <FormFieldPro
+          label="Financial Year To"
+          value={form.fyEnd}
+          disabled
+        />
       </div>
 
       <div className="form-footer">
