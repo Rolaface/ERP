@@ -39,12 +39,18 @@ type OutletContextType = {
 };
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
-  Draft: ["Rejected", "Approved"],
-  Rejected: ["Draft", "Approved"],
+  Draft: ["Approved"],
   Paid: [],
-  Cancelled: ["Draft"],
+  Cancelled: ["Amend"],
   Approved: ["Paid", "Cancelled"],
 };
+// const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
+//   Draft: ["Rejected", "Approved"],
+//   Rejected: ["Draft", "Approved"],
+//   Paid: [],
+//   Cancelled: ["Draft"],
+//   Approved: ["Paid", "Cancelled"],
+// };
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
 
@@ -150,7 +156,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
-  // Initial fetch on mount
+
   useEffect(() => {
     mountedRef.current = true;
     fetchInvoices();
@@ -484,10 +490,9 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
       showLoading("Deleting invoice...");
 
       const res = await deleteSalesInvoiceById(invoiceNumber);
-
-      if (!res || res.status_code !== 200) {
+      if (!res.message || res.message.status_code !== 200) {
         closeSwal();
-        showApiError(res?.message || "Failed to delete invoice");
+        showApiError(res?.message.message || "Failed to delete invoice");
         return;
       }
 
@@ -510,7 +515,7 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
       align: "left",
       sortable: true,
       render: (inv) => (
-        <span className="font-semibold text-main">{inv.invoiceNumber}</span>
+       <span className="text-main whitespace-nowrap truncate block max-w-[140px]">{inv.invoiceNumber}</span>
       ),
       tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
     },

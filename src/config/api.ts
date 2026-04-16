@@ -45,11 +45,11 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = getApiBaseUrl();
 // console.log("🚀 ~ ERP_BASE:", ERP_BASE)
 
 // export const ERP_BASE = ENV.apiBaseUrl;
-export const ERP_BASE = "";
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -228,7 +228,8 @@ export const API = {
     getsalesTemplatesbyid: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.get_sales_tax_template`,
     deleteSalesTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.delete_sales_tax_template`,
     getTemplateGl: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
-    updateSalesTaxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_status`,
+    updateSalesTaxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_template`,
+    updateSalesTaxTemplateStatus: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_status`,
   },
 
   /* =========================
@@ -382,7 +383,7 @@ export const API = {
     getById: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.create`,
 
-    updateStatus: `${ERP_BASE}/api/method/erpnext.zra_client.purchase.invoice.update_purchase_invoices_status`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update_status`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
   },
 

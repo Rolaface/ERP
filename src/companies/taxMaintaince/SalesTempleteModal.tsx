@@ -249,7 +249,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                 value={form.tax_category}
                 onChange={(value) =>
                   handleChange({
-                    target: { name: "Tax_Category", value },
+                    target: { name: "tax_category", value },
                   } as React.ChangeEvent<HTMLSelectElement>)
                 }
                 error={errors.taxcategory}
@@ -386,6 +386,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                           error={errors[`rate_${actualIdx}`]}
                           className="w-full no-spinner"
                           placeholder="0.00"
+                          disabled={row.charge_type === "Actual"}
                         />
                       </td>
 
@@ -406,6 +407,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                           error={errors[`tax_amount_${actualIdx}`]}
                           className="w-full no-spinner"
                           placeholder="0.00"
+                          disabled={row.charge_type !== "Actual"}
                         />
                       </td>
 

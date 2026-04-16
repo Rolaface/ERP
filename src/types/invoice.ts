@@ -3,10 +3,17 @@ import type { TermSection } from "./termsAndCondition";
 
 export type InvoiceStatus =
   | "Draft"
-  | "Rejected"
   | "Paid"
   | "Cancelled"
-  | "Approved";
+  | "Approved"
+  | "Amend";
+// export type InvoiceStatus =
+//   | "Draft"
+//   | "Rejected"
+//   | "Paid"
+//   | "Cancelled"
+//   | "Approved"
+//   | "Amend";
 
 
 export interface Invoice {
