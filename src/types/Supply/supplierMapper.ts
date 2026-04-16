@@ -82,51 +82,45 @@ export const mapSupplierApi = (d: any): Supplier => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const mapSupplierToApi = (f: SupplierFormData, id?: string | number) => {
-  const names = (f.contactPerson ?? "").split(" ");
-
   return {
     ...(id ? { id } : {}),
 
-    name:                f.supplierName ?? "",
-    type:                f.type         ?? "Company",
-    tpin:                f.tpin         ?? "",
-    currency:            f.currency     ?? "",
-    supplierGroup:       f.supplierGroup ?? "All Supplier Groups",
-    status:              f.status       ?? "Active",
-    supplierTaxCategory: f.taxCategory  ?? "",
+    name: f.supplierName ?? "",
+    type: f.type ?? "Company",
+    tpin: f.tpin ?? "",
+    currency: f.currency ?? "",
+    supplierGroup: f.supplierGroup ?? "All Supplier Groups",
+    status: f.status ?? "Active",
+    supplierTaxCategory: f.taxCategory ?? "",
 
-    contacts: [
-      {
-        firstName:   names[0] ?? "",
-        lastName:    names.slice(1).join(" ") ?? "",
-        designation: "",
-        department:  "",
-        email:       f.emailId  ?? "",
-        phone:       `${f.phoneCode ?? ""}${f.phoneNo ?? ""}`,
-        mobile:      `${f.phoneCode ?? ""}${f.phoneNo ?? ""}`,
-        isPrimary:   true,
-        isBilling:   true,
-      },
-    ],
+    contacts: (f.contacts || []).map((c) => ({
+      ...(c.id ? { id: c.id } : {}),
+      firstName: c.firstName || "",
+      lastName: c.lastName || "",
+      designation: c.designation || "",
+      department: c.department || "",
+      email: c.email || "",
+      phone: c.phone || "",
+      mobile: c.mobile || "",
+      isPrimary: c.isPrimary ?? true,
+      isBilling: c.isBilling ?? true,
+    })),
 
-    addresses: [
-      {
-        type:       "Billing",
-        line1:      f.billingAddressLine1 ?? "",
-        line2:      f.billingAddressLine2 ?? "",
-        city:       f.billingCity         ?? "",
-        state:      f.province            ?? "",
-        county:     f.billingCounty ?? f.district ?? "",
-        district:   f.district            ?? "",
-        postalCode: f.billingPostalCode   ?? "",
-        country:    f.billingCountry      ?? "",
-        isPrimary:  true,
-      },
-    ],
+    addresses: (f.addresses || []).map((a) => ({
+      ...(a.id ? { id: a.id } : {}),
+      type: a.type,
+      line1: a.line1 || "",
+      line2: a.line2 || "",
+      city: a.city || "",
+      state: a.state || "",
+      county: a.county || "",
+      postalCode: a.postalCode || "",
+      country: a.country || "",
+      isPrimary: a.isPrimary ?? false,
+    })),
 
-    // API expects terms.Buying (capital B)
     terms: {
-      buying: f.terms?.buying ?? f.terms?.buying ?? { payment: { phases: [] } },
+      buying: f.terms?.buying ?? { payment: { phases: [] } },
     },
   };
 };

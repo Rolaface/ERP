@@ -463,7 +463,7 @@ useEffect(() => {
           paymentInformation,
           terms: {
             selling:
-              data?.terms?.Selling ??
+              data?.terms?.selling ??
               company?.terms?.selling ??
               prev.terms?.selling ??
               EMPTY_TERMS.selling,
