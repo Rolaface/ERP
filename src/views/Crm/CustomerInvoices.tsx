@@ -8,11 +8,12 @@ import {
 import Table from "../../components/ui/Table/Table";
 import { getAllSalesInvoices } from "../../api/salesApi";
 
+// 1. UPDATED INTERFACE TO MATCH API JSON
 interface SalesInvoice {
-  invoiceNumber: string;
-  dateOfInvoice: string;
-  invoiceStatus: string;
-  totalAmount: number;
+  id: string;
+  invoiceDate: string;
+  status: string;
+  total: number;
   outstandingAmount: number;
 }
 
@@ -30,7 +31,6 @@ const CustomerInvoices = ({ customerName }: Props) => {
   const [totalItems, setTotalItems] = useState(0);
 
   /* FETCH DATA */
-
   useEffect(() => {
     if (!customerName) return;
 
@@ -41,7 +41,7 @@ const CustomerInvoices = ({ customerName }: Props) => {
         const res = await getAllSalesInvoices(
           page,
           pageSize,
-          "invoiceNumber",
+          "id", // Updated sort key
           "desc",
           "",
           customerName
@@ -65,20 +65,21 @@ const CustomerInvoices = ({ customerName }: Props) => {
   }, [customerName]);
 
   /* SUMMARY */
-
   const summary = useMemo(() => {
     const total = invoices.length;
 
+    // 2. UPDATED TO USE 'status' INSTEAD OF 'invoiceStatus'
     const draft = invoices.filter(
-      (inv) => inv.invoiceStatus === "Draft"
+      (inv) => inv.status === "Draft"
     ).length;
 
     const paid = invoices.filter(
-      (inv) => inv.invoiceStatus === "Paid"
+      (inv) => inv.status === "Paid"
     ).length;
 
+    // 3. UPDATED TO USE 'total' INSTEAD OF 'totalAmount'
     const totalValue = invoices.reduce(
-      (sum, inv) => sum + (inv.totalAmount || 0),
+      (sum, inv) => sum + (inv.total || 0),
       0
     );
 
@@ -86,50 +87,50 @@ const CustomerInvoices = ({ customerName }: Props) => {
   }, [invoices]);
 
   /* TABLE COLUMNS */
-
+  // 4. UPDATED ALL KEYS AND ROW PROPERTIES
   const columns = [
     {
-      key: "invoiceNumber",
+      key: "id",
       header: "Invoice No",
       render: (row: SalesInvoice) => (
         <span className="text-xs font-black text-primary">
-          {row.invoiceNumber}
+          {row.id}
         </span>
       ),
     },
     {
-      key: "dateOfInvoice",
+      key: "invoiceDate",
       header: "Date",
       render: (row: SalesInvoice) => (
         <span className="text-[10px] font-black text-muted uppercase">
-          {new Date(row.dateOfInvoice).toLocaleDateString("en-GB")}
+          {new Date(row.invoiceDate).toLocaleDateString("en-GB")}
         </span>
       ),
     },
     {
-      key: "invoiceStatus",
+      key: "status",
       header: "Status",
       render: (row: SalesInvoice) => (
         <span
           className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${
-            row.invoiceStatus === "Paid"
+            row.status === "Paid"
               ? "bg-success/10 text-success"
-              : row.invoiceStatus === "Draft"
+              : row.status === "Draft"
               ? "bg-warning/10 text-warning"
               : "bg-muted/10 text-muted"
           }`}
         >
-          {row.invoiceStatus}
+          {row.status}
         </span>
       ),
     },
     {
-      key: "totalAmount",
+      key: "total",
       header: "Total",
       align: "right" as const,
       render: (row: SalesInvoice) => (
         <span className="text-sm font-black text-primary">
-          {row.totalAmount?.toLocaleString()}
+          {row.total?.toLocaleString()}
         </span>
       ),
     },
@@ -146,11 +147,9 @@ const CustomerInvoices = ({ customerName }: Props) => {
   ];
 
   /* UI */
-
   return (
     <div className="max-w-[1400px] mx-auto">
       {/* SUMMARY */}
-
       <div className="grid grid-cols-4 gap-2">
         <SummaryCard
           icon={<ClipboardList size={14} />}
@@ -178,7 +177,6 @@ const CustomerInvoices = ({ customerName }: Props) => {
       </div>
 
       {/* TABLE */}
-
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
         <Table
           columns={columns}
@@ -203,7 +201,6 @@ const CustomerInvoices = ({ customerName }: Props) => {
 };
 
 /* SUMMARY CARD */
-
 const SummaryCard = ({
   icon,
   label,
