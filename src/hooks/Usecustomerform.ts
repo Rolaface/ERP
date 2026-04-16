@@ -28,6 +28,7 @@ export interface ContactEntry {
   department: string;
   email: string;
   mobileCode: string;
+  mobileNumber:string;
   mobile: string;
   phone: string;
   isPrimary: boolean;
@@ -111,7 +112,7 @@ export const defaultContact: ContactEntry = {
   department: "",
   email: "",
   mobileCode: "",
-  mobile: "",
+  mobileNumber: "",
   phone: "",
   isPrimary: true,
   isBilling: true,
@@ -191,7 +192,7 @@ export function mapApiResponseToFormState(
         taxCategory: c.taxCategory ?? "",
         email: c.email ?? "",
         mobileCode: mob.code,
-        mobile: mob.number,
+mobileNumber: mob.number,
         phone: c.phone ?? "",
         isPrimary: c.isPrimary ?? false,
         isBilling: c.isBilling ?? false,
@@ -280,13 +281,13 @@ export function mapApiResponseToFormState(
  */
 export function buildPayload(form: CustomerFormState): Record<string, any> {
   const { sameAsBilling, id, ...rest } = form;
-  const contacts = form.contacts.map(
-    ({ mobileCode, mobile, id, ...contact }) => ({
-      ...(id ? { id } : {}), // ✅ only send if exists
-      ...contact,
-      mobile: mobile ? `${mobileCode}${mobile}` : "",
-    }),
-  );
+const contacts = form.contacts.map(
+  ({ mobileCode, mobileNumber, id, ...contact }) => ({
+    ...(id ? { id } : {}),
+    ...contact,
+    mobile: mobileNumber ? `${mobileCode}${mobileNumber}` : "",
+  }),
+);
 
 let addresses = form.addresses.map((addr) => ({
   ...(addr.id ? { id: addr.id } : {}),
@@ -518,7 +519,7 @@ const handlePrimaryContactChange = (e) => {
     if (!form.currency) newErrors.currency = "Currency is required";
     if (!pc?.firstName?.trim())
       newErrors.contactFirstName = "First name is required";
-    if (!pc?.mobileCode || !pc?.mobile)
+   if (!pc?.mobileCode || !pc?.mobileNumber)
       newErrors.contactMobile = "Mobile number is required";
     if (!pc?.email?.trim()) newErrors.contactEmail = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pc.email))

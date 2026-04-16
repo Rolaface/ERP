@@ -253,7 +253,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
       const res = await getSalesInvoiceById(invoiceNumber);
 
-      if (!res || res.status_code !== 200) {
+      if (!res.message || res.message.status_code !== 200) {
         closeSwal();
         showApiError("Failed to load invoice");
         return;
@@ -261,7 +261,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
       closeSwal();
 
-      openInvoiceEdit(invoiceNumber, res.data);
+      openInvoiceEdit(invoiceNumber, res.message.data);
     } catch (err) {
       closeSwal();
       showApiError(err);

@@ -148,6 +148,15 @@ export const API = {
     getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
     getLedger: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
   },
+
+  journalEntry: {
+    getByIdOnly: `${ERP_BASE}/api/resource`,
+    create: `${ERP_BASE}/api/resource/Journal Entry`,
+    getAll: `${ERP_BASE}/api/resource/Journal Entry`,
+    getById: `${ERP_BASE}/api/resource/Journal Entry`,
+    update: `${ERP_BASE}/api/resource/Journal Entry`,
+    delete: `${ERP_BASE}/api/resource/Journal Entry`,
+  },
   CurrencyExchange: {
     create: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.create_currency_exchange`,
     getAll: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.get_currency_exchanges`,
