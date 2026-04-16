@@ -160,19 +160,15 @@ export const emptyForm: CustomerFormState = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function splitMobile(mobile?: string): { code: string; number: string } {
+function splitMobile(mobile?: string) {
   if (!mobile) return { code: "", number: "" };
 
-  const match = mobile.match(/^(\+\d{1,4})(\d+)$/);
+  const clean = mobile.replace(/\s/g, "");
 
-  if (match) {
-    return {
-      code: match[1],
-      number: match[2],
-    };
-  }
+  const code = clean.slice(0, 4); // +999 max
+  const number = clean.slice(4);
 
-  return { code: "", number: mobile };
+  return { code, number };
 }
 export function mapApiResponseToFormState(
   data: CustomerDetail,
