@@ -1,66 +1,42 @@
 import { useEffect, useState } from "react";
+import countriesLib from "i18n-iso-countries";
+import en from "i18n-iso-countries/langs/en.json";
 
-export function useCountries() {
+countriesLib.registerLocale(en);
+
+export const useCountries = () => {
   const [countries, setCountries] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [detected, setDetected] = useState({
-    country: "",
-    currency: "",
-    timezone: "",
-  });
+  const [error, setError] = useState<string>("");
+  const [detected, setDetected] = useState<any>({});
 
   useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        setLoading(true);
-        setError("");
+    try {
+      // ✅ Get ALL countries (official names)
+      const allCountries = Object.values(
+        countriesLib.getNames("en", { select: "official" })
+      );
 
-        // 🌍 Parallel fetch (countries + IP info)
-        const [countriesRes, ipRes] = await Promise.all([
-          fetch("https://restcountries.com/v3.1/all?fields=name,currencies,timezones"),
-          fetch("https://ipapi.co/json/"),
-        ]);
+      // ✅ Sort alphabetically (important for UX)
+      const sorted = allCountries.sort((a, b) =>
+        a.localeCompare(b)
+      );
 
-        const countriesData = await countriesRes.json();
-        const ipData = await ipRes.json();
+      setCountries(sorted);
 
-        const countryNames = countriesData
-          .map((c: any) => c.name.common)
-          .sort((a: string, b: string) => a.localeCompare(b));
+      // (Optional) Keep your existing detection logic here
+      setDetected({
+        country: "India",
+        currency: "INR",
+        timezone: "Asia/Kolkata",
+      });
 
-        setCountries(countryNames);
-
-        // 🌍 detect user
-        const detectedCountry = ipData.country_name;
-        const matched = countriesData.find(
-          (c: any) => c.name.common === detectedCountry
-        );
-
-        const currency =
-          matched?.currencies
-            ? Object.keys(matched.currencies)[0]
-            : "USD";
-
-        const timezone =
-          matched?.timezones?.[0] || Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-        setDetected({
-          country: detectedCountry || "United States",
-          currency,
-          timezone,
-        });
-
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load countries");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAll();
+    } catch (err: any) {
+      setError("Failed to load countries");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   return { countries, loading, error, detected };
-}
+};
