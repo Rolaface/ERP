@@ -45,19 +45,26 @@ const features: Feature[] = [
 
 const SolutionSection: React.FC = () => {
   return (
-    <section className="section section-alt">
+    <section className="section section-alt relative overflow-hidden">
+
+      {/* Background Enhancement */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
 
       <div className="container-app">
 
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
 
-          <h2 className="text-[30px] md:text-[36px] font-semibold leading-snug text-main">
-            Everything you need to run your business — in one place
+          <p className="text-[12px] text-muted font-medium tracking-wide">
+            The Solution
+          </p>
+
+          <h2 className="text-[32px] md:text-[38px] font-semibold leading-snug text-main">
+            One system to run your entire business — clearly and efficiently
           </h2>
 
           <p className="text-body text-muted">
-            No more switching tools or fixing mismatched data. One system that keeps everything in sync.
+            No more juggling tools or fixing mistakes. Everything works together seamlessly in one place.
           </p>
 
         </div>
@@ -77,14 +84,20 @@ const SolutionSection: React.FC = () => {
 
                 {/* IMAGE */}
                 <div className={`${isReverse ? "md:order-2" : ""}`}>
-                  <div className="group bg-card border border-theme rounded-[calc(var(--density-radius)*2)] overflow-hidden shadow-sm">
+                  <div className="relative group">
 
-                    <img
-                      src={feature.image}
-                      alt={feature.title}
-                      className="w-full h-[260px] md:h-[320px] object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                    />
+                    {/* Glow */}
+                    <div className="absolute inset-0 bg-primary/10 blur-2xl rounded-[calc(var(--density-radius)*2)] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
+                    <div className="relative bg-card border border-theme rounded-[calc(var(--density-radius)*2)] overflow-hidden shadow-sm motion-hover-lift">
+
+                      <img
+                        src={feature.image}
+                        alt={feature.title}
+                        className="w-full h-[260px] md:h-[320px] object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                      />
+
+                    </div>
                   </div>
                 </div>
 
@@ -95,11 +108,11 @@ const SolutionSection: React.FC = () => {
                     {feature.label}
                   </p>
 
-                  <h3 className="text-[22px] md:text-[26px] font-semibold text-main leading-snug">
+                  <h3 className="text-[24px] md:text-[28px] font-semibold text-main leading-snug">
                     {feature.title}
                   </h3>
 
-                  <p className="text-[14px] text-muted leading-relaxed max-w-[480px]">
+                  <p className="text-[14px] text-muted leading-relaxed max-w-[500px]">
                     {feature.desc}
                   </p>
 
