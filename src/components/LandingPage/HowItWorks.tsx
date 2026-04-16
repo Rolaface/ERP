@@ -30,33 +30,38 @@ const steps = [
 
 const HowItWorks: React.FC = () => {
   return (
-    <section className="section section-default overflow-hidden">
+    <section className="section section-default relative overflow-hidden">
+
+      {/* Background Enhancement */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
 
       <div className="container-app">
 
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
 
-        
+          <p className="text-[12px] text-muted font-medium tracking-wide">
+            How it works
+          </p>
 
-          <h2 className="text-[30px] md:text-[36px] font-semibold leading-snug text-main">
-            Get started in minutes,{" "}
+          <h2 className="text-[32px] md:text-[38px] font-semibold leading-snug text-main">
+            Get started in minutes —{" "}
             <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
               not weeks
             </span>
           </h2>
 
           <p className="text-body text-muted">
-            A simple step-by-step flow to run your entire business without chaos.
+            Set up once, and your entire business runs smoothly from there.
           </p>
 
         </div>
 
         {/* STEPS */}
-        <div className="relative mt-[calc(var(--density-gap)*4)] grid md:grid-cols-4 gap-[calc(var(--density-gap)*2)]">
+        <div className="relative mt-[calc(var(--density-gap)*4)] grid md:grid-cols-4 gap-[calc(var(--density-gap)*2.5)]">
 
-          {/* Connector line */}
-          <div className="hidden md:block absolute top-8 left-0 w-full h-px bg-[var(--border)]" />
+          {/* Connector line (more subtle) */}
+          <div className="hidden md:block absolute top-10 left-0 w-full h-px bg-gradient-to-r from-transparent via-[var(--border)] to-transparent" />
 
           {steps.map((step, index) => {
             const Icon = step.icon;
@@ -64,34 +69,41 @@ const HowItWorks: React.FC = () => {
             return (
               <div
                 key={step.id}
-                className="relative flex flex-col items-center text-center md:text-left md:items-start animate-fade-up"
+                className="relative group animate-fade-up"
                 style={{ animationDelay: `${index * 0.12}s` }}
               >
 
-                {/* ICON */}
-                <div className="relative mb-4">
+                <div className="card card-hover flex flex-col items-center text-center md:items-start md:text-left p-[calc(var(--density-gap)*2)] h-full">
 
-                  <div className="w-12 h-12 rounded-[var(--density-radius)] bg-card border border-theme flex items-center justify-center transition-all duration-300 hover:scale-105">
-                    <Icon size={20} className="text-primary" />
+                  {/* ICON + NUMBER */}
+                  <div className="relative mb-4">
+
+                    {/* Glow */}
+                    <div className="absolute inset-0 bg-primary/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[var(--density-radius)]"></div>
+
+                    <div className="relative w-12 h-12 rounded-[var(--density-radius)] bg-card border border-theme flex items-center justify-center transition-all duration-300 group-hover:scale-105">
+                      <Icon size={20} className="text-primary" />
+                    </div>
+
+                    {/* STEP NUMBER */}
+                    <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-white text-[10px] font-semibold flex items-center justify-center shadow-sm">
+                      {step.id}
+                    </div>
+
                   </div>
 
-                  {/* STEP NUMBER */}
-                  <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-white text-[10px] font-semibold flex items-center justify-center">
-                    {step.id}
+                  {/* CONTENT */}
+                  <div className="stack-sm">
+
+                    <h3 className="text-[16px] font-semibold text-main">
+                      {step.title}
+                    </h3>
+
+                    <p className="text-[13px] text-muted leading-relaxed">
+                      {step.desc}
+                    </p>
+
                   </div>
-
-                </div>
-
-                {/* CONTENT */}
-                <div className="stack-sm max-w-[220px]">
-
-                  <h3 className="text-[15px] font-semibold text-main">
-                    {step.title}
-                  </h3>
-
-                  <p className="text-[13px] text-muted leading-relaxed">
-                    {step.desc}
-                  </p>
 
                 </div>
 
@@ -104,12 +116,12 @@ const HowItWorks: React.FC = () => {
         {/* BOTTOM TRUST LINE */}
         <div className="mt-[calc(var(--density-gap)*4)] text-center animate-fade-in">
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-theme rounded-full">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-theme rounded-full shadow-sm">
 
             <ShieldCheck size={14} className="text-primary" />
 
             <p className="text-[13px] text-muted">
-              No technical setup required — your team can start instantly
+              No training required — your team can start instantly
             </p>
 
           </div>
