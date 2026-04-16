@@ -27,7 +27,10 @@ import {
 
 
 type OutletContextType = {
-  openCategoryCreate: (parentId?: string) => void;
+  openCategoryCreate: (options?: {
+  parent?: string;
+  onSuccess?: () => void;
+}) => void;
   openCategoryEdit: (id: string, data?: any) => void; 
 };
 
@@ -112,7 +115,7 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
         }}
         className={`
           w-7 h-7 flex items-center justify-center rounded-md transition
-          opacity-0 group-hover:opacity-100
+         opacity-100
           ${
             open
               ? "bg-primary/10 text-primary"
@@ -203,9 +206,12 @@ const ItemsCategory: React.FC = () => {
     fetchTree();
   }, [fetchTree]);
 
-  const handleAddChild = (row: ItemGroupNode) => {
-    openCategoryCreate({ parent: row.name }); 
-  };
+const handleAddChild = (row: ItemGroupNode) => {
+  openCategoryCreate({
+    parent: row.name,
+    onSuccess: fetchTree,
+  });
+};
   
 
   const confirmDelete = async () => {
@@ -353,7 +359,7 @@ const ItemsCategory: React.FC = () => {
         showExpandControls
         onRefresh={fetchTree}
         matchNode={matchItemGroupNode}
-        defaultExpandDepth={0}
+        defaultExpandDepth={10}
         indentSize={20}
         loading={loading}
         emptyMessage="No item groups found."
@@ -361,7 +367,12 @@ const ItemsCategory: React.FC = () => {
         extraFilters={
           <button
             type="button"
-            onClick={() => openCategoryCreate()}
+            onClick={() =>
+  openCategoryCreate({
+    parent: treeData?.[0]?.name,
+    onSuccess: fetchTree,
+  })
+}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
           >
             <Plus size={13} />

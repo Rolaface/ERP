@@ -161,12 +161,18 @@ export const emptyForm: CustomerFormState = {
 
 function splitMobile(mobile?: string): { code: string; number: string } {
   if (!mobile) return { code: "", number: "" };
-  const countryCodes = ["+91", "+260", "+1", "+44", "+00"];
-  const matchedCode = countryCodes.find((code) => mobile.startsWith(code));
-  if (matchedCode) return { code: matchedCode, number: mobile.slice(matchedCode.length) };
+
+  const match = mobile.match(/^(\+\d{1,4})(\d+)$/);
+
+  if (match) {
+    return {
+      code: match[1],
+      number: match[2],
+    };
+  }
+
   return { code: "", number: mobile };
 }
-
 export function mapApiResponseToFormState(
   data: CustomerDetail,
   companySellingTerms: TermSection | null,
@@ -208,17 +214,17 @@ export function mapApiResponseToFormState(
   // ── Addresses ─────────────────────────────────────────────────────────────
   let addresses: AddressEntry[];
   if (data.addresses && data.addresses.length > 0) {
-    addresses = data.addresses.map((a: any) => ({
-      id: a.id,
-      type: a.type ?? "Billing",
-      line1: a.line1 ?? "",
-      line2: a.line2 ?? "",
-      city: a.city ?? "",
-      state: a.state ?? "",
-      postalCode: a.postalCode ?? "",
-      country: a.country ?? "",
-      isPrimary: a.isPrimary ?? false,
-    }));
+   addresses = data.addresses.map((a: any) => ({
+  id: a.id,
+  type: a.type === "Shipping" ? "Shipping" : "Billing",
+  line1: a.line1 ?? "",
+  line2: a.line2 ?? "",
+  city: a.city ?? "",
+  state: a.state ?? "",
+  postalCode: a.postalCode ?? "",
+  country: a.country ?? "",
+  isPrimary: a.isPrimary ?? false,
+}));
     if (!addresses.some((a) => a.type === "Billing"))
       addresses.unshift({ ...defaultBillingAddress });
     if (!addresses.some((a) => a.type === "Shipping"))
@@ -399,36 +405,38 @@ export function useCustomerForm({
   }, [form.name, form.contacts]);
 
   // ── Sync shipping ← billing when sameAsBilling ────────────────────────────
-  useEffect(() => {
-    if (!form.sameAsBilling) return;
-    const billing = form.addresses.find((a) => a.type === "Billing");
-    if (!billing) return;
-    setForm((prev) => ({
-      ...prev,
-      addresses: prev.addresses.map((a) =>
-        a.type === "Shipping"
-          ? {
-  ...a, 
-  line1: billing.line1,
-  line2: billing.line2,
-  city: billing.city,
-  state: billing.state,
-  postalCode: billing.postalCode,
-  country: billing.country,
-  isPrimary: false,
-}
-          : a,
-      ),
-    }));
-  }, [
-    form.sameAsBilling,
-    form.addresses.find?.((a) => a.type === "Billing")?.line1,
-    form.addresses.find?.((a) => a.type === "Billing")?.line2,
-    form.addresses.find?.((a) => a.type === "Billing")?.city,
-    form.addresses.find?.((a) => a.type === "Billing")?.state,
-    form.addresses.find?.((a) => a.type === "Billing")?.postalCode,
-    form.addresses.find?.((a) => a.type === "Billing")?.country,
-  ]);
+useEffect(() => {
+  if (!form.sameAsBilling || isEditMode) return;
+
+  const billing = form.addresses.find((a) => a.type === "Billing");
+  if (!billing) return;
+
+  setForm((prev) => ({
+    ...prev,
+    addresses: prev.addresses.map((a) =>
+      a.type === "Shipping"
+        ? {
+            ...a,
+            line1: billing.line1,
+            line2: billing.line2,
+            city: billing.city,
+            state: billing.state,
+            postalCode: billing.postalCode,
+            country: billing.country,
+            isPrimary: false,
+          }
+        : a
+    ),
+  }));
+}, [
+  form.sameAsBilling,
+  form.addresses.find((a) => a.type === "Billing")?.line1,
+  form.addresses.find((a) => a.type === "Billing")?.line2,
+  form.addresses.find((a) => a.type === "Billing")?.city,
+  form.addresses.find((a) => a.type === "Billing")?.state,
+  form.addresses.find((a) => a.type === "Billing")?.postalCode,
+  form.addresses.find((a) => a.type === "Billing")?.country,
+]);
 
   // ─── Field handlers ───────────────────────────────────────────────────────
 
@@ -445,27 +453,26 @@ export function useCustomerForm({
     }
   };
 
-  const handlePrimaryContactChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      contacts: prev.contacts.map((c) =>
-        c.isPrimary ? { ...c, [name]: value } : c,
-      ),
-    }));
-    if (name === "email" && value) {
-      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      setErrors((prev) => ({
-        ...prev,
-        contactEmail: ok ? undefined : "Invalid email format",
-      }));
+const handlePrimaryContactChange = (e) => {
+  let { name, value } = e.target;
+
+  if (name === "mobileCode") {
+    // always keep +
+    if (!value.startsWith("+")) {
+      value = "+" + value.replace(/\D/g, "");
     }
-    const errKey =
-      `contact${name.charAt(0).toUpperCase() + name.slice(1)}` as keyof CustomerFormErrors;
-    if (errors[errKey]) setErrors((prev) => ({ ...prev, [errKey]: undefined }));
-  };
+
+    // allow only + and numbers
+    value = "+" + value.replace(/\D/g, "");
+  }
+
+  setForm((prev) => ({
+    ...prev,
+    contacts: prev.contacts.map((c) =>
+      c.isPrimary ? { ...c, [name]: value } : c
+    ),
+  }));
+};
 
   const handleAddressChange = (
     addressType: "Billing" | "Shipping",

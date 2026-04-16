@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState } from "react";
+import React, { Suspense, lazy, useState, useMemo, useCallback } from "react";
 import { useOutletContext, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import ApprovalModal from "../../components/procurement/ApprovalModal";
 import {
@@ -70,42 +70,33 @@ const Procurement: React.FC = () => {
   const [showGRModal, setShowGRModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
-  const handleTabChange = (tabId: string) => {
+  const handleTabChange = useCallback((tabId: string) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("tab", tabId);
     navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-  };
+  }, [navigate, location.pathname, searchParams]);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     if (activeTab === "supplier") openSupplierCreate();
     else if (activeTab === "orders") openPOCreate();
     else if (activeTab === "approvals") setShowApprovalModal(true);
     else if (activeTab === "goodsreceipt") setShowGRModal(true);
     else if (activeTab === "invoicematching") setShowInvoiceModal(true);
-  };
+  }, [activeTab, openSupplierCreate, openPOCreate]);
 
-  const renderTab = () => {
-    switch (activeTab) {
-      case "procurementdashboard":
-        return <Dashboard />;
-      case "supplier":
-        return <SupplierManagement onAdd={handleAdd} />;
-      case "rfqs":
-        return <RFQsTable onAdd={handleAdd} />;
-      case "orders":
-        return <PurchaseOrdersTable onAdd={handleAdd} />;
-      case "approvals":
-        return <ApprovalsSection onAdd={handleAdd} />;
-      case "purchase":
-        return <PurchaseInvoiceTable onAdd={handleAdd} />;
-      case "payments":
-        return <Payments />;
-      case "purchaseAnalytics":
-        return <PurchaseAnalytics />;
-      default:
-        return <Dashboard />;
-    }
-  };
+  // Stable tab components - NO remounting on tab switch
+  const tabComponents = useMemo(() => ({
+    procurementdashboard: <Dashboard />,
+    supplier: <SupplierManagement onAdd={handleAdd} />,
+    rfqs: <RFQsTable onAdd={handleAdd} />,
+    orders: <PurchaseOrdersTable onAdd={handleAdd} />,
+    approvals: <ApprovalsSection onAdd={handleAdd} />,
+    purchase: <PurchaseInvoiceTable onAdd={handleAdd} />,
+    payments: <Payments />,
+    purchaseAnalytics: <PurchaseAnalytics />,
+  }), [handleAdd]);
+
+  const currentTabComponent = tabComponents[activeTab as keyof typeof tabComponents] || <Dashboard />;
 
   return (
     <AppPage viewportLocked={isDashboardTab}>
@@ -116,7 +107,7 @@ const Procurement: React.FC = () => {
       />
       <AppTabs tabs={procurementTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody viewportLocked={isDashboardTab}>
-        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
+        {currentTabComponent}
       </AppPageBody>
 
       {showApprovalModal && (

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useMemo, useCallback } from "react";
 import { useOutletContext, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import {
   FaCreditCard,
@@ -55,30 +55,25 @@ const CRM: React.FC = () => {
   const isDashboardTab = activeTab === "dashboard";
   const { openCustomerCreate } = useOutletContext<OutletContextType>();
 
-  const handleTabChange = (tabId: string) => {
+  const handleTabChange = useCallback((tabId: string) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("tab", tabId);
     navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-  };
+  }, [navigate, location.pathname, searchParams]);
 
-  const handleAddCustomer = () => {
+  const handleAddCustomer = useCallback(() => {
     openCustomerCreate();
-  };
+  }, [openCustomerCreate]);
 
-  const renderTab = () => {
-    switch (activeTab) {
-      case "dashboard":
-        return <CRMDashboard />;
-      case "customer-managment":
-        return <CustomerManagement onAdd={handleAddCustomer} />;
-      case "payments":
-        return <Payments />;
-      case "reports":
-        return <CRMReports />;
-      default:
-        return <CRMDashboard />;
-    }
-  };
+  // Stable tab components - NO remounting on tab switch
+  const tabComponents = useMemo(() => ({
+    dashboard: <CRMDashboard />,
+    "customer-managment": <CustomerManagement onAdd={handleAddCustomer} />,
+    payments: <Payments />,
+    reports: <CRMReports />,
+  }), [handleAddCustomer]);
+
+  const currentTabComponent = tabComponents[activeTab as keyof typeof tabComponents] || <CRMDashboard />;
 
   return (
     <AppPage viewportLocked={isDashboardTab}>
@@ -89,7 +84,7 @@ const CRM: React.FC = () => {
       />
       <AppTabs tabs={crmTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody viewportLocked={isDashboardTab}>
-        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
+        {currentTabComponent}
       </AppPageBody>
     </AppPage>
   );

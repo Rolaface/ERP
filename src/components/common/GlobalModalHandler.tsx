@@ -95,7 +95,7 @@ const GlobalModalHandler: React.FC = () => {
   }, [pending, completeQuickAdd]);
 
   const renderModal = (modal: ModalInstance) => {
-    const context = getModalContext(modal.id);
+    const context = modal.context || getModalContext(modal.id);
 
     const handleClose = () => {
       if (context?.source === "quickAdd") {
@@ -105,9 +105,13 @@ const GlobalModalHandler: React.FC = () => {
     };
 
 const handleSubmit: ModalSubmitHandler = async (data) => {
-  await context?.onSuccess?.(data);
+  if (context?.onSuccess) {
+    await context.onSuccess(data);
+  }
 
-  await context?.callback?.(data);
+  if (context?.callback) {
+    await context.callback(data);
+  }
 
   return true;
 };
@@ -219,18 +223,19 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
           />
         );
 
-      case "itemCategory":
-        return wrappedModal(
-          <ItemsCategoryModal
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            onSubmit={handleSubmit}
-            initialData={getRecordInitialData(modal.initialData)}
-            isEditMode={modal.isEdit}
-          />
-        );
+ case "itemCategory":
+  return wrappedModal(
+    <ItemsCategoryModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+      initialData={getRecordInitialData(modal.initialData)}
+      isEditMode={modal.isEdit}
+    />
+  );
+  
 
       case "taxTemplate":
         return wrappedModal(

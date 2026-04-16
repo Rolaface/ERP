@@ -1,10 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Building2, MapPin, FileText, Receipt } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { DetailsTab } from "../procurement/purchaseinvoice/DetailsTab";
-// import { EmailTab } from "../procurement/purchaseorder/EmailTab";
-// import { TaxTab } from "../procurement/purchaseorder/TaxTab";
 import { AddressTab } from "../procurement/purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
 import { usePurchaseInvoiceForm } from "../../hooks/usePurchaseInvoiceForm";
@@ -23,8 +21,6 @@ interface PurchaseInvoiceModalProps {
 
 const tabs: { key: POTab; icon: typeof Building2; label: string }[] = [
   { key: "details", icon: Building2, label: "Details" },
-  // { key: "email", icon: Mail, label: "Email" },
-  // { key: "tax", icon: Calculator, label: "Tax" },
   { key: "address", icon: MapPin, label: "Address" },
   { key: "terms", icon: FileText, label: "Terms" },
 ];
@@ -80,7 +76,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     setLoading,
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
-  const handleSubmitForm = async () => {
+  const handleSubmitForm = useCallback(async () => {
     const error = validateTab(activeTab);
     if (error) {
       showValidationError(error);
@@ -98,18 +94,27 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     } finally {
       setInternalSaving(false);
     }
-  };
+  }, [validateTab, activeTab, internalSaving, resetDirty, handleSubmit]);
 
-  const handleNextClick = () => {
+  const handleNextClick = useCallback(() => {
     const currentIndex = tabOrder.indexOf(activeTab);
     if (currentIndex < tabOrder.length - 1) {
       setActiveTab(tabOrder[currentIndex + 1]);
     }
-  };
+  }, [activeTab, setActiveTab]);
+
+  const handleTabClick = useCallback((tabKey: POTab) => {
+    const error = validateTab(activeTab);
+    if (error) {
+      showValidationError(error);
+      return;
+    }
+    setActiveTab(tabKey);
+  }, [activeTab, validateTab, setActiveTab]);
 
   const isLastTab = activeTab === "terms";
 
-  const footer = (
+  const footer = useMemo(() => (
     <>
       <Button
         variant="secondary"
@@ -143,7 +148,69 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         )}
       </div>
     </>
-  );
+  ), [handleCloseWithConfirm, onClose, resolvedModalId, resetDirty, reset, isLastTab, handleNextClick, handleSubmitForm, internalSaving]);
+
+  // Memoized tab content - stays mounted but hidden
+  const tabContent = useMemo(() => (
+    <>
+      <div style={{ display: activeTab === "details" ? "block" : "none" }}>
+        <DetailsTab
+          form={form}
+          items={form.items}
+          onFormChange={handleFormChange}
+          onSupplierChange={handleSupplierChange}
+          onItemChange={handleItemChange}
+          onAddItem={addItem}
+          onRemoveItem={removeItem}
+          onDuplicateItem={duplicateItem}
+          getCurrencySymbol={getCurrencySymbol}
+          onItemSelect={handleItemSelect}
+          poList={poList}
+          poLoading={poLoading}
+          onPOSelect={handlePOSelect}
+          usePO={usePO}
+          onTogglePO={handleTogglePO}
+          onBulkItemChange={handleBulkItemChange}
+        />
+      </div>
+
+      <div style={{ display: activeTab === "address" ? "block" : "none" }}>
+        <AddressTab
+          form={form}
+          onFormChange={(e: any) => handleFormChange(e)}
+          customShippingRule={customShippingRule}
+          setCustomShippingRule={setCustomShippingRule}
+          customIncoterm={customIncoterm}
+          setCustomIncoterm={setCustomIncoterm}
+          supplierId={form.supplierId}
+          selected={selected}
+          setSelected={setSelected}
+          selectedIds={selectedIds}
+          setSelectedIds={setSelectedIds}
+          addresses={addresses}
+          setAddresses={setAddresses}
+          loading={loading}
+          setLoading={setLoading}
+        />
+      </div>
+
+      <div style={{ display: activeTab === "terms" ? "block" : "none" }}>
+        <TermsAndCondition
+          terms={form.terms?.buying ?? null}
+          setTerms={(buying) =>
+            setForm((p) => ({ ...p, terms: { buying } }))
+          }
+          type="buying"
+        />
+      </div>
+    </>
+  ), [
+    activeTab, form, handleFormChange, handleSupplierChange, handleItemChange,
+    addItem, removeItem, duplicateItem, getCurrencySymbol, handleItemSelect,
+    poList, poLoading, handlePOSelect, usePO, handleTogglePO, handleBulkItemChange,
+    customShippingRule, setCustomShippingRule, customIncoterm, setCustomIncoterm,
+    selected, setSelected, selectedIds, setSelectedIds, addresses, setAddresses, loading, setLoading
+  ]);
 
   return (
     <MinimizableModal
@@ -169,7 +236,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               <button
                 key={key}
                 type="button"
-                onClick={() => setActiveTab(key)}
+                onClick={() => handleTabClick(key)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
                   activeTab === key
                     ? "text-primary border-b-[3px] border-primary"
@@ -183,94 +250,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         </div>
 
         <section className="flex-1 overflow-y-auto p-4 space-y-6">
-          {activeTab === "details" && (
-            <DetailsTab
-              form={form}
-              items={form.items}
-              onFormChange={handleFormChange}
-              onSupplierChange={handleSupplierChange}
-              onItemChange={handleItemChange}
-              onAddItem={addItem}
-              onRemoveItem={removeItem}
-              onDuplicateItem={duplicateItem}
-              getCurrencySymbol={getCurrencySymbol}
-              onItemSelect={handleItemSelect}
-              poList={poList}
-              poLoading={poLoading}
-              onPOSelect={handlePOSelect}
-              usePO={usePO}
-              onTogglePO={handleTogglePO}
-              onBulkItemChange={handleBulkItemChange}
-            />
-          )}
-
-          {/* {activeTab === "email" && (
-            <EmailTab
-              templateName={form.templateName}
-              templateType={form.templateType}
-              subject={form.subject}
-              sendAttachedFiles={form.sendAttachedFiles}
-              sendPrint={form.sendPrint}
-              onTemplateNameChange={(v) =>
-                setForm((p: any) => ({ ...p, templateName: v }))
-              }
-              onTemplateTypeChange={(v) =>
-                setForm((p: any) => ({ ...p, templateType: v }))
-              }
-              onSubjectChange={(v) =>
-                setForm((p: any) => ({ ...p, subject: v }))
-              }
-              onSendAttachedFilesChange={(v) =>
-                setForm((p: any) => ({ ...p, sendAttachedFiles: v }))
-              }
-              onSendPrintChange={(v) =>
-                setForm((p: any) => ({ ...p, sendPrint: v }))
-              }
-              onSaveTemplate={handleSaveTemplate}
-              onResetTemplate={resetTemplate}
-            />
-        )}
-
-          {/* {activeTab === "tax" && (
-            <TaxTab
-              form={form}
-              taxRows={form.taxRows}
-              onFormChange={handleFormChange}
-              onTaxRowChange={handleTaxRowChange}
-              onAddTaxRow={addTaxRow}
-              onRemoveTaxRow={removeTaxRow}
-            />
-          )} */}
-
-          {activeTab === "address" && (
-            <AddressTab
-              form={form}
-              onFormChange={(e: any) => handleFormChange(e)}
-              customShippingRule={customShippingRule}
-              setCustomShippingRule={setCustomShippingRule}
-              customIncoterm={customIncoterm}
-              setCustomIncoterm={setCustomIncoterm}
-              supplierId={form.supplierId}
-              selected={selected}
-              setSelected={setSelected}
-              selectedIds={selectedIds}
-              setSelectedIds={setSelectedIds}
-              addresses={addresses}
-              setAddresses={setAddresses}
-              loading={loading}
-              setLoading={setLoading}
-            />
-          )}
-
-          {activeTab === "terms" && (
-            <TermsAndCondition
-              terms={form.terms?.buying ?? null}
-              setTerms={(buying) =>
-                setForm((p) => ({ ...p, terms: { buying } }))
-              }
-              type="buying"
-            />
-          )}
+          {tabContent}
         </section>
       </form>
     </MinimizableModal>

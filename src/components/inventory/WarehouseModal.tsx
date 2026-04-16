@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { showValidationError, showApiError } from "../../utils/alert";
+import { showValidationError, showApiError,showSuccess } from "../../utils/alert";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { Warehouse } from "lucide-react";
 import type { CreateWarehousePayload } from "../../api/WarehouseApi";
 import { getCompanyById } from "../../api/companySetupApi";
+import { createWarehouseNode, updateWarehouseById } from "../../api/WarehouseApi";
 
 const emptyForm = {
   warehouse_name: "",
@@ -117,8 +118,28 @@ const handleSubmit = async (e: React.FormEvent) => {
         payload.name = initialData.name;
       }
 
-      onSubmit?.(payload);
-      handleClose();
+let res;
+
+if (isEditMode && initialData?.name) {
+  res = await updateWarehouseById(initialData.name, payload);
+} else {
+  res = await createWarehouseNode(payload);
+}
+
+if (!res || ![200, 201].includes(res.status)) {
+  showApiError(res);
+  return;
+}
+
+showSuccess(
+  isEditMode
+    ? "Warehouse updated successfully"
+    : "Warehouse created successfully"
+);
+
+onSubmit?.(payload);
+handleClose();
+     
     } catch (err: any) {
       showApiError(err);
     } finally {

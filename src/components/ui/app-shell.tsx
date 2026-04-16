@@ -1,6 +1,6 @@
-import React from "react";
+import React, { memo, useCallback } from "react";
 
-export interface AppTabItem {
+interface AppTabItem {
   id: string;
   label: string;
   icon?: React.ReactNode;
@@ -87,33 +87,38 @@ interface AppTabsProps {
   onChange: (tabId: string) => void;
 }
 
-export const AppTabs: React.FC<AppTabsProps> = ({
-  tabs,
-  activeTab,
-  onChange,
-}) => (
-  <div className="w-full overflow-x-auto scrollbar-hide">
-    <div className="flex items-center justify-start gap-2 rounded-2xl border border-[var(--border)] bg-card p-2 min-w-max">
-      {tabs.map((tab) => {
-        const isActive = tab.id === activeTab;
-        return (
-          <button
-            key={tab.id}
-            onClick={() => onChange(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all flex-shrink-0 ${
-              isActive
-                ? "bg-primary text-white"
-                : "text-muted hover:bg-row-hover hover:text-main"
-            }`}
-          >
-            {tab.icon && <span className="text-sm shrink-0">{tab.icon}</span>}
-            <span className="truncate">{tab.label}</span>
-          </button>
-        );
-      })}
+export const AppTabs: React.FC<AppTabsProps> = memo(({ tabs, activeTab, onChange }) => {
+  const handleClick = useCallback((tabId: string) => {
+    onChange(tabId);
+  }, [onChange]);
+
+  return (
+    <div className="w-full overflow-x-auto scrollbar-hide">
+      <div className="flex items-center justify-start gap-2 rounded-2xl border border-[var(--border)] bg-card p-2 min-w-max">
+        {tabs.map((tab) => {
+          const isActive = tab.id === activeTab;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleClick(tab.id)}
+              className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all flex-shrink-0 ${
+                isActive
+                  ? "bg-primary text-white"
+                  : "text-muted hover:bg-row-hover hover:text-main"
+              }`}
+            >
+              {tab.icon && <span className="text-sm shrink-0">{tab.icon}</span>}
+              <span className="truncate">{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
-  </div>
-);
+  );
+});
+
+AppTabs.displayName = 'AppTabs';
 
 export const AppSurface: React.FC<{
   children: React.ReactNode;

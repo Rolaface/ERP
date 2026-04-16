@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useMemo,useEffect } from "react";
+import React, { Suspense, lazy, useMemo, useEffect, useCallback } from "react";
 import { useOutletContext, useNavigate, useLocation } from "react-router-dom";
 import {
   FaBoxOpen,
@@ -64,34 +64,24 @@ const Inventory: React.FC = () => {
 
   const isDashboardTab = activeTab === "dashboard";
 
-  const handleTabChange = (tabId: string) => {
+  const handleTabChange = useCallback((tabId: string) => {
     navigate(`/inventory/${tabId}`, { replace: true });
-  };
+  }, [navigate]);
 
-  const renderTab = () => {
-    switch (activeTab) {
-      case "dashboard":
-        return <InventoryDashboard />;
-      case "items":
-        return <Items />;
-      case "taxCategory":
-        return <TaxCategory />;
-      case "itemsCategory":
-        return <ItemsCategory />;
-      case "warehouse":
-        return <WarehouseView openWarehouseCreate={openWarehouseCreate} openWarehouseEdit={openWarehouseEdit} />;
-      case "stock":
-        return <Stock />;
-      case "import":
-        return <Import />;
-      case "movements":
-        return <Movements />;
-      case "taxTemplates":
-        return <TaxTemplate />;
-      default:
-        return <InventoryDashboard />;
-    }
-  };
+  // Stable tab components - NO remounting on tab switch
+  const tabComponents = useMemo(() => ({
+    dashboard: <InventoryDashboard />,
+    items: <Items />,
+    taxCategory: <TaxCategory />,
+    itemsCategory: <ItemsCategory />,
+    warehouse: <WarehouseView openWarehouseCreate={openWarehouseCreate} openWarehouseEdit={openWarehouseEdit} />,
+    stock: <Stock />,
+    import: <Import />,
+    movements: <Movements />,
+    taxTemplates: <TaxTemplate />,
+  }), [openWarehouseCreate, openWarehouseEdit]);
+
+  const currentTabComponent = tabComponents[activeTab as keyof typeof tabComponents] || <InventoryDashboard />;
 
   return (
     <AppPage viewportLocked={isDashboardTab}>
@@ -106,7 +96,7 @@ const Inventory: React.FC = () => {
         onChange={handleTabChange}
       />
       <AppPageBody viewportLocked={isDashboardTab}>
-        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
+        {currentTabComponent}
       </AppPageBody>
     </AppPage>
   );

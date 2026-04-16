@@ -175,7 +175,9 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   />
                 </Tooltip>
 
-                <Tooltip content={primaryContact?.firstName || "Primary contact"}>
+                <Tooltip
+                  content={primaryContact?.firstName || "Primary contact"}
+                >
                   <ModalInput
                     label="Contact Person First Name"
                     name="firstName"
@@ -235,12 +237,10 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 </Tooltip>
 
                 <Tooltip
-                  content={
-                    form.customerTaxCategory || "Select Tax Category"
-                  }
+                  content={form.customerTaxCategory || "Select Tax Category"}
                 >
                   <TaxCategorySelect
-                   label="Tax Category"
+                    label="Tax Category"
                     value={form.customerTaxCategory}
                     onChange={(value) =>
                       handleChange({
@@ -310,17 +310,21 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                         ].join(" ")}
                       />
                       <input
-                        name="mobile"
-                        type="tel"
-                        value={primaryContact?.mobile ?? ""}
+                        name="mobileCode"
+                        value={primaryContact?.mobileCode || "+"}
                         onChange={handlePrimaryContactChange}
-                        placeholder="Enter mobile number"
-                        className={[
-                          "flex-1 py-1 px-2 border-t border-b border-r rounded-r text-[11px] text-main bg-card transition-all",
-                          errors.contactMobile
-                            ? "border-danger"
-                            : "border-[var(--border)] hover:border-primary/40",
-                        ].join(" ")}
+                        onBlur={(e) => {
+                          if (!e.target.value.startsWith("+")) {
+                            handlePrimaryContactChange({
+                              target: {
+                                name: "mobileCode",
+                                value: "+" + e.target.value,
+                              },
+                            });
+                          }
+                        }}
+                        maxLength={5}
+                        className="w-[60px] py-1 px-2 border rounded-l text-[11px]"
                       />
                     </div>
                     {errors.contactMobile && (
