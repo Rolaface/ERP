@@ -65,18 +65,29 @@ const AddBankAccountModal: React.FC<Props> = ({
       }));
     }
 
-    if (partyName && entities.length) {
-      const match = entities.find((e) => e.value === partyName);
-      setForm((prev) => ({
-        ...prev,
-        name: match?.value || partyName,
-        displayName: match?.label || partyName,
-        accountHolder: match?.label || partyName,
-        currency: prev.currency || currency || match?.meta?.currency,
+    if (partyName) {
+  if (defaultAccountFor === "Company") {
+    setForm((prev) => ({
+      ...prev,
+      name: partyName,
+      displayName: partyName,
+      accountHolder: partyName,
+      currency: prev.currency || currency,
+      accountHolderEdited: false,
+    }));
+  } else if (entities.length) {
+    const match = entities.find((e) => e.value === partyName);
 
-        accountHolderEdited: false,
-      }));
-    }
+    setForm((prev) => ({
+      ...prev,
+      name: match?.value || partyName,
+      displayName: match?.label || partyName,
+      accountHolder: match?.label || partyName,
+      currency: prev.currency || currency || match?.meta?.currency,
+      accountHolderEdited: false,
+    }));
+  }
+}
   }, [defaultAccountFor, partyName, entities, initialData, currency]);
 
   const validate = () => {

@@ -452,7 +452,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
           name="supplierContact"
           value={form.supplierContactDisplay  || ""}
           onChange={onFormChange}
-          disabled
+          
         />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3 pb-3">
