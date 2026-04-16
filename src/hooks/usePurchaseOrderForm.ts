@@ -625,34 +625,6 @@ export const usePurchaseOrderForm = ({
   };
 
   const validateTab = (tab: POTab): string | null => {
-    if (tab === "details") {
-      if (!form.supplierId) return "Supplier is required";
-      if (!form.date) return "PO Date is required";
-
-      if (!form.items.length || !form.items[0].itemCode) {
-        return "Please add at least one item";
-      }
-
-      for (let i = 0; i < form.items.length; i++) {
-        const item = form.items[i];
-
-        if (!item.itemCode) return `Row ${i + 1}: Item required`;
-        if (!item.quantity || item.quantity <= 0)
-          return `Row ${i + 1}: Quantity required`;
-        if (!item.rate || item.rate <= 0) return `Row ${i + 1}: Rate required`;
-        if (!item.warehouse) return `Row ${i + 1}: Warehouse required`;
-
-        if (!item.vatCd || !item.vatCd.trim())
-          return `Row ${i + 1}: Tax Code required`;
-      }
-    }
-
-    if (tab === "address") {
-      const supplier = form.addresses?.supplierAddress;
-
-      if (!supplier?.id) return "Supplier Address is required";
-    }
-
     return null;
   };
 
@@ -713,18 +685,6 @@ export const usePurchaseOrderForm = ({
     e?.preventDefault();
 
     if (saving) return;
-
-    if (!form.taxCategory) {
-      showValidationError("Tax Category is required");
-      return;
-    }
-
-    const errors = validatePO(form);
-
-    if (errors.length) {
-      showValidationError([...new Set(errors)].join("\n"));
-      return;
-    }
 
     try {
       setSaving(true);
