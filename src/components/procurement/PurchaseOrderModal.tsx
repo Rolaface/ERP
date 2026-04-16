@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Building2, MapPin, FileText } from "lucide-react";
 import { Button } from "../ui/modal/formComponent";
 import { DetailsTab } from "./purchaseorder/DetailsTab";
@@ -50,7 +50,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     handleItemChange,
     addItem,
     removeItem,
-    duplicateItem, // ← new
+    duplicateItem,
     handleTaxRowChange,
     addTaxRow,
     removeTaxRow,
@@ -76,14 +76,23 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     setAddressLoading,
   } = usePurchaseOrderForm({ isOpen, onSuccess: onSubmit, onClose, poId });
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     const currentIndex = tabOrder.indexOf(activeTab);
     if (currentIndex < tabOrder.length - 1) {
       setActiveTab(tabOrder[currentIndex + 1]);
     }
-  };
+  }, [activeTab, setActiveTab]);
 
-  const footer = (
+  const handleTabClick = useCallback((tabKey: POTab) => {
+    const error = validateTab(activeTab);
+    if (error) {
+      showValidationError(error);
+      return;
+    }
+    setActiveTab(tabKey);
+  }, [activeTab, validateTab, setActiveTab]);
+
+  const footer = useMemo(() => (
     <>
       <Button
         variant="secondary"
@@ -128,7 +137,77 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
         </Button>
       </div>
     </>
-  );
+  ), [handleCloseWithConfirm, onClose, resolvedModalId, resetDirty, reset, activeTab, validateTab, handleNext, saving]);
+
+  // Memoized tab components - they stay mounted but hidden
+  const tabContent = useMemo(() => (
+    <>
+      <div style={{ display: activeTab === "details" ? "block" : "none" }}>
+        <DetailsTab
+          form={form}
+          items={form.items}
+          onFormChange={handleFormChange}
+          onSupplierChange={handleSupplierChange}
+          onItemChange={handleItemChange}
+          onAddItem={addItem}
+          onRemoveItem={removeItem}
+          onDuplicateItem={duplicateItem}
+          getCurrencySymbol={getCurrencySymbol}
+          onItemSelect={handleItemSelect}
+          onBulkItemChange={handleBulkItemChange}
+        />
+      </div>
+
+      <div style={{ display: activeTab === "tax" ? "block" : "none" }}>
+        <TaxTab
+          form={form}
+          taxRows={form.taxRows}
+          onFormChange={handleFormChange}
+          onTaxRowChange={handleTaxRowChange}
+          onAddTaxRow={addTaxRow}
+          onRemoveTaxRow={removeTaxRow}
+        />
+      </div>
+
+      <div style={{ display: activeTab === "address" ? "block" : "none" }}>
+        <AddressTab
+          form={form}
+          onFormChange={handleFormChange}
+          supplierId={form.supplierId}
+          companyId={form.company}
+          customShippingRule={customShippingRule}
+          setCustomShippingRule={setCustomShippingRule}
+          customIncoterm={customIncoterm}
+          setCustomIncoterm={setCustomIncoterm}
+          selected={addressSelected}
+          setSelected={setAddressSelected}
+          selectedIds={addressSelectedIds}
+          setSelectedIds={setAddressSelectedIds}
+          addresses={addressList}
+          setAddresses={setAddressList}
+          loading={addressLoading}
+          setLoading={setAddressLoading}
+        />
+      </div>
+
+      <div style={{ display: activeTab === "terms" ? "block" : "none" }}>
+        <TermsAndCondition
+          terms={form.terms?.buying ?? null}
+          setTerms={(buying) =>
+            setForm((p) => ({ ...p, terms: { buying } }))
+          }
+          type="buying"
+        />
+      </div>
+    </>
+  ), [
+    activeTab, form, handleFormChange, handleSupplierChange, handleItemChange,
+    addItem, removeItem, duplicateItem, getCurrencySymbol, handleItemSelect,
+    handleBulkItemChange, handleTaxRowChange, addTaxRow, removeTaxRow,
+    customShippingRule, setCustomShippingRule, customIncoterm, setCustomIncoterm,
+    addressSelected, setAddressSelected, addressSelectedIds, setAddressSelectedIds,
+    addressList, setAddressList, addressLoading, setAddressLoading
+  ]);
 
   return (
     <MinimizableModal
@@ -171,7 +250,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
               <button
                 key={key}
                 type="button"
-                onClick={() => setActiveTab(key)}
+                onClick={() => handleTabClick(key)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
                   activeTab === key
                     ? "text-primary border-b-[3px] border-primary"
@@ -185,63 +264,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
         </div>
 
         <section className="flex-1 overflow-y-auto p-4 space-y-6">
-          {activeTab === "details" && (
-            <DetailsTab
-              form={form}
-              items={form.items}
-              onFormChange={handleFormChange}
-              onSupplierChange={handleSupplierChange}
-              onItemChange={handleItemChange}
-              onAddItem={addItem}
-              onRemoveItem={removeItem}
-              onDuplicateItem={duplicateItem} // ← wired
-              getCurrencySymbol={getCurrencySymbol}
-              onItemSelect={handleItemSelect}
-              onBulkItemChange={handleBulkItemChange}
-            />
-          )}
-
-          {activeTab === "tax" && (
-            <TaxTab
-              form={form}
-              taxRows={form.taxRows}
-              onFormChange={handleFormChange}
-              onTaxRowChange={handleTaxRowChange}
-              onAddTaxRow={addTaxRow}
-              onRemoveTaxRow={removeTaxRow}
-            />
-          )}
-
-          {activeTab === "address" && (
-            <AddressTab
-              form={form}
-              onFormChange={handleFormChange}
-              supplierId={form.supplierId}
-              companyId={form.company}
-              customShippingRule={customShippingRule}
-              setCustomShippingRule={setCustomShippingRule}
-              customIncoterm={customIncoterm}
-              setCustomIncoterm={setCustomIncoterm}
-              selected={addressSelected}
-              setSelected={setAddressSelected}
-              selectedIds={addressSelectedIds}
-              setSelectedIds={setAddressSelectedIds}
-              addresses={addressList}
-              setAddresses={setAddressList}
-              loading={addressLoading}
-              setLoading={setAddressLoading}
-            />
-          )}
-
-          {activeTab === "terms" && (
-            <TermsAndCondition
-              terms={form.terms?.buying ?? null}
-              setTerms={(buying) =>
-                setForm((p) => ({ ...p, terms: { buying } }))
-              }
-              type="buying"
-            />
-          )}
+          {tabContent}
         </section>
       </form>
     </MinimizableModal>

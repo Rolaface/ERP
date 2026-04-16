@@ -251,7 +251,7 @@ const InputField: React.FC<InputFieldProps> = ({
 
 interface BasicDetailsProps {
   basic?: BasicDetailsForm | null;
-  terms?: Terms | null;          // ✅ same as BankDetails — prevent wiping
+  terms?: Terms | null;          
   onSaveSuccess: () => void;
 }
 
@@ -401,12 +401,12 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({ basic, terms, onSaveSuccess
                   { label: "Partnership",     value: "PARTNERSHIP"     },
                 ],
               })}
-              {renderField("Company Status", "companyStatus", "registration", {
+              {/* {renderField("Company Status", "companyStatus", "registration", {
                 options: [
                   { label: "Active",   value: "ACTIVE"   },
                   { label: "Inactive", value: "INACTIVE" },
                 ],
-              })}
+              })} */}
               {renderField("Industry Type", "industryType", "registration", {
                 icon: FaIndustry,
                 options: [

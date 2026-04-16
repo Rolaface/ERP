@@ -217,14 +217,13 @@ export const InvoiceAddressTab: React.FC<Props> = ({
 //billing block
 const selectedBilling =
   billingList.find((a) => a.id === formData.billingAddress) ||
-  (formData.billingAddress
-    ? { id: formData.billingAddress, title: String(formData.billingAddress) }
+  (typeof formData.billingAddress === "string" && formData.billingAddress
+    ? { id: formData.billingAddress, title: formData.billingAddress }
     : null);
- 
     //shipping block 
-    const selectedShipping =
+   const selectedShipping =
   shippingList.find((a) => a.id === formData.shippingAddress) ||
-  (formData.shippingAddress
+  (typeof formData.shippingAddress === "string" && formData.shippingAddress
     ? { id: formData.shippingAddress, title: formData.shippingAddress }
     : null);
 

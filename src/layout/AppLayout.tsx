@@ -179,10 +179,50 @@ const AppLayout: React.FC = () => {
     openItemModal(undefined, false, context);
   const openItemEdit = (id: string, data: any, context?: ModalContext) =>
     openItemModal(data, true, context);
-  const openCategoryCreate = () => openItemCategoryModal();
-  const openCategoryEdit = (id: string, data: any) => openItemCategoryModal(data, true);
-  const openWarehouseCreate = (initialData?: { parent: string }) => openWarehouseModal(initialData);
-  const openWarehouseEdit = (id: string, data: any) => openWarehouseModal(data, true);
+  const openCategoryCreate = (options?: {
+  parent?: string;
+  onSuccess?: () => void;
+}) =>
+  openItemCategoryModal(
+    { parent: options?.parent },
+    false,
+    {
+      onSuccess: options?.onSuccess,
+    }
+  );
+const openCategoryEdit = (id: string, data: any, options?: {
+  onSuccess?: () => void;
+}) =>
+  openItemCategoryModal(
+    data,
+    true,
+    {
+      onSuccess: options?.onSuccess,
+    }
+  );
+const openWarehouseCreate = (options?: {
+  parent?: string;
+  onSuccess?: () => void;
+}) =>
+  openWarehouseModal(
+    { parent: options?.parent },
+    false,
+    {
+      onSuccess: options?.onSuccess,
+    }
+  );
+const openWarehouseEdit = (
+  id: string,
+  data: any,
+  options?: { onSuccess?: () => void }
+) =>
+  openWarehouseModal(
+    data,
+    true,
+    {
+      onSuccess: options?.onSuccess,
+    }
+  );
 
   const sharedProps = {
     // Sales

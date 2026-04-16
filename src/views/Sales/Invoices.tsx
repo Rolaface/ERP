@@ -156,7 +156,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
-  // Initial fetch on mount
+
   useEffect(() => {
     mountedRef.current = true;
     fetchInvoices();
@@ -253,7 +253,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
       const res = await getSalesInvoiceById(invoiceNumber);
 
-      if (!res || res.status_code !== 200) {
+      if (!res.message || res.message.status_code !== 200) {
         closeSwal();
         showApiError("Failed to load invoice");
         return;
@@ -261,7 +261,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
       closeSwal();
 
-      openInvoiceEdit(invoiceNumber, res.data);
+      openInvoiceEdit(invoiceNumber, res.message.data);
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -515,7 +515,7 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
       align: "left",
       sortable: true,
       render: (inv) => (
-        <span className="font-semibold text-main">{inv.invoiceNumber}</span>
+       <span className="text-main whitespace-nowrap truncate block max-w-[140px]">{inv.invoiceNumber}</span>
       ),
       tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
     },

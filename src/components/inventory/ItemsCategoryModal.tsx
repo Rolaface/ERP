@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { showValidationError, showApiError } from "../../utils/alert";
+import {
+  showValidationError,
+  showApiError,
+  showSuccess,
+} from "../../utils/alert";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { Layers } from "lucide-react";
 import type { CreateItemGroupPayload } from "../../api/itemGroupApi";
+import {
+  createItemGroupNode,
+  updateItemGroupById,
+} from "../../api/itemGroupApi";
 
 const emptyForm = {
   item_group_name: "",
@@ -16,22 +24,29 @@ const inputClass =
   "h-8 rounded-md border border-theme bg-card text-main text-sm px-2.5 w-full " +
   "focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary";
 
-const labelClass =
-  "text-[11px] font-medium uppercase tracking-wide text-muted";
-
+const labelClass = "text-[11px] font-medium uppercase tracking-wide text-muted";
 
 const ItemsCategoryModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (data: CreateItemGroupPayload) => void;
-  initialData?: Record<string, any> | null; 
+  initialData?: Record<string, any> | null;
   isEditMode?: boolean;
   modalId?: string;
-}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false, modalId }) => {
-  const resolvedModalId = modalId || (isEditMode && initialData?.name
-    ? `item-group-edit-${initialData.name}-${Date.now()}`
-    : `item-group-create-${Date.now()}`);
-    
+}> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+  isEditMode = false,
+  modalId,
+}) => {
+  const resolvedModalId =
+    modalId ||
+    (isEditMode && initialData?.name
+      ? `item-group-edit-${initialData.name}-${Date.now()}`
+      : `item-group-create-${Date.now()}`);
+
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
@@ -40,7 +55,10 @@ const ItemsCategoryModal: React.FC<{
       if (initialData) {
         setForm({
           item_group_name: initialData.item_group_name || "",
-          is_group: initialData.is_group !== undefined ? String(initialData.is_group) : "0",
+          is_group:
+            initialData.is_group !== undefined
+              ? String(initialData.is_group)
+              : "0",
           parent: initialData.parent || initialData.parent_item_group || "",
         });
       } else {
@@ -50,7 +68,7 @@ const ItemsCategoryModal: React.FC<{
   }, [isOpen, initialData]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -71,7 +89,7 @@ const ItemsCategoryModal: React.FC<{
     return true;
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (loading) return;
@@ -88,12 +106,27 @@ const handleSubmit = async (e: React.FormEvent) => {
         is_root: "false",
       };
 
+      let res;
+
       if (isEditMode && initialData?.name) {
-        payload.id = initialData.name;
-        payload.original_name = initialData.name;
+        res = await updateItemGroupById(initialData.name, payload);
+      } else {
+        res = await createItemGroupNode(payload);
       }
 
+      if (!res || ![200, 201].includes(res.status)) {
+        showApiError(res);
+        return;
+      }
+
+      showSuccess(
+        isEditMode
+          ? "Item Group updated successfully"
+          : "Item Group created successfully",
+      );
+
       onSubmit?.(payload);
+
       handleClose();
     } catch (err: any) {
       showApiError(err);
@@ -101,12 +134,14 @@ const handleSubmit = async (e: React.FormEvent) => {
       setLoading(false);
     }
   };
-
   const reset = () => {
     if (initialData) {
       setForm({
         item_group_name: initialData.item_group_name || "",
-        is_group: initialData.is_group !== undefined ? String(initialData.is_group) : "0",
+        is_group:
+          initialData.is_group !== undefined
+            ? String(initialData.is_group)
+            : "0",
         parent: initialData.parent || initialData.parent_item_group || "",
       });
     } else {
@@ -122,7 +157,6 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   if (!isOpen) return null;
 
-
   return (
     <MinimizableModal
       modalId={resolvedModalId}
@@ -134,11 +168,14 @@ const handleSubmit = async (e: React.FormEvent) => {
       customWidth="35vw"
       height="45vh"
     >
-      <form onChange={() => markDirty()} onSubmit={handleSubmit} noValidate className="h-full flex flex-col">
-
+      <form
+        onChange={() => markDirty()}
+        onSubmit={handleSubmit}
+        noValidate
+        className="h-full flex flex-col"
+      >
         <section className="flex-1 overflow-y-auto p-6 bg-app">
           <div className="grid grid-cols-1 gap-5">
-
             <label className="flex flex-col gap-0.5">
               <span className={labelClass}>
                 Parent Group <span className="text-danger">*</span>
@@ -181,16 +218,26 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <option value="1">Group Node (Contains Sub-Groups)</option>
               </select>
             </label>
-
           </div>
         </section>
 
         <div className="flex justify-end gap-3 border-t border-theme px-6 py-4 bg-app shrink-0">
-          <Button variant="secondary" type="button" onClick={() => handleCloseWithConfirm(handleClose, resolvedModalId)}>
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          >
             Cancel
           </Button>
 
-          <Button variant="ghost" type="button" onClick={() => { resetDirty(); reset(); }}>
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={() => {
+              resetDirty();
+              reset();
+            }}
+          >
             Reset
           </Button>
 
@@ -198,7 +245,6 @@ const handleSubmit = async (e: React.FormEvent) => {
             {isEditMode ? "Update Group" : "Save Group"}
           </Button>
         </div>
-
       </form>
     </MinimizableModal>
   );

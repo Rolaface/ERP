@@ -9,7 +9,6 @@ import SearchSelect2 from "../ui/modal/SearchSelect";
 import { BankAccount } from "../../types/BankAccount/bank";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
 
-
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -18,7 +17,6 @@ interface Props {
   partyName?: string;
   initialData?: BankAccount | null;
   currency?: string;
-
 }
 
 type Option = {
@@ -36,8 +34,7 @@ const AddBankAccountModal: React.FC<Props> = ({
   defaultAccountFor,
   partyName,
   initialData,
-  currency
-
+  currency,
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const {
@@ -49,59 +46,69 @@ const AddBankAccountModal: React.FC<Props> = ({
     banks,
     entities,
     reportingAccounts,
-    isCompany
-  } = useBankAccLogic({ onSubmit, onClose});
+    isCompany,
+  } = useBankAccLogic({ onSubmit, onClose });
   useEffect(() => {
-  if (currency) {
+    if (currency) {
+      setForm((prev) => ({
+        ...prev,
+        currency: currency,
+      }));
+    }
+  }, [currency]);
+
+  useEffect(() => {
+    if (!initialData && defaultAccountFor) {
+      setForm((prev) => ({
+        ...prev,
+        accountFor: defaultAccountFor,
+      }));
+    }
+
+    if (partyName) {
+  if (defaultAccountFor === "Company") {
     setForm((prev) => ({
       ...prev,
-      currency: currency,
+      name: partyName,
+      displayName: partyName,
+      accountHolder: partyName,
+      currency: prev.currency || currency,
+      accountHolderEdited: false,
     }));
-  }
-}, [currency]);
+  } else if (entities.length) {
+    const match = entities.find((e) => e.value === partyName);
 
-  useEffect(() => {
-  if (!initialData && defaultAccountFor) {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      accountFor: defaultAccountFor
-    }));
-  }
-
-  if (partyName && entities.length) {
-    const match = entities.find(
-      (e) => e.label.toLowerCase() === partyName.toLowerCase()
-    );
-
-    setForm(prev => ({
-      ...prev,
-      name: match?.label || partyName,
-      currency: prev.currency || currency || match?.meta?.currency,
+      name: match?.value || partyName,
+      displayName: match?.label || partyName,
       accountHolder: match?.label || partyName,
+      currency: prev.currency || currency || match?.meta?.currency,
       accountHolderEdited: false,
     }));
   }
-}, [defaultAccountFor, partyName, entities, initialData, currency]);
+}
+  }, [defaultAccountFor, partyName, entities, initialData, currency]);
 
-const validate = () => {
-  const e: Record<string, string> = {};
+  const validate = () => {
+    const e: Record<string, string> = {};
 
-  if (!form.accountFor) e.accountFor = "Required";
-  if (!form.name) e.name = "Required";
-  if (!form.bank) e.bank = "Required";
-  if (!form.accountNumber) e.accountNumber = "Required";
-  if (!form.sortCode) e.sortCode = "Required";
-  if (!form.currency) e.currency = "Required";
+    if (!form.accountFor) e.accountFor = "Required";
+    if (!form.name) e.name = "Required";
+    if (!form.bank) e.bank = "Required";
+    if (!form.accountNumber) e.accountNumber = "Required";
+    if (!form.sortCode) e.sortCode = "Required";
+    if (!form.currency) e.currency = "Required";
 
-  setErrors(e);
-  return Object.keys(e).length === 0;
-};
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
-const onSave = (e: any) => {
-  e.preventDefault();
-  if (!validate()) return;
-  handleSubmit(e);
-};
+  const onSave = (e: any) => {
+    e.preventDefault();
+    if (!validate()) return;
+    handleSubmit(e);
+  };
 
   const footer = (
     <>
@@ -112,9 +119,9 @@ const onSave = (e: any) => {
         <Button variant="secondary" onClick={handleReset}>
           Reset
         </Button>
-       <Button variant="primary" type="button" onClick={onSave}>
-  Save Account
-</Button>
+        <Button variant="primary" type="button" onClick={onSave}>
+          Save Account
+        </Button>
       </div>
     </>
   );
@@ -164,17 +171,20 @@ const onSave = (e: any) => {
 
             <SearchSelect2
               label="Name"
-              value={form.name}
-              disabled={!form.accountFor || form.accountFor === "Company" || !!defaultAccountFor}
+              value={form.displayName}
+              disabled={
+                !form.accountFor ||
+                form.accountFor === "Company" ||
+                !!defaultAccountFor
+              }
               onChange={(_, option: Option) =>
                 setForm((prev) => ({
                   ...prev,
-                  name: option?.label || "",
-                  currency: option?.meta?.currency || prev.currency,
-
-                  accountHolderEdited: false,
-
+                  name: option?.value || "", // backend
+                  displayName: option?.label || "", // UI
                   accountHolder: option?.label || "",
+                  currency: option?.meta?.currency || prev.currency,
+                  accountHolderEdited: false,
                 }))
               }
               fetchOptions={(q): Promise<Option[]> => {
@@ -222,7 +232,7 @@ const onSave = (e: any) => {
               }
               fetchOptions={fetchCurrencyOptions}
             />
-            
+
             <ModalInput
               label="Account Number"
               name="accountNumber"

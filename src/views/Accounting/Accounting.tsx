@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy } from "react";
+import React, { useState, Suspense, lazy, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import {
   FaBriefcase,
@@ -27,47 +27,9 @@ const CashFlow = lazy(() => import("./CashFlow"));
 const AccountsReceivable = lazy(() => import("./AccountsReceivable"));
 const AccountsPayable = lazy(() => import("./AccountsPayable"));
 const FixedAssets = lazy(() => import("./FixedAssets"));
-
-
 const Banking = lazy(() => import("./BankingModule"));
 
-type Account = {
-  code: string;
-  name: string;
-  type: string;
-  balance: number;
-  parent: string;
-  status: string;
-  category?: string;
-};
-
-type TrialBalanceAccount = {
-  code: string;
-  name: string;
-  debit: number;
-  credit: number;
-};
-
-type ProfitLossData = {
-  revenue: number;
-  expenses: number;
-  grossProfit: number;
-  operatingExpenses: number;
-  netIncome: number;
-  activeAccounts: Account[];
-};
-
-type BalanceSheetData = {
-  assets: number;
-  liabilities: number;
-  equity: number;
-  currentAssets: number;
-  fixedAssets: number;
-  currentLiabilities: number;
-  longTermLiabilities: number;
-  activeAccounts: Account[];
-};
-
+// Memoized data to prevent recreation on each render
 const accounts: Account[] = [
   { code: "1000", name: "Cash", type: "Asset", balance: 150000, parent: "Current Assets", status: "active", category: "asset" },
   { code: "1100", name: "Petty Cash", type: "Asset", balance: 5000, parent: "Current Assets", status: "active", category: "asset" },
@@ -94,64 +56,15 @@ const totalDebit = trialBalance.reduce((sum, acc) => sum + acc.debit, 0);
 const totalCredit = trialBalance.reduce((sum, acc) => sum + acc.credit, 0);
 
 const journalEntries = [
-  {
-    id: "JE-001",
-    date: "2025-11-01",
-    description: "Sales Invoice #1001",
-    status: "Posted",
-    entries: [
-      { account: "4000 - Sales Revenue", debit: 0, credit: 50000 },
-      { account: "1000 - Cash", debit: 50000, credit: 0 },
-    ],
-  },
-  {
-    id: "JE-002",
-    date: "2025-11-03",
-    description: "Purchase Office Supplies",
-    status: "Posted",
-    entries: [
-      { account: "6000 - Office Supplies Expense", debit: 2000, credit: 0 },
-      { account: "2000 - Accounts Payable", debit: 0, credit: 2000 },
-    ],
-  },
-  {
-    id: "JE-003",
-    date: "2025-11-05",
-    description: "Payroll - October",
-    status: "Draft",
-    entries: [
-      { account: "6100 - Salaries Expense", debit: 15000, credit: 0 },
-      { account: "1000 - Cash", debit: 0, credit: 15000 },
-    ],
-  },
-  {
-    id: "JE-004",
-    date: "2025-11-07",
-    description: "Bank Loan Received",
-    status: "Posted",
-    entries: [
-      { account: "1000 - Cash", debit: 300000, credit: 0 },
-      { account: "2500 - Bank Loan", debit: 0, credit: 300000 },
-    ],
-  },
-  {
-    id: "JE-005",
-    date: "2025-11-08",
-    description: "Utility Bills Payment",
-    status: "Posted",
-    entries: [
-      { account: "6200 - Utilities Expense", debit: 1200, credit: 0 },
-      { account: "1000 - Cash", debit: 0, credit: 1200 },
-    ],
-  },
+  { id: "JE-001", date: "2025-11-01", description: "Sales Invoice #1001", status: "Posted", entries: [{ account: "4000 - Sales Revenue", debit: 0, credit: 50000 }, { account: "1000 - Cash", debit: 50000, credit: 0 }] },
+  { id: "JE-002", date: "2025-11-03", description: "Purchase Office Supplies", status: "Posted", entries: [{ account: "6000 - Office Supplies Expense", debit: 2000, credit: 0 }, { account: "2000 - Accounts Payable", debit: 0, credit: 2000 }] },
+  { id: "JE-003", date: "2025-11-05", description: "Payroll - October", status: "Draft", entries: [{ account: "6100 - Salaries Expense", debit: 15000, credit: 0 }, { account: "1000 - Cash", debit: 0, credit: 15000 }] },
+  { id: "JE-004", date: "2025-11-07", description: "Bank Loan Received", status: "Posted", entries: [{ account: "1000 - Cash", debit: 300000, credit: 0 }, { account: "2500 - Bank Loan", debit: 0, credit: 300000 }] },
+  { id: "JE-005", date: "2025-11-08", description: "Utility Bills Payment", status: "Posted", entries: [{ account: "6200 - Utilities Expense", debit: 1200, credit: 0 }, { account: "1000 - Cash", debit: 0, credit: 1200 }] },
 ];
 
 const profitLoss: ProfitLossData = {
-  revenue: 500000,
-  expenses: 200000,
-  grossProfit: 300000,
-  operatingExpenses: 100000,
-  netIncome: 200000,
+  revenue: 500000, expenses: 200000, grossProfit: 300000, operatingExpenses: 100000, netIncome: 200000,
   activeAccounts: [
     { code: "4000", name: "Sales Revenue", type: "Revenue", balance: 500000, parent: "Income", status: "active", category: "income" },
     { code: "5000", name: "Cost of Goods Sold", type: "Expense", balance: 200000, parent: "Cost of Sales", status: "active", category: "expense" },
@@ -160,13 +73,7 @@ const profitLoss: ProfitLossData = {
 };
 
 const balanceSheet: BalanceSheetData = {
-  assets: 500000,
-  liabilities: 300000,
-  equity: 200000,
-  currentAssets: 200000,
-  fixedAssets: 300000,
-  currentLiabilities: 100000,
-  longTermLiabilities: 200000,
+  assets: 500000, liabilities: 300000, equity: 200000, currentAssets: 200000, fixedAssets: 300000, currentLiabilities: 100000, longTermLiabilities: 200000,
   activeAccounts: [
     { code: "1000", name: "Cash", type: "Asset", balance: 150000, parent: "Current Assets", status: "active", category: "asset" },
     { code: "1100", name: "Petty Cash", type: "Asset", balance: 5000, parent: "Current Assets", status: "active", category: "asset" },
@@ -178,20 +85,7 @@ const balanceSheet: BalanceSheetData = {
   ],
 };
 
-const monthNames: { [key: string]: string } = {
-  "01": "January",
-  "02": "February",
-  "03": "March",
-  "04": "April",
-  "05": "May",
-  "06": "June",
-  "07": "July",
-  "08": "August",
-  "09": "September",
-  "10": "October",
-  "11": "November",
-  "12": "December",
-};
+const monthNames: { [key: string]: string } = { "01": "January", "02": "February", "03": "March", "04": "April", "05": "May", "06": "June", "07": "July", "08": "August", "09": "September", "10": "October", "11": "November", "12": "December" };
 
 const allTabs = [
   { id: "gl", label: "General Ledger", icon: <FaChartPie /> },
@@ -212,12 +106,12 @@ const AccountingModule: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab = searchParams.get("tab") || DEFAULT_TAB;
-  
-  const handleTabChange = (tabId: string) => {
+
+  const handleTabChange = useCallback((tabId: string) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("tab", tabId);
     navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-  };
+  }, [navigate, location.pathname, searchParams]);
 
   const [glSubTab, setGlSubTab] = useState<string>("chart");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -227,21 +121,16 @@ const AccountingModule: React.FC = () => {
   const [reportYear, setReportYear] = useState<string>("2024");
   const [reportMonth, setReportMonth] = useState<string>("11");
 
-  const getFilterLabel = (): string => {
+  const getFilterLabel = useCallback((): string => {
     const labels: { [key: string]: string } = {
-      all: "All Accounts",
-      active: "Active Accounts",
-      inactive: "Inactive Accounts",
-      asset: "Asset Accounts",
-      liability: "Liability Accounts",
-      equity: "Equity Accounts",
-      income: "Income Accounts",
-      expense: "Expense Accounts",
+      all: "All Accounts", active: "Active Accounts", inactive: "Inactive Accounts",
+      asset: "Asset Accounts", liability: "Liability Accounts", equity: "Equity Accounts",
+      income: "Income Accounts", expense: "Expense Accounts",
     };
     return labels[selectedFilter] || "All Accounts";
-  };
+  }, [selectedFilter]);
 
-  const getFilterCount = (filter: string): number => {
+  const getFilterCount = useCallback((filter: string): number => {
     if (filter === "all") return accounts.length;
     if (filter === "active") return accounts.filter((a) => a.status === "active").length;
     if (filter === "inactive") return accounts.filter((a) => a.status === "inactive").length;
@@ -251,99 +140,43 @@ const AccountingModule: React.FC = () => {
     if (filter === "income") return accounts.filter((a) => a.category === "income").length;
     if (filter === "expense") return accounts.filter((a) => a.category === "expense").length;
     return 0;
-  };
+  }, []);
 
-  const handleFilterSelect = (filter: string): void => {
+  const handleFilterSelect = useCallback((filter: string) => {
     setSelectedFilter(filter);
     setShowFilterDropdown(false);
-  };
+  }, []);
 
-  const renderTab = () => {
-    switch (activeTab) {
-      case "gl":
-        return (
-          <GeneralLedger
-            glSubTab={glSubTab}
-            setGlSubTab={setGlSubTab}
-            accounts={accounts}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedFilter={selectedFilter}
-            setSelectedFilter={setSelectedFilter}
-            showFilterDropdown={showFilterDropdown}
-            setShowFilterDropdown={setShowFilterDropdown}
-            handleFilterSelect={handleFilterSelect}
-            getFilterLabel={getFilterLabel}
-            getFilterCount={getFilterCount}
-            journalEntries={journalEntries}
-          />
-        );
-      case "trial":
-        return (
-          <TrialBalance
-            trialBalance={trialBalance}
-            totalDebit={totalDebit}
-            totalCredit={totalCredit}
-            reportMonth={reportMonth}
-            reportYear={reportYear}
-            setReportMonth={setReportMonth}
-            setReportYear={setReportYear}
-            monthNames={monthNames}
-          />
-        );
-      case "pl":
-        return (
-          <ProfitLoss
-            profitLoss={profitLoss}
-            reportPeriod={reportPeriod}
-            setReportPeriod={setReportPeriod}
-            reportYear={reportYear}
-            setReportYear={setReportYear}
-            reportMonth={reportMonth}
-            setReportMonth={setReportMonth}
-            monthNames={monthNames}
-          />
-        );
-      case "balance":
-        return (
-          <BalanceSheet
-            balanceSheet={balanceSheet}
-            reportYear={reportYear}
-            setReportYear={setReportYear}
-            monthNames={monthNames}
-            profitLoss={profitLoss}
-          />
-        );
-      case "ar":
-        return <AccountsReceivable />;
-      case "ap":
-        return <AccountsPayable />;
-      case "fa":
-        return <FixedAssets />;
-      case "bank":
-        return <Banking />;
-      case "cashflow":
-        return <CashFlow />;
-      default:
-        return (
-          <GeneralLedger
-            glSubTab={glSubTab}
-            setGlSubTab={setGlSubTab}
-            accounts={accounts}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedFilter={selectedFilter}
-            setSelectedFilter={setSelectedFilter}
-            showFilterDropdown={showFilterDropdown}
-            setShowFilterDropdown={setShowFilterDropdown}
-            handleFilterSelect={handleFilterSelect}
-            getFilterLabel={getFilterLabel}
-            getFilterCount={getFilterCount}
-            journalEntries={journalEntries}
-          />
-        );
-    }
-  };
+  // Memoized tab components - NO remounting on tab switch
+  const tabComponents = useMemo(() => ({
+    gl: (
+      <GeneralLedger
+        glSubTab={glSubTab}
+        setGlSubTab={setGlSubTab}
+        accounts={accounts}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedFilter={selectedFilter}
+        setSelectedFilter={setSelectedFilter}
+        showFilterDropdown={showFilterDropdown}
+        setShowFilterDropdown={setShowFilterDropdown}
+        handleFilterSelect={handleFilterSelect}
+        getFilterLabel={getFilterLabel}
+        getFilterCount={getFilterCount}
+        journalEntries={journalEntries}
+      />
+    ),
+    trial: <TrialBalance trialBalance={trialBalance} totalDebit={totalDebit} totalCredit={totalCredit} />,
+    pl: <ProfitLoss profitLoss={profitLoss} reportPeriod={reportPeriod} setReportPeriod={setReportPeriod} reportYear={reportYear} setReportYear={setReportYear} reportMonth={reportMonth} setReportMonth={setReportMonth} monthNames={monthNames} />,
+    balance: <BalanceSheet balanceSheet={balanceSheet} reportYear={reportYear} setReportYear={setReportYear} monthNames={monthNames} profitLoss={profitLoss} />,
+    ar: <AccountsReceivable />,
+    ap: <AccountsPayable />,
+    fa: <FixedAssets />,
+    bank: <Banking />,
+    cashflow: <CashFlow />,
+  }), [glSubTab, searchTerm, selectedFilter, showFilterDropdown, handleFilterSelect, getFilterLabel, getFilterCount, reportPeriod, reportYear, reportMonth]);
+
+  const currentTabComponent = tabComponents[activeTab as keyof typeof tabComponents] || tabComponents.gl;
 
   return (
     <AppPage>
@@ -354,7 +187,7 @@ const AccountingModule: React.FC = () => {
       />
       <AppTabs tabs={allTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody>
-        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
+        {currentTabComponent}
       </AppPageBody>
     </AppPage>
   );

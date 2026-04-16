@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { getCustomerByCustomerCode } from "../api/customerApi";
 import { getCompanyById } from "../api/companySetupApi";
+import { useCompanyStore } from "../store/companyStore";
 import type { TermSection } from "../types/termsAndCondition";
 import type { Invoice, InvoiceItem } from "../types/invoice";
 import { getRolaCountryList } from "../api/lookupApi";
@@ -170,6 +171,21 @@ export const useInvoiceForm = (
   const enableExchange = mode === "invoice";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
 
+
+
+
+
+const getBaseCurrencyFromStorage = () => {
+  try {
+    const raw = localStorage.getItem("company-info");
+    if (!raw) return "";
+
+    const parsed = JSON.parse(raw);
+    return parsed?.state?.baseCurrency || "";
+  } catch {
+    return "";
+  }
+};
   // Load edit data
   useEffect(() => {
     if (!isOpen) return;
@@ -178,64 +194,24 @@ export const useInvoiceForm = (
     }
   }, [isOpen, initialData, mode]);
 
-  // Load base currency for edit mode
-  useEffect(() => {
-    if (!isOpen || mode !== "edit") return;
-    const loadBaseCurrency = async () => {
-      try {
-        const companyRes = await getCompanyById(COMPANY_ID);
-        const base = companyRes?.data?.financialConfig?.baseCurrency ?? "";
-        setBaseCurrency(base);
-      } catch (err) {
-        console.error("Failed to load base currency", err);
-      }
-    };
-    loadBaseCurrency();
-  }, [isOpen, mode]);
 
-  // Load company defaults on create
-  useEffect(() => {
-    if (!isOpen || initialData) return;
-    const loadCompanyData = async () => {
-      try {
-        const companyRes = await getCompanyById(COMPANY_ID);
-        const company = companyRes?.data;
-        const base = company?.financialConfig?.baseCurrency ?? "";
-        setBaseCurrency(base);
-        lastCurrencyRef.current = base;
-        const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
+useEffect(() => {
+  if (!isOpen) return;
 
-        setFormData((prev) => {
-          const dueDate = calculateDueDate(prev.dateOfInvoice, paymentTerms);
-          return {
-            ...prev,
+  const base = getBaseCurrencyFromStorage();
 
-            invoiceType:
-              prev.taxCategory ||
-              (mode === "proforma" ? "Non-Export" : prev.taxCategory),
-            dueDate: prev.dueDate || dueDate,
-            terms: {
-              selling: company?.terms?.selling ?? EMPTY_TERMS.selling,
-            },
-            paymentInformation: {
-              ...prev.paymentInformation,
-              paymentTerms,
-              bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-              accountNumber:
-                getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-              routingNumber:
-                getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-              swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
-            },
-          };
-        });
-      } catch (err: any) {
-        console.error("Failed to load company data", err);
-        showApiError("Failed to load company configuration");
-      }
-    };
-    loadCompanyData();
-  }, [isOpen, mode]);
+  console.log("Base Currency:", base);
+
+  setBaseCurrency(base);
+  lastCurrencyRef.current = base;
+
+
+  setFormData((prev) => ({
+    ...prev,
+    currencyCode: prev.currencyCode || base,
+  }));
+}, [isOpen]);
+
 
   // Exchange rate auto-fetch
   useEffect(() => {
@@ -487,7 +463,7 @@ export const useInvoiceForm = (
           paymentInformation,
           terms: {
             selling:
-              data?.terms?.Selling ??
+              data?.terms?.selling ??
               company?.terms?.selling ??
               prev.terms?.selling ??
               EMPTY_TERMS.selling,

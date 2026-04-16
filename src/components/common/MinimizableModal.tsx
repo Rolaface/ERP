@@ -55,7 +55,10 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
   height = "520px",
   customWidth,
 }) => {
-  const modals = useModalStore((state) => state.modals);
+  // Optimized: Select only the specific modal instead of entire array
+  const modalMeta = useModalStore((state) => 
+    state.modals.find((m) => m.id === modalId)
+  );
   const swalDepth = useModalStore((state) => state.swalDepth);
   const { minimizeModal, bringToFront, registerModalMeta } = useModalStore();
 
@@ -65,13 +68,8 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
     }
   }, [isOpen, modalId, title, subtitle, icon, registerModalMeta]);
 
-  const modalMeta = useMemo(
-    () => modals.find((m) => m.id === modalId),
-    [modals, modalId],
-  );
-
-  const minimized = modalMeta?.minimized ?? false;
-
+  // Optimized: Calculate layer only when needed
+  const modals = useModalStore((state) => state.modals);
   const layer = useMemo(() => {
     const visible = modals
       .filter((m) => !m.minimized)
@@ -89,6 +87,8 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
   }, [modals, modalId]);
 
   if (!isOpen) return null;
+
+  const minimized = modalMeta?.minimized ?? false;
 
   return (
     <>

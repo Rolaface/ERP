@@ -4,8 +4,15 @@ import { persist } from "zustand/middleware";
 type CompanyState = {
   companyName: string;
   baseCurrency: string;
-  setCompanyInfo: (name: string, currency: string) => void;
+  isHydrated: boolean;
+
+  setCompanyInfo: (data: {
+    companyName?: string;
+    baseCurrency?: string;
+  }) => void;
+
   clearCompanyInfo: () => void;
+  setHydrated: () => void;
 };
 
 export const useCompanyStore = create<CompanyState>()(
@@ -13,11 +20,24 @@ export const useCompanyStore = create<CompanyState>()(
     (set) => ({
       companyName: "",
       baseCurrency: "",
-      setCompanyInfo: (name, currency) =>
-        set({ companyName: name, baseCurrency: currency }),
+      isHydrated: false,
+
+      setCompanyInfo: (data) =>
+        set((state) => ({
+          companyName: data.companyName || state.companyName,
+          baseCurrency: data.baseCurrency || state.baseCurrency,
+        })),
+
       clearCompanyInfo: () =>
         set({ companyName: "", baseCurrency: "" }),
+
+      setHydrated: () => set({ isHydrated: true }),
     }),
-    { name: "company-info" } // localStorage key
+    {
+      name: "company-info",
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated();
+      },
+    }
   )
 );

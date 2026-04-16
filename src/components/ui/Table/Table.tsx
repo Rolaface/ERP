@@ -100,7 +100,7 @@ const ExpandedPanel: React.FC<{ children: React.ReactNode; open: boolean }> = ({
   );
 };
 
-function Table<T extends Record<string, any>>({
+const TableInner = <T extends Record<string, any>>({
   columns = [],
   data = [],
   rowKey,
@@ -130,10 +130,16 @@ function Table<T extends Record<string, any>>({
   pageSizeOptions = [10, 20, 50, 100],
   onPageChange,
   onPageSizeChange,
-}: TableProps<T>) {
-  const allKeys = columns.map((col) => col.key);
-  const [visibleKeys, setVisibleKeys] = useState<string[]>(allKeys);
-  const visibleColumns = columns.filter((col) => visibleKeys.includes(col.key));
+}: TableProps<T>) => {
+  const allKeys = useMemo(() => columns.map((col) => col.key), [columns]);
+  const [visibleKeys, setVisibleKeys] = useState<string[]>(() => 
+    // Initialize only on mount to avoid resetting on every render
+    allKeys
+  );
+  const visibleColumns = useMemo(() => 
+    columns.filter((col) => visibleKeys.includes(col.key)),
+    [columns, visibleKeys]
+  );
 
   const toggleColumn = (key: string) => {
     setVisibleKeys((prev) =>
@@ -336,10 +342,12 @@ function Table<T extends Record<string, any>>({
                 {data.map((item, idx) => {
                   const expandedContent = expandedRowRender?.(item);
                   const isExpanded = !!expandedContent;
+                  // Use rowKey if provided, otherwise use index - never JSON.stringify (expensive!)
+                  const itemKey = rowKey ? rowKey(item) : `row-${idx}`;
 
                   return (
                     <React.Fragment
-                      key={rowKey ? rowKey(item) : JSON.stringify(item)}
+                      key={itemKey}
                     >
                       <tr
                         onClick={() => onRowClick?.(item)}
@@ -482,6 +490,8 @@ function Table<T extends Record<string, any>>({
       </div>
     </div>
   );
-}
+};
 
-export default memo(Table);
+// Memoized table - prevents re-render when props haven't changed
+const Table = memo(TableInner) as typeof TableInner;
+export default Table;

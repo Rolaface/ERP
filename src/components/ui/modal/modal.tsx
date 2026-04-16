@@ -12,6 +12,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { MODAL_LAYER } from "../../../store/modalStore";
 
 export interface ModalProps {
   isOpen: boolean;
@@ -64,7 +65,10 @@ const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop p-4">
+    <div 
+      className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop p-4"
+      style={{ zIndex: MODAL_LAYER.modalBackdropBase }}
+    >
       <AnimatePresence>
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 30 }}
@@ -78,6 +82,7 @@ const Modal: React.FC<ModalProps> = ({
             height,
             width: customWidth || undefined,
             maxWidth: customWidth ? "none" : undefined,
+            zIndex: MODAL_LAYER.modalBackdropBase + MODAL_LAYER.modalStep,
           }}
         >
           {/* Header with Gradient */}

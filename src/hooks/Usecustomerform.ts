@@ -28,6 +28,7 @@ export interface ContactEntry {
   department: string;
   email: string;
   mobileCode: string;
+  mobileNumber:string;
   mobile: string;
   phone: string;
   isPrimary: boolean;
@@ -111,7 +112,7 @@ export const defaultContact: ContactEntry = {
   department: "",
   email: "",
   mobileCode: "",
-  mobile: "",
+  mobileNumber: "",
   phone: "",
   isPrimary: true,
   isBilling: true,
@@ -159,14 +160,16 @@ export const emptyForm: CustomerFormState = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function splitMobile(mobile?: string): { code: string; number: string } {
+function splitMobile(mobile?: string) {
   if (!mobile) return { code: "", number: "" };
-  const countryCodes = ["+91", "+260", "+1", "+44", "+00"];
-  const matchedCode = countryCodes.find((code) => mobile.startsWith(code));
-  if (matchedCode) return { code: matchedCode, number: mobile.slice(matchedCode.length) };
-  return { code: "", number: mobile };
-}
 
+  const clean = mobile.replace(/\s/g, "");
+
+  const code = clean.slice(0, 4); // +999 max
+  const number = clean.slice(4);
+
+  return { code, number };
+}
 export function mapApiResponseToFormState(
   data: CustomerDetail,
   companySellingTerms: TermSection | null,
@@ -185,7 +188,7 @@ export function mapApiResponseToFormState(
         taxCategory: c.taxCategory ?? "",
         email: c.email ?? "",
         mobileCode: mob.code,
-        mobile: mob.number,
+mobileNumber: mob.number,
         phone: c.phone ?? "",
         isPrimary: c.isPrimary ?? false,
         isBilling: c.isBilling ?? false,
@@ -208,17 +211,17 @@ export function mapApiResponseToFormState(
   // ── Addresses ─────────────────────────────────────────────────────────────
   let addresses: AddressEntry[];
   if (data.addresses && data.addresses.length > 0) {
-    addresses = data.addresses.map((a: any) => ({
-      id: a.id,
-      type: a.type ?? "Billing",
-      line1: a.line1 ?? "",
-      line2: a.line2 ?? "",
-      city: a.city ?? "",
-      state: a.state ?? "",
-      postalCode: a.postalCode ?? "",
-      country: a.country ?? "",
-      isPrimary: a.isPrimary ?? false,
-    }));
+   addresses = data.addresses.map((a: any) => ({
+  id: a.id,
+  type: a.type === "Shipping" ? "Shipping" : "Billing",
+  line1: a.line1 ?? "",
+  line2: a.line2 ?? "",
+  city: a.city ?? "",
+  state: a.state ?? "",
+  postalCode: a.postalCode ?? "",
+  country: a.country ?? "",
+  isPrimary: a.isPrimary ?? false,
+}));
     if (!addresses.some((a) => a.type === "Billing"))
       addresses.unshift({ ...defaultBillingAddress });
     if (!addresses.some((a) => a.type === "Shipping"))
@@ -274,13 +277,13 @@ export function mapApiResponseToFormState(
  */
 export function buildPayload(form: CustomerFormState): Record<string, any> {
   const { sameAsBilling, id, ...rest } = form;
-  const contacts = form.contacts.map(
-    ({ mobileCode, mobile, id, ...contact }) => ({
-      ...(id ? { id } : {}), // ✅ only send if exists
-      ...contact,
-      mobile: mobile ? `${mobileCode}${mobile}` : "",
-    }),
-  );
+const contacts = form.contacts.map(
+  ({ mobileCode, mobileNumber, id, ...contact }) => ({
+    ...(id ? { id } : {}),
+    ...contact,
+    mobile: mobileNumber ? `${mobileCode}${mobileNumber}` : "",
+  }),
+);
 
 let addresses = form.addresses.map((addr) => ({
   ...(addr.id ? { id: addr.id } : {}),
@@ -399,36 +402,38 @@ export function useCustomerForm({
   }, [form.name, form.contacts]);
 
   // ── Sync shipping ← billing when sameAsBilling ────────────────────────────
-  useEffect(() => {
-    if (!form.sameAsBilling) return;
-    const billing = form.addresses.find((a) => a.type === "Billing");
-    if (!billing) return;
-    setForm((prev) => ({
-      ...prev,
-      addresses: prev.addresses.map((a) =>
-        a.type === "Shipping"
-          ? {
-  ...a, 
-  line1: billing.line1,
-  line2: billing.line2,
-  city: billing.city,
-  state: billing.state,
-  postalCode: billing.postalCode,
-  country: billing.country,
-  isPrimary: false,
-}
-          : a,
-      ),
-    }));
-  }, [
-    form.sameAsBilling,
-    form.addresses.find?.((a) => a.type === "Billing")?.line1,
-    form.addresses.find?.((a) => a.type === "Billing")?.line2,
-    form.addresses.find?.((a) => a.type === "Billing")?.city,
-    form.addresses.find?.((a) => a.type === "Billing")?.state,
-    form.addresses.find?.((a) => a.type === "Billing")?.postalCode,
-    form.addresses.find?.((a) => a.type === "Billing")?.country,
-  ]);
+useEffect(() => {
+  if (!form.sameAsBilling || isEditMode) return;
+
+  const billing = form.addresses.find((a) => a.type === "Billing");
+  if (!billing) return;
+
+  setForm((prev) => ({
+    ...prev,
+    addresses: prev.addresses.map((a) =>
+      a.type === "Shipping"
+        ? {
+            ...a,
+            line1: billing.line1,
+            line2: billing.line2,
+            city: billing.city,
+            state: billing.state,
+            postalCode: billing.postalCode,
+            country: billing.country,
+            isPrimary: false,
+          }
+        : a
+    ),
+  }));
+}, [
+  form.sameAsBilling,
+  form.addresses.find((a) => a.type === "Billing")?.line1,
+  form.addresses.find((a) => a.type === "Billing")?.line2,
+  form.addresses.find((a) => a.type === "Billing")?.city,
+  form.addresses.find((a) => a.type === "Billing")?.state,
+  form.addresses.find((a) => a.type === "Billing")?.postalCode,
+  form.addresses.find((a) => a.type === "Billing")?.country,
+]);
 
   // ─── Field handlers ───────────────────────────────────────────────────────
 
@@ -445,27 +450,26 @@ export function useCustomerForm({
     }
   };
 
-  const handlePrimaryContactChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      contacts: prev.contacts.map((c) =>
-        c.isPrimary ? { ...c, [name]: value } : c,
-      ),
-    }));
-    if (name === "email" && value) {
-      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      setErrors((prev) => ({
-        ...prev,
-        contactEmail: ok ? undefined : "Invalid email format",
-      }));
+const handlePrimaryContactChange = (e) => {
+  let { name, value } = e.target;
+
+  if (name === "mobileCode") {
+    // always keep +
+    if (!value.startsWith("+")) {
+      value = "+" + value.replace(/\D/g, "");
     }
-    const errKey =
-      `contact${name.charAt(0).toUpperCase() + name.slice(1)}` as keyof CustomerFormErrors;
-    if (errors[errKey]) setErrors((prev) => ({ ...prev, [errKey]: undefined }));
-  };
+
+    // allow only + and numbers
+    value = "+" + value.replace(/\D/g, "");
+  }
+
+  setForm((prev) => ({
+    ...prev,
+    contacts: prev.contacts.map((c) =>
+      c.isPrimary ? { ...c, [name]: value } : c
+    ),
+  }));
+};
 
   const handleAddressChange = (
     addressType: "Billing" | "Shipping",
@@ -511,7 +515,7 @@ export function useCustomerForm({
     if (!form.currency) newErrors.currency = "Currency is required";
     if (!pc?.firstName?.trim())
       newErrors.contactFirstName = "First name is required";
-    if (!pc?.mobileCode || !pc?.mobile)
+   if (!pc?.mobileCode || !pc?.mobileNumber)
       newErrors.contactMobile = "Mobile number is required";
     if (!pc?.email?.trim()) newErrors.contactEmail = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pc.email))

@@ -21,6 +21,7 @@ export const useBankAccLogic = ({ onSubmit,onClose  }: any) => {
     accountFor: "" as AccountType | "",
     name: "",
     bank: "",
+     displayName: "", 
     swiftCode: "",
     currency: "",
     accountNumber: "",
@@ -42,15 +43,18 @@ export const useBankAccLogic = ({ onSubmit,onClose  }: any) => {
 
   // Auto-fill company name when accountFor = Company and only one entity exists
   useEffect(() => {
-    if (form.accountFor === "Company" && entities.length === 1 && !form.name) {
+    if (form.accountFor === "Company" && entities.length > 0) {
       const company = entities[0];
-      setForm((prev) => ({
-        ...prev,
-        name: company.label,
-        accountHolder: company.label,
-        accountHolderEdited: false,
-        currency: company.meta?.currency || prev.currency,
-      }));
+
+setForm((prev) => ({
+  ...prev,
+  name: company.value || company.label,
+  displayName: company.label || company.value,
+  accountHolder: company.label || company.value,
+  accountHolderEdited: false,
+  currency: company.meta?.currency || prev.currency,
+}));
+     
     }
   }, [form.accountFor, entities, form.name]);
 
@@ -58,8 +62,9 @@ export const useBankAccLogic = ({ onSubmit,onClose  }: any) => {
   useEffect(() => {
     setForm((prev) => ({
       ...prev,
-      name: "",
-      accountHolder: "",
+      name: form.accountFor === "Company" ? prev.name : "",
+accountHolder: form.accountFor === "Company" ? prev.accountHolder : "",
+displayName: form.accountFor === "Company" ? prev.displayName : "",
       accountHolderEdited: false,
       reportingAccount: "",
       currency: form.accountFor === "Company" ? "" : prev.currency,
@@ -130,6 +135,7 @@ export const useBankAccLogic = ({ onSubmit,onClose  }: any) => {
       name: "",
       bank: "",
       swiftCode: "",
+       displayName: "", 
       currency: "",
       accountNumber: "",
       accountHolder: "",
