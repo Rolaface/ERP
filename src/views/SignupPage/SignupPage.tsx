@@ -39,8 +39,7 @@ export default function SignupPage() {
     country: "",
     timezone: "",
     currency: "",
-    fyStart: "",
-    fyEnd: "",
+    fyStartMonth: 0, // ✅ Step 1 applied
     chartOfAccounts: "Standard",
   });
 
@@ -70,20 +69,7 @@ export default function SignupPage() {
     }
   }, [detected]);
 
-  useEffect(() => {
-    if (!form.country) return;
-
-    const isIndia = form.country === "India";
-
-    const fy = isIndia
-      ? { start: "2025-04-01", end: "2026-03-31" }
-      : { start: "2025-01-01", end: "2025-12-31" };
-
-    setForm((prev) => {
-      if (prev.fyStart === fy.start && prev.fyEnd === fy.end) return prev;
-      return { ...prev, fyStart: fy.start, fyEnd: fy.end };
-    });
-  }, [form.country]);
+  // ✅ Step 2: Removed FY date effect completely
 
   // ---------------- VALIDATION ----------------
 
@@ -105,11 +91,10 @@ export default function SignupPage() {
     if (!form.country) err.country = "Required";
     if (!form.timezone) err.timezone = "Required";
     if (!form.currency) err.currency = "Required";
-    if (!form.fyStart) err.fyStart = "Required";
-    if (!form.fyEnd) err.fyEnd = "Required";
 
-    if (form.fyStart && form.fyEnd && form.fyStart >= form.fyEnd) {
-      err.fyEnd = "Invalid range";
+    // ✅ Step 3 updated validation
+    if (!form.fyStartMonth || form.fyStartMonth < 1 || form.fyStartMonth > 12) {
+      err.fyStartMonth = "Required";
     }
 
     setErrors(err);
@@ -123,6 +108,7 @@ export default function SignupPage() {
     setApiError("");
 
     try {
+
       const res = await createSite({
         currency: form.currency,
         country: form.country,
@@ -134,8 +120,7 @@ export default function SignupPage() {
         company_name: form.company.trim(),
         company_abbr: form.abbr.trim(),
         chart_of_accounts: "Standard",
-        fy_start_date: form.fyStart,
-        fy_end_date: form.fyEnd,
+        fy_start_month: form.fyStartMonth, // ✅ Step 4 FIXED
         setup_demo: 0,
         apps: [],
       });
@@ -164,15 +149,12 @@ export default function SignupPage() {
     <div className="signup-page min-h-screen flex items-start justify-center px-4 pt-20">
       <div className="w-full max-w-md">
 
-        {/* 🔥 SINGLE CARD SHELL */}
         <div className="form-card form-card--md">
 
-          {/* STEPper */}
           <div className="pt-3 pb-3 px-6 border-b border-gray-100">
             <Stepper step={step} onStepChange={handleStepChange} />
           </div>
 
-          {/* CONTENT */}
           <div className="px-6 pb-6 step-content">
 
             {step === 1 && (

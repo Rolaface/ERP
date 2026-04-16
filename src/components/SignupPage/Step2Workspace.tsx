@@ -19,6 +19,8 @@ export default function Step2Workspace({
   const [search, setSearch] = useState("");
   const [highlightIndex, setHighlightIndex] = useState(0);
 
+  const [fyOpen, setFyOpen] = useState(false);
+
   const [tzOpen, setTzOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
 
@@ -28,6 +30,8 @@ export default function Step2Workspace({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const tzRef = useRef<HTMLDivElement>(null);
   const currencyRef = useRef<HTMLDivElement>(null);
+
+  const fyRef = useRef<HTMLDivElement>(null);
 
   const [manualTZ, setManualTZ] = useState(false);
   const [manualCurrency, setManualCurrency] = useState(false);
@@ -49,11 +53,8 @@ export default function Step2Workspace({
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
-
-  // 🌍 GLOBAL ISO-BASED AUTO MAPPING
   const getAutoData = (countryCode: string) => {
     try {
-      // 🌍 Currency mapping (fallback-safe)
       let currency = "";
       try {
         currency =
@@ -63,9 +64,8 @@ export default function Step2Workspace({
           })
             .resolvedOptions()
             .currency || "USD";
-      } catch { }
+      } catch {}
 
-      // 🌍 Timezone mapping
       let timezone = "";
       try {
         const allTZ = (Intl as any).supportedValuesOf
@@ -76,7 +76,7 @@ export default function Step2Workspace({
           allTZ.find((tz: string) =>
             tz.toUpperCase().includes(countryCode)
           ) || Intl.DateTimeFormat().resolvedOptions().timeZone;
-      } catch { }
+      } catch {}
 
       return {
         timezone,
@@ -87,32 +87,19 @@ export default function Step2Workspace({
     }
   };
 
-  // 🌍 Detect user locale (browser-based)
   const detectUserLocale = () => {
     try {
       const locale = new Intl.Locale(navigator.language);
-      const region = locale.region || "US"; // fallback
+      const region = locale.region || "US";
       return region;
     } catch {
       return "US";
     }
   };
 
+  // ✅ STEP 5 FIXED
   const handleFYMonthChange = (month: string) => {
-    const currentYear = new Date().getFullYear();
-
-    const start = `${currentYear}-${month}-01`;
-
-    const startDate = new Date(start);
-
-    const endDate = new Date(startDate);
-    endDate.setFullYear(endDate.getFullYear() + 1);
-    endDate.setDate(endDate.getDate() - 1);
-
-    const end = endDate.toISOString().split("T")[0];
-
-    update("fyStart", start);
-    update("fyEnd", end);
+    update("fyStartMonth", Number(month));
   };
 
   const currencySymbols: any = {
@@ -130,9 +117,9 @@ export default function Step2Workspace({
   };
 
   const fullCurrencyList = [
-    "USD", "EUR", "GBP", "INR", "JPY", "CNY", "AUD", "CAD", "CHF", "SGD",
-    "AED", "NZD", "ZAR", "SEK", "NOK", "DKK", "HKD", "KRW", "THB",
-    "MYR", "IDR", "PHP", "BRL", "MXN",
+    "USD","EUR","GBP","INR","JPY","CNY","AUD","CAD","CHF","SGD",
+    "AED","NZD","ZAR","SEK","NOK","DKK","HKD","KRW","THB",
+    "MYR","IDR","PHP","BRL","MXN",
   ];
 
   const months = [
@@ -173,6 +160,9 @@ export default function Step2Workspace({
 
       if (currencyRef.current && !currencyRef.current.contains(e.target as Node))
         setCurrencyOpen(false);
+
+      if (fyRef.current && !fyRef.current.contains(e.target as Node))
+        setFyOpen(false);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -240,14 +230,14 @@ export default function Step2Workspace({
     }
   };
 
+  // ✅ FIX VALIDATION (uses fyStartMonth now)
   const isValid =
     form.company.trim() &&
     form.abbr.trim() &&
     form.country &&
     form.timezone &&
     form.currency &&
-    form.fyStart &&
-    form.fyEnd &&
+    form.fyStartMonth &&
     form.chartOfAccounts &&
     Object.keys(errors).length === 0;
 
@@ -276,7 +266,6 @@ export default function Step2Workspace({
 
       {/* Country + Timezone */}
       <div className="form-row">
-
         <div className="relative" ref={dropdownRef}>
           <FormFieldPro
             label="Country"
@@ -423,33 +412,39 @@ export default function Step2Workspace({
 
       {/* Financial Year */}
       <div className="form-row">
-        <FormFieldPro
-          label="Financial Year From"
-          value={
-            form.fyStart
-              ? new Date(form.fyStart).toLocaleString("en-US", { month: "long" })
-              : ""
-          }
-          rightElement={
-            <select
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={(e) => handleFYMonthChange(e.target.value)}
-            >
-              <option value="">Select month</option>
-              {months.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          }
-        />
+        <div className="relative" ref={fyRef}>
+          <FormFieldPro
+            label="Financial Year Start From"
+            value={
+              months.find(m => Number(m.value) === form.fyStartMonth)?.label || ""
+            }
+            rightElement={
+              <ChevronDown
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-60 cursor-pointer"
+                onClick={() => setFyOpen((p) => !p)}
+              />
+            }
+          />
 
-        <FormFieldPro
-          label="Financial Year To"
-          value={form.fyEnd}
-          disabled
-        />
+          {fyOpen && (
+            <div className="absolute z-50 mt-1 w-full rounded-xl border bg-card shadow-md">
+              <div className="max-h-60 overflow-auto">
+                {months.map((m) => (
+                  <div
+                    key={m.value}
+                    onClick={() => {
+                      handleFYMonthChange(m.value);
+                      setFyOpen(false);
+                    }}
+                    className="px-3 py-2 cursor-pointer hover:row-hover"
+                  >
+                    {m.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="form-footer">

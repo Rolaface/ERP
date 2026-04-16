@@ -13,12 +13,10 @@ export default function Step3Review({
 
   const [editing, setEditing] = useState<string | null>(null);
 
-  const formatDate = (date: string) => {
-    if (!date) return "";
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
+  const getMonthName = (month: number) => {
+    if (!month) return "";
+    return new Date(0, month - 1).toLocaleString("en-US", {
+      month: "long",
     });
   };
 
@@ -165,34 +163,12 @@ export default function Step3Review({
             </div>
 
             <div className="text-[12px] text-on-surface-variant">
-              Financial Year
+              Financial Year Start
             </div>
             <div className="text-[12px] font-medium text-on-surface text-right">
-              {editing === "fyStart" || editing === "fyEnd" ? (
-                <div className="flex gap-1 justify-end">
-                  <input
-                    type="date"
-                    value={form.fyStart}
-                    onChange={(e) => update("fyStart", e.target.value)}
-                    onBlur={() => setEditing(null)}
-                    className="text-[12px] border-b outline-none bg-transparent"
-                  />
-                  <input
-                    type="date"
-                    value={form.fyEnd}
-                    onChange={(e) => update("fyEnd", e.target.value)}
-                    onBlur={() => setEditing(null)}
-                    className="text-[12px] border-b outline-none bg-transparent"
-                  />
-                </div>
-              ) : (
-                <span
-                  onClick={() => setEditing("fyStart")}
-                  className="cursor-pointer"
-                >
-                  {formatDate(form.fyStart)} – {formatDate(form.fyEnd)}
-                </span>
-              )}
+              <span className="cursor-default">
+                {getMonthName(form.fyStartMonth)}
+              </span>
             </div>
 
             <div className="text-[12px] text-on-surface-variant">
