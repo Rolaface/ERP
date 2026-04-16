@@ -401,7 +401,8 @@ export const usePurchaseOrderForm = ({
     },
     [],
   );
-  const handleSupplierChange = async (sup: any) => {
+
+  const handleSupplierChange = useCallback(async (sup: any) => {
     if (!sup?.id) return;
 
     try {
@@ -438,8 +439,8 @@ export const usePurchaseOrderForm = ({
         supplierContactDisplay:
           primaryContact?.name || supplier.contactDisplay || "",
         terms: {
-  buying: supplier?.terms?.buying || prev.terms?.buying,
-},
+          buying: supplier?.terms?.buying || prev.terms?.buying,
+        },
 
         currency: supplier.currency || prev.currency,
         taxCategory: supplier.supplierTaxCategory || "",
@@ -476,7 +477,7 @@ export const usePurchaseOrderForm = ({
     } catch (err) {
       console.error("Supplier fetch failed:", err);
     }
-  };
+  }, []);
   const handleItemChange = useCallback(
     (
       e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -655,7 +656,7 @@ export const usePurchaseOrderForm = ({
     return null;
   };
 
-  const handleItemSelect = async (itemId: string, idx: number) => {
+  const handleItemSelect = useCallback(async (itemId: string, idx: number) => {
     try {
       const res = await getItemByItemCode(itemId, form.taxCategory);
       if (!res || res.status_code !== 200) return;
@@ -707,7 +708,7 @@ export const usePurchaseOrderForm = ({
     } catch (err) {
       console.error("Failed to fetch item details", err);
     }
-  };
+  }, [form.taxCategory]);
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 

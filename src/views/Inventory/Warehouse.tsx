@@ -5,10 +5,8 @@ import type { Column } from "../../components/ui/Table/type";
 import DeleteModal from "../../components/actionModal/DeleteModal";
 import { showApiError, showSuccess } from "../../utils/alert";
 
-import {
-  getWarehouseTree,
-  deleteWarehouseById,
-} from "../../api/WarehouseApi";
+
+import { getWarehouseTree, deleteWarehouseById } from "../../api/WarehouseApi";
 
 import {
   AlertCircle,
@@ -22,15 +20,17 @@ import {
   Trash2,
   GitBranch,
   Plus,
-  Boxes
+  Boxes,
 } from "lucide-react";
 
-
 type OutletContextType = {
-  openWarehouseCreate: (initialData?: { parent: string }) => void;
+  openWarehouseCreate: (options?: {
+    parent?: string;
+    onSuccess?: () => void;
+  }) => void;
+
   openWarehouseEdit: (id: string, data?: any) => void;
 };
-
 export interface WarehouseNode {
   name: string;
   warehouse_name: string;
@@ -50,11 +50,12 @@ export interface WarehouseTreeResponse {
   };
 }
 
-
 function normalizeWarehouses(nodes: WarehouseNode[]): WarehouseNode[] {
   return nodes.map((node) => ({
     ...node,
-    children: Array.isArray(node.children) ? normalizeWarehouses(node.children) : [],
+    children: Array.isArray(node.children)
+      ? normalizeWarehouses(node.children)
+      : [],
   }));
 }
 
@@ -80,7 +81,6 @@ function warehouseExpandIcon(
     <Folder size={13} className="text-muted" />
   );
 }
-
 
 interface MenuAction {
   label: string;
@@ -114,7 +114,7 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
         }}
         className={`
           w-7 h-7 flex items-center justify-center rounded-md transition
-          opacity-0 group-hover:opacity-100
+          opacity-100
           ${
             open
               ? "bg-primary/10 text-primary"
@@ -163,21 +163,22 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
   );
 };
 
-
 interface WarehouseViewProps {
   openWarehouseCreate?: (initialData?: { parent: string }) => void;
   openWarehouseEdit?: (id: string, data?: any) => void;
 }
 
-const WarehouseView: React.FC<WarehouseViewProps> = ({ 
-  openWarehouseCreate: propOpenWarehouseCreate, 
-  openWarehouseEdit: propOpenWarehouseEdit 
+const WarehouseView: React.FC<WarehouseViewProps> = ({
+  openWarehouseCreate: propOpenWarehouseCreate,
+  openWarehouseEdit: propOpenWarehouseEdit,
 }) => {
   const outletContext = useOutletContext<OutletContextType>();
   const navigate = useNavigate();
-  
-  const openWarehouseCreate = propOpenWarehouseCreate || outletContext?.openWarehouseCreate;
-  const openWarehouseEdit = propOpenWarehouseEdit || outletContext?.openWarehouseEdit;
+
+  const openWarehouseCreate =
+    propOpenWarehouseCreate || outletContext?.openWarehouseCreate;
+  const openWarehouseEdit =
+    propOpenWarehouseEdit || outletContext?.openWarehouseEdit;
 
   const [treeData, setTreeData] = useState<WarehouseNode[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -185,28 +186,36 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [warehouseToDelete, setWarehouseToDelete] = useState<WarehouseNode | null>(null);
+  const [warehouseToDelete, setWarehouseToDelete] =
+    useState<WarehouseNode | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const fetchTree = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res: any = await getWarehouseTree(); 
+      const res: any = await getWarehouseTree();
       const responseBody = res?.message || res;
 
       if (responseBody?.status_code === 200 && responseBody?.data) {
-        const normalizedNodes = normalizeWarehouses(responseBody.data.warehouses);
+        const normalizedNodes = normalizeWarehouses(
+          responseBody.data.warehouses,
+        );
         setTreeData(normalizedNodes);
       } else {
-        const errorText = typeof responseBody?.message === 'string' 
-            ? responseBody.message 
+        const errorText =
+          typeof responseBody?.message === "string"
+            ? responseBody.message
             : "Failed to load warehouses.";
-            
+
         setError(errorText);
       }
     } catch (err: any) {
-      setError(typeof err?.message === 'string' ? err.message : "An error occurred while fetching warehouses.");
+      setError(
+        typeof err?.message === "string"
+          ? err.message
+          : "An error occurred while fetching warehouses.",
+      );
     } finally {
       setLoading(false);
     }
@@ -217,9 +226,11 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
   }, [fetchTree]);
 
   const handleAddChild = (row: WarehouseNode) => {
-    openWarehouseCreate({ parent: row.name }); 
+    openWarehouseCreate({
+      parent: row.name,
+      onSuccess: fetchTree,
+    });
   };
-
   const confirmDelete = async () => {
     if (!warehouseToDelete) return;
 
@@ -232,7 +243,10 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
         return;
       }
 
-      showSuccess(res.message || `Warehouse ${warehouseToDelete.warehouse_name} deleted successfully`);
+      showSuccess(
+        res.message ||
+          `Warehouse ${warehouseToDelete.warehouse_name} deleted successfully`,
+      );
       setDeleteModalOpen(false);
       fetchTree();
     } catch (err: any) {
@@ -297,14 +311,17 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
       key: "company",
       header: "Company",
       align: "left",
-      render: (row) => <span className="text-xs text-muted">{row.company}</span>,
+      render: (row) => (
+        <span className="text-xs text-muted">{row.company}</span>
+      ),
     },
     {
       key: "bin_count",
       header: "Bins",
       align: "center",
       render: (row) => {
-        if (row.bin_count === 0) return <span className="text-muted text-xs">—</span>;
+        if (row.bin_count === 0)
+          return <span className="text-muted text-xs">—</span>;
         return (
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
             {row.bin_count} Bins
@@ -336,7 +353,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
                   label: "View Stock",
                   icon: <Boxes size={12} />,
                   onClick: () =>
-                    navigate("/stock-balance", { 
+                    navigate("/stock-balance", {
                       state: { warehouse: row.name },
                     }),
                 },
@@ -372,7 +389,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
         showExpandControls
         onRefresh={fetchTree}
         matchNode={matchWarehouseNode}
-        defaultExpandDepth={0}
+        defaultExpandDepth={10}
         indentSize={20}
         loading={loading}
         emptyMessage="No warehouses found."
@@ -380,7 +397,12 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
         extraFilters={
           <button
             type="button"
-            onClick={() => openWarehouseCreate()}
+            onClick={() =>
+              openWarehouseCreate({
+                parent: treeData[0]?.name,
+                onSuccess: fetchTree,
+              })
+            }
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
           >
             <Plus size={13} />
