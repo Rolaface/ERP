@@ -55,7 +55,7 @@
 
   --section-padding-y: 80px;
   --section-padding-x: 24px;
-  --container-max-width: 1200px;
+  --container-max-width: 1280px;
 
   --hero-title-size: 40px;
   --hero-subtitle-size: 16px;
@@ -157,6 +157,27 @@
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+
+  --z-sidebar: 100;
+  --z-app-chrome: 120;
+  --z-modal-backdrop-base: 1000;
+  --z-modal-step: 20;
+  --z-modal-panel-offset: 10;
+  --z-modal-taskbar: 1800;
+  --z-swal: 4000;
+  --app-sidebar-width: 16rem;
+  --app-sidebar-width-collapsed: 4rem;
+  --app-right-panel-width: 320px;
+  --app-right-panel-width-collapsed: 60px;
+  --app-topbar-height: 4.5rem;
+  --app-content-max-width: 1400px;
+  --app-radius-lg: 1rem;
+  --app-radius-xl: 1rem;
+  --app-shadow-soft: 0 18px 48px rgba(15, 23, 42, 0.12);
+  --app-shadow-float: 0 18px 45px rgba(15, 23, 42, 0.16);
+  --app-surface-padding: 1.5rem;
+  --app-table-height: 23rem;
+  --app-table-offset: 18rem;
 }
 
 /* =========================================
@@ -843,6 +864,14 @@
     background: var(--row-hover) !important;
   }
 
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+ 
   /* Motion Utilities */
   .motion-fade {
     animation: fadeIn var(--motion-base) var(--ease-out);
@@ -897,6 +926,11 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
+  overflow: auto;
+}
+html,
+#root {
+  min-height: 100%;
 }
 h1,
 h2,
@@ -1143,6 +1177,62 @@ h4 {
   margin: 0;
 }
 
+/* Firefox */
+.no-spinner {
+  -moz-appearance: textfield;
+}
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.erp-modal-backdrop,
+.erp-modal-layer {
+  isolation: isolate;
+}
+
+.erp-modal-panel {
+  will-change: transform, opacity;
+}
+
+body.app-swal-open .erp-modal-backdrop,
+body.app-swal-open .erp-modal-layer {
+  pointer-events: none !important;
+}
+
+.swal2-container {
+  z-index: var(--z-swal) !important;
+}
+
+.swal2-container.app-swal-container {
+  backdrop-filter: blur(3px);
+}
+
+.swal2-container.app-swal-container.swal2-backdrop-show {
+  background: rgba(15, 23, 42, 0.45) !important;
+}
+
+.swal2-popup.app-swal-popup {
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+}
+
+.app-sidebar {
+  box-shadow: var(--app-shadow-soft);
+}
+
+.app-surface {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--app-radius-xl);
+  /* box-shadow: var(--app-shadow-soft); */
+}
+
+.floating-dock {
+  box-shadow: var(--app-shadow-float);
+  backdrop-filter: blur(18px);
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+}
+ 
 /* TEXT COLORS (Keep as is — already solid) */
 .text-success {
   color: var(--success) !important;
@@ -1204,3 +1294,40 @@ input[type=number]::-webkit-inner-spin-button {
 .react-datepicker-wrapper {
   width: 100%;
 }
+
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+[data-theme="dark"] .skeleton-shimmer,
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 100%
+  );
+}
+
+
+:root {
+  --skeleton-base: #e5e7eb;
+}
+[data-theme="dark"], .dark {
+  --skeleton-base: #374151;
+}
+
+
+

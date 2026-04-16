@@ -1,5 +1,92 @@
 import { TermSection } from "../termsAndCondition";
 
+// ─── Purchase Order Detail (API Response) ────────────────────────────────────
+
+export interface POPaymentPhase {
+  id?: string;
+  name?: string;
+  percentage?: string;
+  condition?: string;
+  credit_days?: string;
+}
+
+export interface POPaymentTerms {
+  phases?: POPaymentPhase[];
+  dueDates?: string;
+  lateCharges?: string;
+  taxes?: string;
+  notes?: string;
+}
+
+export interface POTermsBuying {
+  general?: string;
+  delivery?: string;
+  cancellation?: string;
+  warranty?: string;
+  liability?: string;
+  payment?: POPaymentTerms;
+}
+
+export interface POTerms {
+  buying?: POTermsBuying;
+}
+
+export interface POItem {
+  itemCode?: string;
+  itemName?: string;
+  quantity?: number;
+  rate?: number;
+  requiredBy?: string;
+  warehouse?: string;
+  uom?: string;
+  itemTaxTemplate?: string;
+  packingUnit?: string;
+  packingSize?: string;
+}
+
+export interface PurchaseOrderDetail {
+  poId: string;
+  supplierId?: string;
+  supplierName: string;
+  poDate: string;
+  deliveryDate?: string;
+  currency: string;
+
+ 
+  billingAddress?: string;
+  billingAddressDisplay?: string | null;
+  shippingAddress?: string;
+  shippingAddressDisplay?: string | null;
+  supplierAddress?: string;
+  supplierAddressDisplay?: string | null;
+  dispatchAddress?: string;
+  dispatchAddressDisplay?: string | null;
+
+  taxCategory?: string;
+  project?: string | null;
+  costCenter?: string;
+  incoterms?: string | null;
+
+  terms?: POTerms;
+  items?: POItem[];
+
+  totalTaxes?: number;
+  grandTotal?: number;
+  roundedTotal?: number;
+
+  // Legacy / optional
+  status?: string;
+  conversionRate?: number;
+  placeOfSupply?: string | null;
+  metadata?: {
+    createdBy?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  };
+}
+
+// ─── Purchase Order Form ──────────────────────────────────────────────────────
+
 export interface ItemRow {
   itemCode: string;
   itemName?: string;
@@ -10,12 +97,12 @@ export interface ItemRow {
   rate: number;
   warehouse?: string;
   vatCd: string;
+  taxCategory:string;
   vatRate: number;
   packing?: string;
   packingUnit?: number;
   packingSize?: number;
 }
-
 
 export interface TaxRow {
   type: string;
@@ -23,12 +110,14 @@ export interface TaxRow {
   taxRate: number;
   amount: number;
 }
+
 export interface ItemTerms {
   termName: string;
   description: string;
   isMandatory: boolean;
-  itemCode?: string; // Track which item this term came from
+  itemCode?: string;
 }
+
 export interface PaymentRow {
   paymentTerm: string;
   description: string;
@@ -38,6 +127,7 @@ export interface PaymentRow {
 }
 
 export type AddressBlock = {
+  id?: string;
   addressTitle: string;
   addressType: "Billing" | "Shipping";
   addressLine1: string;
@@ -53,16 +143,16 @@ export type AddressBlock = {
 export interface PurchaseOrderFormData {
   poNumber: string;
   date: string;
+  name: string;
   supplier: string;
   supplierId: string;
   supplierEmail?: string;
   supplierPhone?: string;
-
   supplierCode: string;
   taxCategory: string;
   supplierContact: string;
-
-  destnCountryCd: string; 
+  supplierContactDisplay?: string;
+  destnCountryCd: string;
   shippingRule: string;
   incoterm: string;
   taxesChargesTemplate: string;
@@ -76,27 +166,23 @@ export interface PurchaseOrderFormData {
   useDispatchAddress: boolean;
   useShippingAddress: boolean;
   useCompanyBillingAddress: boolean;
-
   addresses: {
+    
     supplierAddress: AddressBlock;
     dispatchAddress: AddressBlock;
     shippingAddress: AddressBlock;
     companyBillingAddress: AddressBlock;
   };
-
   placeOfSupply: string;
   paymentTermsTemplate: string;
-
   totalQuantity: number;
   grandTotal: number;
   roundingAdjustment: number;
   totalTax: number;
   subTotal: number;
-
   roundedTotal: number;
   items: ItemRow[];
   taxRows: TaxRow[];
-
   templateName: string;
   templateType: string;
   subject: string;
@@ -107,10 +193,13 @@ export interface PurchaseOrderFormData {
   terms?: {
     buying: TermSection;
   };
+  
   itemTerms: ItemTerms[];
   acceptedTerms: Record<string, boolean>;
   paymentRows: PaymentRow[];
 }
+
+// ─── Empty defaults ───────────────────────────────────────────────────────────
 
 export const emptyItem: ItemRow = {
   itemCode: "",
@@ -121,12 +210,13 @@ export const emptyItem: ItemRow = {
   rate: 0,
   vatCd: "",
   vatRate: 0,
+  taxCategory:"",
   packing: "",
   packingUnit: 0,
   packingSize: 0,
   description: "",
+  taxCategory: "",
 };
-
 
 export const emptyTaxRow: TaxRow = {
   type: "",
@@ -161,11 +251,12 @@ export const emptyPOForm: PurchaseOrderFormData = {
   date: "",
   supplier: "",
   supplierContact: "",
+  supplierContactDisplay: "",
   taxCategory: "",
   currency: "",
   status: "Draft",
   destnCountryCd: "",
-  shippingRule: "STANDARD",
+  shippingRule: "",
   incoterm: "EXW",
   taxesChargesTemplate: "",
   costCenter: "",
@@ -195,7 +286,6 @@ export const emptyPOForm: PurchaseOrderFormData = {
       addressType: "Billing",
     },
   },
-
   placeOfSupply: "",
   supplierId: "",
   supplierCode: "",
@@ -207,8 +297,8 @@ export const emptyPOForm: PurchaseOrderFormData = {
   roundingAdjustment: 0,
   roundedTotal: 0,
   items: [{ ...emptyItem }],
-  taxRows: [], 
-  paymentRows: [], 
+  taxRows: [],
+  paymentRows: [],
   templateName: "",
   templateType: "",
   subject: "",
@@ -222,7 +312,7 @@ export const emptyPOForm: PurchaseOrderFormData = {
   useDispatchAddress: true,
   useShippingAddress: true,
   useCompanyBillingAddress: true,
-
+  name: "",
 };
 
 export type POTab = "details" | "email" | "tax" | "address" | "terms";

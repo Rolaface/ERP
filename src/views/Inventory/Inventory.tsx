@@ -1,153 +1,114 @@
-import React, { useState } from "react";
-import { FaBoxOpen, FaBoxes, FaChartBar } from "react-icons/fa";
+import React, { Suspense, lazy, useMemo,useEffect } from "react";
+import { useOutletContext, useNavigate, useLocation } from "react-router-dom";
+import {
+  FaBoxOpen,
+  FaBoxes,
+  FaTachometerAlt,
+  FaWarehouse,
+} from "react-icons/fa";
+import {
+  AppPage,
+  AppPageBody,
+  AppPageHeader,
+  AppTabs,
+} from "../../components/ui/app-shell";
+import AppSkeleton from "../../components/ui/AppSkeleton";
 
-import Items from "./Items";
-import Movements from "./Movements";
-import ItemsCategory from "./ItemsCategory";
-import Stock from "./Stock";
-import Import from "./Import";
-import InventoryDashboard from "./InventoryDashboard";
+const Items = lazy(() => import("./Items"));
+const Movements = lazy(() => import("./Movements"));
+const ItemsCategory = lazy(() => import("./ItemsCategory"));
+const WarehouseView = lazy(() => import("./Warehouse"));
+const Stock = lazy(() => import("./Stock"));
+const Import = lazy(() => import("./Import"));
+const TaxTemplate = lazy(() => import("./TaxTemplate"));
+const InventoryDashboard = lazy(() => import("./InventoryDashboard"));
+const TaxCategory = lazy(() => import("./TaxCategory"));
 
-const inventory = {
-  name: "Inventory",
-  icon: <FaBoxes />,
-  defaultTab: "inventorydashboard",
-  tabs: [
-    { id: "inventorydashboard", name: "Dashboard", icon: <FaChartBar /> },
-    { id: "items", name: "Items", icon: <FaBoxOpen /> },
-    { id: "itemsCategory", name: "Items Category", icon: <FaBoxOpen /> },
-    { id: "stock", name: "Stock", icon: <FaBoxOpen /> },
-    { id: "import", name: "Import", icon: <FaBoxOpen /> },
+interface OutletContextType {
+  openWarehouseCreate: (initialData?: { parent: string }) => void;
+  openWarehouseEdit: (id: string, data?: any) => void;
+}
 
-  ],
-  products: [
-    {
-      id: "PR-001",
-      name: "Laptop Pro 14",
-      category: "Electronics",
-      stock: 120,
-      minStock: 50,
-      price: 1500,
-      supplier: "TechSupply Co",
-    },
-    {
-      id: "PR-002",
-      name: "Office Chair",
-      category: "Furniture",
-      stock: 85,
-      minStock: 30,
-      price: 250,
-      supplier: "Office Solutions",
-    },
-    {
-      id: "PR-003",
-      name: "Printer Ink",
-      category: "Supplies",
-      stock: 200,
-      minStock: 100,
-      price: 45,
-      supplier: "Equipment Plus",
-    },
-  ],
-  warehouses: [
-    {
-      id: "WH-001",
-      name: "Main Warehouse",
-      location: "Lusaka",
-      manager: "John Doe",
-      items: 450,
-      capacity: "90%",
-    },
-    {
-      id: "WH-002",
-      name: "Regional Storage",
-      location: "Ndola",
-      manager: "Sarah Lee",
-      items: 310,
-      capacity: "75%",
-    },
-    {
-      id: "WH-003",
-      name: "Distribution Center",
-      location: "Kitwe",
-      manager: "Anna Wilson",
-      items: 120,
-      capacity: "80%",
-    },
-  ],
-};
+const inventoryTabs = [
+  { id: "dashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
+  { id: "taxTemplates", label: "Tax Templates", icon: <FaBoxOpen /> },
+  { id: "items", label: "Items", icon: <FaBoxOpen /> },
+  { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
+  { id: "warehouse", label: "WareHouse", icon: <FaWarehouse /> },
+  { id: "stock", label: "Stock", icon: <FaBoxOpen /> },
+  { id: "import", label: "Import", icon: <FaBoxOpen /> },
+];
+
+const DEFAULT_TAB = "dashboard";
 
 const Inventory: React.FC = () => {
-  const [activeTab, setActiveTab] = useState(inventory.defaultTab);
-  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { openWarehouseCreate, openWarehouseEdit } = useOutletContext<OutletContextType>();
+
+  const activeTab = useMemo(() => {
+    const path = location.pathname;
+    const base = "/inventory";
+    if (path === base || path === `${base}/`) {
+      return DEFAULT_TAB;
+    }
+    return path.replace(`${base}/`, "") || DEFAULT_TAB;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === "/inventory" || path === "/inventory/") {
+      navigate("/inventory/dashboard", { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  const isDashboardTab = activeTab === "dashboard";
+
+  const handleTabChange = (tabId: string) => {
+    navigate(`/inventory/${tabId}`, { replace: true });
+  };
+
+  const renderTab = () => {
+    switch (activeTab) {
+      case "dashboard":
+        return <InventoryDashboard />;
+      case "items":
+        return <Items />;
+      case "taxCategory":
+        return <TaxCategory />;
+      case "itemsCategory":
+        return <ItemsCategory />;
+      case "warehouse":
+        return <WarehouseView openWarehouseCreate={openWarehouseCreate} openWarehouseEdit={openWarehouseEdit} />;
+      case "stock":
+        return <Stock />;
+      case "import":
+        return <Import />;
+      case "movements":
+        return <Movements />;
+      case "taxTemplates":
+        return <TaxTemplate />;
+      default:
+        return <InventoryDashboard />;
+    }
+  };
 
   return (
-    <div className="p-6 bg-app">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
-          <span>{inventory.icon}</span> {inventory.name}
-        </h2>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-4">
-        {inventory.tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id);
-              setSearchTerm("");
-            }}
-            className={`px-4 py-2 font-medium flex items-center gap-2 transition-colors ${activeTab === tab.id
-
-                ? "text-primary border-b-2 border-current"
-                : "text-muted hover:text-main"
-              }`}
-          >
-            <span>{tab.icon}</span> {tab.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      <div className="">
-        {activeTab === "inventorydashboard" && <InventoryDashboard />}
-        {activeTab === "items" && (
-          <Items
-            products={inventory.products}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            onAdd={() => { }}
-          />
-        )}
-        {activeTab === "itemsCategory" && (
-          <ItemsCategory
-            products={inventory.products}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            onAdd={() => { }}
-          />
-        )}
-        {activeTab === "stock" && (
-          <Stock
-            products={inventory.products}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            onAdd={() => { }}
-          />
-        )}
-        {activeTab === "import" && (
-          <Import
-            products={inventory.products}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            onAdd={() => { }}
-          />
-        )}
-        {activeTab === "movements" && <Movements onAdd={() => { }} />}
-      </div>
-    </div>
+    <AppPage viewportLocked={isDashboardTab}>
+      <AppPageHeader
+        title="Inventory"
+        description="Inventory operations and stock visibility within the shared ERP shell."
+        icon={<FaBoxes />}
+      />
+      <AppTabs
+        tabs={inventoryTabs}
+        activeTab={activeTab}
+        onChange={handleTabChange}
+      />
+      <AppPageBody viewportLocked={isDashboardTab}>
+        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
+      </AppPageBody>
+    </AppPage>
   );
 };
 

@@ -6,16 +6,17 @@ import {
   showValidationError,
 } from "../../utils/alert";
 import { User, Mail, Phone, Plus, Trash2 } from "lucide-react";
-import { Button } from "../../components/ui/modal/formComponent";
+import ModalFooter from "../common/ModalFooter";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import PaymentInfoBlock from "./PaymentInfoBlock";
-import Modal from "../ui/modal/modal";
+import { MinimizableModal } from "../common/MinimizableModal";
 import AddressBlock from "../ui/modal/AddressBlock";
 import { getAllCustomers } from "../../api/customerApi";
 import CustomerSelect from "../selects/CustomerSelect";
 import ItemSelect from "../selects/ItemSelect";
 import { createProformaInvoice } from "../../api/proformaInvoiceApi";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import DatePickerInput from "../calendar/DatePickerInput";
 import {
   invoiceStatusOptions,
@@ -23,13 +24,15 @@ import {
   paymentMethodOptions,
   currencyOptions,
 } from "../../constants/invoice.constants";
+import type { ModalSubmitHandler } from "../../types/modal";
 
 interface ProformaInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: () => void;
+  onSubmit?: ModalSubmitHandler;
   initialData?: any;
   mode?: "create" | "edit";
+  modalId?: string;
 }
 
 const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
@@ -38,7 +41,12 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   onSubmit,
   initialData,
   mode = "create",
+  modalId,
 }) => {
+  const resolvedModalId = modalId || (mode === "edit" && initialData?.proformaId
+    ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
+    : `proforma-create-${Date.now()}`);
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     formData,
     customerDetails,
@@ -60,30 +68,34 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     "address",
     "terms",
   ];
-  const handleNext = () => {
+  const validateDetailsOrFocus = () => {
     try {
-      actions.validateForm(); // same validation as quotation
+      actions.validateForm();
+      return true;
+    } catch (err: any) {
+      ui.setActiveTab("details");
+      showValidationError(err.message);
+      return false;
+    }
+  };
+
+  const handleNext = () => {
+    if (ui.activeTab === "details" && !validateDetailsOrFocus()) return;
 
       const currentIndex = tabs.indexOf(ui.activeTab as any);
 
       if (currentIndex < tabs.length - 1) {
         ui.setActiveTab(tabs[currentIndex + 1]);
       }
-    } catch (err: any) {
-      showValidationError(err.message);
-    }
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (ui.activeTab !== "terms") {
-      handleNext();
-      return;
-    }
+  const handleSave = async () => {
+    if (!validateDetailsOrFocus()) return;
 
     try {
-      const payload = await actions.handleSubmit(e);
+      const payload = await actions.handleSubmit({
+        preventDefault: () => {},
+      } as React.FormEvent);
       if (!payload) return;
 
       let res;
@@ -96,8 +108,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
         // future API
         // res = await updateProformaInvoice(initialData.proformaId, payload)
-
-        console.log("Edit payload", payload);
 
         res = {
           status_code: 200,
@@ -112,14 +122,22 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         return;
       }
 
-      showSuccess(res.message || "Proforma invoice created successfully");
+      showSuccess(res.message);
 
+      const canClose = await onSubmit?.(res);
+      if (canClose === false) return;
+
+      resetDirty();
       actions.handleReset();
-      onSubmit?.();
       onClose();
     } catch (error: any) {
       showApiError(error);
     }
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleSave();
   };
 
   const handleClose = () => {
@@ -156,50 +174,37 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     return () => controller.abort();
   }, [isOpen]);
 
-  if (!isOpen) return null;
+
 
   return (
-    <Modal
+    <MinimizableModal
+    modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
       title={
         mode === "edit" ? "Edit Proforma Invoice" : "Create Proforma Invoice"
       }
       subtitle="Create and manage proforma invoice details"
       footer={
-        <>
-          <Button variant="secondary" onClick={handleClose}>
-            Cancel
-          </Button>
-
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={actions.handleReset}>
-              Reset
-            </Button>
-            <Button
-              variant="primary"
-              type="button"
-              onClick={() => {
-                if (ui.activeTab === "terms") {
-                  const form = document.getElementById("proforma-form");
-
-                  if (form instanceof HTMLFormElement) {
-                    form.requestSubmit();
-                  }
-                } else {
-                  handleNext();
-                }
-              }}
-            >
-              {ui.activeTab === "terms" ? "Submit" : "Next"}
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          onReset={async () => {
+            resetDirty();
+            await actions.handleReset();
+          }}
+          onSave={handleSave}
+          onNext={ui.activeTab === "terms" ? undefined : handleNext}
+        />
       }
       customWidth="83vw"
       height="82vh"
     >
-      <form id="proforma-form" onSubmit={handleFormSubmit}>
+      <form
+        id="proforma-form"
+        onSubmit={handleFormSubmit}
+        onChange={() => markDirty()}
+        className="h-full flex flex-col"
+      >
         {/* Tabs */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
@@ -771,7 +776,7 @@ ${
           </Button>
         </div> */}
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

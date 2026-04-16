@@ -130,7 +130,7 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
   ];
 
   return (
-    <div className="p-6">
+    <div className="h-full min-h-0">
       <Table
         columns={columns}
         data={filteredRFQs}

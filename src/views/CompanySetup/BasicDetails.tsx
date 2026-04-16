@@ -20,7 +20,7 @@ import {
   closeSwal,
 } from "../../utils/alert";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
-import Swal from "sweetalert2";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 import type { BasicDetailsForm } from "../../types/company";
 import type { Terms } from "../../types/termsAndCondition";
@@ -332,7 +332,7 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({ basic, terms, onSaveSuccess
   };
 
   const handleReset = async () => {
-    const result = await Swal.fire({
+    const result = await fireManagedSwal({
       icon: "warning", title: "Reset All Fields?",
       text: "This will clear all entered data.",
       showCancelButton: true,

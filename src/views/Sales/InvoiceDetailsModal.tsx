@@ -4,29 +4,29 @@ import Tooltip from "../../components/Tooltip";
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface InvoiceDetail {
   invoiceNumber: string;
-  invoiceType?: string;
+  tax_category?: string;
   originInvoice?: string | null;
   customerName: string;
   customerTpin?: string;
-  currencyCode: string;
+  currency: string;
   OutStandingAmount?: number;
   taxTotal?: number;
-  exchangeRt?: string;
-  dateOfInvoice: string;
+  exchangeRate?: string;
+  postingDate: string;
   dueDate: string;
   invoiceStatus: string;
   Receipt?: string | null;
   ReceiptNo?: string | null;
   lpoNumber?: string | null;
   destnCountryCd?: string;
-  billingAddress?: { line1?: string; line2?: string; postalCode?: string; city?: string; state?: string; country?: string };
-  shippingAddress?: { line1?: string; line2?: string; postalCode?: string; city?: string; state?: string; country?: string };
+  billingAddress?: string;
+  shippingAddress?: string;
   paymentInformation?: { paymentTerms?: string; paymentMethod?: string; bankName?: string; accountNumber?: string; routingNumber?: string; swiftCode?: string };
   items?: Array<{
     itemCode?: string;
     description?: string;
     quantity?: number;
-    price?: number;
+    rate?: number;
     discount?: number;
     vatCode?: string | null;
     vatTaxableAmount?: string;
@@ -68,6 +68,7 @@ interface Props {
   onClosePdf?: () => void;
 }
 
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n?: number, currency = "-") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2 }).format(n ?? 0);
@@ -89,6 +90,71 @@ const F: React.FC<{ label: string; value?: string | null; mono?: boolean }> = ({
   </div>
 );
 
+/** Strip HTML tags from address display strings returned by the API */
+const stripHtml = (html?: string | null): string[] => {
+  if (!html) return [];
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+};
+
+
+// Address card from display HTML string
+const AddressCard: React.FC<{
+  label: string;
+  html?: string | null;
+  name?: string;
+}> = ({ label, html, name }) => {
+  const lines = stripHtml(html);
+  if (!lines.length && !name) return null;
+  return (
+    <div
+      style={{
+        padding: "7px 9px",
+        borderRadius: 6,
+        background: "var(--bg)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: 9,
+          color: "var(--muted)",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.07em",
+          marginBottom: 3,
+        }}
+      >
+        {label}
+      </p>
+      {name && (
+        <p
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--text)",
+            marginBottom: 2,
+          }}
+        >
+          {name}
+        </p>
+      )}
+      {lines.map((l, i) => (
+        <p
+          key={i}
+          style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}
+        >
+          {l}
+        </p>
+      ))}
+    </div>
+  );
+};
+
 // Section divider with inline title
 const S: React.FC<{ title: string }> = ({ title }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0 7px" }}>
@@ -102,13 +168,19 @@ const InvoiceDetailModal: React.FC<Props> = ({
   open, data, loading, onClose,
   pdfUrl, pdfLoading, onViewPdf, onDownload, onClosePdf,
 }) => {
+  // console.log("🚀 ~ InvoiceDetailModal ~ data:", data)
   if (!open) return null;
 
+    // Address visibility
+  const hasAddresses =
+    data?.billingAddress ||
+    data?.shippingAddress;
+
   const items      = data?.items ?? [];
-  const subtotal   = items.reduce((s, it) => s + (it.price ?? 0) * (it.quantity ?? 0), 0);
-  const taxTotal   = data?.taxTotal ?? 0;
-  const grandTotal = data?.OutStandingAmount ?? 0;
-  const currency   = data?.currencyCode ?? "-";
+  const subtotal   = data?.total;
+  const taxTotal   = data?.total_tax ?? 0;
+  const grandTotal = data?.grand_total ?? 0;
+  const currency   = data?.currency ?? "-";
   const invoiceCharges = (data as any)?.invoiceCharges || [];
 
 const totalCharges = invoiceCharges.reduce(
@@ -117,7 +189,7 @@ const totalCharges = invoiceCharges.reduce(
 );
 
 const fobTotal = grandTotal - totalCharges;
-  const statusCls  = STATUS_MAP[data?.invoiceStatus ?? "Draft"] ?? "bg-draft";
+  const statusCls  = STATUS_MAP[data?.status ?? "Draft"] ?? "bg-draft";
   const phases =
     data?.terms?.selling?.payment?.phases
       ?.filter(p => p?.percentage)
@@ -218,7 +290,7 @@ const fobTotal = grandTotal - totalCharges;
               </div>
               <div style={{ padding: "9px 11px", borderRadius: 7, background: "var(--bg)", border: "1px solid var(--border)" }}>
                 <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Invoice Date</p>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.dateOfInvoice)}</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.postingDate)}</p>
               </div>
               <div style={{ padding: "9px 11px", borderRadius: 7, background: "var(--bg)", border: "1px solid var(--border)" }}>
                 <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Due Date</p>
@@ -233,9 +305,9 @@ const fobTotal = grandTotal - totalCharges;
               <F label="TPIN"       value={data.customerTpin} mono />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
-              <F label="Invoice Type"  value={data.invoiceType} />
-              <F label="Currency"      value={data.currencyCode} />
-              <F label="Exchange Rate" value={data.exchangeRt} />
+              <F label="Invoice Type"  value={data.tax_category} />
+              <F label="Currency"      value={data.currency} />
+              <F label="Exchange Rate" value={data.exchangeRate} />
               <F label="Destination"   value={data.destnCountryCd?.toUpperCase()} />
             </div>
             {(data.lpoNumber || data.originInvoice || data.ReceiptNo) && (
@@ -247,21 +319,29 @@ const fobTotal = grandTotal - totalCharges;
             )}
 
             {/* ── ADDRESSES ── */}
-            {(data.billingAddress || data.shippingAddress) && (<>
-              <S title="Addresses" />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                {[{ label: "Billing", addr: data.billingAddress }, { label: "Shipping", addr: data.shippingAddress }].map(({ label, addr }) =>
-                  addr ? (
-                    <div key={label} style={{ padding: "7px 9px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)" }}>
-                      <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{label}</p>
-                      {[addr.line1, addr.city, [addr.state, addr.postalCode].filter(Boolean).join(", "), addr.country?.toUpperCase()]
-                        .filter(Boolean)
-                        .map((l, i) => <p key={i} style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>{l}</p>)}
-                    </div>
-                  ) : <div key={label} />
-                )}
-              </div>
-            </>)}
+              {hasAddresses && (
+                <>
+                  <S title="Addresses" />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2,1fr)",
+                      gap: 6,
+                    }}
+                  >
+                    <AddressCard
+                      label="Billing Address"
+                      // name={data.billingAddress}
+                      html={data.billingAddress}
+                    />
+                    <AddressCard
+                      label="Shipping Address"
+                      // name={data.shippingAddress}
+                      html={data.shippingAddress}
+                    />
+                  </div>
+                </>
+              )}
 
             {/* ── LINE ITEMS ── */}
             <S title="Line Items" />
@@ -274,7 +354,7 @@ const fobTotal = grandTotal - totalCharges;
                 <span style={{ textAlign: "right" }}>Total</span>
               </div>
               {items.map((it, i) => {
-                const rowTotal = (it.price ?? 0) * (it.quantity ?? 0) ;
+                const rowTotal = (it.rate ?? 0) * (it.quantity ?? 0) ;
                 return (
                   <div key={i} className="idm-irow" style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 60px 88px 72px 96px", padding: "7px 10px", gap: 4, borderTop: "1px solid var(--border)", alignItems: "center" }}>
                     <div style={{ minWidth: 0 }}>
@@ -313,8 +393,8 @@ const fobTotal = grandTotal - totalCharges;
                     <Tooltip content={`Quantity: ${(it.quantity ?? 0).toLocaleString()}`}>
                       <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{(it.quantity ?? 0).toLocaleString()}</p>
                     </Tooltip>
-                    <Tooltip content={`Price: ${fmt(it.price, currency)}`}>
-                      <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(it.price, currency)}</p>
+                    <Tooltip content={`Price: ${fmt(it.rate, currency)}`}>
+                      <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(it.rate, currency)}</p>
                     </Tooltip>
                     <Tooltip content={ "No discount"}>
                       {/* <p style={{ fontSize: 12, textAlign: "right", color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{it.discount ? fmt(it.discount, currency) : "—"}</p> */}
@@ -363,7 +443,7 @@ const fobTotal = grandTotal - totalCharges;
             {data.paymentInformation && (<>
               <S title="Payment Information" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-                <F label="Payment Terms"  value={data.paymentInformation.paymentTerms} />
+                <F label="Payment Terms"  value={data.terms?.selling.payment.notes} />
                 <F label="Method"         value={data.paymentInformation.paymentMethod} />
                 <F label="Bank"           value={data.paymentInformation.bankName} />
                 {data.paymentInformation.accountNumber && <F label="Account No." value={data.paymentInformation.accountNumber} mono />}

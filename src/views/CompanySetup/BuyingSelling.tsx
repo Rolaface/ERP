@@ -10,7 +10,7 @@ import {
   closeSwal,
 } from "../../utils/alert";
 import { updateCompanyById } from "../../api/companySetupApi";
-import Swal from "sweetalert2";
+import { fireManagedSwal } from "../../utils/swalManager";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 interface BuyingSellingProps {
@@ -85,14 +85,14 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
   };
   const handleSubmit = async () => {
     if (!hasChanges) {
-      Swal.fire({
+      fireManagedSwal({
         icon: "info",
         title: "No Changes",
         text: "Please apply changes before saving.",
       });
       return;
     }
-    const confirm = await Swal.fire({
+    const confirm = await fireManagedSwal({
       title: "Save Terms?",
       text: "Do you want to update company terms and conditions?",
       icon: "question",

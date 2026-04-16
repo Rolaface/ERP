@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { getAllItemGroups } from "../../api/itemCategoryApi";
+import { getItemGroupTree } from "../../api/itemGroupApi";
 
 interface ItemCategorySelectProps {
   value?: string;
@@ -9,7 +9,25 @@ interface ItemCategorySelectProps {
   required?: boolean;
   filterByItemType?: string;
 }
+function flattenItemGroups(nodes: any[]): { id: string; name: string }[] {
+  const result: { id: string; name: string }[] = [];
 
+  const traverse = (list: any[]) => {
+    list.forEach((node) => {
+      result.push({
+        id: node.name,
+        name: node.item_group_name,
+      });
+
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    });
+  };
+
+  traverse(nodes);
+  return result;
+}
 export default function ItemCategorySelect({
   value = "",
   onChange,
@@ -27,40 +45,34 @@ export default function ItemCategorySelect({
   const ref = useRef<HTMLDivElement>(null);
 
   /* ---------------- Load Item Categories ---------------- */
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const res = await getAllItemGroups(
-          1,
-          130,
-          filterByItemType ? { itemType: filterByItemType } : undefined
-        );
+useEffect(() => {
+  const load = async () => {
+    try {
+      setLoading(true);
 
-        if (!res || res?.status_code !== 200 || !Array.isArray(res.data)) {
-          console.warn("Invalid API response, setting empty categories");
-          setCategories([]);
-          return;
-        }
+      const res = await getItemGroupTree();
 
-        const safeCategories = res.data
-          .filter((c: any) => c && c.id && typeof c.groupName === "string")
-          .map((c: any) => ({
-            id: String(c.id),
-            name: c.groupName.trim() || `(Unnamed ${c.id})`,
-          }));
+      const treeData = res?.message?.data?.item_groups;
 
-        setCategories(safeCategories);
-      } catch (err) {
-        console.error("Failed to load item groups:", err);
+      if (!Array.isArray(treeData)) {
+        console.warn("Invalid API response");
         setCategories([]);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
 
-    load();
-  }, [filterByItemType]);
+      const flatData = flattenItemGroups(treeData);
+
+      setCategories(flatData);
+    } catch (err) {
+      console.error("Failed to load item groups:", err);
+      setCategories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  load();
+}, []);
   /* -------- Close dropdown when clicking outside -------- */
   useEffect(() => {
     const handler = (e: MouseEvent) => {

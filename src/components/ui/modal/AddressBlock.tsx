@@ -69,7 +69,7 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
     loadCountries();
   }, []);
 
-  const selectedCountry = countriesCache.find((c) => c.code === data.country);
+  const selectedCountry = countriesCache.find((c) => c.name === data.country);
 
   return (
     <Card title={title} subtitle={subtitle} className="relative">
@@ -141,7 +141,7 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
                     c?.country_name &&
                     c.country_name.toLowerCase().includes(lowerQ)
                 )
-                .map((c) => ({ label: c.country_name, value: c.code }));
+                .map((c) => ({ label: c.country_name, value: c.name }));
             }}
             disabled={isDisabled}
             error={errors?.country}

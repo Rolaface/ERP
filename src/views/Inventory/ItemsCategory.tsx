@@ -1,141 +1,227 @@
-import React, { useEffect, useState } from "react";
-
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useOutletContext, useNavigate } from "react-router-dom";
+import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
+import type { Column } from "../../components/ui/Table/type";
+import DeleteModal from "../../components/actionModal/DeleteModal";
 import { showApiError, showSuccess } from "../../utils/alert";
 
 import {
-  getAllItemGroups,
+  getItemGroupTree,
   deleteItemGroupById,
-  getItemGroupById,
-} from "../../api/itemCategoryApi";
+} from "../../api/itemGroupApi";
 
-import ItemsCategoryModal from "../../components/inventory/ItemsCategoryModal";
-import DeleteModal from "../../components/actionModal/DeleteModal";
+import {
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+  FolderOpen,
+  Folder,
+  Package,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  GitBranch,
+  Plus,
+  PackageSearch
+} from "lucide-react";
 
-import Table from "../../components/ui/Table/Table";
-import ActionButton, {
-  ActionGroup,
-  ActionMenu,
-} from "../../components/ui/Table/ActionButton";
-import { FilterSelect } from "../../components/ui/modal/modalComponent";
-import { ItemGroupFilters } from "../../api/itemCategoryApi";
-import type { Column } from "../../components/ui/Table/type";
-import type { ItemGroupSummary, ItemGroup } from "../../types/itemCategory";
 
-/* 
-   COMPONENT
- */
+type OutletContextType = {
+  openCategoryCreate: (parentId?: string) => void;
+  openCategoryEdit: (id: string, data?: any) => void; 
+};
+
+export interface ItemGroupNode {
+  name: string;
+  item_group_name: string;
+  parent_item_group: string | null;
+  is_group: number;
+  item_count: number;
+  children?: ItemGroupNode[];
+}
+
+export interface ItemGroupTreeResponse {
+  status_code: number;
+  message: string;
+  data: {
+    total: number;
+    item_groups: ItemGroupNode[];
+  };
+}
+
+
+function normalizeItemGroups(groups: ItemGroupNode[]): ItemGroupNode[] {
+  return groups.map((g) => ({
+    ...g,
+    children: Array.isArray(g.children) ? normalizeItemGroups(g.children) : [],
+  }));
+}
+
+function matchItemGroupNode(node: ItemGroupNode, term: string): boolean {
+  const t = term.toLowerCase();
+  return (
+    node.name.toLowerCase().includes(t) ||
+    node.item_group_name.toLowerCase().includes(t)
+  );
+}
+
+function itemGroupExpandIcon(
+  _node: ItemGroupNode,
+  isExpanded: boolean,
+  hasChildren: boolean,
+): React.ReactNode {
+  if (!hasChildren)
+    return <Package size={12} className="text-muted opacity-50" />;
+  return isExpanded ? (
+    <FolderOpen size={13} className="text-muted" />
+  ) : (
+    <Folder size={13} className="text-muted" />
+  );
+}
+
+
+interface MenuAction {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+  dividerBefore?: boolean;
+}
+
+const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative flex justify-end">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((p) => !p);
+        }}
+        className={`
+          w-7 h-7 flex items-center justify-center rounded-md transition
+          opacity-0 group-hover:opacity-100
+          ${
+            open
+              ? "bg-primary/10 text-primary"
+              : "text-muted hover:bg-row-hover hover:text-main"
+          }
+        `}
+      >
+        <MoreHorizontal size={15} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-8 z-50 min-w-[160px] bg-card border border-theme rounded-xl shadow-xl py-1.5 overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {actions.map((action, i) => (
+            <React.Fragment key={i}>
+              {action.dividerBefore && (
+                <div className="border-t border-theme my-1" />
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  action.onClick();
+                  setOpen(false);
+                }}
+                className={`
+                  w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
+                  ${
+                    action.danger
+                      ? "text-danger hover:bg-danger/10"
+                      : "text-main hover:bg-row-hover"
+                  }
+                `}
+              >
+                <span className={action.danger ? "text-danger" : "text-muted"}>
+                  {action.icon}
+                </span>
+                {action.label}
+              </button>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 const ItemsCategory: React.FC = () => {
-  const [groups, setGroups] = useState<ItemGroupSummary[]>([]);
+  const { openCategoryCreate, openCategoryEdit } = useOutletContext<OutletContextType>();
+  const navigate = useNavigate();
+
+  const [treeData, setTreeData] = useState<ItemGroupNode[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [initialLoad, setInitialLoad] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editGroup, setEditGroup] = useState<ItemGroup | null>(null);
-  const [filters, setFilters] = useState<ItemGroupFilters>({});
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [groupToDelete, setGroupToDelete] = useState<ItemGroupSummary | null>(
-    null,
-  );
+  const [groupToDelete, setGroupToDelete] = useState<ItemGroupNode | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setFilters((prev) => ({
-        ...prev,
-        search: searchTerm || undefined,
-      }));
-      setPage(1);
-    }, 600);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  /* 
-     FETCH
-   */
-  const fetchGroups = async () => {
+  const fetchTree = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
+      const res: any = await getItemGroupTree(); 
+      const responseBody = res?.message || res;
 
-      const res = await getAllItemGroups(page, pageSize, filters);
-
-      if (res?.status_code !== 200) {
-        showApiError(res?.message || "Failed to fetch item groups");
-        return;
+      if (responseBody?.status_code === 200 && responseBody?.data) {
+        const normalizedGroups = normalizeItemGroups(responseBody.data.item_groups);
+        setTreeData(normalizedGroups);
+      } else {
+        const errorText = typeof responseBody?.message === 'string' 
+            ? responseBody.message 
+            : "Failed to load item groups.";
+            
+        setError(errorText);
       }
-
-      const list = res?.data?.data || [];
-      const pagination = res?.data?.pagination || {};
-
-      setGroups(list);
-      setTotalPages(pagination.total_pages || 1);
-      setTotalItems(pagination.total || 0);
-    } catch (err) {
-      console.error(err);
-      showApiError("Something went wrong");
+    } catch (err: any) {
+      setError(typeof err?.message === 'string' ? err.message : "An error occurred while fetching item groups.");
     } finally {
       setLoading(false);
-      setInitialLoad(false);
     }
-  };
+  }, []);
+
   useEffect(() => {
-    fetchGroups();
-  }, [page, pageSize, filters]);
+    fetchTree();
+  }, [fetchTree]);
 
-  /* 
-     HANDLERS
-   */
-
-  const handleAdd = () => {
-    setEditGroup(null);
-    setShowModal(true);
+  const handleAddChild = (row: ItemGroupNode) => {
+    openCategoryCreate({ parent: row.name }); 
   };
-
-  const handleEdit = async (id: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-
-    try {
-      const res = await getItemGroupById(id);
-
-      setEditGroup({
-        ...res.data,
-        itemType: res.data.itemType,
-      });
-      setShowModal(true);
-    } catch {
-      console.error("Unable to fetch item category");
-    }
-  };
-
-  const handleDeleteClick = (group: ItemGroupSummary, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setGroupToDelete(group);
-    setDeleteModalOpen(true);
-  };
+  
 
   const confirmDelete = async () => {
     if (!groupToDelete) return;
 
     try {
       setDeleting(true);
-
-      const res = await deleteItemGroupById(groupToDelete.id);
-
-      if (!res || ![200, 201].includes(res.status_code)) {
+      const res = await deleteItemGroupById(groupToDelete.name);
+      if (!res || ![200,202].includes(res.status)) {
         showApiError(res);
         return;
       }
 
-      setGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id));
-      showSuccess(res.message || "Item category deleted");
-
+      showSuccess(res.message || `Item Group ${groupToDelete.item_group_name} deleted succesfully`);
       setDeleteModalOpen(false);
+      fetchTree();
     } catch (err: any) {
       showApiError(err);
     } finally {
@@ -144,125 +230,151 @@ const ItemsCategory: React.FC = () => {
     }
   };
 
-  const handleSaved = async () => {
-    const wasEdit = !!editGroup;
-    setShowModal(false);
-    setEditGroup(null);
-    await fetchGroups();
-    showSuccess(wasEdit ? "Category updated" : "Category created");
-  };
+  if (loading && treeData.length === 0) {
+    return (
+      <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col items-center justify-center py-24 gap-3 shadow-sm">
+        <Loader2 size={28} className="animate-spin text-primary" />
+        <p className="text-xs font-bold text-muted uppercase tracking-widest opacity-40">
+          Loading Item Groups…
+        </p>
+      </div>
+    );
+  }
 
-  /* 
-     TABLE COLUMNS
-   */
+  if (error) {
+    return (
+      <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col items-center justify-center py-24 gap-4 shadow-sm">
+        <AlertCircle size={28} className="text-danger" />
+        <p className="text-xs font-bold text-danger uppercase tracking-widest">
+          {error}
+        </p>
+        <button
+          onClick={fetchTree}
+          className="flex items-center gap-2 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest bg-primary rounded-xl transition-all hover:opacity-90"
+        >
+          <RefreshCw size={11} />
+          Retry
+        </button>
+      </div>
+    );
+  }
 
-  const columns: Column<ItemGroupSummary>[] = [
-    { key: "id", header: "ID", align: "left" },
-    { key: "groupName", header: "Name", align: "left" },
-    { key: "description", header: "Description", align: "left" },
+  const columns: Column<ItemGroupNode>[] = [
     {
-      key: "unitOfMeasurement",
-      header: "UOM",
+      key: "item_group_name",
+      header: "Group Name",
       align: "left",
-    },
-    {
-      key: "sellingPrice",
-      header: "Selling Price",
-      align: "right",
-      render: (g) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          INR {g.sellingPrice}
-        </code>
+      render: (row) => (
+        <span
+          className={
+            row.is_group ? "font-semibold text-main" : "font-normal text-main"
+          }
+        >
+          {row.item_group_name}
+        </span>
       ),
     },
-    { key: "salesAccount", header: "Sales Account", align: "left" },
+    {
+      key: "name",
+      header: "ID",
+      align: "left",
+      render: (row) => <span className="text-xs text-muted">{row.name}</span>,
+    },
+    {
+      key: "item_count",
+      header: "Items",
+      align: "center",
+      render: (row) => {
+        if (row.item_count === 0) return <span className="text-muted text-xs">—</span>;
+        return (
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {row.item_count} Items
+          </code>
+        );
+      },
+    },
     {
       key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (g) => (
-        <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={(e) => handleEdit(g.id, e)}
-            iconOnly
-          />
-          <ActionMenu
-            onEdit={(e) => handleEdit(g.id, e as any)}
-            onDelete={(e) => handleDeleteClick(g, e as any)}
-          />
-        </ActionGroup>
-      ),
+      header: "",
+      align: "right",
+      render: (row) => {
+        const actions: MenuAction[] = [
+          {
+            label: "Edit",
+            icon: <Pencil size={12} />,
+            onClick: () => openCategoryEdit(row.name, row),
+          },
+          ...(row.is_group === 1
+            ? [
+                {
+                  label: "Add Child",
+                  icon: <GitBranch size={12} />,
+                  onClick: () => handleAddChild(row),
+                },
+              ]
+            : [
+                {
+                  label: "View Items",
+                  icon: <PackageSearch size={12} />,
+                  onClick: () =>
+                    navigate("/items", {
+                      state: { item_group: row.name },
+                    }),
+                },
+              ]),
+          {
+            label: "Delete",
+            icon: <Trash2 size={12} />,
+            onClick: () => {
+              setGroupToDelete(row);
+              setDeleteModalOpen(true);
+            },
+            danger: true,
+            dividerBefore: true,
+          },
+        ];
+
+        return <RowActionMenu actions={actions} />;
+      },
     },
   ];
 
-  /* 
-     RENDER
-   */
-
   return (
-    <div className="p-8">
-      <Table
-        loading={loading || initialLoad}
-        
+    <div className="h-full min-h-0">
+      <ExpandableTreeTable<ItemGroupNode>
         columns={columns}
-        data={groups}
+        data={treeData}
+        childrenKey="children"
+        nodeKey={(node) => node.name}
         showToolbar
-        enableColumnSelector
         searchValue={searchTerm}
         onSearch={setSearchTerm}
-        enableAdd
-        addLabel="Add Category"
-        onAdd={handleAdd}
-        currentPage={page}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1); // reset page
-        }}
-        onPageChange={setPage}
+        toolbarPlaceholder="Search item groups…"
+        showExpandControls
+        onRefresh={fetchTree}
+        matchNode={matchItemGroupNode}
+        defaultExpandDepth={0}
+        indentSize={20}
+        loading={loading}
+        emptyMessage="No item groups found."
+        expandIconRender={itemGroupExpandIcon}
         extraFilters={
-          <div className="w-48">
-            <FilterSelect
-              value={filters.itemType || ""}
-              onChange={(e) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  itemType: e.target.value || undefined,
-                }));
-                setPage(1);
-              }}
-              options={[
-                { value: "1", label: "Raw Material" },
-                { value: "2", label: "Finished Product" },
-                { value: "3", label: "Service" },
-              ]}
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => openCategoryCreate()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
+          >
+            <Plus size={13} />
+            New Group
+          </button>
         }
       />
 
-      {/* CATEGORY MODAL */}
-      <ItemsCategoryModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditGroup(null);
-        }}
-        onSubmit={handleSaved}
-        initialData={editGroup}
-        isEditMode={!!editGroup}
-      />
-
-      {/* DELETE MODAL */}
       {deleteModalOpen && groupToDelete && (
         <DeleteModal
-          entityName="Item Category"
-          entityId={groupToDelete.id}
-          entityDisplayName={groupToDelete.groupName}
+          entityName="Item Group"
+          entityId={groupToDelete.name}
+          entityDisplayName={groupToDelete.item_group_name}
           isLoading={deleting}
           onClose={() => {
             setDeleteModalOpen(false);

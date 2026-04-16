@@ -1,284 +1,461 @@
-import React, { useState, useEffect } from "react";
-import { Plus, Trash2, Package, TrendingDown, DollarSign, ChevronLeft, ChevronRight, Layers } from "lucide-react";
-import { currencySymbols } from "../../constants/invoice.constants";
+import React, { useEffect, useState, useCallback } from "react";
+import { Layers, Plus, Trash2, ChevronDown, ChevronRight, Tag, AlertCircle } from "lucide-react";
+import { getAllTemplates } from "../../api/salesTaxTemplateApi";
 
-interface Props {
-  charges: any[];
-  currency?: string;
-  totals: any;
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface TemplateTax {
+  name?: string;
+  charge_type: string;
+  account_head: string;
+  rate: number;
+  tax_amount: number;
+  description?: string;
+}
+
+interface Template {
+  name: string;
+  title: string;
+  disabled: number;
+  is_default?: number;
+  taxes: TemplateTax[];
+}
+
+interface InvoiceCharge {
+  charge_type: string; // maps to accountHead in payload
+  amount: string;
+  rate?: string;
+}
+
+interface Totals {
+  subTotal: number;
+  totalTax: number;
+  grandTotal: number;
+}
+
+interface InvoiceChargesTabProps {
+  charges: InvoiceCharge[];
+  currency: string;
+  totals: Totals;
   onAdd: () => void;
   onChange: (index: number, field: string, value: any) => void;
   onRemove: (index: number) => void;
+  // Template props
+  selectedTemplate?: string;
+  onTemplateSelect?: (templateName: string, taxes: TemplateTax[]) => void;
 }
 
-const ITEMS_PER_PAGE = 6;
+// ─── Component ────────────────────────────────────────────────────────────────
 
-const InvoiceChargesTab: React.FC<Props> = ({
-  charges = [],
+const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
+  charges,
   currency,
   totals,
   onAdd,
   onChange,
   onRemove,
+  selectedTemplate = "",
+  onTemplateSelect,
 }) => {
-  const symbol = currencySymbols[currency || ""] || currency || "";
-  const [page, setPage] = useState(0);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [templateError, setTemplateError] = useState<string | null>(null);
+  const [previewExpanded, setPreviewExpanded] = useState(true);
 
-  const cif = totals?.grandTotal || 0;
-  const otherChargesTotal = charges.reduce((sum, ch) => sum + Number(ch.amount || 0), 0);
-  const fob = cif - otherChargesTotal;
-  const totalCount = charges.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
+  // ── Fetch templates once on mount ─────────────────────────────────────────
+
+  const fetchTemplates = useCallback(async () => {
+    setLoadingTemplates(true);
+    setTemplateError(null);
+    try {
+      const res = await getAllTemplates(1, 50);
+      setTemplates(res?.data?.templates ?? []);
+    } catch (err: any) {
+      setTemplateError("Failed to load templates");
+    } finally {
+      setLoadingTemplates(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const maxPage = Math.max(0, totalPages - 1);
-    if (page > maxPage) setPage(maxPage);
-  }, [totalCount]);
+    fetchTemplates();
+  }, [fetchTemplates]);
 
-  useEffect(() => {
-    if (totalCount === 0) return;
-    setPage(Math.floor((totalCount - 1) / ITEMS_PER_PAGE));
-  }, [totalCount]);
+  // ── Derived ───────────────────────────────────────────────────────────────
 
-  const paginatedCharges = charges.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
-  const hasPages = totalCount > ITEMS_PER_PAGE;
+  const activeTemplates = templates.filter((t) => !t.disabled);
+
+  const selectedTemplateObj = templates.find((t) => t.name === selectedTemplate) ?? null;
+
+  const chargesTotal = charges.reduce((sum, ch) => sum + (Number(ch.amount) || 0), 0);
+
+  // CIF = subTotal + charges total + totalTax
+  const cifValue = totals.subTotal + chargesTotal;
+  // FOB = subTotal (Free On Board — before insurance/freight)
+  const fobValue = totals.subTotal;
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (!val) {
+      onTemplateSelect?.("", []);
+      return;
+    }
+    const tpl = templates.find((t) => t.name === val);
+    onTemplateSelect?.(val, tpl?.taxes ?? []);
+    setPreviewExpanded(true);
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full w-full flex gap-4 p-1 items-start">
+    <div className="flex gap-4 items-start max-w-[1600px] mx-auto">
+      {/* ── Left: Template + Charges ── */}
+      <div className="flex-1 flex flex-col gap-4">
 
-      {/* ── LEFT: Main charges table ── */}
-      <div className="flex-1 min-w-0 flex flex-col bg-card border border-theme rounded-xl shadow-sm overflow-hidden">
+        {/* ── Sales Tax Template Selector ── */}
+        <div className="bg-card rounded-lg border border-theme overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-theme">
+            <div className="flex items-center gap-2">
+              <Tag size={14} className="text-primary" />
+              <span className="text-xs font-semibold text-main">Sales Tax Template</span>
+              {selectedTemplateObj && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                  {selectedTemplateObj.title}
+                </span>
+              )}
+            </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-theme bg-app">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Layers className="w-3.5 h-3.5 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold text-main">Shipping &amp; Other Charges</h3>
-              <p className="text-[10px] text-muted mt-0.5">
-                {totalCount === 0 ? "No charges added" : `${totalCount} charge${totalCount !== 1 ? "s" : ""} · Total ${symbol} ${otherChargesTotal.toFixed(2)}`}
-              </p>
-            </div>
+            {selectedTemplateObj && selectedTemplateObj.taxes.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setPreviewExpanded((p) => !p)}
+                className="flex items-center gap-1 text-[10px] text-muted hover:text-main transition-colors bg-transparent border-none cursor-pointer"
+              >
+                {previewExpanded ? (
+                  <>
+                    <ChevronDown size={12} /> Hide details
+                  </>
+                ) : (
+                  <>
+                    <ChevronRight size={12} /> Show details
+                  </>
+                )}
+              </button>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={onAdd}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-[var(--primary-600)] text-white rounded-lg text-[11px] font-medium transition-colors shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add Charge
-          </button>
-        </div>
 
-        {/* Table */}
-        <div className="flex-1 overflow-auto">
-          <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-10">
-              <tr className="border-b border-theme bg-app">
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted uppercase tracking-wider w-12">#</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted uppercase tracking-wider">Charge Name</th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-muted uppercase tracking-wider w-44">
-                  Amount {currency ? `(${currency})` : ""}
-                </th>
-                <th className="w-12" />
-              </tr>
-            </thead>
+          {/* Selector */}
+          <div className="px-4 py-3">
+            {templateError ? (
+              <div className="flex items-center gap-2 text-xs text-danger">
+                <AlertCircle size={13} />
+                {templateError}
+                <button
+                  type="button"
+                  onClick={fetchTemplates}
+                  className="underline bg-transparent border-none cursor-pointer text-xs text-primary"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <select
+                className="w-full border border-theme rounded px-2 py-1.5 text-xs text-main bg-app focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                value={selectedTemplate}
+                onChange={handleTemplateChange}
+                disabled={loadingTemplates}
+              >
+                <option value="">
+                  {loadingTemplates ? "Loading templates..." : "-- Select a Sales Tax Template (optional) --"}
+                </option>
+                {activeTemplates.map((t) => (
+                  <option key={t.name} value={t.name}>
+                    {t.title}
+                    {t.taxes.length > 0 ? ` (${t.taxes.length} charge${t.taxes.length > 1 ? "s" : ""})` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
 
-            <tbody className="divide-y divide-theme">
-              {paginatedCharges.length === 0 ? (
-                <tr>
-                  <td colSpan={4}>
-                    <div className="flex flex-col items-center justify-center py-14 gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-app border border-theme flex items-center justify-center">
-                        <Package className="w-5 h-5 text-muted" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[12px] font-medium text-main">No charges yet</p>
-                        <p className="text-[11px] text-muted mt-0.5">Click <strong>Add Charge</strong> to add shipping or other charges</p>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                paginatedCharges.map((charge, idx) => {
-                  const actualIndex = page * ITEMS_PER_PAGE + idx;
-                  return (
+            {/* Clear template */}
+            {selectedTemplate && (
+              <button
+                type="button"
+                onClick={() => onTemplateSelect?.("", [])}
+                className="mt-1.5 text-[10px] text-muted hover:text-danger transition-colors bg-transparent border-none cursor-pointer"
+              >
+                × Clear template
+              </button>
+            )}
+          </div>
+
+          {/* Template charges preview */}
+          {selectedTemplateObj && selectedTemplateObj.taxes.length > 0 && previewExpanded && (
+            <div className="border-t border-theme">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-primary/5">
+                    <th className="text-left px-4 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
+                      Account Head
+                    </th>
+                    <th className="text-left px-4 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
+                      Charge Type
+                    </th>
+                    <th className="text-right px-4 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
+                      Rate
+                    </th>
+                    <th className="text-right px-4 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="text-left px-4 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
+                      Description
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedTemplateObj.taxes.map((tax, i) => (
                     <tr
-                      key={actualIndex}
-                      className="group hover:bg-app/60 transition-colors"
+                      key={i}
+                      className="border-t border-theme transition-colors hover:bg-primary/5"
+                      style={{ background: i % 2 !== 0 ? "rgba(var(--primary-rgb, 201,125,46),0.03)" : "transparent" }}
                     >
-                      <td className="px-4 py-2.5">
-                        <span className="w-6 h-6 rounded-md bg-app border border-theme flex items-center justify-center text-[10px] font-semibold text-muted">
-                          {actualIndex + 1}
+                      <td className="px-4 py-2 font-medium text-main text-xs">
+                        {tax.account_head}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-border/40 text-muted font-medium">
+                          {tax.charge_type}
                         </span>
                       </td>
-
-                      <td className="px-3 py-2.5">
-                        <input
-                          value={charge.charge_type || ""}
-                          onChange={(e) => onChange(actualIndex, "charge_type", e.target.value)}
-                          className="w-full py-1.5 px-3 border border-theme rounded-lg text-[11px] bg-card text-main
-                                     focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
-                                     hover:border-primary/40 transition-all placeholder:text-muted/40"
-                          placeholder="e.g. Freight, Insurance, Handling…"
-                        />
-                      </td>
-
-                      <td className="px-3 py-2.5">
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-muted font-medium pointer-events-none">
-                            {symbol}
+                      <td className="px-4 py-2 text-right">
+                        {tax.charge_type === "Actual" ? (
+                          <span className="text-muted italic text-[10px]">N/A</span>
+                        ) : (
+                          <span className="font-semibold text-primary text-xs">
+                            {Number(tax.rate).toFixed(2)}%
                           </span>
-                          <input
-                            type="number"
-                            value={charge.amount || ""}
-                            onChange={(e) => onChange(actualIndex, "amount", e.target.value)}
-                            className="w-full py-1.5 pl-7 pr-3 border border-theme rounded-lg text-[11px] bg-card text-main text-right
-                                       focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
-                                       hover:border-primary/40 transition-all no-spinner placeholder:text-muted/40"
-                            placeholder="0.00"
-                          />
-                        </div>
+                        )}
                       </td>
-
-                      <td className="px-3 py-2.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => onRemove(actualIndex)}
-                          className="w-7 h-7 rounded-lg bg-transparent border border-transparent
-                                     text-muted hover:text-danger hover:bg-danger/10 hover:border-danger/20
-                                     flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-                          title="Remove"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      <td className="px-4 py-2 text-right">
+                        {Number(tax.tax_amount) > 0 ? (
+                          <span className="font-semibold text-main text-xs">
+                            {Number(tax.tax_amount).toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className="text-muted text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-muted text-xs">
+                        {tax.description || "—"}
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination footer */}
-        {hasPages && (
-          <div className="px-4 py-2.5 border-t border-theme bg-app flex items-center justify-between">
-            <span className="text-[11px] text-muted">
-              Showing {page * ITEMS_PER_PAGE + 1}–{Math.min((page + 1) * ITEMS_PER_PAGE, totalCount)} of {totalCount}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={page === 0}
-                className="w-7 h-7 flex items-center justify-center rounded-md border border-theme bg-card text-main
-                           disabled:opacity-30 disabled:cursor-not-allowed hover:border-primary/40 transition-all"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setPage(i)}
-                  className={`w-7 h-7 flex items-center justify-center rounded-md text-[11px] font-medium transition-all
-                    ${i === page
-                      ? "bg-primary text-white shadow-sm"
-                      : "border border-theme bg-card text-muted hover:border-primary/40"
-                    }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-                className="w-7 h-7 flex items-center justify-center rounded-md border border-theme bg-card text-main
-                           disabled:opacity-30 disabled:cursor-not-allowed hover:border-primary/40 transition-all"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        )}
-      </div>
+          )}
 
-      {/* ── RIGHT: Summary panel ── */}
-      <div className="w-[200px] shrink-0 flex flex-col gap-3">
-
-        {/* CIF Card */}
-        <div className="bg-card border border-theme rounded-xl shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-theme bg-app flex items-center gap-2">
-            <DollarSign className="w-3.5 h-3.5 text-primary" />
-            <h4 className="text-[11px] font-semibold text-main">Summary</h4>
-          </div>
-
-          <div className="px-4 py-3 flex flex-col gap-2.5">
-
-            {/* CIF */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">CIF Value</p>
-                <p className="text-[9px] text-muted/60 mt-0.5">Cost + Insurance + Freight</p>
-              </div>
-              <span className="text-[12px] font-bold text-main">
-                {symbol}{cif.toFixed(2)}
-              </span>
+          {selectedTemplateObj && selectedTemplateObj.taxes.length === 0 && (
+            <div className="px-4 pb-3 text-xs text-muted italic">
+              This template has no charges defined.
             </div>
-
-            {/* Charges breakdown */}
-            {charges.filter(ch => Number(ch.amount || 0) > 0).length > 0 && (
-              <div className="space-y-1.5 pt-1 border-t border-theme">
-                {charges.map((ch, idx) => {
-                  const amount = Number(ch.amount || 0);
-                  if (!amount) return null;
-                  return (
-                    <div key={idx} className="flex items-center justify-between gap-1">
-                      <span className="text-[10px] text-muted truncate max-w-[100px]" title={ch.charge_type}>
-                        − {ch.charge_type || "Charge"}
-                      </span>
-                      <span className="text-[10px] text-muted shrink-0 font-medium">
-                        {symbol}{amount.toFixed(2)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Divider + total deductions */}
-            {otherChargesTotal > 0 && (
-              <div className="flex items-center justify-between pt-1 border-t border-dashed border-theme">
-                <span className="text-[10px] text-muted">Total Deductions</span>
-                <span className="text-[10px] font-semibold text-danger">
-                  −{symbol}{otherChargesTotal.toFixed(2)}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* FOB Result Card */}
-        <div className="bg-primary rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-1.5 mb-3">
-            <TrendingDown className="w-3.5 h-3.5 text-white/70" />
-            <p className="text-[10px] font-semibold text-white/80 uppercase tracking-wide">FOB Value</p>
-          </div>
-          <p className="text-[9px] text-white/60 mb-1">Free On Board</p>
-          <p className="text-[20px] font-bold text-white leading-none">
-            {symbol}{fob.toFixed(2)}
-          </p>
-          {otherChargesTotal > 0 && (
-            <p className="text-[9px] text-white/60 mt-2">
-              CIF {symbol}{cif.toFixed(2)} − charges {symbol}{otherChargesTotal.toFixed(2)}
-            </p>
           )}
         </div>
 
+        {/* ── Manual Charges Table ── */}
+        <div className="bg-card rounded-lg border border-theme overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-theme">
+            <div className="flex items-center gap-2">
+              <Layers size={14} className="text-primary" />
+              <span className="text-xs font-semibold text-main">
+                Shipping &amp; Other Charges
+              </span>
+              <span className="text-[10px] text-muted">
+                {charges.length} charge{charges.length !== 1 ? "s" : ""} · Total{" "}
+                {chargesTotal.toFixed(2)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onAdd}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-primary text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
+            >
+              <Plus size={12} />
+              Add Charge
+            </button>
+          </div>
+
+          {/* Table */}
+          {charges.length > 0 ? (
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-primary/5">
+                  <th className="text-center px-3 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider w-10">
+                    #
+                  </th>
+                  <th className="text-left px-3 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
+                    Charge Name / Account Head
+                  </th>
+                  <th className="text-right px-3 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider w-40">
+                    Amount
+                  </th>
+                  <th className="w-10" />
+                </tr>
+              </thead>
+              <tbody>
+                {charges.map((charge, idx) => (
+                  <tr
+                    key={idx}
+                    className="border-t border-theme group transition-colors hover:bg-primary/5"
+                  >
+                    {/* Row number */}
+                    <td className="px-3 py-2 text-center">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-semibold bg-border/50 text-muted">
+                        {idx + 1}
+                      </span>
+                    </td>
+
+                    {/* Charge name */}
+                    <td className="px-3 py-2">
+                      <input
+                        type="text"
+                        value={charge.charge_type}
+                        onChange={(e) => onChange(idx, "charge_type", e.target.value)}
+                        placeholder="e.g. Freight, Insurance, Handling..."
+                        className="w-full bg-transparent border border-theme rounded px-2 py-1 text-xs text-main placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                      />
+                    </td>
+
+                    {/* Amount */}
+                    <td className="px-3 py-2">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={charge.amount}
+                          onChange={(e) => onChange(idx, "amount", e.target.value)}
+                          placeholder="0.00"
+                          min="0"
+                          step="0.01"
+                          className="w-full bg-transparent border border-theme rounded px-2 py-1 text-xs text-right text-main placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                        />
+                      </div>
+                    </td>
+
+                    {/* Delete */}
+                    <td className="px-2 py-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => onRemove(idx)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-danger/10 text-muted hover:text-danger bg-transparent border-none cursor-pointer"
+                        title="Remove charge"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+
+              {/* Totals footer */}
+              <tfoot>
+                <tr className="border-t-2 border-theme bg-primary/5">
+                  <td colSpan={2} className="px-3 py-2 text-right text-xs font-semibold text-muted">
+                    Total Charges
+                  </td>
+                  <td className="px-3 py-2 text-right text-xs font-bold text-primary">
+                    {chargesTotal.toFixed(2)}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          ) : (
+            <div className="px-4 py-8 flex flex-col items-center gap-2 text-center">
+              <Layers size={28} className="text-muted/30" />
+              <p className="text-xs text-muted">No charges added yet.</p>
+              <button
+                type="button"
+                onClick={onAdd}
+                className="mt-1 text-xs text-primary underline bg-transparent border-none cursor-pointer"
+              >
+                Add a charge
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Right: Summary panel ── */}
+      <div className="w-[220px] shrink-0 flex flex-col gap-3 sticky top-0">
+        {/* CIF */}
+        <div className="bg-card border border-theme rounded-lg p-3">
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-primary text-sm">$</span>
+            <span className="text-xs font-semibold text-main">Summary</span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted">Subtotal</span>
+              <span className="font-medium text-main">{totals.subTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted">Tax</span>
+              <span className="font-medium text-main">{totals.totalTax.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted">Charges</span>
+              <span className="font-medium text-main">{chargesTotal.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* CIF Value */}
+        <div className="bg-card border border-theme rounded-lg p-3">
+          <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-0.5">
+            CIF Value
+          </p>
+          <p className="text-[10px] text-muted mb-2">Cost + Insurance + Freight</p>
+          <p className="text-lg font-bold text-main">{cifValue.toFixed(2)}</p>
+        </div>
+
+        {/* FOB Value */}
+        <div className="rounded-lg p-3" style={{ background: "var(--primary, #c97d2e)" }}>
+          <div className="flex items-center gap-1 mb-1">
+            <svg
+              className="w-3 h-3 text-white/80"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+              <polyline points="17 6 23 6 23 12" />
+            </svg>
+            <p className="text-[10px] font-bold text-white/90 uppercase tracking-wider">
+              FOB Value
+            </p>
+          </div>
+          <p className="text-[10px] text-white/70 mb-1">Free On Board</p>
+          <p className="text-xl font-bold text-white">{fobValue.toFixed(2)}</p>
+        </div>
+
+        {/* Grand total */}
+        <div className="bg-card border border-theme rounded-lg p-3">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold text-main">Grand Total</span>
+            <span className="text-sm font-bold text-primary">
+              {totals.grandTotal.toFixed(2)}
+            </span>
+          </div>
+          {currency && (
+            <p className="text-[10px] text-muted mt-0.5 text-right">{currency}</p>
+          )}
+        </div>
       </div>
     </div>
   );

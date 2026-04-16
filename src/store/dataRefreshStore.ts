@@ -1,0 +1,89 @@
+import { create } from "zustand";
+
+interface DataRefreshState {
+  refreshFlags: Record<string, boolean>;
+  subscribers: Record<string, Subscriber[]>;
+  triggerRefresh: (key: string) => void;
+  subscribeToRefresh: (key: string, callback: () => void) => () => void;
+  clearRefresh: (key: string) => void;
+}
+
+type Subscriber = () => void;
+
+export const useDataRefreshStore = create<DataRefreshState>((set, get) => ({
+  refreshFlags: {},
+  subscribers: {},
+
+  triggerRefresh: (key: string) => {
+    set((state) => ({
+      refreshFlags: { ...state.refreshFlags, [key]: true },
+    }));
+    
+    const subscribers = get().subscribers[key];
+    if (subscribers) {
+      subscribers.forEach((callback) => callback());
+    }
+    
+    setTimeout(() => {
+      set((state) => ({
+        refreshFlags: { ...state.refreshFlags, [key]: false },
+      }));
+    }, 100);
+  },
+
+  subscribeToRefresh: (key: string, callback: Subscriber) => {
+    set((state) => ({
+      subscribers: {
+        ...state.subscribers,
+        [key]: [...(state.subscribers[key] || []), callback],
+      },
+    }));
+
+    return () => {
+      set((state) => ({
+        subscribers: {
+          ...state.subscribers,
+          [key]: (state.subscribers[key] || []).filter((cb) => cb !== callback),
+        },
+      }));
+    };
+  },
+
+  clearRefresh: (key: string) => {
+    set((state) => ({
+      refreshFlags: { ...state.refreshFlags, [key]: false },
+    }));
+  },
+}));
+
+// Pre-defined refresh keys for consistent usage across the app
+export const REFRESH_KEYS = {
+  // CRM
+  CUSTOMER_LIST: "customer_list",
+  CUSTOMER_DETAIL: "customer_detail",
+  
+  // Procurement
+  SUPPLIER_LIST: "supplier_list",
+  SUPPLIER_DETAIL: "supplier_detail",
+  PURCHASE_ORDER_LIST: "purchase_order_list",
+  PURCHASE_INVOICE_LIST: "purchase_invoice_list",
+  
+  // Sales
+  INVOICE_LIST: "invoice_list",
+  QUOTATION_LIST: "quotation_list",
+  PROFORMA_LIST: "proforma_list",
+  
+  // Inventory
+  ITEM_LIST: "item_list",
+  ITEM_DETAIL: "item_detail",
+  ITEM_CATEGORY_LIST: "item_category_list",
+  WAREHOUSE_LIST: "warehouse_list",
+  TAX_TEMPLATE_LIST: "tax_template_list",
+  TAX_CATEGORY_LIST: "tax_category_list",
+  SALES_TAX_LIST: "sales_tax_list",
+  
+  // Payment
+  PAYMENT_LIST: "payment_list",
+} as const;
+
+export type RefreshKey = typeof REFRESH_KEYS[keyof typeof REFRESH_KEYS];

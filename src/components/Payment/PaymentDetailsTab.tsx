@@ -101,6 +101,13 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   // ── Clear GL + mode when paymentType or partyType changes ─────────────────
   const prevRef = useRef({ paymentType, partyType });
+  useEffect(() => {
+  if (!form.mode && modeOptions.length > 0) {
+    onFormChange({
+      mode: modeOptions[0].value,
+    });
+  }
+}, [modeOptions]);
 
   useEffect(() => {
     const prev = prevRef.current;
@@ -111,7 +118,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         currencyFrom: "",
         glTo: "",
         currencyTo: "",
-        mode: "",
+        
         ...(paymentType === "Internal Transfer"
           ? { partyType: "", partyName: "", partyId: "", allocations: {}, selectedInvoices: [], allocatedAmount: 0 }
           : {}),
@@ -219,7 +226,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     const run = async () => {
       const [details] = await Promise.all([
         fetchPartyDetails(
-          form.partyName,
+          form.partyId,
           form.partyType as
           | "Supplier"
           | "Customer"
@@ -295,7 +302,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         return;
       }
 
-      onFormChange({ partyName: option.label });
+      onFormChange({ partyId: option.value,  partyName: option.label});
 
       if (partyType !== "Supplier" && partyType !== "Customer") return;
 

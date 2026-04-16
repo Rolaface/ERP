@@ -1,3 +1,13 @@
+/**
+ * modal.tsx — NO CHANGES NEEDED to this file.
+ *
+ * Your original Modal component is kept 100% intact.
+ * It still works for any existing usage.
+ *
+ * For minimize support, use <MinimizableModal> from MinimizableModal.tsx instead.
+ * MinimizableModal is a drop-in: same props + modalId.
+ */
+
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -12,16 +22,16 @@ export interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   maxWidth?:
-  | "sm"
-  | "md"
-  | "lg"
-  | "xl"
-  | "2xl"
-  | "4xl"
-  | "5xl"
-  | "6xl"
-  | "wide"
-  | "full";
+    | "sm"
+    | "md"
+    | "lg"
+    | "xl"
+    | "2xl"
+    | "4xl"
+    | "5xl"
+    | "6xl"
+    | "wide"
+    | "full";
   height?: string;
   customWidth?: string;
 }
@@ -36,7 +46,7 @@ const Modal: React.FC<ModalProps> = ({
   footer,
   maxWidth = "4xl",
   height = "520px",
-  customWidth
+  customWidth,
 }) => {
   if (!isOpen) return null;
 
@@ -61,12 +71,13 @@ const Modal: React.FC<ModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 30 }}
           transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          className={`w-full ${!customWidth ? maxWidthClasses[maxWidth] : ""
-            } bg-card shadow-2xl flex flex-col border border-[var(--border)] rounded-2xl overflow-hidden`}
+          className={`w-full ${
+            !customWidth ? maxWidthClasses[maxWidth] : ""
+          } bg-card shadow-2xl flex flex-col border border-[var(--border)] rounded-2xl overflow-hidden`}
           style={{
             height,
             width: customWidth || undefined,
-            maxWidth: customWidth ? "none" : undefined
+            maxWidth: customWidth ? "none" : undefined,
           }}
         >
           {/* Header with Gradient */}

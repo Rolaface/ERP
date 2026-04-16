@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 
-import Swal from "sweetalert2";
 import {
   showApiError,
   showSuccess,
   showLoading,
   closeSwal,
 } from "../../../utils/alert";
+import { fireManagedSwal } from "../../../utils/swalManager";
 import {
   getAllEmployees,
   getEmployeeById,
@@ -113,7 +113,7 @@ const handleEdit = async (id: string, e: React.MouseEvent) => {
 const handleDelete = async (id: string, e: React.MouseEvent) => {
   e.stopPropagation();
 
-  const result = await Swal.fire({
+  const result = await fireManagedSwal({
     title: "Are you sure?",
     text: "This employee will be permanently deleted.",
     icon: "warning",

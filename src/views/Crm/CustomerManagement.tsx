@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import CustomerDetailView from "./CustomerDetailView";
 import {
   showLoading,
@@ -7,40 +8,47 @@ import {
   closeSwal,
 } from "../../utils/alert";
 import {
-  getAllCustomers,
   deleteCustomerById,
+  getAllCustomers,
   getCustomerByCustomerCode,
 } from "../../api/customerApi";
-
-import CustomerModal from "../../components/crm/CustomerModal";
-
 import type { CustomerSummary, CustomerDetail } from "../../types/customer";
-
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
-
 import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
-import Swal from "sweetalert2";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
-import Tooltip from "../../components/Tooltip";
+import { fireManagedSwal } from "../../utils/swalManager";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+
+type OutletContextType = {
+  openCustomerCreate: () => void;
+  openCustomerEdit: (id: string, data: any) => void;
+};
 
 interface Props {
   onAdd: () => void;
 }
 
 const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
+  const { 
+    openCustomerCreate, 
+    openCustomerEdit
+  } =
+    useOutletContext<OutletContextType>();
+
+  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerDetail | null>(null);
   const [custLoading, setCustLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editCustomer, setEditCustomer] = useState<CustomerDetail | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -50,41 +58,48 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [taxCategory, setTaxCategory] = useState<string>("");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<
-    any | null
+    CustomerSummary | null
   >(null);
 
-  const fetchCustomers = async () => {
-    try {
-      setCustLoading(true);
+const fetchCustomers = async () => {
+  try {
+    setCustLoading(true);
 
-      const response = await getAllCustomers(
-        page,
-        pageSize,
-        taxCategory || undefined,
-      );
+    const response = await getAllCustomers(
+      page,
+      pageSize,
+      taxCategory || undefined
+    );
 
-      setCustomers(response.data);
-      setTotalPages(response.pagination?.total_pages || 1);
-      setTotalItems(response.pagination?.total || 1);
-    } catch (error) {
-      console.error("Error loading customers:", error);
-      showApiError(error);
-    } finally {
-      setCustLoading(false);
-      setInitialLoad(false);
-    }
-  };
+    setCustomers(response?.data || []);
+    setTotalPages(response?.pagination?.total_pages || 1);
+    setTotalItems(response?.pagination?.total || 0);
 
+  } catch (error) {
+    console.error("Error loading customers:", error);
+    showApiError(error);
+  } finally {
+    setCustLoading(false);
+    setInitialLoad(false);
+  }
+};
   useEffect(() => {
     fetchCustomers();
   }, [page, pageSize, taxCategory]);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.CUSTOMER_LIST, () => {
+      fetchCustomers();
+    });
+    return () => unsubscribe();
+  }, [subscribeToRefresh, fetchCustomers]);
+
   const fetchAllCustomers = async () => {
     try {
-      const resp = await getAllCustomers(1, 1000, taxCategory);
-      setAllCustomers(resp.data || []);
-    } catch (err) {
-      console.error("Error loading all customers:", err);
+      const response = await getAllCustomers(1, 1000, taxCategory);
+      setAllCustomers(response?.data || []);
+    } catch (error) {
+      console.error("Error loading all customers:", error);
     }
   };
 
@@ -92,6 +107,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     if (!allCustomers.length) {
       await fetchAllCustomers();
     }
+  };
+
+  const handleAddCustomer = () => {
+    openCustomerCreate();
   };
 
   const handleMakePayment = (customer: CustomerSummary) => {
@@ -102,7 +121,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const handleDelete = async (customerId: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    const confirm = await Swal.fire({
+    const confirm = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
       text: `Delete customer ${customerId}?`,
@@ -112,17 +131,15 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       confirmButtonText: "Yes, delete",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!confirm.isConfirmed) {
+      return;
+    }
 
     try {
       showLoading("Deleting Customer...");
-
       await deleteCustomerById(customerId);
-
       closeSwal();
-
-      setCustomers((prev) => prev.filter((c) => c.id !== customerId));
-
+      triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
       showSuccess("Customer deleted successfully.");
     } catch (error) {
       closeSwal();
@@ -130,46 +147,45 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     }
   };
 
-  const handleAddCustomer = () => {
-    setEditCustomer(null);
-    setShowModal(true);
-  };
-
   const handleEditCustomer = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+
     try {
+      showLoading("Loading customer...");
       const customer = await getCustomerByCustomerCode(id);
-      setEditCustomer(customer.data ?? customer);
-      setShowModal(true);
+      closeSwal();
+      openCustomerEdit(id, customer.data ?? customer.message?.data ?? customer);
     } catch (error) {
+      closeSwal();
       console.error("Failed to fetch customer:", error);
       showApiError(error);
     }
   };
 
   const handleCustomerSaved = async () => {
-    setShowModal(false);
-    setEditCustomer(null);
     await fetchCustomers();
-    showSuccess(editCustomer ? "Customer updated!" : "Customer created!");
   };
 
-  const handleRowClick = async (customer: CustomerSummary) => {
+  const handleRowClick = async (customerOrId: CustomerSummary | string) => {
     try {
       setCustLoading(true);
-
-      //  Ensure sidebar data loaded
       await ensureAllCustomers();
 
-      //  Fetch full customer detail
-      const res = await getCustomerByCustomerCode(customer.id);
-      const fullCustomer = res.data ?? res;
+      const customerId =
+        typeof customerOrId === "string" ? customerOrId : customerOrId.id;
+
+      const response = await getCustomerByCustomerCode(customerId);
+      const fullCustomer = response?.message?.data ?? response?.data;
+
+      if (!fullCustomer) {
+        throw new Error("Customer not found");
+      }
 
       setSelectedCustomer(fullCustomer);
       setViewMode("detail");
-    } catch (err) {
-      console.error("Failed to load customer detail:", err);
-      showApiError(err);
+    } catch (error) {
+      console.error("Failed to load customer detail:", error);
+      showApiError(error);
     } finally {
       setCustLoading(false);
     }
@@ -180,91 +196,103 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     setSelectedCustomer(null);
   };
 
-  // columns definition for Table component
   const columns: Column<CustomerSummary>[] = [
-
     {
-  key: "id",
-  header: "Customer ID",
-  align: "left",
-  render: (c: CustomerSummary) => (
-    <Tooltip content={c.id}>
-      <span className="cursor-pointer">{c.id}</span>
-    </Tooltip>
-  ),
-},
-{
-  key: "name",
-  header: "Name",
-  align: "left",
-  render: (c: CustomerSummary) => (
-    <Tooltip content={c.name}>
-      <span className="cursor-pointer">{c.name}</span>
-    </Tooltip>
-  ),
-},
+      key: "id",
+      header: "Customer ID",
+      align: "left",
+      maxWidth: "120px",
+      render: (customer) => (
+        <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.id}
+        </span>
+      ),
+    },
+    {
+      key: "name",
+      header: "Name",
+      align: "left",
+      maxWidth: "220px",
+      render: (customer) => (
+        <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.name}
+        </span>
+      ),
+    },
     {
       key: "type",
       header: "Type",
       align: "left",
-      render: (c: CustomerSummary) => (
-        <Tooltip content={c.type ?? "—"}>
-          <span>{c.type ?? "—"}</span>
-        </Tooltip>
+      maxWidth: "100px",
+      render: (customer) => (
+        <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.type ?? "-"}
+        </span>
+      ),
+    },
+    {
+      key: "tpin",
+      header: "TPIN",
+      align: "left",
+      maxWidth: "100px",
+      render: (customer) => (
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.tpin}
+        </code>
       ),
     },
     {
       key: "customerTaxCategory",
-      header: "TaxCategory",
+      header: "Tax Category",
       align: "left",
-      render: (c: CustomerSummary) => (
-        <Tooltip content={c.customerTaxCategory ?? "—"}>
-          <span>{c.customerTaxCategory ?? "—"}</span>
-        </Tooltip>
+      maxWidth: "120px",
+      render: (customer) => (
+        <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.customerTaxCategory ?? "-"}
+        </span>
       ),
     },
     {
       key: "currency",
       header: "Currency",
       align: "left",
-      render: (c: CustomerSummary) => (
-        <Tooltip content={c.currency}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {c.currency}
-          </code>
-        </Tooltip>
+      maxWidth: "80px",
+      render: (customer) => (
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.currency}
+        </code>
       ),
     },
     {
-      key: "onboardingBalance",
-      header: "Onboard Balance",
-      align: "right",
-      render: (c: CustomerSummary) => (
-        <Tooltip content={c.onboardingBalance}>
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {c.onboardingBalance}
-          </code>
-        </Tooltip>
+      key: "status",
+      header: "Status",
+      align: "left",
+      maxWidth: "90px",
+      render: (customer) => (
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+          {customer.status}
+        </code>
       ),
     },
     {
       key: "actions",
       header: "Actions",
       align: "center",
-      render: (c: CustomerSummary) => (
+      width: "100px",
+      render: (customer) => (
         <ActionGroup>
           <ActionButton
             type="view"
-            onClick={() => handleRowClick(c)}
+            onClick={() => handleRowClick(customer)}
             iconOnly
           />
           <ActionMenu
-            onEdit={(e) => handleEditCustomer(c.id, e as any)}
-            onDelete={(e) => handleDelete(c.id, e as any)}
+            onEdit={(e) => handleEditCustomer(customer.id, e as any)}
+            onDelete={(e) => handleDelete(customer.id, e as any)}
             customActions={[
               {
                 label: "Receive Payment",
-                onClick: () => handleMakePayment(c),
+                onClick: () => handleMakePayment(customer),
               },
             ]}
           />
@@ -274,47 +302,45 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   ];
 
   return (
-    <div className="p-8">
+    <div>
       {viewMode === "table" ? (
-        <>
-          <Table
-            columns={columns}
-            data={customers}
-            showToolbar
-            loading={custLoading || initialLoad}
-            onPageSizeChange={(size) => setPageSize(size)}
-            pageSizeOptions={[10, 25, 50, 100]}
-            searchValue={searchTerm}
-            onSearch={setSearchTerm}
-            enableAdd
-            addLabel="Add Customer"
-            onAdd={handleAddCustomer}
-            enableColumnSelector
-            currentPage={page}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={totalItems}
-            onPageChange={setPage}
-            extraFilters={
-              <div>
-                <FilterSelect
-                  value={taxCategory}
-                  onChange={(e) => {
-                    setPage(1);
-                    setTaxCategory(e.target.value);
-                  }}
-                  options={[
-                    { label: "Non-Export", value: "Non-Export" },
-                    { label: "Export", value: "Export" },
-                  ]}
-                />
-              </div>
-            }
-          />
-        </>
+        <Table
+          columns={columns}
+          data={customers}
+          showToolbar
+          loading={custLoading || initialLoad}
+          onPageSizeChange={(size) => setPageSize(size)}
+          pageSizeOptions={[10, 25, 50, 100]}
+          searchValue={searchTerm}
+          onSearch={setSearchTerm}
+          enableAdd
+          addLabel="Add Customer"
+          onAdd={handleAddCustomer}
+          enableColumnSelector
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={setPage}
+          extraFilters={
+            <div>
+              <FilterSelect
+                value={taxCategory}
+                onChange={(e) => {
+                  setPage(1);
+                  setTaxCategory(e.target.value);
+                }}
+                options={[
+                  { label: "Non-Export", value: "Non-Export" },
+                  { label: "Export", value: "Export" },
+                ]}
+              />
+            </div>
+          }
+        />
       ) : selectedCustomer ? (
         <CustomerDetailView
-          customer={selectedCustomer}
+          customerId={selectedCustomer.id}
           customers={allCustomers}
           onBack={handleBack}
           onCustomerSelect={handleRowClick}
@@ -323,21 +349,16 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         />
       ) : null}
 
-      <CustomerModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditCustomer(null);
-        }}
-        onSubmit={handleCustomerSaved}
-        initialData={editCustomer}
-        isEditMode={!!editCustomer}
-      />
       <PaymentEntryModal
         isOpen={paymentModalOpen}
         onClose={() => {
           setPaymentModalOpen(false);
           setSelectedCustomerForPayment(null);
+        }}
+        onSuccess={async () => {
+          setPaymentModalOpen(false);
+          setSelectedCustomerForPayment(null);
+          await handleCustomerSaved();
         }}
         defaultValues={
           selectedCustomerForPayment
