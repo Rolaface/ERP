@@ -46,8 +46,6 @@ const BenefitsSection: React.FC = () => {
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md">
 
-
-
           <h2 className="text-[32px] md:text-[38px] font-semibold leading-snug text-main">
             Run your business with clarity, control, and confidence
           </h2>
@@ -67,11 +65,11 @@ const BenefitsSection: React.FC = () => {
             return (
               <div
                 key={i}
-                className="group card card-hover flex flex-col gap-3 p-[calc(var(--density-gap)*2)]"
+                className="group card card-hover flex flex-col gap-3 p-[calc(var(--density-gap)*2)] bg-white"
               >
 
                 {/* ICON */}
-                <div className="relative w-10 h-10 rounded-[var(--density-radius)] bg-card border border-theme flex items-center justify-center">
+                <div className="relative w-10 h-10 rounded-[var(--density-radius)] bg-white border border-theme flex items-center justify-center">
 
                   {/* Glow */}
                   <div className="absolute inset-0 bg-primary/10 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[var(--density-radius)]"></div>
