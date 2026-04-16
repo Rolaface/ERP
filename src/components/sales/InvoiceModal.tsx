@@ -304,6 +304,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                         value={formData.exchangeRt || "1"}
                         onChange={actions.handleInputChange}
                         className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                        disabled
                       />
                       {!!ui.exchangeRateError && (
                         <div className="mt-1 text-[10px] text-danger">

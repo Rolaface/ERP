@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { loginApi, logoutApi, AuthUser } from "../api/authService";
 import { useCompanyStore } from "../store/companyStore";
+import { getCompanyById } from "../api/companySetupApi";
+
 
 const SID_KEY = "session_id";
 
