@@ -211,7 +211,7 @@ const CustomerDetailView: React.FC<Props> = ({
         );
       case "quotations":
         return (
-          <button onClick={() => openQuotationCreate(true)}
+          <button onClick={() => openQuotationCreate()}
             className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
             <Plus size={13} /> New Quotation
           </button>
