@@ -97,8 +97,30 @@ export async function cancelJournalEntry(id: string): Promise<any> {
   return resp.data;
 }
 
-export async function getComponentById(id: string): Promise<any> {
+// export async function getComponentById(id: string): Promise<any> {
+//   const url = `${JournalEntryAPI.getByIdOnly}/${encodeURIComponent(id)}`;
+//   const resp: AxiosResponse = await api.get(url);
+//   return resp.data;
+// }
+// export async function getComponentById(id: string, fields?: string[]): Promise<any> {
+//    const url = `${JournalEntryAPI.getByIdOnly}/${encodeURIComponent(id)}`;
+   
+//    const config = fields ? { params: { fields: JSON.stringify(fields) } } : {};
+   
+// const resp: AxiosResponse = await api.get(url, config);
+//  return resp.data;
+// }
+export async function getComponentById(id: string, fields?: string[]): Promise<any> {
   const url = `${JournalEntryAPI.getByIdOnly}/${encodeURIComponent(id)}`;
-  const resp: AxiosResponse = await api.get(url);
+    const params: any = {
+    limit_page_length: 0, 
+  };
+
+  if (fields) {
+    params.fields = JSON.stringify(fields);
+  }
+
+  const resp: AxiosResponse = await api.get(url, { params });
   return resp.data;
 }
+

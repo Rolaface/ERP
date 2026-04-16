@@ -163,9 +163,9 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-3 py-2 font-medium w-48">Account</th>
-                    <th className="px-3 py-2 font-medium w-24">CCY</th>
+                    <th className="px-3 py-2 font-medium w-14">CCY</th>
                     <th className="px-3 py-2 font-medium w-20">Type</th> 
-                    <th className="px-3 py-2 font-medium w-32">Amount</th>
+                    <th className="px-3 py-2 font-medium w-28">Amount</th>
                     <th className="px-3 py-2 font-medium w-32">Party Type</th>
                     <th className="px-3 py-2 font-medium w-48">Party</th>
                     <th className="px-3 py-2 font-medium w-10">Exc. Rate</th>
@@ -197,7 +197,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                              disabled={isReadOnly}
                           />
                         </td>
-                        <td className="px-2 py-1">
+                        {/* <td className="px-2 py-1">
                           <ModalSelect 
                              label="" 
                              name={`ccy-${actualIndex}`} 
@@ -206,7 +206,18 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                              options={[{ label: "Select", value: "" }, ...currencyOptions]}
                              disabled={isReadOnly}
                           />
-                        </td>
+                        </td> */}
+                        <td className="px-2 py-1">
+  <ModalInput 
+     label="" 
+     name={`ccy-${actualIndex}`} 
+     value={entry.ccy} 
+     onChange={() => {}} // Empty function since it's read-only
+     disabled={true} // Permanently disabled so users cannot edit it
+     placeholder="CCY"
+     className="w-full"
+  />
+</td>
                         <td className="px-2 py-1">
                           <ModalSelect 
                              label="" 
@@ -228,6 +239,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                              value={entry.amount} 
                              onChange={(e) => handleEntryChange(actualIndex, 'amount', e.target.value)} 
                              disabled={isReadOnly}
+                             className="w-full"
                           />
                         </td>
                         <td className="px-2 py-1">
@@ -313,7 +325,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
         </div>
 
         {/* BOTTOM SECTION */}
-        <div className="flex justify-between items-center bg-gray-50 p-4 rounded-md border border-gray-200 mt-2">
+        {/* <div className="flex justify-between items-center bg-gray-50 p-4 rounded-md border border-gray-200 mt-2">
           <div className="flex flex-col">
             <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Debit</span>
             <span className="text-lg font-bold text-main">{totals.debit.toFixed(2)}</span>
@@ -322,6 +334,36 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
             <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Credit</span>
             <span className="text-lg font-bold text-main">{totals.credit.toFixed(2)}</span>
           </div>
+        </div> */}
+        {/* BOTTOM SECTION */}
+        <div className="flex justify-end items-center gap-12 bg-gray-50 p-4 rounded-md border border-gray-200 mt-2">
+          
+          <div className="flex flex-col text-right">
+            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Debit</span>
+            <span className="text-lg font-bold text-main">{totals.debit.toFixed(2)}</span>
+          </div>
+          
+          <div className="flex flex-col text-right">
+            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Credit</span>
+            <span className="text-lg font-bold text-main">{totals.credit.toFixed(2)}</span>
+          </div>
+
+          {/* Vertical Divider */}
+          <div className="h-10 border-l border-gray-300"></div>
+
+          <div className="flex flex-col text-right min-w-[120px]">
+            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Net Balance</span>
+            <span 
+              className={`text-lg font-bold ${
+                Math.abs(totals.debit - totals.credit) > 0.001 
+                  ? "text-red-500" 
+                  : "text-green-600"
+              }`}
+            >
+              {Math.abs(totals.debit - totals.credit).toFixed(2)}
+            </span>
+          </div>
+          
         </div>
 
       </div>
