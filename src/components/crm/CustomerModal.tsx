@@ -292,48 +292,47 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     error={errors.contactEmail}
                   />
 
-                  <div className="flex flex-col min-w-0">
-                    <span className="block text-[10px] font-medium text-main mb-1">
-                      Mobile <span className="text-danger">*</span>
-                    </span>
-                    <div className="flex">
-                      <input
-                        name="mobileCode"
-                        value={primaryContact?.mobileCode ?? ""}
-                        onChange={handlePrimaryContactChange}
-                        placeholder="+"
-                        className={[
-                          "w-[50px] py-1 px-2 border rounded-l text-[11px] text-main bg-card transition-all",
-                          errors.contactMobile
-                            ? "border-danger"
-                            : "border-[var(--border)] hover:border-primary/40",
-                        ].join(" ")}
-                      />
-                      <input
-                        name="mobileCode"
-                        value={primaryContact?.mobileCode || "+"}
-                        onChange={handlePrimaryContactChange}
-                        onBlur={(e) => {
-                          if (!e.target.value.startsWith("+")) {
-                            handlePrimaryContactChange({
-                              target: {
-                                name: "mobileCode",
-                                value: "+" + e.target.value,
-                              },
-                            });
-                          }
-                        }}
-                        maxLength={5}
-                        className="w-[60px] py-1 px-2 border rounded-l text-[11px]"
-                      />
-                    </div>
-                    {errors.contactMobile && (
-                      <span className="text-[10px] text-danger mt-1">
-                        {errors.contactMobile}
-                      </span>
-                    )}
-                  </div>
+                 <div className="flex flex-col min-w-0">
+  <span className="block text-[10px] font-medium text-main mb-1">
+    Mobile <span className="text-danger">*</span>
+  </span>
 
+  <div className="flex">
+    {/* Country Code */}
+    <input
+      name="mobileCode"
+      value={primaryContact?.mobileCode ?? "+"}
+      onChange={handlePrimaryContactChange}
+      onBlur={(e) => {
+        if (!e.target.value.startsWith("+")) {
+          handlePrimaryContactChange({
+            target: {
+              name: "mobileCode",
+              value: "+" + e.target.value,
+            },
+          });
+        }
+      }}
+      maxLength={5}
+      className="w-[60px] py-1 px-2 border rounded-l text-[11px]"
+    />
+
+    {/* Actual Mobile Number */}
+    <input
+      name="mobileNumber"
+     value={primaryContact?.mobileNumber ?? ""}
+      onChange={handlePrimaryContactChange}
+      placeholder="Enter number"
+      className="flex-1 py-1 px-2 border rounded-r text-[11px]"
+    />
+  </div>
+
+  {errors.contactMobile && (
+    <span className="text-[10px] text-danger mt-1">
+      {errors.contactMobile}
+    </span>
+  )}
+</div>
                   <CustomerGroupSearchSelect
                     value={form.customerGroup}
                     onChange={(value) =>
