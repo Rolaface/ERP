@@ -25,19 +25,27 @@ const problems = [
 
 const ProblemSection: React.FC = () => {
   return (
-    <section className="section section-default">
+    <section className="section section-default relative overflow-hidden">
+
+      {/* Subtle Background Enhancement */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgba(220,38,38,0.04)] pointer-events-none"></div>
 
       <div className="container-app">
 
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md">
 
-          <h2 className="text-[28px] md:text-[34px] font-semibold leading-snug text-main">
-            Running your business shouldn’t feel this messy
+          {/* Label */}
+          <p className="text-[12px] text-muted font-medium tracking-wide">
+            The Problem
+          </p>
+
+          <h2 className="text-[30px] md:text-[36px] font-semibold leading-snug text-main">
+            Running your business shouldn’t feel this chaotic
           </h2>
 
           <p className="text-body text-muted">
-            Yet most businesses still rely on disconnected tools, manual work, and guesswork.
+            But most businesses still rely on disconnected tools, manual work, and constant guesswork.
           </p>
 
         </div>
@@ -45,10 +53,10 @@ const ProblemSection: React.FC = () => {
         {/* MAIN GRID */}
         <div className="grid lg:grid-cols-2 gap-[calc(var(--density-gap)*3)] items-start mt-[calc(var(--density-gap)*3)]">
 
-          {/* LEFT: SIGNAL PANEL (CLEAN VISUAL) */}
+          {/* LEFT: SIGNAL PANEL (UPGRADED) */}
           <div className="relative">
 
-            <div className="bg-card border border-theme rounded-[calc(var(--density-radius)*1.5)] p-[calc(var(--density-gap)*2)] shadow-sm">
+            <div className="bg-card border border-theme rounded-[calc(var(--density-radius)*1.5)] p-[calc(var(--density-gap)*2)] shadow-sm motion-hover-lift">
 
               <p className="text-[13px] text-muted mb-4">
                 System Alert
@@ -83,26 +91,26 @@ const ProblemSection: React.FC = () => {
 
           </div>
 
-          {/* RIGHT: PROBLEMS */}
-          <div className="stack-md">
+          {/* RIGHT: PROBLEMS (UPGRADED CARDS) */}
+          <div className="grid sm:grid-cols-2 gap-[var(--density-gap)]">
 
             {problems.map((item, i) => (
               <div
                 key={i}
-                className="flex gap-4 items-start group"
+                className="card card-hover flex gap-3 items-start"
               >
 
                 {/* ICON */}
-                <div className="mt-1 w-8 h-8 rounded-full bg-[rgba(220,38,38,0.08)] flex items-center justify-center text-danger text-sm font-semibold">
-                  !
+                <div className="mt-1 w-7 h-7 rounded-full bg-[rgba(220,38,38,0.08)] flex items-center justify-center text-danger text-xs font-bold">
+                  ✕
                 </div>
 
                 {/* TEXT */}
                 <div>
-                  <h3 className="text-[15px] font-semibold text-main">
+                  <h3 className="text-[14px] font-semibold text-main leading-snug">
                     {item.title}
                   </h3>
-                  <p className="text-[13px] text-muted leading-relaxed mt-1">
+                  <p className="text-[12px] text-muted leading-relaxed mt-1">
                     {item.desc}
                   </p>
                 </div>
@@ -114,11 +122,11 @@ const ProblemSection: React.FC = () => {
 
         </div>
 
-        {/* BOTTOM LINE */}
+        {/* BOTTOM LINE (STRONGER EMOTION) */}
         <div className="text-center mt-[calc(var(--density-gap)*4)]">
 
           <p className="text-[16px] text-muted max-w-xl mx-auto">
-            You’re putting in the effort — but your systems are slowing you down.
+            You’re putting in the effort — but your systems are slowing you down and creating problems you shouldn’t have to deal with.
           </p>
 
         </div>
