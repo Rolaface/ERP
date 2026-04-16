@@ -343,7 +343,8 @@ export const generatePurchaseInvoicePDF = async (
   item.batchNo ?? "-",
   item.warehouse ?? "-",
   fmtDate(item.mfgDate),   
-  fmtDate(item.expDate),   
+  fmtDate(item.expDate), 
+  packing,  
   Number(item.quantity ?? 0),
   item.uom ?? "-",
   fmt2(item.rate),
@@ -397,7 +398,7 @@ export const generatePurchaseInvoicePDF = async (
   const subTotal = Number((pi?.grandTotal ?? 0) - (pi?.totalTaxes ?? 0));
   const taxTotal = Number(pi?.totalTaxes ?? 0);
   const rounding = Number((pi?.roundedTotal ?? 0) - (pi?.grandTotal ?? 0));
-  const taxRate = pi?.tax?.taxRate ?? "-";
+ 
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);

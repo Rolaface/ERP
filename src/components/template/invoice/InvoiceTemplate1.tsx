@@ -43,7 +43,7 @@ export const generateInvoicePDF = async (
   const doc = new jsPDF("p", "mm", "a4");
   const W   = doc.internal.pageSize.width;   
   const H   = doc.internal.pageSize.height;  
-  const cur = invoice.currencyCode ?? "INR";
+  const cur = invoice.currency ?? "INR";
   const M   = 14;
   const MR  = W - M;
 
@@ -373,7 +373,7 @@ const taxTotal = Number(invoice.total_tax ?? 0);
 
 
   if (cur !== "INR") {
-    const exchangeRate   = Number(invoice?.exchangeRt ?? 0);
+    const exchangeRate   = Number(invoice?.exchangeRate ?? 0);
     const cifInINR       = cifValue * exchangeRate;
 
     const EX_GAP     = 4;                         
