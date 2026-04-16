@@ -234,7 +234,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           | "Shareholder",
         ),
         fetchCompanyBanks(),
-        fetchPartyBanks(form.partyType, form.partyName),
+        fetchPartyBanks(form.partyType, form.partyId)
       ]);
 
       if (requestId !== requestRef.current) return;
@@ -436,10 +436,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         }));
       } else {
         // Receive: Paid From = party bank
-        if (!form.partyType || !form.partyName) return [];
+        if (!form.partyType || !form.partyId) return [];
         const fresh = await fetchPartyBanks(
           form.partyType,
-          form.partyName,
+          form.partyId,
           q || undefined,
         );
         return (fresh ?? []).map((o) => ({
@@ -453,7 +453,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       fetchCompanyBanks,
       fetchPartyBanks,
       form.partyType,
-      form.partyName,
+      form.partyId,
     ],
   );
 
@@ -465,7 +465,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         if (!form.partyType || !form.partyName) return [];
         const fresh = await fetchPartyBanks(
           form.partyType,
-          form.partyName,
+          form.partyId,
           q || undefined,
         );
         return (fresh ?? []).map((o) => ({
@@ -486,7 +486,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       fetchCompanyBanks,
       fetchPartyBanks,
       form.partyType,
-      form.partyName,
+      form.partyId,
     ],
   );
 

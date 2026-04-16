@@ -90,7 +90,7 @@ const getReferenceDoctype = (partyType: string): string => {
   const payload: CreatePaymentEntryPayload = {
     payment_type: form?.paymentType ?? "Pay",
     party_type: form?.partyType ?? "",
-   party_id: form?.partyName ?? form?.partyName ?? "",
+   party_id: form?.partyId || "",
     mode_of_payment: form?.mode ?? "",
     payment_date: form?.date ?? new Date().toISOString().split("T")[0],
     reference_no: form?.referenceNo ?? "",
@@ -412,7 +412,7 @@ useEffect(() => {
 
   const invoiceListForm = {
     partyType: form?.partyType,
-    partyName: form?.partyName,
+    partyName: form?.partyId,
     amount: form?.amountFrom ?? form?.amount,
     fifoTrigger: form?.fifoTrigger,
     referenceName: form?.referenceName,

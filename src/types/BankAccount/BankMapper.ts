@@ -30,8 +30,9 @@ export const mapGetBankAccounts = (data: any): BankAccount[] => {
       ? (item.accountFor as BankAccount["accountFor"])
       : "",
 
-    partyName: item.partyName || "",
+    partyName: item.partyName || item.party_name || "",
 
     isCompanyAccount: Number(item.is_company_account) === 1,
   }));
+  
 };
