@@ -67,11 +67,28 @@
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-primary: var(--primary);
+
+  /* Brand Gradients */
+  --gradient-primary: linear-gradient(135deg, #ff7a1a, #ffb347);
+  --gradient-accent: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --gradient-dark: linear-gradient(135deg, #0b0b0c, #1a1a1d);
+
+  /* Glow Effects */
+  --glow-primary:
+    0 0 0 1px rgba(255, 122, 26, 0.3), 0 8px 30px rgba(255, 122, 26, 0.25);
+  --glow-accent:
+    0 0 0 1px rgba(99, 102, 241, 0.3), 0 8px 30px rgba(99, 102, 241, 0.25);
+
+  /* Radial Glow (Hero backgrounds) */
+  --radial-glow: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 122, 26, 0.15),
+    transparent 60%
+  );
 }
 
 /* Form Tokens */
 :root {
-
   --form-radius: 16px;
   --form-padding: 24px;
   --form-max-width: 480px;
@@ -158,6 +175,11 @@
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
 
+  /* Premium Shadows */
+  --shadow-soft-xl: 0 20px 60px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 10px 40px rgba(255, 122, 26, 0.25);
+  --shadow-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+
   --z-sidebar: 100;
   --z-app-chrome: 120;
   --z-modal-backdrop-base: 1000;
@@ -235,7 +257,7 @@
   --table-head-text: #071025;
   --border: rgba(255, 255, 255, 0.1);
   --row-hover: rgba(255, 255, 255, 0.05);
-    --input-bg: #0f172a;
+  --input-bg: #0f172a;
   --input-border: rgba(255, 255, 255, 0.1);
   --input-border-hover: rgba(255, 255, 255, 0.2);
 
@@ -416,7 +438,6 @@
   --primary-600: #4338ca; /* indigo-700 */
   --primary-700: #3730a3; /* deeper hover */
 
-
   /* BACKGROUND SYSTEM */
   --bg: #f7f8fb; /* page gradient base */
   --card: #ffffff; /* clean white cards */
@@ -484,13 +505,19 @@
   .btn:active {
     transform: scale(var(--scale-active));
   }
+
   .btn-primary {
-    background: var(--primary);
+    background: var(--gradient-primary);
     color: #fff;
+    box-shadow: var(--glow-primary);
+    border: none;
   }
+
   .btn-primary:hover {
-    background: var(--primary-600);
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(255, 122, 26, 0.35);
   }
+
   .btn-outline {
     border: 1px solid var(--border);
     color: var(--text);
@@ -505,6 +532,16 @@
   }
   .btn-ghost:hover {
     background: var(--row-hover);
+  }
+
+  .btn-glow {
+    background: var(--gradient-accent);
+    color: #fff;
+    box-shadow: var(--glow-accent);
+  }
+
+  .btn-glow:hover {
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.35);
   }
 
   /* Cards */
@@ -524,7 +561,52 @@
     box-shadow: var(--shadow-md);
   }
 
-  
+  /* Premium Card */
+  /* Premium Card */
+  .card-premium {
+    background: var(--card);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-soft-xl);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Glow border effect on hover */
+  .card-premium::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+
+    background: var(--gradient-primary);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+
+    z-index: 0;
+  }
+
+  .card-premium {
+    position: relative;
+    z-index: 1;
+  }
+
+  .card-premium:hover::before {
+    opacity: 0.08; /* subtle glow instead of border cut */
+  }
+
+  /* Glass System */
+  .glass {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .glass-dark {
+    background: rgba(15, 15, 15, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
 
   /* Label */
   .label {
@@ -549,7 +631,6 @@
     flex-direction: column;
     gap: 6px;
   }
-
 
   /* Higher-level composed UI */
   /* Form Section (group of fields) */
@@ -602,230 +683,222 @@
     flex: 1;
   }
 
+  /* ---------------- CARD ---------------- */
+  .form-card {
+    background: var(--card);
+    border-radius: var(--form-radius);
+    padding: var(--form-padding);
+    max-width: var(--form-max-width);
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
 
+    display: flex;
+    flex-direction: column;
+    gap: var(--form-gap-field);
 
-/* ---------------- CARD ---------------- */
-.form-card {
-  background: var(--card);
-  border-radius: var(--form-radius);
-  padding: var(--form-padding);
-  max-width: var(--form-max-width);
-  width: 100%;
-  margin: 0 auto;
-  position: relative;
+    min-height: var(--form-min-height);
 
-  display: flex;
-  flex-direction: column;
-  gap: var(--form-gap-field);
+    box-shadow:
+      0px 4px 20px rgba(0, 0, 0, 0.04),
+      0px 10px 40px rgba(0, 0, 0, 0.06);
+  }
 
-  min-height: var(--form-min-height);
+  .form-card--sm {
+    min-height: 480px;
+  }
 
-  box-shadow:
-    0px 4px 20px rgba(0,0,0,0.04),
-    0px 10px 40px rgba(0,0,0,0.06);
-}
+  .form-card--md {
+    min-height: 520px;
+  }
 
-.form-card--sm {
-  min-height: 480px;
-}
+  .form-card--lg {
+    min-height: 580px;
+  }
 
-.form-card--md {
-  min-height: 520px;
-}
+  /* ---------------- LABEL ---------------- */
+  .form-label {
+    font-size: var(--label-size);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--muted);
+    margin-left: 4px;
+  }
 
-.form-card--lg {
-  min-height: 580px;
-}
+  /* ---------------- INPUT ---------------- */
+  .input-base {
+    width: 100%;
 
+    /* Layout */
+    padding: var(--input-padding-y) var(--input-padding-x);
+    border-radius: var(--input-radius);
 
+    /* Typography */
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--input-text);
 
-/* ---------------- LABEL ---------------- */
-.form-label {
-  font-size: var(--label-size);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  color: var(--muted);
-  margin-left: 4px;
-}
+    /* Visual */
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
 
-/* ---------------- INPUT ---------------- */
-.input-base {
-  width: 100%;
+    /* UX */
+    outline: none;
+    transition: var(--input-transition);
 
-  /* Layout */
-  padding: var(--input-padding-y) var(--input-padding-x);
-  border-radius: var(--input-radius);
+    /* Fix browser styles */
+    appearance: none;
+  }
 
-  /* Typography */
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--input-text);
-
-  /* Visual */
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-
-  /* UX */
-  outline: none;
-  transition: var(--input-transition);
-
-  /* Fix browser styles */
-  appearance: none;
-}
-
-/* =========================================
+  /* =========================================
    INPUT VARIANTS
 ========================================= */
 
-/* Default = outline (already handled by .input-base) */
+  /* Default = outline (already handled by .input-base) */
 
-/* Filled */
-.input-filled {
-  background: var(--input-bg-filled);
-  border-color: transparent;
-}
+  /* Filled */
+  .input-filled {
+    background: var(--input-bg-filled);
+    border-color: transparent;
+  }
 
-.input-filled:hover {
-  background: var(--input-bg);
-}
+  .input-filled:hover {
+    background: var(--input-bg);
+  }
 
-/* Ghost (minimal UI like Stripe inline fields) */
-.input-ghost {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--input-border);
-  border-radius: 0;
-}
+  /* Ghost (minimal UI like Stripe inline fields) */
+  .input-ghost {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--input-border);
+    border-radius: 0;
+  }
 
-.input-ghost:focus {
-  border-color: var(--input-border-focus);
-  box-shadow: none;
-}
+  .input-ghost:focus {
+    border-color: var(--input-border-focus);
+    box-shadow: none;
+  }
 
-/* =========================================
+  /* =========================================
    FLOATING LABEL
 ========================================= */
 
-.form-field {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
+  .form-field {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
 
-/* Input wrapper needed */
-.input-wrapper {
-  position: relative;
-}
+  /* Input wrapper needed */
+  .input-wrapper {
+    position: relative;
+  }
 
-/* Floating label */
-.floating-label {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 14px;
-  color: var(--muted);
-  pointer-events: none;
+  /* Floating label */
+  .floating-label {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: var(--muted);
+    pointer-events: none;
 
-  transition: var(--input-transition);
-}
+    transition: var(--input-transition);
+  }
 
-/* Move up on focus or when filled */
-.input-base:focus + .floating-label,
-.input-base:not(:placeholder-shown) + .floating-label {
-  top: 6px;
-  font-size: 11px;
-  color: var(--primary);
-}
+  /* Move up on focus or when filled */
+  .input-base:focus + .floating-label,
+  .input-base:not(:placeholder-shown) + .floating-label {
+    top: 6px;
+    font-size: 11px;
+    color: var(--primary);
+  }
 
-/* Background fix (for card overlap look) */
-.floating-label::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--card);
-  z-index: -1;
-  padding: 0 4px;
-}
+  /* Background fix (for card overlap look) */
+  .floating-label::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--card);
+    z-index: -1;
+    padding: 0 4px;
+  }
 
-/* =========================================
+  /* =========================================
    VALIDATION STATES
 ========================================= */
 
-/* ERROR */
-.input-base.error {
-  border-color: var(--input-border-error);
-  background: var(--input-bg-error);
-}
+  /* ERROR */
+  .input-base.error {
+    border-color: var(--input-border-error);
+    background: var(--input-bg-error);
+  }
 
-.input-base.error:focus {
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
-}
+  .input-base.error:focus {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  }
 
-/* SUCCESS */
-.input-base.success {
-  border-color: var(--success);
-}
+  /* SUCCESS */
+  .input-base.success {
+    border-color: var(--success);
+  }
 
-.input-base.success:focus {
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
-}
+  .input-base.success:focus {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+  }
 
-/* Helper text variations */
-.form-helper.error {
-  color: var(--danger);
-}
+  /* Helper text variations */
+  .form-helper.error {
+    color: var(--danger);
+  }
 
-.form-helper.success {
-  color: var(--success);
-}
+  .form-helper.success {
+    color: var(--success);
+  }
 
-/* Placeholder */
-.input-base::placeholder {
-  color: var(--muted);
-  opacity: 0.6;
-}
+  /* Placeholder */
+  .input-base::placeholder {
+    color: var(--muted);
+    opacity: 0.6;
+  }
 
-/* Hover */
-.input-base:hover {
-  border-color: var(--input-border-hover);
-}
+  /* Hover */
+  .input-base:hover {
+    border-color: var(--input-border-hover);
+  }
 
-/* Focus (Stripe-level) */
-.input-base:focus {
-  border-color: var(--input-border-focus);
-  box-shadow: 0 0 0 3px var(--input-focus-ring);
-}
+  /* Focus (Stripe-level) */
+  .input-base:focus {
+    border-color: var(--input-border-focus);
+    box-shadow: 0 0 0 3px var(--input-focus-ring);
+  }
 
-/* Filled state */
-.input-base:not(:placeholder-shown) {
-  background: var(--input-bg-filled);
-}
+  /* Filled state */
+  .input-base:not(:placeholder-shown) {
+    background: var(--input-bg-filled);
+  }
 
-/* Error */
-.input-base.error {
-  border-color: var(--input-border-error);
-  background: var(--input-bg-error);
-}
+  /* Error */
+  .input-base.error {
+    border-color: var(--input-border-error);
+    background: var(--input-bg-error);
+  }
 
-/* Disabled */
-.input-base:disabled {
-  background: var(--input-bg-disabled);
-  color: var(--input-text-disabled);
-  cursor: not-allowed;
-}
+  /* Disabled */
+  .input-base:disabled {
+    background: var(--input-bg-disabled);
+    color: var(--input-text-disabled);
+    cursor: not-allowed;
+  }
 
-
-
-
-/* ---------------- HELPER ---------------- */
-.form-helper {
-  font-size: var(--helper-size);
-  margin-top: var(--form-gap-micro);
-  color: var(--muted);
-}
-
+  /* ---------------- HELPER ---------------- */
+  .form-helper {
+    font-size: var(--helper-size);
+    margin-top: var(--form-gap-micro);
+    color: var(--muted);
+  }
 }
 
 @layer utilities {
@@ -846,12 +919,36 @@
   .text-muted {
     color: var(--muted) !important;
   }
+  .text-gradient {
+    background: var(--gradient-primary);
+
+    /* Standard property (for compatibility) */
+    background-clip: text;
+
+    /* WebKit support (required for Chrome/Safari) */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    /* Fallback for non-supporting browsers */
+    color: var(--primary);
+  }
   .border-theme {
     border-color: var(--border);
   }
   .bg-primary {
     background: var(--primary);
     color: white;
+  }
+
+  .bg-radial-glow {
+    background: var(--radial-glow);
+  }
+
+  .bg-grid-subtle {
+    background-image:
+      linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
   .text-primary {
     color: var(--primary) !important;
@@ -871,7 +968,7 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
- 
+
   /* Motion Utilities */
   .motion-fade {
     animation: fadeIn var(--motion-base) var(--ease-out);
@@ -895,14 +992,14 @@
   }
 
   /* Interaction system */
-.non-interactive {
-  cursor: default;
-  pointer-events: none;
-}
+  .non-interactive {
+    cursor: default;
+    pointer-events: none;
+  }
 
-.cursor-default-only {
-  cursor: default;
-}
+  .cursor-default-only {
+    cursor: default;
+  }
 }
 
 /* =========================================
@@ -994,6 +1091,18 @@ h4 {
 .section-bordered {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
+}
+.section-dark {
+  background: #0b0b0c;
+  color: #fff;
+}
+
+.section-glow {
+  background: radial-gradient(
+    circle at top,
+    rgba(255, 122, 26, 0.12),
+    transparent 60%
+  );
 }
 
 /* Layouts */
@@ -1123,6 +1232,20 @@ h4 {
   }
 }
 
+@keyframes floatPremium {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
+}
+
+.animate-float-premium {
+  animation: floatPremium 6s ease-in-out infinite;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1232,7 +1355,7 @@ body.app-swal-open .erp-modal-layer {
   backdrop-filter: blur(18px);
   background: color-mix(in srgb, var(--card) 88%, transparent);
 }
- 
+
 /* TEXT COLORS (Keep as is — already solid) */
 .text-success {
   color: var(--success) !important;
@@ -1295,10 +1418,13 @@ input[type=number]::-webkit-inner-spin-button {
   width: 100%;
 }
 
-
 @keyframes shimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .skeleton-shimmer {
@@ -1321,13 +1447,10 @@ input[type=number]::-webkit-inner-spin-button {
   );
 }
 
-
 :root {
   --skeleton-base: #e5e7eb;
 }
-[data-theme="dark"], .dark {
+[data-theme="dark"],
+.dark {
   --skeleton-base: #374151;
 }
-
-
-
