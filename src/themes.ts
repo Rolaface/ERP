@@ -25,7 +25,7 @@ export const setTheme = (theme: Theme) => {
 };
 
 export const initTheme = (): Theme => {
-  if (typeof window === "undefined") return "gold";
+  if (typeof window === "undefined") return "clinical-sanctuary";
   const saved = localStorage.getItem(THEME_KEY) as Theme | null;
   const theme: Theme = saved ?? "gold";
   document.documentElement.setAttribute("data-theme", theme);

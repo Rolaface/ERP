@@ -383,9 +383,21 @@ export const useSupplierForm = ({
       const statusCode = res?.message?.status_code;
 
       if (!res || ![200, 201].includes(statusCode)) {
-        showApiError(res?.message || res);
+        showApiError(res?.message || "Supplier creation failed");
         return;
       }
+
+      // Only success case comes here
+     const successMessage =
+  res?.message?.message ||
+  (isEditMode ? "Supplier Updated" : "Supplier Created");
+
+await showSuccess(successMessage); // IMPORTANT: must wait
+
+useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.SUPPLIER_LIST);
+
+onSuccess?.(form);
+
       /* Step 2 — Bank accounts (only on create, not edit) */
       if (!isEditMode) {
         const bankAccounts = form.bankAccounts || [];
@@ -421,12 +433,13 @@ export const useSupplierForm = ({
       }
 
       /* Success */
-      const successMessage =
-        res?.message?.message ||
+
+      res?.message?.message ||
         res?.message ||
         (isEditMode ? "Supplier Updated" : "Supplier Created");
 
       showSuccess(successMessage);
+      
       useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.SUPPLIER_LIST);
       onSuccess?.(form);
     } catch (err: any) {

@@ -238,7 +238,7 @@ const payL: string[] = ([
       const batchShort = (item.batchNo || "-").length > 18
         ? (item.batchNo as string).slice(0, 16) + ".." : (item.batchNo || "-");
 
-      const taxName = item.taxInfo?.[0]?.taxName ?? "-";
+      const taxName = item.taxInfo?.[0]?.taxTitle ?? "-";
       const taxRate = item.taxInfo?.[0]?.totalTaxRate ?? "0";
 
       return [

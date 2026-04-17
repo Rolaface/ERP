@@ -43,9 +43,11 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   mode = "create",
   modalId,
 }) => {
-  const resolvedModalId = modalId || (mode === "edit" && initialData?.proformaId
-    ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
-    : `proforma-create-${Date.now()}`);
+  const resolvedModalId =
+    modalId ||
+    (mode === "edit" && initialData?.proformaId
+      ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
+      : `proforma-create-${Date.now()}`);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     formData,
@@ -82,11 +84,11 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   const handleNext = () => {
     if (ui.activeTab === "details" && !validateDetailsOrFocus()) return;
 
-      const currentIndex = tabs.indexOf(ui.activeTab as any);
+    const currentIndex = tabs.indexOf(ui.activeTab as any);
 
-      if (currentIndex < tabs.length - 1) {
-        ui.setActiveTab(tabs[currentIndex + 1]);
-      }
+    if (currentIndex < tabs.length - 1) {
+      ui.setActiveTab(tabs[currentIndex + 1]);
+    }
   };
 
   const handleSave = async () => {
@@ -174,11 +176,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     return () => controller.abort();
   }, [isOpen]);
 
-
-
   return (
     <MinimizableModal
-    modalId={resolvedModalId}
+      modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
       title={

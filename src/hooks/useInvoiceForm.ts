@@ -189,7 +189,7 @@ const getBaseCurrencyFromStorage = () => {
   // Load edit data
   useEffect(() => {
     if (!isOpen) return;
-    if (mode === "edit" && initialData?.invoiceNumber) {
+    if (mode === "edit" && initialData?.id) {
       setFormDataFromInvoice(initialData);
     }
   }, [isOpen, initialData, mode]);
@@ -224,14 +224,20 @@ useEffect(() => {
       setExchangeRateLoading(false);
       setExchangeRateError(null);
       if (mode !== "edit") {
-        setFormData((prev) => ({ ...prev, exchangeRt: "1" }));
+        setFormData((prev) => {
+  if (prev.exchangeRt === "1") return prev; // 🔥 STOP LOOP
+  return { ...prev, exchangeRt: "1" };
+});
       }
       return;
     }
 
     let cancelled = false;
     setExchangeRateLoading(true);
-    setFormData((prev) => ({ ...prev, exchangeRt: "1" }));
+    setFormData((prev) => {
+  if (prev.exchangeRt === "1") return prev; // 🔥 STOP LOOP
+  return { ...prev, exchangeRt: "1" };
+});
     setExchangeRateError(null);
 
     getExchangeRate({
@@ -251,7 +257,10 @@ useEffect(() => {
       .catch((err) => {
         if (cancelled) return;
         setExchangeRateError(err?.message || "Exchange rate not found");
-        setFormData((prev) => ({ ...prev, exchangeRt: "1" }));
+        setFormData((prev) => {
+  if (prev.exchangeRt === "1") return prev; // 🔥 STOP LOOP
+  return { ...prev, exchangeRt: "1" };
+});
         showApiError(err);
       })
       .finally(() => {
@@ -620,12 +629,12 @@ useEffect(() => {
       customerId: invoice.customerId ?? prev.customerId,
       invoiceType: invoice.invoiceType ?? "",
 
-      currencyCode: invoice.currencyCode,
-      dateOfInvoice: invoice.dateOfInvoice,
-      exchangeRt:
-        invoice.exchangeRt && Number(invoice.exchangeRt) > 0
-          ? String(invoice.exchangeRt)
-          : "1",
+    currencyCode: invoice.currency,
+dateOfInvoice: invoice.postingDate,
+exchangeRt:
+  invoice.exchangeRate && Number(invoice.exchangeRate) > 0
+    ? String(invoice.exchangeRate)
+    : "1",
       dueDate: invoice.dueDate,
       destnCountryCd: invoice.destnCountryCd ?? "",
       billingAddress: invoice.billingAddress ?? prev.billingAddress,
@@ -639,10 +648,34 @@ useEffect(() => {
               amount: String(ch.amount ?? ""),
             }))
           : [],
-      terms: invoice.terms ?? prev.terms,
+      terms: {
+  selling: {
+    general: invoice.terms?.selling?.general || "",
+    delivery: invoice.terms?.selling?.delivery || "",
+    cancellation: invoice.terms?.selling?.cancellation || "",
+    warranty: invoice.terms?.selling?.warranty || "",
+    liability: invoice.terms?.selling?.liability || "",
+    payment: {
+      phases:
+        invoice.terms?.selling?.payment?.phases?.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          percentage: String(p.percentage),
+          condition: p.condition,
+          credit_days: String(p.credit_days),
+        })) || [],
+      dueDates:
+        invoice.terms?.selling?.payment?.dueDates || "",
+      lateCharges:
+        invoice.terms?.selling?.payment?.lateCharges || "",
+      taxes: invoice.terms?.selling?.payment?.taxes || "",
+      notes: invoice.terms?.selling?.payment?.notes || "",
+    },
+  },
+},
       items: (invoice.items || []).map((it: any) => {
         const quantity = Number(it.quantity);
-        const price = Number(it.price);
+        const price = Number(it.rate);
         const discount = Number(it.discount || 0);
         const discountAmount = quantity * price * (discount / 100);
         const totalInclusive = quantity * price - discountAmount;

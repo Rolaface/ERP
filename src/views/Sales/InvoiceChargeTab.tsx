@@ -266,8 +266,7 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
         </div>
 
         {/* ── Manual Charges Table ── */}
-        <div className="bg-card rounded-lg border border-theme overflow-hidden">
-          {/* Header */}
+        {/* <div className="bg-card rounded-lg border border-theme overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-theme">
             <div className="flex items-center gap-2">
               <Layers size={14} className="text-primary" />
@@ -289,7 +288,6 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
             </button>
           </div>
 
-          {/* Table */}
           {charges.length > 0 ? (
             <table className="w-full text-xs border-collapse">
               <thead>
@@ -312,14 +310,12 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
                     key={idx}
                     className="border-t border-theme group transition-colors hover:bg-primary/5"
                   >
-                    {/* Row number */}
                     <td className="px-3 py-2 text-center">
                       <span className="inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-semibold bg-border/50 text-muted">
                         {idx + 1}
                       </span>
                     </td>
 
-                    {/* Charge name */}
                     <td className="px-3 py-2">
                       <input
                         type="text"
@@ -330,7 +326,6 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
                       />
                     </td>
 
-                    {/* Amount */}
                     <td className="px-3 py-2">
                       <div className="relative">
                         <input
@@ -345,7 +340,6 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
                       </div>
                     </td>
 
-                    {/* Delete */}
                     <td className="px-2 py-2 text-center">
                       <button
                         type="button"
@@ -360,7 +354,6 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
                 ))}
               </tbody>
 
-              {/* Totals footer */}
               <tfoot>
                 <tr className="border-t-2 border-theme bg-primary/5">
                   <td colSpan={2} className="px-3 py-2 text-right text-xs font-semibold text-muted">
@@ -386,7 +379,7 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
               </button>
             </div>
           )}
-        </div>
+        </div> */}
       </div>
 
       {/* ── Right: Summary panel ── */}

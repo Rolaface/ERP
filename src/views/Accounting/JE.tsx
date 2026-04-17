@@ -21,7 +21,7 @@ import JournalEntryModal from "../../components/JournalEntries/JournalEntriesMod
 import { 
   getJournalEntries, 
   deleteJournalEntryById, 
-  submitJournalEntry // Make sure this is exported from your API file
+  updateJournalEntryStatus // Make sure this is exported from your API file
 } from "../../api/Accounting/JournalEntryApi";
 import { showApiError, showSuccess } from "../../utils/alert";
 
@@ -209,11 +209,26 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const handleSubmitEntry = async (id: string) => {
     try {
       setLoading(true);
-      await submitJournalEntry(id);
+      await updateJournalEntryStatus(id, "approved");
       showSuccess(`Entry ${id} has been submitted successfully.`);
       fetchJE();
     } catch (err: any) {
       showApiError(err?.response?.data?.message || err?.message || "Failed to submit entry.");
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEntry = async (id: string) => {
+    // Optional: Add a native confirm dialog so they don't accidentally cancel
+    if (!window.confirm(`Are you sure you want to cancel entry ${id}?`)) return;
+
+    try {
+      setLoading(true);
+      await updateJournalEntryStatus(id, "cancelled");
+      showSuccess(`Entry ${id} has been cancelled successfully.`);
+      fetchJE();
+    } catch (err: any) {
+      showApiError(err?.response?.data?.message || err?.message || "Failed to cancel entry.");
       setLoading(false);
     }
   };
@@ -343,6 +358,43 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         </span>
       ),
     },
+    // {
+    //   key: "actions",
+    //   header: "Actions",
+    //   align: "right",
+    //   render: (row: JournalEntry) => {
+    //     const actions: MenuAction[] = [
+    //       {
+    //         label: "View Entry",
+    //         icon: <Eye size={12} />,
+    //         onClick: () => handleOpenModal(row.name, "view"),
+    //       },
+    //       ...(row.docstatus === 0
+    //         ? [
+    //             {
+    //               label: "Submit",
+    //               icon: <CheckCircle size={12} className="text-success" />,
+    //               onClick: () => handleSubmitEntry(row.name),
+    //             },
+    //             {
+    //               label: "Edit",
+    //               icon: <Pencil size={12} />,
+    //               onClick: () => handleOpenModal(row.name, "edit"),
+    //             },
+    //           ]
+    //         : []),
+    //       {
+    //         label: row.docstatus === 1 ? "Cancel Entry" : "Delete",
+    //         icon: <Trash2 size={12} />,
+    //         onClick: () => initiateDelete(row.name), 
+    //         danger: true,
+    //         dividerBefore: true,
+    //       },
+    //     ];
+
+    //     return <RowActionMenu actions={actions} />;
+    //   },
+    // },
     {
       key: "actions",
       header: "Actions",
@@ -359,7 +411,8 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
                 {
                   label: "Submit",
                   icon: <CheckCircle size={12} className="text-success" />,
-                  onClick: () => handleSubmitEntry(row.name),
+                  // Passes "approved" behind the scenes based on your existing setup
+                  onClick: () => handleSubmitEntry(row.name), 
                 },
                 {
                   label: "Edit",
@@ -369,9 +422,16 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
               ]
             : []),
           {
+            // If it's submitted (1), we cancel it. If Draft (0) or Cancelled (2), we delete it.
             label: row.docstatus === 1 ? "Cancel Entry" : "Delete",
             icon: <Trash2 size={12} />,
-            onClick: () => initiateDelete(row.name), 
+            onClick: () => {
+              if (row.docstatus === 1) {
+                handleCancelEntry(row.name); // Calls updateJournalEntryStatus with "cancelled"
+              } else {
+                initiateDelete(row.name); // Opens DeleteModal -> deleteJournalEntryById
+              }
+            }, 
             danger: true,
             dividerBefore: true,
           },

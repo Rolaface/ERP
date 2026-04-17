@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
-import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
+import ExpandableTreeTable, { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
 import DeleteModal from "../../components/actionModal/DeleteModal";
 import { showApiError, showSuccess } from "../../utils/alert";
@@ -92,74 +92,47 @@ interface MenuAction {
 }
 
 const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    if (open) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
   return (
-    <div ref={ref} className="relative flex justify-end">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((p) => !p);
-        }}
-        className={`
-          w-7 h-7 flex items-center justify-center rounded-md transition
-         opacity-100
-          ${
-            open
-              ? "bg-primary/10 text-primary"
-              : "text-muted hover:bg-row-hover hover:text-main"
-          }
-        `}
+    <div className="flex justify-end">
+      <PortalDropdown
+        align="right"
+        trigger={
+          <button
+            type="button"
+            className="w-7 h-7 flex items-center justify-center rounded-md transition text-muted hover:bg-row-hover hover:text-main"
+          >
+            <MoreHorizontal size={15} />
+          </button>
+        }
       >
-        <MoreHorizontal size={15} />
-      </button>
-
-      {open && (
-        <div
-          className="absolute right-0 top-8 z-50 min-w-[160px] bg-card border border-theme rounded-xl shadow-xl py-1.5 overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {actions.map((action, i) => (
-            <React.Fragment key={i}>
-              {action.dividerBefore && (
-                <div className="border-t border-theme my-1" />
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  action.onClick();
-                  setOpen(false);
-                }}
-                className={`
-                  w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
-                  ${
-                    action.danger
-                      ? "text-danger hover:bg-danger/10"
-                      : "text-main hover:bg-row-hover"
-                  }
-                `}
-              >
-                <span className={action.danger ? "text-danger" : "text-muted"}>
-                  {action.icon}
-                </span>
-                {action.label}
-              </button>
-            </React.Fragment>
-          ))}
-        </div>
-      )}
+        {actions.map((action, i) => (
+          <React.Fragment key={i}>
+            {action.dividerBefore && (
+              <div className="border-t border-[var(--border)] my-1" />
+            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                action.onClick();
+              }}
+              className={`
+                w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
+                ${
+                  action.danger
+                    ? "text-danger hover:bg-danger/10"
+                    : "text-main hover:bg-row-hover"
+                }
+              `}
+            >
+              <span className={action.danger ? "text-danger" : "text-muted"}>
+                {action.icon}
+              </span>
+              {action.label}
+            </button>
+          </React.Fragment>
+        ))}
+      </PortalDropdown>
     </div>
   );
 };
