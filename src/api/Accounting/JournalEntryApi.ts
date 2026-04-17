@@ -77,23 +77,23 @@ export async function deleteJournalEntryById(id: string): Promise<any> {
   return resp.data;
 }
 
-export async function submitJournalEntry(id: string): Promise<any> {
-  const resp: AxiosResponse = await api.post("/api/method/frappe.client.submit", {
-    doc: {
-      doctype: "Journal Entry",
-      name: id,
-    },
-  });
-  return resp.data;
-}
+type JournalEntryAction = "approved" | "cancelled" | "amend";
 
-export async function cancelJournalEntry(id: string): Promise<any> {
-  const resp: AxiosResponse = await api.post("/api/method/frappe.client.cancel", {
-    doc: {
-      doctype: "Journal Entry",
-      name: id,
-    },
-  });
+export async function updateJournalEntryStatus(
+  id: string,
+  action: JournalEntryAction
+): Promise<any> {
+  if (!id) throw new Error("Journal Entry ID is required");
+  if (!action) throw new Error("Action is required");
+
+  const resp: AxiosResponse = await api.post(
+    "/api/method/custom_api.journal_entry.api.update_journal_entry_status",
+    {
+      id,
+      action,
+    }
+  );
+
   return resp.data;
 }
 
