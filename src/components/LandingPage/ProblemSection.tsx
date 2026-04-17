@@ -35,11 +35,6 @@ const ProblemSection: React.FC = () => {
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md">
 
-          {/* Label */}
-          <p className="text-[12px] text-muted font-medium tracking-wide">
-            The Problem
-          </p>
-
           <h2 className="text-[30px] md:text-[36px] font-semibold leading-snug text-main">
             Running your business shouldn’t feel this chaotic
           </h2>
