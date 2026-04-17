@@ -13,7 +13,7 @@ interface JournalEntryModalProps {
   isReadOnly?: boolean; // Fixed the TypeScript error!
 }
 
-const ITEMS_PER_PAGE = 4;
+const ITEMS_PER_PAGE = 6;
 
 const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   isOpen,
@@ -97,8 +97,8 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
       subtitle={isReadOnly ? "Viewing journal entry details" : entryId ? "Update existing manual journal entry" : "Create a new manual journal entry"}
       icon={FileText}
       footer={footer}
-      customWidth="70vw" 
-      height="650px"
+      customWidth="80vw" 
+      height="80vh"
     >
       <div className="flex flex-col gap-6 py-3 px-1">
         
@@ -186,11 +186,11 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                     // }
                     if (entry.partyType === "Customer") {
   rowPartyOptions = [
-   ...customerOptions.map((opt) => ({ label: opt.label, value: opt.label }))
+   ...customerOptions.map((opt) => ({ label: opt.label, value: opt.value }))
   ];
 } else if (entry.partyType === "Supplier") {
   rowPartyOptions = [
-    ...supplierOptions.map((opt) => ({ label: opt.label, value: opt.label }))
+    ...supplierOptions.map((opt) => ({ label: opt.label, value: opt.value }))
   ];
 }
                     
@@ -282,7 +282,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                             />
                           )}
                         </td>
-                        <td className="px-2 py-1">
+                        {/* <td className="px-2 py-1">
                           <ModalInput 
                              label="" 
                              name={`exchangeRate-${actualIndex}`} 
@@ -292,7 +292,18 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                              disabled={isReadOnly}
                              className="w-full"
                           />
-                        </td>
+                        </td> */}
+                        <td className="px-2 py-1">
+  <ModalInput 
+     label="" 
+     name={`exchangeRate-${actualIndex}`} 
+     type="number" 
+     value={entry.exchange_rate} 
+     onChange={() => {}} 
+     disabled={true}  
+     className="w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+  />
+</td>
                         <td className="px-2 py-1">
                           <ModalInput 
                              label="" 
@@ -345,15 +356,17 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
           </div>
         </div> */}
         {/* BOTTOM SECTION */}
+        {/* BOTTOM SECTION */}
         <div className="flex justify-end items-center gap-12 bg-gray-50 p-4 rounded-md border border-gray-200 mt-2">
           
           <div className="flex flex-col text-right">
-            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Debit</span>
+            {/* Added "(Base)" or you can hardcode "(INR)" */}
+            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Debit (Base)</span>
             <span className="text-lg font-bold text-main">{totals.debit.toFixed(2)}</span>
           </div>
           
           <div className="flex flex-col text-right">
-            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Credit</span>
+            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Credit (Base)</span>
             <span className="text-lg font-bold text-main">{totals.credit.toFixed(2)}</span>
           </div>
 

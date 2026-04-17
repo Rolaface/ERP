@@ -156,7 +156,7 @@ export const API = {
     getById: `${ERP_BASE}/api/resource/Journal Entry`,
     update: `${ERP_BASE}/api/resource/Journal Entry`,
     delete: `${ERP_BASE}/api/resource/Journal Entry`,
-    updateStatus: `${ERP_BASE}/api/method/custom_api.journal_entry.api.update_journal_entry_status`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.accounting.journal_entry.api.update_journal_entry_status`,
   },
   CurrencyExchange: {
     create: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.create_currency_exchange`,
