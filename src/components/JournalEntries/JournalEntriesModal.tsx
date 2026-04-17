@@ -59,7 +59,6 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
 
   const handleAddDoubleRow = () => {
     handleAddRow();
-    handleAddRow();
     const newTotalLength = entries.length + 2;
     setCurrentPage(Math.ceil(newTotalLength / ITEMS_PER_PAGE));
   };
@@ -179,11 +178,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                     const isDropdown = entry.partyType === "Customer" || entry.partyType === "Supplier";
                     
                     let rowPartyOptions = [{ label: "", value: "" }];
-                    // if (entry.partyType === "Customer") {
-                    //     rowPartyOptions = [{ label: "Select Customer", value: "" }, ...customerOptions];
-                    // } else if (entry.partyType === "Supplier") {
-                    //     rowPartyOptions = [{ label: "Select Supplier", value: "" }, ...supplierOptions];
-                    // }
+
                     if (entry.partyType === "Customer") {
   rowPartyOptions = [
    ...customerOptions.map((opt) => ({ label: opt.label, value: opt.value }))
@@ -206,16 +201,6 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                              disabled={isReadOnly}
                           />
                         </td>
-                        {/* <td className="px-2 py-1">
-                          <ModalSelect 
-                             label="" 
-                             name={`ccy-${actualIndex}`} 
-                             value={entry.ccy} 
-                             onChange={(e) => handleEntryChange(actualIndex, 'ccy', e.target.value)}
-                             options={[{ label: "Select", value: "" }, ...currencyOptions]}
-                             disabled={isReadOnly}
-                          />
-                        </td> */}
                         <td className="px-2 py-1">
   <ModalInput 
      label="" 
@@ -282,17 +267,18 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                             />
                           )}
                         </td>
+
                         <td className="px-2 py-1">
-                          <ModalInput 
-                             label="" 
-                             name={`exchangeRate-${actualIndex}`} 
-                             type="number" 
-                             value={entry.exchange_rate} 
-                             onChange={(e) => handleEntryChange(actualIndex, 'exchange_rate', e.target.value)} 
-                             disabled={isReadOnly}
-                             className="w-full"
-                          />
-                        </td>
+  <ModalInput 
+     label="" 
+     name={`exchangeRate-${actualIndex}`} 
+     type="number" 
+     value={entry.exchange_rate} 
+     onChange={() => {}} 
+     disabled={true}  
+     className="w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+  />
+</td>
                         <td className="px-2 py-1">
                           <ModalInput 
                              label="" 
@@ -332,28 +318,16 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
             )}
           </div>
         </div>
-
-        {/* BOTTOM SECTION */}
-        {/* <div className="flex justify-between items-center bg-gray-50 p-4 rounded-md border border-gray-200 mt-2">
-          <div className="flex flex-col">
-            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Debit</span>
-            <span className="text-lg font-bold text-main">{totals.debit.toFixed(2)}</span>
-          </div>
-          <div className="flex flex-col text-right">
-            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Credit</span>
-            <span className="text-lg font-bold text-main">{totals.credit.toFixed(2)}</span>
-          </div>
-        </div> */}
-        {/* BOTTOM SECTION */}
         <div className="flex justify-end items-center gap-12 bg-gray-50 p-4 rounded-md border border-gray-200 mt-2">
           
           <div className="flex flex-col text-right">
-            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Debit</span>
+            {/* Added "(Base)" or you can hardcode "(INR)" */}
+            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Debit (Base)</span>
             <span className="text-lg font-bold text-main">{totals.debit.toFixed(2)}</span>
           </div>
           
           <div className="flex flex-col text-right">
-            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Credit</span>
+            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Credit (Base)</span>
             <span className="text-lg font-bold text-main">{totals.credit.toFixed(2)}</span>
           </div>
 
