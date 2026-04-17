@@ -178,12 +178,21 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                     const actualIndex = startIndex + index;
                     const isDropdown = entry.partyType === "Customer" || entry.partyType === "Supplier";
                     
-                    let rowPartyOptions = [{ label: "Select", value: "" }];
+                    let rowPartyOptions = [{ label: "", value: "" }];
+                    // if (entry.partyType === "Customer") {
+                    //     rowPartyOptions = [{ label: "Select Customer", value: "" }, ...customerOptions];
+                    // } else if (entry.partyType === "Supplier") {
+                    //     rowPartyOptions = [{ label: "Select Supplier", value: "" }, ...supplierOptions];
+                    // }
                     if (entry.partyType === "Customer") {
-                        rowPartyOptions = [{ label: "Select Customer", value: "" }, ...customerOptions];
-                    } else if (entry.partyType === "Supplier") {
-                        rowPartyOptions = [{ label: "Select Supplier", value: "" }, ...supplierOptions];
-                    }
+  rowPartyOptions = [
+   ...customerOptions.map((opt) => ({ label: opt.label, value: opt.label }))
+  ];
+} else if (entry.partyType === "Supplier") {
+  rowPartyOptions = [
+    ...supplierOptions.map((opt) => ({ label: opt.label, value: opt.label }))
+  ];
+}
                     
                     return (
                       <tr key={actualIndex} className="border-b border-gray-100 last:border-none">
@@ -193,7 +202,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                              name={`account-${actualIndex}`} 
                              value={entry.account} 
                              onChange={(e) => handleEntryChange(actualIndex, 'account', e.target.value)}
-                             options={[{ label: "Select", value: "" }, ...accountOptions]}
+                             options={[...accountOptions]}
                              disabled={isReadOnly}
                           />
                         </td>
@@ -248,7 +257,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                              name={`partyType-${actualIndex}`} 
                              value={entry.partyType} 
                              onChange={(e) => handleEntryChange(actualIndex, 'partyType', e.target.value)}
-                             options={[{ label: "Select", value: "" }, ...partyTypeOptions]}
+                             options={[...partyTypeOptions]}
                              disabled={isReadOnly}
                           />
                         </td>
