@@ -3,7 +3,6 @@ export type Theme =
   | "dark"
   | "corporate"
   | "ocean"
-  | "sunset"
   | "mint"
   | "lavender"
   | "luxury"

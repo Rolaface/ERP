@@ -271,19 +271,6 @@
   --table-head: #1a202c;
 }
 
-:root[data-theme="sunset"] {
-  --primary: #ea580c;
-  --primary-600: #c2410c;
-  --bg: #fff7ed;
-  --card: #ffffff;
-  --text: #431407;
-  --muted: #9a3412;
-  --sidebar-bg: #292524;
-  --sidebar-text: #f5f5f4;
-  --table-head: #ffe4e6;
-  --table-head-text: #881337;
-}
-
 :root[data-theme="mint"] {
   --primary: #0d9488;
   --primary-600: #0f766e;
@@ -1304,7 +1291,7 @@ body.app-swal-open .erp-modal-layer {
 
 /* WARNING */
 .bg-warning {
-  background: #f59e0b !important; /* dark amber */
+  background: #f59e0b !important; /* dark su */
   color: #fef3c7 !important;
 }
 
