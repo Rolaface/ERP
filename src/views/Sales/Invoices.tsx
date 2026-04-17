@@ -445,16 +445,17 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       showLoading("Updating invoice status...");
 
     const res = await updateInvoiceStatus(invoiceNumber, status);
+    console.log("🚀 ~ handleRowStatusChange ~ res:", res)
 
 closeSwal();
 
-if (!res || res.status_code !== 200) {
-  showApiError(res?.message || "Failed to update invoice status");
+if (!res.message || res.message.status_code !== 200) {
+  showApiError(res?.message.message || "Failed to update invoice status");
   return;
 }
 
-// ✅ use backend response (NOT input param)
-const updatedStatus = res.data?.status;
+// ✅ WHY THIS KOLAVERI DI?
+const updatedStatus = res.message.data?.status;
 
 setInvoices((prev) =>
   prev.map((inv) =>
@@ -464,7 +465,7 @@ setInvoices((prev) =>
   ),
 );
 
-showSuccess(`Invoice marked as ${updatedStatus}`);
+showSuccess(`Invoice marked as ${status}`);
     } catch (err) {
       closeSwal();
       showApiError(err);
