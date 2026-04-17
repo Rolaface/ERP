@@ -8,6 +8,7 @@ import {
   closeSwal,
 } from "../utils/alert";
 import type { ApiAddress, BoxType } from "../hooks/useAddressLogic";
+import { getPurchaseOrders } from "../api/procurement/PurchaseOrderApi";
 import type {
   PurchaseInvoiceFormData,
   POTab,
@@ -448,7 +449,30 @@ export const usePurchaseInvoiceForm = ({
       showApiError({ message: "Failed to load supplier details" });
     }
   };
+  useEffect(() => {
+    if (!isOpen || !form.supplierId) return;
 
+    const fetchPOs = async () => {
+      try {
+        setPoLoading(true);
+
+        const res = await getPurchaseOrders(1, 50, {
+          supplier: form.supplierId,
+          status: "Approved",
+        });
+
+        console.log("PO LIST:", res.data);
+
+        setPoList(res.data || []);
+      } catch (e) {
+        console.error("PO fetch failed", e);
+      } finally {
+        setPoLoading(false);
+      }
+    };
+
+    fetchPOs();
+  }, [isOpen, form.supplierId]);
   // ── PO select ──────────────────────────────
   const handlePOSelect = async (po: any) => {
     if (!po?.poId) return;
