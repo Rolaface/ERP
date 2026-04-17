@@ -10,14 +10,14 @@ const HeroSection: React.FC = () => {
       if (!imageRef.current) return;
 
       const { innerWidth, innerHeight } = window;
-      const x = (e.clientX - innerWidth / 2) / 50;
-      const y = (e.clientY - innerHeight / 2) / 50;
+      const x = (e.clientX - innerWidth / 2) / 40;
+      const y = (e.clientY - innerHeight / 2) / 40;
 
       imageRef.current.style.transform = `
         perspective(1200px)
-        rotateY(${x * 0.25}deg)
-        rotateX(${-y * 0.25}deg)
-        scale(1.02)
+        rotateY(${x * 0.3}deg)
+        rotateX(${-y * 0.3}deg)
+        scale(1.03)
       `;
     };
 
@@ -35,7 +35,7 @@ const HeroSection: React.FC = () => {
       const x = e.clientX - rect.left - rect.width / 2;
       const y = e.clientY - rect.top - rect.height / 2;
 
-      btn.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px)`;
+      btn.style.transform = `translate(${x * 0.12}px, ${y * 0.12}px)`;
     };
 
     const reset = () => {
@@ -53,51 +53,54 @@ const HeroSection: React.FC = () => {
 
   return (
     <section className="section section-default relative overflow-hidden">
-      
-      {/* Background Gradient Enhancement */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
+
+      {/* 🌌 PREMIUM BACKGROUND */}
+      <div className="absolute inset-0 bg-radial-glow pointer-events-none"></div>
+      <div className="absolute inset-0 bg-grid-subtle opacity-40 pointer-events-none"></div>
 
       <div className="container-app">
-
-        {/* Layout Upgrade */}
         <div className="hero-layout items-center">
 
           {/* LEFT */}
           <div className="max-w-[640px] stack-lg">
 
-            <div className="badge">
+            {/* Badge */}
+            <div className="badge bg-white/60 backdrop-blur-md border border-white/30">
               Trusted by 500+ growing businesses
             </div>
 
-            {/* Headline Upgrade */}
-            <h1 className="text-[32px] md:text-[42px] lg:text-[48px] font-semibold text-main leading-tight tracking-tight">
-              Run your entire business <br />
-              from one powerful dashboard{" "}
-              <span className="text-primary">without chaos</span>
+            {/* 🔥 HEADLINE */}
+            <h1 className="text-[34px] md:text-[46px] lg:text-[56px] font-semibold leading-tight tracking-tight text-main">
+              Run your entire business{" "}
+              <span className="text-gradient">from one powerful dashboard</span>
+              <br />
+              without chaos
             </h1>
 
-            {/* Sharper Subheadline */}
-            <p className="text-muted text-[16px] max-w-[520px] leading-relaxed">
+            {/* Subheadline */}
+            <p className="text-muted text-[17px] max-w-[520px] leading-relaxed">
               Manage inventory, sales, and operations in one place — built for modern distributors and trading businesses.
             </p>
 
-            {/* CTA Section */}
-            <div className="flex items-center gap-[var(--density-gap)] flex-wrap mt-2">
+            {/* CTA */}
+            <div className="flex items-center gap-4 flex-wrap mt-3">
 
+              {/* Primary CTA */}
               <button
                 ref={buttonRef}
-                className="btn btn-primary shadow-md"
+                className="btn btn-primary relative overflow-hidden"
               >
-                Start Free Trial →
+                <span className="relative z-10">Start Free Trial →</span>
               </button>
 
-              <button className="btn btn-outline">
+              {/* Secondary CTA */}
+              <button className="btn btn-ghost border border-theme hover:bg-white/40 backdrop-blur-md">
                 See Live Demo
               </button>
             </div>
 
-            {/* Trust Signal */}
-            <div className="flex items-center gap-4 text-[13px] text-muted">
+            {/* Trust */}
+            <div className="flex items-center gap-5 text-[13px] text-muted mt-2">
               <span>✔ No credit card required</span>
               <span>✔ Setup in minutes</span>
             </div>
@@ -105,23 +108,25 @@ const HeroSection: React.FC = () => {
           </div>
 
           {/* RIGHT */}
-          <div className="relative flex justify-center lg:justify-end mt-10 lg:mt-0">
+          <div className="relative flex justify-center lg:justify-end mt-12 lg:mt-0">
 
-            {/* Floating Elements */}
-            <div className="absolute -top-6 -right-6 w-20 h-20 bg-primary/10 rounded-xl animate-float"></div>
-            <div className="absolute bottom-0 -left-6 w-16 h-16 bg-primary/10 rounded-xl animate-float-delayed"></div>
+            {/* Floating Glow Shapes */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-float-premium"></div>
+            <div className="absolute bottom-0 -left-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl animate-float-delayed"></div>
 
-            {/* Premium Image Wrapper */}
+            {/* Image Wrapper */}
             <div
               ref={imageRef}
-              className="relative transition-transform duration-200 w-full max-w-[560px]"
+              className="relative transition-transform duration-200 w-full max-w-[600px]"
             >
-              <div className="absolute inset-0 bg-primary/10 blur-3xl rounded-[calc(var(--density-radius)*2)]"></div>
+              {/* Glow Behind Image */}
+              <div className="absolute inset-0 bg-[var(--gradient-primary)] opacity-10 blur-3xl rounded-[28px]"></div>
 
+              {/* Image */}
               <img
                 src="/dashboard.png"
                 alt="ERP Dashboard"
-                className="relative w-full rounded-[calc(var(--density-radius)*2)] shadow-xl border border-theme motion-hover-lift"
+                className="relative w-full rounded-[28px] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.25)]"
               />
             </div>
 
