@@ -466,27 +466,23 @@ export const DetailsTab = ({
                   }
                 >
                   <ModalSelect
-                    label=""
+                    label="Select PO"
                     name="poNumber"
                     value={form.poNumber}
                     placeholder="Select PO"
-                    options={(poList || [])
-                      .filter((po) => po.status === "Approved")
-                      .map((po) => ({
-                        label: po.poId,
-                        value: po.poId,
-                      }))}
-                   onChange={(e) => {
-  const poId = e.target.value;
+                    options={(poList || []).map((po) => ({
+                      label: po.poId,
+                      value: po.poId,
+                    }))}
+                    onChange={(e) => {
+                      const poId = e.target.value;
 
-  console.log("PO SELECTED:", poId);
+                      const selected = poList.find((p) => p.poId === poId);
 
-  const selected = poList.find((p) => p.poId === poId);
-
-  if (selected) {
-    onPOSelect(selected);
-  }
-}}
+                      if (selected) {
+                        onPOSelect(selected);
+                      }
+                    }}
                   />
                 </Tooltip>
               ) : (
