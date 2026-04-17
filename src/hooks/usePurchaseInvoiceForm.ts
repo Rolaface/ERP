@@ -8,6 +8,7 @@ import {
   closeSwal,
 } from "../utils/alert";
 import type { ApiAddress, BoxType } from "../hooks/useAddressLogic";
+import { getPurchaseOrders } from "../api/procurement/PurchaseOrderApi";
 import type {
   PurchaseInvoiceFormData,
   POTab,
@@ -24,9 +25,12 @@ import {
 import {
   createPurchaseInvoice,
   getPurchaseInvoiceById,
-  
 } from "../api/procurement/PurchaseInvoiceApi";
-import { mapUIToCreatePI, mapApiToUI, mapSupplierToAddress } from "../types/Supply/purchaseInvoiceMapper";
+import {
+  mapUIToCreatePI,
+  mapApiToUI,
+  mapSupplierToAddress,
+} from "../types/Supply/purchaseInvoiceMapper";
 import { validatePI } from "./piValidator";
 import { getSupplierById } from "../../src/api/procurement/supplierApi";
 import { getCompanyById } from "../api/companySetupApi";
@@ -59,7 +63,7 @@ const addressStub = (id: string, type: string) =>
     ? {
         id,
         title: id,
-        type:type,
+        type: type,
         addressType: type,
         addressLine1: "",
         addressLine2: "",
@@ -108,34 +112,32 @@ export const usePurchaseInvoiceForm = ({
     supplierDispatch: "",
   });
 
-
   useEffect(() => {
-  setForm(prev => ({
-    ...prev,
-    addresses: {
-      ...prev.addresses,
-      companyBillingAddress: {
-        ...prev.addresses.companyBillingAddress,
-        id: selectedIds.companyBilling,
+    setForm((prev) => ({
+      ...prev,
+      addresses: {
+        ...prev.addresses,
+        companyBillingAddress: {
+          ...prev.addresses.companyBillingAddress,
+          id: selectedIds.companyBilling,
+        },
+        shippingAddress: {
+          ...prev.addresses.shippingAddress,
+          id: selectedIds.companyShipping,
+        },
+        supplierAddress: {
+          ...prev.addresses.supplierAddress,
+          id: selectedIds.supplierBilling,
+        },
+        dispatchAddress: {
+          ...prev.addresses.dispatchAddress,
+          id: selectedIds.supplierDispatch,
+        },
       },
-      shippingAddress: {
-        ...prev.addresses.shippingAddress,
-        id: selectedIds.companyShipping,
-      },
-      supplierAddress: {
-        ...prev.addresses.supplierAddress,
-        id: selectedIds.supplierBilling,
-      },
-      dispatchAddress: {
-        ...prev.addresses.dispatchAddress,
-        id: selectedIds.supplierDispatch,
-      },
-    }
-  }));
-  console.log("[PI] selectedIds sync:", selectedIds);
-}, [selectedIds]);
+    }));
+    console.log("[PI] selectedIds sync:", selectedIds);
+  }, [selectedIds]);
 
-  
   const [addresses, setAddresses] = useState<Record<BoxType, ApiAddress[]>>({
     companyBilling: [],
     supplierBilling: [],
@@ -152,7 +154,6 @@ export const usePurchaseInvoiceForm = ({
   const hasLoadedRef = useRef(false);
   const isEditMode = !!pId;
 
-  
   // ── Reset on close ─────────────────────────
   useEffect(() => {
     if (!isOpen) {
@@ -350,13 +351,20 @@ export const usePurchaseInvoiceForm = ({
       return;
     }
 
-    if (name.startsWith("addresses.") && typeof value === "object" && value !== null) {
+    if (
+      name.startsWith("addresses.") &&
+      typeof value === "object" &&
+      value !== null
+    ) {
       const addressKey = name.replace("addresses.", "") as AddressKey;
       setForm((prev) => ({
         ...prev,
         addresses: {
           ...prev.addresses,
-          [addressKey]: { ...prev.addresses[addressKey], ...(value as Record<string, any>) },
+          [addressKey]: {
+            ...prev.addresses[addressKey],
+            ...(value as Record<string, any>),
+          },
         },
       }));
       return;
@@ -441,7 +449,30 @@ export const usePurchaseInvoiceForm = ({
       showApiError({ message: "Failed to load supplier details" });
     }
   };
+useEffect(() => {
+  if (!isOpen || !form.supplierId) return;
 
+  const fetchPOs = async () => {
+    try {
+      setPoLoading(true);
+
+      const res = await getPurchaseOrders(1, 50, {
+        supplierId: form.supplier,
+        status: "Approved",
+      });
+
+      console.log("PO LIST:", res.data);
+
+      setPoList(res.data?.data || []);
+    } catch (e) {
+      console.error("PO fetch failed", e);
+    } finally {
+      setPoLoading(false);
+    }
+  };
+
+  fetchPOs();
+}, [isOpen, form.supplierId]);
   // ── PO select ──────────────────────────────
   const handlePOSelect = async (po: any) => {
     if (!po?.poId) return;
@@ -655,6 +686,7 @@ export const usePurchaseInvoiceForm = ({
           uom: data.unitOfMeasureCd,
           vatRate: Number(selectedTax?.totalTaxRate || 0),
           vatCd: selectedTax?.taxName || "",
+
           packingUnit: Number(data.packingUnit || 0),
           packingSize: Number(data.packingSize || 0),
           packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,

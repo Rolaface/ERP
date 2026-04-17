@@ -7,7 +7,7 @@ import {
   getJournalEntryById,
   getComponentById,
 } from "../api/Accounting/JournalEntryApi";
-import { getSupplierList, getCustomerList, getCurrencyList } from "../api/lookupApi";
+import { getSupplierList, getCustomerListJe, getCurrencyList } from "../api/lookupApi";
 
 export interface JournalEntryForm {
   postingDate: string;
@@ -186,7 +186,7 @@ fetchInitialOptions()}, []);
 
           // Lazy load customers/suppliers if the loaded entry already contains them
           if (loadedEntries.some((e) => e.partyType === "Customer")) {
-            getCustomerList().then(r => setCustomerOptions(mapOptions(r))).catch(() => null);
+            getCustomerListJe().then(r => setCustomerOptions(mapOptions(r))).catch(() => null);
           }
           if (loadedEntries.some((e) => e.partyType === "Supplier")) {
             getSupplierList().then(r => setSupplierOptions(mapOptions(r))).catch(() => null);
@@ -199,6 +199,7 @@ fetchInitialOptions()}, []);
       setLoading(false);
     }
   }, []);
+  console.log("customerOptions", customerOptions);
 
   useEffect(() => {
     if (entryId) loadEntry(entryId);
@@ -280,7 +281,7 @@ const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: 
     // 4. LAZY LOAD: Trigger API call only when user explicitly selects Customer or Supplier
     if (field === "partyType") {
       if (value === "Customer" && customerOptions.length === 0) {
-        getCustomerList().then((res) => setCustomerOptions(mapOptions(res))).catch(console.error);
+        getCustomerListJe().then((res) => setCustomerOptions(mapOptions(res))).catch(console.error);
       } else if (value === "Supplier" && supplierOptions.length === 0) {
         getSupplierList().then((res) => setSupplierOptions(mapOptions(res))).catch(console.error);
       }

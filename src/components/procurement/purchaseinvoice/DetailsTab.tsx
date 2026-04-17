@@ -117,49 +117,48 @@ export const DetailsTab = ({
 
   const [page, setPage] = useState(0);
   const handleModeFetchOptions = async (q: string) => {
+    const res = await getAllModeOfPayment(1, 10, q || "", 1);
 
-  const res = await getAllModeOfPayment(1, 10, q || "", 1);
+    const list = res?.data?.modeOfPayments || res?.data || [];
 
-  const list = res?.data?.modeOfPayments || res?.data || [];
-
-  return list.map((item: any) => ({
-    label: item.name || item.modeOfPayment,
-    value: item.name || item.modeOfPayment,
-    meta: item,
-  }));
-};
-  const handleModeChange = (_: string, option: any) => {
-  onFormChange({
-    target: {
-      name: "paymentType", 
-      value: option?.label || option?.value || "", 
-    },
-  } as any);
-};
-useEffect(() => {
-  const setDefaultMode = async () => {
-    try {
-      const res = await getAllModeOfPayment(1, 10, "", 1);
-
-      const list = res?.data?.modeOfPayments || res?.data || [];
-
-      if (list.length && !form.paymentType) {
-        const first = list[0];
-
-        onFormChange({
-          target: {
-            name: "paymentType",
-            value: first.name || first.modeOfPayment,
-          },
-        } as any);
-      }
-    } catch (err) {
-      console.error("Default mode fetch failed", err);
-    }
+    return list.map((item: any) => ({
+      label: item.name || item.modeOfPayment,
+      value: item.name || item.modeOfPayment,
+      meta: item,
+    }));
   };
+  const handleModeChange = (_: string, option: any) => {
+    onFormChange({
+      target: {
+        name: "paymentType",
+        value: option?.label || option?.value || "",
+      },
+    } as any);
+  };
+  useEffect(() => {
+    const setDefaultMode = async () => {
+      try {
+        const res = await getAllModeOfPayment(1, 10, "", 1);
 
-  setDefaultMode();
-}, []);
+        const list = res?.data?.modeOfPayments || res?.data || [];
+
+        if (list.length && !form.paymentType) {
+          const first = list[0];
+
+          onFormChange({
+            target: {
+              name: "paymentType",
+              value: first.name || first.modeOfPayment,
+            },
+          } as any);
+        }
+      } catch (err) {
+        console.error("Default mode fetch failed", err);
+      }
+    };
+
+    setDefaultMode();
+  }, []);
   const handleTopWarehouseChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -217,8 +216,6 @@ useEffect(() => {
     const taxAmount = netAmount * (vatRate / 100);
 
     const amount = netAmount + taxAmount;
-    
-    
 
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
@@ -479,12 +476,17 @@ useEffect(() => {
                         label: po.poId,
                         value: po.poId,
                       }))}
-                    onChange={(e) => {
-                      const selected = poList.find(
-                        (p) => p.poId === e.target.value,
-                      );
-                      if (selected) onPOSelect(selected);
-                    }}
+                   onChange={(e) => {
+  const poId = e.target.value;
+
+  console.log("PO SELECTED:", poId);
+
+  const selected = poList.find((p) => p.poId === poId);
+
+  if (selected) {
+    onPOSelect(selected);
+  }
+}}
                   />
                 </Tooltip>
               ) : (
