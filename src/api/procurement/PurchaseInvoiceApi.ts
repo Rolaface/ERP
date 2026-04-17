@@ -5,7 +5,7 @@ import { createAxiosInstance } from "../axiosInstance";
 
 import { API, ERP_BASE } from "../../config/api";
 const api = createAxiosInstance(ERP_BASE);
-export const purchaseinvoiceapi = API.purchaseIvoice;
+export const purchaseinvoiceapi = API.purchaseInvoice;
 
 
 export interface PurchaseInvoiceFilters {
@@ -87,4 +87,16 @@ export async function deletePi(name: string): Promise<any> {
     }
   );
   return resp;
+}
+
+
+export async function updatePurchaseInvoice(
+  id: string | number,
+  payload: any
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${purchaseinvoiceapi.update}?id=${id}`,
+    payload
+  );
+  return resp.data;
 }

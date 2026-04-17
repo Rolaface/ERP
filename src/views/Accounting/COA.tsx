@@ -96,10 +96,9 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
               }}
               className={`
                 w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
-                ${
-                  action.danger
-                    ? "text-danger hover:bg-danger/10"
-                    : "text-main hover:bg-row-hover"
+                ${action.danger
+                  ? "text-danger hover:bg-danger/10"
+                  : "text-main hover:bg-row-hover"
                 }
               `}
             >
@@ -275,10 +274,15 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
       header: "Base Currency Balance",
       align: "right",
       render: (row: COAAccount) => {
-        if (row.is_group) return <span className="text-muted text-xs">—</span>;
+        const value = row.balance;
+
+        if (value === null || value === undefined) {
+          return <span className="text-muted text-xs">—</span>;
+        }
+
         return (
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {coaData?.base_currency} {row.balance}
+            {coaData?.base_currency} {value}
           </code>
         );
       },
@@ -296,25 +300,25 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
           },
           ...(row.is_group === 1
             ? [
-                {
-                  label: "Add Child",
-                  icon: <GitBranch size={12} />,
-                  onClick: () => handleAddChild(row),
-                },
-              ]
+              {
+                label: "Add Child",
+                icon: <GitBranch size={12} />,
+                onClick: () => handleAddChild(row),
+              },
+            ]
             : [
-                {
-                  label: "View Ledger",
-                  icon: <BookMarked size={12} />,
-                  onClick: () =>
-                    navigate("/ledger", {
-                      state: {
-                        account: row.name,
-                        currency: row.account_currency,
-                      },
-                    }),
-                },
-              ]),
+              {
+                label: "View Ledger",
+                icon: <BookMarked size={12} />,
+                onClick: () =>
+                  navigate("/ledger", {
+                    state: {
+                      account: row.name,
+                      currency: row.account_currency,
+                    },
+                  }),
+              },
+            ]),
           {
             label: "Delete",
             icon: <Trash2 size={12} />,

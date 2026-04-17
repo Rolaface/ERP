@@ -76,13 +76,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     setLoading,
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
+  // ── Submit: runs full validatePI via handleSubmit ──────────
   const handleSubmitForm = useCallback(async () => {
-    const error = validateTab(activeTab);
-    if (error) {
-      showValidationError(error);
-      return;
-    }
-
     if (internalSaving) return;
 
     setInternalSaving(true);
@@ -94,123 +89,167 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     } finally {
       setInternalSaving(false);
     }
-  }, [validateTab, activeTab, internalSaving, resetDirty, handleSubmit]);
+  }, [internalSaving, resetDirty, handleSubmit]);
 
+  // ── Next: validates CURRENT tab before advancing ───────────
   const handleNextClick = useCallback(() => {
-    const currentIndex = tabOrder.indexOf(activeTab);
-    if (currentIndex < tabOrder.length - 1) {
-      setActiveTab(tabOrder[currentIndex + 1]);
-    }
-  }, [activeTab, setActiveTab]);
-
-  const handleTabClick = useCallback((tabKey: POTab) => {
     const error = validateTab(activeTab);
     if (error) {
       showValidationError(error);
       return;
     }
-    setActiveTab(tabKey);
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1]);
+    }
   }, [activeTab, validateTab, setActiveTab]);
+
+  // ── Tab click: freely navigable — NO validation ────────────
+  const handleTabClick = useCallback(
+    (tabKey: POTab) => {
+      setActiveTab(tabKey);
+    },
+    [setActiveTab],
+  );
 
   const isLastTab = activeTab === "terms";
 
-  const footer = useMemo(() => (
-    <>
-      <Button
-        variant="secondary"
-        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      >
-        Cancel
-      </Button>
-      <div className="flex gap-2">
+  const footer = useMemo(
+    () => (
+      <>
         <Button
           variant="secondary"
-          onClick={() => {
-            resetDirty();
-            reset();
-          }}
+          onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
         >
-          Reset
+          Cancel
         </Button>
-        {!isLastTab && (
-          <Button variant="secondary" onClick={handleNextClick}>
-            Next
-          </Button>
-        )}
-        {isLastTab && (
+        <div className="flex gap-2">
           <Button
-            variant="primary"
-            onClick={handleSubmitForm}
-            disabled={internalSaving}
+            variant="secondary"
+            onClick={() => {
+              resetDirty();
+              reset();
+            }}
           >
-            {internalSaving ? "Saving..." : "Submit"}
+            Reset
           </Button>
-        )}
-      </div>
-    </>
-  ), [handleCloseWithConfirm, onClose, resolvedModalId, resetDirty, reset, isLastTab, handleNextClick, handleSubmitForm, internalSaving]);
+          {!isLastTab && (
+            <Button variant="secondary" onClick={handleNextClick}>
+              Next
+            </Button>
+          )}
+          {isLastTab && (
+            <Button
+              variant="primary"
+              onClick={handleSubmitForm}
+              disabled={internalSaving}
+            >
+              {internalSaving ? "Saving..." : "Submit"}
+            </Button>
+          )}
+        </div>
+      </>
+    ),
+    [
+      handleCloseWithConfirm,
+      onClose,
+      resolvedModalId,
+      resetDirty,
+      reset,
+      isLastTab,
+      handleNextClick,
+      handleSubmitForm,
+      internalSaving,
+    ],
+  );
 
-  // Memoized tab content - stays mounted but hidden
-  const tabContent = useMemo(() => (
-    <>
-      <div style={{ display: activeTab === "details" ? "block" : "none" }}>
-        <DetailsTab
-          form={form}
-          items={form.items}
-          onFormChange={handleFormChange}
-          onSupplierChange={handleSupplierChange}
-          onItemChange={handleItemChange}
-          onAddItem={addItem}
-          onRemoveItem={removeItem}
-          onDuplicateItem={duplicateItem}
-          getCurrencySymbol={getCurrencySymbol}
-          onItemSelect={handleItemSelect}
-          poList={poList}
-          poLoading={poLoading}
-          onPOSelect={handlePOSelect}
-          usePO={usePO}
-          onTogglePO={handleTogglePO}
-          onBulkItemChange={handleBulkItemChange}
-        />
-      </div>
+  // Memoized tab content — stays mounted but hidden for perf
+  const tabContent = useMemo(
+    () => (
+      <>
+        <div style={{ display: activeTab === "details" ? "block" : "none" }}>
+          <DetailsTab
+            form={form}
+            items={form.items}
+            onFormChange={handleFormChange}
+            onSupplierChange={handleSupplierChange}
+            onItemChange={handleItemChange}
+            onAddItem={addItem}
+            onRemoveItem={removeItem}
+            onDuplicateItem={duplicateItem}
+            getCurrencySymbol={getCurrencySymbol}
+            onItemSelect={handleItemSelect}
+            poList={poList}
+            poLoading={poLoading}
+            onPOSelect={handlePOSelect}
+            usePO={usePO}
+            onTogglePO={handleTogglePO}
+            onBulkItemChange={handleBulkItemChange}
+          />
+        </div>
 
-      <div style={{ display: activeTab === "address" ? "block" : "none" }}>
-        <AddressTab
-          form={form}
-          onFormChange={(e: any) => handleFormChange(e)}
-          customShippingRule={customShippingRule}
-          setCustomShippingRule={setCustomShippingRule}
-          customIncoterm={customIncoterm}
-          setCustomIncoterm={setCustomIncoterm}
-          supplierId={form.supplierId}
-          selected={selected}
-          setSelected={setSelected}
-          selectedIds={selectedIds}
-          setSelectedIds={setSelectedIds}
-          addresses={addresses}
-          setAddresses={setAddresses}
-          loading={loading}
-          setLoading={setLoading}
-        />
-      </div>
+        <div style={{ display: activeTab === "address" ? "block" : "none" }}>
+          <AddressTab
+            form={form}
+            onFormChange={(e: any) => handleFormChange(e)}
+            customShippingRule={customShippingRule}
+            setCustomShippingRule={setCustomShippingRule}
+            customIncoterm={customIncoterm}
+            setCustomIncoterm={setCustomIncoterm}
+            supplierId={form.supplierId}
+            selected={selected}
+            setSelected={setSelected}
+            selectedIds={selectedIds}
+            setSelectedIds={setSelectedIds}
+            addresses={addresses}
+            setAddresses={setAddresses}
+            loading={loading}
+            setLoading={setLoading}
+          />
+        </div>
 
-      <div style={{ display: activeTab === "terms" ? "block" : "none" }}>
-        <TermsAndCondition
-          terms={form.terms?.buying ?? null}
-          setTerms={(buying) =>
-            setForm((p) => ({ ...p, terms: { buying } }))
-          }
-          type="buying"
-        />
-      </div>
-    </>
-  ), [
-    activeTab, form, handleFormChange, handleSupplierChange, handleItemChange,
-    addItem, removeItem, duplicateItem, getCurrencySymbol, handleItemSelect,
-    poList, poLoading, handlePOSelect, usePO, handleTogglePO, handleBulkItemChange,
-    customShippingRule, setCustomShippingRule, customIncoterm, setCustomIncoterm,
-    selected, setSelected, selectedIds, setSelectedIds, addresses, setAddresses, loading, setLoading
-  ]);
+        <div style={{ display: activeTab === "terms" ? "block" : "none" }}>
+          <TermsAndCondition
+            terms={form.terms?.buying ?? null}
+            setTerms={(buying) =>
+              setForm((p) => ({ ...p, terms: { buying } }))
+            }
+            type="buying"
+          />
+        </div>
+      </>
+    ),
+    [
+      activeTab,
+      form,
+      handleFormChange,
+      handleSupplierChange,
+      handleItemChange,
+      addItem,
+      removeItem,
+      duplicateItem,
+      getCurrencySymbol,
+      handleItemSelect,
+      poList,
+      poLoading,
+      handlePOSelect,
+      usePO,
+      handleTogglePO,
+      handleBulkItemChange,
+      customShippingRule,
+      setCustomShippingRule,
+      customIncoterm,
+      setCustomIncoterm,
+      selected,
+      setSelected,
+      selectedIds,
+      setSelectedIds,
+      addresses,
+      setAddresses,
+      loading,
+      setLoading,
+    ],
+  );
 
   return (
     <MinimizableModal
@@ -230,6 +269,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         onChange={() => markDirty()}
         className="h-full flex flex-col"
       >
+        {/* ── Tabs — freely navigable, NO validation on click ── */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
             {tabs.map(({ key, icon: Icon, label }) => (

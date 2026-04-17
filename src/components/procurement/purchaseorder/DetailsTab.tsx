@@ -49,11 +49,11 @@ const POColumnHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
       Item Name
     </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[180px]">
+      Description
+    </th>
     <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[120px]">
-      Packing{" "}
-      <span className="ml-1 text-[9px] text-muted/60 font-normal">
-        (unit × size)
-      </span>
+      Packing(unit × size)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
       Required By
@@ -74,7 +74,7 @@ const POColumnHeaders: React.FC = () => (
       Tax(%)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px] whitespace-nowrap">
-      Tax Code <span className="text-danger">*</span>
+      Tax Name <span className="text-danger">*</span>
     </th>
     <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">
       Amount
@@ -180,10 +180,29 @@ export const DetailsTab = ({
           </div>
         </td>
 
+
+        {/* Description */}
+        <td className="px-2 py-1">
+          <Tooltip
+            content={
+              it.description
+                ? `Description: ${it.description}`
+                : "Enter description"
+            }
+          >
+            <input
+              name="description"
+              value={it.description || ""}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[90px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </Tooltip>
+        </td>
+
         {/* Packing */}
         <td className="px-2 py-1">
           <div className="flex items-center justify-center gap-1">
-            <Tooltip content={`Packing Unit: ${it.packingUnit || "N/A"}`}>
+            <Tooltip content={`Packing Unit: ${it.packingUnit || " "}`}>
               <input
                 type="number"
                 name="packingUnit"
@@ -193,7 +212,7 @@ export const DetailsTab = ({
               />
             </Tooltip>
             <span className="text-muted text-[10px] font-bold">×</span>
-            <Tooltip content={`Packing Size: ${it.packingSize || "N/A"}`}>
+            <Tooltip content={`Packing Size: ${it.packingSize || " "}`}>
               <input
                 type="number"
                 name="packingSize"
