@@ -899,12 +899,12 @@ export const usePurchaseInvoiceForm = ({
       }
     }
 
-    if (tab === "address") {
-      const addr = form.addresses?.supplierAddress;
-      if (!addr?.id?.trim()) return "Supplier Address is required";
-      if (!addr?.city?.trim()) return "City is required";
-      if (!addr?.country?.trim()) return "Country is required";
-    }
+    // if (tab === "address") {
+    //   const addr = form.addresses?.supplierAddress;
+    //   if (!addr?.id?.trim()) return "Supplier Address is required";
+    //   if (!addr?.city?.trim()) return "City is required";
+    //   if (!addr?.country?.trim()) return "Country is required";
+    // }
 
     return null;
   };
