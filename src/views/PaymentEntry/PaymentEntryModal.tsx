@@ -237,7 +237,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     return () => { cancelled = true; };
   }, [isOpen]);
 
-  // ── Watch amountFrom — set isAllocating=true immediately when amount
+    // ── Watch amountFrom — set isAllocating=true immediately when amount
   //    changes AND party is selected, BEFORE InvoiceList has a chance to react
   // ──────────────────────────────────────────────────────────────────────────
   const amountFrom = Number(form?.amountFrom ?? form?.amount ?? 0);
@@ -263,8 +263,10 @@ const PaymentEntryModal: React.FC<Props> = ({
   const advance = isAllocating ? 0 : Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
-const getResetPartyState = (name: string, value: string) => ({
+const getResetPartyState = (prev: any, name: string, value: string) => ({
+  ...prev,
   [name]: value,
+  partyId: name === "partyName" ? prev.partyId : "",
   allocatedAmount: 0,
   selectedInvoices: [],
   allocations: {},
@@ -318,9 +320,9 @@ useEffect(() => {
       }
 
       setForm((prev) => {
-        if (name === "partyType" || name === "partyName") {
-          return { ...prev, ...getResetPartyState(name, value) };
-        }
+       if (name === "partyType" || name === "partyName") {
+  return getResetPartyState(prev, name, value);
+}
         if (name === "amount" || name === "amountFrom") {
           return { ...prev, ...getOptimisticAmountState(prev, name, value) };
         }
@@ -412,7 +414,7 @@ useEffect(() => {
 
   const invoiceListForm = {
     partyType: form?.partyType,
-    partyName: form?.partyId,
+    partyName: form?.partyName,
     amount: form?.amountFrom ?? form?.amount,
     fifoTrigger: form?.fifoTrigger,
     referenceName: form?.referenceName,
