@@ -158,9 +158,15 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
             onChange={(e) => {
               const val = e.target.value;
               setSearch(val);
-              setIsCustom(true); // mark as custom typing
+              setIsCustom(true); 
+               
               if (!open) setOpen(true);
             }}
+            onBlur={() => {
+  if (allowCustomInput && search) {
+    onChange(search, { label: search, value: search }); 
+  }
+}}
             onFocus={async () => {
               if (!open) {
                 setOpen(true);
@@ -223,7 +229,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
                     setIsCustom(false);
                     setOpen(false);
                   }}
-                  className="px-3 py-2 cursor-pointer text-[13px] hover:bg-gray-100"
+                  className="px-3 py-2 cursor-pointer text-[13px] hover:taxg-gray-100"
                 >
                   {opt.label}
                 </div>

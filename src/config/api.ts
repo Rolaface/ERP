@@ -45,11 +45,11 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = getApiBaseUrl();
 // console.log("🚀 ~ ERP_BASE:", ERP_BASE)
 
 // export const ERP_BASE = ENV.apiBaseUrl;
-// export const ERP_BASE = "";
+ export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -156,6 +156,7 @@ export const API = {
     getById: `${ERP_BASE}/api/resource/Journal Entry`,
     update: `${ERP_BASE}/api/resource/Journal Entry`,
     delete: `${ERP_BASE}/api/resource/Journal Entry`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.accounting.journal_entry.api.update_journal_entry_status`,
   },
   CurrencyExchange: {
     create: `${ERP_BASE}/api/method/custom_api.api.currency_exchange.create_currency_exchange`,
@@ -377,12 +378,12 @@ export const API = {
     createInvoiceFromPO: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.create_pi_from_po`,
   },
   //purchase invoice
-  purchaseIvoice: {
+  purchaseInvoice: {
     getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get`,
 
     getById: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.create`,
-
+    update: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update_status`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
   },

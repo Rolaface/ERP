@@ -141,8 +141,8 @@ const payL: string[] = ([
   invoice?.paymentInformation?.accountNumber
     ? `A/C: ${invoice.paymentInformation.accountNumber}`
     : null,
-  invoice?.paymentInformation?.routingNumber
-    ? `Sort Code: ${invoice.paymentInformation.routingNumber}`
+  invoice?.paymentInformation?.branchCode
+    ? `Branch Code: ${invoice.paymentInformation.branchCode}`
     : null,
      invoice?.paymentInformation?.swiftCode
     ? `SWIFT: ${invoice.paymentInformation.swiftCode}`
@@ -313,7 +313,7 @@ const taxTotal = Number(invoice.total_tax ?? 0);
   const grandTotal  = Number(invoice.grand_total ?? 0);
 
   
-  const otherCharges = (invoice?.invoiceCharges || []).reduce(
+  const otherCharges = (invoice?.charges || []).reduce(
   (sum: number, ch: any) => sum + Number(ch.amount ?? 0),
   0
 );
@@ -345,10 +345,10 @@ const taxTotal = Number(invoice.total_tax ?? 0);
   
  ["FOB", `${fmt2(fobValue)} ${cur}`],
  
-  ...(invoice?.invoiceCharges || []).map((ch: any) => [
-    ch.charge_type,
-    `${fmt2(ch.amount)} ${cur}`,
-  ]),
+  ...(invoice?.charges || []).map((ch: any) => [
+  ch.accountHead,
+  `${fmt2(ch.amount)} ${cur}`,
+]),
   ["CIF", `${fmt2(cifValue)} ${cur}`],
  
 ],

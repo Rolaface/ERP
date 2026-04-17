@@ -24,7 +24,10 @@ import ActionButton, {
 
 import type { Column } from "../../components/ui/Table/type";
 import type { ItemSummary, Item } from "../../types/item";
-import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import {
+  REFRESH_KEYS,
+  useDataRefreshStore,
+} from "../../store/dataRefreshStore";
 
 type OutletContextType = {
   openItemCreate: (context?: { onSuccess?: () => void }) => void;
@@ -35,11 +38,6 @@ type OutletContextType = {
   ) => void;
 };
 
-// ─── FLATTEN HELPER ───────────────────────────────────────────────────────────
-// Keeps ALL nested objects intact (vendorInfo, inventoryInfo, taxInfo, batchInfo)
-// so ItemDetailView can read item?.vendorInfo?.preferredVendor etc.
-// Also hoists flat legacy fields for table columns that need them directly.
-
 const flattenItemDetail = (fullItem: any): Item => {
   if (!fullItem) return {} as Item;
 
@@ -49,8 +47,8 @@ const flattenItemDetail = (fullItem: any): Item => {
     ...fullItem,
 
     taxCategory: Array.isArray(taxInfo)
-      ? taxInfo[0]?.taxCategory ?? fullItem.taxCategory ?? ""
-      : (taxInfo as any)?.taxCategory ?? fullItem.taxCategory ?? "",
+      ? (taxInfo[0]?.taxCategory ?? fullItem.taxCategory ?? "")
+      : ((taxInfo as any)?.taxCategory ?? fullItem.taxCategory ?? ""),
 
     taxPreference:
       fullItem.taxInfo?.taxPreference ?? fullItem.taxPreference ?? "",
@@ -148,13 +146,15 @@ const Items: React.FC = () => {
       const flat = rawList.map((it: any) => ({
         ...it,
         taxCategory: Array.isArray(it.taxInfo)
-          ? it.taxInfo[0]?.taxCategory ?? ""
-          : it.taxInfo?.taxCategory ?? "",
+          ? (it.taxInfo[0]?.taxCategory ?? "")
+          : (it.taxInfo?.taxCategory ?? ""),
         taxPreference: it.taxInfo?.taxPreference ?? "",
         taxType: it.taxInfo?.taxType ?? "",
         taxCode: it.taxInfo?.taxCode ?? "",
         taxPerct: it.taxInfo?.taxPerct ?? "",
         preferredVendor: it.vendorInfo?.preferredVendor ?? "",
+        preferredVendorName: it.vendorInfo?.preferredVendorName ?? "",
+
         salesAccount: it.vendorInfo?.salesAccount ?? "",
         purchaseAccount: it.vendorInfo?.purchaseAccount ?? "",
         minStockLevel: it.inventoryInfo?.minStockLevel ?? "",
@@ -197,13 +197,14 @@ const Items: React.FC = () => {
       const flat = rawList.map((it: any) => ({
         ...it,
         taxCategory: Array.isArray(it.taxInfo)
-          ? it.taxInfo[0]?.taxCategory ?? ""
-          : it.taxInfo?.taxCategory ?? "",
+          ? (it.taxInfo[0]?.taxCategory ?? "")
+          : (it.taxInfo?.taxCategory ?? ""),
         taxPreference: it.taxInfo?.taxPreference ?? "",
         taxType: it.taxInfo?.taxType ?? "",
         taxCode: it.taxInfo?.taxCode ?? "",
         taxPerct: it.taxInfo?.taxPerct ?? "",
         preferredVendor: it.vendorInfo?.preferredVendor ?? "",
+        preferredVendorName: it.vendorInfo?.preferredVendorName ?? "",
         salesAccount: it.vendorInfo?.salesAccount ?? "",
         purchaseAccount: it.vendorInfo?.purchaseAccount ?? "",
         minStockLevel: it.inventoryInfo?.minStockLevel ?? "",
@@ -242,25 +243,12 @@ const Items: React.FC = () => {
     openItemCreate({ onSuccess: refetchItemData });
   }, [openItemCreate, refetchItemData]);
 
-  /* ────────────────────────────────────────────────────────────────────────
-   * handleRowClick
-   *
-   * KEY ORDERING FIX:
-   *   setViewMode("detail") is called SYNCHRONOUSLY before the await so that
-   *   React renders the detail panel immediately. Previously the await could
-   *   resolve in the same tick as other state updates and the panel would
-   *   flicker back to "table".
-   *
-   * RESPONSE SHAPE FIX:
-   *   Handles both  res.data.data  AND  res.data  so it never silently gets
-   *   null and falls through to "Select an item from the sidebar".
-   * ─────────────────────────────────────────────────────────────────────── */
   const handleRowClick = async (summary: ItemSummary) => {
     // ── 1. Synchronous state updates FIRST (before any await) ──────────────
     setActiveSummary(summary);
-    setViewMode("detail");   // ← panel appears immediately
+    setViewMode("detail"); // ← panel appears immediately
     setDetailLoading(true);
-    setSelectedItem(null);   // ← clears stale data while loading
+    setSelectedItem(null); // ← clears stale data while loading
 
     // ── 2. Sidebar population (fire-and-forget) ───────────────────────────
     if (allItems.length === 0) void fetchAllItems();
@@ -284,8 +272,6 @@ const Items: React.FC = () => {
         return;
       }
 
-      // flattenItemDetail preserves nested vendorInfo / inventoryInfo /
-      // taxInfo / batchInfo AND adds flat aliases for table columns.
       setSelectedItem(flattenItemDetail(raw));
     } catch (err) {
       console.error("handleRowClick: API call failed", err);
@@ -383,7 +369,7 @@ const Items: React.FC = () => {
     {
       key: "itemName",
       header: "Name",
-      align: "left",
+      align: "center",
       maxWidth: "200px",
       truncate: true,
       render: (i) => <span className="truncate block">{i.itemName}</span>,
@@ -391,7 +377,7 @@ const Items: React.FC = () => {
     {
       key: "itemGroup",
       header: "Category",
-      align: "left",
+      align: "center",
       maxWidth: "90px",
       truncate: true,
       render: (i) => <span className="truncate block">{i.itemGroup}</span>,
@@ -400,33 +386,33 @@ const Items: React.FC = () => {
     {
       key: "minStockLevel",
       header: "Min",
-      align: "right",
+      align: "center",
       maxWidth: "60px",
       truncate: true,
     },
     {
       key: "maxStockLevel",
       header: "Max",
-      align: "right",
+      align: "center",
       maxWidth: "60px",
       truncate: true,
     },
 
     {
-      key: "preferredVendor",
+      key: "preferredVendorName",
       header: "Supplier",
-      align: "left",
+      align: "center",
       maxWidth: "180px",
       truncate: true,
       render: (i) => (
-        <span className="truncate block">{i.preferredVendor}</span>
+        <span className="truncate block">{i.preferredVendorName}</span>
       ),
     },
 
     {
       key: "sellingPrice",
       header: "Price",
-      align: "left",
+      align: "center",
       maxWidth: "90px",
       truncate: true,
       render: (i) => (

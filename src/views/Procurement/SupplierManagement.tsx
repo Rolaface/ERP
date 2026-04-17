@@ -222,12 +222,12 @@ const handleEditSupplier = async (supplier: Supplier) => {
           {supplier.supplierId|| "-"}
         </span>
       ),
-      tooltip: (supplier) => supplier.supplierCode || "-",
+      tooltip: (supplier) => supplier.supplierId || "-",
     },
     {
       key: "supplierName",
       header: "Supplier Name",
-      align: "left",
+      align: "center",
       render: (supplier) => (
         <span className="block truncate text-sm">
           {supplier.supplierName || "-"}
@@ -238,7 +238,7 @@ const handleEditSupplier = async (supplier: Supplier) => {
     {
       key: "taxCategory",
       header: "Tax Category",
-      align: "left",
+      align: "center",
       render: (supplier) => (
         <span className="block truncate text-sm">
           {supplier.taxCategory || "-"}
@@ -249,7 +249,7 @@ const handleEditSupplier = async (supplier: Supplier) => {
     {
       key: "phoneNo",
       header: "Phone",
-      align: "left",
+      align: "center",
       render: (supplier) => (
         <span className="block truncate text-sm">
           {supplier.phoneNo || "-"}
@@ -260,7 +260,7 @@ const handleEditSupplier = async (supplier: Supplier) => {
     {
       key: "tpin",
       header: "TPIN",
-      align: "left",
+      align: "center",
       render: (supplier) =>
         supplier.tpin ? (
           <code className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
@@ -274,7 +274,7 @@ const handleEditSupplier = async (supplier: Supplier) => {
     {
       key: "currency",
       header: "Currency",
-      align: "left",
+      align: "center",
       render: (supplier) => (
         <span className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
           {supplier.currency || "-"}
@@ -285,7 +285,7 @@ const handleEditSupplier = async (supplier: Supplier) => {
     {
       key: "status",
       header: "Status",
-      align: "left",
+      align: "center",
       render: (supplier) => <StatusBadge status={supplier.status || "active"} />,
     },
     {

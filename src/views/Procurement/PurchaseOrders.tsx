@@ -437,7 +437,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
     }
   };
 
-  // ── Columns
+ 
   const columns: Column<PurchaseOrder>[] = [
     {
   key: "id",
@@ -448,39 +448,32 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
       {o.id || "—"}
     </span>
   ),
-},
-    {
-  key: "referenceNumber",
-  header: "Reference Code",
-  align: "left",
-  render: (o) => (
-    <span className="truncate max-w-[140px] block">
-      {o.referenceNumber || "—"}
-    </span>
-  ),
+  tooltip: (o) => o.id || "—",
 },
    {
   key: "supplier",
   header: "Supplier",
-  align: "left",
+  align: "center",
   render: (o) => (
     <span className="truncate max-w-[160px] block">
       {o.supplier || "—"}
     </span>
   ),
+  tooltip: (o) => o.supplier || "—",
 },
   {
   key: "date",
   header: "Date",
-  align: "left",
+  align: "center",
   render: (o) => (
     <span>{o.date || "—"}</span>
   ),
+  tooltip: (o) => o.date || "—",
 },
     {
       key: "amount",
       header: "Amount",
-      align: "right",
+      align: "center",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {Number(o.amount || 0).toFixed(2)}
@@ -490,13 +483,13 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
     {
       key: "status",
       header: "Status",
-      align: "left",
+      align: "center",
       render: (o) => <StatusBadge status={o.status} />,
     },
    {
   key: "deliveryDate",
   header: "Delivery Date",
-  align: "left",
+  align: "center",
   render: (o) => (
     <span>{o.deliveryDate || "—"}</span>
   ),

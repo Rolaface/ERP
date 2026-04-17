@@ -366,37 +366,11 @@ export const useItemForm = ({
     return null;
   };
 
-  const getTaxValidationError = (
-    taxRows: ItemTaxRow[],
-  ): ItemValidationError | null => {
-    if (taxRows.length === 0) {
-      return {
-        tab: "taxDetails",
-        field: "taxRows",
-        message: "At least one tax row is required.",
-      };
-    }
-
-    for (const [index, row] of taxRows.entries()) {
-      if (!row.taxCategory.trim()) {
-        return {
-          tab: "taxDetails",
-          field: `taxRows.${index}.taxCategory`,
-          message: `Tax Category is required in row ${index + 1}.`,
-        };
-      }
-
-      if (!row.taxTemplate.trim()) {
-        return {
-          tab: "taxDetails",
-          field: `taxRows.${index}.taxTemplate`,
-          message: `Tax Template is required in row ${index + 1}.`,
-        };
-      }
-    }
-
-    return null;
-  };
+const getTaxValidationError = (
+  taxRows: ItemTaxRow[],
+): ItemValidationError | null => {
+  return null;
+};
 
   const getValidationErrorForTab = (
     tab: ItemModalTab,

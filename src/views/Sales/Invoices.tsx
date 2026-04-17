@@ -445,16 +445,17 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       showLoading("Updating invoice status...");
 
     const res = await updateInvoiceStatus(invoiceNumber, status);
+    console.log("🚀 ~ handleRowStatusChange ~ res:", res)
 
 closeSwal();
 
-if (!res || res.status_code !== 200) {
-  showApiError(res?.message || "Failed to update invoice status");
+if (!res.message || res.message.status_code !== 200) {
+  showApiError(res?.message.message || "Failed to update invoice status");
   return;
 }
 
-// ✅ use backend response (NOT input param)
-const updatedStatus = res.data?.status;
+// ✅ WHY THIS KOLAVERI DI?
+const updatedStatus = res.message.data?.status;
 
 setInvoices((prev) =>
   prev.map((inv) =>
@@ -464,7 +465,7 @@ setInvoices((prev) =>
   ),
 );
 
-showSuccess(`Invoice marked as ${updatedStatus}`);
+showSuccess(`Invoice marked as ${status}`);
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -522,20 +523,21 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
     {
       key: "invoiceType",
       header: "Type",
-      align: "left",
+      align: "center",
       render: (inv) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block max-w-[80px] truncate whitespace-nowrap overflow-hidden">
           {inv.invoiceType}
         </code>
       ),
+      tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
     },
     {
       key: "customerName",
       header: "Customer",
-      align: "left",
+      align: "center",
       sortable: true,
       render: (inv) => (
-        <span className="text-sm text-main">{inv.customerName}</span>
+          <span className="text-sm text-main whitespace-nowrap truncate block max-w-[160px] overflow-hidden">{inv.customerName}</span>
       ),
       tooltip: (inv) => `Customer: ${inv.customerName}`,
     },

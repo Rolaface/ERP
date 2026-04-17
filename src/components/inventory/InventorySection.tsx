@@ -179,10 +179,10 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
             name="valuationMethod"
             value={form.valuationMethod ?? ""}
             onChange={onFormChange}
-            placeholder="Select..."
           >
             <option value="FIFO">FIFO</option>
-            <option value="WAC">WAC</option>
+            <option value="LIFO">LIFO</option>
+            <option value="Moving Average">Moving Average</option>
           </ModalSelect>
         </div>
 

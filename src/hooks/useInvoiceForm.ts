@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { getCustomerByCustomerCode } from "../api/customerApi";
 import { getCompanyById } from "../api/companySetupApi";
-import { useCompanyStore } from "../store/companyStore";
 import type { TermSection } from "../types/termsAndCondition";
 import type { Invoice, InvoiceItem } from "../types/invoice";
 import { getRolaCountryList } from "../api/lookupApi";
@@ -16,12 +15,12 @@ import {
 } from "../constants/invoice.constants";
 import dayjs from "dayjs";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants 
 
 const ITEMS_PER_PAGE = 5;
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers 
 
 const getDefaultBank = (accounts: any[] = []) =>
   accounts.find(

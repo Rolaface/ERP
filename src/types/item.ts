@@ -76,4 +76,5 @@ export interface ItemSummary {
   stockEntryType: string;
   totalTaxableAmount: number;
   warehouse: string;
+  preferredVendorName:string;
 }

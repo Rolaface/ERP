@@ -7,7 +7,8 @@ import {
   getJournalEntryById,
   getComponentById,
 } from "../api/Accounting/JournalEntryApi";
-import { getSupplierList, getCustomerListJe, getCurrencyList } from "../api/lookupApi";
+import { getSupplierList, getCustomerListJe } from "../api/lookupApi";
+import { getAllCurrencyExchanges } from "../api/currencyExchangeApi";
 
 export interface JournalEntryForm {
   postingDate: string;
@@ -46,28 +47,6 @@ const emptyEntry = (): JournalEntryLine => ({
   remark: "",
 });
 
-// A bulletproof mapper to dig through Frappe's nested response wrappers
-// const mapOptions = (res: any) => {
-//   const data = 
-//     res?.data?.message?.data || 
-//     res?.data?.message || 
-//     res?.data?.data || 
-//     res?.message?.data || 
-//     res?.data || 
-//     res || 
-//     [];
-    
-//   return Array.isArray(data)
-//     ? data.map((item: any) => {
-//         // Fallbacks for different Frappe doctypes
-//         const optionValue = item.value || item.name || item.currency_name || "Unknown";
-//         return {
-//           label: optionValue,
-//           value: optionValue,
-//         };
-//       })
-//     : [];
-// };
 const mapOptions = (res: any) => {
   const data = 
     res?.data?.message?.data || 
@@ -81,8 +60,9 @@ const mapOptions = (res: any) => {
   return Array.isArray(data)
     ? data.map((item: any) => {
         const optionValue = item.value || item.name || item.currency_name || "Unknown";
+        const optionLabel = item.label || item.name || item.currency_name || optionValue;
         return {
-          label: optionValue,
+          label: optionLabel,
           value: optionValue,
           currency: item.account_currency || "",
         };
@@ -106,41 +86,54 @@ export const useJournalEntryLogic = (onSuccess?: () => void, entryId?: string) =
   const [supplierOptions, setSupplierOptions] = useState<{label: string, value: string}[]>([]);
   const [currencyOptions, setCurrencyOptions] = useState<{label: string, value: string}[]>([]);
 
-  // 1. Fetch standard lookups on mount
-  // useEffect(() => {
-  //   const fetchInitialOptions = async () => {
-  //     try {
-  //       const [accRes, ptRes] = await Promise.all([
-  //         getComponentById("Account").catch(() => null),
-  //         getComponentById("Party Type").catch(() => null),
-  //         // getCurrencyList().catch(() => null)
-  //       ]);
-
-  //       setAccountOptions(mapOptions(accRes));
-  //       setPartyTypeOptions(mapOptions(ptRes));
-  //       // setCurrencyOptions(mapOptions(currRes));
-  //     } catch (err) {
-  //       console.error("Failed to fetch dropdown options", err);
-  //     }
-  //   };
-  //   fetchInitialOptions();
-  // }, []);
-  // 1. Fetch standard lookups on mount
+// useEffect(() => {
+// const fetchInitialOptions = async () => {
+// try {
+// const [accRes, ptRes] = await Promise.all([
+//  // Pass the specific fields you need for the Account lookup here
+//  getComponentById("Account", ["name", "account_currency"]).catch(() => null),
+//  getComponentById("Party Type").catch(() => null),
+// ]);
+// setAccountOptions(mapOptions(accRes));
+// setPartyTypeOptions(mapOptions(ptRes));
+//    } catch (err) {
+// console.error("Failed to fetch dropdown options", err);
+// }
+// };
+// fetchInitialOptions()}, []);
 useEffect(() => {
-const fetchInitialOptions = async () => {
-try {
-const [accRes, ptRes] = await Promise.all([
- // Pass the specific fields you need for the Account lookup here
- getComponentById("Account", ["name", "account_currency"]).catch(() => null),
- getComponentById("Party Type").catch(() => null),
-]);
-setAccountOptions(mapOptions(accRes));
-setPartyTypeOptions(mapOptions(ptRes));
-   } catch (err) {
-console.error("Failed to fetch dropdown options", err);
-}
-};
-fetchInitialOptions()}, []);
+  const fetchInitialOptions = async () => {
+    try {
+      const [accRes, ptRes] = await Promise.all([
+        getComponentById("Account", ["name", "account_currency"]).catch(() => null),
+        getComponentById("Party Type").catch(() => null),
+      ]);
+
+      // 1. Extract the raw account data from your API response structure
+      const rawAccounts = 
+        accRes?.data?.message?.data || 
+        accRes?.data?.message || 
+        accRes?.data?.data || 
+        accRes?.data || [];
+
+      // 2. Map it to include both name and currency in the label
+      const formattedAccountOptions = Array.isArray(rawAccounts) ? rawAccounts.map((item: any) => ({
+        label: `${item.name} -> (${item.account_currency})`,
+        value: item.name,
+        currency: item.account_currency || "",
+      })) : [];
+
+      setAccountOptions(formattedAccountOptions);
+      
+      // Leave Party Types using the generic mapper
+      setPartyTypeOptions(mapOptions(ptRes));
+    } catch (err) {
+      console.error("Failed to fetch dropdown options", err);
+    }
+  };
+  
+  fetchInitialOptions();
+}, []);
 
   // 2. Fetch Existing Entry (Edit/View Mode)
   const loadEntry = useCallback(async (id: string) => {
@@ -206,79 +199,150 @@ fetchInitialOptions()}, []);
     else reset();
   }, [entryId, loadEntry]);
 
-  const totals = useMemo(() => {
+const totals = useMemo(() => {
     let debit = 0;
     let credit = 0;
     entries.forEach((entry) => {
       const val = Math.abs(parseFloat(entry.amount)) || 0;
-      if (entry.entryType === "Dr") debit += val;
-      else if (entry.entryType === "Cr") credit += val;
+      // Fallback to 1 if the exchange rate is blank/missing
+      const rate = parseFloat(entry.exchange_rate) || 1; 
+      const baseValue = val * rate;
+      
+      if (entry.entryType === "Dr") debit += baseValue;
+      else if (entry.entryType === "Cr") credit += baseValue;
     });
     return { debit, credit };
   }, [entries]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const val = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
+    
     setForm((prev) => ({ ...prev, [name]: val }));
     if (errors[name as keyof JournalEntryForm]) setErrors((prev) => ({ ...prev, [name]: undefined }));
+
+    // Re-evaluate the pair of rates if the date changes
+    if (name === "postingDate") {
+      updateExchangeRates(entries, val as string);
+    }
   };
 
-  // const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: string) => {
-  //   setEntries((prev) => {
-  //     const newEntries = [...prev];
-  //     const updatedRow = { ...newEntries[index], [field]: value };
-      
-  //     if (field === "partyType") {
-  //       updatedRow.party = ""; 
-  //     }
+// HELPER 1: Calculates Row 2 amount based on Row 1 and current exchange rates
+// HELPER 1: Calculates Row amount based on its specific partner
+const calculateAmounts = (currentEntries: JournalEntryLine[], editedIndex: number) => {
+  const newEntries = [...currentEntries];
 
-  //     if (index === 0 && field === "amount" && newEntries.length >= 2 && !prev[1].amount) {
-  //        newEntries[1] = { ...newEntries[1], amount: value };
-  //     }
-      
-  //     newEntries[index] = updatedRow;
-  //     return newEntries;
-  //   });
+  // Figure out if the edited row is even (Dr) or odd (Cr) to find its partner
+  const isEven = editedIndex % 2 === 0;
+  const pairIndex = isEven ? editedIndex + 1 : editedIndex - 1;
 
-  //   // 3. LAZY LOAD: Trigger API call only when user explicitly selects Customer or Supplier
-  //   if (field === "partyType") {
-  //     if (value === "Customer" && customerOptions.length === 0) {
-  //       getCustomerList().then((res) => setCustomerOptions(mapOptions(res))).catch(console.error);
-  //     } else if (value === "Supplier" && supplierOptions.length === 0) {
-  //       getSupplierList().then((res) => setSupplierOptions(mapOptions(res))).catch(console.error);
-  //     }
-  //   }
-  // };
-const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: string) => {
-    setEntries((prev) => {
-      const newEntries = [...prev];
-      const updatedRow = { ...newEntries[index], [field]: value };
-      
-      // 1. AUTO-FILL CURRENCY WHEN ACCOUNT CHANGES
-      if (field === "account") {
-        const selectedAccount = accountOptions.find((opt) => opt.value === value);
-        if (selectedAccount && selectedAccount.currency) {
-          updatedRow.ccy = selectedAccount.currency;
-        } else {
-           // Optional: clear the currency if the newly selected account has no default currency
-           updatedRow.ccy = ""; 
+  // Only proceed if the partner row exists
+  if (newEntries[editedIndex] && newEntries[pairIndex]) {
+    const inputAmount = parseFloat(newEntries[editedIndex].amount) || 0;
+
+    if (inputAmount > 0 && newEntries[editedIndex].ccy && newEntries[pairIndex].ccy) {
+      const rate1 = parseFloat(newEntries[editedIndex].exchange_rate) || 1;
+      const rate2 = parseFloat(newEntries[pairIndex].exchange_rate) || 1;
+
+      const convertedAmount = (inputAmount * rate1) / rate2;
+      newEntries[pairIndex].amount = convertedAmount ? Number(convertedAmount.toFixed(2)).toString() : "";
+    } else if (inputAmount > 0 && !newEntries[pairIndex].ccy) {
+      newEntries[pairIndex].amount = inputAmount.toString();
+    } else if (!inputAmount) {
+      newEntries[pairIndex].amount = "";
+    }
+  }
+  return newEntries;
+};
+
+const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: string, triggerIndex?: number) => {
+  let newEntries = [...currentEntries];
+
+  // Internal helper to fetch rates for a specific pair of rows
+  const processPair = async (index: number) => {
+    const isEven = index % 2 === 0;
+    const idx1 = isEven ? index : index - 1;
+    const idx2 = isEven ? index + 1 : index;
+
+    if (!newEntries[idx1] || !newEntries[idx2]) return;
+
+    const ccy1 = newEntries[idx1].ccy;
+    const ccy2 = newEntries[idx2].ccy;
+
+    if (!ccy1 && !ccy2) return;
+
+    // If currencies are the same, rate is 1
+    if (ccy1 === ccy2) {
+      newEntries[idx1].exchange_rate = ccy1 ? "1" : "";
+      newEntries[idx2].exchange_rate = ccy2 ? "1" : "";
+      return;
+    }
+
+    try {
+      let res = await getAllCurrencyExchanges(1, 10, undefined, ccy1, ccy2, date);
+      let data = res?.message?.data?.data || [];
+
+      if (data.length > 0) {
+        newEntries[idx1].exchange_rate = data[0].exchange_rate.toString();
+        newEntries[idx2].exchange_rate = "1";
+      } else {
+        // Try the reverse pair if the first fails
+        res = await getAllCurrencyExchanges(1, 10, undefined, ccy2, ccy1, date);
+        data = res?.message?.data?.data || [];
+        if (data.length > 0) {
+          newEntries[idx2].exchange_rate = data[0].exchange_rate.toString();
+          newEntries[idx1].exchange_rate = "1";
         }
       }
+    } catch (error) {
+      console.error("Exchange rate fetch failed:", error);
+    }
+  };
 
-      if (field === "partyType") {
-        updatedRow.party = ""; 
+  // If a specific row triggered this, only update its pair
+  if (triggerIndex !== undefined) {
+    await processPair(triggerIndex);
+    newEntries = calculateAmounts(newEntries, triggerIndex);
+  } else {
+    // If the Date changed, loop through and update ALL pairs
+    for (let i = 0; i < newEntries.length; i += 2) {
+      await processPair(i);
+      newEntries = calculateAmounts(newEntries, i);
+    }
+  }
+
+  setEntries(newEntries);
+};
+  
+const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: string) => {
+    // 1. Build the new state synchronously
+    let updatedEntries = [...entries];
+    const updatedRow = { ...updatedEntries[index], [field]: value };
+
+    if (field === "account") {
+      const selectedAccount = accountOptions.find((opt) => opt.value === value);
+      if (selectedAccount && selectedAccount.currency) {
+        updatedRow.ccy = selectedAccount.currency;
+      } else {
+        updatedRow.ccy = "";
+        updatedRow.exchange_rate = "";
       }
+    }
 
-      if (index === 0 && field === "amount" && newEntries.length >= 2 && !prev[1].amount) {
-         newEntries[1] = { ...newEntries[1], amount: value };
-      }
-      
-      newEntries[index] = updatedRow;
-      return newEntries;
-    });
+    if (field === "partyType") {
+      updatedRow.party = ""; 
+    }
 
-    // 4. LAZY LOAD: Trigger API call only when user explicitly selects Customer or Supplier
+    updatedEntries[index] = updatedRow;
+    if (field === "amount") {
+  // PASS THE INDEX HERE
+  updatedEntries = calculateAmounts(updatedEntries, index);
+}
+
+    // 3. Update UI state
+    setEntries(updatedEntries);
+
+    // 4. Lazy Load Party Options
     if (field === "partyType") {
       if (value === "Customer" && customerOptions.length === 0) {
         getCustomerListJe().then((res) => setCustomerOptions(mapOptions(res))).catch(console.error);
@@ -286,8 +350,24 @@ const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: 
         getSupplierList().then((res) => setSupplierOptions(mapOptions(res))).catch(console.error);
       }
     }
+
+    // 5. Trigger API ONLY if the account (and therefore currency) changed
+    // if (field === "account") {
+    //   updateExchangeRates(updatedEntries, form.postingDate);
+    // }
+    if (field === "account") {
+  // PASS THE INDEX HERE
+  updateExchangeRates(updatedEntries, form.postingDate, index);
+}
   };
-  const handleAddRow = () => setEntries((prev) => [...prev, { ...emptyEntry(), entryType: "Dr" }]);
+// const handleAddRow = () => setEntries((prev) => [...prev, { ...emptyEntry(), entryType: "Dr" }]);
+const handleAddRow = () => {
+  setEntries((prev) => [
+    ...prev, 
+    { ...emptyEntry(), entryType: "Dr" }, 
+    { ...emptyEntry(), entryType: "Cr" }
+  ]);
+};
   const handleRemoveRow = (index: number) => setEntries((prev) => prev.filter((_, i) => i !== index));
 
   const validate = (): boolean => {

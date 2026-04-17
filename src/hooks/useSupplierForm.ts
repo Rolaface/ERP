@@ -392,11 +392,13 @@ export const useSupplierForm = ({
   res?.message?.message ||
   (isEditMode ? "Supplier Updated" : "Supplier Created");
 
-await showSuccess(successMessage); // IMPORTANT: must wait
+await showSuccess(successMessage);
 
-useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.SUPPLIER_LIST);
+useDataRefreshStore.getState().triggerRefresh(
+  REFRESH_KEYS.SUPPLIER_LIST
+);
 
-onSuccess?.(form);
+onSuccess?.(form); 
 
       /* Step 2 — Bank accounts (only on create, not edit) */
       if (!isEditMode) {
@@ -434,14 +436,10 @@ onSuccess?.(form);
 
       /* Success */
 
-      res?.message?.message ||
+      res?.message?.message 
         res?.message ||
         (isEditMode ? "Supplier Updated" : "Supplier Created");
 
-      showSuccess(successMessage);
-      
-      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.SUPPLIER_LIST);
-      onSuccess?.(form);
     } catch (err: any) {
       showApiError(err);
     } finally {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
+import ExpandableTreeTable, { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
 import { getChartOfAccounts } from "../../api/Accounting/AccountApi";
 import GLView from "./glview";
@@ -70,78 +70,49 @@ interface MenuAction {
 }
 
 const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    if (open) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
   return (
-    <div ref={ref} className="relative flex justify-end">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((p) => !p);
-        }}
-        className={`
-          w-7 h-7 flex items-center justify-center rounded-md transition
-          opacity-0 group-hover:opacity-100
-          ${
-            open
-              ? "bg-primary/10 text-primary"
-              : "text-muted hover:bg-row-hover hover:text-main"
-          }
-        `}
+    <div className="flex justify-end">
+      <PortalDropdown
+        align="right"
+        trigger={
+          <button
+            type="button"
+            className="w-7 h-7 flex items-center justify-center rounded-md transition text-muted hover:bg-row-hover hover:text-main"
+          >
+            <MoreHorizontal size={15} />
+          </button>
+        }
       >
-        <MoreHorizontal size={15} />
-      </button>
-
-      {open && (
-        <div
-          className="absolute right-0 top-8 z-50 min-w-[160px] bg-card border border-theme rounded-xl shadow-xl py-1.5 overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {actions.map((action, i) => (
-            <React.Fragment key={i}>
-              {action.dividerBefore && (
-                <div className="border-t border-theme my-1" />
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  action.onClick();
-                  setOpen(false);
-                }}
-                className={`
-                  w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
-                  ${
-                    action.danger
-                      ? "text-danger hover:bg-danger/10"
-                      : "text-main hover:bg-row-hover"
-                  }
-                `}
-              >
-                <span className={action.danger ? "text-danger" : "text-muted"}>
-                  {action.icon}
-                </span>
-                {action.label}
-              </button>
-            </React.Fragment>
-          ))}
-        </div>
-      )}
+        {actions.map((action, i) => (
+          <React.Fragment key={i}>
+            {action.dividerBefore && (
+              <div className="border-t border-[var(--border)] my-1" />
+            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                action.onClick();
+              }}
+              className={`
+                w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
+                ${action.danger
+                  ? "text-danger hover:bg-danger/10"
+                  : "text-main hover:bg-row-hover"
+                }
+              `}
+            >
+              <span className={action.danger ? "text-danger" : "text-muted"}>
+                {action.icon}
+              </span>
+              {action.label}
+            </button>
+          </React.Fragment>
+        ))}
+      </PortalDropdown>
     </div>
   );
 };
-
 // ─── Main Component ────────────────────────────────────────────────────────
 const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
   const [coaData, setCoaData] = useState<COAResponseData | null>(null);
@@ -303,10 +274,15 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
       header: "Base Currency Balance",
       align: "right",
       render: (row: COAAccount) => {
-        if (row.is_group) return <span className="text-muted text-xs">—</span>;
+        const value = row.balance;
+
+        if (value === null || value === undefined) {
+          return <span className="text-muted text-xs">—</span>;
+        }
+
         return (
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {coaData?.base_currency} {row.balance}
+            {coaData?.base_currency} {value}
           </code>
         );
       },
@@ -324,25 +300,25 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
           },
           ...(row.is_group === 1
             ? [
-                {
-                  label: "Add Child",
-                  icon: <GitBranch size={12} />,
-                  onClick: () => handleAddChild(row),
-                },
-              ]
+              {
+                label: "Add Child",
+                icon: <GitBranch size={12} />,
+                onClick: () => handleAddChild(row),
+              },
+            ]
             : [
-                {
-                  label: "View Ledger",
-                  icon: <BookMarked size={12} />,
-                  onClick: () =>
-                    navigate("/ledger", {
-                      state: {
-                        account: row.name,
-                        currency: row.account_currency,
-                      },
-                    }),
-                },
-              ]),
+              {
+                label: "View Ledger",
+                icon: <BookMarked size={12} />,
+                onClick: () =>
+                  navigate("/ledger", {
+                    state: {
+                      account: row.name,
+                      currency: row.account_currency,
+                    },
+                  }),
+              },
+            ]),
           {
             label: "Delete",
             icon: <Trash2 size={12} />,
