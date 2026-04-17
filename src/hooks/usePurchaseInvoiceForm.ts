@@ -449,30 +449,30 @@ export const usePurchaseInvoiceForm = ({
       showApiError({ message: "Failed to load supplier details" });
     }
   };
-useEffect(() => {
-  if (!isOpen || !form.supplierId) return;
+  useEffect(() => {
+    if (!isOpen || !form.supplierId) return;
 
-  const fetchPOs = async () => {
-    try {
-      setPoLoading(true);
+    const fetchPOs = async () => {
+      try {
+        setPoLoading(true);
 
-      const res = await getPurchaseOrders(1, 50, {
-        supplierId: form.supplier,
-        status: "Approved",
-      });
+        const res = await getPurchaseOrders(1, 50, {
+          supplier: form.supplierId,
+          status: "Approved",
+        });
 
-      console.log("PO LIST:", res.data);
+        console.log("PO LIST:", res.data);
 
-      setPoList(res.data?.data || []);
-    } catch (e) {
-      console.error("PO fetch failed", e);
-    } finally {
-      setPoLoading(false);
-    }
-  };
+        setPoList(res.data || []);
+      } catch (e) {
+        console.error("PO fetch failed", e);
+      } finally {
+        setPoLoading(false);
+      }
+    };
 
-  fetchPOs();
-}, [isOpen, form.supplierId]);
+    fetchPOs();
+  }, [isOpen, form.supplierId]);
   // ── PO select ──────────────────────────────
   const handlePOSelect = async (po: any) => {
     if (!po?.poId) return;
