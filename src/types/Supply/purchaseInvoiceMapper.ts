@@ -35,9 +35,9 @@ const skeletonAddress = (
   email: str(source?.email),
 });
 
-// ─────────────────────────────────────────────
+
 // UI → API  (Create / Update payload)
-// ─────────────────────────────────────────────
+
 
 export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
   const items = form.items
@@ -139,9 +139,9 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
   return payload;
 };
 
-// ─────────────────────────────────────────────
+
 // API → UI  (Load / Edit)
-// ─────────────────────────────────────────────
+
 
 export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
   const api = apiResponse?.data || apiResponse;
@@ -351,9 +351,9 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
   return mappedForm;
 };
 
-// ─────────────────────────────────────────────
+
 // Supplier API → AddressBlock
-// ─────────────────────────────────────────────
+
 
 export const mapSupplierToAddress = (
   supplier: any,

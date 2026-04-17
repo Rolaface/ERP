@@ -576,7 +576,7 @@ export const usePurchaseInvoiceForm = ({
           vatRate: Number(selectedTax?.totalTaxRate || 0),
           vatCd: selectedTax?.taxName || "",
 
-          description: "",
+          description: str(item.description || ""),
           warehouse: form.updateStock ? str(item.warehouse) : "",
           packingUnit: Number(item.packingUnit || 0),
           packingSize: Number(item.packingSize || 0),
