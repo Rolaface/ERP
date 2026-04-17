@@ -219,30 +219,7 @@
   --table-head-text: #fff;
 }
 
-:root[data-theme="amber"] {
-  --primary: #e9a23b;
-  --primary-600: #cc8a2e;
-  --primary-700: #a56d23;
-  --bg: #f5f7fa;
-  --card: #ffffff;
-  --text: #1e293b;
-  --muted: #64748b;
-  --sidebar-bg: #ffffff;
-  --sidebar-text: #1e293b;
-  --table-head: #1e293b;
-}
 
-:root[data-theme="yellow"] {
-  --primary: #fbbf24;
-  --primary-600: #f59e0b;
-  --bg: #fffdf7;
-  --card: #ffffff;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --sidebar-bg: #ffffff;
-  --sidebar-text: #1f2937;
-  --table-head: #111827;
-}
 
 :root[data-theme="dark"] {
   --primary: #60a5fa;
@@ -280,18 +257,7 @@
   --table-head: #374151;
 }
 
-:root[data-theme="midnight"] {
-  --primary: #2563eb;
-  --primary-600: #1d4ed8;
-  --bg: #f3f4f6;
-  --card: #ffffff;
-  --text: #0f172a;
-  --muted: #64748b;
-  --sidebar-bg: #104076;
-  --sidebar-text: #ffffff;
-  --border: #e2e8f0;
-  --table-head: var(--primary);
-}
+
 
 :root[data-theme="ocean"] {
   --primary: #06b6d4;
@@ -316,18 +282,6 @@
   --sidebar-text: #f5f5f4;
   --table-head: #ffe4e6;
   --table-head-text: #881337;
-}
-
-:root[data-theme="rose"] {
-  --primary: #f0a0b0;
-  --primary-600: #e88099;
-  --bg: #fff7f8;
-  --card: #ffffff;
-  --text: #5c3a4a;
-  --muted: #ad8b96;
-  --sidebar-bg: #ffffff;
-  --sidebar-text: #5c3a4a;
-  --table-head: #a37e88;
 }
 
 :root[data-theme="mint"] {
@@ -356,42 +310,6 @@
   --table-head-text: #3730a3;
 }
 
-:root[data-theme="nordic"] {
-  --primary: #475569;
-  --primary-600: #334155;
-  --bg: #f8fafc;
-  --card: #ffffff;
-  --text: #334155;
-  --muted: #94a3b8;
-  --sidebar-bg: #1e293b;
-  --sidebar-text: #f1f5f9;
-  --table-head: #e2e8f0;
-}
-
-:root[data-theme="cyber"] {
-  --primary: #00f2ff;
-  --primary-600: #00d4e0;
-  --bg: #050505;
-  --card: #0d1117;
-  --text: #ffffff;
-  --muted: #8b949e;
-  --sidebar-bg: #000000;
-  --sidebar-text: #00f2ff;
-  --table-head: #161b22;
-  --table-head-text: var(--primary);
-}
-
-:root[data-theme="glass"] {
-  --primary: #3b82f6;
-  --primary-600: #2563eb;
-  --bg: #f0f2f5;
-  --card: rgba(255, 255, 255, 0.7);
-  --text: #1c1e21;
-  --muted: #65676b;
-  --sidebar-bg: rgba(255, 255, 255, 0.8);
-  --sidebar-text: #1c1e21;
-  --border: rgba(255, 255, 255, 0.4);
-}
 
 :root[data-theme="luxury"] {
   --primary: #d4af37;
