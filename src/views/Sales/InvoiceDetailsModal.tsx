@@ -244,7 +244,7 @@ const fobTotal = grandTotal - totalCharges;
             </div>
             <div style={{ lineHeight: 1 }}>
               <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>Invoice</p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{data?.invoiceNumber ?? "—"}</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{data?.id ?? "—"}</p>
             </div>
             <span className={`idm-btn ${statusCls}`} style={{ cursor: "default", padding: "2px 9px", fontSize: 10, borderRadius: 20 }}>
               {data?.invoiceStatus ?? "Draft"}
