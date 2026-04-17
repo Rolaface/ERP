@@ -5,15 +5,13 @@ import {
 } from "./purchaseInvoice";
 import type { AddressBlock } from "./purchaseInvoice";
 
-// ─────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────
+
 
 const num = (v: any) => Number(v || 0);
 
 const str = (v: any) => (v ? String(v).trim() : "");
 
-/** Resolve address ID from flat root key OR nested object */
+
 const resolveAddressId = (flat: any, nested: any): string =>
   str(flat) || str(nested?.id) || "";
 
@@ -42,7 +40,6 @@ const skeletonAddress = (
 // ─────────────────────────────────────────────
 
 export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
-  // ── Items ──────────────────────────────────
   const items = form.items
     .filter(
       (it) =>
@@ -107,9 +104,8 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
     spplrInvcNo: form.supplierInvoiceNumber,
     spplrInvcDt: form.supplierInvoiceDate,
     paymentType: form.paymentType,
-    transactionProgress: form.transactionProgress,
 
-    // Address — send only the ID string, same as Purchase Order
+
     supplier_address: form.addresses?.supplierAddress?.id || "",
     shipping_address: form.addresses?.shippingAddress?.id || "",
     dispatch_address: form.addresses?.dispatchAddress?.id || "",
@@ -122,7 +118,7 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
     items,
     metadata: {},
 
-    // Optional fields — only included when truthy
+
     lpoNumber: form.poNumber || "",
     ...(form.updateStock && form.warehouse && { warehouse: form.warehouse }),
     ...(form.costCenter && { costCenter: form.costCenter }),
@@ -152,25 +148,38 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
 
   // ── Items ──────────────────────────────────
   const items = (api.items || []).map((item: any) => {
-    const selectedTax =
-      item.taxInfo?.find(
-        (t: any) =>
-          t.taxCategory?.toLowerCase() === api.taxCategory?.toLowerCase(),
-      ) || item.taxInfo?.[0];
 
+    const selectedTax =
+      (item.taxInfo || []).find(
+        (t: any) =>
+          t.taxCategory?.toLowerCase?.() ===
+          (api.taxCategory || "").toLowerCase()
+      ) || (item.taxInfo || [])[0] || null;
     return {
       itemCode: str(item.item_code || item.itemCode),
       itemName: str(item.item_name || item.itemName),
       quantity: num(item.qty || item.quantity),
       rate: num(item.rate || item.price),
       uom: str(item.uom),
-      vatCd: str(item.vatCd || item.VatCd || selectedTax?.taxName),
-      vatRate: num(item.vatRate || item.taxPerct || selectedTax?.totalTaxRate),
+      vatCd: str(
+        item.vatCd ||
+        item.taxName ||
+        selectedTax?.taxName ||
+        ""
+      ),
+
+      vatRate: num(
+        item.vatRate ||
+        item.taxRate ||
+        selectedTax?.totalTaxRate ||
+        selectedTax?.taxRates?.[0]?.tax_rate ||
+        0
+      ),
       description: str(item.description),
       packing: str(item.packing),
-      batchNo: str(item.batchNo),
-      mfgDate: str(item.mfgDate),
-      expDate: str(item.expDate),
+      batchNo: str(item.batchNo || ""),
+      mfgDate: str(item.mfgDate || ""),
+      expDate: str(item.expDate || ""),
       discount: num(item.discount),
       warehouse: str(item.warehouse),
       packingUnit: num(item.packingUnit),
@@ -203,30 +212,24 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
     ];
   }
 
-  // ── Addresses ──────────────────────────────
-  // Backend returns flat ID strings at root level:
-  //   api.supplier_address, api.shipping_address, api.dispatch_address, api.billing_address
-  // AND optionally a nested api.addresses object with full details.
-  // We resolve the ID from the flat root first (same as PO mapper),
-  // then fill display fields from the nested object if present.
 
   const addresses = {
     supplierAddress: skeletonAddress(
-      resolveAddressId(api.supplier_address, api.addresses?.supplierAddress),
+      resolveAddressId(api.supplier_address || api.supplierAddress, api.addresses?.supplierAddress),
       "Supplier Main Address",
       "Billing",
       api.addresses?.supplierAddress,
     ),
 
     dispatchAddress: skeletonAddress(
-      resolveAddressId(api.dispatch_address, api.addresses?.dispatchAddress),
+      resolveAddressId(api.dispatch_address || api.dispatchAddress, api.addresses?.dispatchAddress),
       "Warehouse Dispatch",
       "Shipping",
       api.addresses?.dispatchAddress,
     ),
 
     shippingAddress: skeletonAddress(
-      resolveAddressId(api.shipping_address, api.addresses?.shippingAddress),
+      resolveAddressId(api.shipping_address || api.shippingAddress, api.addresses?.shippingAddress),
       "Customer Delivery Address",
       "Shipping",
       api.addresses?.shippingAddress,
@@ -234,7 +237,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
 
     companyBillingAddress: skeletonAddress(
       resolveAddressId(
-        api.billing_address,
+        api.billing_address || api.billingAddress,
         api.addresses?.companyBillingAddress,
       ),
       "Company HQ Billing",
@@ -291,8 +294,8 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
   const mappedForm: PurchaseInvoiceFormData = {
     ...emptyPOForm,
 
-    poNumber: str(api.lpoNumber),
-    date: str(api.poDate),
+    poNumber: str(api.lpoNumber || api.poId || ""),
+    date: str(api.piDate),
     taxCategory: str(api.taxCategory),
     updateStock: api.updateStock ?? true,
 
@@ -302,7 +305,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
     supplierEmail: str(api.emailId || api.email),
     supplierPhone: str(api.phone),
     supplierContact: str(api.contactPerson),
-
+    supplierContactDisplay: str(api.contactDisplay || api.contactPerson),
     currency: str(api.currency),
     status: str(api.status),
     costCenter: str(api.costCenter),
@@ -318,7 +321,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
     supplierInvoiceNumber: str(api.spplrInvcNo),
     supplierInvoiceDate: str(api.spplrInvcDt),
     paymentType: str(api.paymentType),
-    transactionProgress: str(api.transactionProgress),
+
 
     warehouse: str(api.warehouse),
 
@@ -335,8 +338,6 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
     advanceAmount,
     roundingAdjustment,
     roundedTotal,
-
-    // Email template (not persisted from API)
     templateName: "",
     templateType: "",
     subject: "",

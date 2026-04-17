@@ -9,7 +9,7 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
     const hasQty = it.quantity && Number(it.quantity) > 0;
     const hasRate = it.rate && Number(it.rate) > 0;
 
-    return hasCode && hasQty && hasRate; // Only include complete items
+    return hasCode && hasQty && hasRate; 
   });
 
   const items = validItems.map((it, idx) => {

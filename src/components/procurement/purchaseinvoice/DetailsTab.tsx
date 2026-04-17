@@ -438,6 +438,7 @@ export const DetailsTab = ({
               }
             >
               <SupplierSelect
+               value={form.supplier || ""}
                 selectedId={form.supplierId}
                 onChange={(s) => {
                   console.log("UI SELECT:", s);
@@ -599,8 +600,8 @@ export const DetailsTab = ({
             <Tooltip
               content={
                 form.paymentType
-                  ? `Payment Type: ${form.paymentType}`
-                  : "Select payment type"
+                  ? `Mode of Payment: ${form.paymentType}`
+                  : "Select a mode of payment"
               }
             >
               <SearchSelect2
