@@ -106,7 +106,7 @@ const InvoiceHeaders: React.FC = () => (
       Tax(%)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
-      Tax Code
+     Tax Name
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
       Amount
@@ -155,12 +155,13 @@ const ItemTable: React.FC<ItemTableProps> = ({
           <StockItemSelect
             value={it.itemCode}
             batchNo={it.batchNo}
-            itemName={it.description}
+            itemName={it.itemName}
             taxCategory={taxCategory}
 onChange={(item: SelectedStockItem) => {
   actions.updateItemDirectly?.(i, {
 
     itemCode: item.itemCode,
+    itemName: item.itemName,
     description: item.description,
 
    
