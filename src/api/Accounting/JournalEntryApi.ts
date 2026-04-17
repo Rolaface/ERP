@@ -86,8 +86,7 @@ export async function updateJournalEntryStatus(
   if (!id) throw new Error("Journal Entry ID is required");
   if (!action) throw new Error("Action is required");
 
-  const resp: AxiosResponse = await api.post(
-    "/api/method/custom_api.journal_entry.api.update_journal_entry_status",
+  const resp: AxiosResponse = await api.post(JournalEntryAPI.updateStatus,
     {
       id,
       action,
