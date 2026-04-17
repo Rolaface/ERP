@@ -155,9 +155,7 @@ export default function StockItemSelect({
       >
         <Package className="w-3 h-3 text-muted" />
         <span className="flex-1 truncate">
-          {selected?.itemCode ||
-            itemName ||
-            (loading ? "Loading..." : "Select item")}
+          {selected?.itemName || itemName || (loading ? "Loading..." : "Select item")}
         </span>
 
         {(selected || value) && (
@@ -220,7 +218,12 @@ export default function StockItemSelect({
                   onClick={() => handleSelect(row)}
                   className="grid grid-cols-6 gap-3 px-3 py-2 text-[11px] cursor-pointer row-hover border-b border-theme last:border-none"
                 >
-                  <div className="font-medium">{row.itemCode}</div>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{row.itemCode}</span>
+                    <span className="text-[10px] text-muted truncate">
+                      {row.itemName}
+                    </span>
+                  </div>
                   <div>{row.batchNo || "-"}</div>
                   <div>{fmt(row.mfgDate)}</div>
                   <div>{fmt(row.expiryDate)}</div>

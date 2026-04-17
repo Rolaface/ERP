@@ -621,11 +621,11 @@ const TermsAndCondition: React.FC<Props> = ({
             <button
               key={tab.key}
               type="button"
-              disabled={isEditing && i !== activeTab}
+              disabled={false}
               onClick={() => setActiveTab(i)}
               className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all
                 ${i === activeTab ? "text-white shadow-sm" : "text-muted hover:bg-theme"}
-                ${isEditing && i !== activeTab ? "opacity-30 cursor-not-allowed" : ""}
+                
               `}
               style={
                 i === activeTab ? { background: "var(--primary-600)" } : {}
