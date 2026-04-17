@@ -1,11 +1,107 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ChevronRight, ChevronDown, Folder, FolderOpen, FileText } from "lucide-react";
 import { FaSearch } from "react-icons/fa";
 import { Layers, RefreshCw } from "lucide-react";
 import type { Column } from "./type";
 
 
-// Types
+// ── PortalDropdown ─────────────────────────────────────────────────────────────
+// Renders the dropdown menu at document.body level so it is never clipped
+// by the table's overflow:auto scroll container.
+
+export interface PortalDropdownProps {
+  trigger: React.ReactNode;
+  children: React.ReactNode;
+  align?: "right" | "left";
+}
+
+export function PortalDropdown({ trigger, children, align = "right" }: PortalDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const dropdownHeight = dropdownRef.current?.offsetHeight ?? 100;
+    const dropdownWidth = dropdownRef.current?.offsetWidth ?? 160;
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    // Flip upward if not enough space below
+    const top =
+      spaceBelow < dropdownHeight + 8
+        ? rect.top - dropdownHeight - 4
+        : rect.bottom + 4;
+
+    const left =
+      align === "right"
+        ? rect.right - dropdownWidth
+        : rect.left;
+
+    setPos({ top, left });
+  }, [align]);
+
+  // Recalculate position after dropdown mounts (so we have real dimensions)
+  useEffect(() => {
+    if (open) {
+      // First paint: approximate position
+      updatePosition();
+      // After paint: precise position with real dimensions
+      const id = requestAnimationFrame(updatePosition);
+      return () => cancelAnimationFrame(id);
+    }
+  }, [open, updatePosition]);
+
+  // Close on outside click or any scroll
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    document.addEventListener("mousedown", close);
+    document.addEventListener("scroll", close, true); // capture — fires on any scrollable
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
+  return (
+    <div ref={triggerRef} className="relative inline-block">
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((o) => !o);
+        }}
+      >
+        {trigger}
+      </div>
+
+      {open &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              top: pos.top,
+              left: pos.left,
+              zIndex: 9999,
+            }}
+            className="bg-card border border-[var(--border)] rounded-xl shadow-lg py-1 min-w-[160px]"
+          >
+            {children}
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+}
+
+
+// ── Types ──────────────────────────────────────────────────────────────────────
 
 export interface ExpandableTreeTableProps<T extends Record<string, any>> {
   columns: Column<T>[];
@@ -14,18 +110,18 @@ export interface ExpandableTreeTableProps<T extends Record<string, any>> {
   nodeKey: (node: T) => string;
   isGroupKey?: string;
 
-  // ── Toolbar (mirrors Table's toolbar props) ──
+  // ── Toolbar ──
   showToolbar?: boolean;
-   showSearch?: boolean; 
+  showSearch?: boolean;
   searchValue?: string;
   onSearch?: (q: string) => void;
   toolbarPlaceholder?: string;
   extraFilters?: React.ReactNode;
-  onRefresh?: () => void;           
-  showExpandControls?: boolean;     
+  onRefresh?: () => void;
+  showExpandControls?: boolean;
 
   // ── Tree behaviour ──
-  searchTerm?: string;               
+  searchTerm?: string;
   matchNode?: (node: T, term: string) => boolean;
   defaultExpandDepth?: number;
   indentSize?: number;
@@ -41,8 +137,7 @@ export interface ExpandableTreeTableProps<T extends Record<string, any>> {
 }
 
 
-// Helpers
-
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function nodeOrDescendantMatches<T extends Record<string, any>>(
   node: T,
@@ -87,8 +182,7 @@ function collectAllExpandableKeys<T extends Record<string, any>>(
 export { collectAllExpandableKeys, collectExpandableKeys };
 
 
-// Skeleton Row — identical to Table's
-
+// ── Skeleton Row ───────────────────────────────────────────────────────────────
 
 const SkeletonRow: React.FC<{ columnsCount: number }> = ({ columnsCount }) => (
   <tr className="bg-transparent">
@@ -101,8 +195,7 @@ const SkeletonRow: React.FC<{ columnsCount: number }> = ({ columnsCount }) => (
 );
 
 
-// Default expand icon
-
+// ── Default expand icon ────────────────────────────────────────────────────────
 
 function defaultExpandIcon<T extends Record<string, any>>(
   _node: T,
@@ -116,8 +209,7 @@ function defaultExpandIcon<T extends Record<string, any>>(
 }
 
 
-// Tree Row
-
+// ── Tree Row ───────────────────────────────────────────────────────────────────
 
 interface TreeRowProps<T extends Record<string, any>> {
   node: T;
@@ -133,7 +225,7 @@ interface TreeRowProps<T extends Record<string, any>> {
   onRowClick?: (n: T) => void;
   expandIconRender?: (n: T, isExpanded: boolean, hasChildren: boolean) => React.ReactNode;
   rowClassName?: (n: T, depth: number) => string;
-  rowIndex: number; // for alternating rows,
+  rowIndex: number;
   isGroupKey: string;
 }
 
@@ -252,8 +344,7 @@ function TreeRow<T extends Record<string, any>>({
 }
 
 
-// Main ExpandableTreeTable — same outer structure as Table
-
+// ── Main ExpandableTreeTable ───────────────────────────────────────────────────
 
 function ExpandableTreeTable<T extends Record<string, any>>({
   columns,
@@ -284,7 +375,6 @@ function ExpandableTreeTable<T extends Record<string, any>>({
 
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
-  // Active search term: toolbar's searchValue takes priority over external searchTerm prop
   const activeTerm = showToolbar ? searchValue : (externalSearchTerm ?? "");
 
   const resolvedMatchNode = useCallback(
@@ -317,7 +407,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
   }, [data, nodeKey, childrenKey]);
 
   const collapseAll = useCallback(() => {
-    setExpandedKeys(new Set()); // collapse everything
+    setExpandedKeys(new Set());
   }, []);
 
   const getAlignment = (align?: "left" | "center" | "right") => {
@@ -327,78 +417,86 @@ function ExpandableTreeTable<T extends Record<string, any>>({
   };
 
   return (
-    // ── Exact same outer wrapper as Table ──
     <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col shadow-sm transition-all relative z-10 w-full">
 
-      {/* ── Toolbar — exact same layout as Table's toolbar ── */}
-     {showToolbar && (
-  <div className="px-5 py-4 border-b border-[var(--border)] bg-card flex flex-col lg:flex-row lg:items-center gap-4 shrink-0">
+      {/* ── Toolbar ── */}
+      {showToolbar && (
+        <div className="px-5 py-4 border-b border-[var(--border)] bg-card flex flex-col lg:flex-row lg:items-center gap-4 shrink-0">
 
-    {/* Search — left */}
-    {showSearch && (
-      <div className="relative w-52 group">
-        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs group-focus-within:text-primary transition-colors" />
-        <input
-          value={searchValue}
-          onChange={(e) => onSearch?.(e.target.value)}
-          placeholder={toolbarPlaceholder}
-          className="w-full pl-10 pr-4 py-2 bg-card border border-[var(--border)] rounded-xl text-xs font-medium text-main focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all"
-        />
-      </div>
-    )}
+          {/* Search — left */}
+          {showSearch && (
+            <div className="relative w-52 group">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs group-focus-within:text-primary transition-colors" />
+              <input
+                value={searchValue}
+                onChange={(e) => onSearch?.(e.target.value)}
+                placeholder={toolbarPlaceholder}
+                className="w-full pl-10 pr-4 py-2 bg-card border border-[var(--border)] rounded-xl text-xs font-medium text-main focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all"
+              />
+            </div>
+          )}
 
-    {/* Right side — ml-auto pushes everything to the right */}
-    <div className="flex items-center gap-2 ml-auto shrink-0">
+          {/* Right side */}
+          <div className="flex items-center gap-2 ml-auto shrink-0">
 
-      {/* Expand / Collapse controls */}
-      {showExpandControls && (
-        <>
-          <button
-            onClick={expandAll}
-            className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
-          >
-            <Layers size={11} />
-            Expand All
-          </button>
-          <button
-            onClick={collapseAll}
-            className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
-          >
-            <ChevronRight size={11} />
-            Collapse
-          </button>
-        </>
-      )}
+            {showExpandControls && (
+              <>
+                <button
+                  onClick={expandAll}
+                  className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
+                >
+                  <Layers size={11} />
+                  Expand All
+                </button>
+                <button
+                  onClick={collapseAll}
+                  className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
+                >
+                  <ChevronRight size={11} />
+                  Collapse
+                </button>
+              </>
+            )}
 
-      {/* Refresh */}
-      {onRefresh && (
-        <button
-          onClick={onRefresh}
-          className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all"
-        >
-          <RefreshCw size={11} />
-        </button>
-      )}
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all"
+              >
+                <RefreshCw size={11} />
+              </button>
+            )}
 
-      {/* extraFilters — + New button yahan aayega, rightmost */}
-      {extraFilters && (
-        <div className="flex items-center gap-2 shrink-0">
-          {extraFilters}
+            {extraFilters && (
+              <div className="flex items-center gap-2 shrink-0">
+                {extraFilters}
+              </div>
+            )}
+          </div>
         </div>
       )}
-    </div>
 
-  </div>
-)}
-      {/* ── Table — exact same scroll wrapper as Table ── */}
+      {/* ── Table scroll container ─────────────────────────────────────────────
+          KEY FIX: removed overflow-x-auto from className and set overflow-x
+          separately so we can keep overflow-y:auto without triggering the
+          browser rule that forces overflow-x:hidden when overflow-y is set —
+          which was clipping the portal's fixed-position ancestor check.
+          The portal itself renders on document.body so it is never clipped,
+          but keeping the container tidy prevents any residual stacking issues.
+      ──────────────────────────────────────────────────────────────────────── */}
       <div
-        className="w-full overflow-x-auto custom-scrollbar"
-        style={{ minHeight: "200px", overflowY: "auto", maxHeight: "70vh" }}
+        className="w-full custom-scrollbar"
+        style={{
+          minHeight: "200px",
+          overflowX: "auto",
+          overflowY: "auto",
+          maxHeight: "70vh",
+        }}
       >
         <div className="pb-4">
           <table className="w-full min-w-full md:min-w-[800px] border-separate border-spacing-0">
 
-            {/* ── thead — exact same sticky style as Table ── */}
+            {/* ── thead ── */}
             <thead className="sticky top-0 z-30 shadow-sm">
               <tr>
                 {columns.map((col) => (
@@ -458,7 +556,6 @@ function ExpandableTreeTable<T extends Record<string, any>>({
         </div>
       </div>
 
-   
     </div>
   );
 }
