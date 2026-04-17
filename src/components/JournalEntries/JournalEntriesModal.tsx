@@ -13,7 +13,7 @@ interface JournalEntryModalProps {
   isReadOnly?: boolean; // Fixed the TypeScript error!
 }
 
-const ITEMS_PER_PAGE = 4;
+const ITEMS_PER_PAGE = 6;
 
 const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   isOpen,
@@ -97,8 +97,8 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
       subtitle={isReadOnly ? "Viewing journal entry details" : entryId ? "Update existing manual journal entry" : "Create a new manual journal entry"}
       icon={FileText}
       footer={footer}
-      customWidth="70vw" 
-      height="650px"
+      customWidth="80vw" 
+      height="80vh"
     >
       <div className="flex flex-col gap-6 py-3 px-1">
         
@@ -186,11 +186,11 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                     // }
                     if (entry.partyType === "Customer") {
   rowPartyOptions = [
-   ...customerOptions.map((opt) => ({ label: opt.label, value: opt.label }))
+   ...customerOptions.map((opt) => ({ label: opt.label, value: opt.value }))
   ];
 } else if (entry.partyType === "Supplier") {
   rowPartyOptions = [
-    ...supplierOptions.map((opt) => ({ label: opt.label, value: opt.label }))
+    ...supplierOptions.map((opt) => ({ label: opt.label, value: opt.value }))
   ];
 }
                     

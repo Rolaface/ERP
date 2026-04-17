@@ -81,17 +81,15 @@ type JournalEntryAction = "approved" | "cancelled" | "amend";
 
 export async function updateJournalEntryStatus(
   id: string,
-  action: JournalEntryAction
+  action: JournalEntryAction,
 ): Promise<any> {
   if (!id) throw new Error("Journal Entry ID is required");
   if (!action) throw new Error("Action is required");
 
-  const resp: AxiosResponse = await api.post(JournalEntryAPI.updateStatus,
-    {
-      id,
-      action,
-    }
-  );
+  const resp: AxiosResponse = await api.patch(JournalEntryAPI.updateStatus, {
+    id,
+    action,
+  });
 
   return resp.data;
 }
