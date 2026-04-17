@@ -376,52 +376,71 @@ const Items: React.FC = () => {
       key: "id",
       header: "Item Code",
       align: "left",
-      render: (i) => (
-        <span className="truncate block max-w-[120px]">{i.id}</span>
-      ),
+      maxWidth: "100px",
+      truncate: true,
+      render: (i) => <span className="truncate block">{i.id}</span>,
     },
     {
       key: "itemName",
       header: "Name",
       align: "left",
-      render: (i) => (
-        <span className="truncate block max-w-[150px]">{i.itemName}</span>
-      ),
+      maxWidth: "200px",
+      truncate: true,
+      render: (i) => <span className="truncate block">{i.itemName}</span>,
     },
     {
       key: "itemGroup",
       header: "Category",
       align: "left",
-      render: (i) => (
-        <span className="truncate block max-w-[120px]">{i.itemGroup}</span>
-      ),
+      maxWidth: "90px",
+      truncate: true,
+      render: (i) => <span className="truncate block">{i.itemGroup}</span>,
     },
-    { key: "minStockLevel", header: "Min Stock", align: "right" },
-    { key: "maxStockLevel", header: "Max Stock", align: "right" },
+
+    {
+      key: "minStockLevel",
+      header: "Min",
+      align: "right",
+      maxWidth: "60px",
+      truncate: true,
+    },
+    {
+      key: "maxStockLevel",
+      header: "Max",
+      align: "right",
+      maxWidth: "60px",
+      truncate: true,
+    },
+
     {
       key: "preferredVendor",
       header: "Supplier",
       align: "left",
+      maxWidth: "180px",
+      truncate: true,
       render: (i) => (
-        <span className="truncate block max-w-[130px]">
-          {i.preferredVendor}
-        </span>
+        <span className="truncate block">{i.preferredVendor}</span>
       ),
     },
+
     {
       key: "sellingPrice",
       header: "Price",
       align: "left",
+      maxWidth: "90px",
+      truncate: true,
       render: (i) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {i.sellingPrice}
         </code>
       ),
     },
+
     {
       key: "actions",
       header: "Actions",
       align: "center",
+      maxWidth: "100px",
       render: (i) => (
         <ActionGroup>
           <ActionButton
