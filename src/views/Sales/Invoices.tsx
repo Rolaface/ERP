@@ -522,20 +522,21 @@ showSuccess(`Invoice marked as ${updatedStatus}`);
     {
       key: "invoiceType",
       header: "Type",
-      align: "left",
+      align: "center",
       render: (inv) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block max-w-[80px] truncate whitespace-nowrap overflow-hidden">
           {inv.invoiceType}
         </code>
       ),
+      tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
     },
     {
       key: "customerName",
       header: "Customer",
-      align: "left",
+      align: "center",
       sortable: true,
       render: (inv) => (
-        <span className="text-sm text-main">{inv.customerName}</span>
+          <span className="text-sm text-main whitespace-nowrap truncate block max-w-[160px] overflow-hidden">{inv.customerName}</span>
       ),
       tooltip: (inv) => `Customer: ${inv.customerName}`,
     },

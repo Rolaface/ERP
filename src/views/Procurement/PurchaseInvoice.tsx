@@ -424,40 +424,42 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
 
   // ── Columns
   const columns: Column<Purchaseinvoice>[] = [
-    { key: "pId", header: "PI ID", align: "left" },
-    { key: "supplier", header: "Supplier", align: "left" },
-    { key: "podate", header: "PI Date", align: "left" },
-    { key: "deliveryDate", header: "Delivery Date", align: "left" },
-    { key: "registrationType", header: "Type", align: "left" },
+    { key: "pId", header: "PI ID", align: "left", tooltip: (o) => o.pId || "—", },
+    { key: "supplier", header: "Supplier", align: "center", tooltip: (o) => o.supplier || "—", },
+    { key: "podate", header: "PI Date", align: "center", tooltip: (o) => o.podate || "—", },
+    { key: "deliveryDate", header: "Delivery Date", align: "center", tooltip: (o) => o.deliveryDate || "—", },
     {
       key: "amount",
       header: "Amount",
-      align: "left",
+      align: "center",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {Number(o.amount || 0).toFixed(2)}
         </code>
       ),
+      tooltip: (o) => o.amount || "—",
 },
     {
       key: "grandTotalWithTax",
-      header: "Amount with Tax",
-      align: "left",
+      header: "Grand Total",
+      align: "center",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {Number(o.grandTotalWithTax || 0).toFixed(2)}
         </code>
       ),
+      tooltip: (o) => o.grandTotalWithTax || "—",
 },
     {
      key: "outstanding_amount",
      header: "Outstanding",
-     align: "left",
+     align: "center",
      render: (o) => (
        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
          {Number(o.outstanding_amount || 0).toFixed(2)}
        </code>
      ),
+      tooltip: (o) => o.outstanding_amount || "—",
 },
     {
       key: "status",
@@ -469,7 +471,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({ onAdd }) 
     {
       key: "actions",
       header: "Actions",
-      align: "center",
+      align: "left",
       render: (o) => (
         <ActionGroup>
           <ActionButton
