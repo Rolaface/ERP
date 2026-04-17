@@ -12,6 +12,7 @@ export interface ExpandableTreeTableProps<T extends Record<string, any>> {
   data: T[];
   childrenKey?: string;
   nodeKey: (node: T) => string;
+  isGroupKey?: string;
 
   // ── Toolbar (mirrors Table's toolbar props) ──
   showToolbar?: boolean;
@@ -132,7 +133,8 @@ interface TreeRowProps<T extends Record<string, any>> {
   onRowClick?: (n: T) => void;
   expandIconRender?: (n: T, isExpanded: boolean, hasChildren: boolean) => React.ReactNode;
   rowClassName?: (n: T, depth: number) => string;
-  rowIndex: number; // for alternating rows
+  rowIndex: number; // for alternating rows,
+  isGroupKey: string;
 }
 
 function TreeRow<T extends Record<string, any>>({
@@ -150,11 +152,14 @@ function TreeRow<T extends Record<string, any>>({
   expandIconRender,
   rowClassName,
   rowIndex,
+  isGroupKey,
 }: TreeRowProps<T>): React.ReactElement | null {
   if (!nodeOrDescendantMatches(node, activeTerm, childrenKey, matchNode)) return null;
 
   const children: T[] = node[childrenKey] ?? [];
-  const hasChildren = children.length > 0;
+  const group = node[isGroupKey] ?? 0;
+  const hasGroup = group == 1;
+  const hasChildren = children.length > 0 || hasGroup;
   const key = nodeKey(node);
   const isExpanded = activeTerm.trim() !== "" ? true : expandedKeys.has(key);
   const isDirectMatch = activeTerm ? matchNode(node, activeTerm) : false;
@@ -239,6 +244,7 @@ function TreeRow<T extends Record<string, any>>({
           expandIconRender={expandIconRender}
           rowClassName={rowClassName}
           rowIndex={childIdx}
+          isGroupKey={isGroupKey}
         />
       ))}
     </>
@@ -254,7 +260,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
   data,
   childrenKey = "children",
   nodeKey,
-
+  isGroupKey = "is_group",
   showToolbar = false,
   showSearch = true,
   searchValue = "",
@@ -443,6 +449,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
                     expandIconRender={expandIconRender}
                     rowClassName={rowClassName}
                     rowIndex={idx}
+                    isGroupKey={isGroupKey}
                   />
                 ))
               )}
