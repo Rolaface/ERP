@@ -29,7 +29,7 @@ const testimonials = [
 ];
 
 const Card = ({ t }: any) => (
-  <div className="w-[300px] md:w-[340px] flex-shrink-0 bg-card border border-theme rounded-[calc(var(--density-radius)*1.5)] p-[calc(var(--density-gap)*2)] transition-all duration-300 hover:shadow-md hover:-translate-y-1 hover:scale-[1.02]">
+  <div className="w-[300px] md:w-[340px] flex-shrink-0 bg-white border border-theme rounded-[calc(var(--density-radius)*1.5)] p-[calc(var(--density-gap)*2)] shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02]">
 
     {/* Stars */}
     <div className="flex mb-4 text-[var(--primary)]">
@@ -67,22 +67,25 @@ const Card = ({ t }: any) => (
 
 const Testimonials: React.FC = () => {
   return (
-    <section className="section section-default overflow-hidden">
+    <section className="section section-default relative overflow-hidden">
+
+      {/* Background Enhancement */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-primary/5 pointer-events-none"></div>
 
       <div className="container-app">
 
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
 
-          <h2 className="text-[30px] md:text-[36px] font-semibold text-main leading-snug">
-            Trusted by{" "}
+          <h2 className="text-[32px] md:text-[38px] font-semibold text-main leading-snug">
+            Loved by{" "}
             <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
               growing businesses
             </span>
           </h2>
 
           <p className="text-body text-muted">
-            Real stories from businesses simplifying their operations every day.
+            Businesses like yours are simplifying operations, saving time, and gaining full control.
           </p>
 
         </div>
@@ -113,9 +116,13 @@ const Testimonials: React.FC = () => {
 
       {/* TRUST LINE */}
       <div className="text-center mt-[calc(var(--density-gap)*4)] animate-fade-in">
-        <p className="text-[13px] text-muted">
-          Join 500+ businesses already running smarter operations
-        </p>
+
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-theme rounded-full">
+          <p className="text-[13px] text-muted">
+            Join 500+ businesses already running smarter operations
+          </p>
+        </div>
+
       </div>
 
       {/* ANIMATIONS */}

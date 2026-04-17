@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus } from "lucide-react";
 
@@ -27,11 +27,37 @@ const faqs = [
 
 const FAQ: React.FC = () => {
   const [active, setActive] = useState<number | null>(0);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 🔍 Filtered FAQs
+  const filteredFaqs = faqs.filter(
+    (item) =>
+      item.q.toLowerCase().includes(query.toLowerCase()) ||
+      item.a.toLowerCase().includes(query.toLowerCase())
+  );
+
+  // 👀 Auto-open on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const isVisible = rect.top < window.innerHeight * 0.6;
+
+      if (isVisible && active === null && filteredFaqs.length > 0) {
+        setActive(0);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [active, filteredFaqs.length]);
 
   return (
     <section className="section section-alt">
 
-      <div className="container-app max-w-3xl">
+      <div ref={containerRef} className="container-app max-w-3xl">
 
         {/* HEADER */}
         <div className="text-center stack-md animate-fade-in">
@@ -49,10 +75,21 @@ const FAQ: React.FC = () => {
 
         </div>
 
+        {/* 🔍 SEARCH BAR */}
+        <div className="mt-[calc(var(--density-gap)*2)] animate-fade-in">
+          <input
+            type="text"
+            placeholder="Search your question..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full px-[calc(var(--density-gap)*1.5)] py-[calc(var(--density-gap)*1.2)] rounded-[var(--density-radius)] border border-theme bg-card text-[14px] outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
         {/* FAQ LIST */}
         <div className="mt-[calc(var(--density-gap)*3)] space-y-[var(--density-gap)]">
 
-          {faqs.map((item, i) => {
+          {filteredFaqs.map((item, i) => {
             const isOpen = active === i;
 
             return (
@@ -66,9 +103,20 @@ const FAQ: React.FC = () => {
                   onClick={() => setActive(isOpen ? null : i)}
                   className="w-full flex items-center justify-between p-[calc(var(--density-gap)*1.5)] text-left"
                 >
-                  <h3 className="text-[15px] font-medium text-main pr-4">
-                    {item.q}
-                  </h3>
+                  <div className="flex items-center gap-2 pr-4 flex-wrap">
+
+                    <h3 className="text-[15px] font-medium text-main">
+                      {item.q}
+                    </h3>
+
+                    {/* ⭐ MOST ASKED TAG */}
+                    {i < 2 && (
+                      <span className="text-[10px] px-2 py-[2px] rounded-full bg-primary/10 text-primary font-medium">
+                        Most asked
+                      </span>
+                    )}
+
+                  </div>
 
                   <motion.div
                     animate={{ rotate: isOpen ? 45 : 0 }}
@@ -99,6 +147,13 @@ const FAQ: React.FC = () => {
               </div>
             );
           })}
+
+          {/* Empty state */}
+          {filteredFaqs.length === 0 && (
+            <p className="text-center text-[13px] text-muted">
+              No results found. Try a different keyword.
+            </p>
+          )}
 
         </div>
 
