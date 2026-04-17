@@ -38,6 +38,7 @@ type OutletContextType = {
 };
 import PurchaseOrderDetailModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+import { se } from "date-fns/locale";
 
 interface PurchaseOrder {
   id: string;
@@ -664,12 +665,11 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
   defaultValues={{
     paymentType: "Pay",
     partyType: "Supplier",
-    partyName: selectedPOForPayment?.supplier,   // display name for UI
-    partyId: selectedPOForPayment?.supplierId,   // ← actual ID for API (add this field to your PurchaseOrder interface)
-    amount: selectedPOForPayment?.amount, 
+    partyName: selectedPOForPayment?.supplier,
+    partyId: selectedPOForPayment?.supplier,
+    amount: selectedPOForPayment?.amount,
     referenceName: selectedPOForPayment?.id,
-   referenceType: "Purchase Order",
-    
+    referenceType: "Purchase Order",
   }}
 />
     </div>
