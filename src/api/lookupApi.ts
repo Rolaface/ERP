@@ -83,6 +83,11 @@ export async function getCustomerList(params: SearchApiParams = {}): Promise<any
   return resp.data.message?.data || [];
 }
 
+export async function getCustomerListJe(params: SearchApiParams = {}): Promise<any[]> {
+  const resp: AxiosResponse = await api.get(RolaLookupAPI.getCustomer, { params });
+    return resp.data?.data || [];
+}
+
 export async function getSupplierList(params: SearchApiParams = {}): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getSupplier, { params });
   return resp.data?.message?.data || resp.data || [];

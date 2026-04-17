@@ -10,14 +10,16 @@ export const purchaseorderapi = API.purchaseOrder;
 export interface PurchaseOrderFilters {
   search?: string;
   status?: string;
-  supplier?: string;
+  supplierId?: string;  
   from_date?: string;
   to_date?: string;
+
 }
 
 export async function getPurchaseOrders(
   page = 1,
   page_size = 10,
+
   filters?: PurchaseOrderFilters
 ) {
   const cleanedFilters = Object.fromEntries(

@@ -59,6 +59,8 @@ import { getCustomerByCustomerCode } from "../../api/customerApi";
 
 type OutletContextType = {
   openCustomerCreate: () => void;
+  openInvoiceCreate:()=>void;
+  openQuotationCreate: () => void;
 };
 
 interface Props {
@@ -113,6 +115,8 @@ const CustomerDetailView: React.FC<Props> = ({
   onCustomerSelect,
 }) => {
   const { openCustomerCreate } = useOutletContext<OutletContextType>();
+  const { openInvoiceCreate } = useOutletContext<OutletContextType>();
+  const { openQuotationCreate } = useOutletContext<OutletContextType> ();
 
   const [searchTerm,          setSearchTerm]          = useState("");
   const [customer,            setCustomer]            = useState<CustomerDetail | null>(null);
@@ -207,14 +211,14 @@ const CustomerDetailView: React.FC<Props> = ({
         );
       case "quotations":
         return (
-          <button onClick={() => setShowQuotationModal(true)}
+          <button onClick={() => openQuotationCreate()}
             className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
             <Plus size={13} /> New Quotation
           </button>
         );
       case "invoices":
         return (
-          <button onClick={() => setShowInvoiceModal(true)}
+          <button onClick={() => openInvoiceCreate()}
             className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
             <Plus size={13} /> New Invoice
           </button>
