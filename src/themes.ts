@@ -1,18 +1,11 @@
 export type Theme =
   | "gold"
-  | "amber"
-  | "yellow"
   | "dark"
   | "corporate"
-  | "midnight"
   | "ocean"
   | "sunset"
-  | "rose"
   | "mint"
   | "lavender"
-  | "nordic"
-  | "cyber"
-  | "glass"
   | "luxury"
   | "clinical-sanctuary"
   | "saas-indigo";

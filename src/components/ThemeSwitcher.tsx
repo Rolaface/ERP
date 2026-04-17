@@ -2,22 +2,18 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { initTheme, setTheme, type Theme } from "../themes";
 
 const themes: { value: Theme; label: string }[] = [
-  { value: "midnight", label: "🌑 Midnight Blue" },
-  { value: "glass", label: "✨ Frosted Glass" },
+
   { value: "luxury", label: "💎 Luxury Gold" },
 
   { value: "corporate", label: "💼 Corporate" },
   { value: "ocean", label: "🌊 Ocean Cyan" },
-  { value: "nordic", label: "🏔️ Nordic Slate" },
 
   { value: "mint", label: "🍃 Fresh Mint" },
-  { value: "rose", label: "🌸 Pastel Rose" },
   { value: "lavender", label: "🔮 Lavender" },
   { value: "sunset", label: "🌇 Sunset Warm" },
 
   { value: "dark", label: "🌙 Classic Dark" },
   { value: "gold", label: "🏆 Classic Gold" },
-  { value: "cyber", label: "🚀 Cyber Neon" },
 
   { value: "clinical-sanctuary", label: "🧪 Clinical Sanctuary" },
 
