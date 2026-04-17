@@ -118,11 +118,10 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
-                  activeTab === tab
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === tab
                     ? "text-primary border-b-[3px] border-primary"
                     : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+                  }`}
               >
                 {tab === "details" && <User className="w-4 h-4" />}
                 {tab === "bank" && <DollarSign className="w-4 h-4" />}
@@ -292,47 +291,47 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     error={errors.contactEmail}
                   />
 
-                 <div className="flex flex-col min-w-0">
-  <span className="block text-[10px] font-medium text-main mb-1">
-    Mobile <span className="text-danger">*</span>
-  </span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="block text-[10px] font-medium text-main mb-1">
+                      Mobile <span className="text-danger">*</span>
+                    </span>
 
-  <div className="flex">
-    {/* Country Code */}
-    <input
-      name="mobileCode"
-      value={primaryContact?.mobileCode ?? "+"}
-      onChange={handlePrimaryContactChange}
-      onBlur={(e) => {
-        if (!e.target.value.startsWith("+")) {
-          handlePrimaryContactChange({
-            target: {
-              name: "mobileCode",
-              value: "+" + e.target.value,
-            },
-          });
-        }
-      }}
-      maxLength={5}
-      className="w-[60px] py-1 px-2 border rounded-l text-[11px]"
-    />
+                    <div className="flex">
+                      {/* Country Code */}
+                      <input
+                        name="mobileCode"
+                        value={primaryContact?.mobileCode ?? "+"}
+                        onChange={handlePrimaryContactChange}
+                        onBlur={(e) => {
+                          if (!e.target.value.startsWith("+")) {
+                            handlePrimaryContactChange({
+                              target: {
+                                name: "mobileCode",
+                                value: "+" + e.target.value,
+                              },
+                            });
+                          }
+                        }}
+                        maxLength={5}
+                        className="w-[60px] py-1 px-2 border rounded  text-main  text-[11px] bg-card border-[var(--border)] hover:border-primary/40"
+                      />
 
-    {/* Actual Mobile Number */}
-    <input
-      name="mobileNumber"
-     value={primaryContact?.mobileNumber ?? ""}
-      onChange={handlePrimaryContactChange}
-      placeholder="Enter number"
-      className="flex-1 py-1 px-2 border rounded-r text-[11px]"
-    />
-  </div>
+                      {/* Actual Mobile Number */}
+                      <input
+                        name="mobileNumber"
+                        value={primaryContact?.mobileNumber ?? ""}
+                        onChange={handlePrimaryContactChange}
+                        placeholder="Enter number"
+                        className="flex-1 py-1 px-2 border rounded text-[11px] text-main  bg-card border-[var(--border)] hover:border-primary/40"
+                      />
+                    </div>
 
-  {errors.contactMobile && (
-    <span className="text-[10px] text-danger mt-1">
-      {errors.contactMobile}
-    </span>
-  )}
-</div>
+                    {errors.contactMobile && (
+                      <span className="text-[10px] text-danger mt-1">
+                        {errors.contactMobile}
+                      </span>
+                    )}
+                  </div>
                   <CustomerGroupSearchSelect
                     value={form.customerGroup}
                     onChange={(value) =>
