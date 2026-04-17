@@ -45,25 +45,22 @@ const features: Feature[] = [
 
 const SolutionSection: React.FC = () => {
   return (
-    <section className="section section-alt relative overflow-hidden">
+    <section className="section relative overflow-hidden bg-gradient-to-b from-white to-[var(--row-hover)]">
 
-      {/* Background Enhancement */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
+      {/* Soft Relief Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.08),transparent_60%)] pointer-events-none"></div>
 
       <div className="container-app">
 
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
 
-          <p className="text-[12px] text-muted font-medium tracking-wide">
-            The Solution
-          </p>
 
-          <h2 className="text-[32px] md:text-[38px] font-semibold leading-snug text-main">
+          <h2 className="text-[34px] md:text-[40px] font-semibold leading-tight text-main tracking-tight">
             One system to run your entire business — clearly and efficiently
           </h2>
 
-          <p className="text-body text-muted">
+          <p className="text-[15px] text-muted leading-relaxed">
             No more juggling tools or fixing mistakes. Everything works together seamlessly in one place.
           </p>
 
@@ -86,15 +83,15 @@ const SolutionSection: React.FC = () => {
                 <div className={`${isReverse ? "md:order-2" : ""}`}>
                   <div className="relative group">
 
-                    {/* Glow */}
-                    <div className="absolute inset-0 bg-primary/10 blur-2xl rounded-[calc(var(--density-radius)*2)] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    {/* Soft Glow */}
+                    <div className="absolute inset-0 bg-primary/10 blur-3xl rounded-[calc(var(--density-radius)*2)] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-                    <div className="relative bg-card border border-theme rounded-[calc(var(--density-radius)*2)] overflow-hidden shadow-sm motion-hover-lift">
+                    <div className="relative bg-card border border-theme rounded-[calc(var(--density-radius)*2)] overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
 
                       <img
                         src={feature.image}
                         alt={feature.title}
-                        className="w-full h-[260px] md:h-[320px] object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                        className="w-full h-[260px] md:h-[320px] object-cover transition-transform duration-500 group-hover:scale-[1.05]"
                       />
 
                     </div>
@@ -104,7 +101,7 @@ const SolutionSection: React.FC = () => {
                 {/* TEXT */}
                 <div className={`stack-md ${isReverse ? "md:order-1" : ""}`}>
 
-                  <p className="text-[12px] font-medium text-primary tracking-wide">
+                  <p className="text-[12px] font-semibold text-primary tracking-wide uppercase">
                     {feature.label}
                   </p>
 
@@ -118,15 +115,21 @@ const SolutionSection: React.FC = () => {
 
                   {feature.points && (
                     <ul className="stack-sm pt-2">
+
                       {feature.points.map((point, i) => (
                         <li
                           key={i}
-                          className="text-[13px] text-main flex items-center gap-2 transition-all duration-300 hover:translate-x-1"
+                          className="text-[13px] text-main flex items-center gap-3 transition-all duration-300 hover:translate-x-1"
                         >
-                          <span className="w-1.5 h-1.5 bg-primary rounded-full" />
+                          {/* ✔ Premium Check */}
+                          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500/10 text-green-600 text-xs font-bold">
+                            ✓
+                          </span>
+
                           {point}
                         </li>
                       ))}
+
                     </ul>
                   )}
 
@@ -140,7 +143,7 @@ const SolutionSection: React.FC = () => {
 
       </div>
 
-      {/* ANIMATIONS */}
+      {/* ANIMATIONS (kept yours, slightly refined) */}
       <style>
         {`
           .animate-fade-in {

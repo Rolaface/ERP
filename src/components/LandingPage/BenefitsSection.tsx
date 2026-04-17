@@ -1,5 +1,12 @@
 import React from "react";
-import { Clock, ShieldCheck, TrendingUp, Eye, Zap, CheckCircle } from "lucide-react";
+import {
+  Clock,
+  ShieldCheck,
+  TrendingUp,
+  Eye,
+  Zap,
+  CheckCircle,
+} from "lucide-react";
 
 const benefits = [
   {
@@ -38,15 +45,15 @@ const BenefitsSection: React.FC = () => {
   return (
     <section className="section section-default relative overflow-hidden">
 
-      {/* Background Enhancement */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
+      {/* 🌟 Ambient Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.08),transparent_60%)] pointer-events-none"></div>
 
       <div className="container-app">
 
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md">
 
-          <h2 className="text-[32px] md:text-[38px] font-semibold leading-snug text-main">
+          <h2 className="text-[32px] md:text-[40px] font-semibold leading-snug text-main tracking-tight">
             Run your business with clarity, control, and confidence
           </h2>
 
@@ -57,7 +64,7 @@ const BenefitsSection: React.FC = () => {
         </div>
 
         {/* BENEFITS GRID */}
-        <div className="mt-[calc(var(--density-gap)*4)] grid sm:grid-cols-2 lg:grid-cols-3 gap-[calc(var(--density-gap)*2)]">
+        <div className="mt-[calc(var(--density-gap)*5)] grid sm:grid-cols-2 lg:grid-cols-3 gap-[calc(var(--density-gap)*2.5)]">
 
           {benefits.map((item, i) => {
             const Icon = item.icon;
@@ -65,31 +72,38 @@ const BenefitsSection: React.FC = () => {
             return (
               <div
                 key={i}
-                className="group card card-hover flex flex-col gap-3 p-[calc(var(--density-gap)*2)] bg-white"
+                className="group relative rounded-[calc(var(--density-radius)*1.5)] p-[1px] transition-all duration-300 hover:scale-[1.025]"
               >
 
-                {/* ICON */}
-                <div className="relative w-10 h-10 rounded-[var(--density-radius)] bg-white border border-theme flex items-center justify-center">
+                {/* 🔥 Gradient Border Effect */}
+                <div className="absolute inset-0 rounded-[inherit] bg-gradient-to-br from-primary/40 via-transparent to-primary/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-[1px]" />
 
-                  {/* Glow */}
-                  <div className="absolute inset-0 bg-primary/10 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[var(--density-radius)]"></div>
+                {/* CARD */}
+                <div className="relative h-full rounded-[inherit] bg-card border border-theme p-[calc(var(--density-gap)*2)] flex flex-col gap-4 shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
 
-                  <Icon size={18} className="text-primary relative z-10" />
+                  {/* ICON */}
+                  <div className="relative w-11 h-11 rounded-[var(--density-radius)] flex items-center justify-center bg-card border border-theme">
+
+                    {/* Glow */}
+                    <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[inherit]" />
+
+                    <Icon size={20} className="text-primary relative z-10" />
+                  </div>
+
+                  {/* TEXT */}
+                  <div className="stack-sm">
+
+                    <h3 className="text-[16px] font-semibold text-main">
+                      {item.title}
+                    </h3>
+
+                    <p className="text-[13px] text-muted leading-relaxed">
+                      {item.desc}
+                    </p>
+
+                  </div>
+
                 </div>
-
-                {/* TEXT */}
-                <div className="stack-sm">
-
-                  <h3 className="text-[15px] font-semibold text-main">
-                    {item.title}
-                  </h3>
-
-                  <p className="text-[13px] text-muted leading-relaxed">
-                    {item.desc}
-                  </p>
-
-                </div>
-
               </div>
             );
           })}
@@ -97,10 +111,14 @@ const BenefitsSection: React.FC = () => {
         </div>
 
         {/* BOTTOM LINE */}
-        <div className="text-center mt-[calc(var(--density-gap)*4)]">
+        <div className="text-center mt-[calc(var(--density-gap)*5)]">
 
-          <p className="text-[16px] text-muted max-w-xl mx-auto">
-            Less stress, fewer errors, and more control — so you can focus on growing your business instead of managing chaos.
+          <p className="text-[16px] text-muted max-w-xl mx-auto leading-relaxed">
+            Less stress. Fewer errors. More control.
+            <br />
+            <span className="text-main font-medium">
+              So you can focus on growing your business — not managing chaos.
+            </span>
           </p>
 
         </div>
