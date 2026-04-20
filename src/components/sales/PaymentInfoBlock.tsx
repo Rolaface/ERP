@@ -49,7 +49,7 @@ const PaymentInfoBlock: React.FC<Props> = ({
         />
       )}
 
-      <ModalInput
+      {/* <ModalInput
         label="Bank Name"
         name="bankName"
         value={data.bankName}
@@ -75,7 +75,7 @@ const PaymentInfoBlock: React.FC<Props> = ({
         name="swiftCode"
         value={data.swiftCode}
         onChange={onChange}
-      />
+      /> */}
     </div>
   );
 };

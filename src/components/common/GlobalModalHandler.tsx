@@ -159,6 +159,7 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onClose={handleClose}
             onSubmit={handleSubmit}
             initialData={modal.initialData}
+            mode={modal.isEdit ? "edit" : "create"}
           />
         );
 
