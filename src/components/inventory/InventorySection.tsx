@@ -165,10 +165,10 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
                 onChange={onFormChange}
                 className="h-[28px] w-16 shrink-0 rounded border border-[var(--border)] bg-card px-1 text-[11px] text-main focus:outline-none focus:ring-1 focus:ring-primary hover:border-primary/40 transition-all"
               >
-                <option value="gm">gm</option>
+                <option value="Gram">gm</option>
                 <option value="kg">kg</option>
-                <option value="lbs">lbs</option>
-                <option value="oz">oz</option>
+                <option value="Pound">lbs</option>
+                <option value="Ounce">oz</option>
               </select>
             </div>
           </div>
