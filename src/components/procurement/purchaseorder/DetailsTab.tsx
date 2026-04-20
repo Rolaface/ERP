@@ -49,9 +49,9 @@ const POColumnHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
       Item Name
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[180px]">
+    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[180px]">
       Description
-    </th>
+    </th> */}
     <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[120px]">
       Packing(unit × size)
     </th>
@@ -182,7 +182,7 @@ export const DetailsTab = ({
 
 
         {/* Description */}
-        <td className="px-2 py-1">
+        {/* <td className="px-2 py-1">
           <Tooltip
             content={
               it.description
@@ -197,7 +197,7 @@ export const DetailsTab = ({
               className="w-[90px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </Tooltip>
-        </td>
+        </td> */}
 
         {/* Packing */}
         <td className="px-2 py-1">

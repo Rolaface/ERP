@@ -74,6 +74,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     setAddresses,
     loading,
     setLoading,
+    handleAddressSelect,
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
   // ── Submit: runs full validatePI via handleSubmit ──────────
@@ -205,6 +206,9 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             setAddresses={setAddresses}
             loading={loading}
             setLoading={setLoading}
+            handleAddressSelect={handleAddressSelect}
+            handleCopyBillingToShipping={() => { }}
+            handleCopySupplierToDispatch={() => { }}
           />
         </div>
 
@@ -277,11 +281,10 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
                 key={key}
                 type="button"
                 onClick={() => handleTabClick(key)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
-                  activeTab === key
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === key
                     ? "text-primary border-b-[3px] border-primary"
                     : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+                  }`}
               >
                 {label}
               </button>
