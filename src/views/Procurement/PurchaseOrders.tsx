@@ -10,6 +10,7 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import type { Column } from "../../components/ui/Table/type";
+import type { PurchaseOrderDetail } from "../../types/Supply/purchaseOrder";
 import { createPurchaseInvoiceFromPO } from "../../api/procurement/PurchaseOrderApi";
 import {
   showApiError,
@@ -38,7 +39,7 @@ type OutletContextType = {
 };
 import PurchaseOrderDetailModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
-import { se } from "date-fns/locale";
+
 
 interface PurchaseOrder {
   id: string;
@@ -46,6 +47,7 @@ interface PurchaseOrder {
   date: string;
   amount: number;
   status: string;
+  currency?: string;
    supplierId: string;  
   deliveryDate: string;
   referenceNumber: string;
@@ -85,11 +87,11 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [totalItems, setTotalItems] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrderDetail | null>(null);
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
   const [company, setCompany] = useState<any | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(null);
+  const [selectedPOForPayment, setSelectedPOForPayment] = useState<PurchaseOrder | null>(null);
 
   // ── PDF preview modal (kept — do not remove)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -97,9 +99,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
   // ── Drawer (same pattern as ProformaInvoicesTable)
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerData, setDrawerData] = useState< | null>(
-    null,
-  );
+ const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
@@ -148,6 +148,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
         supplierId: po.supplierId ?? po.partyId ?? po.supplier_id ?? "",
         deliveryDate: po.deliveryDate || po.items?.[0]?.requiredBy || "",
         amount: po.grandTotal,
+        currency: po.currency,
         status: po.status,
         referenceNumber: po.referenceNumber,
       }));
@@ -302,9 +303,8 @@ const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
     openPOEdit(0); // This will create a new PO (poId is undefined)
   };
 
-  const handleEdit = (order: PurchaseOrder, e: React.MouseEvent) => {
-    e.stopPropagation();
-
+  const handleEdit = (order: PurchaseOrder, e?: React.MouseEvent) => {
+  e?.stopPropagation();
     if (order.status !== "Draft") {
       showApiError("Only Draft purchase orders can be edited");
       return;
@@ -511,7 +511,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
       align: "center",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.amount || 0).toFixed(2)}
+         {o.currency} {Number(o.amount || 0).toFixed(2)}
         </code>
       ),
     },
@@ -523,7 +523,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
     },
    {
   key: "deliveryDate",
-  header: "Delivery Date",
+  header: "Required By",
   align: "center",
   render: (o) => (
     <span>{o.deliveryDate || "—"}</span>
@@ -649,7 +649,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
         }}
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
-        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.poId)}
+        onViewPdf={() => drawerData?.poId && handleDrawerPdf(drawerData.poId)}
         onDownload={() =>
           drawerData &&
           company &&

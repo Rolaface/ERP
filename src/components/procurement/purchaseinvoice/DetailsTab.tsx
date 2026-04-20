@@ -51,9 +51,9 @@ const PIColumnHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
       Item
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[76px]">
+    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[76px]">
       Description
-    </th>
+    </th> */}
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
       Packing{" "}
       <span className="ml-1 text-[9px] font-normal text-muted/60">
@@ -237,7 +237,7 @@ export const DetailsTab = ({
         </td>
 
         {/* DESCRIPTION */}
-        <td className="px-2 py-1">
+        {/* <td className="px-2 py-1">
           <Tooltip content={it.description || "Enter item description"}>
             <input
               name="description"
@@ -246,7 +246,7 @@ export const DetailsTab = ({
               className="w-[70px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </Tooltip>
-        </td>
+        </td> */}
 
         {/* PACKING */}
         <td className="px-2 py-1">

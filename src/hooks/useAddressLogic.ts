@@ -5,7 +5,7 @@ import { getAddressList } from "../api/Adressapi";
 export interface ApiAddress {
   id: string;
   title: string;
-  type: string;
+  type?: string;
   addressLine1: string;
   addressLine2: string;
   city: string;
@@ -69,6 +69,7 @@ export function useAddressLogic({
   setLoading,
   onFormChange,
 }: UseAddressLogicOptions) {
+  // Tracks last fetched params per box to avoid redundant company-address fetches
   const lastParamsRef = useRef<Record<BoxType, string>>({
     companyBilling: "",
     supplierBilling: "",
@@ -76,7 +77,6 @@ export function useAddressLogic({
     supplierDispatch: "",
   });
 
-  // FIXED: Single batched call instead of 12 separate calls
   const applyAddressToForm = useCallback(
     (prefix: string, addr: ApiAddress) => {
       onFormChange({
@@ -110,13 +110,26 @@ export function useAddressLogic({
     [setSelected, setSelectedIds, applyAddressToForm],
   );
 
+  /**
+   * loadAddresses
+   *
+   * @param boxKey  – which address box to populate
+   * @param force   – when true, skips the dedup guard so a new supplier selection
+   *                  always triggers a fresh fetch even if supplierId looks the same.
+   *                  Pass force=true from handleSupplierChange;
+   *                  omit (defaults to false) for company boxes on modal open.
+   */
   const loadAddresses = useCallback(
-    async (boxKey: BoxType) => {
-      let params: { company: true } | { supplier: string } | { supplier: string; addressType: string };
+    async (boxKey: BoxType, force = false) => {
+      let params:
+        | { company: true }
+        | { supplier: string }
+        | { supplier: string; addressType: string };
 
       if (boxKey === "companyBilling" || boxKey === "companyShipping") {
         params = { company: true };
       } else {
+        // Supplier boxes require a supplierId — bail silently if not set yet
         if (!supplierId) return;
         const config = BOX_CONFIGS.find((c) => c.key === boxKey);
         if (boxKey === "supplierDispatch") {
@@ -127,15 +140,20 @@ export function useAddressLogic({
       }
 
       const key = JSON.stringify(params);
-      if (boxKey !== "supplierDispatch") {
-        if (lastParamsRef.current[boxKey] === key) return;
-        lastParamsRef.current[boxKey] = key;
-      }
+
+      // Dedup guard — skip identical re-fetches unless forced
+      if (!force && lastParamsRef.current[boxKey] === key) return;
+      lastParamsRef.current[boxKey] = key;
 
       setLoading((prev) => ({ ...prev, [boxKey]: true }));
 
       try {
-        const apiParams: { company?: boolean; supplierId?: string; addressType?: string } = {};
+        const apiParams: {
+          company?: boolean;
+          supplierId?: string;
+          addressType?: string;
+        } = {};
+
         if ("company" in params) {
           apiParams.company = true;
         } else {
@@ -146,6 +164,7 @@ export function useAddressLogic({
         const data = await getAddressList(apiParams);
         setAddresses((prev) => ({ ...prev, [boxKey]: data }));
 
+        // Auto-default the first address returned by the API
         if (data?.length > 0) {
           const first = data[0];
           setSelected((prev) => ({ ...prev, [boxKey]: first }));
@@ -153,11 +172,12 @@ export function useAddressLogic({
           applyAddressToForm(prefixMap[boxKey], first);
         }
       } catch (err) {
-        console.error("Failed to load addresses:", err);
+        console.error(`[useAddressLogic] Failed to load addresses for "${boxKey}":`, err);
       } finally {
         setLoading((prev) => ({ ...prev, [boxKey]: false }));
       }
     },
+    // supplierId must be in deps so supplier box fetches use the latest value
     [supplierId, setSelected, setSelectedIds, setAddresses, setLoading, applyAddressToForm],
   );
 
@@ -166,7 +186,7 @@ export function useAddressLogic({
       onFormChange({ target: { name: "useShippingAddress", value: checked } });
       if (checked && selected.companyBilling) {
         setSelected((prev) => ({ ...prev, companyShipping: prev.companyBilling }));
-        setSelectedIds((prev) => ({ ...prev, companyShipping: prev.companyBilling.id }));
+        setSelectedIds((prev) => ({ ...prev, companyShipping: selected.companyBilling?.id || "" }));
         applyAddressToForm("shippingAddress", selected.companyBilling);
       }
     },
@@ -178,7 +198,10 @@ export function useAddressLogic({
       onFormChange({ target: { name: "useDispatchAddress", value: checked } });
       if (checked && selected.supplierBilling) {
         setSelected((prev) => ({ ...prev, supplierDispatch: prev.supplierBilling }));
-        setSelectedIds((prev) => ({ ...prev, supplierDispatch: prev.supplierBilling.id }));
+        setSelectedIds((prev) => ({
+          ...prev,
+          supplierDispatch: selected.supplierBilling?.id || "" || "",
+        }));
         applyAddressToForm("dispatchAddress", selected.supplierBilling);
       }
     },
