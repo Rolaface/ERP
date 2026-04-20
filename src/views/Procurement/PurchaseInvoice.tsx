@@ -543,28 +543,30 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
           />
           <ActionMenu
             onDelete={(e) => handleDelete(o, e as any)}
-            customActions={[
-              {
-                label: "View PDF",
-                onClick: () => handleOpenPDF(o),
-              },
-              ...(["Unpaid", "Overdue"].includes(o.status)
-                ? [
-                    {
-                      label: "Make Payment",
-                      onClick: () => handleMakePayment(o.pId),
-                    },
-                  ]
-                : []),
-              ...(STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
-                (status) => ({
-                  label: `Mark as ${status}`,
-                  danger:
-                    status === "Cancelled" || status === "Debit Note Issued",
-                  onClick: () => handleStatusChange(o.pId, status),
-                }),
-              ),
-            ]}
+           customActions={[
+  {
+    label: "View PDF",
+    onClick: () => handleOpenPDF(o),
+  },
+
+  ...(Number(o.outstanding_amount || 0) > 0
+    ? [
+        {
+          label: "Make Payment",
+          onClick: () => handleMakePayment(o.pId),
+        },
+      ]
+    : []),
+
+  ...(STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
+    (status) => ({
+      label: `Mark as ${status}`,
+      danger:
+        status === "Cancelled" || status === "Debit Note Issued",
+      onClick: () => handleStatusChange(o.pId, status),
+    })
+  ),
+]}
           />
         </ActionGroup>
       ),
@@ -674,6 +676,13 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
 
       <PaymentEntryModal
         isOpen={paymentModalOpen}
+        onSuccess={(paymentId) => {
+          fetchInvoice();
+          setPaymentModalOpen(false);
+          setSelectedPI(null);
+
+          showSuccess(`Payment ${paymentId} created`);
+        }}
         onClose={() => {
           setPaymentModalOpen(false);
           setSelectedPI(null);
