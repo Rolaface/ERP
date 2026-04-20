@@ -52,8 +52,8 @@ const POColumnHeaders: React.FC = () => (
     {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[180px]">
       Description
     </th> */}
-    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[120px]">
-      Pckg(unit × size)
+    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[90px]">
+      Pkg (U×S)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
       Required By
