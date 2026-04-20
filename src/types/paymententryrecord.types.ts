@@ -89,7 +89,7 @@ export interface NormalizedPagination {
 export interface FetchParams {
   page: number;
   pageSize: number;
-  partyName?: string;
+  partyId?: string;
 }
 
 export interface InvoiceAdapter {
@@ -103,7 +103,7 @@ export interface InvoiceAdapter {
    * Fetch ALL outstanding invoices in one call for FIFO allocation.
    * Use a large pageSize (1000). Sorted by dueDateRaw ASC by adapter.
    */
-  fetchAllForFifo: (partyName: string | undefined) => Promise<NormalizedInvoice[]>;
+  fetchAllForFifo: (partyId: string | undefined) => Promise<NormalizedInvoice[]>;
 }
 
 // ─── Allocation types ─────────────────────────────────────────────────────────

@@ -504,12 +504,19 @@ export type ExchangeRateResult =
 
 export async function getExchangeRate(
   from_currency: string,
+  to_currency: string,
   transaction_date: string,
+  args: "for_selling" | "for_buying" = "for_selling",
 ): Promise<ExchangeRateResult> {
   try {
     const resp: AxiosResponse = await api.post(
       Account.getExchangeRate,
-      { from_currency, transaction_date }
+      {
+        from_currency,
+        to_currency,
+        transaction_date,
+        args,
+      },
     );
 
     const data = resp?.data;
@@ -588,14 +595,24 @@ export type CreatePaymentEntryPayload = {
   taxes: PaymentTax[];
 };
 
-/** Shape returned by the API on success */
+
 export type CreatePaymentEntryResponse = {
   status_code: 201;
   status: "success";
   message: string;
-  data: {
-    modeOfPaymentId: string;
-  };
+data: {
+  paymentId: string;
+  paymentType: string;
+  partyType: string;
+  partyName: string;
+  paidFrom: string;
+  paidTo: string;
+  paidAmount: number;
+  receivedAmount: number;
+  paymentDate: string;
+  referenceNo: string;
+  status: string;
+};
 };
 
 export async function createPaymentEntry(

@@ -235,6 +235,7 @@ const addresses = {
     poNumber: api.poId || "",
     date: api.poDate || "",
     taxCategory: api.taxCategory || "",
+    requiredBy: api.deliveryDate || "",
     referenceNumber: api.referenceNumber || "",
     supplier: api.supplierName || "",
     supplierId: api.supplierId || "",

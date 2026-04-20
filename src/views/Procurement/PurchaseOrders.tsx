@@ -10,6 +10,7 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import type { Column } from "../../components/ui/Table/type";
+import type { PurchaseOrderDetail } from "../../types/Supply/purchaseOrder";
 import { createPurchaseInvoiceFromPO } from "../../api/procurement/PurchaseOrderApi";
 import {
   showApiError,
@@ -38,7 +39,7 @@ type OutletContextType = {
 };
 import PurchaseOrderDetailModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
-import { se } from "date-fns/locale";
+
 
 interface PurchaseOrder {
   id: string;
@@ -46,6 +47,7 @@ interface PurchaseOrder {
   date: string;
   amount: number;
   status: string;
+  currency?: string;
    supplierId: string;  
   deliveryDate: string;
   referenceNumber: string;
@@ -85,11 +87,11 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [totalItems, setTotalItems] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrderDetail | null>(null);
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
   const [company, setCompany] = useState<any | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPOForPayment, setSelectedPOForPayment] = useState<any | null>(null);
+  const [selectedPOForPayment, setSelectedPOForPayment] = useState<PurchaseOrder | null>(null);
 
   // ── PDF preview modal (kept — do not remove)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -97,9 +99,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
   // ── Drawer (same pattern as ProformaInvoicesTable)
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerData, setDrawerData] = useState< | null>(
-    null,
-  );
+ const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
@@ -143,11 +143,12 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
       const mappedOrders: PurchaseOrder[] = res.data.map((po: any) => ({
         id: po.poId,
-        supplier: po.supplierName,
+        supplier: po.supplierName || po.supplier_name || po.partyName || "",
         date: po.poDate,
-        supplierId: po.supplierId ?? po.partyId ?? po.supplier_id,
+        supplierId: po.supplierId ?? po.partyId ?? po.supplier_id ?? "",
         deliveryDate: po.deliveryDate || po.items?.[0]?.requiredBy || "",
         amount: po.grandTotal,
+        currency: po.currency,
         status: po.status,
         referenceNumber: po.referenceNumber,
       }));
@@ -173,15 +174,49 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchOrders]);
 
-  const handleMakePayment = (order: PurchaseOrder) => {
-  if (order.status !== "Approved") {
-    showApiError("Only Approved purchase orders can have payments");
-    return;
-  }
+  const handleMakePayment = async (order: PurchaseOrder) => {
+    if (order.status !== "Approved") {
+      showApiError("Only Approved purchase orders can have payments");
+      return;
+    }
 
-  setSelectedPOForPayment(order);
-  setPaymentModalOpen(true);
-};
+    try {
+      showLoading("Opening payment...");
+      const res = await getPurchaseOrderById(order.id);
+      closeSwal();
+
+      if (!res || res.status !== "success") {
+        showApiError("Failed to load purchase order");
+        return;
+      }
+
+      const data = res.data ?? {};
+      const supplierName =
+        data.supplierName ||
+        data.supplier_name ||
+        data.partyName ||
+        data.supplier ||
+        order.supplier;
+      const supplierId =
+        data.supplierId ??
+        data.partyId ??
+        data.supplier_id ??
+        order.supplierId;
+      const poId = data.poId || order.id;
+      const amount = Number(data.grandTotal ?? order.amount ?? 0);
+
+      setSelectedPOForPayment({
+        id: poId,
+        supplier: supplierName,
+        supplierId,
+        amount,
+      });
+      setPaymentModalOpen(true);
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
 const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
   try {
@@ -268,9 +303,8 @@ const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
     openPOEdit(0); // This will create a new PO (poId is undefined)
   };
 
-  const handleEdit = (order: PurchaseOrder, e: React.MouseEvent) => {
-    e.stopPropagation();
-
+  const handleEdit = (order: PurchaseOrder, e?: React.MouseEvent) => {
+  e?.stopPropagation();
     if (order.status !== "Draft") {
       showApiError("Only Draft purchase orders can be edited");
       return;
@@ -327,7 +361,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
         if (res?.status_code === 200) {
           const mapped = res.data.map((po: any) => ({
             id: po.poId,
-            supplier: po.supplierName,
+            supplier: po.supplierName || po.supplier_name || po.partyName || "",
             date: po.poDate,
             deliveryDate: po.deliveryDate,
             amount: po.grandTotal,
@@ -477,7 +511,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
       align: "center",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.amount || 0).toFixed(2)}
+         {o.currency} {Number(o.amount || 0).toFixed(2)}
         </code>
       ),
     },
@@ -489,7 +523,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
     },
    {
   key: "deliveryDate",
-  header: "Delivery Date",
+  header: "Required By",
   align: "center",
   render: (o) => (
     <span>{o.deliveryDate || "—"}</span>
@@ -615,7 +649,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
         }}
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
-        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.poId)}
+        onViewPdf={() => drawerData?.poId && handleDrawerPdf(drawerData.poId)}
         onDownload={() =>
           drawerData &&
           company &&
@@ -662,15 +696,25 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
     setPaymentModalOpen(false);
     setSelectedPOForPayment(null);
   }}
-  defaultValues={{
-    paymentType: "Pay",
-    partyType: "Supplier",
-    partyName: selectedPOForPayment?.supplier,
-    partyId: selectedPOForPayment?.supplier,
-    amount: selectedPOForPayment?.amount,
-    referenceName: selectedPOForPayment?.id,
-    referenceType: "Purchase Order",
+  onSuccess={(paymentId) => {
+    fetchOrders();
+    setPaymentModalOpen(false);
+    setSelectedPOForPayment(null);
+    showSuccess(`Payment ${paymentId} created`);
   }}
+  defaultValues={
+    selectedPOForPayment
+      ? {
+          paymentType: "Pay",
+          partyType: "Supplier",
+          partyName: selectedPOForPayment.supplier,
+          partyId: selectedPOForPayment.supplierId,
+          amount: selectedPOForPayment.amount,
+          referenceName: selectedPOForPayment.id,
+          referenceType: "Purchase Order",
+        }
+      : undefined
+  }
 />
     </div>
   );

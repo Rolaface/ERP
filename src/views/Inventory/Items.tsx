@@ -367,6 +367,14 @@ const Items: React.FC = () => {
       render: (i) => <span className="truncate block">{i.id}</span>,
     },
     {
+      key: "brand",
+      header: "Brand",
+      align: "center",
+      maxWidth: "100px",
+      truncate: true,
+      render: (i) => <span className="truncate block">{i.brand}</span>,
+    },
+    {
       key: "itemName",
       header: "Name",
       align: "center",
@@ -446,7 +454,6 @@ const Items: React.FC = () => {
     },
   ];
 
-  // ── RENDER ────────────────────────────────────────────────────────────────
 
   return (
     <>

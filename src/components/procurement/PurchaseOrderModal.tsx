@@ -54,8 +54,6 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     handleTaxRowChange,
     addTaxRow,
     removeTaxRow,
-    handleSaveTemplate,
-    resetTemplate,
     getCurrencySymbol,
     handleSubmit,
     validateTab,
@@ -74,6 +72,9 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     setAddressList,
     addressLoading,
     setAddressLoading,
+    handleAddressSelect,
+    handleCopyBillingToShipping,
+    handleCopySupplierToDispatch,
   } = usePurchaseOrderForm({ isOpen, onSuccess: onSubmit, onClose, poId });
 
   const handleNext = useCallback(() => {
@@ -118,14 +119,14 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           onClick={
             activeTab !== "terms"
               ? (e) => {
-                  e.preventDefault();
-                  const error = validateTab(activeTab);
-                  if (error) {
-                    showValidationError(error);
-                    return;
-                  }
-                  handleNext();
+                e.preventDefault();
+                const error = validateTab(activeTab);
+                if (error) {
+                  showValidationError(error);
+                  return;
                 }
+                handleNext();
+              }
               : undefined
           }
         >
@@ -187,6 +188,9 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           setAddresses={setAddressList}
           loading={addressLoading}
           setLoading={setAddressLoading}
+          handleAddressSelect={handleAddressSelect}
+          handleCopyBillingToShipping={handleCopyBillingToShipping}
+          handleCopySupplierToDispatch={handleCopySupplierToDispatch}
         />
       </div>
 
@@ -251,11 +255,10 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                 key={key}
                 type="button"
                 onClick={() => handleTabClick(key)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
-                  activeTab === key
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === key
                     ? "text-primary border-b-[3px] border-primary"
                     : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+                  }`}
               >
                 {label}
               </button>

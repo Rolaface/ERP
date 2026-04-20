@@ -44,31 +44,45 @@ interface Props {
   };
 }
 
+const inferReferenceType = (
+  partyType?: string,
+): "Purchase Order" | "Purchase Invoice" | "Sales Invoice" | undefined => {
+  if (partyType === "Supplier") return "Purchase Invoice";
+  if (partyType === "Customer") return "Sales Invoice";
+  return undefined;
+};
+
 function buildPayload(
   form: Record<string, any>,
-  isAdvanceFromPO: boolean,
 ): CreatePaymentEntryPayload {
   const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
   const receivedAmount = Number(form?.amountTo ?? paymentAmount);
+  const parsedExchangeRate = Number(form?.exchangeRate);
+  const exchangeRate =
+    Number.isFinite(parsedExchangeRate) && parsedExchangeRate > 0
+      ? parsedExchangeRate
+      : 1;
 
-const getReferenceDoctype = (partyType: string): string => {
-  if (form?.referenceType === "Purchase Order") return "Purchase Order";
-  if (form?.referenceType === "Purchase Invoice") return "Purchase Invoice";
+  const getReferenceDoctype = (partyType: string): string => {
+    if (form?.referenceType === "Purchase Order") return "Purchase Order";
+    if (form?.referenceType === "Purchase Invoice") return "Purchase Invoice";
+    if (form?.referenceType === "Sales Invoice") return "Sales Invoice";
 
-  switch (partyType) {
-    case "Supplier":
-      return "Purchase Invoice";
-    case "Customer":
-      return "Sales Invoice";
-    default:
-      return "Journal Entry";
-  }
-};
+    switch (partyType) {
+      case "Supplier":
+        return "Purchase Invoice";
+      case "Customer":
+        return "Sales Invoice";
+      default:
+        return "Journal Entry";
+    }
+  };
+
   const referenceDoctype = getReferenceDoctype(form?.partyType ?? "");
   const allocations: Record<string, number> = form?.allocations ?? {};
   const invoiceDueDates: Record<string, string> = form?.invoiceDueDates ?? {};
 
-  const references: PaymentReference[] = Object.entries(allocations)
+  let references: PaymentReference[] = Object.entries(allocations)
     .filter(([, amount]) => Number(amount) > 0)
     .map(([invoiceName, allocatedAmount]) => ({
       reference_doctype: referenceDoctype,
@@ -78,6 +92,19 @@ const getReferenceDoctype = (partyType: string): string => {
         ? { due_date: invoiceDueDates[invoiceName] }
         : {}),
     }));
+
+  if (references.length === 0 && form?.referenceName && paymentAmount > 0) {
+    references = [
+      {
+        reference_doctype: referenceDoctype,
+        reference_name: form.referenceName,
+        allocated_amount: paymentAmount,
+        ...(invoiceDueDates[form.referenceName]
+          ? { due_date: invoiceDueDates[form.referenceName] }
+          : {}),
+      },
+    ];
+  }
 
   const taxes: PaymentTax[] = (form?.taxes ?? []).map((t: any) => ({
     type: t.type ?? "",
@@ -97,7 +124,7 @@ const getReferenceDoctype = (partyType: string): string => {
     reference_date: form?.referenceDate ?? "",
     project: form?.project ?? "",
     cost_center: form?.costCenter ?? "",
-    exchange_rate: Number(form?.exchangeRate ?? 1),
+    exchange_rate: exchangeRate,
 
     paid_from: form?.glFrom ?? "",
     paid_from_bank_account: form?.companyBankAccount ?? "",
@@ -122,12 +149,23 @@ function validateForm(form: Record<string, any>): string | null {
   const isInternalTransfer = form.paymentType === "Internal Transfer";
 
   if (!isInternalTransfer && !form?.partyType) return "Party Type is required.";
-  if (!isInternalTransfer && !form?.partyName) return "Party Name is required.";
+  if (!isInternalTransfer && !(form?.partyId || form?.partyName)) {
+    return "Party Name is required.";
+  }
 
   if (!form?.date) return "Payment Date is required.";
   if (!form?.mode) return "Mode of Payment is required.";
   if (!form?.glFrom) return "Account (GL) — Paid From is required.";
   if (!form?.glTo) return "Account (GL) — Paid To is required.";
+
+  const fromCurrency = String(form?.currencyFrom ?? "").trim();
+  const toCurrency = String(form?.currencyTo ?? "").trim();
+  if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+    const rate = Number(form?.exchangeRate ?? 0);
+    if (!rate || rate <= 0) {
+      return "Exchange Rate is required for cross-currency payments.";
+    }
+  }
 
   const amount = Number(form?.amountFrom ?? form?.amount ?? 0);
   if (!amount || amount <= 0) return "Please enter a valid payment amount.";
@@ -135,6 +173,30 @@ function validateForm(form: Record<string, any>): string | null {
   return null;
 }
 
+const getInitialForm = () => ({
+  paymentType: "Pay",
+  partyType: "",
+  partyName: "",
+  partyId: "",
+  mode: "",
+  glFrom: "",
+  glTo: "",
+  currencyFrom: "",
+  currencyTo: "",
+  companyBankAccount: "",
+  partyBankAccount: "",
+  amount: "",
+ 
+  amountTo: "",
+  referenceNo: "",
+  referenceDate: "",
+  project: "",
+  costCenter: "",
+  exchangeRate: 1,
+  allocations: {},
+  selectedInvoices: [],
+  allocatedAmount: 0,
+});
 const PaymentEntryModal: React.FC<Props> = ({
   isOpen,
   onClose,
@@ -155,20 +217,41 @@ const PaymentEntryModal: React.FC<Props> = ({
   const isAdvanceFromPO =
   defaultValues?.referenceType === "Purchase Order";
   const isInternalTransfer = form?.paymentType === "Internal Transfer";
+  const resetModalState = useCallback(() => {
+    setForm(getInitialForm());
+    setActiveTab("details");
+    setError(null);
+    setTaxesMounted(false);
+    setIsSaving(false);
+    setIsAllocating(false);
+    lastFetchedPartyKeyRef.current = "";
+    prevAmountRef.current = 0;
+  }, []);
 
   const visibleTabs =
     isAdvanceFromPO || isInternalTransfer
       ? ALL_TABS.filter((t) => t.key !== "invoices")
       : ALL_TABS;
 
+  useEffect(() => {
+    if (isOpen) return;
+    resetModalState();
+  }, [isOpen, resetModalState]);
+
   // ── Reset on open ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
 
-    const base: Record<string, any> = { ...(defaultValues ?? {}) };
-    if (!defaultValues?.partyName) {
-      lastFetchedPartyKeyRef.current = "";
+    const base: Record<string, any> = {
+  ...getInitialForm(),   
+  ...(defaultValues ?? {}) 
+};
+    if (defaultValues?.referenceType) {
+      base.referenceType = defaultValues.referenceType;
+    } else if (base.referenceName && !base.referenceType) {
+      base.referenceType = inferReferenceType(base.partyType);
     }
+    lastFetchedPartyKeyRef.current = "";
     const today = new Date().toISOString().split("T")[0];
 
     if (!base.date) base.date = today;
@@ -183,13 +266,17 @@ const PaymentEntryModal: React.FC<Props> = ({
       base.partyId = defaultValues.partyId;
     }
 
-    if (defaultValues?.referenceName && base.amount) {
-  base.allocations = {
-    [defaultValues.referenceName]: Number(base.amount),
-  };
-  base.allocatedAmount = Number(base.amount);
-  base.selectedInvoices = [defaultValues.referenceName];
-}
+    if (defaultValues?.referenceName) {
+      const lockedAmount = Math.max(
+        0,
+        Number(base.amountFrom ?? base.amount ?? 0),
+      );
+      base.allocations = {
+        [defaultValues.referenceName]: lockedAmount,
+      };
+      base.allocatedAmount = lockedAmount;
+      base.selectedInvoices = [defaultValues.referenceName];
+    }
 
     const hasPartyAndAmount =
       Boolean(base.partyName) &&
@@ -206,7 +293,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     // If party + amount pre-filled, start in allocating state so sidebar
     // never flashes wrong Advance value
     setIsAllocating(hasPartyAndAmount && !isAdvanceFromPO);
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen,defaultValues]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -276,12 +363,13 @@ const getOptimisticAmountState = (prev: Record<string, any>, name: string, value
   const numericValue = Number(value) || 0;
   
   if (numericValue === 0) {
+    const isRef = Boolean(prev.referenceName);
     return { 
       [name]: value, 
       fifoTrigger: Date.now(), 
       allocatedAmount: 0, 
-      allocations: {}, 
-      selectedInvoices: [] 
+      allocations: isRef ? { [prev.referenceName]: 0 } : {}, 
+      selectedInvoices: isRef ? [prev.referenceName] : [] 
     };
   }
 const isRef = Boolean(prev.referenceName);
@@ -335,13 +423,34 @@ useEffect(() => {
   const handleFormChange = useCallback(
     (updates: Record<string, any>) => {
       setForm((prev) => {
+        if (prev.referenceName) {
+          const referenceName = prev.referenceName;
+          const next = { ...prev, ...updates };
+          const lockedAmount = Math.max(
+            0,
+            Number(next.amountFrom ?? next.amount ?? 0),
+          );
+
+          return {
+            ...next,
+            referenceType:
+              next.referenceType ??
+              prev.referenceType ??
+              inferReferenceType(next.partyType),
+            allocations: { [referenceName]: lockedAmount },
+            selectedInvoices: [referenceName],
+            allocatedAmount: lockedAmount,
+          };
+        }
         const currentAmount = Number(prev.amountFrom ?? prev.amount ?? 0);
         
-        if (
-          currentAmount > 0 &&
-          updates.allocatedAmount === 0 &&
-          (!updates.allocations || Object.keys(updates.allocations).length === 0)
-        ) {
+    if (
+  !prev.referenceName &&
+  currentAmount > 0 &&
+  updates.allocatedAmount === 0 &&
+  (!updates.allocations || Object.keys(updates.allocations).length === 0)
+)
+         {
           const { allocatedAmount, allocations, selectedInvoices, ...safeUpdates } = updates;
           return Object.keys(safeUpdates).length ? { ...prev, ...safeUpdates } : prev;
         }
@@ -384,49 +493,82 @@ useEffect(() => {
   }, []);
 
   // ── Save ───────────────────────────────────────────────────────────────────
-  const handleSave = useCallback(async () => {
-    const validationError = validateForm(form);
-    if (validationError) {
-      setError(validationError);
-      setActiveTab("details");
-      return;
-    }
+const handleSave = useCallback(async () => {
+  const validationError = validateForm(form);
+  if (validationError) {
+    setError(validationError);
+    setActiveTab("details");
+    return;
+  }
 
-    setError(null);
-    setIsSaving(true);
-    showLoading("Creating Payment Entry…");
+  setError(null);
+  setIsSaving(true);
+  showLoading("Creating Payment Entry…");
 
-    try {
-      const payload = buildPayload(form, isAdvanceFromPO);
-      const response = await createPaymentEntry(payload);
+  try {
+    const payload = buildPayload(form);
+    const response = await createPaymentEntry(payload);
 
-      closeSwal();
-      showSuccess(response.message);
-      onSuccess?.(response.data?.modeOfPaymentId ?? "");
+    closeSwal();
+
+
+    if (response?.status === "success") {
+      showSuccess(response.message || "Payment created successfully");
+
+     
+      onSuccess?.(response.data?.paymentId || "");
+
+      resetModalState();
       onClose();
-    } catch (err: any) {
-      closeSwal();
-      showApiError(err);
-    } finally {
-      setIsSaving(false);
+    } else {
+      // fallback if backend sends unexpected structure
+      showApiError(response);
     }
-  }, [form, isAdvanceFromPO, onClose, onSuccess]);
+
+  } catch (err: any) {
+    closeSwal();
+    showApiError(err);
+  } finally {
+    setIsSaving(false);
+  }
+}, [form, onClose, onSuccess, resetModalState]);
 
   const invoiceListForm = {
     partyType: form?.partyType,
     partyName: form?.partyName,
+    partyId: form?.partyId,
     amount: form?.amountFrom ?? form?.amount,
     fifoTrigger: form?.fifoTrigger,
-    referenceName: form?.referenceName,
+    referenceInvoice: form?.referenceName,
     allocations: form?.allocations ?? {},
   };
 
+  const requiresExchangeRate =
+    Boolean(form?.currencyFrom) &&
+    Boolean(form?.currencyTo) &&
+    form?.currencyFrom !== form?.currencyTo;
+  const hasExchangeRate =
+    !requiresExchangeRate || Number(form?.exchangeRate ?? 0) > 0;
+  const hasPartySelection =
+    isInternalTransfer || Boolean(form?.partyId || form?.partyName);
+  const hasAccounts = Boolean(form?.glFrom && form?.glTo);
+  const hasAmount = Number(form?.amountFrom ?? form?.amount ?? 0) > 0;
+  const isSubmitDisabled =
+    isSaving || !hasExchangeRate || !hasPartySelection || !hasAccounts || !hasAmount;
+
   const footer = (
     <>
-      <Button variant="secondary" onClick={onClose} disabled={isSaving}>
+      <Button
+        variant="secondary"
+        onClick={() => {
+          resetModalState();
+          onClose();
+        }}
+        disabled={isSaving}
+      >
         Cancel
       </Button>
-      <Button variant="primary" onClick={handleSave} disabled={isSaving}>
+      <Button variant="primary" onClick={handleSave} disabled={isSubmitDisabled}>
         {isSaving ? "Saving…" : "Save"}
       </Button>
     </>
@@ -435,7 +577,10 @@ useEffect(() => {
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        resetModalState();
+        onClose();
+      }}
       title="Payment Entry"
       subtitle={
         isAdvanceFromPO
