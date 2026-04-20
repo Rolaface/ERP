@@ -244,31 +244,22 @@ export const DetailsTab = ({
             />
           </Tooltip>
         </td> */}
-
         {/* PACKING */}
-        <td className="px-0 py-1">
-          <div className="flex items-center justify-center gap-[1px] w-[70px]">
-            <input
-              type="number"
-              name="packingUnit"
-              value={it.packingUnit || ""}
-              onChange={(e) => onItemChange(e, i)}
-              disabled
-              className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
-            />
-
-            <span className="text-[10px] text-muted leading-none">×</span>
-
-            <input
-              type="number"
-              name="packingSize"
-              value={it.packingSize || ""}
-              onChange={(e) => onItemChange(e, i)}
-              disabled
-              className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
-            />
-          </div>
-        </td>
+<td className="px-0 py-[2px]">
+  <div className="flex items-center justify-center w-[70px]">
+    <input
+      type="text"
+      name="packing"
+      value={
+        it.packingUnit && it.packingSize
+          ? `${it.packingUnit}×${it.packingSize}`
+          : ""
+      }
+      disabled
+      className="w-[50px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
+    />
+  </div>
+</td>
 
         {/* BATCH */}
         <td className="px-1 py-1">

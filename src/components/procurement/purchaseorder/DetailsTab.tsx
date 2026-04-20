@@ -52,8 +52,8 @@ const POColumnHeaders: React.FC = () => (
     {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[180px]">
       Description
     </th> */}
-    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[90px]">
-      Pkg (U×S)
+    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[10px]">
+      Pckg(Uxs)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
       Required By
@@ -200,33 +200,48 @@ export const DetailsTab = ({
         </td> */}
 
         {/* Packing */}
-        <td className="px-2 py-1">
-          <div className="flex items-center justify-center gap-[2px] w-[70px]">
-            <Tooltip content={`Packing Unit: ${it.packingUnit || " "}`}>
-              <input
-                type="number"
-                name="packingUnit"
-                value={it.packingUnit || ""}
-                onChange={(e) => onItemChange(e, i)}
-                className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
-                disabled
-              />
-            </Tooltip>
+     {/* Packing */}  
+<td className="px-2 py-[2px]">
+  <div className="flex items-center justify-center w-[70px]">
+    <Tooltip
+      content={`Packing: ${it.packingUnit || ""} × ${it.packingSize || ""}`}
+    >
+      <input
+        type="text"
+        value={
+  it.itemCode
+    ? `${it.packingUnit || ""}x${it.packingSize || ""}`
+    : ""
+}
+        onChange={(e) => {
+          const value = e.target.value;
+          const [unit, size] = value.split("x");
 
-            <span className="text-[10px] text-muted leading-none">×</span>
+          onItemChange(
+            {
+              target: {
+                name: "packingUnit",
+                value: unit || "",
+              },
+            } as any,
+            i
+          );
 
-            <Tooltip content={`Packing Size: ${it.packingSize || " "}`}>
-              <input
-                type="number"
-                name="packingSize"
-                value={it.packingSize || ""}
-                onChange={(e) => onItemChange(e, i)}
-                className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
-                disabled
-              />
-            </Tooltip>
-          </div>
-        </td>
+          onItemChange(
+            {
+              target: {
+                name: "packingSize",
+                value: size || "",
+              },
+            } as any,
+            i
+          );
+        }}
+        className="w-[60px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
+      />
+    </Tooltip>
+  </div>
+</td>
 
         {/* Required By */}
         <td className="px-2 py-1">
