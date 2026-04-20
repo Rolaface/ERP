@@ -64,7 +64,7 @@ export function usePaymentModes(): UseModeOfPaymentReturn {
         currency: item.currency ?? "",
       }));
       setOptions(mapped);
-      return mapped;  // ← return the fresh data
+      return mapped;  // return the fresh data
     } catch (err: any) {
       setError(err.message || "Failed to load payment modes");
       return [];
@@ -158,10 +158,10 @@ export function useCompanyBankAccounts() {
     try {
       const data = await getBankAccountOptions({ company: true, search });
       setOptions(data);
-      return data;  // ← add this
+      return data;
     } catch {
       setOptions([]);
-      return [];    // ← add this
+      return [];    
     } finally {
       setIsLoading(false);
     }

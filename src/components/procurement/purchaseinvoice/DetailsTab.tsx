@@ -379,6 +379,7 @@ export const DetailsTab = ({
             value={it.vatRate}
             onChange={(e) => onItemChange(e, i)}
             className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            disabled
           />
         </td>
 
@@ -389,6 +390,7 @@ export const DetailsTab = ({
             value={it.vatCd || ""}
             onChange={(e) => onItemChange(e, i)}
             className="w-[50px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+            disabled
           />
         </td>
 
@@ -438,6 +440,7 @@ export const DetailsTab = ({
               }
             >
               <SupplierSelect
+               value={form.supplier || ""}
                 selectedId={form.supplierId}
                 onChange={(s) => {
                   console.log("UI SELECT:", s);
@@ -599,8 +602,8 @@ export const DetailsTab = ({
             <Tooltip
               content={
                 form.paymentType
-                  ? `Payment Type: ${form.paymentType}`
-                  : "Select payment type"
+                  ? `Mode of Payment: ${form.paymentType}`
+                  : "Select a mode of payment"
               }
             >
               <SearchSelect2

@@ -159,6 +159,7 @@ export const emptyPaymentRow: PaymentRow = {
 };
 
 export const emptyAddress: AddressBlock = {
+  id: "",
   addressTitle: "",
   addressType: "Billing",
   addressLine1: "",

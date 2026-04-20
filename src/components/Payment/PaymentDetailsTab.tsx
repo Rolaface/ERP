@@ -41,6 +41,7 @@ const PARTY_FILLED_FIELDS = {
   totalOutstanding: null,
 };
 
+
 const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   form,
   onChange,

@@ -61,6 +61,9 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     isEditMode,
     onSuccess: async (data) => {
       const result = await onSubmit?.(data);
+      if (result) {
+    onClose();
+  }
       return result ?? false;
     },
     isOpen,
@@ -78,10 +81,10 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     reset();
   };
 
-  const handleSubmitForm = async () => {
-    await handleFormSubmit(new Event("submit") as unknown as React.FormEvent);
-    return !loading;
-  };
+ const handleSubmitForm = async () => {
+  await handleFormSubmit(new Event("submit") as unknown as React.FormEvent);
+  return true; 
+};
 
   const footer = (
     <ModalFooter

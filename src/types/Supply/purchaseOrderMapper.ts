@@ -9,11 +9,10 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
     const hasQty = it.quantity && Number(it.quantity) > 0;
     const hasRate = it.rate && Number(it.rate) > 0;
 
-    return hasCode && hasQty && hasRate; // Only include complete items
+    return hasCode && hasQty && hasRate; 
   });
 
   const items = validItems.map((it, idx) => {
-    // Force number conversion
     const quantity = Number(it.quantity);
     const rate = Number(it.rate);
     const vatRate = Number(it.vatRate || 0);
@@ -24,6 +23,7 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
       quantity: quantity,
       rate: rate,
       uom: it.uom,
+       description: it.description || "",
       vatCd: it.vatCd,
       vatRate: vatRate,
       requiredBy: it.requiredBy || form.date,

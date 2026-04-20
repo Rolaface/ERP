@@ -136,7 +136,7 @@ const fetchGroups = useCallback(async (query: string) => {
   };
 
   return (
-    <div className="flex flex-col gap-1 w-full">
+    <div className="flex flex-col  w-full">
       {label && (
         <span className="block text-[10px] font-medium text-main mb-1">
           {label}

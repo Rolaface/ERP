@@ -588,14 +588,24 @@ export type CreatePaymentEntryPayload = {
   taxes: PaymentTax[];
 };
 
-/** Shape returned by the API on success */
+
 export type CreatePaymentEntryResponse = {
   status_code: 201;
   status: "success";
   message: string;
-  data: {
-    modeOfPaymentId: string;
-  };
+data: {
+  paymentId: string;
+  paymentType: string;
+  partyType: string;
+  partyName: string;
+  paidFrom: string;
+  paidTo: string;
+  paidAmount: number;
+  receivedAmount: number;
+  paymentDate: string;
+  referenceNo: string;
+  status: string;
+};
 };
 
 export async function createPaymentEntry(

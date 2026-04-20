@@ -188,66 +188,66 @@ export const usePurchaseOrderForm = ({
       setAddressSelected({
         supplierBilling: mapped.addresses.supplierAddress.id
           ? {
-              id: mapped.addresses.supplierAddress.id,
-              title: mapped.addresses.supplierAddress.id,
-              addressType: "Billing",
-              addressLine1: "",
-              addressLine2: "",
-              city: "",
-              state: "",
-              country: "",
-              pincode: "",
-              phone: "",
-              email: "",
-            }
+            id: mapped.addresses.supplierAddress.id,
+            title: mapped.addresses.supplierAddress.id,
+            addressType: "Billing",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            country: "",
+            pincode: "",
+            phone: "",
+            email: "",
+          }
           : null,
 
         supplierDispatch: mapped.addresses.dispatchAddress.id
           ? {
-              id: mapped.addresses.dispatchAddress.id,
-              title: mapped.addresses.dispatchAddress.id,
-              addressType: "Dispatch",
-              addressLine1: "",
-              addressLine2: "",
-              city: "",
-              state: "",
-              country: "",
-              pincode: "",
-              phone: "",
-              email: "",
-            }
+            id: mapped.addresses.dispatchAddress.id,
+            title: mapped.addresses.dispatchAddress.id,
+            addressType: "Dispatch",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            country: "",
+            pincode: "",
+            phone: "",
+            email: "",
+          }
           : null,
 
         companyBilling: mapped.addresses.companyBillingAddress.id
           ? {
-              id: mapped.addresses.companyBillingAddress.id,
-              title: mapped.addresses.companyBillingAddress.id,
-              addressType: "Billing",
-              addressLine1: "",
-              addressLine2: "",
-              city: "",
-              state: "",
-              country: "",
-              pincode: "",
-              phone: "",
-              email: "",
-            }
+            id: mapped.addresses.companyBillingAddress.id,
+            title: mapped.addresses.companyBillingAddress.id,
+            addressType: "Billing",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            country: "",
+            pincode: "",
+            phone: "",
+            email: "",
+          }
           : null,
 
         companyShipping: mapped.addresses.shippingAddress.id
           ? {
-              id: mapped.addresses.shippingAddress.id,
-              title: mapped.addresses.shippingAddress.id,
-              addressType: "Shipping",
-              addressLine1: "",
-              addressLine2: "",
-              city: "",
-              state: "",
-              country: "",
-              pincode: "",
-              phone: "",
-              email: "",
-            }
+            id: mapped.addresses.shippingAddress.id,
+            title: mapped.addresses.shippingAddress.id,
+            addressType: "Shipping",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            country: "",
+            pincode: "",
+            phone: "",
+            email: "",
+          }
           : null,
       });
       setAddressSelectedIds({
@@ -437,7 +437,7 @@ export const usePurchaseOrderForm = ({
         ),
         supplierContact: primaryContact?.id || supplier.contactPerson || "",
         supplierContactDisplay:
-          primaryContact?.name || supplier.contactDisplay || "",
+          primaryContact?.fullName || supplier.contactPerson || "",
         terms: {
           buying: supplier?.terms?.buying || prev.terms?.buying,
         },
@@ -491,9 +491,9 @@ export const usePurchaseOrderForm = ({
           i !== idx
             ? item
             : {
-                ...item,
-                [name]: isNum ? (value === "" ? "" : Number(value)) : value,
-              },
+              ...item,
+              [name]: isNum ? (value === "" ? "" : Number(value)) : value,
+            },
         );
         return { ...p, items: newItems };
       });

@@ -25,6 +25,7 @@ import {
 import {
   createPurchaseInvoice,
   getPurchaseInvoiceById,
+  updatePurchaseInvoice,           // ← ADDED: was missing, caused edit to fail
 } from "../api/procurement/PurchaseInvoiceApi";
 import {
   mapUIToCreatePI,
@@ -58,22 +59,22 @@ interface UsePurchaseInvoiceFormProps {
 type AddressKey = keyof PurchaseInvoiceFormData["addresses"];
 
 /** Builds a minimal stub for the address selector state when loading saved IDs */
-const addressStub = (id: string, type: string) =>
+const addressStub = (id: string, type: string): ApiAddress | null =>
   id
     ? {
-        id,
-        title: id,
-        type: type,
-        addressType: type,
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        country: "",
-        pincode: "",
-        phone: "",
-        email: "",
-      }
+      id,
+      title: id,
+      type,
+      addressType: type,
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      state: "",
+      country: "",
+      pincode: "",
+      phone: "",
+      email: "",
+    }
     : null;
 
 // ─────────────────────────────────────────────
@@ -112,6 +113,7 @@ export const usePurchaseInvoiceForm = ({
     supplierDispatch: "",
   });
 
+  // Sync selectedIds → form.addresses so payload always has correct IDs
   useEffect(() => {
     setForm((prev) => ({
       ...prev,
@@ -135,7 +137,6 @@ export const usePurchaseInvoiceForm = ({
         },
       },
     }));
-    console.log("[PI] selectedIds sync:", selectedIds);
   }, [selectedIds]);
 
   const [addresses, setAddresses] = useState<Record<BoxType, ApiAddress[]>>({
@@ -161,6 +162,19 @@ export const usePurchaseInvoiceForm = ({
       setActiveTab("details");
       setUsePO(true);
       hasLoadedRef.current = false;
+      // Reset address selector state too
+      setSelected({
+        companyBilling: null,
+        supplierBilling: null,
+        companyShipping: null,
+        supplierDispatch: null,
+      });
+      setSelectedIds({
+        companyBilling: "",
+        supplierBilling: "",
+        companyShipping: "",
+        supplierDispatch: "",
+      });
     }
   }, [isOpen]);
 
@@ -201,13 +215,28 @@ export const usePurchaseInvoiceForm = ({
           },
         });
 
-        setForm((prev) => ({
-          ...prev,
-          terms: { ...prev.terms, buying: buyingTerms || prev.terms?.buying },
-          addresses: { ...prev.addresses, companyBillingAddress },
-        }));
+        // Only set company billing on create; edit load will overwrite anyway
+        if (!pId) {
+          setForm((prev) => ({
+            ...prev,
+            terms: { ...prev.terms, buying: buyingTerms || prev.terms?.buying },
+            addresses: { ...prev.addresses, companyBillingAddress },
+          }));
+
+          // Pre-select company billing address in selector
+          if (company.address?.id) {
+            setSelectedIds((prev) => ({
+              ...prev,
+              companyBilling: company.address.id,
+            }));
+            setSelected((prev) => ({
+              ...prev,
+              companyBilling: addressStub(company.address.id, "Billing"),
+            }));
+          }
+        }
       } catch (e) {
-        console.error("Failed to load company data", e);
+        showApiError(e);
       }
     };
 
@@ -220,41 +249,71 @@ export const usePurchaseInvoiceForm = ({
 
     const loadPI = async () => {
       try {
+        showLoading("Loading Purchase Invoice...");
         const res = await getPurchaseInvoiceById(pId);
+        closeSwal();
+
+        if (!res || res.status_code !== 200) {
+          showApiError(res);
+          return;
+        }
+
         const mapped = mapApiToUI(res.data);
         setForm(mapped);
 
-        // Sync address selector state — same pattern as PO hook
-        setSelected({
-          supplierBilling: addressStub(
-            mapped.addresses.supplierAddress.id,
-            "Billing",
-          ),
-          supplierDispatch: addressStub(
-            mapped.addresses.dispatchAddress.id,
-            "Dispatch",
-          ),
-          companyBilling: addressStub(
-            mapped.addresses.companyBillingAddress.id,
-            "Billing",
-          ),
-          companyShipping: addressStub(
-            mapped.addresses.shippingAddress.id,
-            "Shipping",
-          ),
+        const supplierAddrId = mapped.addresses?.supplierAddress?.id || "";
+        const dispatchAddrId = mapped.addresses?.dispatchAddress?.id || "";
+        const shippingAddrId = mapped.addresses?.shippingAddress?.id || "";
+        const companyBillingAddrId = mapped.addresses?.companyBillingAddress?.id || "";
+
+     
+        setSelectedIds({
+          supplierBilling: supplierAddrId,
+          supplierDispatch: dispatchAddrId,
+          companyShipping: shippingAddrId,
+          companyBilling: companyBillingAddrId,
         });
 
-        setSelectedIds({
-          supplierBilling: mapped.addresses.supplierAddress.id || "",
-          supplierDispatch: mapped.addresses.dispatchAddress.id || "",
-          companyBilling: mapped.addresses.companyBillingAddress.id || "",
-          companyShipping: mapped.addresses.shippingAddress.id || "",
+      
+        setSelected({
+          supplierBilling: supplierAddrId
+            ? addressStub(supplierAddrId, "Billing")
+            : null,
+
+          supplierDispatch: dispatchAddrId
+            ? addressStub(dispatchAddrId, "Dispatch")
+            : null,
+
+          companyShipping: shippingAddrId
+            ? addressStub(shippingAddrId, "Shipping")
+            : null,
+
+          companyBilling: companyBillingAddrId
+            ? addressStub(companyBillingAddrId, "Billing")
+            : null,
         });
+
+        const newSelectedIds: Record<BoxType, string> = {
+          supplierBilling: supplierAddrId,
+          supplierDispatch: dispatchAddrId,
+          companyShipping: shippingAddrId,
+          companyBilling: companyBillingAddrId,
+        };
+
+        const newSelected: Record<BoxType, ApiAddress | null> = {
+          supplierBilling: addressStub(supplierAddrId, "Billing"),
+          supplierDispatch: addressStub(dispatchAddrId, "Dispatch"),
+          companyShipping: addressStub(shippingAddrId, "Shipping"),
+          companyBilling: addressStub(companyBillingAddrId, "Billing"),
+        };
+
+        setSelectedIds(newSelectedIds);
+        setSelected(newSelected);
 
         hasLoadedRef.current = true;
       } catch (e) {
-        console.error("Failed to load PI", e);
-        showApiError({ message: "Failed to load Purchase Invoice" });
+        closeSwal();
+        showApiError(e);
       }
     };
 
@@ -424,6 +483,9 @@ export const usePurchaseInvoiceForm = ({
           supplierEmail: primaryContact?.email || "",
           supplierPhone: primaryContact?.mobile || primaryContact?.phone || "",
           supplierContact: primaryContact?.id || "",
+          supplierContactDisplay:
+            primaryContact?.fullName ||
+            `${primaryContact?.firstName || ""} ${primaryContact?.lastName || ""}`.trim(),
           taxCategory: supplier.supplierTaxCategory || prev.taxCategory,
           currency: supplier.currency || prev.currency,
           terms: buyingTerms ? { buying: buyingTerms } : prev.terms,
@@ -443,29 +505,30 @@ export const usePurchaseInvoiceForm = ({
           ...prev,
           supplierBilling: supplierPrimaryAddress.id,
         }));
+        setSelected((prev) => ({
+          ...prev,
+          supplierBilling: addressStub(supplierPrimaryAddress.id, "Billing"),
+        }));
       }
     } catch (e) {
-      console.error("Supplier fetch failed", e);
-      showApiError({ message: "Failed to load supplier details" });
+      showApiError(e);
     }
   };
+
+  // ── Fetch POs for selected supplier ────────
   useEffect(() => {
     if (!isOpen || !form.supplierId) return;
 
     const fetchPOs = async () => {
       try {
         setPoLoading(true);
-
         const res = await getPurchaseOrders(1, 50, {
           supplier: form.supplierId,
           status: "Approved",
         });
-
-        console.log("PO LIST:", res.data);
-
         setPoList(res.data || []);
       } catch (e) {
-        console.error("PO fetch failed", e);
+        showApiError(e);
       } finally {
         setPoLoading(false);
       }
@@ -473,55 +536,59 @@ export const usePurchaseInvoiceForm = ({
 
     fetchPOs();
   }, [isOpen, form.supplierId]);
+
   // ── PO select ──────────────────────────────
   const handlePOSelect = async (po: any) => {
     if (!po?.poId) return;
 
     try {
+      showLoading("Loading PO details...");
       const res = await getPurchaseOrderById(po.poId);
+      closeSwal();
 
       if (!res || res.status_code !== 200) {
-        showApiError({ message: "Failed to fetch PO" });
+        showApiError(res);
         return;
       }
 
       const data = res.data;
-      const taxRate = Number(data.tax?.taxRate || 0);
 
       setCustomIncoterm("");
       setCustomShippingRule("");
 
-      const enrichedItems = await Promise.all(
-        (data.items || []).map(async (item: any) => {
-          let description = "";
-          try {
-            const itemRes = await getItemByItemCode(item.item_code);
-            if (itemRes?.status_code === 200) {
-              description = itemRes.data?.description || "";
-            }
-          } catch {}
+      const enrichedItems = (data.items || []).map((item: any) => {
+        const supplierTaxCategory = data.taxCategory?.trim();
 
-          return {
-            itemCode: item.item_code,
-            itemName: item.item_name,
-            quantity: Number(item.qty || 0),
-            rate: Number(item.rate || 0),
-            uom: item.uom || "",
-            vatCd: item.vatCd || "",
-            vatRate: taxRate,
-            description,
-            warehouse: form.updateStock ? item.warehouse || "" : "",
-            packingUnit: Number(item.packingUnit || 0),
-            packingSize: Number(item.packingSize || 0),
-            packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
-            batchNo: item.batchNo || "",
-            mfgDate: item.mfgDate || "",
-            expDate: "",
-            requiresBatch: Boolean(item.has_batch_no),
-            discount: 0,
-          };
-        }),
-      );
+        let selectedTax =
+          item.taxInfo?.find(
+            (t: any) =>
+              t.taxCategory?.toLowerCase() === supplierTaxCategory?.toLowerCase(),
+          ) || item.taxInfo?.[0];
+
+        return {
+          itemCode: str(item.itemCode),
+          itemName: str(item.itemName),
+          quantity: Number(item.quantity || 0),
+          rate: Number(item.rate || 0),
+          uom: str(item.uom),
+
+
+          vatRate: Number(selectedTax?.totalTaxRate || 0),
+          vatCd: selectedTax?.taxName || "",
+
+          description: str(item.description || ""),
+          warehouse: form.updateStock ? str(item.warehouse) : "",
+          packingUnit: Number(item.packingUnit || 0),
+          packingSize: Number(item.packingSize || 0),
+          packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
+
+          batchNo: "",
+          mfgDate: "",
+          expDate: "",
+          requiresBatch: false,
+          discount: 0,
+        };
+      });
 
       const hasExistingItems = form.items.some((i) => i.itemCode);
       let finalItems = enrichedItems;
@@ -537,73 +604,116 @@ export const usePurchaseInvoiceForm = ({
             ...enrichedItems.filter((i) => !existingCodes.has(i.itemCode)),
           ];
         }
-        // action === "replace" → finalItems stays as enrichedItems
       }
+
+
+      const supplierAddrId =
+        data.supplierAddress ||
+        data.supplier_address ||
+        data.addresses?.supplierAddress?.id ||
+        "";
+
+      const shippingAddrId =
+        data.shippingAddress ||
+        data.shipping_address ||
+        data.addresses?.shippingAddress?.id ||
+        "";
+
+      const dispatchAddrId =
+        data.dispatchAddress ||
+        data.dispatch_address ||
+        data.addresses?.dispatchAddress?.id ||
+        "";
 
       setForm((prev) => ({
         ...prev,
-        poNumber: data.poId,
-        supplier: data.supplierName,
-        currency: data.currency || "",
-        taxCategory: data.taxCategory || "",
-        project: data.project || "",
-        costCenter: data.costCenter || "",
-        shippingRule: data.shippingRule || "",
+        // ── Header fields from PO ──────────────
+        poNumber: str(data.poId),
+        supplier: str(data.supplierName),
+        supplierId: str(data.supplierId),
+        supplierCode: str(data.supplierCode),
+        supplierContact: str(data.supplierContact),
+        currency: str(data.currency) || prev.currency,
+        taxCategory: str(data.taxCategory) || prev.taxCategory,
+        project: str(data.project) || prev.project,
+        costCenter: str(data.costCenter) || prev.costCenter,
+        warehouse: str(data.warehouse) || prev.warehouse,
+        shippingRule: str(data.shippingRule) || prev.shippingRule,
         incoterm:
           typeof data.incoterm === "string"
             ? data.incoterm.trim().toUpperCase()
-            : "",
-        placeOfSupply: data.placeOfSupply || "",
+            : prev.incoterm,
+        placeOfSupply: str(data.placeOfSupply) || prev.placeOfSupply,
+        paymentTermsTemplate:
+          str(data.paymentTermsTemplate) || prev.paymentTermsTemplate,
+        taxesChargesTemplate:
+          str(data.taxesChargesTemplate) || prev.taxesChargesTemplate,
+        destnCountryCd: str(data.destnCountryCd) || prev.destnCountryCd,
+
+
         terms: {
-          buying: data.terms?.terms?.buying || prev.terms?.buying,
+          buying:
+            data.terms?.terms?.buying ||
+            data.terms?.buying ||
+            prev.terms?.buying,
         },
+
         addresses: {
           ...prev.addresses,
-          // Resolve IDs from flat root keys (same as how PO stores them)
           supplierAddress: {
             ...prev.addresses.supplierAddress,
-            ...(data.addresses?.supplierAddress || {}),
-            id:
-              data.supplier_address ||
-              data.addresses?.supplierAddress?.id ||
-              prev.addresses.supplierAddress.id ||
-              "",
+            id: supplierAddrId,
+            addressLine1: data.supplierAddressDisplay || "",
           },
           shippingAddress: {
             ...prev.addresses.shippingAddress,
-            ...(data.addresses?.shippingAddress || {}),
-            id:
-              data.shipping_address ||
-              data.addresses?.shippingAddress?.id ||
-              prev.addresses.shippingAddress.id ||
-              "",
+            id: shippingAddrId,
+            addressLine1: data.shippingAddressDisplay || "",
           },
+
           dispatchAddress: {
             ...prev.addresses.dispatchAddress,
-            ...(data.addresses?.dispatchAddress || {}),
-            id:
-              data.dispatch_address ||
-              data.addresses?.dispatchAddress?.id ||
-              prev.addresses.dispatchAddress.id ||
-              "",
+            id: dispatchAddrId,
+            addressLine1: data.dispatchAddressDisplay || "",
           },
         },
-        items: finalItems,
+
+        // ── Items ──────────────────────────────
+        items: finalItems.length > 0 ? finalItems : [{ ...emptyItem }],
+
+        // ── Advances ──────────────────────────
         advanceAmount: (data.advances_payments || []).reduce(
           (sum: number, p: any) => sum + Number(p.allocated_amount || 0),
           0,
         ),
       }));
 
-      // Sync selectedIds when addresses are loaded from PO
+      // Sync address selectors so UI shows pre-selected values
       setSelectedIds((prev) => ({
         ...prev,
-        supplierBilling: data.supplier_address || prev.supplierBilling,
-        companyShipping: data.shipping_address || prev.companyShipping,
-        supplierDispatch: data.dispatch_address || prev.supplierDispatch,
+        supplierBilling: supplierAddrId || prev.supplierBilling,
+        companyShipping: shippingAddrId || prev.companyShipping,
+        supplierDispatch: dispatchAddrId || prev.supplierDispatch,
+        companyBilling: shippingAddrId || prev.companyBilling,
+      }));
+      setSelected((prev) => ({
+        ...prev,
+        ...(supplierAddrId
+          ? { supplierBilling: addressStub(supplierAddrId, "Billing") }
+          : {}),
+        ...(shippingAddrId
+          ? {
+            companyShipping: addressStub(shippingAddrId, "Shipping"),
+            companyBilling: addressStub(shippingAddrId, "Billing"),
+          }
+          : {}),
+        ...(dispatchAddrId
+          ? { supplierDispatch: addressStub(dispatchAddrId, "Dispatch") }
+          : {}),
       }));
     } catch (e) {
-      showApiError({ message: "Failed to load PO details" });
+      closeSwal();
+      showApiError(e);
     }
   };
 
@@ -625,9 +735,9 @@ export const usePurchaseInvoiceForm = ({
         i !== idx
           ? item
           : {
-              ...item,
-              [name]: isNum ? (value === "" ? "" : Number(value)) : value,
-            },
+            ...item,
+            [name]: isNum ? (value === "" ? "" : Number(value)) : value,
+          },
       );
       return { ...p, items };
     });
@@ -686,7 +796,6 @@ export const usePurchaseInvoiceForm = ({
           uom: data.unitOfMeasureCd,
           vatRate: Number(selectedTax?.totalTaxRate || 0),
           vatCd: selectedTax?.taxName || "",
-
           packingUnit: Number(data.packingUnit || 0),
           packingSize: Number(data.packingSize || 0),
           packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
@@ -694,8 +803,8 @@ export const usePurchaseInvoiceForm = ({
         };
         return { ...prev, items };
       });
-    } catch (err) {
-      console.error("Failed to fetch item details", err);
+    } catch (e) {
+      showApiError(e);
     }
   };
 
@@ -757,7 +866,7 @@ export const usePurchaseInvoiceForm = ({
       sendPrint: false,
     }));
 
-  // ── Currency symbol ────────────────────────
+  // ── Currency symbol 
   const getCurrencySymbol = () => {
     const map: Record<string, string> = {
       ZMW: "K",
@@ -768,15 +877,13 @@ export const usePurchaseInvoiceForm = ({
     return map[form.currency] ?? "";
   };
 
-  // ── Tab validation ─────────────────────────
+  // Tab validation 
   const validateTab = (tab: POTab): string | null => {
     if (tab === "details") {
       if (!form.supplier) return "Supplier is required";
-      if (usePO && !form.poNumber) return "Purchase Order is required";
       if (!form.supplierInvoiceNumber?.trim())
         return "Supplier Invoice No is required";
-      if (!form.transactionProgress) return "Transaction Progress is required";
-      if (!form.paymentType) return "Payment Type is required";
+      if (!form.paymentType) return "Mode of Payment is required";
       if (!form.items.length) return "At least one item required";
 
       for (let i = 0; i < form.items.length; i++) {
@@ -792,13 +899,12 @@ export const usePurchaseInvoiceForm = ({
       }
     }
 
-    if (tab === "address") {
-      const addr = form.addresses?.supplierAddress;
-      if (!addr?.id?.trim()) return "Supplier Address is required";
-      if (!addr?.addressLine1?.trim()) return "Address Line 1 is required";
-      if (!addr?.city?.trim()) return "City is required";
-      if (!addr?.country?.trim()) return "Country is required";
-    }
+    // if (tab === "address") {
+    //   const addr = form.addresses?.supplierAddress;
+    //   if (!addr?.id?.trim()) return "Supplier Address is required";
+    //   if (!addr?.city?.trim()) return "City is required";
+    //   if (!addr?.country?.trim()) return "Country is required";
+    // }
 
     return null;
   };
@@ -836,20 +942,10 @@ export const usePurchaseInvoiceForm = ({
         incoterm: form.incoterm === "OTHER" ? customIncoterm : form.incoterm,
       };
 
-      console.log("[PI] Submit - form.addresses:", finalForm.addresses);
-      console.log("[PI] Submit - selectedIds:", selectedIds);
-
       const payload = mapUIToCreatePI(finalForm);
 
-      console.log("[PI] Submit - payload addresses:", {
-        supplier_address: payload.supplier_address,
-        shipping_address: payload.shipping_address,
-        dispatch_address: payload.dispatch_address,
-        billing_address: payload.billing_address,
-      });
-
       const res = isEditMode
-        ? await updatePurchaseInvoice(pId, payload)
+        ? await updatePurchaseInvoice(pId!, payload)   // ← properly imported now
         : await createPurchaseInvoice(payload);
 
       closeSwal();
@@ -859,7 +955,7 @@ export const usePurchaseInvoiceForm = ({
         return;
       }
 
-      showSuccess(res.message);
+      showSuccess(res.message || (isEditMode ? "Purchase Invoice updated successfully" : "Purchase Invoice created successfully"));
       useDataRefreshStore
         .getState()
         .triggerRefresh(REFRESH_KEYS.PURCHASE_INVOICE_LIST);
@@ -892,6 +988,18 @@ export const usePurchaseInvoiceForm = ({
       },
     });
     setActiveTab("details");
+    setSelected({
+      companyBilling: null,
+      supplierBilling: null,
+      companyShipping: null,
+      supplierDispatch: null,
+    });
+    setSelectedIds({
+      companyBilling: "",
+      supplierBilling: "",
+      companyShipping: "",
+      supplierDispatch: "",
+    });
     hasLoadedRef.current = false;
   };
 
@@ -945,3 +1053,8 @@ export const usePurchaseInvoiceForm = ({
     setLoading,
   };
 };
+
+// ─────────────────────────────────────────────
+// Local helper (mirrors mapper's str)
+// ─────────────────────────────────────────────
+const str = (v: any): string => (v ? String(v).trim() : "");
