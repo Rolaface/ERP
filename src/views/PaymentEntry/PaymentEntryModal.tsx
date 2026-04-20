@@ -44,6 +44,14 @@ interface Props {
   };
 }
 
+const inferReferenceType = (
+  partyType?: string,
+): "Purchase Order" | "Purchase Invoice" | "Sales Invoice" | undefined => {
+  if (partyType === "Supplier") return "Purchase Invoice";
+  if (partyType === "Customer") return "Sales Invoice";
+  return undefined;
+};
+
 function buildPayload(
   form: Record<string, any>,
   isAdvanceFromPO: boolean,
@@ -51,24 +59,26 @@ function buildPayload(
   const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
   const receivedAmount = Number(form?.amountTo ?? paymentAmount);
 
-const getReferenceDoctype = (partyType: string): string => {
-  if (form?.referenceType === "Purchase Order") return "Purchase Order";
-  if (form?.referenceType === "Purchase Invoice") return "Purchase Invoice";
+  const getReferenceDoctype = (partyType: string): string => {
+    if (form?.referenceType === "Purchase Order") return "Purchase Order";
+    if (form?.referenceType === "Purchase Invoice") return "Purchase Invoice";
+    if (form?.referenceType === "Sales Invoice") return "Sales Invoice";
 
-  switch (partyType) {
-    case "Supplier":
-      return "Purchase Invoice";
-    case "Customer":
-      return "Sales Invoice";
-    default:
-      return "Journal Entry";
-  }
-};
+    switch (partyType) {
+      case "Supplier":
+        return "Purchase Invoice";
+      case "Customer":
+        return "Sales Invoice";
+      default:
+        return "Journal Entry";
+    }
+  };
+
   const referenceDoctype = getReferenceDoctype(form?.partyType ?? "");
   const allocations: Record<string, number> = form?.allocations ?? {};
   const invoiceDueDates: Record<string, string> = form?.invoiceDueDates ?? {};
 
-  const references: PaymentReference[] = Object.entries(allocations)
+  let references: PaymentReference[] = Object.entries(allocations)
     .filter(([, amount]) => Number(amount) > 0)
     .map(([invoiceName, allocatedAmount]) => ({
       reference_doctype: referenceDoctype,
@@ -78,6 +88,19 @@ const getReferenceDoctype = (partyType: string): string => {
         ? { due_date: invoiceDueDates[invoiceName] }
         : {}),
     }));
+
+  if (references.length === 0 && form?.referenceName && paymentAmount > 0) {
+    references = [
+      {
+        reference_doctype: referenceDoctype,
+        reference_name: form.referenceName,
+        allocated_amount: paymentAmount,
+        ...(invoiceDueDates[form.referenceName]
+          ? { due_date: invoiceDueDates[form.referenceName] }
+          : {}),
+      },
+    ];
+  }
 
   const taxes: PaymentTax[] = (form?.taxes ?? []).map((t: any) => ({
     type: t.type ?? "",
@@ -193,6 +216,11 @@ const PaymentEntryModal: React.FC<Props> = ({
   ...getInitialForm(),   
   ...(defaultValues ?? {}) 
 };
+    if (defaultValues?.referenceType) {
+      base.referenceType = defaultValues.referenceType;
+    } else if (base.referenceName && !base.referenceType) {
+      base.referenceType = inferReferenceType(base.partyType);
+    }
     if (!defaultValues?.partyName) {
       lastFetchedPartyKeyRef.current = "";
     }
@@ -210,13 +238,17 @@ const PaymentEntryModal: React.FC<Props> = ({
       base.partyId = defaultValues.partyId;
     }
 
-    if (defaultValues?.referenceName && base.amount) {
-  base.allocations = {
-    [defaultValues.referenceName]: Number(base.amount),
-  };
-  base.allocatedAmount = Number(base.amount);
-  base.selectedInvoices = [defaultValues.referenceName];
-}
+    if (defaultValues?.referenceName) {
+      const lockedAmount = Math.max(
+        0,
+        Number(base.amountFrom ?? base.amount ?? 0),
+      );
+      base.allocations = {
+        [defaultValues.referenceName]: lockedAmount,
+      };
+      base.allocatedAmount = lockedAmount;
+      base.selectedInvoices = [defaultValues.referenceName];
+    }
 
     const hasPartyAndAmount =
       Boolean(base.partyName) &&
@@ -303,12 +335,13 @@ const getOptimisticAmountState = (prev: Record<string, any>, name: string, value
   const numericValue = Number(value) || 0;
   
   if (numericValue === 0) {
+    const isRef = Boolean(prev.referenceName);
     return { 
       [name]: value, 
       fifoTrigger: Date.now(), 
       allocatedAmount: 0, 
-      allocations: {}, 
-      selectedInvoices: [] 
+      allocations: isRef ? { [prev.referenceName]: 0 } : {}, 
+      selectedInvoices: isRef ? [prev.referenceName] : [] 
     };
   }
 const isRef = Boolean(prev.referenceName);
@@ -362,13 +395,34 @@ useEffect(() => {
   const handleFormChange = useCallback(
     (updates: Record<string, any>) => {
       setForm((prev) => {
+        if (prev.referenceName) {
+          const referenceName = prev.referenceName;
+          const next = { ...prev, ...updates };
+          const lockedAmount = Math.max(
+            0,
+            Number(next.amountFrom ?? next.amount ?? 0),
+          );
+
+          return {
+            ...next,
+            referenceType:
+              next.referenceType ??
+              prev.referenceType ??
+              inferReferenceType(next.partyType),
+            allocations: { [referenceName]: lockedAmount },
+            selectedInvoices: [referenceName],
+            allocatedAmount: lockedAmount,
+          };
+        }
         const currentAmount = Number(prev.amountFrom ?? prev.amount ?? 0);
         
-        if (
-          currentAmount > 0 &&
-          updates.allocatedAmount === 0 &&
-          (!updates.allocations || Object.keys(updates.allocations).length === 0)
-        ) {
+    if (
+  !prev.referenceName &&
+  currentAmount > 0 &&
+  updates.allocatedAmount === 0 &&
+  (!updates.allocations || Object.keys(updates.allocations).length === 0)
+)
+         {
           const { allocatedAmount, allocations, selectedInvoices, ...safeUpdates } = updates;
           return Object.keys(safeUpdates).length ? { ...prev, ...safeUpdates } : prev;
         }
@@ -424,6 +478,8 @@ const handleSave = useCallback(async () => {
   showLoading("Creating Payment Entry…");
 
   try {
+    console.log("UI Name:", form?.partyName);
+    console.log("Payload ID:", form?.partyId);
     const payload = buildPayload(form, isAdvanceFromPO);
     const response = await createPaymentEntry(payload);
 
@@ -453,9 +509,10 @@ const handleSave = useCallback(async () => {
   const invoiceListForm = {
     partyType: form?.partyType,
     partyName: form?.partyName,
+    partyId: form?.partyId,
     amount: form?.amountFrom ?? form?.amount,
     fifoTrigger: form?.fifoTrigger,
-    referenceName: form?.referenceName,
+    referenceInvoice: form?.referenceName,
     allocations: form?.allocations ?? {},
   };
 

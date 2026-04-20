@@ -400,7 +400,9 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   const canAllocate =
     Number(form?.amountTo || 0) > 0 &&
     !!form?.partyName &&
-    !form?.referenceInvoice;
+    !(form?.referenceName || form?.referenceInvoice);
+
+  const lockedReference = form?.referenceName || form?.referenceInvoice;
 
   // ── Mode of Payment fetch ─────────────────────────────────────────────────
   const handleModeFetchOptions = useCallback(
@@ -635,7 +637,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         <div className="flex items-center gap-2.5 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
           <span className="text-xs text-primary leading-relaxed">
             Party details are pre-filled from{" "}
-            <span className="font-bold">{form?.referenceInvoice}</span>. Payment
+            <span className="font-bold">{lockedReference}</span>. Payment
             Type, Party Type and Name cannot be changed.
           </span>
         </div>

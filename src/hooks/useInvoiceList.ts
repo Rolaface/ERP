@@ -58,12 +58,14 @@ export interface UseInvoiceListReturn {
 
 export function useInvoiceList(
   partyType: string,
-  partyName: string | undefined,
+  partyId: string | undefined,
   paymentAmount: number,
   onFormChange: (data: AllocationResult) => void,
   referenceInvoice?: string,
   initialAllocated?: Record<string, number>,
 ): UseInvoiceListReturn {
+  console.log("partyId:", partyId);
+
   const adapter     = getInvoiceAdapter(partyType);
   const isSupported = isSupportedPartyType(partyType);
 
@@ -106,17 +108,22 @@ export function useInvoiceList(
   // ── Fetch a single page (display only — no allocation side-effect) ─────────
   const fetchPage = useCallback(async (page: number) => {
     if (!adapter) return;
+    if (!partyId) {
+      setInvoices([]);
+      setPagination(null);
+      return;
+    }
     setLoading(true);
     setFetchError(null);
     try {
       const ref = referenceInvoiceRef.current;
       if (ref) {
-        const allData = await adapter.fetchAllForFifo(partyName);
+        const allData = await adapter.fetchAllForFifo(partyId);
         const match   = allData.filter((inv) => inv.invoiceNumber === ref);
         setInvoices(match);
         setPagination({ page: 1, totalPages: 1, total: match.length, hasNext: false, hasPrev: false });
       } else {
-        const result = await adapter.fetchPage({ page, pageSize: PAGE_SIZE, partyName });
+        const result = await adapter.fetchPage({ page, pageSize: PAGE_SIZE, partyId });
         setInvoices(result.data);
         setPagination(result.pagination);
       }
@@ -125,7 +132,7 @@ export function useInvoiceList(
     } finally {
       setLoading(false);
     }
-  }, [adapter, partyName]);
+  }, [adapter, partyId]);
 
   const fetchPageRef   = useRef(fetchPage);
   fetchPageRef.current = fetchPage;
@@ -134,13 +141,14 @@ export function useInvoiceList(
   // Called on mount and whenever paymentAmount changes since last run.
   const runAutoAllocation = useCallback(async () => {
     if (!adapter) return;
+    if (!partyId) return;
     const budget = paymentAmountRef.current;
     if (budget <= 0) return;
 
     let cancelled = false;
     try {
       const ref         = referenceInvoiceRef.current;
-      const allData     = await adapter.fetchAllForFifo(partyName);
+      const allData     = await adapter.fetchAllForFifo(partyId);
       const allInvoices = ref
         ? allData.filter((inv) => inv.invoiceNumber === ref)
         : allData;
@@ -167,9 +175,9 @@ export function useInvoiceList(
       // silent — page fetch will show its own error
     }
     return () => { cancelled = true; };
-  }, [adapter, partyName, publishAllocation]);
+  }, [adapter, partyId, publishAllocation]);
 
-  // ── Effect 1: On mount — party / referenceInvoice change ─────────────────
+  // ── Effect 1: On mount — partyId / referenceInvoice change ───────────────
   // Reset state, then decide: run auto-allocation or just fetch page.
   useEffect(() => {
     setCurrentPage(1);
@@ -177,7 +185,7 @@ export function useInvoiceList(
     setPagination(null);
     setFetchError(null);
 
-    if (!isSupported || !partyType) return;
+    if (!isSupported || !partyType || !partyId) return;
 
     const budget = paymentAmountRef.current;
     const needsAllocation =
@@ -193,11 +201,11 @@ export function useInvoiceList(
       // Allocation already correct for this amount — just fetch display page
       fetchPageRef.current(1);
     }
-  }, [partyType, partyName, referenceInvoice]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [partyType, partyId, referenceInvoice]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Effect 2: Page navigation ─────────────────────────────────────────────
   useEffect(() => {
-    if (isSupported && partyType) fetchPageRef.current(currentPage);
+    if (isSupported && partyType && partyId) fetchPageRef.current(currentPage);
   }, [currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Effect 3: paymentAmount changed → mark for re-allocation ─────────────
@@ -211,7 +219,7 @@ export function useInvoiceList(
       return;
     }
     // Amount changed while this component is mounted — re-run allocation
-    if (isSupported && partyType) {
+    if (isSupported && partyType && partyId) {
       lastAutoAllocatedAmountRef.current = null; // mark stale
       setAllocated({});
       setInputValues({});

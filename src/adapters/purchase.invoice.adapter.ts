@@ -48,9 +48,10 @@ function normalizePurchaseInvoice(raw: PurchaseInvoiceRaw): NormalizedInvoice {
 // ─── Adapter 
 
 export const purchaseInvoiceAdapter: InvoiceAdapter = {
-  async fetchPage({ page, pageSize, partyName }: FetchParams): Promise<NormalizedPage> {
+  async fetchPage({ page, pageSize, partyId }: FetchParams): Promise<NormalizedPage> {
+    console.log("API supplier param:", partyId);
     const res = await getPurchaseInvoices(page, pageSize, {
-      supplier: partyName,
+      supplier: partyId,
       status: ["Partly Paid", "Unpaid", "Overdue"],
       sort_order: "asc",
     });
@@ -70,9 +71,10 @@ export const purchaseInvoiceAdapter: InvoiceAdapter = {
     };
   },
 
-  async fetchAllForFifo(partyName): Promise<NormalizedInvoice[]> {
+  async fetchAllForFifo(partyId): Promise<NormalizedInvoice[]> {
+    console.log("API supplier param:", partyId);
     const res = await getPurchaseInvoices(1, 1000, {
-      supplier: partyName,
+      supplier: partyId,
       status: ["Partly Paid", "Unpaid", "Overdue"],
       sort_order: "asc",
     });

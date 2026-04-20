@@ -14,6 +14,7 @@ interface InvoiceListProps {
   form: {
     partyType?: string;
     partyName?: string;
+    partyId?: string;
     amount?: number | string;
     referenceInvoice?: string;
     allocations?: Record<string, number>;
@@ -27,7 +28,7 @@ interface InvoiceListProps {
 
 const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange, onModifyAllocation, onLoadingChange }) => {
   const partyType          = form.partyType ?? "";
-  const partyName          = form.partyName;
+  const partyId            = form.partyId;
   const paymentAmount      = Number(form.amount ?? 0);
   const referenceInvoice   = form.referenceInvoice;
   const initialAllocations = form.allocations ?? {};
@@ -52,7 +53,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ form, onFormChange, onModifyA
     retryFetch,
   } = useInvoiceList(
     partyType,
-    partyName,
+    partyId,
     paymentAmount,
     onFormChange,
     referenceInvoice,

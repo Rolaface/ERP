@@ -143,9 +143,9 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
       const mappedOrders: PurchaseOrder[] = res.data.map((po: any) => ({
         id: po.poId,
-        supplier: po.supplierName,
+        supplier: po.supplierName || po.supplier_name || po.partyName || "",
         date: po.poDate,
-        supplierId: po.supplierId ?? po.partyId ?? po.supplier_id,
+        supplierId: po.supplierId ?? po.partyId ?? po.supplier_id ?? "",
         deliveryDate: po.deliveryDate || po.items?.[0]?.requiredBy || "",
         amount: po.grandTotal,
         status: po.status,
@@ -173,15 +173,49 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchOrders]);
 
-  const handleMakePayment = (order: PurchaseOrder) => {
-  if (order.status !== "Approved") {
-    showApiError("Only Approved purchase orders can have payments");
-    return;
-  }
+  const handleMakePayment = async (order: PurchaseOrder) => {
+    if (order.status !== "Approved") {
+      showApiError("Only Approved purchase orders can have payments");
+      return;
+    }
 
-  setSelectedPOForPayment(order);
-  setPaymentModalOpen(true);
-};
+    try {
+      showLoading("Opening payment...");
+      const res = await getPurchaseOrderById(order.id);
+      closeSwal();
+
+      if (!res || res.status !== "success") {
+        showApiError("Failed to load purchase order");
+        return;
+      }
+
+      const data = res.data ?? {};
+      const supplierName =
+        data.supplierName ||
+        data.supplier_name ||
+        data.partyName ||
+        data.supplier ||
+        order.supplier;
+      const supplierId =
+        data.supplierId ??
+        data.partyId ??
+        data.supplier_id ??
+        order.supplierId;
+      const poId = data.poId || order.id;
+      const amount = Number(data.grandTotal ?? order.amount ?? 0);
+
+      setSelectedPOForPayment({
+        id: poId,
+        supplier: supplierName,
+        supplierId,
+        amount,
+      });
+      setPaymentModalOpen(true);
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
 const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
   try {
@@ -327,7 +361,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
         if (res?.status_code === 200) {
           const mapped = res.data.map((po: any) => ({
             id: po.poId,
-            supplier: po.supplierName,
+            supplier: po.supplierName || po.supplier_name || po.partyName || "",
             date: po.poDate,
             deliveryDate: po.deliveryDate,
             amount: po.grandTotal,
@@ -663,28 +697,24 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
     setSelectedPOForPayment(null);
   }}
   onSuccess={(paymentId) => {
-    console.log("Payment Created:", paymentId);
-
-  
     fetchOrders();
-
-  
     setPaymentModalOpen(false);
     setSelectedPOForPayment(null);
-
-   
     showSuccess(`Payment ${paymentId} created`);
   }}
-
-  defaultValues={{
-    paymentType: "Pay",
-    partyType: "Supplier",
-    partyName: selectedPOForPayment?.supplier,
-    partyId: selectedPOForPayment?.supplier,
-    amount: selectedPOForPayment?.amount,
-    referenceName: selectedPOForPayment?.id,
-    referenceType: "Purchase Order",
-  }}
+  defaultValues={
+    selectedPOForPayment
+      ? {
+          paymentType: "Pay",
+          partyType: "Supplier",
+          partyName: selectedPOForPayment.supplier,
+          partyId: selectedPOForPayment.supplierId,
+          amount: selectedPOForPayment.amount,
+          referenceName: selectedPOForPayment.id,
+          referenceType: "Purchase Order",
+        }
+      : undefined
+  }
 />
     </div>
   );
