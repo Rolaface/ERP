@@ -54,11 +54,8 @@ const PIColumnHeaders: React.FC = () => (
     {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[76px]">
       Description
     </th> */}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
-      Packing{" "}
-      <span className="ml-1 text-[9px] font-normal text-muted/60">
-        (unit × size)
-      </span>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
+      Pkg (U×S)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
       Batch No{" "}
@@ -66,10 +63,10 @@ const PIColumnHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">
       Qty
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
       Mfg Date
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px]">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
       Expiry Date
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px] whitespace-nowrap">
@@ -78,7 +75,7 @@ const PIColumnHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px]">
       Warehouse
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[40px]">
       Dis (%)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
@@ -249,30 +246,32 @@ export const DetailsTab = ({
         </td> */}
 
         {/* PACKING */}
-        <td className="px-2 py-1">
-          <div className="flex items-center justify-center gap-1">
+        <td className="px-0 py-1">
+          <div className="flex items-center justify-center gap-[1px] w-[70px]">
             <input
               type="number"
               name="packingUnit"
               value={it.packingUnit || ""}
               onChange={(e) => onItemChange(e, i)}
-              className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
+              disabled
+              className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
             />
 
-            <span className="text-muted text-[10px] font-bold">×</span>
+            <span className="text-[10px] text-muted leading-none">×</span>
 
             <input
               type="number"
               name="packingSize"
               value={it.packingSize || ""}
               onChange={(e) => onItemChange(e, i)}
-              className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
+              disabled
+              className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
             />
           </div>
         </td>
 
         {/* BATCH */}
-        <td className="px-2 py-1">
+        <td className="px-1 py-1">
           <input
             name="batchNo"
             value={it.batchNo || ""}
@@ -283,7 +282,7 @@ export const DetailsTab = ({
         </td>
 
         {/* QTY */}
-        <td className="px-2 py-1">
+        <td className="px-1 py-1">
           <input
             type="number"
             name="quantity"
@@ -294,8 +293,8 @@ export const DetailsTab = ({
         </td>
 
         {/* MFG DATE */}
-        <td className="px-2 py-1">
-          <div style={{ width: "125px" }}>
+        <td className="px-1 py-1">
+          <div style={{ width: "98px" }}>
             <DatePickerInput
               name="mfgDate"
               value={it.mfgDate || ""}
@@ -312,8 +311,8 @@ export const DetailsTab = ({
         </td>
 
         {/* EXPIRY DATE */}
-        <td className="px-2 py-1">
-          <div style={{ width: "125px" }}>
+        <td className="px-1 py-1">
+          <div style={{ width: "98px" }}>
             <DatePickerInput
               name="expDate"
               value={it.expDate || ""}
@@ -330,7 +329,7 @@ export const DetailsTab = ({
         </td>
 
         {/* RATE */}
-        <td className="px-2 py-1">
+        <td className="px-1 py-1">
           <input
             type="number"
             name="rate"
@@ -341,7 +340,7 @@ export const DetailsTab = ({
         </td>
 
         {/* WAREHOUSE */}
-        <td className="px-2 py-1">
+        <td className="px-1 py-1">
           <WarehouseSelect
             compact
             value={it.warehouse || ""}
@@ -365,9 +364,9 @@ export const DetailsTab = ({
           <input
             type="number"
             name="discount"
-            value={it.discount || 0}
+            value={it.discount ?? ""}
             onChange={(e) => onItemChange(e, i)}
-            className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
           />
         </td>
 
@@ -378,7 +377,7 @@ export const DetailsTab = ({
             name="vatRate"
             value={it.vatRate}
             onChange={(e) => onItemChange(e, i)}
-            className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             disabled
           />
         </td>
@@ -440,7 +439,7 @@ export const DetailsTab = ({
               }
             >
               <SupplierSelect
-               value={form.supplier || ""}
+                value={form.supplier || ""}
                 selectedId={form.supplierId}
                 onChange={(s) => {
                   console.log("UI SELECT:", s);
