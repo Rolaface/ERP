@@ -5,6 +5,7 @@ import {
   showApiError,
   showSuccess
 } from "../../utils/alert";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
 import { createSalesInvoice , editSalesInvoice } from "../../api/salesApi";
 import { User, Mail, Phone } from "lucide-react";
 import CustomerSelect from "../selects/CustomerSelect";
@@ -148,6 +149,7 @@ const handleModeFetchOptions = async (q: string) => {
           showSuccess(res?.message || "Invoice updated successfully");
           resetDirty();
           onClose();
+          useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
         } else {
           showApiError(res?.message || "Failed to update invoice");
         }
@@ -159,6 +161,7 @@ const handleModeFetchOptions = async (q: string) => {
           showSuccess(`${res?.message} (ID: ${res?.data?.invoiceId})`);
           resetDirty();
           onClose();
+          useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
         } else {
           showApiError(res?.message || "Something went wrong");
         }
