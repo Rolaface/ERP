@@ -243,19 +243,6 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
       },
     },
     {
-      key: "account_currency",
-      header: "Currency",
-      align: "center",
-      render: (row: COAAccount) =>
-        !row.is_group && row.account_currency ? (
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {row.account_currency}
-          </code>
-        ) : (
-          <span className="text-muted text-xs">—</span>
-        ),
-    },
-    {
       key: "balance",
       header: "Balance",
       align: "right",
@@ -271,7 +258,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
     },
     {
       key: "balance_in_account_currency",
-      header: "Base Currency Balance",
+      header: `Balance (${coaData?.base_currency || ""})`,
       align: "right",
       render: (row: COAAccount) => {
         const value = row.balance;
@@ -282,7 +269,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
 
         return (
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {coaData?.base_currency} {value}
+             {value}
           </code>
         );
       },
