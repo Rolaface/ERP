@@ -488,7 +488,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
     },
    {
   key: "deliveryDate",
-  header: "Delivery Date",
+  header: "Required By",
   align: "center",
   render: (o) => (
     <span>{o.deliveryDate || "—"}</span>

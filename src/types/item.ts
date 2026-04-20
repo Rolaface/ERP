@@ -62,6 +62,7 @@ export interface Item {
 export interface ItemSummary {
   id: string;
   itemName: string;
+  brand: string;
   itemGroup: string;
   itemClassCode: string;
   unitOfMeasureCd: string;
