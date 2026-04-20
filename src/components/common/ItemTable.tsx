@@ -315,7 +315,7 @@ onChange={(item: SelectedStockItem) => {
 
         {/* Mfg Date */}
         <td className="px-0.5 py-1">
-          <div style={{ width: "130px" }}>
+          <div style={{ width: "110px" }}>
             <DatePickerInput
               label=""
               name="mfgDate"
@@ -330,7 +330,7 @@ onChange={(item: SelectedStockItem) => {
 
         {/* Expiry Date */}
         <td className="px-0.5 py-1">
-          <div style={{ width: "130px" }}>
+          <div style={{ width: "110px" }}>
             <DatePickerInput
               label=""
               name="expDate"

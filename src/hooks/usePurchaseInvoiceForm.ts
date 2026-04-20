@@ -283,74 +283,88 @@ export const usePurchaseInvoiceForm = ({
     if (!isOpen || !pId || hasLoadedRef.current) return;
 
     const loadPI = async () => {
-      try {
-        showLoading("Loading Purchase Invoice...");
-        const res = await getPurchaseInvoiceById(pId);
-        closeSwal();
+  try {
+    showLoading("Loading Purchase Invoice...");
+    const res = await getPurchaseInvoiceById(pId);
+    closeSwal();
 
-        if (!res || res.status_code !== 200) {
-          showApiError(res);
-          return;
-        }
+    if (!res || res.status_code !== 200) {
+      showApiError(res);
+      return;
+    }
 
-        const mapped = mapApiToUI(res.data);
-        setForm(mapped);
+    const mapped = mapApiToUI(res.data);
+    setForm(mapped);
 
-        const supplierAddrId = mapped.addresses?.supplierAddress?.id || "";
-        const dispatchAddrId = mapped.addresses?.dispatchAddress?.id || "";
-        const shippingAddrId = mapped.addresses?.shippingAddress?.id || "";
-        const companyBillingAddrId = mapped.addresses?.companyBillingAddress?.id || "";
+    const supplierAddrId        = mapped.addresses?.supplierAddress?.id        || "";
+    const dispatchAddrId        = mapped.addresses?.dispatchAddress?.id        || "";
+    const shippingAddrId        = mapped.addresses?.shippingAddress?.id        || "";
+    const companyBillingAddrId  = mapped.addresses?.companyBillingAddress?.id  || "";
 
-     
-        setSelectedIds({
-          supplierBilling: supplierAddrId,
-          supplierDispatch: dispatchAddrId,
-          companyShipping: shippingAddrId,
-          companyBilling: companyBillingAddrId,
-        });
+    // Set stubs first so UI shows something immediately
+    setSelectedIds({
+      supplierBilling:  supplierAddrId,
+      supplierDispatch: dispatchAddrId,
+      companyShipping:  shippingAddrId,
+      companyBilling:   companyBillingAddrId,
+    });
+    setSelected({
+      supplierBilling:  supplierAddrId  ? addressStub(supplierAddrId,       "Billing")  : null,
+      supplierDispatch: dispatchAddrId  ? addressStub(dispatchAddrId,       "Dispatch") : null,
+      companyShipping:  shippingAddrId  ? addressStub(shippingAddrId,       "Shipping") : null,
+      companyBilling:   companyBillingAddrId ? addressStub(companyBillingAddrId, "Billing") : null,
+    });
 
-      
-        setSelected({
-          supplierBilling: supplierAddrId
-            ? addressStub(supplierAddrId, "Billing")
-            : null,
+    // ── NOW fetch full address lists and match saved IDs to full objects ──
+    const supplierId = mapped.supplierId || "";
 
-          supplierDispatch: dispatchAddrId
-            ? addressStub(dispatchAddrId, "Dispatch")
-            : null,
+    // Fetch all 4 address lists in parallel
+    const [companyAddrs, supplierBillingAddrs, supplierDispatchAddrs] =
+      await Promise.all([
+        getAddressList({ company: true }),
+        supplierId ? getAddressList({ supplierId, addressType: "Billing" }) : Promise.resolve([]),
+        supplierId ? getAddressList({ supplierId }) : Promise.resolve([]),
+      ]);
 
-          companyShipping: shippingAddrId
-            ? addressStub(shippingAddrId, "Shipping")
-            : null,
+    // Company addresses — both billing and shipping use same company list
+    setAddresses((prev) => ({
+      ...prev,
+      companyBilling:   companyAddrs,
+      companyShipping:  companyAddrs,
+      supplierBilling:  supplierBillingAddrs,
+      supplierDispatch: supplierDispatchAddrs,
+    }));
 
-          companyBilling: companyBillingAddrId
-            ? addressStub(companyBillingAddrId, "Billing")
-            : null,
-        });
+    // Match saved IDs to full address objects so UI shows full details
+    const matchedCompanyBilling  = companyAddrs.find((a) => a.id === companyBillingAddrId)
+                                    ?? companyAddrs[0] ?? null;
+    const matchedCompanyShipping = companyAddrs.find((a) => a.id === shippingAddrId)
+                                    ?? null;
+    const matchedSupplierBilling = supplierBillingAddrs.find((a) => a.id === supplierAddrId)
+                                    ?? supplierBillingAddrs[0] ?? null;
+    const matchedSupplierDispatch = supplierDispatchAddrs.find((a) => a.id === dispatchAddrId)
+                                    ?? supplierDispatchAddrs[0] ?? null;
 
-        const newSelectedIds: Record<BoxType, string> = {
-          supplierBilling: supplierAddrId,
-          supplierDispatch: dispatchAddrId,
-          companyShipping: shippingAddrId,
-          companyBilling: companyBillingAddrId,
-        };
+    setSelected({
+      companyBilling:   matchedCompanyBilling,
+      companyShipping:  matchedCompanyShipping,
+      supplierBilling:  matchedSupplierBilling,
+      supplierDispatch: matchedSupplierDispatch,
+    });
 
-        const newSelected: Record<BoxType, ApiAddress | null> = {
-          supplierBilling: addressStub(supplierAddrId, "Billing"),
-          supplierDispatch: addressStub(dispatchAddrId, "Dispatch"),
-          companyShipping: addressStub(shippingAddrId, "Shipping"),
-          companyBilling: addressStub(companyBillingAddrId, "Billing"),
-        };
+    setSelectedIds({
+      companyBilling:   matchedCompanyBilling?.id  ?? companyBillingAddrId,
+      companyShipping:  matchedCompanyShipping?.id ?? shippingAddrId,
+      supplierBilling:  matchedSupplierBilling?.id ?? supplierAddrId,
+      supplierDispatch: matchedSupplierDispatch?.id ?? dispatchAddrId,
+    });
 
-        setSelectedIds(newSelectedIds);
-        setSelected(newSelected);
-
-        hasLoadedRef.current = true;
-      } catch (e) {
-        closeSwal();
-        showApiError(e);
-      }
-    };
+    hasLoadedRef.current = true;
+  } catch (e) {
+    closeSwal();
+    showApiError(e);
+  }
+};
 
     loadPI();
   }, [isOpen, pId]);
