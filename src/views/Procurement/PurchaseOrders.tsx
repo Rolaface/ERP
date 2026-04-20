@@ -662,6 +662,20 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
     setPaymentModalOpen(false);
     setSelectedPOForPayment(null);
   }}
+  onSuccess={(paymentId) => {
+    console.log("Payment Created:", paymentId);
+
+  
+    fetchOrders();
+
+  
+    setPaymentModalOpen(false);
+    setSelectedPOForPayment(null);
+
+   
+    showSuccess(`Payment ${paymentId} created`);
+  }}
+
   defaultValues={{
     paymentType: "Pay",
     partyType: "Supplier",

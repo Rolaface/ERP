@@ -135,6 +135,30 @@ function validateForm(form: Record<string, any>): string | null {
   return null;
 }
 
+const getInitialForm = () => ({
+  paymentType: "Pay",
+  partyType: "",
+  partyName: "",
+  partyId: "",
+  mode: "",
+  glFrom: "",
+  glTo: "",
+  currencyFrom: "",
+  currencyTo: "",
+  companyBankAccount: "",
+  partyBankAccount: "",
+  amount: "",
+ 
+  amountTo: "",
+  referenceNo: "",
+  referenceDate: "",
+  project: "",
+  costCenter: "",
+  exchangeRate: 1,
+  allocations: {},
+  selectedInvoices: [],
+  allocatedAmount: 0,
+});
 const PaymentEntryModal: React.FC<Props> = ({
   isOpen,
   onClose,
@@ -165,7 +189,10 @@ const PaymentEntryModal: React.FC<Props> = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    const base: Record<string, any> = { ...(defaultValues ?? {}) };
+    const base: Record<string, any> = {
+  ...getInitialForm(),   
+  ...(defaultValues ?? {}) 
+};
     if (!defaultValues?.partyName) {
       lastFetchedPartyKeyRef.current = "";
     }
@@ -206,7 +233,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     // If party + amount pre-filled, start in allocating state so sidebar
     // never flashes wrong Advance value
     setIsAllocating(hasPartyAndAmount && !isAdvanceFromPO);
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen,defaultValues]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -384,33 +411,44 @@ useEffect(() => {
   }, []);
 
   // ── Save ───────────────────────────────────────────────────────────────────
-  const handleSave = useCallback(async () => {
-    const validationError = validateForm(form);
-    if (validationError) {
-      setError(validationError);
-      setActiveTab("details");
-      return;
-    }
+const handleSave = useCallback(async () => {
+  const validationError = validateForm(form);
+  if (validationError) {
+    setError(validationError);
+    setActiveTab("details");
+    return;
+  }
 
-    setError(null);
-    setIsSaving(true);
-    showLoading("Creating Payment Entry…");
+  setError(null);
+  setIsSaving(true);
+  showLoading("Creating Payment Entry…");
 
-    try {
-      const payload = buildPayload(form, isAdvanceFromPO);
-      const response = await createPaymentEntry(payload);
+  try {
+    const payload = buildPayload(form, isAdvanceFromPO);
+    const response = await createPaymentEntry(payload);
 
-      closeSwal();
-      showSuccess(response.message);
-      onSuccess?.(response.data?.modeOfPaymentId ?? "");
+    closeSwal();
+
+
+    if (response?.status === "success") {
+      showSuccess(response.message || "Payment created successfully");
+
+     
+      onSuccess?.(response.data?.paymentId || "");
+
       onClose();
-    } catch (err: any) {
-      closeSwal();
-      showApiError(err);
-    } finally {
-      setIsSaving(false);
+    } else {
+      // fallback if backend sends unexpected structure
+      showApiError(response);
     }
-  }, [form, isAdvanceFromPO, onClose, onSuccess]);
+
+  } catch (err: any) {
+    closeSwal();
+    showApiError(err);
+  } finally {
+    setIsSaving(false);
+  }
+}, [form, isAdvanceFromPO, onClose, onSuccess]);
 
   const invoiceListForm = {
     partyType: form?.partyType,
@@ -435,7 +473,10 @@ useEffect(() => {
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+     onClose={() => {
+    setForm(getInitialForm());
+    onClose();
+  }}
       title="Payment Entry"
       subtitle={
         isAdvanceFromPO
