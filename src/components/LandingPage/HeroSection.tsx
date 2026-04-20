@@ -54,7 +54,7 @@ const HeroSection: React.FC = () => {
   return (
     <section className="section section-default relative overflow-hidden">
 
-      {/* 🌌 PREMIUM BACKGROUND */}
+      {/* Background */}
       <div className="absolute inset-0 bg-radial-glow pointer-events-none"></div>
       <div className="absolute inset-0 bg-grid-subtle opacity-40 pointer-events-none"></div>
 
@@ -65,14 +65,23 @@ const HeroSection: React.FC = () => {
           <div className="max-w-[640px] stack-lg">
 
             {/* Badge */}
-            <div className="badge bg-white/60 backdrop-blur-md border border-white/30">
+            <div className="badge glass">
               Trusted by 500+ growing businesses
             </div>
 
-            {/* 🔥 HEADLINE */}
+            {/* HEADLINE */}
             <h1 className="text-[34px] md:text-[46px] lg:text-[56px] font-semibold leading-tight tracking-tight text-main">
               Run your entire business{" "}
-              <span className="text-gradient">from one powerful dashboard</span>
+              <span
+                className="inline-block"
+                style={{
+                  background: "var(--gradient-primary)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                from one powerful dashboard
+              </span>
               <br />
               without chaos
             </h1>
@@ -85,16 +94,22 @@ const HeroSection: React.FC = () => {
             {/* CTA */}
             <div className="flex items-center gap-4 flex-wrap mt-3">
 
-              {/* Primary CTA */}
+              {/* Primary CTA (FORCED TOKEN USAGE) */}
               <button
                 ref={buttonRef}
-                className="btn btn-primary relative overflow-hidden"
+                className="btn relative overflow-hidden"
+                style={{
+                  background: "var(--gradient-primary)",
+                  boxShadow: "var(--glow-primary)",
+                  color: "#fff",
+                  border: "none",
+                }}
               >
                 <span className="relative z-10">Start Free Trial →</span>
               </button>
 
               {/* Secondary CTA */}
-              <button className="btn btn-ghost border border-theme hover:bg-white/40 backdrop-blur-md">
+              <button className="btn btn-ghost border border-theme backdrop-blur-md hover:bg-[var(--row-hover)]">
                 See Live Demo
               </button>
             </div>
@@ -110,23 +125,29 @@ const HeroSection: React.FC = () => {
           {/* RIGHT */}
           <div className="relative flex justify-center lg:justify-end mt-12 lg:mt-0">
 
-            {/* Floating Glow Shapes */}
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-float-premium"></div>
-            <div className="absolute bottom-0 -left-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl animate-float-delayed"></div>
+            {/* Glow Shapes */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl animate-float-premium"
+              style={{ background: "var(--gradient-primary)", opacity: 0.2 }}
+            />
+            <div className="absolute bottom-0 -left-10 w-24 h-24 rounded-full blur-2xl animate-float-delayed"
+              style={{ background: "var(--gradient-accent)", opacity: 0.3 }}
+            />
 
-            {/* Image Wrapper */}
+            {/* Image */}
             <div
               ref={imageRef}
               className="relative transition-transform duration-200 w-full max-w-[600px]"
             >
-              {/* Glow Behind Image */}
-              <div className="absolute inset-0 bg-[var(--gradient-primary)] opacity-10 blur-3xl rounded-[28px]"></div>
+              <div
+                className="absolute inset-0 blur-3xl rounded-[28px]"
+                style={{ background: "var(--gradient-primary)", opacity: 0.1 }}
+              />
 
-              {/* Image */}
               <img
                 src="/dashboard.png"
                 alt="ERP Dashboard"
-                className="relative w-full rounded-[28px] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.25)]"
+                className="relative w-full rounded-[28px] border border-theme"
+                style={{ boxShadow: "var(--shadow-soft-xl)" }}
               />
             </div>
 

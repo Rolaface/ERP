@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
-
 type ButtonVariant = "primary" | "secondary" | "ghost";
 type ButtonSize = "sm" | "md" | "lg";
 type ButtonWidth = "full" | "wide" | "auto";
@@ -43,15 +42,15 @@ export default function ButtonPro({
       ? "w-auto"
       : width;
 
-  /* ---------------- VARIANTS ---------------- */
+  /* ---------------- VARIANTS (TOKEN-BASED) ---------------- */
   const variantClass =
     variant === "primary"
-      ? "bg-gradient-to-br from-[#204385] to-[#3b5b9e] text-white hover:shadow-lg"
+      ? "btn-primary"
       : variant === "secondary"
-      ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
-      : "bg-transparent text-gray-700 hover:bg-gray-100";
+      ? "btn-outline"
+      : "btn-ghost";
 
-  /* ---------------- SIZES ---------------- */
+  /* ---------------- SIZES (TOKEN-ALIGNED) ---------------- */
   const sizeClass =
     size === "sm"
       ? "py-2 px-3 text-sm"
@@ -59,7 +58,7 @@ export default function ButtonPro({
       ? "py-5 px-6 text-lg"
       : "py-4 px-5 text-base";
 
-  /* ---------------- DISABLED STATE ---------------- */
+  /* ---------------- DISABLED ---------------- */
   const isDisabled = disabled || loading;
 
   return (
@@ -70,12 +69,11 @@ export default function ButtonPro({
       whileTap={{ scale: 0.97 }}
       whileHover={{ scale: isDisabled ? 1 : 1.02 }}
       className={`
-        ${widthClass}
+        btn
         ${variantClass}
         ${sizeClass}
-        rounded-xl font-semibold
+        ${widthClass}
         flex items-center justify-center gap-2
-        transition-all duration-200
         ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}
         ${className}
       `}

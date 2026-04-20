@@ -19,16 +19,15 @@ export default function Stepper({
   return (
     <div className="w-full flex justify-center mb-12">
       <div className="w-full max-w-xl">
-        
-        {/* 🔓 Removed global non-interactive */}
+
         <div className="relative w-full flex items-center justify-between px-8">
-          
+
           {/* ===== BASE LINE ===== */}
-          <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gray-200 -translate-y-1/2 z-0" />
+          <div className="absolute top-1/2 left-0 w-full h-[2px] bg-border -translate-y-1/2 z-0" />
 
           {/* ===== PROGRESS LINE ===== */}
           <motion.div
-            className="absolute top-1/2 left-0 h-[2px] bg-gradient-to-r from-blue-500 to-blue-600 -translate-y-1/2 z-10"
+            className="absolute top-1/2 left-0 h-[2px] bg-primary -translate-y-1/2 z-10"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ type: "spring", stiffness: 80, damping: 20 }}
@@ -40,8 +39,8 @@ export default function Stepper({
 
             const isActive = step === s;
             const isCompleted = step > s;
-            const isClickable = s < step; // ✅ only past steps
-            const isLocked = s > step; // 🔒 future steps
+            const isClickable = s < step;
+            const isLocked = s > step;
             const hasError = Boolean(errorMessages[s]);
 
             return (
@@ -56,11 +55,10 @@ export default function Stepper({
                   ${isLocked ? "opacity-40" : ""}
                 `}
               >
+
                 {/* ===== CIRCLE ===== */}
                 <motion.div
-                  animate={{
-                    scale: isActive ? 1.15 : 1,
-                  }}
+                  animate={{ scale: isActive ? 1.15 : 1 }}
                   transition={{
                     type: "spring",
                     stiffness: 300,
@@ -68,33 +66,32 @@ export default function Stepper({
                   }}
                   className={`
                     relative flex items-center justify-center
-                    rounded-full
-                    transition-all duration-300
-                    
+                    rounded-full transition-all duration-300
+
                     ${
                       hasError
-                        ? "w-3 h-3 bg-red-100 ring-4 ring-red-50"
+                        ? "w-3 h-3 bg-danger/10 ring-4 ring-danger/20"
                         : isCompleted
-                        ? "w-3 h-3 bg-blue-600 shadow-sm"
+                        ? "w-3 h-3 bg-primary shadow-sm"
                         : isActive
-                        ? "w-3 h-3 bg-white ring-4 ring-blue-100 shadow-sm"
-                        : "w-3 h-3 bg-gray-200"
+                        ? "w-3 h-3 bg-card ring-4 ring-primary/20 shadow-sm"
+                        : "w-3 h-3 bg-border"
                     }
 
                     ${isClickable ? "group-hover:scale-110" : ""}
                   `}
                 >
                   {hasError ? (
-                    <AlertCircle size={10} className="text-red-600" />
+                    <AlertCircle size={10} className="text-danger" />
                   ) : isCompleted ? (
                     <Check size={10} className="text-white" />
                   ) : isActive ? (
                     <motion.div
                       layoutId="active-dot"
-                      className="w-1.5 h-1.5 rounded-full bg-blue-600"
+                      className="w-1.5 h-1.5 rounded-full bg-primary"
                     />
                   ) : (
-                    <div className="w-1 h-1 rounded-full bg-gray-400" />
+                    <div className="w-1 h-1 rounded-full bg-muted" />
                   )}
                 </motion.div>
 
@@ -107,15 +104,15 @@ export default function Stepper({
 
                     ${
                       hasError
-                        ? "text-red-600"
+                        ? "text-danger"
                         : isActive
-                        ? "text-gray-900 font-bold"
+                        ? "text-main font-bold"
                         : isCompleted
-                        ? "text-gray-700"
-                        : "text-gray-400"
+                        ? "text-main/80"
+                        : "text-muted"
                     }
 
-                    ${isClickable ? "group-hover:text-gray-900" : ""}
+                    ${isClickable ? "group-hover:text-main" : ""}
                   `}
                 >
                   {label}
@@ -123,7 +120,16 @@ export default function Stepper({
 
                 {/* ===== TOOLTIP ===== */}
                 {hasError && (
-                  <div className="absolute top-6 scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-200 bg-red-600 text-white text-xs px-2 py-1 rounded shadow-md whitespace-nowrap">
+                  <div
+                    className="
+                      absolute top-6
+                      scale-95 opacity-0
+                      group-hover:scale-100 group-hover:opacity-100
+                      transition-all duration-200
+                      bg-danger text-white
+                      text-xs px-2 py-1 rounded shadow-md whitespace-nowrap
+                    "
+                  >
                     {errorMessages[s]}
                   </div>
                 )}

@@ -10,7 +10,6 @@ export default function Step3Review({
   apiError,
   update,
 }: any) {
-
   const [editing, setEditing] = useState<string | null>(null);
 
   const getMonthName = (month: number) => {
@@ -29,7 +28,13 @@ export default function Step3Review({
           autoFocus
           onChange={(e) => update(key, e.target.value)}
           onBlur={() => setEditing(null)}
-          className="text-[12px] text-right border-b border-outline focus:outline-none bg-transparent"
+          className="
+            text-xs text-right
+            border-b border-theme
+            bg-transparent
+            text-main
+            focus:outline-none focus:border-primary
+          "
         />
       );
     }
@@ -37,12 +42,32 @@ export default function Step3Review({
     return (
       <span
         onClick={() => setEditing(key)}
-        className="cursor-pointer"
+        className="cursor-pointer text-main hover:text-primary transition"
       >
         {value}
       </span>
     );
   };
+
+  const Section = ({ title, children }: any) => (
+    <div className="bg-card border border-theme rounded-xl p-4 transition hover:bg-hover">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-semibold tracking-wide uppercase text-muted">
+          {title}
+        </span>
+
+        <button
+          onClick={() => setEditing(null)}
+          className="flex items-center gap-1 text-xs font-medium text-primary hover:opacity-80 transition"
+        >
+          <Pencil size={14} />
+          Edit
+        </button>
+      </div>
+
+      {children}
+    </div>
+  );
 
   return (
     <div className="form-section">
@@ -50,76 +75,49 @@ export default function Step3Review({
       {/* CONTENT */}
       <div className="p-6 space-y-4">
 
-        {/* USER IDENTITY */}
-        <div className="bg-surface-container-low rounded-xl p-4 transition-all duration-300 hover:bg-surface-container-high">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold tracking-[0.05em] text-on-surface-variant uppercase">
-              Identity
-            </span>
-
-            <button
-              onClick={() => setEditing(null)}
-              className="flex items-center gap-1 text-[11px] font-semibold text-primary-container hover:text-primary transition-colors"
-            >
-              <Pencil size={14} />
-              Edit
-            </button>
-          </div>
-
+        {/* IDENTITY */}
+        <Section title="Identity">
           <div className="grid grid-cols-2 gap-y-2">
-            <div className="text-[12px] text-on-surface-variant">
-              Full Name
-            </div>
-            <div className="text-[12px] font-semibold text-on-surface text-right">
+            <div className="text-xs text-muted">Full Name</div>
+            <div className="text-xs font-semibold text-main text-right">
               {renderField("fullName", form.fullName)}
             </div>
 
-            <div className="text-[12px] text-on-surface-variant">
-              Email
-            </div>
-            <div className="text-[12px] font-medium text-on-surface/60 text-right truncate pl-4">
+            <div className="text-xs text-muted">Email</div>
+            <div className="text-xs text-main/70 text-right truncate pl-4">
               {renderField("email", form.email)}
             </div>
           </div>
-        </div>
+        </Section>
 
         {/* ORGANIZATION */}
-        <div className="bg-surface-container-low rounded-xl p-4 transition-all duration-300 hover:bg-surface-container-high">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold tracking-[0.05em] text-on-surface-variant uppercase">
-              Organization
-            </span>
-
-            <button
-              onClick={() => setEditing(null)}
-              className="flex items-center gap-1 text-[11px] font-semibold text-primary-container hover:text-primary transition-colors"
-            >
-              <Pencil size={14} />
-              Edit
-            </button>
-          </div>
-
+        <Section title="Organization">
           <div className="grid grid-cols-2 gap-y-2">
-            <div className="text-[12px] text-on-surface-variant">
-              Company Name
-            </div>
-            <div className="text-[12px] font-semibold text-on-surface text-right">
+            <div className="text-xs text-muted">Company Name</div>
+            <div className="text-xs font-semibold text-main text-right">
               {renderField("company", form.company)}
             </div>
 
-            <div className="text-[12px] text-on-surface-variant self-center">
+            <div className="text-xs text-muted self-center">
               Abbreviation
             </div>
             <div className="flex justify-end">
               <span
                 onClick={() => setEditing("abbr")}
-                className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold text-[10px] tracking-wider cursor-pointer"
+                className="
+                  px-2 py-0.5 rounded-full
+                  bg-primary/10 text-primary
+                  font-semibold text-xs tracking-wider
+                  cursor-pointer
+                "
               >
                 {editing === "abbr" ? (
                   <input
                     value={form.abbr}
                     autoFocus
-                    onChange={(e) => update("abbr", e.target.value.toUpperCase())}
+                    onChange={(e) =>
+                      update("abbr", e.target.value.toUpperCase())
+                    }
                     onBlur={() => setEditing(null)}
                     className="bg-transparent text-center w-16 outline-none"
                   />
@@ -129,63 +127,52 @@ export default function Step3Review({
               </span>
             </div>
 
-            <div className="text-[12px] text-on-surface-variant">
-              Country
-            </div>
-            <div className="text-[12px] font-semibold text-on-surface text-right">
+            <div className="text-xs text-muted">Country</div>
+            <div className="text-xs font-semibold text-main text-right">
               {renderField("country", form.country)}
             </div>
           </div>
-        </div>
+        </Section>
 
         {/* FINANCE */}
-        <div className="bg-surface-container-low rounded-xl p-4 transition-all duration-300 hover:bg-surface-container-high">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold tracking-[0.05em] text-on-surface-variant uppercase">
-              Finance & Region
-            </span>
-
-            <button
-              onClick={() => setEditing(null)}
-              className="flex items-center gap-1 text-[11px] font-semibold text-primary-container hover:text-primary transition-colors"
-            >
-              <Pencil size={14} />
-              Edit
-            </button>
-          </div>
-
+        <Section title="Finance & Region">
           <div className="grid grid-cols-2 gap-y-3">
-            <div className="text-[12px] text-on-surface-variant">
-              Base Country
-            </div>
-            <div className="text-[12px] font-semibold text-on-surface text-right">
+            <div className="text-xs text-muted">Base Country</div>
+            <div className="text-xs font-semibold text-main text-right">
               {renderField("country", form.country)}
             </div>
 
-            <div className="text-[12px] text-on-surface-variant">
+            <div className="text-xs text-muted">
               Financial Year Start
             </div>
-            <div className="text-[12px] font-medium text-on-surface text-right">
-              <span className="cursor-default">
-                {getMonthName(form.fyStartMonth)}
-              </span>
+            <div className="text-xs text-main text-right">
+              {getMonthName(form.fyStartMonth)}
             </div>
 
-            <div className="text-[12px] text-on-surface-variant">
-              Currency
-            </div>
-            <div className="text-[12px] font-semibold text-on-surface text-right">
+            <div className="text-xs text-muted">Currency</div>
+            <div className="text-xs font-semibold text-main text-right">
               {renderField("currency", form.currency)}
             </div>
+
+            <div className="text-xs text-muted">Timezone</div>
+            <div className="text-xs text-main text-right">
+              {renderField("timezone", form.timezone)}
+            </div>
+
+            <div className="text-xs text-muted">Chart of Accounts</div>
+            <div className="text-xs text-main text-right">
+              {renderField("chartOfAccounts", form.chartOfAccounts)}
+            </div>
           </div>
-        </div>
+        </Section>
+
       </div>
 
       {/* FOOTER */}
       <div className="form-footer">
 
         {apiError && (
-          <div className="mb-3 text-error text-sm text-center">
+          <div className="mb-3 text-danger text-sm text-center">
             {apiError}
           </div>
         )}
@@ -196,7 +183,6 @@ export default function Step3Review({
             onClick={back}
             variant="secondary"
             width="w-[40%]"
-            size="md"
             leftIcon={<MoveLeftIcon size={16} />}
           >
             Back
@@ -206,7 +192,6 @@ export default function Step3Review({
             onClick={submit}
             loading={loading}
             width="w-[60%]"
-            size="md"
             rightIcon={<Check size={16} />}
             className="whitespace-nowrap"
           >
@@ -215,6 +200,7 @@ export default function Step3Review({
 
         </div>
       </div>
+
     </div>
   );
 }

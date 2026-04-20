@@ -20,7 +20,6 @@ export default function Step2Workspace({
   const [highlightIndex, setHighlightIndex] = useState(0);
 
   const [fyOpen, setFyOpen] = useState(false);
-
   const [tzOpen, setTzOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
 
@@ -30,7 +29,6 @@ export default function Step2Workspace({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const tzRef = useRef<HTMLDivElement>(null);
   const currencyRef = useRef<HTMLDivElement>(null);
-
   const fyRef = useRef<HTMLDivElement>(null);
 
   const [manualTZ, setManualTZ] = useState(false);
@@ -78,10 +76,7 @@ export default function Step2Workspace({
           ) || Intl.DateTimeFormat().resolvedOptions().timeZone;
       } catch {}
 
-      return {
-        timezone,
-        currency,
-      };
+      return { timezone, currency };
     } catch {
       return null;
     }
@@ -90,14 +85,12 @@ export default function Step2Workspace({
   const detectUserLocale = () => {
     try {
       const locale = new Intl.Locale(navigator.language);
-      const region = locale.region || "US";
-      return region;
+      return locale.region || "US";
     } catch {
       return "US";
     }
   };
 
-  // ✅ STEP 5 FIXED
   const handleFYMonthChange = (month: string) => {
     update("fyStartMonth", Number(month));
   };
@@ -154,13 +147,10 @@ export default function Step2Workspace({
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
         setIsOpen(false);
-
       if (tzRef.current && !tzRef.current.contains(e.target as Node))
         setTzOpen(false);
-
       if (currencyRef.current && !currencyRef.current.contains(e.target as Node))
         setCurrencyOpen(false);
-
       if (fyRef.current && !fyRef.current.contains(e.target as Node))
         setFyOpen(false);
     };
@@ -182,15 +172,9 @@ export default function Step2Workspace({
       update("country", matchedCountry.name);
 
       const auto = getAutoData(userCountryCode);
-
       if (auto) {
-        if (!manualTZ && auto.timezone) {
-          update("timezone", auto.timezone);
-        }
-
-        if (!manualCurrency && auto.currency) {
-          update("currency", auto.currency);
-        }
+        if (!manualTZ && auto.timezone) update("timezone", auto.timezone);
+        if (!manualCurrency && auto.currency) update("currency", auto.currency);
       }
     }
   }, []);
@@ -201,7 +185,6 @@ export default function Step2Workspace({
     setSearch("");
 
     const auto = getAutoData(country.code);
-
     if (auto) {
       if (!manualTZ && auto.timezone) update("timezone", auto.timezone);
       if (!manualCurrency && auto.currency) update("currency", auto.currency);
@@ -230,7 +213,6 @@ export default function Step2Workspace({
     }
   };
 
-  // ✅ FIX VALIDATION (uses fyStartMonth now)
   const isValid =
     form.company.trim() &&
     form.abbr.trim() &&
@@ -266,12 +248,14 @@ export default function Step2Workspace({
 
       {/* Country + Timezone */}
       <div className="form-row">
+
+        {/* COUNTRY */}
         <div className="relative" ref={dropdownRef}>
           <FormFieldPro
             label="Country"
             value={isOpen ? search : form.country}
             placeholder={
-              countriesLoading ? "Loading countries..." : "Search country..."
+              countriesLoading ? "Loading..." : "Search country..."
             }
             disabled={countriesLoading}
             onChange={(e: any) => {
@@ -284,7 +268,7 @@ export default function Step2Workspace({
             helperText={countriesError || ""}
             rightElement={
               <ChevronDown
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-60 cursor-pointer"
+                className="icon-muted cursor-pointer"
                 onClick={() => {
                   setIsOpen(true);
                   setSearch("");
@@ -294,19 +278,21 @@ export default function Step2Workspace({
           />
 
           {isOpen && (
-            <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-xl border bg-card shadow-md">
+            <div className="dropdown">
               {countriesError && (
-                <div className="p-3 text-sm text-red-500">
+                <div className="dropdown-item text-danger">
                   {countriesError}
                 </div>
               )}
 
               {!countriesError &&
-                filteredCountries.map((c: any) => (
+                filteredCountries.map((c: any, i: number) => (
                   <div
                     key={c.name}
                     onClick={() => handleCountrySelect(c)}
-                    className="px-3 py-2 cursor-pointer flex gap-2 hover:row-hover"
+                    className={`dropdown-item ${
+                      i === highlightIndex ? "bg-row-hover" : ""
+                    }`}
                   >
                     <span>{getFlag(c.code)}</span>
                     <span>{c.name}</span>
@@ -327,42 +313,48 @@ export default function Step2Workspace({
             }}
             rightElement={
               <ChevronDown
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-60 cursor-pointer"
+                className="icon-muted cursor-pointer"
                 onClick={() => setTzOpen((p) => !p)}
               />
             }
           />
 
           {tzOpen && (
-            <div className="absolute z-50 mt-1 w-full rounded-xl border bg-card shadow-md">
+            <div className="dropdown">
               <input
-                className="w-full p-2 text-sm border-b bg-transparent"
+                className="dropdown-search"
                 placeholder="Search timezone..."
                 onChange={(e) => setTzSearch(e.target.value)}
               />
-              <div className="max-h-60 overflow-auto">
-                {filteredTimezones.map((t: string) => (
-                  <div
-                    key={t}
-                    onClick={() => {
-                      setManualTZ(true);
-                      update("timezone", t);
-                      setTzOpen(false);
-                    }}
-                    className="px-3 py-2 cursor-pointer hover:row-hover"
-                  >
-                    {t}
-                  </div>
-                ))}
-              </div>
+              {filteredTimezones.map((t: string) => (
+                <div
+                  key={t}
+                  onClick={() => {
+                    setManualTZ(true);
+                    update("timezone", t);
+                    setTzOpen(false);
+                  }}
+                  className="dropdown-item"
+                >
+                  {t}
+                </div>
+              ))}
             </div>
           )}
         </div>
+
       </div>
 
       {/* Currency */}
       <div className="form-row">
-        <FormFieldPro label="Charts of Account" value={form.chartOfAccounts || "Standard"} onChange={(e: any) => update("chartOfAccounts", e.target.value)} />
+
+        <FormFieldPro
+          label="Charts of Account"
+          value={form.chartOfAccounts || "Standard"}
+          onChange={(e: any) =>
+            update("chartOfAccounts", e.target.value)
+          }
+        />
 
         <div className="relative" ref={currencyRef}>
           <FormFieldPro
@@ -374,40 +366,39 @@ export default function Step2Workspace({
             }}
             rightElement={
               <ChevronDown
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-60 cursor-pointer"
+                className="icon-muted cursor-pointer"
                 onClick={() => setCurrencyOpen((p) => !p)}
               />
             }
           />
 
           {currencyOpen && (
-            <div className="absolute z-50 mt-1 w-full rounded-xl border bg-card shadow-md">
+            <div className="dropdown">
               <input
-                className="w-full p-2 text-sm border-b bg-transparent"
+                className="dropdown-search"
                 placeholder="Search currency..."
                 onChange={(e) => setCurrencySearch(e.target.value)}
               />
-              <div className="max-h-60 overflow-auto">
-                {filteredCurrencies.map((c: string) => (
-                  <div
-                    key={c}
-                    onClick={() => {
-                      setManualCurrency(true);
-                      update("currency", c);
-                      setCurrencyOpen(false);
-                    }}
-                    className="px-3 py-2 cursor-pointer flex justify-between hover:row-hover"
-                  >
-                    <span>{c}</span>
-                    <span className="opacity-60">
-                      {currencySymbols[c] || c}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {filteredCurrencies.map((c: string) => (
+                <div
+                  key={c}
+                  onClick={() => {
+                    setManualCurrency(true);
+                    update("currency", c);
+                    setCurrencyOpen(false);
+                  }}
+                  className="dropdown-item flex justify-between"
+                >
+                  <span>{c}</span>
+                  <span className="text-muted">
+                    {currencySymbols[c] || c}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </div>
+
       </div>
 
       {/* Financial Year */}
@@ -420,37 +411,42 @@ export default function Step2Workspace({
             }
             rightElement={
               <ChevronDown
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-60 cursor-pointer"
+                className="icon-muted cursor-pointer"
                 onClick={() => setFyOpen((p) => !p)}
               />
             }
           />
 
           {fyOpen && (
-            <div className="absolute z-50 mt-1 w-full rounded-xl border bg-card shadow-md">
-              <div className="max-h-60 overflow-auto">
-                {months.map((m) => (
-                  <div
-                    key={m.value}
-                    onClick={() => {
-                      handleFYMonthChange(m.value);
-                      setFyOpen(false);
-                    }}
-                    className="px-3 py-2 cursor-pointer hover:row-hover"
-                  >
-                    {m.label}
-                  </div>
-                ))}
-              </div>
+            <div className="dropdown">
+              {months.map((m) => (
+                <div
+                  key={m.value}
+                  onClick={() => {
+                    handleFYMonthChange(m.value);
+                    setFyOpen(false);
+                  }}
+                  className="dropdown-item"
+                >
+                  {m.label}
+                </div>
+              ))}
             </div>
           )}
         </div>
       </div>
 
+      {/* Footer */}
       <div className="form-footer">
-        <ButtonPro onClick={back}>Back</ButtonPro>
-        <ButtonPro onClick={next} disabled={!isValid}>Continue</ButtonPro>
+        <ButtonPro variant="ghost" onClick={back}>
+          Back
+        </ButtonPro>
+
+        <ButtonPro onClick={next} disabled={!isValid}>
+          Continue
+        </ButtonPro>
       </div>
+
     </div>
   );
 }
