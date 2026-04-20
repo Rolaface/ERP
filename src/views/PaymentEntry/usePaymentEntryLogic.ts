@@ -380,7 +380,7 @@ export function useExchangeRate(
   currencyFrom: string,
   currencyTo: string,
   date: string,
-  companyDefaultCurrency: string // still needed for logic, not for display
+  args: "for_selling" | "for_buying",
 ) {
   const [rate, setRate] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -389,53 +389,59 @@ export function useExchangeRate(
   const currenciesKnown = Boolean(currencyFrom && currencyTo);
   const currenciesDiffer = currenciesKnown && currencyFrom !== currencyTo;
 
-  const oneIsDefault =
-    currencyFrom === companyDefaultCurrency ||
-    currencyTo === companyDefaultCurrency;
-
-  const shouldFetchRate = currenciesDiffer && oneIsDefault;
-
-
-  const nonDefaultCurrency =
-    currencyFrom !== companyDefaultCurrency ? currencyFrom : currencyTo;
-
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (!shouldFetchRate) {
+    if (!currenciesKnown) {
       setRate(null);
       setError(null);
       setIsLoading(false);
       return;
     }
 
+    if (!currenciesDiffer) {
+      setRate(1);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setRate(null);
+    setError(null);
+
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true);
-      setError(null);
 
       const effectiveDate = date || dayjs().format("YYYY-MM-DD");
-      const result: ExchangeRateResult = await getExchangeRate(
-        nonDefaultCurrency,
-        effectiveDate,
-      );
+      try {
+        const result: ExchangeRateResult = await getExchangeRate(
+          currencyFrom,
+          currencyTo,
+          effectiveDate,
+          args,
+        );
 
-      setIsLoading(false);
-
-      if (result.error) {
-        setError(result.error);
+        if (result.error) {
+          setError(result.error);
+          setRate(null);
+        } else {
+          setError(null);
+          setRate(result.rate);
+        }
+      } catch (err: any) {
+        setError(err?.message || "Failed to fetch exchange rate.");
         setRate(null);
-      } else {
-        setError(null);
-        setRate(result.rate);
+      } finally {
+        setIsLoading(false);
       }
     }, 300);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [currencyFrom, currencyTo, date, companyDefaultCurrency, shouldFetchRate, nonDefaultCurrency]);
+  }, [currencyFrom, currencyTo, currenciesKnown, currenciesDiffer, date, args]);
 
-  return { rate, error, isLoadingRate: isLoading, currenciesDiffer: shouldFetchRate };
+  return { rate, error, isLoadingRate: isLoading, currenciesDiffer };
 }

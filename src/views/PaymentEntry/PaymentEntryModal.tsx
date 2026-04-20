@@ -54,10 +54,14 @@ const inferReferenceType = (
 
 function buildPayload(
   form: Record<string, any>,
-  isAdvanceFromPO: boolean,
 ): CreatePaymentEntryPayload {
   const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
   const receivedAmount = Number(form?.amountTo ?? paymentAmount);
+  const parsedExchangeRate = Number(form?.exchangeRate);
+  const exchangeRate =
+    Number.isFinite(parsedExchangeRate) && parsedExchangeRate > 0
+      ? parsedExchangeRate
+      : 1;
 
   const getReferenceDoctype = (partyType: string): string => {
     if (form?.referenceType === "Purchase Order") return "Purchase Order";
@@ -120,7 +124,7 @@ function buildPayload(
     reference_date: form?.referenceDate ?? "",
     project: form?.project ?? "",
     cost_center: form?.costCenter ?? "",
-    exchange_rate: Number(form?.exchangeRate ?? 1),
+    exchange_rate: exchangeRate,
 
     paid_from: form?.glFrom ?? "",
     paid_from_bank_account: form?.companyBankAccount ?? "",
@@ -145,12 +149,23 @@ function validateForm(form: Record<string, any>): string | null {
   const isInternalTransfer = form.paymentType === "Internal Transfer";
 
   if (!isInternalTransfer && !form?.partyType) return "Party Type is required.";
-  if (!isInternalTransfer && !form?.partyName) return "Party Name is required.";
+  if (!isInternalTransfer && !(form?.partyId || form?.partyName)) {
+    return "Party Name is required.";
+  }
 
   if (!form?.date) return "Payment Date is required.";
   if (!form?.mode) return "Mode of Payment is required.";
   if (!form?.glFrom) return "Account (GL) — Paid From is required.";
   if (!form?.glTo) return "Account (GL) — Paid To is required.";
+
+  const fromCurrency = String(form?.currencyFrom ?? "").trim();
+  const toCurrency = String(form?.currencyTo ?? "").trim();
+  if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+    const rate = Number(form?.exchangeRate ?? 0);
+    if (!rate || rate <= 0) {
+      return "Exchange Rate is required for cross-currency payments.";
+    }
+  }
 
   const amount = Number(form?.amountFrom ?? form?.amount ?? 0);
   if (!amount || amount <= 0) return "Please enter a valid payment amount.";
@@ -202,11 +217,26 @@ const PaymentEntryModal: React.FC<Props> = ({
   const isAdvanceFromPO =
   defaultValues?.referenceType === "Purchase Order";
   const isInternalTransfer = form?.paymentType === "Internal Transfer";
+  const resetModalState = useCallback(() => {
+    setForm(getInitialForm());
+    setActiveTab("details");
+    setError(null);
+    setTaxesMounted(false);
+    setIsSaving(false);
+    setIsAllocating(false);
+    lastFetchedPartyKeyRef.current = "";
+    prevAmountRef.current = 0;
+  }, []);
 
   const visibleTabs =
     isAdvanceFromPO || isInternalTransfer
       ? ALL_TABS.filter((t) => t.key !== "invoices")
       : ALL_TABS;
+
+  useEffect(() => {
+    if (isOpen) return;
+    resetModalState();
+  }, [isOpen, resetModalState]);
 
   // ── Reset on open ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -221,9 +251,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     } else if (base.referenceName && !base.referenceType) {
       base.referenceType = inferReferenceType(base.partyType);
     }
-    if (!defaultValues?.partyName) {
-      lastFetchedPartyKeyRef.current = "";
-    }
+    lastFetchedPartyKeyRef.current = "";
     const today = new Date().toISOString().split("T")[0];
 
     if (!base.date) base.date = today;
@@ -478,9 +506,7 @@ const handleSave = useCallback(async () => {
   showLoading("Creating Payment Entry…");
 
   try {
-    console.log("UI Name:", form?.partyName);
-    console.log("Payload ID:", form?.partyId);
-    const payload = buildPayload(form, isAdvanceFromPO);
+    const payload = buildPayload(form);
     const response = await createPaymentEntry(payload);
 
     closeSwal();
@@ -492,6 +518,7 @@ const handleSave = useCallback(async () => {
      
       onSuccess?.(response.data?.paymentId || "");
 
+      resetModalState();
       onClose();
     } else {
       // fallback if backend sends unexpected structure
@@ -504,7 +531,7 @@ const handleSave = useCallback(async () => {
   } finally {
     setIsSaving(false);
   }
-}, [form, isAdvanceFromPO, onClose, onSuccess]);
+}, [form, onClose, onSuccess, resetModalState]);
 
   const invoiceListForm = {
     partyType: form?.partyType,
@@ -516,12 +543,32 @@ const handleSave = useCallback(async () => {
     allocations: form?.allocations ?? {},
   };
 
+  const requiresExchangeRate =
+    Boolean(form?.currencyFrom) &&
+    Boolean(form?.currencyTo) &&
+    form?.currencyFrom !== form?.currencyTo;
+  const hasExchangeRate =
+    !requiresExchangeRate || Number(form?.exchangeRate ?? 0) > 0;
+  const hasPartySelection =
+    isInternalTransfer || Boolean(form?.partyId || form?.partyName);
+  const hasAccounts = Boolean(form?.glFrom && form?.glTo);
+  const hasAmount = Number(form?.amountFrom ?? form?.amount ?? 0) > 0;
+  const isSubmitDisabled =
+    isSaving || !hasExchangeRate || !hasPartySelection || !hasAccounts || !hasAmount;
+
   const footer = (
     <>
-      <Button variant="secondary" onClick={onClose} disabled={isSaving}>
+      <Button
+        variant="secondary"
+        onClick={() => {
+          resetModalState();
+          onClose();
+        }}
+        disabled={isSaving}
+      >
         Cancel
       </Button>
-      <Button variant="primary" onClick={handleSave} disabled={isSaving}>
+      <Button variant="primary" onClick={handleSave} disabled={isSubmitDisabled}>
         {isSaving ? "Saving…" : "Save"}
       </Button>
     </>
@@ -530,10 +577,10 @@ const handleSave = useCallback(async () => {
   return (
     <Modal
       isOpen={isOpen}
-     onClose={() => {
-    setForm(getInitialForm());
-    onClose();
-  }}
+      onClose={() => {
+        resetModalState();
+        onClose();
+      }}
       title="Payment Entry"
       subtitle={
         isAdvanceFromPO

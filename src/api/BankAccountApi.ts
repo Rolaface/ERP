@@ -504,12 +504,19 @@ export type ExchangeRateResult =
 
 export async function getExchangeRate(
   from_currency: string,
+  to_currency: string,
   transaction_date: string,
+  args: "for_selling" | "for_buying" = "for_selling",
 ): Promise<ExchangeRateResult> {
   try {
     const resp: AxiosResponse = await api.post(
       Account.getExchangeRate,
-      { from_currency, transaction_date }
+      {
+        from_currency,
+        to_currency,
+        transaction_date,
+        args,
+      },
     );
 
     const data = resp?.data;

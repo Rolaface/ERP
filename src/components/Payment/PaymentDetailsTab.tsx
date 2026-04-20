@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useCallback } from "react";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { MoveRight, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
-import { useCompanyStore } from "../../store/companyStore";
 import dayjs from "dayjs";
 import {
   usePaymentModes,
@@ -79,10 +78,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     "";
   const isInternalTransfer = paymentType === "Internal Transfer";
 
-
-  const companyBaseCurrency = useCompanyStore((s) => s.baseCurrency);
-
-  const { partyOptions, isLoadingParties, fetchParties } =
+  const { isLoadingParties, fetchParties } =
     usePartyOptions(partyType);
 
   // ── selectedMode: find full option object for auto-fill ──────────────────
@@ -132,6 +128,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   const currencyFrom = form.currencyFrom ?? "";
   const currencyTo = form.currencyTo ?? "";
   const date = form.date || dayjs().format("YYYY-MM-DD");
+  const exchangeRateArgs: "for_selling" | "for_buying" =
+    paymentType === "Pay" ? "for_buying" : "for_selling";
 
   const {
     rate: fetchedRate,
@@ -142,19 +140,21 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     currencyFrom,
     currencyTo,
     date,
-    companyBaseCurrency,
+    exchangeRateArgs,
   );
 
   // Sync exchange rate result into form state
   useEffect(() => {
     if (!currenciesDiffer) {
-      onFormChange({ exchangeRate: null });
+      onFormChange({ exchangeRate: 1 });
+    } else if (isLoadingRate) {
+      onFormChange({ exchangeRate: "" });
     } else if (fetchedRate !== null) {
       onFormChange({ exchangeRate: fetchedRate });
     } else if (rateError) {
       onFormChange({ exchangeRate: "" });
     }
-  }, [fetchedRate, rateError, currenciesDiffer]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchedRate, rateError, currenciesDiffer, isLoadingRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Default date on mount ─────────────────────────────────────────────────
   useEffect(() => {
@@ -653,8 +653,24 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         </div>
       )}
 
+      {(form?.partyName || (form?.currencyFrom && form?.currencyTo)) && (
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--row-hover)] px-4 py-2">
+          <p className="text-[11px] text-muted">
+            {form?.partyName ? `Party: ${form.partyName}` : "Party: -"} |{" "}
+            {form?.currencyFrom && form?.currencyTo
+              ? `Currency: ${form.currencyFrom} -> ${form.currencyTo}`
+              : "Currency: -"}
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+          Basic Info
+        </p>
+
       {/* Row 1 */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <ModalSelect
           label="Payment Type"
           name="paymentType"
@@ -696,7 +712,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       </div>
 
       {/* Row 2 */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <SearchSelect2
           label="Mode of Payment"
           value={form.mode ?? ""}
@@ -719,6 +735,12 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           required
         />
       </div>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+          Accounts
+        </p>
 
       {/* From / To box */}
       <div className="rounded-xl border border-[var(--border)] overflow-hidden">
@@ -805,6 +827,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           </div>
         </div>
 
+        <div className="px-5 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted border-t border-[var(--border)] bg-[var(--row-hover)]">
+          Amount + Exchange Rate
+        </div>
+
         {/* Amount row */}
         <div className="border-t border-[var(--border)] grid grid-cols-[1fr_auto_1fr]">
           <div className="border-r border-[var(--border)] px-5 py-4">
@@ -872,21 +898,35 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
               onChange={handleAmountToChange}
               className="no-spinner"
             />
-            {canAllocate && onAllocate && (
-              <button
-                type="button"
-                onClick={onAllocate}
-                className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors w-fit"
-              >
-                Modify Allocation Order <ArrowRight size={11} />
-              </button>
-            )}
           </div>
+        </div>
+      </div>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+          References
+        </p>
+
+        <div className="rounded-lg border border-[var(--border)] px-4 py-3 bg-card">
+          {canAllocate && onAllocate ? (
+            <button
+              type="button"
+              onClick={onAllocate}
+              className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors"
+            >
+              Modify Allocation Order <ArrowRight size={11} />
+            </button>
+          ) : (
+            <p className="text-xs text-muted">
+              Allocation references will appear after amount and party are set.
+            </p>
+          )}
         </div>
       </div>
 
       {/* Project & Cost Centre */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <ProjectSelect
     value={form.project ?? ""}
     onChange={(val) =>
