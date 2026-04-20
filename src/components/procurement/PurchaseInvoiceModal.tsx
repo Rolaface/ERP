@@ -134,20 +134,18 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           >
             Reset
           </Button>
-          {!isLastTab && (
-            <Button variant="secondary" onClick={handleNextClick}>
-              Next
-            </Button>
-          )}
-          {isLastTab && (
-            <Button
-              variant="primary"
-              onClick={handleSubmitForm}
-              disabled={internalSaving}
-            >
-              {internalSaving ? "Saving..." : "Submit"}
-            </Button>
-          )}
+{!isLastTab && (
+  <Button variant="secondary" onClick={handleNextClick}>
+    Next
+  </Button>
+)}
+<Button
+  variant="primary"
+  onClick={handleSubmitForm}
+  disabled={internalSaving}
+>
+  {internalSaving ? "Saving..." : "Submit"}
+</Button>
         </div>
       </>
     ),
