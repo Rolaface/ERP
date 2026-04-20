@@ -53,7 +53,7 @@ const POColumnHeaders: React.FC = () => (
       Description
     </th> */}
     <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[120px]">
-      Packing(unit × size)
+      Pckg(unit × size)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
       Required By
@@ -201,24 +201,28 @@ export const DetailsTab = ({
 
         {/* Packing */}
         <td className="px-2 py-1">
-          <div className="flex items-center justify-center gap-1">
+          <div className="flex items-center justify-center gap-[2px] w-[70px]">
             <Tooltip content={`Packing Unit: ${it.packingUnit || " "}`}>
               <input
                 type="number"
                 name="packingUnit"
                 value={it.packingUnit || ""}
                 onChange={(e) => onItemChange(e, i)}
-                className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
+                className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
+                disabled
               />
             </Tooltip>
-            <span className="text-muted text-[10px] font-bold">×</span>
+
+            <span className="text-[10px] text-muted leading-none">×</span>
+
             <Tooltip content={`Packing Size: ${it.packingSize || " "}`}>
               <input
                 type="number"
                 name="packingSize"
                 value={it.packingSize || ""}
                 onChange={(e) => onItemChange(e, i)}
-                className="w-[39px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main text-center no-spinner"
+                className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
+                disabled
               />
             </Tooltip>
           </div>
@@ -226,7 +230,7 @@ export const DetailsTab = ({
 
         {/* Required By */}
         <td className="px-2 py-1">
-          <div className="w-[125px]">
+          <div className="w-[100px]">
             <Tooltip
               content={
                 it.requiredBy
@@ -313,7 +317,7 @@ export const DetailsTab = ({
               name="vatRate"
               value={it.vatRate}
               onChange={(e) => onItemChange(e, i)}
-              className="w-[54px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+              className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
           </Tooltip>
         </td>
