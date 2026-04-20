@@ -22,7 +22,7 @@ interface Template {
 }
 
 interface InvoiceCharge {
-  charge_type: string; // maps to accountHead in payload
+  charge_type: string; 
   amount: string;
   rate?: string;
 }
@@ -40,9 +40,12 @@ interface InvoiceChargesTabProps {
   onAdd: () => void;
   onChange: (index: number, field: string, value: any) => void;
   onRemove: (index: number) => void;
-  // Template props
+
   selectedTemplate?: string;
   onTemplateSelect?: (templateName: string, taxes: TemplateTax[]) => void;
+
+  taxes: any[];   // ✅ ADD THIS
+  onTaxChange?: (index: number, field: string, value: any) => void; // ✅ ADD THIS
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -54,8 +57,10 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
   onAdd,
   onChange,
   onRemove,
-  selectedTemplate = "",
-  onTemplateSelect,
+ selectedTemplate = "",
+onTemplateSelect,
+taxes,
+onTaxChange,
 }) => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -84,6 +89,7 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
   // ── Derived ───────────────────────────────────────────────────────────────
 
   const activeTemplates = templates.filter((t) => !t.disabled);
+  
 
   const selectedTemplateObj = templates.find((t) => t.name === selectedTemplate) ?? null;
 
@@ -193,70 +199,81 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
           </div>
 
           {/* Template charges preview */}
-          {selectedTemplateObj && selectedTemplateObj.taxes.length > 0 && previewExpanded && (
-            <div className="border-t border-theme">
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="bg-primary/5">
-                    <th className="text-left px-4 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
-                      Account Head
-                    </th>
-                    <th className="text-left px-4 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
-                      Charge Type
-                    </th>
-                    <th className="text-right px-4 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
-                      Rate
-                    </th>
-                    <th className="text-right px-4 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="text-left px-4 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
-                      Description
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedTemplateObj.taxes.map((tax, i) => (
-                    <tr
-                      key={i}
-                      className="border-t border-theme transition-colors hover:bg-primary/5"
-                      style={{ background: i % 2 !== 0 ? "rgba(var(--primary-rgb, 201,125,46),0.03)" : "transparent" }}
-                    >
-                      <td className="px-4 py-2 font-medium text-main text-xs">
-                        {tax.account_head}
-                      </td>
-                      <td className="px-4 py-2">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-border/40 text-muted font-medium">
-                          {tax.charge_type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        {tax.charge_type === "Actual" ? (
-                          <span className="text-muted italic text-[10px]">N/A</span>
-                        ) : (
-                          <span className="font-semibold text-primary text-xs">
-                            {Number(tax.rate).toFixed(2)}%
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        {Number(tax.tax_amount) > 0 ? (
-                          <span className="font-semibold text-main text-xs">
-                            {Number(tax.tax_amount).toFixed(2)}
-                          </span>
-                        ) : (
-                          <span className="text-muted text-xs">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 text-muted text-xs">
-                        {tax.description || "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+         {taxes && taxes.length > 0 && (
+  <div className="border-t border-theme">
+    <table className="w-full text-xs border-collapse">
+      <thead>
+        <tr className="bg-primary/5">
+          <th className="px-4 py-2 text-left">Account Head</th>
+          <th className="px-4 py-2 text-left">Charge Type</th>
+          <th className="px-4 py-2 text-right">Rate</th>
+          <th className="px-4 py-2 text-right">Amount</th>
+          <th className="px-4 py-2 text-left">Description</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {taxes.map((tax, i) => (
+          <tr key={i} className="border-t border-theme">
+
+            <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
+              <input
+                value={tax.accountHead}
+                onChange={(e) =>
+                  onTaxChange?.(i, "accountHead", e.target.value)
+                }
+                className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </td>
+
+            <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
+              <input
+                value={tax.chargeType}
+                onChange={(e) =>
+                  onTaxChange?.(i, "chargeType", e.target.value)
+                }
+                className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </td>
+
+            <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
+              <input
+                type="number"
+                value={tax.rate}
+                onChange={(e) =>
+                  onTaxChange?.(i, "rate", e.target.value)
+                }
+                className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+              />
+            </td>
+
+            <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
+              <input
+                type="number"
+                value={tax.taxAmount}
+                onChange={(e) =>
+                  onTaxChange?.(i, "taxAmount", e.target.value)
+                }
+                className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+              />
+            </td>
+
+            <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
+              <input
+                value={tax.description}
+                onChange={(e) =>
+                  onTaxChange?.(i, "description", e.target.value)
+                }
+                className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </td>
+
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
 
           {selectedTemplateObj && selectedTemplateObj.taxes.length === 0 && (
             <div className="px-4 pb-3 text-xs text-muted italic">

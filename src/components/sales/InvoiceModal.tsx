@@ -491,6 +491,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           {/* ──────────── SHIPPING & OTHER CHARGES ──────────── */}
           {ui.activeTab === "otherCharges" && (
             <InvoiceChargesTab
+             taxes={formData.taxes || []}
               charges={formData.invoiceCharges || []}
               currency={formData.currencyCode}
               totals={totals}
@@ -498,7 +499,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               onChange={actions.handleOtherChargeChange}
               onRemove={actions.removeOtherCharge}
               selectedTemplate={formData.salesTaxTemplate}
-              onTemplateSelect={actions.handleTemplateSelect}
+              onTemplateSelect={(name, taxes) => {
+            actions.handleTemplateSelect(name, taxes);
+            
+}}
+    taxes={formData.taxes || []}            
+    onTaxChange={actions.handleTaxChange}   
+
+
             />
           )}
 

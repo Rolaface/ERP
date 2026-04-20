@@ -77,7 +77,14 @@ export function buildInvoicePayload(
       vatRate: String(item.vatRate ?? 0),
       vatCode: item.vatCode ?? "",
     }));
-
+const mappedTaxes =
+  (formData.taxes || []).map((t: any) => ({
+    chargeType: t.chargeType,
+    accountHead: t.accountHead,
+    description: t.description || "",
+    rate: Number(t.rate) || 0,
+    taxAmount: Number(t.taxAmount) || 0,
+  }));
   return {
     customerId: formData.customerId,
     currency: formData.currencyCode,
@@ -95,7 +102,6 @@ export function buildInvoicePayload(
       : {}),
     ...(formData.lpoNumber ? { lpoNumber: formData.lpoNumber } : {}),
     paymentInformation: formData.paymentInformation,
-    salesTaxTemplate: formData.salesTaxTemplate || "",
     items,
     terms: formData.terms,
 
@@ -108,6 +114,7 @@ export function buildInvoicePayload(
     grandTotal: totals.grandTotal,
     // Pass through address objects for reference
     addresses: formData.addresses,
+    taxes: mappedTaxes,
   };
 }
 
@@ -125,6 +132,7 @@ export const useInvoiceForm = (
     terms: { ...EMPTY_TERMS },
     invoiceCharges: [],
     addresses: {},
+    taxes: [],
   });
 
   // Set today's date on open
@@ -526,12 +534,56 @@ useEffect(() => {
     });
   };
   //charge temeplete--------------------
-  const handleTemplateSelect = (templateName: string) => {
-    setFormData((prev) => ({
+  const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
+  setFormData((prev) => {
+    // calculate subtotal first
+    const subTotal = prev.items.reduce((sum, item) => {
+      const qty = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      const discount = Number(item.discount || 0);
+      const net = qty * price * (1 - discount / 100);
+      return sum + net;
+    }, 0);
+
+    // convert template taxes → API format
+    const mappedTaxes = taxes.map((t: any) => {
+      const rate = Number(t.rate) || 0;
+
+      const taxAmount =
+        t.charge_type === "Actual"
+          ? Number(t.tax_amount) || 0
+          : (subTotal * rate) / 100;
+
+      return {
+        chargeType: t.charge_type,
+        accountHead: t.account_head,
+        description: t.description || "",
+        rate,
+        taxAmount,
+      };
+    });
+
+    return {
       ...prev,
-      salesTaxTemplate: templateName,
-    }));
-  };
+      taxes: mappedTaxes, 
+      salesTaxTemplate: templateName,  
+    };
+  });
+};
+const handleTaxChange = (index: number, field: string, value: any) => {
+  setFormData((prev) => {
+    const updated = [...(prev.taxes || [])];
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+
+    return {
+      ...prev,
+      taxes: updated,
+    };
+  });
+};
 
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
@@ -873,6 +925,7 @@ exchangeRt:
       handleOtherChargeChange,
       removeOtherCharge,
       handleTemplateSelect,
+       handleTaxChange,
     },
   };
 };
