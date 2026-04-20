@@ -32,7 +32,10 @@ import PurchaseInvoiceDetailModal, {
   type PurchaseInvoiceDetail,
 } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
 import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
-import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import {
+  REFRESH_KEYS,
+  useDataRefreshStore,
+} from "../../store/dataRefreshStore";
 import { fireManagedSwal } from "../../utils/swalManager";
 
 interface Purchaseinvoice {
@@ -260,7 +263,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   };
 
   // ── PDF preview modal (table row "View PDF" action) ─────────
-  const handleOpenPDF = async (invoice: Purchaseinvoice, e?: React.MouseEvent) => {
+  const handleOpenPDF = async (
+    invoice: Purchaseinvoice,
+    e?: React.MouseEvent,
+  ) => {
     e?.stopPropagation();
     try {
       showLoading("Generating PDF...");
@@ -413,12 +419,9 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Invoices");
 
       saveAs(
-        new Blob(
-          [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-          {
-            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          },
-        ),
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
         "All_Purchase_Invoices.xlsx",
       );
 
@@ -453,10 +456,30 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
 
   // ── Columns ─────────────────────────────────
   const columns: Column<Purchaseinvoice>[] = [
-    { key: "pId", header: "PI ID", align: "left", tooltip: (o) => o.pId || "—", },
-    { key: "supplier", header: "Supplier", align: "center", tooltip: (o) => o.supplier || "—", },
-    { key: "podate", header: "PI Date", align: "center", tooltip: (o) => o.podate || "—", },
-    { key: "deliveryDate", header: "Delivery Date", align: "center", tooltip: (o) => o.deliveryDate || "—", },
+    {
+      key: "pId",
+      header: "PI ID",
+      align: "left",
+      tooltip: (o) => o.pId || "—",
+    },
+    {
+      key: "supplier",
+      header: "Supplier",
+      align: "center",
+      tooltip: (o) => o.supplier || "—",
+    },
+    {
+      key: "podate",
+      header: "PI Date",
+      align: "center",
+      tooltip: (o) => o.podate || "—",
+    },
+    {
+      key: "deliveryDate",
+      header: "Delivery Date",
+      align: "center",
+      tooltip: (o) => o.deliveryDate || "—",
+    },
     {
       key: "amount",
       header: "Amount",
@@ -467,7 +490,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         </code>
       ),
       tooltip: (o) => o.amount || "—",
-},
+    },
     {
       key: "grandTotalWithTax",
       header: "Grand Total",
@@ -478,18 +501,18 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         </code>
       ),
       tooltip: (o) => o.grandTotalWithTax || "—",
-},
+    },
     {
-     key: "outstanding_amount",
-     header: "Outstanding",
-     align: "center",
-     render: (o) => (
-       <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-         {Number(o.outstanding_amount || 0).toFixed(2)}
-       </code>
-     ),
+      key: "outstanding_amount",
+      header: "Outstanding",
+      align: "center",
+      render: (o) => (
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+          {Number(o.outstanding_amount || 0).toFixed(2)}
+        </code>
+      ),
       tooltip: (o) => o.outstanding_amount || "—",
-},
+    },
     {
       key: "status",
       header: "Status",
@@ -525,7 +548,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
                 label: "View PDF",
                 onClick: () => handleOpenPDF(o),
               },
-              ...(o.status === "Unpaid"
+              ...(["Unpaid", "Overdue"].includes(o.status)
                 ? [
                     {
                       label: "Make Payment",
@@ -614,7 +637,8 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
           generatePurchaseInvoicePDF(drawerData, company, "save")
         }
         onClosePdf={() => {
-          if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl);
+          if (drawerPdfUrl?.startsWith("blob:"))
+            URL.revokeObjectURL(drawerPdfUrl);
           setDrawerPdfUrl(null);
         }}
       />
