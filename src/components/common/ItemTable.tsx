@@ -69,9 +69,9 @@ const InvoiceHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
       Item
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[140px] whitespace-nowrap">
+    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[140px] whitespace-nowrap">
       Description
-    </th>
+    </th> */}
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
       Packing{" "}
       <span className="ml-1 text-[9px] text-muted/60 font-normal">
@@ -210,7 +210,7 @@ onChange={(item: SelectedStockItem) => {
         </td>
 
         {/* Description */}
-        <td className="px-0.5 py-1">
+        {/* <td className="px-0.5 py-1">
           <Tooltip content={it.description || "No description"}>
             <input
               className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
@@ -219,7 +219,7 @@ onChange={(item: SelectedStockItem) => {
               onChange={(e) => actions.handleItemChange(i, e)}
             />
           </Tooltip>
-        </td>
+        </td> */}
 
         {/* Packing */}
         <td className="px-0.5 py-1">

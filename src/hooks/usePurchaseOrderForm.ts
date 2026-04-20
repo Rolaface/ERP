@@ -6,6 +6,7 @@ import {
   showLoading,
   closeSwal,
 } from "../utils/alert";
+import { useAddressLogic, BOX_CONFIGS } from "./useAddressLogic";
 import type {
   PurchaseOrderFormData,
   POTab,
@@ -24,18 +25,17 @@ import {
   updatePurchaseOrder,
 } from "../api/procurement/PurchaseOrderApi";
 import { mapUIToCreatePO } from "../types/Supply/purchaseOrderMapper";
-import { validatePO } from "./poValidator";
 import { getPurchaseOrderById } from "../api/procurement/PurchaseOrderApi";
 import { mapApiToUI } from "../types/Supply/purchaseOrderMapper";
 import { getSupplierById } from "../../src/api/procurement/supplierApi";
 import { getCompanyById } from "../api/companySetupApi";
-import { mapSupplierToAddress } from "../types/Supply/purchaseOrderMapper";
 import type { AddressBlock } from "../types/Supply/purchaseOrder";
 import { getItemByItemCode } from "../api/itemApi";
 import { useFieldDefault } from "./useFieldDefault";
 import { fetchCostCenters, fetchProjects } from "../api/getAllApi";
 import { getAllWarehouses } from "../api/WarehouseApi";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
+import type { ApiAddress,BoxType } from "./useAddressLogic";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 interface UsePurchaseOrderFormProps {
@@ -57,12 +57,14 @@ export const usePurchaseOrderForm = ({
   const [saving, setSaving] = useState(false);
   const [customShippingRule, setCustomShippingRule] = useState("");
   const [customIncoterm, setCustomIncoterm] = useState("");
-  const [addressSelected, setAddressSelected] = useState<Record<string, any>>({
-    companyBilling: null,
-    supplierBilling: null,
-    companyShipping: null,
-    supplierDispatch: null,
-  });
+ const [addressSelected, setAddressSelected] = useState<
+  Record<BoxType, ApiAddress | null>
+>({
+  companyBilling: null,
+  supplierBilling: null,
+  companyShipping: null,
+  supplierDispatch: null,
+});
   const [addressSelectedIds, setAddressSelectedIds] = useState<
     Record<string, string>
   >({
@@ -71,12 +73,14 @@ export const usePurchaseOrderForm = ({
     companyShipping: "",
     supplierDispatch: "",
   });
-  const [addressList, setAddressList] = useState<Record<string, any[]>>({
-    companyBilling: [],
-    supplierBilling: [],
-    companyShipping: [],
-    supplierDispatch: [],
-  });
+const [addressList, setAddressList] = useState<
+  Record<BoxType, ApiAddress[]>
+>({
+  companyBilling: [],
+  supplierBilling: [],
+  companyShipping: [],
+  supplierDispatch: [],
+});
   const [addressLoading, setAddressLoading] = useState<Record<string, boolean>>(
     {
       companyBilling: false,
@@ -90,6 +94,96 @@ export const usePurchaseOrderForm = ({
     companyBillingAddress?: any;
     baseCurrency?: string;
   }>({});
+
+  const handleFormChange = useCallback(
+    (
+      e:
+        | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+        | { target: { name: string; value: any } },
+    ) => {
+      const { name, value } = e.target;
+
+      // Handle batched address object update (single render instead of 12)
+      if (
+        name.startsWith("addresses.") &&
+        typeof value === "object" &&
+        value !== null
+      ) {
+        const addressKey = name.replace(
+          "addresses.",
+          "",
+        ) as keyof PurchaseOrderFormData["addresses"];
+        setForm((prev) => ({
+          ...prev,
+          addresses: {
+            ...prev.addresses,
+            [addressKey]: { ...prev.addresses[addressKey], ...value },
+          },
+        }));
+        return;
+      }
+
+      // Handle nested keys like "addresses.supplierAddress.id"
+      if (name.includes(".")) {
+        const keys = name.split(".");
+
+        setForm((prev) => {
+          const updated = { ...prev } as any;
+
+          let current = updated;
+          for (let i = 0; i < keys.length - 1; i++) {
+            current[keys[i]] = { ...current[keys[i]] };
+            current = current[keys[i]];
+          }
+
+          current[keys[keys.length - 1]] = value;
+
+          return updated;
+        });
+
+        return;
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    },
+    [],
+  );
+  // ── Instantiate useAddressLogic here so we can call loadAddresses imperatively
+const {
+  loadAddresses,
+  handleSelect:handleAddressSelect,
+  handleCopyBillingToShipping,
+  handleCopySupplierToDispatch,
+} = useAddressLogic({
+  supplierId:     form.supplierId,
+  selected:       addressSelected,
+  setSelected:    setAddressSelected,
+  selectedIds:    addressSelectedIds,
+  setSelectedIds: setAddressSelectedIds,
+  addresses:      addressList,
+  setAddresses:   setAddressList,
+  loading:        addressLoading,
+  setLoading:     setAddressLoading,
+  onFormChange:   handleFormChange,
+});
+
+// ── Company addresses: load ONCE when modal opens ──
+const companyAddressLoadedRef = useRef(false);
+useEffect(() => {
+  if (!isOpen) {
+    companyAddressLoadedRef.current = false;
+    return;
+  }
+  if (companyAddressLoadedRef.current) return;
+  companyAddressLoadedRef.current = true;
+
+  loadAddresses("companyBilling");
+  loadAddresses("companyShipping");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isOpen]);
 
   const handleBulkItemChange = useCallback(
     (field: keyof ItemRow, value: string) => {
@@ -189,7 +283,7 @@ export const usePurchaseOrderForm = ({
         supplierBilling: mapped.addresses.supplierAddress.id
           ? {
             id: mapped.addresses.supplierAddress.id,
-            title: mapped.addresses.supplierAddress.id,
+            title: mapped.addresses.supplierAddress.id, 
             addressType: "Billing",
             addressLine1: "",
             addressLine2: "",
@@ -345,62 +439,60 @@ export const usePurchaseOrderForm = ({
     }));
   };
 
-  const handleFormChange = useCallback(
-    (
-      e:
-        | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-        | { target: { name: string; value: any } },
-    ) => {
-      const { name, value } = e.target;
+    // Fetches supplier addresses using the FRESH supplierId from the API response,
+// not form.supplierId (which may still be stale at the time of the call).
+const loadAddressesForSupplier = useCallback(
+  async (freshSupplierId: string, boxKey: "supplierBilling" | "supplierDispatch") => {
+    if (!freshSupplierId) return;
 
-      // Handle batched address object update (single render instead of 12)
-      if (
-        name.startsWith("addresses.") &&
-        typeof value === "object" &&
-        value !== null
-      ) {
-        const addressKey = name.replace(
-          "addresses.",
-          "",
-        ) as keyof PurchaseOrderFormData["addresses"];
-        setForm((prev) => ({
-          ...prev,
-          addresses: {
-            ...prev.addresses,
-            [addressKey]: { ...prev.addresses[addressKey], ...value },
+    const { getAddressList } = await import("../api/Adressapi");
+
+    const apiParams: { supplierId: string; addressType?: string } = {
+      supplierId: freshSupplierId,
+    };
+    if (boxKey === "supplierBilling") {
+      apiParams.addressType = "Billing";
+    }
+
+    setAddressLoading((prev) => ({ ...prev, [boxKey]: true }));
+
+    try {
+      const data = await getAddressList(apiParams);
+      setAddressList((prev) => ({ ...prev, [boxKey]: data }));
+
+      if (data?.length > 0) {
+        const first = data[0];
+        setAddressSelected((prev)    => ({ ...prev, [boxKey]: first }));
+        setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: first.id }));
+
+        const prefix = boxKey === "supplierBilling" ? "supplierAddress" : "dispatchAddress";
+        handleFormChange({
+          target: {
+            name: `addresses.${prefix}`,
+            value: {
+              id:           first.id,
+              addressTitle: first.title,
+              addressType:  first.addressType,
+              addressLine1: first.addressLine1 ?? "",
+              addressLine2: first.addressLine2 ?? "",
+              city:         first.city         ?? "",
+              state:        first.state        ?? "",
+              country:      first.country      ?? "",
+              postalCode:   first.pincode      ?? "",
+              phone:        first.phone        ?? "",
+              email:        first.email        ?? "",
+            },
           },
-        }));
-        return;
-      }
-
-      // Handle nested keys like "addresses.supplierAddress.id"
-      if (name.includes(".")) {
-        const keys = name.split(".");
-
-        setForm((prev) => {
-          const updated = { ...prev } as any;
-
-          let current = updated;
-          for (let i = 0; i < keys.length - 1; i++) {
-            current[keys[i]] = { ...current[keys[i]] };
-            current = current[keys[i]];
-          }
-
-          current[keys[keys.length - 1]] = value;
-
-          return updated;
         });
-
-        return;
       }
-
-      setForm((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    },
-    [],
-  );
+    } catch (err) {
+      console.error(`[usePurchaseOrderForm] Failed to load "${boxKey}":`, err);
+    } finally {
+      setAddressLoading((prev) => ({ ...prev, [boxKey]: false }));
+    }
+  },
+  [handleFormChange],
+);
 
   const handleSupplierChange = useCallback(async (sup: any) => {
     if (!sup?.id) return;
@@ -473,11 +565,20 @@ export const usePurchaseOrderForm = ({
             postalCode: primaryAddress?.postalCode || "",
           },
         },
-      }));
+       }));
+
+      // ── Auto-load supplier address boxes on supplier select ──
+      await Promise.all([
+        loadAddressesForSupplier(supplier.id, "supplierBilling"),
+        loadAddressesForSupplier(supplier.id, "supplierDispatch"),
+      ]);
     } catch (err) {
       console.error("Supplier fetch failed:", err);
     }
-  }, []);
+  }, [loadAddressesForSupplier]);
+
+
+
   const handleItemChange = useCallback(
     (
       e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -757,6 +858,19 @@ export const usePurchaseOrderForm = ({
     });
 
     setActiveTab("details");
+    setAddressSelected({
+  companyBilling: null, supplierBilling: null,
+  companyShipping: null, supplierDispatch: null,
+});
+setAddressSelectedIds({
+  companyBilling: "", supplierBilling: "",
+  companyShipping: "", supplierDispatch: "",
+});
+setAddressList({
+  companyBilling: [], supplierBilling: [],
+  companyShipping: [], supplierDispatch: [],
+});
+companyAddressLoadedRef.current = false;
   };
   return {
     form: { ...form, ...totals },
@@ -797,5 +911,9 @@ export const usePurchaseOrderForm = ({
     setAddressList,
     addressLoading,
     setAddressLoading,
+    handleAddressSelect,
+handleCopyBillingToShipping,
+handleCopySupplierToDispatch,
+loadAddresses,
   };
 };
