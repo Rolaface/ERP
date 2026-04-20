@@ -3,11 +3,9 @@ import { FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import {
   showApiError,
-  showSuccess,
-  showValidationError,
+  showSuccess
 } from "../../utils/alert";
-import Select from "../ui/Select";
-import { createSalesInvoice } from "../../api/salesApi";
+import { createSalesInvoice , editSalesInvoice } from "../../api/salesApi";
 import { User, Mail, Phone } from "lucide-react";
 import CustomerSelect from "../selects/CustomerSelect";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
@@ -22,7 +20,6 @@ import { InvoiceAddressTab } from "./InvoiceAddressTab";
 import { getAllModeOfPayment } from "../../api/BankAccountApi";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import {
-  invoiceStatusOptions,
   currencySymbols,
   paymentMethodOptions,
   currencyOptions,
@@ -63,8 +60,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [submitting, setSubmitting] = useState(false);
-  const [paymentOptions, setPaymentOptions] = useState([]);
-  const [loading, setLoading] = useState(false);
+
 
   const {
     formData,
@@ -86,8 +82,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     customerDetails?.contacts?.find((c: any) => c.isPrimary) || {};
   const billingAddress =
     customerDetails?.addresses?.find((a: any) => a.type === "Billing") || {};
-  const [customShippingRule, setCustomShippingRule] = useState("");
-  const [customIncoterm, setCustomIncoterm] = useState("");
+  
 
   const tabs: Array<"details" | "address" | "otherCharges" | "terms"> = [
     "details",
@@ -110,14 +105,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
 
-  // ─── Submit handler ──────────────────────────────────────────────────────────
-  // Calls hook's handleSubmit (which validates + builds API payload), then
-  // passes the result up to the parent via onSubmit.
 
-  const handleModeFetchOptions = async (q: string) => {
+const handleModeFetchOptions = async (q: string) => {
     const res = await getAllModeOfPayment(1, 10, q || "", 1);
 
-    return res.data.map((item) => ({
+    return res.data.map((item: any) => ({
       label: item.name,
       value: item.name,
       meta: item,
@@ -143,19 +135,33 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
       if (!payload) return;
 
-      const response = await createSalesInvoice(payload);
-
-      if (!response) return;
-
-      const res = response?.message;
-
-      if (res?.status_code === 201) {
-        showSuccess(`${res?.message} (ID: ${res?.data?.invoiceId})`);
-
-        resetDirty();
-        onClose();
+      if (mode === "edit") {
+        // PUT: send invoiceNumber as query param, rest as body
+        const invoiceNumber = formData.invoiceNumber ?? initialData?.id ?? initialData?.invoiceNumber;
+        if (!invoiceNumber) {
+          showApiError("Invoice number missing — cannot update");
+          return;
+        }
+        const response = await editSalesInvoice(invoiceNumber, payload);
+        const res = response?.message;
+        if (res?.status_code === 200) {
+          showSuccess(res?.message || "Invoice updated successfully");
+          resetDirty();
+          onClose();
+        } else {
+          showApiError(res?.message || "Failed to update invoice");
+        }
       } else {
-        showApiError(res?.message || "Something went wrong");
+        const response = await createSalesInvoice(payload);
+        if (!response) return;
+        const res = response?.message;
+        if (res?.status_code === 201) {
+          showSuccess(`${res?.message} (ID: ${res?.data?.invoiceId})`);
+          resetDirty();
+          onClose();
+        } else {
+          showApiError(res?.message || "Something went wrong");
+        }
       }
     } catch (err) {
       showApiError(err);
@@ -235,7 +241,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         </div>
 
         {/* ── Tab Content ── */}
-        <div className="flex-1 overflow-y-auto px-5 py-3">
+        <div className=" overflow-y-auto px-3 py-2">
           {/* ──────────── DETAILS ──────────── */}
           {ui.activeTab === "details" && (
             <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
@@ -489,9 +495,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           )}
 
           {/* ──────────── SHIPPING & OTHER CHARGES ──────────── */}
-          {ui.activeTab === "otherCharges" && (
+         {ui.activeTab === "otherCharges" && (
             <InvoiceChargesTab
-             taxes={formData.taxes || []}
+              taxes={formData.taxes || []}
               charges={formData.invoiceCharges || []}
               currency={formData.currencyCode}
               totals={totals}
@@ -500,13 +506,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               onRemove={actions.removeOtherCharge}
               selectedTemplate={formData.salesTaxTemplate}
               onTemplateSelect={(name, taxes) => {
-            actions.handleTemplateSelect(name, taxes);
-            
-}}
-    taxes={formData.taxes || []}            
-    onTaxChange={actions.handleTaxChange}   
-
-
+                actions.handleTemplateSelect(name, taxes);
+              }}
+              onTaxChange={actions.handleTaxChange}
             />
           )}
 

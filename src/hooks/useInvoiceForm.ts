@@ -15,12 +15,12 @@ import {
 } from "../constants/invoice.constants";
 import dayjs from "dayjs";
 
-// ─── Constants 
+// ─── Constants
 
 const ITEMS_PER_PAGE = 5;
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
-// ─── Helpers 
+// ─── Helpers
 
 const getDefaultBank = (accounts: any[] = []) =>
   accounts.find(
@@ -77,8 +77,7 @@ export function buildInvoicePayload(
       vatRate: String(item.vatRate ?? 0),
       vatCode: item.vatCode ?? "",
     }));
-const mappedTaxes =
-  (formData.taxes || []).map((t: any) => ({
+  const mappedTaxes = (formData.taxes || []).map((t: any) => ({
     chargeType: t.chargeType,
     accountHead: t.accountHead,
     description: t.description || "",
@@ -178,21 +177,17 @@ export const useInvoiceForm = (
   const enableExchange = mode === "invoice";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
 
+  const getBaseCurrencyFromStorage = () => {
+    try {
+      const raw = localStorage.getItem("company-info");
+      if (!raw) return "";
 
-
-
-
-const getBaseCurrencyFromStorage = () => {
-  try {
-    const raw = localStorage.getItem("company-info");
-    if (!raw) return "";
-
-    const parsed = JSON.parse(raw);
-    return parsed?.state?.baseCurrency || "";
-  } catch {
-    return "";
-  }
-};
+      const parsed = JSON.parse(raw);
+      return parsed?.state?.baseCurrency || "";
+    } catch {
+      return "";
+    }
+  };
   // Load edit data
   useEffect(() => {
     if (!isOpen) return;
@@ -201,24 +196,21 @@ const getBaseCurrencyFromStorage = () => {
     }
   }, [isOpen, initialData, mode]);
 
+  useEffect(() => {
+    if (!isOpen) return;
 
-useEffect(() => {
-  if (!isOpen) return;
+    const base = getBaseCurrencyFromStorage();
 
-  const base = getBaseCurrencyFromStorage();
+    console.log("Base Currency:", base);
 
-  console.log("Base Currency:", base);
+    setBaseCurrency(base);
+    lastCurrencyRef.current = base;
 
-  setBaseCurrency(base);
-  lastCurrencyRef.current = base;
-
-
-  setFormData((prev) => ({
-    ...prev,
-    currencyCode: prev.currencyCode || base,
-  }));
-}, [isOpen]);
-
+    setFormData((prev) => ({
+      ...prev,
+      currencyCode: prev.currencyCode || base,
+    }));
+  }, [isOpen]);
 
   // Exchange rate auto-fetch
   useEffect(() => {
@@ -232,9 +224,9 @@ useEffect(() => {
       setExchangeRateError(null);
       if (mode !== "edit") {
         setFormData((prev) => {
-  if (prev.exchangeRt === "1") return prev; // 🔥 STOP LOOP
-  return { ...prev, exchangeRt: "1" };
-});
+          if (prev.exchangeRt === "1") return prev; // 🔥 STOP LOOP
+          return { ...prev, exchangeRt: "1" };
+        });
       }
       return;
     }
@@ -242,9 +234,9 @@ useEffect(() => {
     let cancelled = false;
     setExchangeRateLoading(true);
     setFormData((prev) => {
-  if (prev.exchangeRt === "1") return prev; // 🔥 STOP LOOP
-  return { ...prev, exchangeRt: "1" };
-});
+      if (prev.exchangeRt === "1") return prev; // 🔥 STOP LOOP
+      return { ...prev, exchangeRt: "1" };
+    });
     setExchangeRateError(null);
 
     getExchangeRate({
@@ -265,9 +257,9 @@ useEffect(() => {
         if (cancelled) return;
         setExchangeRateError(err?.message || "Exchange rate not found");
         setFormData((prev) => {
-  if (prev.exchangeRt === "1") return prev; // 🔥 STOP LOOP
-  return { ...prev, exchangeRt: "1" };
-});
+          if (prev.exchangeRt === "1") return prev; // 🔥 STOP LOOP
+          return { ...prev, exchangeRt: "1" };
+        });
         showApiError(err);
       })
       .finally(() => {
@@ -492,10 +484,11 @@ useEffect(() => {
     }
   };
 
-
   const handleItemChange = (
     idx: number,
-    e: React.ChangeEvent<HTMLInputElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
   ) => {
     const { name, value } = e.target;
     const isNum = NUM_FIELDS.includes(name);
@@ -535,55 +528,55 @@ useEffect(() => {
   };
   //charge temeplete--------------------
   const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
-  setFormData((prev) => {
-    // calculate subtotal first
-    const subTotal = prev.items.reduce((sum, item) => {
-      const qty = Number(item.quantity || 0);
-      const price = Number(item.price || 0);
-      const discount = Number(item.discount || 0);
-      const net = qty * price * (1 - discount / 100);
-      return sum + net;
-    }, 0);
+    setFormData((prev) => {
+      // calculate subtotal first
+      const subTotal = prev.items.reduce((sum, item) => {
+        const qty = Number(item.quantity || 0);
+        const price = Number(item.price || 0);
+        const discount = Number(item.discount || 0);
+        const net = qty * price * (1 - discount / 100);
+        return sum + net;
+      }, 0);
 
-    // convert template taxes → API format
-    const mappedTaxes = taxes.map((t: any) => {
-      const rate = Number(t.rate) || 0;
+      // convert template taxes → API format
+      const mappedTaxes = taxes.map((t: any) => {
+        const rate = Number(t.rate) || 0;
 
-      const taxAmount =
-        t.charge_type === "Actual"
-          ? Number(t.tax_amount) || 0
-          : (subTotal * rate) / 100;
+        const taxAmount =
+          t.charge_type === "Actual"
+            ? Number(t.tax_amount) || 0
+            : (subTotal * rate) / 100;
+
+        return {
+          chargeType: t.charge_type,
+          accountHead: t.account_head,
+          description: t.description || "",
+          rate,
+          taxAmount,
+        };
+      });
 
       return {
-        chargeType: t.charge_type,
-        accountHead: t.account_head,
-        description: t.description || "",
-        rate,
-        taxAmount,
+        ...prev,
+        taxes: mappedTaxes,
+        salesTaxTemplate: templateName,
       };
     });
+  };
+  const handleTaxChange = (index: number, field: string, value: any) => {
+    setFormData((prev) => {
+      const updated = [...(prev.taxes || [])];
+      updated[index] = {
+        ...updated[index],
+        [field]: value,
+      };
 
-    return {
-      ...prev,
-      taxes: mappedTaxes, 
-      salesTaxTemplate: templateName,  
-    };
-  });
-};
-const handleTaxChange = (index: number, field: string, value: any) => {
-  setFormData((prev) => {
-    const updated = [...(prev.taxes || [])];
-    updated[index] = {
-      ...updated[index],
-      [field]: value,
-    };
-
-    return {
-      ...prev,
-      taxes: updated,
-    };
-  });
-};
+      return {
+        ...prev,
+        taxes: updated,
+      };
+    });
+  };
 
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
@@ -674,23 +667,55 @@ const handleTaxChange = (index: number, field: string, value: any) => {
   };
 
   const setFormDataFromInvoice = (invoice: any) => {
+    // charges[] from GET response map to taxes[] in formData
+    // (taxes[] in GET is always empty; actual applied charges are in charges[])
+    const mappedTaxesFromCharges =
+      Array.isArray(invoice.charges) && invoice.charges.length > 0
+        ? invoice.charges.map((ch: any) => ({
+            chargeType: ch.chargeType ?? "Actual",
+            accountHead: ch.accountHead ?? "",
+            description: ch.description ?? "",
+            rate: Number(ch.rate) || 0,
+            taxAmount: Number(ch.amount) || 0,
+          }))
+        : Array.isArray(invoice.taxes) && invoice.taxes.length > 0
+          ? invoice.taxes.map((t: any) => ({
+              chargeType: t.chargeType ?? "",
+              accountHead: t.accountHead ?? "",
+              description: t.description ?? "",
+              rate: Number(t.rate) || 0,
+              taxAmount: Number(t.taxAmount) || 0,
+            }))
+          : [];
+
     setFormData((prev: any) => ({
       ...prev,
-      invoiceNumber: invoice.invoiceNumber,
+      invoiceNumber: invoice.id ?? invoice.invoiceNumber,
       customerId: invoice.customerId ?? prev.customerId,
       invoiceType: invoice.invoiceType ?? "",
-
-    currencyCode: invoice.currency,
-dateOfInvoice: invoice.postingDate,
-exchangeRt:
-  invoice.exchangeRate && Number(invoice.exchangeRate) > 0
-    ? String(invoice.exchangeRate)
-    : "1",
+      taxCategory: invoice.tax_category ?? prev.taxCategory,
+      mode: invoice.paymentMode ?? prev.mode ?? "",
+      currencyCode: invoice.currency,
+      dateOfInvoice: invoice.postingDate,
+      exchangeRt:
+        invoice.exchangeRate && Number(invoice.exchangeRate) > 0
+          ? String(invoice.exchangeRate)
+          : "1",
       dueDate: invoice.dueDate,
       destnCountryCd: invoice.destnCountryCd ?? "",
-      billingAddress: invoice.billingAddress ?? prev.billingAddress,
-      shippingAddress: invoice.shippingAddress ?? prev.shippingAddress,
+      updateStock: invoice.updateStock ?? true,
+      warehouse: invoice.warehouse ?? prev.warehouse ?? "",
+      // Use address IDs (not the HTML display strings) for the PUT payload
+      billingAddress:
+        invoice.customerAddressId ??
+        invoice.billingAddress ??
+        prev.billingAddress,
+      shippingAddress:
+        invoice.shippingAddressId ??
+        invoice.shippingAddress ??
+        prev.shippingAddress,
       paymentInformation: invoice.paymentInformation ?? prev.paymentInformation,
+      taxes: mappedTaxesFromCharges,
       invoiceCharges:
         Array.isArray(invoice.invoiceCharges) &&
         invoice.invoiceCharges.length > 0
@@ -700,30 +725,28 @@ exchangeRt:
             }))
           : [],
       terms: {
-  selling: {
-    general: invoice.terms?.selling?.general || "",
-    delivery: invoice.terms?.selling?.delivery || "",
-    cancellation: invoice.terms?.selling?.cancellation || "",
-    warranty: invoice.terms?.selling?.warranty || "",
-    liability: invoice.terms?.selling?.liability || "",
-    payment: {
-      phases:
-        invoice.terms?.selling?.payment?.phases?.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          percentage: String(p.percentage),
-          condition: p.condition,
-          credit_days: String(p.credit_days),
-        })) || [],
-      dueDates:
-        invoice.terms?.selling?.payment?.dueDates || "",
-      lateCharges:
-        invoice.terms?.selling?.payment?.lateCharges || "",
-      taxes: invoice.terms?.selling?.payment?.taxes || "",
-      notes: invoice.terms?.selling?.payment?.notes || "",
-    },
-  },
-},
+        selling: {
+          general: invoice.terms?.selling?.general || "",
+          delivery: invoice.terms?.selling?.delivery || "",
+          cancellation: invoice.terms?.selling?.cancellation || "",
+          warranty: invoice.terms?.selling?.warranty || "",
+          liability: invoice.terms?.selling?.liability || "",
+          payment: {
+            phases:
+              invoice.terms?.selling?.payment?.phases?.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                percentage: String(p.percentage),
+                condition: p.condition,
+                credit_days: String(p.credit_days),
+              })) || [],
+            dueDates: invoice.terms?.selling?.payment?.dueDates || "",
+            lateCharges: invoice.terms?.selling?.payment?.lateCharges || "",
+            taxes: invoice.terms?.selling?.payment?.taxes || "",
+            notes: invoice.terms?.selling?.payment?.notes || "",
+          },
+        },
+      },
       items: (invoice.items || []).map((it: any) => {
         const quantity = Number(it.quantity);
         const price = Number(it.rate);
@@ -738,12 +761,13 @@ exchangeRt:
             : 0;
         return {
           itemCode: it.itemCode,
+          itemName: it.itemName ?? "",
           description: it.description ?? "",
           quantity,
           price,
           discount,
-          vatRate: taxRate,
-          vatCode: it.vatCode ?? "",
+          vatRate: it.taxInfo?.[0]?.totalTaxRate ?? taxRate,
+          vatCode: it.itemTaxTemplate ?? it.vatCode ?? "",
           packingUnit: it.packingUnit ?? "",
           packingSize: it.packingSize ?? "",
           batchNo: it.batchNo ?? "",
@@ -910,7 +934,7 @@ exchangeRt:
       validateForm,
       handleInputChange,
       handleCustomerSelect,
-      
+
       handleItemChange,
       updateItemDirectly,
       addItem,
@@ -925,7 +949,7 @@ exchangeRt:
       handleOtherChargeChange,
       removeOtherCharge,
       handleTemplateSelect,
-       handleTaxChange,
+      handleTaxChange,
     },
   };
 };

@@ -156,7 +156,7 @@ const AppLayout: React.FC = () => {
 
   // Sales handlers - using Zustand modal store
   const openInvoiceCreate = () => openInvoiceModal();
-  const openInvoiceEdit = (invoiceNumber: string, data: any) => openInvoiceModal({ invoiceNumber }, true);
+  const openInvoiceEdit = (invoiceNumber: string, data: any) => openInvoiceModal(data, true);
   const openProformaCreate = () => openProformaModal();
   const openProformaEdit = (proformaId: string, data: any) => openProformaModal({ proformaId }, true);
   const openQuotationCreate = () => openQuotationModal();
