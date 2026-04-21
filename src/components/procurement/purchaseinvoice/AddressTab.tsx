@@ -457,7 +457,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             addresses={addresses.companyBilling}
             selectedAddr={
               selected.companyBilling
-              || mapFormAddressToApi(form.addresses?.companyBillingAddress)
+              ?? mapFormAddressToApi(form.addresses?.companyBillingAddress)
             }
             loading={loading.companyBilling}
             onSelect={(addr) => handleAddressSelect("companyBilling", addr)}
@@ -467,7 +467,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             addresses={addresses.supplierBilling}
             selectedAddr={
               selected.supplierBilling
-              || mapFormAddressToApi(form.addresses?.supplierAddress)
+              ?? mapFormAddressToApi(form.addresses?.supplierAddress)
             }
             loading={loading.supplierBilling}
             onSelect={(addr) => handleAddressSelect("supplierBilling", addr)}
@@ -479,7 +479,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             addresses={addresses.companyShipping}
             selectedAddr={
               selected.companyShipping
-              || mapFormAddressToApi(form.addresses?.shippingAddress)
+              ?? mapFormAddressToApi(form.addresses?.shippingAddress)
             }
             loading={loading.companyShipping}
             onSelect={(addr) => handleAddressSelect("companyShipping", addr)}
@@ -489,7 +489,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             addresses={addresses.supplierDispatch}
             selectedAddr={
               selected.supplierDispatch
-              || mapFormAddressToApi(form.addresses?.dispatchAddress)
+              ?? mapFormAddressToApi(form.addresses?.dispatchAddress)
             }
             loading={loading.supplierDispatch}
             onSelect={(addr) => handleAddressSelect("supplierDispatch", addr)}

@@ -543,13 +543,7 @@ export const usePurchaseInvoiceForm = ({
             email: first.email ?? "",
           };
 
-          setForm(prev => ({
-            ...prev,
-            addresses: {
-              ...prev.addresses,
-              [prefix]: fullAddress
-            }
-          }));
+
         }
       } catch (err) {
         console.error(`[usePurchaseInvoiceForm] Failed to load "${boxKey}":`, err);
@@ -667,6 +661,8 @@ export const usePurchaseInvoiceForm = ({
 
       const data = res.data;
 
+      
+
       setCustomIncoterm("");
       setCustomShippingRule("");
 
@@ -685,7 +681,13 @@ export const usePurchaseInvoiceForm = ({
           quantity: Number(item.quantity || 0),
           rate: Number(item.rate || 0),
           uom: str(item.uom),
-
+          requiresBatch:
+            !!item.requiresBatch ||
+            !!item.batchNo ||
+            !!item.mfgDate ||
+            !!item.expiryDate ||
+            !!item.batchRequired ||
+            !!item.hasBatch,
 
           vatRate: Number(selectedTax?.totalTaxRate || 0),
           vatCd: selectedTax?.taxName || "",
@@ -699,7 +701,6 @@ export const usePurchaseInvoiceForm = ({
           batchNo: "",
           mfgDate: "",
           expDate: "",
-          requiresBatch: false,
           discount: 0,
         };
       });
@@ -777,7 +778,6 @@ export const usePurchaseInvoiceForm = ({
           supplierAddress: {
             ...prev.addresses.supplierAddress,
             id: supplierAddrId,
-            addressLine1: data.supplierAddressDisplay || "",
           },
           shippingAddress: {
             ...prev.addresses.shippingAddress,
@@ -914,7 +914,7 @@ export const usePurchaseInvoiceForm = ({
           packingSize: Number(data.packingSize || 0),
           packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
           warehouse: items[idx].warehouse || prev.warehouse || "",
-          requiresBatch: data.batchInfo?.has_batch_no || false,
+          requiresBatch: data.batchInfo?.has_batch_no,
         };
         return { ...prev, items };
       });
