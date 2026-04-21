@@ -85,7 +85,7 @@ const PIColumnHeaders: React.FC<{ items: ItemRow[] }> = ({ items }) => (
       Tax
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px] whitespace-nowrap">
-      Tax Code <span className="text-danger">*</span>
+      Tax Name
     </th>
     <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[80px]">
       Amount
@@ -266,24 +266,29 @@ export const DetailsTab = ({
 
         {/* BATCH */}
         <td className="px-1 py-1">
-          <input
-            name="batchNo"
-            value={it.batchNo || ""}
-            onChange={(e) => onItemChange(e, i)}
-            required={it.requiresBatch}
-            className="w-[85px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+          <Tooltip content={it.batchNo ? `Batch: ${it.batchNo}` : "Enter batch number"}>
+            <input
+              name="batchNo"
+              value={it.batchNo || ""}
+              onChange={(e) => onItemChange(e, i)}
+              required={it.requiresBatch}
+              className="w-[85px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+
+            />
+          </Tooltip>
         </td>
 
         {/* QTY */}
         <td className="px-1 py-1">
-          <input
-            type="number"
-            name="quantity"
-            value={it.quantity}
-            onChange={(e) => onItemChange(e, i)}
-            className="w-[75px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-          />
+          <Tooltip content={it.quantity ? `Quantity: ${it.quantity}` : "Enter quantity"}>
+            <input
+              type="number"
+              name="quantity"
+              value={it.quantity}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[75px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            />
+          </Tooltip>
         </td>
 
         {/* MFG DATE */}
@@ -324,13 +329,15 @@ export const DetailsTab = ({
 
         {/* RATE */}
         <td className="px-1 py-1">
-          <input
-            type="number"
-            name="rate"
-            value={it.rate}
-            onChange={(e) => onItemChange(e, i)}
-            className="w-[56px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-          />
+          <Tooltip content={it.rate ? `Rate: ${symbol} ${it.rate}` : "Enter rate"}>
+            <input
+              type="number"
+              name="rate"
+              value={it.rate}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[56px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            />
+          </Tooltip>
         </td>
 
         {/* WAREHOUSE */}
@@ -355,36 +362,42 @@ export const DetailsTab = ({
 
         {/* DISCOUNT */}
         <td className="px-2 py-1">
-          <input
-            type="number"
-            name="discount"
-            value={it.discount ?? ""}
-            onChange={(e) => onItemChange(e, i)}
-            className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-          />
+          <Tooltip content={it.discount ? `Discount: ${it.discount}%` : "Enter discount"}>
+            <input
+              type="number"
+              name="discount"
+              value={it.discount ?? ""}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            />
+          </Tooltip>
         </td>
 
         {/* TAX */}
         <td className="px-2 py-1">
-          <input
-            type="number"
-            name="vatRate"
-            value={it.vatRate}
-            onChange={(e) => onItemChange(e, i)}
-            className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-            disabled
-          />
+          <Tooltip content={`Tax Rate: ${it.vatRate}%`}>
+            <input
+              type="number"
+              name="vatRate"
+              value={it.vatRate}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+              disabled
+            />
+          </Tooltip>
         </td>
 
         {/* TAX CODE */}
         <td className="px-2 py-1">
-          <input
-            name="vatCd"
-            value={it.vatCd || ""}
-            onChange={(e) => onItemChange(e, i)}
-            className="w-[50px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-            disabled
-          />
+          <Tooltip content={`Tax Name: ${it.vatCd || "N/A"}`}>
+            <input
+              name="vatCd"
+              value={it.vatCd || ""}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[50px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+              disabled
+            />
+          </Tooltip>
         </td>
 
         {/* AMOUNT */}

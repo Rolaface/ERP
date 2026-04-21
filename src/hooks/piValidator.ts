@@ -10,7 +10,6 @@ export const validatePI = (form: PurchaseInvoiceFormData) => {
   }
 
   form.items.forEach((item, i) => {
-    if (!item.itemCode) errors.push(`Item ${i + 1}: Item Code missing`);
     if (!item.quantity) errors.push(`Item ${i + 1}: Quantity missing`);
     if (!item.rate) errors.push(`Item ${i + 1}: Rate missing`);
 
