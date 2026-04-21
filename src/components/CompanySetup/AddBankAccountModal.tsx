@@ -47,6 +47,7 @@ const AddBankAccountModal: React.FC<Props> = ({
     entities,
     reportingAccounts,
     isCompany,
+    isSubmitting,
   } = useBankAccLogic({ onSubmit, onClose });
   useEffect(() => {
     if (currency) {
@@ -66,28 +67,28 @@ const AddBankAccountModal: React.FC<Props> = ({
     }
 
     if (partyName) {
-  if (defaultAccountFor === "Company") {
-    setForm((prev) => ({
-      ...prev,
-      name: partyName,
-      displayName: partyName,
-      accountHolder: partyName,
-      currency: prev.currency || currency,
-      accountHolderEdited: false,
-    }));
-  } else if (entities.length) {
-    const match = entities.find((e) => e.value === partyName);
+      if (defaultAccountFor === "Company") {
+        setForm((prev) => ({
+          ...prev,
+          name: partyName,
+          displayName: partyName,
+          accountHolder: partyName,
+          currency: prev.currency || currency || "",
+          accountHolderEdited: false,
+        }));
+      } else if (entities.length) {
+        const match = entities.find((e) => e.value === partyName);
 
-    setForm((prev) => ({
-      ...prev,
-      name: match?.value || partyName,
-      displayName: match?.label || partyName,
-      accountHolder: match?.label || partyName,
-      currency: prev.currency || currency || match?.meta?.currency,
-      accountHolderEdited: false,
-    }));
-  }
-}
+        setForm((prev) => ({
+          ...prev,
+          name: match?.value || partyName,
+          displayName: match?.label || partyName,
+          accountHolder: match?.label || partyName,
+          currency: prev.currency || currency || match?.meta?.currency || "",
+          accountHolderEdited: false,
+        }));
+      }
+    }
   }, [defaultAccountFor, partyName, entities, initialData, currency]);
 
   const validate = () => {
@@ -106,7 +107,11 @@ const AddBankAccountModal: React.FC<Props> = ({
 
   const onSave = (e: any) => {
     e.preventDefault();
+
+    if (isSubmitting) return;
+
     if (!validate()) return;
+
     handleSubmit(e);
   };
 
@@ -119,8 +124,14 @@ const AddBankAccountModal: React.FC<Props> = ({
         <Button variant="secondary" onClick={handleReset}>
           Reset
         </Button>
-        <Button variant="primary" type="button" onClick={onSave}>
-          Save Account
+        <Button
+          variant="primary"
+          type="button"
+          onClick={onSave}
+          disabled={isSubmitting}
+          className={isSubmitting ? "opacity-60 cursor-not-allowed" : ""}
+        >
+          {isSubmitting ? "Saving..." : "Save Account"}
         </Button>
       </div>
     </>

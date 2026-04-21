@@ -1008,7 +1008,6 @@ export const usePurchaseInvoiceForm = ({
           return `Row ${i + 1}: Quantity required`;
         if (!item.rate || item.rate <= 0)
           return `Row ${i + 1}: Unit Price required`;
-        if (!item.vatCd) return `Row ${i + 1}: Tax Code required`;
         if (item.requiresBatch && !item.batchNo?.trim())
           return `Row ${i + 1}: Batch No required`;
         if (item.requiresBatch && !item.mfgDate)

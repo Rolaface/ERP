@@ -34,6 +34,7 @@ interface Props {
   onClose: () => void;
   onSave: (data: any) => void;
   editData?: EditData | null;
+  actionLoading: boolean;
 }
 
 interface FormState {
@@ -78,6 +79,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
   onClose,
   onSave,
   editData = null,
+  actionLoading,
 }) => {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -131,36 +133,31 @@ const CurrencyConversionModal: React.FC<Props> = ({
         }));
       }
     };
-   const handleSubmit = async () => {
+  const handleSubmit = async () => {
   if (!validate()) return;
 
   try {
-    showLoading("Saving currency exchange...");
+    const res: any = await onSave({
+      ...(editData?.id ? { id: editData.id } : {}),
+      date: form.date,
+      fromCurrency: form.fromCurrency,
+      toCurrency: form.toCurrency,
+      exchangeRate: Number(form.exchangeRate),
+      isBuying: form.isBuying,
+      isSelling: form.isSelling,
+    });
 
-   const res: any = await onSave({
-  ...(editData?.id ? { id: editData.id } : {}),
-  date: form.date,
-  fromCurrency: form.fromCurrency,
-  toCurrency: form.toCurrency,
-  exchangeRate: Number(form.exchangeRate),
-  isBuying: form.isBuying,
-  isSelling: form.isSelling,
-});
+    const backend = res?.message;
 
-closeSwal();
+    if (!backend || backend.status === "error" || backend.status_code >= 400) {
+      showApiError(res);
+      return;
+    }
 
-const backend = res?.message;
+    showSuccess(backend.message);
+    onClose();
 
-if (!backend || backend.status === "error" || backend.status_code >= 400) {
-  showApiError(res);
-  return;
-}
-
-showSuccess(backend.message); 
-
-onClose();
   } catch (error) {
-    closeSwal();
     showApiError(error);
   }
 };
@@ -208,16 +205,26 @@ onClose();
 
 
   // ── Footer ────────────────────────────────────
-  const footer = (
-    <>
-      <Button variant="secondary" onClick={onClose}>
-        Cancel
-      </Button>
-      <Button variant="primary" onClick={handleSubmit}>
-        {editData ? "Update" : "Save"}
-      </Button>
-    </>
-  );
+ const footer = (
+  <>
+    <Button variant="secondary" onClick={onClose}>
+      Cancel
+    </Button>
+
+    <Button
+      variant="primary"
+      onClick={handleSubmit}
+      disabled={actionLoading}
+      className={actionLoading ? "opacity-60 cursor-not-allowed" : ""}
+    >
+      {actionLoading
+        ? "Saving..."
+        : editData
+        ? "Update"
+        : "Save"}
+    </Button>
+  </>
+);
 
   // ─────────────────────────────────────────────
   // Render

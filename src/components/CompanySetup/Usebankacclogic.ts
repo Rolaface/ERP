@@ -38,6 +38,7 @@ export const useBankAccLogic = ({ onSubmit,onClose  }: any) => {
   const [banks, setBanks] = useState<Option[]>([]);
   const [entities, setEntities] = useState<Option[]>([]);
   const [reportingAccounts, setReportingAccounts] = useState<Option[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isCompany = form.accountFor === "Company";
 
@@ -149,16 +150,20 @@ displayName: form.accountFor === "Company" ? prev.displayName : "",
     });
   };
 
-  // ✅ handleSubmit only validates and passes payload to parent via onSubmit
-  // Parent component (PaymentInfoTab, CompanySetup etc.) handles the actual API call
+  
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+
+     if (isSubmitting) return;
 
     if (!form.accountFor || !form.bank || !form.accountNumber || !form.name) {
       showApiError("Please fill required fields");
       return;
     }
 
+      setIsSubmitting(true); 
+
+      try{
     const payload = {
       accountHolderName: form.accountHolder,
       accountNo: form.accountNumber,
@@ -175,7 +180,6 @@ displayName: form.accountFor === "Company" ? prev.displayName : "",
     };
 
 
-   try {
   const res = await createNewBankAccount(payload);
 
   const isSuccess =
@@ -203,11 +207,12 @@ displayName: form.accountFor === "Company" ? prev.displayName : "",
 );
   onClose?.();
 
-} catch (err) {
-  showApiError(err);
-}
-    
-  };
+ } catch (err) {
+    showApiError(err);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return {
     form,
@@ -216,6 +221,7 @@ displayName: form.accountFor === "Company" ? prev.displayName : "",
     handleDateChange,
     handleSubmit,
     handleReset,
+    isSubmitting,
     banks,
     entities,
     reportingAccounts,

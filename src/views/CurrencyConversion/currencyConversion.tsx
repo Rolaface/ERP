@@ -33,6 +33,7 @@ const CurrencyConversion: React.FC = () => {
     setSearch,
     addConversion,
     updateConversion,
+    actionLoading, 
     deleteConversion,
   } = useCurrencyConversion();
 
@@ -46,6 +47,7 @@ const CurrencyConversion: React.FC = () => {
   const handleClose = () => { setShowModal(false); setEditData(null); };
 
   const handleSave = async (payload: any) => {
+    if (actionLoading) return; 
     if (payload.id) return await updateConversion(payload);
     return await addConversion(payload);
   };
@@ -161,6 +163,7 @@ const CurrencyConversion: React.FC = () => {
               {
                 label: "Delete",
                 onClick: async () => {
+                  if (actionLoading) return; 
                   const confirmed = await showConfirm(
                     "Do you want to delete this record?",
                   );
@@ -232,6 +235,7 @@ const CurrencyConversion: React.FC = () => {
         onClose={handleClose}
         onSave={handleSave}
         editData={editData}
+        actionLoading={actionLoading} 
       />
     </div>
   );
