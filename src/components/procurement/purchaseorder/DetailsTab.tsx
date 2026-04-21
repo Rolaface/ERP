@@ -52,8 +52,8 @@ const POColumnHeaders: React.FC = () => (
     {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[180px]">
       Description
     </th> */}
-    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[10px]">
-      Pckg(Uxs)
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[10px]">
+      Pkg(UxS)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
       Required By
@@ -199,7 +199,7 @@ export const DetailsTab = ({
           </Tooltip>
         </td> */}
 
-        {/* Packing */}
+  
         {/* Packing */}
         <td className="px-2 py-[2px]">
           <div className="flex items-center justify-center w-[70px]">
@@ -207,7 +207,7 @@ export const DetailsTab = ({
               content={`Packing: ${it.packingUnit || ""} × ${it.packingSize || ""}`}
             >
               <input
-                type="text"
+                type="number"
                 value={
                   it.itemCode
                     ? `${it.packingUnit || ""}x${it.packingSize || ""}`
@@ -237,7 +237,7 @@ export const DetailsTab = ({
                     i
                   );
                 }}
-                className="w-[60px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
+                className="w-[60px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
               />
             </Tooltip>
           </div>
