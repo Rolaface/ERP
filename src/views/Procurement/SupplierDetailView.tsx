@@ -101,6 +101,9 @@ const SupplierDetailView: React.FC<Props> = ({
   onEdit,
 }) => {
   const { openPICreate } = useOutletContext<{ openPICreate: () => void }>();
+   const { openPOCreate } = useOutletContext<{ openPOCreate: () => void }>();
+    // const { openPICreate } = useOutletContext<{ openPICreate: () => void }>();
+  
 
   const [searchTerm,       setSearchTerm]       = useState("");
   const [activeTab,        setActiveTab]        = useState<TabId>("overview");
@@ -183,7 +186,7 @@ const SupplierDetailView: React.FC<Props> = ({
     switch (activeTab) {
       case "purchase-orders":
         return (
-          <button onClick={() => setShowPOModal(true)}
+          <button onClick={() => openPOCreate()}
             className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
             <Plus size={13} /> New PO
           </button>
@@ -592,7 +595,7 @@ const SupplierDetailView: React.FC<Props> = ({
             {activeTab === "bank-accounts" && (
               <div className="p-5 w-full min-w-0 overflow-hidden">
                 <SupplierBankDetails
-                  supplierName={supplierName}
+                  supplierName={supplierId}
                   onAdd={(refresh) => { bankAccountsRefresh.current = refresh; }}
                   onEdit={(row) => { setEditingRow(row); setShowBankModal(true); }}
                 />
@@ -602,14 +605,14 @@ const SupplierDetailView: React.FC<Props> = ({
             {/* ════ PURCHASE ORDERS ════════════════════════════════════ */}
             {activeTab === "purchase-orders" && supplierName && (
               <div className="p-5 w-full min-w-0 overflow-hidden">
-                <SupplierPurchaseOrders supplierName={supplierName} />
+                <SupplierPurchaseOrders supplierName={supplierId} />
               </div>
             )}
 
             {/* ════ BILLS ══════════════════════════════════════════════ */}
             {activeTab === "bills" && supplierName && (
               <div className="p-5 w-full min-w-0 overflow-hidden">
-                <SupplierPurchaseInvoices supplierName={supplierName} />
+                <SupplierPurchaseInvoices supplierName={supplierId} />
               </div>
             )}
 
