@@ -112,7 +112,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           Reset
         </Button>
       <>
-  {/* ✅ NEXT BUTTON (same as current behavior) */}
+
   {activeTab !== "terms" && (
     <Button
       variant="secondary"
@@ -130,7 +130,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     </Button>
   )}
 
-  {/* ✅ SAVE BUTTON (works exactly like Terms tab) */}
+
   <Button
     variant="primary"
     type="submit"
@@ -226,29 +226,27 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       subtitle="Create and manage purchase order"
       icon={Building2}
       customWidth="95vw"
-      height="90vh"
+      height="85vh"
       footer={footer}
     >
       <form
         id="purchaseOrderForm"
         onChange={() => markDirty()}
-        onSubmit={(e) => {
-          e.preventDefault();
-          const error = validateTab(activeTab);
-          if (error) {
-            showValidationError(error);
-            return;
-          }
-          if (activeTab !== "terms") {
-            handleNext();
-            return;
-          }
-          const handleFormSubmit = async () => {
-            resetDirty();
-            await handleSubmit(e);
-          };
-          handleFormSubmit();
-        }}
+      onSubmit={(e) => {
+  e.preventDefault();
+
+  const error = validateTab(activeTab);
+  if (error) {
+    showValidationError(error);
+    return;
+  }
+  const handleFormSubmit = async () => {
+    resetDirty();
+    await handleSubmit(e);
+  };
+
+  handleFormSubmit();
+}}
         className="h-full flex flex-col"
       >
         {/* Tab bar */}

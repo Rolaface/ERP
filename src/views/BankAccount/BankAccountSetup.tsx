@@ -199,7 +199,7 @@ const BankAccountSetup: React.FC = () => {
   ];
 
   return (
-    <div className="p-8">
+    <div className="p-6">
       {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
