@@ -207,7 +207,7 @@ export const DetailsTab = ({
               content={`Packing: ${it.packingUnit || ""} × ${it.packingSize || ""}`}
             >
               <input
-                type="number"
+                type="text"
                 value={
                   it.itemCode
                     ? `${it.packingUnit || ""}x${it.packingSize || ""}`
@@ -237,7 +237,7 @@ export const DetailsTab = ({
                     i
                   );
                 }}
-                className="w-[60px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
+                className="w-[60px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm "
               />
             </Tooltip>
           </div>
