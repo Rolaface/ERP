@@ -243,10 +243,12 @@ export default function StockItemSelect({
                   onClick={() => handleSelect(row)}
                   className="grid grid-cols-6 gap-3 px-3 py-2 text-[11px] cursor-pointer row-hover border-b border-theme last:border-none"
                 >
-                  <div className="flex flex-col">
-                    <span className="font-medium">{row.itemCode}</span>
-                    <span className="text-[10px] text-muted truncate">
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[12px] font-medium text-main truncate">
                       {row.itemName}
+                    </span>
+                    <span className="text-[10px] text-muted truncate">
+                      {row.itemCode}
                     </span>
                   </div>
                   <div>{row.batchNo || "-"}</div>
