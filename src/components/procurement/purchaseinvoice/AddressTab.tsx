@@ -1,22 +1,18 @@
 import React, { useState, useCallback, useEffect, useRef, memo } from "react";
 import {
-  MapPin,
-  Truck,
-  Building2,
   ChevronDown,
   ChevronUp,
   Search,
   Plus,
   Check,
 } from "lucide-react";
-import { ModalSelect, ModalInput } from "../../ui/modal/modalComponent";
+import { ModalInput } from "../../ui/modal/modalComponent";
 import type { PurchaseOrderFormData } from "../../../types/Supply/purchaseOrder";
 import type { PurchaseInvoiceFormData } from "../../../types/Supply/purchaseInvoice";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import { getShippingRules } from "../../../api/utils/shippingruleapi";
 import { getIncoterms } from "../../../api/utils/incotermApi";
 import {
-  useAddressLogic,
   BOX_CONFIGS,
   ApiAddress,
   BoxType,
@@ -47,6 +43,9 @@ interface AddressTabProps {
   >;
   loading: Record<BoxType, boolean>;
   setLoading: React.Dispatch<React.SetStateAction<Record<BoxType, boolean>>>;
+  handleAddressSelect: (boxKey: BoxType, addr: ApiAddress) => void;
+handleCopyBillingToShipping: (checked: boolean) => void;
+handleCopySupplierToDispatch: (checked: boolean) => void;
 }
 
 function formatAddressPreview(addr: ApiAddress): string {
@@ -126,14 +125,14 @@ const AddressPicker: React.FC<{
           })
         )}
       </div>
-      <div className="border-t border-theme px-2 py-1.5">
+      {/* <div className="border-t border-theme px-2 py-1.5">
         <button
           type="button"
           className="flex items-center gap-1 text-xs text-primary hover:opacity-80 transition-opacity"
         >
           <Plus size={11} /> Add new
         </button>
-      </div>
+      </div> */}
     </div>
   );
 });
@@ -149,8 +148,7 @@ const AddressBox: React.FC<{
   selectedAddr: ApiAddress | null;
   loading: boolean;
   onSelect: (addr: ApiAddress) => void;
-  onOpen: () => void;
-}> = memo(({ config, addresses, selectedAddr, loading, onSelect, onOpen }) => {
+}> = memo(({ config, addresses, selectedAddr, loading, onSelect }) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -171,7 +169,6 @@ const AddressBox: React.FC<{
     [onSelect],
   );
   const togglePicker = () => {
-    if (!pickerOpen) onOpen();
     setPickerOpen((v) => !v);
   };
   const Icon = config.icon;
@@ -259,36 +256,15 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
   setCustomShippingRule,
   customIncoterm,
   setCustomIncoterm,
-  supplierId,
-  companyId,
   selected,
-  setSelected,
-  selectedIds,
-  setSelectedIds,
   addresses,
-  setAddresses,
   loading,
-  setLoading,
+  handleAddressSelect,           
 }) => {
   const [incotermLabel, setIncotermLabel] = useState("");
   const [shippingLabel, setShippingLabel] = useState("");
-  const {
-    handleSelect,
-    loadAddresses,
-    handleCopyBillingToShipping,
-    handleCopySupplierToDispatch,
-  } = useAddressLogic({
-    supplierId,
-    selected,
-    setSelected,
-    selectedIds,
-    setSelectedIds,
-    addresses,
-    setAddresses,
-    loading,
-    setLoading,
-    onFormChange,
-  });
+  
+ 
   //SHOW API FIRST VALUE DEFUALT
   useEffect(() => {
     const loadDefaultIncoterm = async () => {
@@ -449,10 +425,9 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
         </div>
         <ModalInput
           label="Supplier Contact"
-          name="supplierContact"
+         name="supplierContactDisplay"
           value={form.supplierContactDisplay  || ""}
           onChange={onFormChange}
-          
         />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3 pb-3">
@@ -462,16 +437,14 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             addresses={addresses.companyBilling}
             selectedAddr={selected.companyBilling}
             loading={loading.companyBilling}
-            onSelect={(addr) => handleSelect("companyBilling", addr)}
-            onOpen={() => loadAddresses("companyBilling")}
+            onSelect={(addr) => handleAddressSelect("companyBilling", addr)}
           />
           <AddressBox
             config={BOX_CONFIGS[1]}
             addresses={addresses.supplierBilling}
             selectedAddr={selected.supplierBilling}
             loading={loading.supplierBilling}
-            onSelect={(addr) => handleSelect("supplierBilling", addr)}
-            onOpen={() => loadAddresses("supplierBilling")}
+            onSelect={(addr) => handleAddressSelect("supplierBilling", addr)}
           />
         </div>
         <div className="space-y-3">
@@ -480,16 +453,14 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             addresses={addresses.companyShipping}
             selectedAddr={selected.companyShipping}
             loading={loading.companyShipping}
-            onSelect={(addr) => handleSelect("companyShipping", addr)}
-            onOpen={() => loadAddresses("companyShipping")}
+            onSelect={(addr) => handleAddressSelect("companyShipping", addr)}
           />
           <AddressBox
             config={BOX_CONFIGS[3]}
             addresses={addresses.supplierDispatch}
             selectedAddr={selected.supplierDispatch}
             loading={loading.supplierDispatch}
-            onSelect={(addr) => handleSelect("supplierDispatch", addr)}
-            onOpen={() => loadAddresses("supplierDispatch")}
+            onSelect={(addr) => handleAddressSelect("supplierDispatch", addr)}
           />
         </div>
       </div>

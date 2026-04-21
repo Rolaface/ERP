@@ -12,7 +12,7 @@ import Tooltip from "../Tooltip";
 export interface ItemTableActions {
   handleItemChange: (
     index: number,
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => void;
   updateItemDirectly?: (index: number, updates: any) => void;
   removeItem: (index: number) => void;
@@ -69,14 +69,11 @@ const InvoiceHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
       Item
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[140px] whitespace-nowrap">
+    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[140px] whitespace-nowrap">
       Description
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
-      Packing{" "}
-      <span className="ml-1 text-[9px] text-muted/60 font-normal">
-        (unit × size)
-      </span>
+    </th> */}
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">
+      Pkg (U×S)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
       Box
@@ -99,14 +96,14 @@ const InvoiceHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[40px] whitespace-nowrap">
       Unit Price <span className="text-danger">*</span>
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
       Dis(%)
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
       Tax(%)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
-      Tax Code
+     Tax Name
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
       Amount
@@ -155,12 +152,13 @@ const ItemTable: React.FC<ItemTableProps> = ({
           <StockItemSelect
             value={it.itemCode}
             batchNo={it.batchNo}
-            itemName={it.description}
+            itemName={it.itemName}
             taxCategory={taxCategory}
 onChange={(item: SelectedStockItem) => {
   actions.updateItemDirectly?.(i, {
 
     itemCode: item.itemCode,
+    itemName: item.itemName,
     description: item.description,
 
    
@@ -209,7 +207,7 @@ onChange={(item: SelectedStockItem) => {
         </td>
 
         {/* Description */}
-        <td className="px-0.5 py-1">
+        {/* <td className="px-0.5 py-1">
           <Tooltip content={it.description || "No description"}>
             <input
               className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
@@ -218,11 +216,11 @@ onChange={(item: SelectedStockItem) => {
               onChange={(e) => actions.handleItemChange(i, e)}
             />
           </Tooltip>
-        </td>
+        </td> */}
 
         {/* Packing */}
         <td className="px-0.5 py-1">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-center gap-[1px] w-[70px]">
             <Tooltip content={`Unit: ${it.packingUnit}`}>
               <input
                 type="number"
@@ -230,7 +228,7 @@ onChange={(item: SelectedStockItem) => {
                 value={it.packingUnit || ""}
                 disabled
                 onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
+                className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
               />
             </Tooltip>
             <span className="text-[10px] text-muted font-semibold">×</span>
@@ -241,7 +239,7 @@ onChange={(item: SelectedStockItem) => {
                 value={it.packingSize || ""}
                 disabled
                 onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
+                className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
               />
             </Tooltip>
           </div>
@@ -256,7 +254,7 @@ onChange={(item: SelectedStockItem) => {
                 value={it.boxStart || ""}
                 placeholder="Start"
                 onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
+                className="w-[35px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
               />
             </Tooltip>
             <span className="text-[10px] text-muted">-</span>
@@ -266,7 +264,7 @@ onChange={(item: SelectedStockItem) => {
                 value={it.boxEnd || ""}
                 placeholder="End"
                 onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[38px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
+                className="w-[35px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
               />
             </Tooltip>
           </div>
@@ -314,7 +312,7 @@ onChange={(item: SelectedStockItem) => {
 
         {/* Mfg Date */}
         <td className="px-0.5 py-1">
-          <div style={{ width: "130px" }}>
+          <div style={{ width: "98px" }}>
             <DatePickerInput
               label=""
               name="mfgDate"
@@ -329,7 +327,7 @@ onChange={(item: SelectedStockItem) => {
 
         {/* Expiry Date */}
         <td className="px-0.5 py-1">
-          <div style={{ width: "130px" }}>
+          <div style={{ width: "98px" }}>
             <DatePickerInput
               label=""
               name="expDate"
@@ -358,7 +356,7 @@ onChange={(item: SelectedStockItem) => {
         </td>
 
         {/* Price */}
-        <td className="px-0.5 py-1">
+        <td className="px-1.5 py-1">
           <Tooltip
             content={`Price: ${symbol} ${Number(it.price || 0).toFixed(2)}`}
           >
@@ -378,7 +376,7 @@ onChange={(item: SelectedStockItem) => {
             type="number"
             name="discount"
             value={it.discount ?? ""}
-            className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            className="w-[38px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             onChange={(e) => actions.handleItemChange(i, e)}
           />
         </td>
@@ -389,7 +387,7 @@ onChange={(item: SelectedStockItem) => {
             type="number"
             name="vatRate"
             value={it.vatRate ?? ""}
-            className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            className="w-[38px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             onChange={(e) => actions.handleItemChange(i, e)}
           />
         </td>

@@ -378,12 +378,12 @@ export const API = {
     createInvoiceFromPO: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_order.api.create_pi_from_po`,
   },
   //purchase invoice
-  purchaseIvoice: {
+  purchaseInvoice: {
     getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get`,
 
     getById: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.create`,
-
+    update: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update_status`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
   },

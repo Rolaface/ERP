@@ -261,13 +261,13 @@ const handleAddChild = (row: ItemGroupNode) => {
     },
     {
       key: "item_count",
-      header: "Items",
+      header: "Item Count",
       align: "center",
       render: (row) => {
         if (row.item_count === 0) return <span className="text-muted text-xs">—</span>;
         return (
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {row.item_count} Items
+            {row.item_count}
           </code>
         );
       },

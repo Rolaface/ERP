@@ -43,6 +43,13 @@ shippingAddress: string;
     amount: string;
     rate:string;
   }[];
+  taxes?: {
+  chargeType: string;
+  accountHead: string;
+  description?: string;
+  rate: number;
+  taxAmount: number;
+}[];
   salesTaxTemplate:string;
   addresses?: {
   companyBillingAddress?: any;

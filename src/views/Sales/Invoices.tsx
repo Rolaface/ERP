@@ -11,6 +11,7 @@ import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
 import PdfPreviewModal from "./PdfPreviewModal";
 import InvoiceDetailModal, { type InvoiceDetail } from "./InvoiceDetailsModal";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
@@ -168,6 +169,16 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     if (isInitialLoad) return;
     fetchInvoices();
   }, [page, pageSize, sortBy, sortOrder, searchTerm]);
+
+  // Auto-refresh when invoice is created or edited from modal
+  useEffect(() => {
+    const unsubscribe = useDataRefreshStore
+      .getState()
+      .subscribeToRefresh(REFRESH_KEYS.INVOICE_LIST, () => {
+        fetchInvoices();
+      });
+    return unsubscribe;
+  }, [fetchInvoices]);
 
   const handleSortChange = ({
     sortBy: colKey,
@@ -523,20 +534,21 @@ showSuccess(`Invoice marked as ${status}`);
     {
       key: "invoiceType",
       header: "Type",
-      align: "left",
+      align: "center",
       render: (inv) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block max-w-[80px] truncate whitespace-nowrap overflow-hidden">
           {inv.invoiceType}
         </code>
       ),
+      tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
     },
     {
       key: "customerName",
       header: "Customer",
-      align: "left",
+      align: "center",
       sortable: true,
       render: (inv) => (
-        <span className="text-sm text-main">{inv.customerName}</span>
+          <span className="text-sm text-main whitespace-nowrap truncate block max-w-[160px] overflow-hidden">{inv.customerName}</span>
       ),
       tooltip: (inv) => `Customer: ${inv.customerName}`,
     },

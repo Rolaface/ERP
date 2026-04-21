@@ -215,7 +215,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
               width: dropdownPos.width,
               zIndex: 99999,
             }}
-            className="bg-white border rounded shadow-lg max-h-48 overflow-auto"
+            className="bg-white border rounded shadow-lg max-h-52 overflow-auto"
           >
             <>
               {/* Existing options */}

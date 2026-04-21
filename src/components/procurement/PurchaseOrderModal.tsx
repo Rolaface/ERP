@@ -54,8 +54,6 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     handleTaxRowChange,
     addTaxRow,
     removeTaxRow,
-    handleSaveTemplate,
-    resetTemplate,
     getCurrencySymbol,
     handleSubmit,
     validateTab,
@@ -74,6 +72,9 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     setAddressList,
     addressLoading,
     setAddressLoading,
+    handleAddressSelect,
+    handleCopyBillingToShipping,
+    handleCopySupplierToDispatch,
   } = usePurchaseOrderForm({ isOpen, onSuccess: onSubmit, onClose, poId });
 
   const handleNext = useCallback(() => {
@@ -110,31 +111,35 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
         >
           Reset
         </Button>
-        <Button
-          variant="primary"
-          type={activeTab === "terms" ? "submit" : "button"}
-          form={activeTab === "terms" ? "purchaseOrderForm" : undefined}
-          disabled={saving}
-          onClick={
-            activeTab !== "terms"
-              ? (e) => {
-                  e.preventDefault();
-                  const error = validateTab(activeTab);
-                  if (error) {
-                    showValidationError(error);
-                    return;
-                  }
-                  handleNext();
-                }
-              : undefined
-          }
-        >
-          {saving
-            ? "Saving..."
-            : activeTab === "terms"
-              ? "Save Purchase Order"
-              : "Next"}
-        </Button>
+      <>
+  {/* ✅ NEXT BUTTON (same as current behavior) */}
+  {activeTab !== "terms" && (
+    <Button
+      variant="secondary"
+      onClick={(e) => {
+        e.preventDefault();
+        const error = validateTab(activeTab);
+        if (error) {
+          showValidationError(error);
+          return;
+        }
+        handleNext();
+      }}
+    >
+      Next
+    </Button>
+  )}
+
+  {/* ✅ SAVE BUTTON (works exactly like Terms tab) */}
+  <Button
+    variant="primary"
+    type="submit"
+    form="purchaseOrderForm"
+    disabled={saving}
+  >
+    {saving ? "Saving..." : "Save Purchase Order"}
+  </Button>
+</>
       </div>
     </>
   ), [handleCloseWithConfirm, onClose, resolvedModalId, resetDirty, reset, activeTab, validateTab, handleNext, saving]);
@@ -187,6 +192,9 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           setAddresses={setAddressList}
           loading={addressLoading}
           setLoading={setAddressLoading}
+          handleAddressSelect={handleAddressSelect}
+          handleCopyBillingToShipping={handleCopyBillingToShipping}
+          handleCopySupplierToDispatch={handleCopySupplierToDispatch}
         />
       </div>
 
@@ -251,11 +259,10 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                 key={key}
                 type="button"
                 onClick={() => handleTabClick(key)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
-                  activeTab === key
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === key
                     ? "text-primary border-b-[3px] border-primary"
                     : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+                  }`}
               >
                 {label}
               </button>
@@ -263,7 +270,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           </div>
         </div>
 
-        <section className="flex-1 overflow-y-auto p-4 space-y-6">
+        <section className="overflow-y-auto p-2">
           {tabContent}
         </section>
       </form>

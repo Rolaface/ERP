@@ -65,7 +65,7 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
         onChange={onChange}
         disabled={disabled}
         required={required}
-        className={`w-[90px] py-1 px-1 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary ${className}`}
+        className={`w-[100px] py-1 pl-1 pr-4 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary ${className}`}
       >
         <option value="">Select</option>
         {warehouses.map((opt) => (

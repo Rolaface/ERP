@@ -367,9 +367,17 @@ const Items: React.FC = () => {
       render: (i) => <span className="truncate block">{i.id}</span>,
     },
     {
+      key: "brand",
+      header: "Brand",
+      align: "center",
+      maxWidth: "100px",
+      truncate: true,
+      render: (i) => <span className="truncate block">{i.brand}</span>,
+    },
+    {
       key: "itemName",
       header: "Name",
-      align: "left",
+      align: "center",
       maxWidth: "200px",
       truncate: true,
       render: (i) => <span className="truncate block">{i.itemName}</span>,
@@ -377,7 +385,7 @@ const Items: React.FC = () => {
     {
       key: "itemGroup",
       header: "Category",
-      align: "left",
+      align: "center",
       maxWidth: "90px",
       truncate: true,
       render: (i) => <span className="truncate block">{i.itemGroup}</span>,
@@ -386,14 +394,14 @@ const Items: React.FC = () => {
     {
       key: "minStockLevel",
       header: "Min",
-      align: "right",
+      align: "center",
       maxWidth: "60px",
       truncate: true,
     },
     {
       key: "maxStockLevel",
       header: "Max",
-      align: "right",
+      align: "center",
       maxWidth: "60px",
       truncate: true,
     },
@@ -401,7 +409,7 @@ const Items: React.FC = () => {
     {
       key: "preferredVendorName",
       header: "Supplier",
-      align: "left",
+      align: "center",
       maxWidth: "180px",
       truncate: true,
       render: (i) => (
@@ -412,7 +420,7 @@ const Items: React.FC = () => {
     {
       key: "sellingPrice",
       header: "Price",
-      align: "left",
+      align: "center",
       maxWidth: "90px",
       truncate: true,
       render: (i) => (
@@ -446,7 +454,6 @@ const Items: React.FC = () => {
     },
   ];
 
-  // ── RENDER ────────────────────────────────────────────────────────────────
 
   return (
     <>

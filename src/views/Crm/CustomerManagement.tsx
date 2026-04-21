@@ -211,8 +211,8 @@ const fetchCustomers = async () => {
     {
       key: "name",
       header: "Name",
-      align: "left",
-      maxWidth: "220px",
+      align: "center",
+      maxWidth: "200px",
       render: (customer) => (
         <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
           {customer.name}
@@ -222,7 +222,7 @@ const fetchCustomers = async () => {
     {
       key: "type",
       header: "Type",
-      align: "left",
+      align: "center",
       maxWidth: "100px",
       render: (customer) => (
         <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
@@ -233,7 +233,7 @@ const fetchCustomers = async () => {
     {
       key: "tpin",
       header: "TPIN",
-      align: "left",
+      align: "center",
       maxWidth: "100px",
       render: (customer) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
@@ -244,7 +244,7 @@ const fetchCustomers = async () => {
     {
       key: "customerTaxCategory",
       header: "Tax Category",
-      align: "left",
+      align: "center",
       maxWidth: "120px",
       render: (customer) => (
         <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
@@ -255,7 +255,7 @@ const fetchCustomers = async () => {
     {
       key: "currency",
       header: "Currency",
-      align: "left",
+      align: "center",
       maxWidth: "80px",
       render: (customer) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
@@ -266,7 +266,7 @@ const fetchCustomers = async () => {
     {
       key: "status",
       header: "Status",
-      align: "left",
+      align: "center",
       maxWidth: "90px",
       render: (customer) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
