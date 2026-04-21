@@ -110,7 +110,7 @@ export async function cancelJournalEntry(id: string): Promise<any> {
 // const resp: AxiosResponse = await api.get(url, config);
 //  return resp.data;
 // }
-export async function getComponentById(id: string, fields?: string[]): Promise<any> {
+export async function getComponentById(id: string, fields?: string[], filters?: any[][]): Promise<any> {
   const url = `${JournalEntryAPI.getByIdOnly}/${encodeURIComponent(id)}`;
     const params: any = {
     limit_page_length: 0, 
@@ -118,6 +118,9 @@ export async function getComponentById(id: string, fields?: string[]): Promise<a
 
   if (fields) {
     params.fields = JSON.stringify(fields);
+  }
+  if (filters) {
+    params.filters = JSON.stringify(filters);
   }
 
   const resp: AxiosResponse = await api.get(url, { params });

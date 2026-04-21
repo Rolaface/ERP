@@ -29,6 +29,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
     errors,
     totals,
     accountOptions,
+    fetchAccountOptions,
     partyTypeOptions,
     customerOptions,
     supplierOptions,
@@ -39,7 +40,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
     handleRemoveRow,
     handleSubmit,
     reset,
-  } = useJournalEntryLogic(() => {
+  } = useJournalEntryLogic(isOpen,() => {
     onSuccess();
     onClose();
   }, entryId || undefined);
@@ -193,7 +194,8 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                              name={`account-${actualIndex}`} 
                              value={entry.account} 
                              onChange={(e) => handleEntryChange(actualIndex, 'account', e.target.value)}
-                             options={[{ label: "Select", value: "" }, ...accountOptions]}
+                             onFocus={fetchAccountOptions}
+                             options={[...accountOptions]}
                              disabled={isReadOnly}
                           />
                         </td>

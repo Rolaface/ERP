@@ -90,7 +90,35 @@ const mapOptions = (res: any) => {
     : [];
 };
 
-export const useJournalEntryLogic = (onSuccess?: () => void, entryId?: string) => {
+const parseFrappeError = (err: any): string => {
+  const data = err?.response?.data;
+  if (!data) return err?.message || "An unknown error occurred.";
+
+  if (data._server_messages) {
+    try {
+      const messages = JSON.parse(data._server_messages);
+      if (messages.length > 0) {
+        const msgObj = JSON.parse(messages[0]);
+        if (msgObj.message) return msgObj.message;
+      }
+    } catch (e) {
+      console.error("Failed to parse _server_messages", e);
+    }
+  }
+
+   if (data.exception) {
+    const parts = String(data.exception).split(":");
+    if (parts.length > 1) {
+      return parts.slice(1).join(":").trim(); 
+    }
+    return data.exception;
+  }
+
+  // 3. Generic fallback
+  return data.message || err?.message || "An error occurred.";
+};
+
+export const useJournalEntryLogic = (isOpen: boolean, onSuccess?: () => void, entryId?: string) => {
   const [form, setForm] = useState<JournalEntryForm>(emptyForm());
   const [entries, setEntries] = useState<JournalEntryLine[]>([
     { ...emptyEntry(), entryType: "Dr" },
@@ -106,49 +134,84 @@ export const useJournalEntryLogic = (onSuccess?: () => void, entryId?: string) =
   const [supplierOptions, setSupplierOptions] = useState<{label: string, value: string}[]>([]);
   const [currencyOptions, setCurrencyOptions] = useState<{label: string, value: string}[]>([]);
 
-  // 1. Fetch standard lookups on mount
-  // useEffect(() => {
-  //   const fetchInitialOptions = async () => {
-  //     try {
-  //       const [accRes, ptRes] = await Promise.all([
-  //         getComponentById("Account").catch(() => null),
-  //         getComponentById("Party Type").catch(() => null),
-  //         // getCurrencyList().catch(() => null)
-  //       ]);
+const reset = useCallback(() => {
+    setForm(emptyForm());
+    setEntries([{ ...emptyEntry(), entryType: "Dr" }, { ...emptyEntry(), entryType: "Cr" }]);
+    setErrors({});
+  }, []);
 
-  //       setAccountOptions(mapOptions(accRes));
-  //       setPartyTypeOptions(mapOptions(ptRes));
-  //       // setCurrencyOptions(mapOptions(currRes));
-  //     } catch (err) {
-  //       console.error("Failed to fetch dropdown options", err);
-  //     }
-  //   };
-  //   fetchInitialOptions();
-  // }, []);
-  // 1. Fetch standard lookups on mount
-useEffect(() => {
-const fetchInitialOptions = async () => {
-try {
-const [accRes, ptRes] = await Promise.all([
- // Pass the specific fields you need for the Account lookup here
- getComponentById("Account", ["name", "account_currency"]).catch(() => null),
- getComponentById("Party Type").catch(() => null),
-]);
-setAccountOptions(mapOptions(accRes));
-setPartyTypeOptions(mapOptions(ptRes));
-   } catch (err) {
-console.error("Failed to fetch dropdown options", err);
-}
+  const fetchAccountOptions = async () => {
+  try {
+    const accRes = await getComponentById("Account", ["name", "account_currency"], [["is_group", "=", 1]]);
+    
+    const rawAccounts = 
+      accRes?.data?.message?.data || 
+      accRes?.data?.message || 
+      accRes?.data?.data || 
+      accRes?.data || [];
+
+    const formattedAccountOptions = Array.isArray(rawAccounts) ? rawAccounts.map((item: any) => ({
+      label: `${item.name} -> (${item.account_currency})`,
+      value: item.name,
+      currency: item.account_currency || "",
+    })) : [];
+
+    setAccountOptions(formattedAccountOptions);
+  } catch (err) {
+    console.error("Failed to fetch account options", err);
+  }
 };
-fetchInitialOptions()}, []);
 
-  // 2. Fetch Existing Entry (Edit/View Mode)
+// useEffect(() => {
+//   const fetchInitialOptions = async () => {
+//     try {
+//       const [accRes, ptRes] = await Promise.all([
+//         getComponentById("Account", ["name", "account_currency"], [["is_group", "=", "0"]]).catch(() => null),
+//         getComponentById("Party Type").catch(() => null),
+//       ]);
+
+//       const rawAccounts = 
+//         accRes?.data?.message?.data || 
+//         accRes?.data?.message || 
+//         accRes?.data?.data || 
+//         accRes?.data || [];
+
+//       // 2. Map it to include both name and currency in the label
+//       const formattedAccountOptions = Array.isArray(rawAccounts) ? rawAccounts.map((item: any) => ({
+//         label: `${item.name} -> (${item.account_currency})`,
+//         value: item.name,
+//         currency: item.account_currency || "",
+//       })) : [];
+
+//       setAccountOptions(formattedAccountOptions);
+      
+//       // Leave Party Types using the generic mapper
+//       setPartyTypeOptions(mapOptions(ptRes));
+//     } catch (err) {
+//       console.error("Failed to fetch dropdown options", err);
+//     }
+//   };
+  
+//   fetchInitialOptions();
+// }, []);
+useEffect(() => {
+  const fetchInitialOptions = async () => {
+    try {
+      const ptRes = await getComponentById("Party Type").catch(() => null);
+      setPartyTypeOptions(mapOptions(ptRes));
+    } catch (err) {
+      console.error("Failed to fetch party type options", err);
+    }
+  };
+  
+  fetchInitialOptions();
+}, []);
+
   const loadEntry = useCallback(async (id: string) => {
     try {
       setLoading(true);
       const res = await getJournalEntryById(id);
       
-      // Dig out the document object properly
       const doc = res?.data?.data || res?.data?.message || res?.data || res?.message;
 
       if (doc) {
@@ -160,7 +223,6 @@ fetchInitialOptions()}, []);
 
         if (doc.accounts && Array.isArray(doc.accounts)) {
           const loadedEntries = doc.accounts.map((acc: any): JournalEntryLine => {
-            // Frappe might return debit_in_account_currency as 0 but debit with the base amount
             const debit = acc.debit_in_account_currency || acc.debit || 0;
             const credit = acc.credit_in_account_currency || acc.credit || 0;
             const isDebit = debit > 0;
@@ -199,12 +261,15 @@ fetchInitialOptions()}, []);
       setLoading(false);
     }
   }, []);
-  console.log("customerOptions", customerOptions);
 
   useEffect(() => {
-    if (entryId) loadEntry(entryId);
-    else reset();
-  }, [entryId, loadEntry]);
+    if (isOpen) {
+      if (entryId) loadEntry(entryId);
+      else reset();
+    } else {
+      reset(); // Clean up state behind the scenes when modal closes
+    }
+  }, [isOpen, entryId, loadEntry, reset]);
 
   const totals = useMemo(() => {
     let debit = 0;
@@ -299,14 +364,14 @@ const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: 
       showApiError("A journal entry requires at least two valid rows.");
       return false;
     }
-    if (totals.debit === 0 && totals.credit === 0) {
-      showApiError("Total Debit and Credit cannot be zero.");
-      return false;
-    }
-    if (Math.abs(totals.debit - totals.credit) > 0.01) { 
-      showApiError(`Entries do not balance. Difference: ${Math.abs(totals.debit - totals.credit).toFixed(2)}`);
-      return false;
-    }
+    // if (totals.debit === 0 && totals.credit === 0) {
+    //   showApiError("Total Debit and Credit cannot be zero.");
+    //   return false;
+    // }
+    // if (Math.abs(totals.debit - totals.credit) > 0.01) { 
+    //   showApiError(`Entries do not balance. Difference: ${Math.abs(totals.debit - totals.credit).toFixed(2)}`);
+    //   return false;
+    // }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -347,7 +412,8 @@ const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: 
       
       onSuccess?.();
     } catch (err: any) {
-      showApiError(err?.response?.data?.message || err?.message || "Failed to save journal entry.");
+      // showApiError(err?.response?.data?.message || err?.message || "Failed to save journal entry.");
+      showApiError(parseFrappeError(err) || "Failed to save journal entry.");
     } finally {
       setLoading(false);
     }
@@ -359,14 +425,9 @@ const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: 
       showSuccess("Journal Entry deleted successfully");
       onSuccess?.();
     } catch (err: any) {
-       showApiError(err?.response?.data?.message || err?.message || "Failed to delete entry.");
+      //  showApiError(err?.response?.data?.message || err?.message || "Failed to delete entry.");
+       showApiError(parseFrappeError(err) || "Failed to delete entry.");
     }
-  };
-
-  const reset = () => {
-    setForm(emptyForm());
-    setEntries([{ ...emptyEntry(), entryType: "Dr" }, { ...emptyEntry(), entryType: "Cr" }]);
-    setErrors({});
   };
 
   return {
@@ -374,5 +435,6 @@ const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: 
     accountOptions, partyTypeOptions, customerOptions, supplierOptions, currencyOptions,
     handleChange, handleEntryChange, handleAddRow, handleRemoveRow,
     handleSubmit, deleteEntry, reset,
+    fetchAccountOptions,
   };
 };
