@@ -351,6 +351,7 @@ const fetchCustomers = async () => {
 
       <PaymentEntryModal
         isOpen={paymentModalOpen}
+        
         onClose={() => {
           setPaymentModalOpen(false);
           setSelectedCustomerForPayment(null);

@@ -17,6 +17,7 @@ interface Props {
   partyName?: string;
   initialData?: BankAccount | null;
   currency?: string;
+   customerId?:string;
 }
 
 type Option = {
@@ -35,6 +36,7 @@ const AddBankAccountModal: React.FC<Props> = ({
   partyName,
   initialData,
   currency,
+  customerId
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const {

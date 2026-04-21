@@ -657,6 +657,7 @@ const SupplierDetailView: React.FC<Props> = ({
       <PaymentEntryModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
+        
       />
 
       <AddBankAccountModal

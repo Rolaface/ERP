@@ -32,6 +32,8 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (paymentEntryName: string) => void;
+
+  customerId?: string; 
   defaultValues?: {
     paymentType?: "Pay" | "Receive" | "Internal Transfer";
     partyType?: string;
@@ -201,6 +203,7 @@ const PaymentEntryModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onSuccess,
+  customerId,
   defaultValues,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>("details");
@@ -246,6 +249,11 @@ const PaymentEntryModal: React.FC<Props> = ({
   ...getInitialForm(),   
   ...(defaultValues ?? {}) 
 };
+
+if (customerId) {
+  base.partyId = customerId;
+  base.partyType = "Customer"; 
+}
     if (defaultValues?.referenceType) {
       base.referenceType = defaultValues.referenceType;
     } else if (base.referenceName && !base.referenceType) {
