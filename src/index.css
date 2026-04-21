@@ -593,6 +593,64 @@
   );
 }
 
+:root[data-theme="rola-theme"] {
+  --primary: #ff4500;
+  --primary-600: #d63a00;
+
+  --bg: #ffffff;
+  --card: #f8fafc;
+
+  --text: #0f172a;
+  --muted: #3b3b3b;
+
+  --border: #e2e8f0;
+
+  --sidebar-bg: #e5e7eb;
+  --sidebar-text: #0f172a;
+
+  --table-head: #f1f5f9;
+  --table-head-text: #334155;
+
+  /* optional */
+  --success: #16a34a;
+  --danger: #dc2626;
+
+  /* gradients */
+  --gradient-primary: linear-gradient(135deg, #ff4500 0%, #b93800 100%);
+
+  --font-heading: "Sora", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+:root[data-theme="udvell-theme"] {
+  --primary: #3b82f6;
+  --primary-600: #2563eb;
+
+  --bg: #f8fafc;
+  --card: #ffffff;
+
+  --text: #0f172a;
+  --muted: #64748b;
+
+  --border: #e2e8f0;
+
+  --sidebar-bg: #f1f5f9;
+  --sidebar-text: #1e293b;
+
+  --table-head: #f1f5f9;
+  --table-head-text: #334155;
+
+  /* optional */
+  --success: #16a34a;
+  --danger: #dc2626;
+
+  /* gradients */
+  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+
+  --font-heading: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
 /* Layer Components */
 @layer components {
   /* Buttons */

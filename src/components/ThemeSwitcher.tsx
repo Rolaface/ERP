@@ -11,6 +11,8 @@ const themes: { value: Theme; label: string }[] = [
   { value: "gold", label: "🏆 Classic Gold" },
   { value: "luxury", label: "💎 Luxury Gold" },
   { value: "clinical-sanctuary", label: "🧪 Clinical Sanctuary" },
+  { value: "rola-theme", label: "🟠 rola-theme" },
+  { value: "udvell-theme", label: "🟣 udvell-theme" },
 ];
 
 export function ThemeSwitcher() {

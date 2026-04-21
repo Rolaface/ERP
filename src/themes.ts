@@ -7,7 +7,11 @@ export type Theme =
   | "lavender"
   | "luxury"
   | "clinical-sanctuary"
-  | "saas-indigo";
+  | "saas-indigo"
+  | "rola-theme"
+  | "udvell-theme";
+
+
 
 const THEME_KEY = "erp-theme";
 
