@@ -291,6 +291,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   const handlePartyNameSelect = useCallback(
     async (_: string, option: PartyOption | null) => {
+       console.log("Party selected:", option); 
       if (!option?.value) {
         onFormChange({
           ...PARTY_FILLED_FIELDS,
@@ -313,7 +314,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         fetchPartyBanks(partyType, option.value),
       ]);
 
+      console.log("Details received:", details);  // ADD THIS
       if (!details) return;
+
+       console.log("Calling onFormChange with:", { glFrom: details.companyLedgerAccount }); // ADD THIS
 
       const base = { partyName: details.partyName || option.label };
       const companyDefaultCurrency = {
