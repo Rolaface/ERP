@@ -112,7 +112,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           Reset
         </Button>
       <>
-  {/* ✅ NEXT BUTTON (same as current behavior) */}
+
   {activeTab !== "terms" && (
     <Button
       variant="secondary"
@@ -130,7 +130,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     </Button>
   )}
 
-  {/* ✅ SAVE BUTTON (works exactly like Terms tab) */}
+
   <Button
     variant="primary"
     type="submit"
@@ -226,7 +226,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       subtitle="Create and manage purchase order"
       icon={Building2}
       customWidth="95vw"
-      height="90vh"
+      height="85vh"
       footer={footer}
     >
       <form

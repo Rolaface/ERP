@@ -134,18 +134,18 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           >
             Reset
           </Button>
-{!isLastTab && (
-  <Button variant="secondary" onClick={handleNextClick}>
-    Next
-  </Button>
-)}
-<Button
-  variant="primary"
-  onClick={handleSubmitForm}
-  disabled={internalSaving}
->
-  {internalSaving ? "Saving..." : "Submit"}
-</Button>
+          {!isLastTab && (
+            <Button variant="secondary" onClick={handleNextClick}>
+              Next
+            </Button>
+          )}
+          <Button
+            variant="primary"
+            onClick={handleSubmitForm}
+            disabled={internalSaving}
+          >
+            {internalSaving ? "Saving..." : "Submit"}
+          </Button>
         </div>
       </>
     ),
@@ -262,7 +262,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
       subtitle="Create and manage purchase invoice"
       icon={Receipt}
       customWidth="99vw"
-      height="97vh"
+      height="93vh"
       footer={footer}
     >
       <form
@@ -280,8 +280,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
                 type="button"
                 onClick={() => handleTabClick(key)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === key
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  ? "text-primary border-b-[3px] border-primary"
+                  : "text-muted border-b-[3px] border-transparent hover:text-main"
                   }`}
               >
                 {label}
