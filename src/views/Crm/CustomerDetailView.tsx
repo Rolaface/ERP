@@ -564,7 +564,7 @@ const CustomerDetailView: React.FC<Props> = ({
             {activeTab === "bank" && (
               <div className="p-5 w-full min-w-0 overflow-hidden">
                 <CustomerBankDetails
-                  customerName={(customer as any).name}
+                  customerName={(customer as any).id}
                   onAdd={(refresh) => {
                     setEditingRow(null);
                     refreshBankAccounts.current = refresh;
