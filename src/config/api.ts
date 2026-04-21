@@ -49,7 +49,7 @@ const getApiBaseUrl = (): string => {
 // console.log("🚀 ~ ERP_BASE:", ERP_BASE)
 
 // export const ERP_BASE = ENV.apiBaseUrl;
- export const ERP_BASE = "";
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
