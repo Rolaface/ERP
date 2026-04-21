@@ -259,7 +259,7 @@ export const DetailsTab = ({
                   : ""
               }
               disabled
-              className="w-[50px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
+              className="w-[45px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
             />
           </div>
         </td>

@@ -63,7 +63,7 @@ export const API = {
    * DASHBOARD
    * ========================= */
   dashboard: {
-    summary: `${ERP_BASE}/api/method/erpnext.dashboards.main.api.summary`,
+    summary: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.summary`,
   },
 
   /* =========================
@@ -77,7 +77,7 @@ export const API = {
    * CUSTOMER DASHBOARD
    * ========================= */
   customerDashboard: {
-    summary: `${ERP_BASE}/api/method/erpnext.dashboards.customer.api.summary`,
+    summary: `${ERP_BASE}/api/method/custom_api.api.dashboard.customer.api.summary`,
   },
 
   /* =========================
