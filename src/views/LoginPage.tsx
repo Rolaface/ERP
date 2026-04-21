@@ -59,30 +59,26 @@ const Login = () => {
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ================= FORM ================= */}
+          <form onSubmit={handleSubmit} className="form-section">
 
             {/* Email */}
-            <div>
-              <label className="block text-sm text-muted mb-2">
-                Email or Username
-              </label>
+            <div className="form-group">
+              <label className="form-label">Email or Username</label>
               <input
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-12 px-4 rounded-lg bg-card border border-theme text-main placeholder:text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
+                className="input-base"
                 placeholder="name@company.com"
                 required
               />
             </div>
 
             {/* Password */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm text-muted">
-                  Password
-                </label>
+            <div className="form-group">
+              <div className="flex justify-between items-center">
+                <label className="form-label">Password</label>
                 <button
                   type="button"
                   className="text-sm text-primary hover:underline"
@@ -91,12 +87,12 @@ const Login = () => {
                 </button>
               </div>
 
-              <div className="relative">
+              <div className="input-wrapper">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-12 px-4 pr-10 rounded-lg bg-card border border-theme text-main placeholder:text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
+                  className="input-base pr-10"
                   placeholder="••••••••"
                   required
                 />
@@ -128,13 +124,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="
-                w-full h-12 rounded-lg font-semibold text-white
-bg-[linear-gradient(to_right,var(--primary),rgba(59,91,158,0.8))]
-hover:opacity-90
-active:scale-[0.98]
-transition flex items-center justify-center gap-2
-              "
+              className="btn btn-primary w-full h-12 flex items-center justify-center gap-2"
             >
               {isSubmitting ? "Signing In..." : "Sign In"}
               <ArrowRight size={18} />
@@ -155,16 +145,16 @@ transition flex items-center justify-center gap-2
       {/* ================= RIGHT ================= */}
       <section className="hidden md:flex relative items-center justify-center overflow-hidden bg-sidebar">
 
-        {/* Gradient Background */}
+        {/* Background glow using tokens */}
         <div className="absolute inset-0">
-          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
-          <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
+          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-radial-glow blur-[100px]" />
+          <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-radial-glow blur-[120px]" />
         </div>
 
         <div className="relative w-full max-w-lg px-8 space-y-8">
 
           {/* Card 1 */}
-          <div className="p-6 rounded-2xl bg-card/70 backdrop-blur-xl shadow-xl border border-theme animate-float">
+          <div className="card card-hover animate-float">
             <div className="flex justify-between items-start mb-4">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <BarChart3 className="text-primary" />
@@ -183,7 +173,7 @@ transition flex items-center justify-center gap-2
           </div>
 
           {/* Card 2 */}
-          <div className="p-6 rounded-2xl bg-card/70 backdrop-blur-xl shadow-xl border border-theme ml-12 animate-float-delayed">
+          <div className="card card-hover ml-12 animate-float-delayed">
             <div className="flex items-center gap-4">
               <Users className="text-primary" />
               <div>
@@ -194,7 +184,7 @@ transition flex items-center justify-center gap-2
           </div>
 
           {/* Card 3 */}
-          <div className="p-6 rounded-2xl bg-card/70 backdrop-blur-xl shadow-xl border border-theme animate-float-slow">
+          <div className="card card-hover animate-float-slow">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <Package className="text-primary" />
@@ -219,7 +209,7 @@ transition flex items-center justify-center gap-2
         </div>
 
         {/* Grid texture */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(circle,_#000_1px,_transparent_1px)] [background-size:24px_24px]" />
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-grid-subtle" />
       </section>
     </div>
   );

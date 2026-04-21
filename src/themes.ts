@@ -1,20 +1,17 @@
 export type Theme =
   | "gold"
-  | "amber"
-  | "yellow"
   | "dark"
   | "corporate"
-  | "midnight"
   | "ocean"
-  | "sunset"
-  | "rose"
   | "mint"
   | "lavender"
-  | "nordic"
-  | "cyber"
-  | "glass"
   | "luxury"
-  | "clinical-sanctuary";
+  | "clinical-sanctuary"
+  | "saas-indigo"
+  | "rola-theme"
+  | "udvell-theme";
+
+
 
 const THEME_KEY = "erp-theme";
 
@@ -26,7 +23,7 @@ export const setTheme = (theme: Theme) => {
 export const initTheme = (): Theme => {
   if (typeof window === "undefined") return "clinical-sanctuary";
   const saved = localStorage.getItem(THEME_KEY) as Theme | null;
-  const theme: Theme = saved ?? "gold";
+  const theme: Theme = saved ?? "clinical-sanctuary";
   document.documentElement.setAttribute("data-theme", theme);
   return theme;
 };

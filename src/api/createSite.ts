@@ -16,8 +16,7 @@ export interface CreateSitePayload {
   company_name: string;
   company_abbr: string;
   chart_of_accounts: string;
-  fy_start_date: string;
-  fy_end_date: string;
+  fy_start_month: number;
   setup_demo: number;
   apps: string[];
 }

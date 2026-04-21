@@ -1,107 +1,109 @@
 import React from "react";
 import {
-  Wallet,
   Clock,
   ShieldCheck,
-  BarChart3,
   TrendingUp,
-  Sparkles,
+  Eye,
+  Zap,
   CheckCircle,
 } from "lucide-react";
 
 const benefits = [
   {
-    title: "Complete financial clarity",
-    desc: "Know exactly where your money is going with real-time visibility across every transaction.",
-    icon: Wallet,
-    span: "md:col-span-7",
-    highlight: "Real-time audit trails",
-  },
-  {
-    title: "Save hours every week",
-    desc: "Automate repetitive work and eliminate reconciliation headaches.",
     icon: Clock,
-    span: "md:col-span-5",
+    title: "Save hours every week",
+    desc: "Automate repetitive work and reduce manual effort across your operations.",
   },
   {
-    title: "Reduce costly mistakes",
-    desc: "Automation ensures accuracy and removes human error from your workflow.",
+    icon: Eye,
+    title: "Complete visibility",
+    desc: "Know exactly what’s happening across sales, inventory, and accounts in real-time.",
+  },
+  {
     icon: ShieldCheck,
-    span: "md:col-span-4",
+    title: "Fewer mistakes, more accuracy",
+    desc: "Eliminate costly errors caused by manual entries and disconnected systems.",
   },
   {
-    title: "Make faster decisions",
-    desc: "Use real-time insights instead of outdated reports to move with confidence.",
-    icon: BarChart3,
-    span: "md:col-span-4",
-  },
-  {
-    title: "Scale without chaos",
-    desc: "Grow your business without breaking processes or losing control.",
     icon: TrendingUp,
-    span: "md:col-span-4",
+    title: "Make faster decisions",
+    desc: "Use real-time insights to act quickly and confidently.",
+  },
+  {
+    icon: Zap,
+    title: "Run operations smoothly",
+    desc: "Everything works together — no more switching tools or fixing mismatches.",
+  },
+  {
+    icon: CheckCircle,
+    title: "Scale without chaos",
+    desc: "Grow your business without increasing operational complexity.",
   },
 ];
 
 const BenefitsSection: React.FC = () => {
   return (
-    <section className="section section-alt overflow-hidden">
+    <section className="section section-default relative overflow-hidden">
+
+      {/* 🌟 Ambient Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.08),transparent_60%)] pointer-events-none"></div>
 
       <div className="container-app">
 
         {/* HEADER */}
-        <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
+        <div className="text-center max-w-2xl mx-auto stack-md">
 
-          <h2 className="text-[30px] md:text-[36px] font-semibold leading-snug text-main">
-            What you actually{" "}
-            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
-              gain
-            </span>
+          <h2 className="text-[32px] md:text-[40px] font-semibold leading-snug text-main tracking-tight">
+            Run your business with clarity, control, and confidence
           </h2>
 
           <p className="text-body text-muted">
-            Real improvements you’ll feel in your business every single day.
+            Everything works together so you can focus on growth — not fixing problems.
           </p>
 
         </div>
 
-        {/* BENTO GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-[var(--density-gap)] mt-[calc(var(--density-gap)*4)]">
+        {/* BENEFITS GRID */}
+        <div className="mt-[calc(var(--density-gap)*5)] grid sm:grid-cols-2 lg:grid-cols-3 gap-[calc(var(--density-gap)*2.5)]">
 
-          {benefits.map((item, index) => {
+          {benefits.map((item, i) => {
             const Icon = item.icon;
 
             return (
               <div
-                key={item.title}
-                className={`${item.span} group bg-card border border-theme rounded-[calc(var(--density-radius)*1.5)] p-[calc(var(--density-gap)*2)] transition-all duration-300 hover:shadow-md hover:-translate-y-1 animate-fade-up`}
-                style={{ animationDelay: `${index * 0.1}s` }}
+                key={i}
+                className="group relative rounded-[calc(var(--density-radius)*1.5)] p-[1px] transition-all duration-300 hover:scale-[1.025]"
               >
 
-                {/* ICON */}
-                <div className="w-10 h-10 rounded-[var(--density-radius)] bg-[rgba(0,0,0,0.03)] flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-primary/10">
-                  <Icon size={18} className="text-primary" />
-                </div>
+                {/* 🔥 Gradient Border Effect */}
+                <div className="absolute inset-0 rounded-[inherit] bg-gradient-to-br from-primary/40 via-transparent to-primary/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-[1px]" />
 
-                {/* CONTENT */}
-                <h3 className="text-[18px] font-semibold text-main mb-2">
-                  {item.title}
-                </h3>
+                {/* CARD */}
+                <div className="relative h-full rounded-[inherit] bg-card border border-theme p-[calc(var(--density-gap)*2)] flex flex-col gap-4 shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
 
-                <p className="text-[14px] text-muted leading-relaxed">
-                  {item.desc}
-                </p>
+                  {/* ICON */}
+                  <div className="relative w-11 h-11 rounded-[var(--density-radius)] flex items-center justify-center bg-card border border-theme">
 
-                {/* HIGHLIGHT */}
-                {item.highlight && (
-                  <div className="mt-5 flex items-center gap-2">
-                    <CheckCircle size={14} className="text-success" />
-                    <span className="text-[13px] font-medium text-main">
-                      {item.highlight}
-                    </span>
+                    {/* Glow */}
+                    <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[inherit]" />
+
+                    <Icon size={20} className="text-primary relative z-10" />
                   </div>
-                )}
 
+                  {/* TEXT */}
+                  <div className="stack-sm">
+
+                    <h3 className="text-[16px] font-semibold text-main">
+                      {item.title}
+                    </h3>
+
+                    <p className="text-[13px] text-muted leading-relaxed">
+                      {item.desc}
+                    </p>
+
+                  </div>
+
+                </div>
               </div>
             );
           })}
@@ -109,52 +111,19 @@ const BenefitsSection: React.FC = () => {
         </div>
 
         {/* BOTTOM LINE */}
-        <div className="mt-[calc(var(--density-gap)*4)] text-center animate-fade-in">
+        <div className="text-center mt-[calc(var(--density-gap)*5)]">
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-theme rounded-full">
-
-            <Sparkles size={14} className="text-primary" />
-
-            <p className="text-[13px] text-muted">
-              This isn’t just software — it’s operational clarity.
-            </p>
-
-          </div>
+          <p className="text-[16px] text-muted max-w-xl mx-auto leading-relaxed">
+            Less stress. Fewer errors. More control.
+            <br />
+            <span className="text-main font-medium">
+              So you can focus on growing your business — not managing chaos.
+            </span>
+          </p>
 
         </div>
 
       </div>
-
-      {/* ANIMATIONS */}
-      <style>
-        {`
-          .animate-fade-in {
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeIn 0.6s ease forwards;
-          }
-
-          .animate-fade-up {
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeUp 0.7s ease forwards;
-          }
-
-          @keyframes fadeIn {
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          @keyframes fadeUp {
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}
-      </style>
     </section>
   );
 };
