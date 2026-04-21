@@ -232,23 +232,21 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       <form
         id="purchaseOrderForm"
         onChange={() => markDirty()}
-        onSubmit={(e) => {
-          e.preventDefault();
-          const error = validateTab(activeTab);
-          if (error) {
-            showValidationError(error);
-            return;
-          }
-          if (activeTab !== "terms") {
-            handleNext();
-            return;
-          }
-          const handleFormSubmit = async () => {
-            resetDirty();
-            await handleSubmit(e);
-          };
-          handleFormSubmit();
-        }}
+      onSubmit={(e) => {
+  e.preventDefault();
+
+  const error = validateTab(activeTab);
+  if (error) {
+    showValidationError(error);
+    return;
+  }
+  const handleFormSubmit = async () => {
+    resetDirty();
+    await handleSubmit(e);
+  };
+
+  handleFormSubmit();
+}}
         className="h-full flex flex-col"
       >
         {/* Tab bar */}
