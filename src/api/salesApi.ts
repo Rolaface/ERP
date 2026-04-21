@@ -125,10 +125,9 @@ export async function editSalesInvoice(
   invoiceNumber: string,
   payload: any
 ): Promise<any> {
-  const resp: AxiosResponse = await api.put(InvoiceAPI.editInvoice, {
-    invoiceNumber,
-    ...payload,
-  });
-
+  const resp: AxiosResponse = await api.put(
+    `${InvoiceAPI.editInvoice}?id=${encodeURIComponent(invoiceNumber)}`,
+    payload,
+  );
   return resp.data;
 }

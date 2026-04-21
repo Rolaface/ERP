@@ -111,31 +111,35 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
         >
           Reset
         </Button>
-        <Button
-          variant="primary"
-          type={activeTab === "terms" ? "submit" : "button"}
-          form={activeTab === "terms" ? "purchaseOrderForm" : undefined}
-          disabled={saving}
-          onClick={
-            activeTab !== "terms"
-              ? (e) => {
-                e.preventDefault();
-                const error = validateTab(activeTab);
-                if (error) {
-                  showValidationError(error);
-                  return;
-                }
-                handleNext();
-              }
-              : undefined
-          }
-        >
-          {saving
-            ? "Saving..."
-            : activeTab === "terms"
-              ? "Save Purchase Order"
-              : "Next"}
-        </Button>
+      <>
+  {/* ✅ NEXT BUTTON (same as current behavior) */}
+  {activeTab !== "terms" && (
+    <Button
+      variant="secondary"
+      onClick={(e) => {
+        e.preventDefault();
+        const error = validateTab(activeTab);
+        if (error) {
+          showValidationError(error);
+          return;
+        }
+        handleNext();
+      }}
+    >
+      Next
+    </Button>
+  )}
+
+  {/* ✅ SAVE BUTTON (works exactly like Terms tab) */}
+  <Button
+    variant="primary"
+    type="submit"
+    form="purchaseOrderForm"
+    disabled={saving}
+  >
+    {saving ? "Saving..." : "Save Purchase Order"}
+  </Button>
+</>
       </div>
     </>
   ), [handleCloseWithConfirm, onClose, resolvedModalId, resetDirty, reset, activeTab, validateTab, handleNext, saving]);
@@ -266,7 +270,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           </div>
         </div>
 
-        <section className="flex-1 overflow-y-auto p-4 space-y-6">
+        <section className="overflow-y-auto p-2">
           {tabContent}
         </section>
       </form>

@@ -134,20 +134,18 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           >
             Reset
           </Button>
-          {!isLastTab && (
-            <Button variant="secondary" onClick={handleNextClick}>
-              Next
-            </Button>
-          )}
-          {isLastTab && (
-            <Button
-              variant="primary"
-              onClick={handleSubmitForm}
-              disabled={internalSaving}
-            >
-              {internalSaving ? "Saving..." : "Submit"}
-            </Button>
-          )}
+{!isLastTab && (
+  <Button variant="secondary" onClick={handleNextClick}>
+    Next
+  </Button>
+)}
+<Button
+  variant="primary"
+  onClick={handleSubmitForm}
+  disabled={internalSaving}
+>
+  {internalSaving ? "Saving..." : "Submit"}
+</Button>
         </div>
       </>
     ),
@@ -263,8 +261,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
       title={pId ? "Edit Purchase Invoice" : "New Purchase Invoice"}
       subtitle="Create and manage purchase invoice"
       icon={Receipt}
-      customWidth="95vw"
-      height="90vh"
+      customWidth="99vw"
+      height="97vh"
       footer={footer}
     >
       <form
@@ -292,7 +290,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           </div>
         </div>
 
-        <section className="flex-1 overflow-y-auto p-4 space-y-6">
+        <section className=" overflow-y-auto p-1 ">
           {tabContent}
         </section>
       </form>

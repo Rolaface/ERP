@@ -29,7 +29,7 @@ export default function StockItemSelect({
   batchNo,
   itemName,
   onChange,
-  onClonChanear,
+  onClear,
   taxCategory,
   disabled = false,
 }: any) {
@@ -124,6 +124,26 @@ export default function StockItemSelect({
     });
   };
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!open) return;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        dropdownRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+      setSearch("");
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [open]);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return flatRows.filter(
@@ -155,20 +175,25 @@ export default function StockItemSelect({
       >
         <Package className="w-3 h-3 text-muted" />
         <span className="flex-1 truncate">
-          {selected?.itemName || itemName || (loading ? "Loading..." : "Select item")}
+          {selected?.itemName ||
+            itemName ||
+            (loading ? "Loading..." : "Select item")}
         </span>
 
-        {(selected || value) && (
+        {/* {(selected || value) && (
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               setSelected(null);
+              setSearch("");
+              setOpen(false);
               onClear?.();
             }}
           >
             <X className="w-3 h-3 text-muted hover:text-danger" />
           </button>
-        )}
+        )} */}
 
         <ChevronDown className="w-3 h-3 text-muted" />
       </div>
