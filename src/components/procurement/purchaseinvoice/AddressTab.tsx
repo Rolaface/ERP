@@ -18,6 +18,24 @@ import {
   BoxType,
 } from "../../../hooks/useAddressLogic";
 
+const mapFormAddressToApi = (addr: any): ApiAddress | null => {
+  if (!addr?.id) return null;
+
+  return {
+    id: addr.id,
+    title: addr.addressTitle || addr.id,
+    addressType: addr.addressType || "",
+    addressLine1: addr.addressLine1 || "",
+    addressLine2: addr.addressLine2 || "",
+    city: addr.city || "",
+    state: addr.state || "",
+    country: addr.country || "",
+    pincode: addr.postalCode || "",
+    phone: addr.phone || "",
+    email: addr.email || "",
+  };
+};
+
 interface AddressTabProps {
   form: PurchaseOrderFormData | PurchaseInvoiceFormData;
   onFormChange: (
@@ -44,8 +62,8 @@ interface AddressTabProps {
   loading: Record<BoxType, boolean>;
   setLoading: React.Dispatch<React.SetStateAction<Record<BoxType, boolean>>>;
   handleAddressSelect: (boxKey: BoxType, addr: ApiAddress) => void;
-handleCopyBillingToShipping: (checked: boolean) => void;
-handleCopySupplierToDispatch: (checked: boolean) => void;
+  handleCopyBillingToShipping: (checked: boolean) => void;
+  handleCopySupplierToDispatch: (checked: boolean) => void;
 }
 
 function formatAddressPreview(addr: ApiAddress): string {
@@ -72,10 +90,10 @@ const AddressPicker: React.FC<{
   const [query, setQuery] = useState("");
   const filtered = query.trim()
     ? addresses.filter(
-        (a) =>
-          a.id.toLowerCase().includes(query.toLowerCase()) ||
-          a.title.toLowerCase().includes(query.toLowerCase()),
-      )
+      (a) =>
+        a.id.toLowerCase().includes(query.toLowerCase()) ||
+        a.title.toLowerCase().includes(query.toLowerCase()),
+    )
     : addresses;
 
   return (
@@ -203,7 +221,9 @@ const AddressBox: React.FC<{
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-main truncate">
-                {selectedAddr.title || selectedAddr.id}
+                {selectedAddr.title
+                  || selectedAddr.addressLine1
+                  || selectedAddr.id}
                 <span className="ml-1.5 text-[9px] px-1 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                   {selectedAddr.addressType}
                 </span>
@@ -259,12 +279,12 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
   selected,
   addresses,
   loading,
-  handleAddressSelect,           
+  handleAddressSelect,
 }) => {
   const [incotermLabel, setIncotermLabel] = useState("");
   const [shippingLabel, setShippingLabel] = useState("");
-  
- 
+
+
   //SHOW API FIRST VALUE DEFUALT
   useEffect(() => {
     const loadDefaultIncoterm = async () => {
@@ -425,8 +445,8 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
         </div>
         <ModalInput
           label="Supplier Contact"
-         name="supplierContactDisplay"
-          value={form.supplierContactDisplay  || ""}
+          name="supplierContactDisplay"
+          value={form.supplierContactDisplay || ""}
           onChange={onFormChange}
         />
       </div>
@@ -435,14 +455,20 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
           <AddressBox
             config={BOX_CONFIGS[0]}
             addresses={addresses.companyBilling}
-            selectedAddr={selected.companyBilling}
+            selectedAddr={
+              selected.companyBilling
+              || mapFormAddressToApi(form.addresses?.companyBillingAddress)
+            }
             loading={loading.companyBilling}
             onSelect={(addr) => handleAddressSelect("companyBilling", addr)}
           />
           <AddressBox
             config={BOX_CONFIGS[1]}
             addresses={addresses.supplierBilling}
-            selectedAddr={selected.supplierBilling}
+            selectedAddr={
+              selected.supplierBilling
+              || mapFormAddressToApi(form.addresses?.supplierAddress)
+            }
             loading={loading.supplierBilling}
             onSelect={(addr) => handleAddressSelect("supplierBilling", addr)}
           />
@@ -451,14 +477,20 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
           <AddressBox
             config={BOX_CONFIGS[2]}
             addresses={addresses.companyShipping}
-            selectedAddr={selected.companyShipping}
+            selectedAddr={
+              selected.companyShipping
+              || mapFormAddressToApi(form.addresses?.shippingAddress)
+            }
             loading={loading.companyShipping}
             onSelect={(addr) => handleAddressSelect("companyShipping", addr)}
           />
           <AddressBox
             config={BOX_CONFIGS[3]}
             addresses={addresses.supplierDispatch}
-            selectedAddr={selected.supplierDispatch}
+            selectedAddr={
+              selected.supplierDispatch
+              || mapFormAddressToApi(form.addresses?.dispatchAddress)
+            }
             loading={loading.supplierDispatch}
             onSelect={(addr) => handleAddressSelect("supplierDispatch", addr)}
           />
