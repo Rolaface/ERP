@@ -911,6 +911,7 @@ const loadAddressesForSupplier = useCallback(
           packingSize: Number(data.packingSize || 0),
           packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
           warehouse: items[idx].warehouse || prev.warehouse || "",
+          requiresBatch: data.batchInfo?.has_batch_no || false,
         };
         return { ...prev, items };
       });
@@ -1007,6 +1008,11 @@ const loadAddressesForSupplier = useCallback(
         if (!item.vatCd) return `Row ${i + 1}: Tax Code required`;
         if (item.requiresBatch && !item.batchNo?.trim())
           return `Row ${i + 1}: Batch No required`;
+        if (item.requiresBatch && !item.mfgDate)
+  return `Row ${i + 1}: Mfg Date required`;
+
+if (item.requiresBatch && !item.expDate)
+  return `Row ${i + 1}: Expiry Date required`;
       }
     }
 

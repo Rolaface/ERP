@@ -43,7 +43,7 @@ const ITEMS_PER_PAGE = 5;
 
 // ─── PI-specific column headers ───────────────────────────────────────────────
 
-const PIColumnHeaders: React.FC = () => (
+const PIColumnHeaders: React.FC<{ items: ItemRow[] }> = ({ items }) => (
   <tr className="border-b border-theme">
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">
       #
@@ -59,15 +59,18 @@ const PIColumnHeaders: React.FC = () => (
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
       Batch No{" "}
+      {items?.some((it) => it.requiresBatch) && (
+        <span className="text-danger">*</span>
+      )}
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">
       Qty
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
-      Mfg Date
+      Mfg Date {items.some(i => i.requiresBatch) && <span className="text-danger">*</span>}
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
-      Expiry Date
+      Expiry Date {items.some(i => i.requiresBatch) && <span className="text-danger">*</span>}
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px] whitespace-nowrap">
       Unit Price <span className="text-danger">*</span>
@@ -245,21 +248,21 @@ export const DetailsTab = ({
           </Tooltip>
         </td> */}
         {/* PACKING */}
-<td className="px-0 py-[2px]">
-  <div className="flex items-center justify-center w-[70px]">
-    <input
-      type="text"
-      name="packing"
-      value={
-        it.packingUnit && it.packingSize
-          ? `${it.packingUnit}×${it.packingSize}`
-          : ""
-      }
-      disabled
-      className="w-[50px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
-    />
-  </div>
-</td>
+        <td className="px-0 py-[2px]">
+          <div className="flex items-center justify-center w-[70px]">
+            <input
+              type="text"
+              name="packing"
+              value={
+                it.packingUnit && it.packingSize
+                  ? `${it.packingUnit}×${it.packingSize}`
+                  : ""
+              }
+              disabled
+              className="w-[50px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
+            />
+          </div>
+        </td>
 
         {/* BATCH */}
         <td className="px-1 py-1">
@@ -652,7 +655,7 @@ export const DetailsTab = ({
           actions={tableActions}
           symbol={symbol}
           ITEMS_PER_PAGE={ITEMS_PER_PAGE}
-          columnHeaders={<PIColumnHeaders />}
+          columnHeaders={<PIColumnHeaders items={items} />}
           renderRow={renderPIRow}
         />
 
