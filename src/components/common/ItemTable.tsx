@@ -187,6 +187,10 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
                 vatRate: item.vatRate,
                 vatCode: item.vatCode,
+                taxTypes: (item.taxInfo || [])
+  .flatMap((tax: any) => tax.taxRates || [])
+  .map((r: any) => r.tax_type)
+  .filter((t: string) => t && t.trim() !== ""),
               });
             }}
             onClear={() =>
@@ -392,7 +396,13 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* VAT Code */}
         <td className="px-2 py-1">
-          <Tooltip content={it.vatCode || "No tax code"}>
+          <Tooltip
+  content={
+    it.taxTypes?.length
+      ? `Tax Types: ${it.taxTypes.join(", ")}`
+      : "No Tax Types"
+  }
+>
             <input
               type="text"
               name="vatCode"
