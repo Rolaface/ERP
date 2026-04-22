@@ -7,6 +7,7 @@ export interface Column<T> {
   align?: "left" | "center" | "right";
   sortable?: boolean;
   tooltip?: (item: T) => React.ReactNode;
+  width?: string;
   maxWidth?: string;
   truncate?: boolean;
 }
