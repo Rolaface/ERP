@@ -12,6 +12,7 @@ import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import type { Column } from "../../components/ui/Table/type";
 import type { PurchaseOrderDetail } from "../../types/Supply/purchaseOrder";
 import { createPurchaseInvoiceFromPO } from "../../api/procurement/PurchaseOrderApi";
+import { openPaymentEntryModal } from "../../store/modalStore";
 import {
   showApiError,
   showSuccess,
@@ -174,55 +175,56 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchOrders]);
 
-  const handleMakePayment = async (order: PurchaseOrder) => {
-    if (order.status !== "Approved") {
-      showApiError("Only Approved purchase orders can have payments");
+const handleMakePayment = async (order: PurchaseOrder) => {
+  if (order.status !== "Approved") {
+    showApiError("Only Approved purchase orders can have payments");
+    return;
+  }
+
+  try {
+    showLoading("Opening payment...");
+    const res = await getPurchaseOrderById(order.id);
+    closeSwal();
+
+    if (!res || res.status !== "success") {
+      showApiError("Failed to load purchase order");
       return;
     }
 
-    try {
-      showLoading("Opening payment...");
-      const res = await getPurchaseOrderById(order.id);
-      closeSwal();
+    const data = res.data ?? {};
 
-      if (!res || res.status !== "success") {
-        showApiError("Failed to load purchase order");
-        return;
+    openPaymentEntryModal(
+      {
+        paymentType: "Pay",
+        partyType: "Supplier",
+        partyName:
+          data.supplierName ||
+          data.supplier_name ||
+          data.partyName ||
+          order.supplier,
+        partyId:
+          data.supplierId ??
+          data.partyId ??
+          data.supplier_id ??
+          order.supplierId,
+        amount: Number(data.grandTotal ?? order.amount ?? 0),
+        referenceName: data.poId || order.id,
+        referenceType: "Purchase Order",
+      },
+      false,
+      {
+        onSuccess: (paymentId) => {
+          fetchOrders();
+          showSuccess(`Payment ${paymentId} created`);
+        },
       }
+    );
 
-      const data = res.data ?? {};
-      const supplierName =
-        data.supplierName ||
-        data.supplier_name ||
-        data.partyName ||
-        data.supplier ||
-        order.supplier;
-      const supplierId =
-        data.supplierId ??
-        data.partyId ??
-        data.supplier_id ??
-        order.supplierId;
-      const poId = data.poId || order.id;
-      const amount = Number(data.grandTotal ?? order.amount ?? 0);
-
-      setSelectedPOForPayment({
-        id: poId,
-        supplier: supplierName,
-        supplierId,
-        amount,
-        date: order.date,
-        status: order.status,
-        deliveryDate: order.deliveryDate,
-        referenceNumber: order.referenceNumber,
-        currency: order.currency,
-      });
-      setPaymentModalOpen(true);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
-
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
   const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
     try {
       showLoading("Creating Purchase Invoice...");
@@ -641,7 +643,6 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
           </>
         }
       />
-
       <PurchaseOrderDetailModal
         open={drawerOpen}
         data={drawerData}
@@ -693,32 +694,8 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
           }}
         />
       )}
-      <PaymentEntryModal
-        isOpen={paymentModalOpen}
-        onClose={() => {
-          setPaymentModalOpen(false);
-          setSelectedPOForPayment(null);
-        }}
-        onSuccess={(paymentId) => {
-          fetchOrders();
-          setPaymentModalOpen(false);
-          setSelectedPOForPayment(null);
-          showSuccess(`Payment ${paymentId} created`);
-        }}
-        defaultValues={
-          selectedPOForPayment
-            ? {
-              paymentType: "Pay",
-              partyType: "Supplier",
-              partyName: selectedPOForPayment.supplier,
-              partyId: selectedPOForPayment.supplierId,
-              amount: selectedPOForPayment.amount,
-              referenceName: selectedPOForPayment.id,
-              referenceType: "Purchase Order",
-            }
-            : undefined
-        }
-      />
+      
+     
     </div>
   );
 };

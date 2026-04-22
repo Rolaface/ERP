@@ -103,13 +103,13 @@ const BankAccountSetup: React.FC = () => {
       render: (row) => row.dateAdded || "—",
     },
     {
-  key: "accountFor",
-  header: "Account For",
-  render: (row) =>
-    Number(row.isCompanyAccount) === 1
-      ? "Company"
-      : row.accountFor || "—",
-},
+      key: "accountFor",
+      header: "Account For",
+      render: (row) =>
+        Number(row.isCompanyAccount) === 1
+          ? "Company"
+          : row.accountFor || "—",
+    },
     {
       key: "bankName",
       header: "Bank",
@@ -220,6 +220,8 @@ const BankAccountSetup: React.FC = () => {
         enableAdd
         currentPage={page}
         totalPages={totalPages}
+        enableColumnSelector
+        tableId="bank-accounts"
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
@@ -227,12 +229,12 @@ const BankAccountSetup: React.FC = () => {
         onPageChange={setPage}
         addLabel="Add Bank Account"
         onAdd={() => openBankAccountModal(null, false, {
-  onSuccess: () => fetchAccounts(),
-})}
+          onSuccess: () => fetchAccounts(),
+        })}
       />
 
 
-    
+
     </div>
   );
 };

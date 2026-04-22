@@ -344,6 +344,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
+            defaultValues={modal.initialData as any}
           />,
         );
 

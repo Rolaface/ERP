@@ -152,6 +152,8 @@ const PaymentEntry: React.FC = () => {
         loading={loading}
         rowKey={(r) => r.id}
         searchValue={searchTerm}
+        enableColumnSelector
+        tableId="payment-entry"
         onSearch={(q) => {
           setSearchTerm(q);
           setPage(1);

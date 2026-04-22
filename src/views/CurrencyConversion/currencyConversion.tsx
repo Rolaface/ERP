@@ -1,4 +1,4 @@
-import React   from "react";
+import React from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import { FaExchangeAlt } from "react-icons/fa";
@@ -36,18 +36,18 @@ const CurrencyConversion: React.FC = () => {
   } = useCurrencyConversion();
 
   // ── Handlers ─────────────────────────────────
-const handleAdd = () =>
-  openCurrencyExchangeModal(null, false, {
-    onSuccess: async (payload: any) => {
-      await addConversion(payload);
-    },
-  });
- const handleEdit = (row: CurrencyConversionPayload) =>
-  openCurrencyExchangeModal(row, true, {
-    onSuccess: async (payload: any) => {
-      await updateConversion(payload);
-    },
-  });
+  const handleAdd = () =>
+    openCurrencyExchangeModal(null, false, {
+      onSuccess: async (payload: any) => {
+        await addConversion(payload);
+      },
+    });
+  const handleEdit = (row: CurrencyConversionPayload) =>
+    openCurrencyExchangeModal(row, true, {
+      onSuccess: async (payload: any) => {
+        await updateConversion(payload);
+      },
+    });
   const handleSearch = (q: string) => {
     setSearch(q);
     setPagination((prev) => ({
@@ -206,6 +206,8 @@ const handleAdd = () =>
         columns={columns}
         data={data}
         loading={loading}
+        enableColumnSelector
+        tableId="currency-exchange"
         rowKey={(r) => r.id}
         showToolbar
         enableAdd
