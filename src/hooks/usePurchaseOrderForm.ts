@@ -786,6 +786,10 @@ const loadAddressesForSupplier = useCallback(
       }
 
       const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
+      const taxTypes = (data.taxInfo || [])
+  .flatMap((tax: any) => tax.taxRates || [])
+  .map((r: any) => r.tax_type)
+  .filter((t: string) => t && t.trim() !== "");
 
       setForm((prev) => {
         const items = [...prev.items];
@@ -804,6 +808,7 @@ const loadAddressesForSupplier = useCallback(
 
           vatRate: totalTaxRate,
           vatCd: selectedTax?.taxName || "",
+          taxTypes: taxTypes,
 
           taxCategory: selectedTax?.taxCategory || "",
 

@@ -16,6 +16,7 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
     const quantity = Number(it.quantity);
     const rate = Number(it.rate);
     const vatRate = Number(it.vatRate || 0);
+    ;
 
     return {
       itemCode: it.itemCode,
@@ -110,6 +111,10 @@ const items = (api.items || []).map((item: any) => {
 
   const vatRate = Number(selectedTax?.totalTaxRate || 0);
   const vatCd = selectedTax?.taxName || "";
+  const taxTypes = (item.taxInfo || [])
+  .flatMap((tax: any) => tax.taxRates || [])
+  .map((r: any) => r.tax_type)
+  .filter((t: string) => t && t.trim() !== "");
 
   return {
     itemCode: item.item_code || item.itemCode || "",
@@ -122,6 +127,7 @@ const items = (api.items || []).map((item: any) => {
 
     vatRate: vatRate,   
     vatCd: vatCd,       
+    taxTypes: taxTypes,
 
     requiredBy: item.requiredBy || api.deliveryDate || "",
     warehouse: item.warehouse || "",
