@@ -161,16 +161,23 @@ export const emptyForm: CustomerFormState = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function splitMobile(mobile?: string) {
+function splitMobile(mobile?: string): { code: string; number: string } {
   if (!mobile) return { code: "", number: "" };
 
   const clean = mobile.replace(/\s/g, "");
 
-  const code = clean.slice(0, 4); // +999 max
-  const number = clean.slice(4);
+  if (!clean.startsWith("+")) {
+    return { code: "", number: clean };
+  }
+
+  // Same logic as mapSupplierToForm: slice(0, 3) = "+" + 2 digit code
+  const code = clean.slice(0, 3);   // e.g. "+91"
+  const number = clean.slice(3);    // e.g. "3534656"
 
   return { code, number };
 }
+
+
 export function mapApiResponseToFormState(
   data: CustomerDetail,
   companySellingTerms: TermSection | null,
