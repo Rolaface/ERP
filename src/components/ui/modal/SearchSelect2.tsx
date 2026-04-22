@@ -148,9 +148,9 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
        {label && (
   <label className="text-[10px] font-medium mb-1">
     {label}
+    {required && <span className="text-danger"> *</span>}
   </label>
 )}
-
         <div className="relative w-full">
           <input
             ref={inputRef}
