@@ -238,6 +238,8 @@ const BankDetails: React.FC = () => {
         searchValue={search}
         onSearch={setSearch}
         enableAdd
+        enableColumnSelector
+        tableId="bank-details"
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}

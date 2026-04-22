@@ -17,7 +17,7 @@ import { openModeOfPaymentModal } from "../../store/modalStore";
 const ModeOfPaymentSetup: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -130,15 +130,17 @@ const ModeOfPaymentSetup: React.FC = () => {
         showToolbar
         enableAdd
         addLabel="Add Mode of Payment"
-       onAdd={() =>
-  openModeOfPaymentModal(null, false, {
-    onSuccess: () => fetchData(),
-  })
-}
+        onAdd={() =>
+          openModeOfPaymentModal(null, false, {
+            onSuccess: () => fetchData(),
+          })
+        }
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
+        enableColumnSelector
+        tableId="modeOfPayment"
         pageSizeOptions={[10, 25, 50, 100]}
         onPageChange={setPage}
         searchValue={search}
