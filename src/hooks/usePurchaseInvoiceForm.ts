@@ -898,6 +898,10 @@ export const usePurchaseInvoiceForm = ({
           t.taxCategory?.toLowerCase() === supplierTaxCategory?.toLowerCase(),
       );
       if (!selectedTax && data.taxInfo?.length) selectedTax = data.taxInfo[0];
+        const taxTypes = (data.taxInfo || [])
+  .flatMap((tax: any) => tax.taxRates || [])
+  .map((r: any) => r.tax_type)
+  .filter((t: string) => t && t.trim() !== "");
 
       setForm((prev) => {
         const items = [...prev.items];
@@ -910,6 +914,7 @@ export const usePurchaseInvoiceForm = ({
           uom: data.unitOfMeasureCd,
           vatRate: Number(selectedTax?.totalTaxRate || 0),
           vatCd: selectedTax?.taxName || "",
+          taxTypes: taxTypes,
           packingUnit: Number(data.packingUnit || 0),
           packingSize: Number(data.packingSize || 0),
           packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,

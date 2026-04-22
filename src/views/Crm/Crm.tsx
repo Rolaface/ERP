@@ -13,7 +13,7 @@ import {
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
-import AppSkeleton from "../../components/ui/AppSkeleton";
+
 
 const CustomerManagement = lazy(() => import("./CustomerManagement"));
 const CRMDashboard = lazy(() => import("./CRMDashboard"));

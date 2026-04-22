@@ -313,18 +313,25 @@ const GlobalModalHandler: React.FC = () => {
             isEditMode={modal.isEdit}
           />,
         );
-      case "bankAccount":
-        return wrappedModal(
-          <AddBankAccountModal
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            onSubmit={handleSubmit}
-            initialData={getInitialData<BankAccount>(modal.initialData)}
-            isEditMode={modal.isEdit}
-          />,
-        );
+     case "bankAccount": {
+  const bankData = isRecord(modal.initialData) ? modal.initialData : null;
+  return wrappedModal(
+    <AddBankAccountModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+      initialData={modal.isEdit ? getInitialData<BankAccount>(modal.initialData) : null}
+      isEditMode={modal.isEdit}
+    
+      defaultAccountFor={bankData?.accountFor as any}
+      partyName={bankData?.partyName as string | undefined}
+       partyId={bankData?.partyId as string | undefined}  
+      currency={bankData?.currency as string | undefined}
+    />,
+  );
+}
       case "modeOfPayment":
         return wrappedModal(
           <AddModeOfPaymentModal

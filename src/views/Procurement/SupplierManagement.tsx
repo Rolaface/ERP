@@ -17,7 +17,8 @@ import type { Column } from "../../components/ui/Table/type";
 import type { Supplier } from "../../types/Supply/supplier";
 import type { SupplierFilters } from "../../api/procurement/supplierApi";
 import { showApiError, showSuccess } from "../../utils/alert";
-import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
+
+import { openPaymentEntryModal } from "../../store/modalStore";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
 type OutletContextType = {
@@ -55,8 +56,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
 
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPI, setSelectedPI] = useState<any | null>(null);
+
 
  const normalizeStatus = (status?: string) => {
   if (!status) return "inactive";
@@ -180,15 +180,42 @@ const handleEditSupplier = async (supplier: Supplier) => {
 };
   const handleEditFromDetail = (supplier: Supplier) => handleEditSupplier(supplier);
 
-  const handleMakePayment = (supplier: Supplier) => {
-    setSelectedPI(supplier);
-    setPaymentModalOpen(true);
-  };
+const handleMakePayment = (supplier: Supplier) => {
+  openPaymentEntryModal(
+    {
+      paymentType: "Pay",
+      partyType: "Supplier",
+      partyName: {
+        label: supplier.supplierName,
+        value: supplier.supplierId,
+      },
+      partyId: supplier.supplierId,
+    },
+    false,
+    {
+      onSuccess: () => fetchSuppliers(),
+    }
+  );
+};
 
-  const handleMakeAdvancePayment = (supplier: Supplier) => {
-    setSelectedPI({ ...supplier, isAdvance: true });
-    setPaymentModalOpen(true);
-  };
+const handleMakeAdvancePayment = (supplier: Supplier) => {
+  openPaymentEntryModal(
+    {
+      paymentType: "Pay",
+      partyType: "Supplier",
+      partyName: {
+        label: supplier.supplierName,
+        value: supplier.supplierId,
+      },
+      partyId: supplier.supplierId,
+      referenceName: `ADV-${supplier.supplierId}`,
+    },
+    false,
+    {
+      onSuccess: () => fetchSuppliers(),
+    }
+  );
+};
 
   const handleDeleteSupplier = async (supplier: Supplier) => {
     if (!supplier.supplierId) return;
@@ -354,26 +381,7 @@ const handleEditSupplier = async (supplier: Supplier) => {
         />
       ) : null}
 
-      <PaymentEntryModal
-        isOpen={paymentModalOpen}
-        onClose={() => {
-          setPaymentModalOpen(false);
-          setSelectedPI(null);
-        }}
-        defaultValues={
-          selectedPI
-            ? {
-                paymentType: "Pay",
-                partyType: "Supplier",
-                partyName: selectedPI.supplierName,
-                partyId: selectedPI.supplierId,
-                referenceName: selectedPI.isAdvance
-                  ? `ADV-${selectedPI.supplierId}`
-                  : undefined,
-              }
-            : undefined
-        }
-      />
+      
     </div>
   );
 };

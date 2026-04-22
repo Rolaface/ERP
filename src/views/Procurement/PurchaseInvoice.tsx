@@ -542,7 +542,7 @@ const handleMakePayment = async (pId: string) => {
     {
       key: "actions",
       header: "Actions",
-      align: "left",
+      align: "center",
       render: (o) => (
         <ActionGroup>
           <ActionButton

@@ -497,7 +497,7 @@ const handleMakePayment = async (order: PurchaseOrder) => {
       header: "Supplier",
       align: "center",
       render: (o) => (
-        <span className="truncate max-w-[160px] block">
+        <span className="truncate max-w-[160px]">
           {o.supplier || "—"}
         </span>
       ),
