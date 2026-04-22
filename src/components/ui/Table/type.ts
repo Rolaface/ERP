@@ -8,5 +8,7 @@ export interface Column<T> {
   sortable?: boolean;
   tooltip?: (item: T) => React.ReactNode;
   maxWidth?: string;
+   minWidth?: string;   
+  width?: string; 
   truncate?: boolean;
 }

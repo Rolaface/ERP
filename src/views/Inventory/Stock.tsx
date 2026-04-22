@@ -183,6 +183,7 @@ const Items: React.FC = () => {
         loading={loading || initialLoad}
         columns={columns}
         data={items}
+        tableId="inventory-stocks"
         onRowClick={(row) => toggleRow(row.id)}
         expandedRowRender={(row) =>
           expandedRows[row.id] ? (

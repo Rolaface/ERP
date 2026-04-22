@@ -307,6 +307,7 @@ const fetchCustomers = async () => {
         <Table
           columns={columns}
           data={customers}
+          tableId="customer-management"
           showToolbar
           loading={custLoading || initialLoad}
           onPageSizeChange={(size) => setPageSize(size)}

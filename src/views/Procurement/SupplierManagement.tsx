@@ -327,6 +327,7 @@ const handleEditSupplier = async (supplier: Supplier) => {
         <Table
           columns={columns}
           data={allSuppliers}
+          tableId="supplier-management"
           showToolbar
           loading={loading}
           onPageSizeChange={(size) => setPageSize(size)}

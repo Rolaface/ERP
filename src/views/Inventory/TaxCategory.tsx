@@ -214,6 +214,7 @@ const TaxCategory: React.FC = () => {
         columns={columns}
         data={categories}
         showToolbar
+        tableId="taxcategory"
         loading={isInitialLoad}
         isFetching={isFetching}
         onPageSizeChange={(size) => {

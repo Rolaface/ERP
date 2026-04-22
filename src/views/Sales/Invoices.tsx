@@ -666,6 +666,7 @@ showSuccess(`Invoice marked as ${status}`);
         columns={columns}
         data={invoices}
         rowKey={(row) => row.invoiceNumber}
+        tableId="sales-invoices"
         loading={isInitialLoad}
         isFetching={isFetching}
         showToolbar

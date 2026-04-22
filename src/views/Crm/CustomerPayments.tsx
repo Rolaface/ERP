@@ -168,6 +168,7 @@ const Payments: React.FC = () => {
       <Table
         columns={columns}
         data={payments}
+        tableId="customer-payments"
         loading={loading || initialLoad}
         showToolbar
         enableColumnSelector

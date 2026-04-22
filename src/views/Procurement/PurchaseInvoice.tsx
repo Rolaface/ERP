@@ -579,6 +579,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         columns={columns}
         data={orders}
         showToolbar
+        tableId="purchase-invoices"
         loading={loading}
         searchValue={searchTerm}
         onSearch={setSearchTerm}

@@ -215,7 +215,6 @@ export const emptyItem: ItemRow = {
   packingUnit: 0,
   packingSize: 0,
   description: "",
-  taxCategory: "",
 };
 
 export const emptyTaxRow: TaxRow = {

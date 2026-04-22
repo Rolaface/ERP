@@ -235,6 +235,7 @@ const DebitNotesTable: React.FC = () => {
       <Table
         columns={columns}
         data={data}
+        tableId="sales-debitnote"
         rowKey={(row) => row.noteNo}
         loading={loading || initialLoad}
         showToolbar
