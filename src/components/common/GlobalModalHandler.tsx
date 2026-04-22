@@ -11,20 +11,44 @@ import type { Supplier } from "../../types/Supply/supplier";
 import type { ItemInitialData } from "../inventory/ItemModal";
 import type { TaxCategoryFormData as TaxTemplateFormData } from "../../types/tax/taxTemplate";
 import type { SalesTaxTemplateFormData } from "../../types/tax/salesTemplate";
+import type { BankAccount } from "../../types/BankAccount/bank";
 
 const CustomerModal = lazy(() => import("../crm/CustomerModal"));
 const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
 const InvoiceModal = lazy(() => import("../sales/InvoiceModal"));
-const ProformaInvoiceModal = lazy(() => import("../sales/ProformaInvoiceModal"));
+const ProformaInvoiceModal = lazy(
+  () => import("../sales/ProformaInvoiceModal"),
+);
 const QuotationModal = lazy(() => import("../sales/QuotationModal"));
-const PurchaseOrderModal = lazy(() => import("../procurement/PurchaseOrderModal"));
-const PurchaseInvoiceModal = lazy(() => import("../procurement/PurchaseInvoiceModal"));
+const PurchaseOrderModal = lazy(
+  () => import("../procurement/PurchaseOrderModal"),
+);
+const PurchaseInvoiceModal = lazy(
+  () => import("../procurement/PurchaseInvoiceModal"),
+);
 const ItemModal = lazy(() => import("../inventory/ItemModal"));
-const ItemsCategoryModal = lazy(() => import("../inventory/ItemsCategoryModal"));
+const ItemsCategoryModal = lazy(
+  () => import("../inventory/ItemsCategoryModal"),
+);
 const WarehouseModal = lazy(() => import("../inventory/WarehouseModal"));
-const TaxTemplateModalComponent = lazy(() => import("../../companies/taxMaintaince/TaxTemplateModal"));
-const TaxCategoryModalComponent = lazy(() => import("../inventory/TaxCategoryModal"));
-const SalesTaxTemplateModalComponent = lazy(() => import("../../companies/taxMaintaince/SalesTempleteModal"));
+const TaxTemplateModalComponent = lazy(
+  () => import("../../companies/taxMaintaince/TaxTemplateModal"),
+);
+const TaxCategoryModalComponent = lazy(
+  () => import("../inventory/TaxCategoryModal"),
+);
+const SalesTaxTemplateModalComponent = lazy(
+  () => import("../../companies/taxMaintaince/SalesTempleteModal"),
+);
+const AddBankAccountModal = lazy(
+  () => import("../CompanySetup/AddBankAccountModal"),
+);
+const AddModeOfPaymentModal = lazy(
+  () => import("../../views/Mode of Payment/AddModeOfPaymentModal"),
+);
+const PaymentEntryModal = lazy(
+  () => import("../../views/PaymentEntry/PaymentEntryModal"),
+);
 
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
@@ -104,22 +128,20 @@ const GlobalModalHandler: React.FC = () => {
       closeModal(modal.id);
     };
 
-const handleSubmit: ModalSubmitHandler = async (data) => {
-  if (context?.onSuccess) {
-    await context.onSuccess(data);
-  }
+    const handleSubmit: ModalSubmitHandler = async (data) => {
+      if (context?.onSuccess) {
+        await context.onSuccess(data);
+      }
 
-  if (context?.callback) {
-    await context.callback(data);
-  }
+      if (context?.callback) {
+        await context.callback(data);
+      }
 
-  return true;
-};
+      return true;
+    };
 
     const wrappedModal = (modalContent: React.ReactNode) => (
-      <Suspense fallback={modalFallback}>
-        {modalContent}
-      </Suspense>
+      <Suspense fallback={modalFallback}>{modalContent}</Suspense>
     );
 
     switch (modal.type) {
@@ -133,21 +155,20 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onSubmit={handleSubmit}
             initialData={getInitialData<CustomerDetail>(modal.initialData)}
             isEditMode={modal.isEdit}
-          />
+          />,
         );
 
       case "supplier":
         return wrappedModal(
           <SupplierModal
             key={modal.id}
-
             modalId={modal.id}
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
             initialData={getInitialData<Supplier>(modal.initialData)}
             isEditMode={modal.isEdit}
-          />
+          />,
         );
 
       case "invoice":
@@ -160,7 +181,7 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onSubmit={handleSubmit}
             initialData={modal.initialData}
             mode={modal.isEdit ? "edit" : "create"}
-          />
+          />,
         );
 
       case "proforma":
@@ -172,7 +193,7 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onClose={handleClose}
             onSubmit={handleSubmit}
             initialData={modal.initialData}
-          />
+          />,
         );
 
       case "quotation":
@@ -184,7 +205,7 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onClose={handleClose}
             onSubmit={handleSubmit}
             initialData={modal.initialData}
-          />
+          />,
         );
 
       case "purchaseOrder":
@@ -196,7 +217,7 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onClose={handleClose}
             onSubmit={handleSubmit}
             poId={getModalSeedValue(modal.initialData, "poId")}
-          />
+          />,
         );
 
       case "purchaseInvoice":
@@ -208,7 +229,7 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onClose={handleClose}
             onSubmit={handleSubmit}
             pId={getModalSeedValue(modal.initialData, "pId")}
-          />
+          />,
         );
 
       case "item":
@@ -221,22 +242,21 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onSubmit={handleSubmit}
             initialData={getInitialData<ItemInitialData>(modal.initialData)}
             isEditMode={modal.isEdit}
-          />
+          />,
         );
 
- case "itemCategory":
-  return wrappedModal(
-    <ItemsCategoryModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={handleSubmit}
-      initialData={getRecordInitialData(modal.initialData)}
-      isEditMode={modal.isEdit}
-    />
-  );
-  
+      case "itemCategory":
+        return wrappedModal(
+          <ItemsCategoryModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={getRecordInitialData(modal.initialData)}
+            isEditMode={modal.isEdit}
+          />,
+        );
 
       case "taxTemplate":
         return wrappedModal(
@@ -248,7 +268,7 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onSubmit={handleSubmit}
             initialData={getInitialData<TaxTemplateFormData>(modal.initialData)}
             isEditMode={modal.isEdit}
-          />
+          />,
         );
 
       case "warehouse":
@@ -261,7 +281,7 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onSubmit={handleSubmit}
             initialData={getRecordInitialData(modal.initialData)}
             isEditMode={modal.isEdit}
-          />
+          />,
         );
 
       case "taxCategory":
@@ -274,7 +294,7 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
             onSubmit={async (data) => {
               await handleSubmit(data);
             }}
-          />
+          />,
         );
       case "salesTax":
         return wrappedModal(
@@ -288,8 +308,42 @@ const handleSubmit: ModalSubmitHandler = async (data) => {
               modal.initialData,
             )}
             isEditMode={modal.isEdit}
-          />
+          />,
         );
+      case "bankAccount":
+        return wrappedModal(
+          <AddBankAccountModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={getInitialData<BankAccount>(modal.initialData)}
+            isEditMode={modal.isEdit}
+          />,
+        );
+      case "modeofpayment":
+        return wrappedModal(
+          <AddModeOfPaymentModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+          />,
+        );
+
+     case "paymentEntry":
+        return wrappedModal(
+          <PaymentEntryModal  
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+           
+          />,
+        );    
 
       default:
         return null;

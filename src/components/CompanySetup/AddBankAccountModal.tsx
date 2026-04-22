@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Modal from "../ui/modal/modal";
+import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import { Building2 } from "lucide-react";
@@ -14,6 +14,7 @@ interface Props {
   onClose: () => void;
   onSubmit: (data: any) => void;
   defaultAccountFor?: AccountType;
+    modalId: string;
   partyName?: string;
   initialData?: BankAccount | null;
   currency?: string;
@@ -36,7 +37,8 @@ const AddBankAccountModal: React.FC<Props> = ({
   partyName,
   initialData,
   currency,
-  customerId
+  modalId
+  
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const {
@@ -140,7 +142,8 @@ const AddBankAccountModal: React.FC<Props> = ({
   );
 
   return (
-    <Modal
+    <MinimizableModal
+    modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
       title="Add Bank Account"
@@ -335,7 +338,7 @@ const AddBankAccountModal: React.FC<Props> = ({
           </div>
         </div>
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

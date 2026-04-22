@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
-import PaymentEntryModal from "./PaymentEntryModal";
+
 import { FaReceipt } from "react-icons/fa";
 import type { Column } from "../../components/ui/Table/type";
 
 import { getAllPayments } from "../../api/CustomerPayment";
 import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-
+import { openPaymentEntryModal } from "../../store/modalStore";
 
 // API Response Type
 
@@ -48,7 +48,6 @@ const PaymentEntry: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-
   const fetchPayments = useCallback(async () => {
     try {
       setLoading(true);
@@ -57,11 +56,10 @@ const PaymentEntry: React.FC = () => {
         undefined,
         page,
         pageSize,
-        searchTerm
+        searchTerm,
       );
 
-      const payments: PaymentAPI[] =
-        response?.data?.payments || [];
+      const payments: PaymentAPI[] = response?.data?.payments || [];
 
       const mapped: PaymentRow[] = payments.map((p) => ({
         id: p.paymentId,
@@ -81,7 +79,7 @@ const PaymentEntry: React.FC = () => {
     } catch (error: any) {
       console.error("Payment fetch error:", error);
       showApiError(
-        error?.response?.data?.message || "Failed to fetch payments"
+        error?.response?.data?.message || "Failed to fetch payments",
       );
     } finally {
       setLoading(false);
@@ -108,7 +106,7 @@ const PaymentEntry: React.FC = () => {
     {
       key: "paymentDate",
       header: "Payment Date",
-      render: (row) => row.paymentDate || "-"
+      render: (row) => row.paymentDate || "-",
     },
     {
       key: "partyType",
@@ -128,8 +126,7 @@ const PaymentEntry: React.FC = () => {
     {
       key: "amount",
       header: "Amount",
-      render: (row) =>
-        ` ${row.amount?.toLocaleString("en-IN") || 0}`,
+      render: (row) => ` ${row.amount?.toLocaleString("en-IN") || 0}`,
     },
     {
       key: "status",
@@ -172,25 +169,12 @@ const PaymentEntry: React.FC = () => {
         showToolbar
         enableAdd
         addLabel="Add Payment Entry"
-        onAdd={() => setShowModal(true)}
+        onAdd={() =>
+          openPaymentEntryModal(null, false, {
+            onSuccess: () => fetchPayments(),
+          })
+        }
       />
-
-      {/* MODAL */}
-      {showModal && (
-       <PaymentEntryModal
-    isOpen={showModal}
-    onSuccess={() => {
-      fetchPayments();
-      setShowModal(false)
-    }}
-    
-    onClose={() => {
-      setShowModal(false);
-    
-    }}
-    
-  />
-      )}
     </div>
   );
 };
