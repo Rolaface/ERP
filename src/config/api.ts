@@ -1,4 +1,3 @@
-import { ShippingAPI } from "../api/utils/shippingruleapi";
 import { ENV } from "./env";
 
 const getApiBaseUrl = (): string => {
@@ -7,10 +6,6 @@ const getApiBaseUrl = (): string => {
   }
 
   const { protocol, hostname } = window.location;
-  console.log("🚀 ~ getApiBaseUrl ~ protocol, hostname:", protocol, hostname);
-
-  // let hostname1 ="gbfn.erp.rolaface.com/"
-
   // Dev / localhost fallback
   if (
     hostname === "localhost" ||
@@ -21,23 +16,13 @@ const getApiBaseUrl = (): string => {
   }
 
   const hostSegments = hostname.split(".");
-  console.log("🚀 ~ getApiBaseUrl ~ hostSegments:", hostSegments);
-
   if (hostSegments.length < 3) {
-    console.log(
-      "🚀 ~ getApiBaseUrl ~ hostSegments.length < 3:",
-      hostSegments.length < 3,
-    );
     return ENV.apiBaseUrl;
   }
 
   const tenantSubdomain = hostSegments[0];
-  console.log("🚀 ~ getApiBaseUrl ~ tenantSubdomain:", tenantSubdomain);
   const baseDomain = hostSegments.slice(-2).join(".");
-  console.log("🚀 ~ getApiBaseUrl ~ baseDomain:", baseDomain);
-
   const isValidTenant = /^[a-z0-9-]+$/i.test(tenantSubdomain);
-  console.log("🚀 ~ getApiBaseUrl ~ isValidTenant:", isValidTenant);
   if (!isValidTenant) {
     return ENV.apiBaseUrl;
   }
@@ -45,10 +30,7 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// console.log("🚀 ~ ERP_BASE:", ERP_BASE)
-
-// export const ERP_BASE = ENV.apiBaseUrl;
+export const ERP_BASE = ENV.apiBaseUrl;
 //  export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
@@ -174,7 +156,7 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.create_customer`,
     update: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.update_customer`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.delete_customer`,
-    getStatement: `${ERP_BASE}/api/method/erpnext.zra_client.customer.statement.api.get_customer_statement`,
+    getStatement: `${ERP_BASE}/api/method/custom_api.api.reports.customer_statement.get_customer_statement`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
     getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
@@ -397,7 +379,7 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.create_supplier`,
     update: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.update_supplier`,
     delete: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.delete_supplier`,
-    getStatement: `${ERP_BASE}/api/method/erpnext.supplier.statement.api.get_supplier_statement`,
+    getStatement: `${ERP_BASE}/api/method/custom_api.api.reports.supplier_statement.get_supplier_statement`,
     CreatePayment: `${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
   },
 
