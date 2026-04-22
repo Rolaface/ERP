@@ -6,6 +6,8 @@ import React, {
   useMemo,
 } from "react";
 import { useOutletContext } from "react-router-dom";
+import { FilterSelect } from "../../components/ui/modal/modalComponent";
+import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import { openPaymentEntryModal } from "../../store/modalStore";
 import {
   getAllSalesInvoices,
@@ -65,6 +67,13 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
 
+const statusOptions = [
+  { label: "Draft", value: "Draft" },
+  { label: "Approved", value: "Approved" },
+  { label: "Paid", value: "Paid" },
+  { label: "Cancelled", value: "Cancelled" },
+];
+
 interface InvoiceTableProps {
   onAddInvoice?: () => void;
   onExportInvoice?: () => void;
@@ -91,6 +100,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+  const [filters, setFilters] = useState<{
+    status?: string;
+    from_date?: string;
+    to_date?: string;
+  }>({});
 
   // ── Pagination (server)
   const [page, setPage] = useState(1);
@@ -108,6 +122,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   // ── Fetch company once
   useEffect(() => {
@@ -130,6 +148,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         sortBy,
         sortOrder,
         searchTerm,
+        undefined,
+        undefined,
+        filters.status,
+        filters.from_date,
+        filters.to_date,
       );
       if (!res || res.status_code !== 200) return;
 
@@ -160,7 +183,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
+  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -174,7 +197,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   useEffect(() => {
     if (isInitialLoad) return;
     fetchInvoices();
-  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
+  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
 
   // Auto-refresh when invoice is created or edited from modal
   useEffect(() => {
@@ -652,14 +675,14 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
               onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
               customActions={[
                 ...(inv.invoiceStatus !== "Draft" &&
-                inv.invoiceStatus !== "Cancelled" &&
-                inv.outstandingAmount > 0
+                  inv.invoiceStatus !== "Cancelled" &&
+                  inv.outstandingAmount > 0
                   ? [
-                      {
-                        label: "Receive Payment",
-                        onClick: () => handleReceivePayment(inv),
-                      },
-                    ]
+                    {
+                      label: "Receive Payment",
+                      onClick: () => handleReceivePayment(inv),
+                    },
+                  ]
                   : []),
                 {
                   label: "View PDF",
@@ -724,6 +747,29 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        extraFilters={
+          <>
+            <FilterSelect
+              value={filters.status ?? ""}
+              options={statusOptions}
+              onChange={(e) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  status: e.target.value || undefined,
+                }));
+                setPage(1);
+              }}
+            />
+            <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range) => {
+                setFilters((prev) => ({ ...prev, ...range }));
+                setPage(1);
+              }}
+            />
+          </>
+        }
       />
 
       {/* ── Drawer modal ── */}
