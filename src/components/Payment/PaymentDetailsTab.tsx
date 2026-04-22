@@ -210,7 +210,11 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   const requestRef = useRef(0);
 
   useEffect(() => {
-    const partyKey = form.partyId || form.partyName;
+    const partyKey = form.partyId ;
+    console.log("STEP 3 👉 useEffect form:", {
+      partyId: form.partyId,
+      partyName: form.partyName,
+    });
     if (
       !partyKey ||
       (form.partyType !== "Customer" && form.partyType !== "Supplier")
@@ -235,6 +239,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           | "Shareholder",
         ),
         fetchCompanyBanks(),
+     
         fetchPartyBanks(form.partyType, form.partyId)
       ]);
 
@@ -272,7 +277,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     };
 
     run();
-  }, [form.partyId, form.partyName, form.partyType, form.paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.partyId, form.partyType, form.paymentType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handlePartyTypeChange = (
@@ -291,6 +296,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   const handlePartyNameSelect = useCallback(
     async (_: string, option: PartyOption | null) => {
+       console.log("STEP 1 👉 Selected Option:", option); 
       if (!option?.value) {
         onFormChange({
           ...PARTY_FILLED_FIELDS,
@@ -305,6 +311,11 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
       onFormChange({ partyId: option.value,  partyName: option.label});
 
+      console.log("STEP 2 👉 Form after select:", {
+        partyId: option.value,
+        partyName: option.label,
+      });
+
       if (partyType !== "Supplier" && partyType !== "Customer") return;
 
       const [details] = await Promise.all([
@@ -313,7 +324,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         fetchPartyBanks(partyType, option.value),
       ]);
 
+      console.log("Details received:", details);
       if (!details) return;
+
+       console.log("Calling onFormChange with:", { glFrom: details.companyLedgerAccount });
 
       const base = { partyName: details.partyName || option.label };
       const companyDefaultCurrency = {
@@ -465,7 +479,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
       if (paymentType === "Pay") {
         // Paid To = party bank
-        if (!form.partyType || !form.partyName) return [];
+        if (!form.partyType || !form.partyId) return [];
         const fresh = await fetchPartyBanks(
           form.partyType,
           form.partyId,

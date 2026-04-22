@@ -295,6 +295,7 @@ const TaxTemplate: React.FC<Props> = () => {
       <Table
         columns={columns}
         data={templates}
+        tableId="inventory-taxtemplates"
         showToolbar
         loading={loading || initialLoad}
         rowKey={(row) => row.name}

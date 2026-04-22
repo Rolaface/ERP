@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus } from "lucide-react";
 
@@ -27,90 +27,164 @@ const faqs = [
 
 const FAQ: React.FC = () => {
   const [active, setActive] = useState<number | null>(0);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filteredFaqs = faqs.filter(
+    (item) =>
+      item.q.toLowerCase().includes(query.toLowerCase()) ||
+      item.a.toLowerCase().includes(query.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const isVisible = rect.top < window.innerHeight * 0.6;
+
+      if (isVisible && active === null && filteredFaqs.length > 0) {
+        setActive(0);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [active, filteredFaqs.length]);
 
   return (
-    <section className="section section-alt">
+    <section className="section section-alt relative overflow-hidden">
 
-      <div className="container-app max-w-3xl">
+      {/* Background depth */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-primary/5 pointer-events-none" />
+
+      <div ref={containerRef} className="container-app max-w-3xl">
 
         {/* HEADER */}
         <div className="text-center stack-md animate-fade-in">
 
-          <h2 className="text-[30px] md:text-[36px] font-semibold text-main leading-snug">
+          <h2 className="text-[32px] md:text-[38px] font-semibold text-main leading-snug tracking-tight">
             Everything you need to{" "}
             <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
               know before getting started
             </span>
           </h2>
 
-          <p className="text-body text-muted">
-            Clear answers to help you make the right decision.
+          <p className="text-body text-muted max-w-lg mx-auto">
+            Clear answers so you can make the right decision with confidence.
           </p>
 
         </div>
 
-        {/* FAQ LIST */}
-        <div className="mt-[calc(var(--density-gap)*3)] space-y-[var(--density-gap)]">
+        {/* 🔍 SEARCH BAR (UPGRADED) */}
+        <div className="mt-[calc(var(--density-gap)*2.5)] animate-fade-in">
 
-          {faqs.map((item, i) => {
+          <div className="relative group">
+            {/* Glow */}
+            <div className="absolute inset-0 bg-primary/5 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 rounded-[var(--density-radius)]" />
+
+            <input
+              type="text"
+              placeholder="Search your question..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="relative w-full px-[calc(var(--density-gap)*1.6)] py-[calc(var(--density-gap)*1.3)] rounded-[calc(var(--density-radius)*1.2)] border border-theme bg-card text-[14px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+            />
+          </div>
+
+        </div>
+
+        {/* FAQ LIST */}
+        <div className="mt-[calc(var(--density-gap)*3)] space-y-[calc(var(--density-gap)*1.2)]">
+
+          {filteredFaqs.map((item, i) => {
             const isOpen = active === i;
 
             return (
               <div
                 key={i}
-                className="bg-card border border-theme rounded-[calc(var(--density-radius)*1.5)] transition-all duration-300 hover:shadow-sm"
+                className="group relative rounded-[calc(var(--density-radius)*1.5)] transition-all duration-300"
               >
 
-                {/* QUESTION */}
-                <button
-                  onClick={() => setActive(isOpen ? null : i)}
-                  className="w-full flex items-center justify-between p-[calc(var(--density-gap)*1.5)] text-left"
+                {/* Hover glow */}
+                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 blur-xl rounded-[calc(var(--density-radius)*1.5)] transition-all duration-300" />
+
+                {/* CARD */}
+                <div
+                  className={`relative bg-card border border-theme rounded-[calc(var(--density-radius)*1.5)] transition-all duration-300 
+                  ${isOpen ? "shadow-md border-primary/30" : "hover:shadow-sm hover:border-primary/20"}`}
                 >
-                  <h3 className="text-[15px] font-medium text-main pr-4">
-                    {item.q}
-                  </h3>
 
-                  <motion.div
-                    animate={{ rotate: isOpen ? 45 : 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="text-[var(--primary)] flex-shrink-0"
+                  {/* QUESTION */}
+                  <button
+                    onClick={() => setActive(isOpen ? null : i)}
+                    className="w-full flex items-center justify-between p-[calc(var(--density-gap)*1.6)] text-left"
                   >
-                    <Plus size={18} />
-                  </motion.div>
-                </button>
+                    <div className="flex items-center gap-2 pr-4 flex-wrap">
 
-                {/* ANSWER */}
-                <AnimatePresence initial={false}>
-                  {isOpen && (
+                      <h3 className="text-[15px] font-medium text-main">
+                        {item.q}
+                      </h3>
+
+                      {i < 2 && (
+                        <span className="text-[10px] px-2 py-[2px] rounded-full bg-primary/10 text-primary font-medium">
+                          Popular
+                        </span>
+                      )}
+
+                    </div>
+
                     <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
+                      animate={{ rotate: isOpen ? 45 : 0 }}
                       transition={{ duration: 0.25 }}
-                      className="overflow-hidden"
+                      className="text-primary flex-shrink-0"
                     >
-                      <p className="px-[calc(var(--density-gap)*1.5)] pb-[calc(var(--density-gap)*1.5)] text-[14px] text-muted leading-relaxed max-w-[90%]">
-                        {item.a}
-                      </p>
+                      <Plus size={18} />
                     </motion.div>
-                  )}
-                </AnimatePresence>
+                  </button>
 
+                  {/* ANSWER */}
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden"
+                      >
+                        <p className="px-[calc(var(--density-gap)*1.6)] pb-[calc(var(--density-gap)*1.6)] text-[14px] text-muted leading-relaxed max-w-[92%]">
+                          {item.a}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                </div>
               </div>
             );
           })}
 
+          {/* Empty state */}
+          {filteredFaqs.length === 0 && (
+            <p className="text-center text-[13px] text-muted">
+              No results found. Try a different keyword.
+            </p>
+          )}
+
         </div>
 
-        {/* BOTTOM CONVERSION HINT */}
-        <div className="text-center mt-[calc(var(--density-gap)*3)] animate-fade-in">
-          <p className="text-[13px] text-muted">
+        {/* BOTTOM CONVERSION */}
+        <div className="text-center mt-[calc(var(--density-gap)*4)] animate-fade-in">
+
+          <p className="text-[14px] text-muted">
             Still have questions?{" "}
-            <span className="text-primary font-medium cursor-pointer">
+            <span className="text-primary font-medium cursor-pointer hover:underline">
               Book a free demo
             </span>{" "}
-            and we’ll walk you through everything.
+            and we’ll guide you step-by-step.
           </p>
+
         </div>
 
       </div>

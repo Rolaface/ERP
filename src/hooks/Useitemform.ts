@@ -224,35 +224,58 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   }),
 });
 
-//structure the API response to match the form data shape, especially for nested fields like vendorInfo and inventoryInfo
+
 
 const mapApiToForm = (item: any) => {
   return {
     ...item,
+
+    // BASIC
+    itemName: item.itemName || "",
+    itemGroup: item.itemGroup || "",
+    itemClassCode: item.itemClassCode || "",
+    description: item.description || "",
+    unitOfMeasureCd: item.unitOfMeasureCd || "",
+
+    // PRICING
+    buyingPrice: String(item.buyingPrice || ""),
+    sellingPrice: String(item.sellingPrice || ""),
+
+    // PACKING 
+    packingUnit: String(item.packingUnit || 1),
+    packingSize: String(item.packingSize || 1),
+
+    // INVENTORY
+    brand: item.brand || "",
+    weight: String(item.weight || ""),
+    weightUnit: (item.weightUnit || "").toLowerCase(), 
+
+    dimensionLength: String(item.dimensionLength || ""),
+    dimensionWidth: String(item.dimensionWidth || ""),
+    dimensionHeight: String(item.dimensionHeight || ""),
+
+    // COUNTRY
+    originNationCode: item.countryOfOrigin || "",
+
+    // VENDOR
     preferredVendor: item.vendorInfo?.preferredVendor || "",
-    originNationCode: item.countryOfOrigin || "", 
+
+    // INVENTORY INFO
     valuationMethod: item.inventoryInfo?.valuationMethod || "",
     trackingMethod: item.inventoryInfo?.trackingMethod || "",
     reorderLevel: item.inventoryInfo?.reorderLevel || "",
     maxStockLevel: item.inventoryInfo?.maxStockLevel || "",
     minStockLevel: item.inventoryInfo?.minStockLevel || "",
 
+    // BATCH
     has_batch_no: item.batchInfo?.has_batch_no || false,
     has_expiry_date: item.batchInfo?.has_expiry_date || false,
 
-    taxRows: Array.isArray(item.taxInfo)
-      ? item.taxInfo.map((t: any) => ({
-          taxCategory: t.taxCategory || "",
-          taxTemplate: t.taxName || "",
-        }))
-      : item.taxInfo && Object.keys(item.taxInfo).length > 0
-        ? [
-            {
-              taxCategory: item.taxInfo.taxCategory || "",
-              taxTemplate: item.taxInfo.taxName || "",
-            },
-          ]
-        : [],
+    // TAX
+    taxRows: item.taxInfo?.map((t: any) => ({
+      taxCategory: t.taxCategory || "",
+      taxTemplate: t.taxName || "",
+    })) || [],
   };
 };
 

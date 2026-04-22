@@ -27,6 +27,8 @@ export interface MinimizableModalProps {
   icon?: LucideIcon;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  summaryBar?: React.ReactNode;
+
   maxWidth?:
     | "sm"
     | "md"
@@ -54,6 +56,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
   maxWidth = "4xl",
   height = "520px",
   customWidth,
+  summaryBar,
 }) => {
   // Optimized: Select only the specific modal instead of entire array
   const modalMeta = useModalStore((state) => 
@@ -107,6 +110,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
             panelZIndex={layer.panel}
             onClose={onClose}
             onMinimize={() => minimizeModal(modalId)}
+            summaryBar={summaryBar} 
           >
             {children}
           </ModalShell>
@@ -129,6 +133,7 @@ interface ModalShellProps {
   panelZIndex: number;
   onClose: () => void;
   onMinimize: () => void;
+  summaryBar?: React.ReactNode;
 }
 
 const ModalShell: React.FC<ModalShellProps> = ({
@@ -144,6 +149,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
   panelZIndex,
   onClose,
   onMinimize,
+  summaryBar,
 }) => {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -239,6 +245,9 @@ const ModalShell: React.FC<ModalShellProps> = ({
                 </button>
               </div>
             </div>
+            {summaryBar && (
+    <div className="relative mt-1">{summaryBar}</div>
+  )}
           </header>
 
           <section className="min-h-0 flex-1 overflow-x-auto overflow-y-auto bg-app px-4 py-3 text-sm text-main">

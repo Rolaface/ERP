@@ -4,6 +4,7 @@ import PurchaseInvoiceView from "../../views/Procurement/PurchaseInvoiceView";
 // Shared UI Table Components
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
+import { openPaymentEntryModal } from "../../store/modalStore";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -31,7 +32,7 @@ import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import PurchaseInvoiceDetailModal, {
   type PurchaseInvoiceDetail,
 } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
-import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
+
 import {
   REFRESH_KEYS,
   useDataRefreshStore,
@@ -107,8 +108,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
   const [company, setCompany] = useState<any | null>(null);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPI, setSelectedPI] = useState<any | null>(null);
+
 
   // ── PDF preview modal
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -123,25 +123,45 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
-  const handleMakePayment = async (pId: string) => {
-    try {
-      showLoading("Opening payment...");
-      const res = await getPurchaseInvoiceById(pId);
-      closeSwal();
 
-      if (!res || res.status !== "success") {
-        showApiError("Failed to load invoice");
-        return;
-      }
 
-      setSelectedPI(res.data);
-      setPaymentModalOpen(true);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
+const handleMakePayment = async (pId: string) => {
+  try {
+    showLoading("Opening payment...");
+    const res = await getPurchaseInvoiceById(pId);
+    closeSwal();
+
+    if (!res || res.status !== "success") {
+      showApiError("Failed to load invoice");
+      return;
     }
-  };
 
+    const data = res.data ?? {};
+
+    openPaymentEntryModal(
+      {
+        paymentType: "Pay",
+        partyType: "Supplier",
+        partyName: data.supplierName,
+        partyId: data.supplierId ?? data.pId,
+        amount: data.grandTotal,
+        referenceName: data.pId,
+        referenceType: "Purchase Invoice",
+      },
+      false,
+      {
+        onSuccess: (paymentId) => {
+          fetchInvoice();
+          showSuccess(`Payment ${paymentId} created`);
+        },
+      }
+    );
+
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));
@@ -522,7 +542,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     {
       key: "actions",
       header: "Actions",
-      align: "left",
+      align: "center",
       render: (o) => (
         <ActionGroup>
           <ActionButton
@@ -579,6 +599,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         columns={columns}
         data={orders}
         showToolbar
+        tableId="purchase-invoices"
         loading={loading}
         searchValue={searchTerm}
         onSearch={setSearchTerm}
@@ -674,33 +695,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         />
       )}
 
-      <PaymentEntryModal
-        isOpen={paymentModalOpen}
-        onSuccess={(paymentId) => {
-          fetchInvoice();
-          setPaymentModalOpen(false);
-          setSelectedPI(null);
-
-          showSuccess(`Payment ${paymentId} created`);
-        }}
-        onClose={() => {
-          setPaymentModalOpen(false);
-          setSelectedPI(null);
-        }}
-        defaultValues={
-          selectedPI
-            ? {
-                paymentType: "Pay",
-                partyType: "Supplier",
-                partyName: selectedPI.supplierName,
-                partyId: selectedPI.supplierId ?? selectedPI.pId,
-                amount: selectedPI.grandTotal,
-                referenceName: selectedPI.pId,
-                referenceType: "Purchase Invoice",
-              }
-            : undefined
-        }
-      />
+  
     </div>
   );
 };

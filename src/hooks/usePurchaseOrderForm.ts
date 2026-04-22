@@ -725,10 +725,48 @@ const loadAddressesForSupplier = useCallback(
     }
   };
 
-  const validateTab = (tab: POTab): string | null => {
-    return null;
-  };
+ const validateTab = (tab: POTab): string | null => {
+  if (tab === "details") {
+    if (!form.supplierId) {
+      return "Please select a supplier";
+    }
 
+    if (!form.items.length) {
+      return "Please add at least one item";
+    }
+
+    for (let i = 0; i < form.items.length; i++) {
+      const it = form.items[i];
+
+      // Item
+      if (!it.itemCode) {
+        return `Row ${i + 1}: Item is required`;
+      }
+
+      // Qty
+      if (!it.quantity || Number(it.quantity) <= 0) {
+        return `Row ${i + 1}: Quantity is required`;
+      }
+
+      // Rate 
+      if (!it.rate || Number(it.rate) <= 0) {
+        return `Row ${i + 1}: Rate is required`;
+      }
+
+      // Warehouse
+      if (!it.warehouse) {
+        return `Row ${i + 1}: Warehouse is required`;
+      }
+
+      // VAT Code
+      // if (!it.vatCd || it.vatCd.trim() === "") {
+      //   return `Row ${i + 1}: Tax Name is required`;
+      // }   
+    }
+  }
+
+  return null;
+};
   const handleItemSelect = useCallback(async (itemId: string, idx: number) => {
     try {
       const res = await getItemByItemCode(itemId, form.taxCategory);
@@ -748,6 +786,10 @@ const loadAddressesForSupplier = useCallback(
       }
 
       const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
+      const taxTypes = (data.taxInfo || [])
+  .flatMap((tax: any) => tax.taxRates || [])
+  .map((r: any) => r.tax_type)
+  .filter((t: string) => t && t.trim() !== "");
 
       setForm((prev) => {
         const items = [...prev.items];
@@ -766,6 +808,7 @@ const loadAddressesForSupplier = useCallback(
 
           vatRate: totalTaxRate,
           vatCd: selectedTax?.taxName || "",
+          taxTypes: taxTypes,
 
           taxCategory: selectedTax?.taxCategory || "",
 

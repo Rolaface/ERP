@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import type { Column } from "../../components/ui/Table/type";
+import { openPaymentEntryModal } from "../../store/modalStore";
 
-import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+
 
 import {
   showLoading,
@@ -35,12 +36,18 @@ const Payments: React.FC = () => {
 
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [openPaymentModal, setOpenPaymentModal] = useState(false);
+  
   const [initialLoad, setInitialLoad] = useState(true);
 
-  const handleAddPayment = () => {
-    setOpenPaymentModal(true);
-  };
+const handleAddPayment = () => {
+  openPaymentEntryModal(
+    null,   // no default values
+    false,  // create mode
+    {
+      onSuccess: () => fetchPayments(),
+    }
+  );
+};
   /**
    * Fetch Payments
    */
@@ -168,6 +175,7 @@ const Payments: React.FC = () => {
       <Table
         columns={columns}
         data={payments}
+        tableId="customer-payments"
         loading={loading || initialLoad}
         showToolbar
         enableColumnSelector
@@ -190,10 +198,7 @@ const Payments: React.FC = () => {
           setPage(1);
         }}
       />
-      <PaymentEntryModal
-        isOpen={openPaymentModal}
-        onClose={() => setOpenPaymentModal(false)}
-      />
+      
     </div>
   );
 };

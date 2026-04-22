@@ -4,7 +4,7 @@ import { showValidationError } from "../../utils/alert";
 import StockItemSelect from "../selects/StockItemSelect";
 import WarehouseSelect from "../selects/WarehouseSelect";
 import DatePickerInput from "../calendar/DatePickerInput";
-import {SelectedStockItem} from "../../types/Stock/stock";
+import { SelectedStockItem } from "../../types/Stock/stock";
 import Tooltip from "../Tooltip";
 
 // ─── Shared action/ui shapes (exported so callers can type against them) ──────
@@ -72,10 +72,10 @@ const InvoiceHeaders: React.FC = () => (
     {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[140px] whitespace-nowrap">
       Description
     </th> */}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[10px] whitespace-nowrap">
       Pkg (U×S)
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
       Box
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[250px] whitespace-nowrap">
@@ -103,7 +103,7 @@ const InvoiceHeaders: React.FC = () => (
       Tax(%)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
-     Tax Name
+      Tax Name
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
       Amount
@@ -154,41 +154,45 @@ const ItemTable: React.FC<ItemTableProps> = ({
             batchNo={it.batchNo}
             itemName={it.itemName}
             taxCategory={taxCategory}
-onChange={(item: SelectedStockItem) => {
-  actions.updateItemDirectly?.(i, {
+            onChange={(item: SelectedStockItem) => {
+              actions.updateItemDirectly?.(i, {
 
-    itemCode: item.itemCode,
-    itemName: item.itemName,
-    description: item.description,
+                itemCode: item.itemCode,
+                itemName: item.itemName,
+                description: item.description,
 
-   
-    packingSize: item.packingSize,
-    packingUnit: item.packingUnit,
 
-   
-    batchNo: item.batchNo,
-    mfgDate: item.mfgDate,
-    expDate: item.expiryDate,
+                packingSize: item.packingSize,
+                packingUnit: item.packingUnit,
 
-   
-    availableQty: item.qty,
-    quantity: 1, // default
 
-    
-    price:
-      item.price ??
-      item.sellingPrice ??
-      item.purchasePrice ??
-      0,
+                batchNo: item.batchNo,
+                mfgDate: item.mfgDate,
+                expDate: item.expiryDate,
 
-    // warehouse
-    warehouse: item.warehouse,
 
- 
-    vatRate: item.vatRate,
-    vatCode: item.vatCode,
-  });
-}}
+                availableQty: item.qty,
+                quantity: 1, // default
+
+
+                price:
+                  item.price ??
+                  item.sellingPrice ??
+                  item.purchasePrice ??
+                  0,
+
+                // warehouse
+                warehouse: item.warehouse,
+
+
+                vatRate: item.vatRate,
+                vatCode: item.vatCode,
+                taxTypes: (item.taxInfo || [])
+  .flatMap((tax: any) => tax.taxRates || [])
+  .map((r: any) => r.tax_type)
+  .filter((t: string) => t && t.trim() !== ""),
+              });
+            }}
             onClear={() =>
               actions.updateItemDirectly?.(i, {
                 itemCode: "",
@@ -219,27 +223,25 @@ onChange={(item: SelectedStockItem) => {
         </td> */}
 
         {/* Packing */}
-        <td className="px-0.5 py-1">
-          <div className="flex items-center justify-center gap-[1px] w-[70px]">
-            <Tooltip content={`Unit: ${it.packingUnit}`}>
+        <td className="px-1 py-1">
+          <div className="flex items-center justify-center ">
+            <Tooltip
+              content={
+                it.packingUnit && it.packingSize
+                  ? `Packing: ${it.packingUnit} × ${it.packingSize}`
+                  : "No packing defined"
+              }
+            >
               <input
-                type="number"
-                name="packingUnit"
-                value={it.packingUnit || ""}
+                type="text"
+                name="packing"
+                value={
+                  it.packingUnit && it.packingSize
+                    ? `${it.packingUnit}×${it.packingSize}`
+                    : ""
+                }
                 disabled
-                onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
-              />
-            </Tooltip>
-            <span className="text-[10px] text-muted font-semibold">×</span>
-            <Tooltip content={`Size: ${it.packingSize}`}>
-              <input
-                type="number"
-                name="packingSize"
-                value={it.packingSize || ""}
-                disabled
-                onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[23px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm no-spinner"
+                className="w-[50px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
               />
             </Tooltip>
           </div>
@@ -356,7 +358,7 @@ onChange={(item: SelectedStockItem) => {
         </td>
 
         {/* Price */}
-        <td className="px-1.5 py-1">
+        <td className="px-2 py-1">
           <Tooltip
             content={`Price: ${symbol} ${Number(it.price || 0).toFixed(2)}`}
           >
@@ -371,7 +373,7 @@ onChange={(item: SelectedStockItem) => {
         </td>
 
         {/* Discount */}
-        <td className="px-0.5 py-1">
+        <td className="px-1 py-1">
           <input
             type="number"
             name="discount"
@@ -382,7 +384,7 @@ onChange={(item: SelectedStockItem) => {
         </td>
 
         {/* VAT Rate */}
-        <td className="px-0.5 py-1">
+        <td className="px-1 py-1">
           <input
             type="number"
             name="vatRate"
@@ -393,8 +395,14 @@ onChange={(item: SelectedStockItem) => {
         </td>
 
         {/* VAT Code */}
-        <td className="px-0.5 py-1">
-          <Tooltip content={it.vatCode || "No tax code"}>
+        <td className="px-2 py-1">
+          <Tooltip
+  content={
+    it.taxTypes?.length
+      ? `Tax Types: ${it.taxTypes.join(", ")}`
+      : "No Tax Types"
+  }
+>
             <input
               type="text"
               name="vatCode"

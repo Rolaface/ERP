@@ -1,54 +1,40 @@
 import { SupplierFormData, Supplier } from "../../types/Supply/supplier";
 import { emptySupplierForm } from "./supplier";
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  mapSupplierApi  —  API response (message.data)  →  Supplier (store shape)
-//
-//  KEY RULES:
-//  • Keep contacts[] and addresses[] arrays intact — SupplierDetailView reads them
-//  • Also flatten the primary contact into legacy flat fields (forms still use them)
-//  • terms come as terms.Buying (capital B) from API — preserve that key
-//  • supplierId  = d.id   (the API uses `id`, not `supplierId`)
-//  • supplierName = d.name  (not `supplierName`)
-//  • taxCategory  = d.supplierTaxCategory  (not `taxCategory`)
-//  • createdAt    = d.createdAt  (not `dateOfAddition`)
-// ─────────────────────────────────────────────────────────────────────────────
-
 export const mapSupplierApi = (d: any): Supplier => {
   if (!d) return emptySupplierForm as Supplier;
 
-  // Primary contact — prefer isPrimary flag, else first
+
   const contact =
     d.contacts?.find((c: any) => c.isPrimary) ?? d.contacts?.[0] ?? {};
 
-  // Billing address — prefer type=Billing, else first
+
   const address =
     d.addresses?.find((a: any) => a.type === "Billing") ??
     d.addresses?.[0] ??
     {};
 
   return {
-    // ── Identity (new API fields) ──────────────────────────────────────────
-    id: d.id ?? "", // "SUP-2026-00008"
-    supplierId: d.id ?? "", // keep both for legacy compat
-    supplierName: d.name ?? "", // API sends `name`, not `supplierName`
+    id: d.id ?? "", 
+    supplierId: d.id ?? "", 
+    supplierName: d.name ?? "", 
     supplierCode: d.code ?? "",
 
-    taxCategory: d.supplierTaxCategory ?? "", // API sends `supplierTaxCategory`
+    taxCategory: d.supplierTaxCategory ?? "", 
     tpin: d.tpin ?? "",
     currency: d.currency ?? "",
     type: d.type ?? "",
     supplierGroup: d.supplierGroup ?? "",
     status: d.status ?? "",
 
-    // createdAt stored so SupplierDetailView can render it
+
     createdAt: d.createdAt ?? "",
 
-    // ── Keep the full arrays (SupplierDetailView iterates these directly) ──
+
     contacts: Array.isArray(d.contacts) ? d.contacts : [],
     addresses: Array.isArray(d.addresses) ? d.addresses : [],
 
-    // ── Flat contact fields (legacy — forms & dropdowns use these) ─────────
+
     contactPerson:
       contact.fullName ||
       `${contact.firstName ?? ""} ${contact.lastName ?? ""}`.trim() ||
@@ -57,23 +43,19 @@ export const mapSupplierApi = (d: any): Supplier => {
     alternateNo: "",
     emailId: contact.email ?? "",
 
-    // ── Flat address fields (legacy — forms use these) ─────────────────────
+
     billingAddressLine1: address.line1 ?? "",
     billingAddressLine2: address.line2 ?? "",
     billingCity: address.city ?? "",
     province: address.state ?? "",
     billingPostalCode: address.postalCode ?? "",
     billingCountry: address.country ?? "",
-    billingCounty: address.county ?? "", // county ≠ country
-    district: address.county ?? "", // alias
-
-    // ── Misc ───────────────────────────────────────────────────────────────
+    billingCounty: address.county ?? "", 
+    district: address.county ?? "", 
     openingBalance: 0,
     paymentTerms: "",
     dateOfAddition: d.createdAt ?? "",
 
-    // ── Terms — API sends terms.Buying (capital B); keep BOTH keys so that
-    //    SupplierDetailView (reads Buying) and forms (read buying) both work ─
     terms: {
       buying: d.terms?.buying ?? null,
       buying: d.terms?.buying ?? d.terms?.buying ?? { payment: { phases: [] } },
@@ -81,20 +63,18 @@ export const mapSupplierApi = (d: any): Supplier => {
   } as Supplier;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  mapSupplierToApi  —  form data  →  API request body (POST / PUT)
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 export const mapSupplierToApi = (f: SupplierFormData, id?: string | number) => {
   return {
     ...(id ? { id } : {}),
 
     name: f.supplierName ?? "",
-    type: f.type ?? "Company",
+    type: f.type ?? "",
     tpin: f.tpin ?? "",
     currency: f.currency ?? "",
-    supplierGroup: f.supplierGroup ?? "All Supplier Groups",
-    status: f.status ?? "Active",
+    supplierGroup: f.supplierGroup ?? "",
+    status: f.status ?? "",
     supplierTaxCategory: f.taxCategory ?? "",
 
     contacts:
@@ -116,7 +96,7 @@ export const mapSupplierToApi = (f: SupplierFormData, id?: string | number) => {
               firstName: f.contactPerson || "",
               lastName: "",
               email: f.emailId || "",
-              mobile: `${f.phoneCode || ""}${f.phoneNo || ""}`,
+              mobile: `${f.phoneCode || ""}${(f.phoneNo || "").replace(/^\+\d{1,3}/, "")}`,
               phone: "",
               isPrimary: true,
               isBilling: true,
@@ -157,14 +137,10 @@ export const mapSupplierToApi = (f: SupplierFormData, id?: string | number) => {
   };
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  mapSupplierToForm  —  Supplier (store)  →  SupplierFormData (edit form)
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
   if (!s) return emptySupplierForm;
 
-  // Reconstruct flat contact fields from contacts[] if flat fields are missing
   const contacts = (s as any).contacts ?? [];
   const addresses = (s as any).addresses ?? [];
   const primary = contacts.find((c: any) => c.isPrimary) ?? contacts[0] ?? {};
@@ -189,8 +165,8 @@ export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
     taxCategory: s.taxCategory ?? (s as any).supplierTaxCategory ?? "",
 
     contactPerson,
-    phoneCode: phoneNo.slice(0, 3),
-    phoneNo: phoneNo.slice(3) || phoneNo,
+    phoneCode: phoneNo.startsWith("+") ? phoneNo.slice(0, 3) : "",
+phoneNo: phoneNo.startsWith("+") ? phoneNo.slice(3).replace(/^\+\d{1,3}/, "") : phoneNo,
     alternateCode: (s.alternateNo ?? "").slice(0, 3),
     alternateNo: (s.alternateNo ?? "").slice(3),
     emailId,
@@ -204,11 +180,10 @@ export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
 
     openingBalance: Number(s.openingBalance ?? 0),
 
-    // Keep arrays through for any component that needs them
     contacts: contacts.length ? contacts : (s.contacts ?? []),
     addresses: addresses.length ? addresses : (s.addresses ?? []),
 
-    // Flat address fields
+
     billingAddressLine1: s.billingAddressLine1 ?? billing.line1 ?? "",
     billingAddressLine2: s.billingAddressLine2 ?? billing.line2 ?? "",
     billingCity: s.billingCity ?? billing.city ?? "",
@@ -252,12 +227,8 @@ export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
   };
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  supplierApiToDropdown  —  lightweight shape for select dropdowns
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const supplierApiToDropdown = (s: any) => ({
-  // handles both old flat shape and new nested API shape
   id: s.id ?? s.supplierId,
   code: s.code ?? s.supplierCode,
   name: s.name ?? s.supplierName,

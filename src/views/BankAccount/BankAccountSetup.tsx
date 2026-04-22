@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
-import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
+import { openBankAccountModal } from "../../store/modalStore";
 import { FaUniversity } from "react-icons/fa";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
@@ -103,13 +103,13 @@ const BankAccountSetup: React.FC = () => {
       render: (row) => row.dateAdded || "—",
     },
     {
-  key: "accountFor",
-  header: "Account For",
-  render: (row) =>
-    Number(row.isCompanyAccount) === 1
-      ? "Company"
-      : row.accountFor || "—",
-},
+      key: "accountFor",
+      header: "Account For",
+      render: (row) =>
+        Number(row.isCompanyAccount) === 1
+          ? "Company"
+          : row.accountFor || "—",
+    },
     {
       key: "bankName",
       header: "Bank",
@@ -199,7 +199,7 @@ const BankAccountSetup: React.FC = () => {
   ];
 
   return (
-    <div className="p-8">
+    <div className="p-6">
       {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
@@ -220,26 +220,21 @@ const BankAccountSetup: React.FC = () => {
         enableAdd
         currentPage={page}
         totalPages={totalPages}
+        enableColumnSelector
+        tableId="bank-accounts"
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
         addLabel="Add Bank Account"
-        onAdd={() => setShowModal(true)}
+        onAdd={() => openBankAccountModal(null, false, {
+          onSuccess: () => fetchAccounts(),
+        })}
       />
 
 
-      {/* MODAL */}
-      {showModal && (
-        <AddBankAccountModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSubmit={() => {
-            fetchAccounts();
-          }}
-        />
-      )}
+
     </div>
   );
 };

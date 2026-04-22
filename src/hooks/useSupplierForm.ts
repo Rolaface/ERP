@@ -363,8 +363,8 @@ export const useSupplierForm = ({
 
       const formattedForm = {
         ...form,
-        phoneNo: `${form.phoneCode || ""}${form.phoneNo || ""}`,
-        alternateNo: `${form.alternateCode || ""}${form.alternateNo || ""}`,
+        phoneNo: `${form.phoneCode || ""}${(form.phoneNo || "").replace(/^\+\d{1,3}/, "")}`,
+        alternateNo: `${form.alternateCode || ""}${(form.alternateNo || "").replace(/^\+\d{1,3}/, "")}`,
       };
 
       const payload = mapSupplierToApi(formattedForm, initialData?.supplierId);
@@ -388,17 +388,17 @@ export const useSupplierForm = ({
       }
 
       // Only success case comes here
-     const successMessage =
-  res?.message?.message ||
-  (isEditMode ? "Supplier Updated" : "Supplier Created");
+      const successMessage =
+        res?.message?.message ||
+        (isEditMode ? "Supplier Updated" : "Supplier Created");
 
-await showSuccess(successMessage);
+      await showSuccess(successMessage);
 
-useDataRefreshStore.getState().triggerRefresh(
-  REFRESH_KEYS.SUPPLIER_LIST
-);
+      useDataRefreshStore.getState().triggerRefresh(
+        REFRESH_KEYS.SUPPLIER_LIST
+      );
 
-onSuccess?.(form); 
+      onSuccess?.(form);
 
       /* Step 2 — Bank accounts (only on create, not edit) */
       if (!isEditMode) {
@@ -436,8 +436,8 @@ onSuccess?.(form);
 
       /* Success */
 
-      res?.message?.message 
-        res?.message ||
+      res?.message?.message
+      res?.message ||
         (isEditMode ? "Supplier Updated" : "Supplier Created");
 
     } catch (err: any) {

@@ -4,6 +4,7 @@ import ColumnSelector from "./ColumnSelector";
 import Pagination from "../../Pagination";
 import Tooltip from "../../Tooltip";
 import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { useColumnStore } from "../../../store/useColumnStore";
 
 interface SortState {
   sortBy: string;
@@ -13,6 +14,7 @@ interface SortState {
 interface TableProps<T> {
   columns: Column<T>[];
   data: T[];
+  tableId?: string;
   rowKey?: (row: T) => string;
   loading?: boolean;
   isFetching?: boolean;
@@ -107,6 +109,7 @@ const TableInner = <T extends Record<string, any>>({
   loading = false,
   isFetching = false,
   emptyMessage = "No records found.",
+  tableId,  
   expandedRowRender,
   onRowClick,
   showToolbar = false,
@@ -132,20 +135,25 @@ const TableInner = <T extends Record<string, any>>({
   onPageSizeChange,
 }: TableProps<T>) => {
   const allKeys = useMemo(() => columns.map((col) => col.key), [columns]);
-  const [visibleKeys, setVisibleKeys] = useState<string[]>(() => 
-    // Initialize only on mount to avoid resetting on every render
-    allKeys
+  const { getVisibleKeys, setVisibleKeys: saveVisibleKeys } = useColumnStore();
+
+  const [visibleKeys, setVisibleKeys] = useState<string[]>(() =>
+    tableId ? getVisibleKeys(tableId, allKeys) : allKeys
   );
-  const visibleColumns = useMemo(() => 
+
+
+  const handleApplyColumns = (keys: string[]) => {
+    setVisibleKeys(keys);
+    if (tableId) {
+      saveVisibleKeys(tableId, keys);
+    }
+  };
+
+  const visibleColumns = useMemo(() =>
     columns.filter((col) => visibleKeys.includes(col.key)),
     [columns, visibleKeys]
   );
 
-  const toggleColumn = (key: string) => {
-    setVisibleKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
-    );
-  };
 
   const handleColumnSort = (colKey: string) => {
     if (!onSortChange) return;
@@ -196,9 +204,8 @@ const TableInner = <T extends Record<string, any>>({
               <ColumnSelector
                 columns={columns}
                 visibleKeys={visibleKeys}
-                toggleColumn={toggleColumn}
-                setVisibleKeys={setVisibleKeys}
                 allKeys={allKeys}
+                onApply={handleApplyColumns}  
               />
             )}
             {enableAdd && (
@@ -330,127 +337,126 @@ const TableInner = <T extends Record<string, any>>({
                 </tr>
               ) : (
                 <>{/* Subtle fetching indicator - show only when isFetching and data exists */}
-                {isFetching && data.length > 0 && (
-                  <tr className="absolute top-0 left-0 right-0 z-20 h-full bg-white/30">
-                    <td colSpan={visibleColumns.length}>
-                      <div className="flex items-center justify-center py-1">
-                        <div className="h-1 w-20 rounded-full bg-primary/30 animate-pulse" />
-                      </div>
-                    </td>
-                  </tr>
-                )}
-                {data.map((item, idx) => {
-                  const expandedContent = expandedRowRender?.(item);
-                  const isExpanded = !!expandedContent;
-                  // Use rowKey if provided, otherwise use index - never JSON.stringify (expensive!)
-                  const itemKey = rowKey ? rowKey(item) : `row-${idx}`;
+                  {isFetching && data.length > 0 && (
+                    <tr className="absolute top-0 left-0 right-0 z-20 h-full bg-white/30">
+                      <td colSpan={visibleColumns.length}>
+                        <div className="flex items-center justify-center py-1">
+                          <div className="h-1 w-20 rounded-full bg-primary/30 animate-pulse" />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {data.map((item, idx) => {
+                    const expandedContent = expandedRowRender?.(item);
+                    const isExpanded = !!expandedContent;
+                    const itemKey = rowKey ? rowKey(item) : `row-${idx}`;
 
-                  return (
-                    <React.Fragment
-                      key={itemKey}
-                    >
-                      <tr
-                        onClick={() => onRowClick?.(item)}
-                        className={[
-                          "group transition-colors duration-150",
-                          onRowClick ? "cursor-pointer" : "",
-                          idx % 2 === 0 ? "bg-transparent" : "bg-row-hover/10",
-                          "hover:bg-row-hover",
-                          isExpanded ? "bg-row-hover/20" : "",
-                        ].join(" ")}
+                    return (
+                      <React.Fragment
+                        key={itemKey}
                       >
-                        {visibleColumns.map((column) => {
-                          const rawValue = item[column.key];
-                          const fallbackText =
-                            rawValue === null || rawValue === undefined
-                              ? "-"
-                              : String(rawValue);
+                        <tr
+                          onClick={() => onRowClick?.(item)}
+                          className={[
+                            "group transition-colors duration-150",
+                            onRowClick ? "cursor-pointer" : "",
+                            idx % 2 === 0 ? "bg-transparent" : "bg-row-hover/10",
+                            "hover:bg-row-hover",
+                            isExpanded ? "bg-row-hover/20" : "",
+                          ].join(" ")}
+                        >
+                          {visibleColumns.map((column) => {
+                            const rawValue = item[column.key];
+                            const fallbackText =
+                              rawValue === null || rawValue === undefined
+                                ? "-"
+                                : String(rawValue);
 
-                          const needsTruncation =
-                            column.truncate === true ||
-                            column.maxWidth !== undefined;
-                          const cellStyle = column.maxWidth
-                            ? { maxWidth: column.maxWidth }
-                            : {};
+                            const needsTruncation =
+                              column.truncate === true ||
+                              column.maxWidth !== undefined;
+                            const cellStyle = column.maxWidth
+                              ? { maxWidth: column.maxWidth }
+                              : {};
 
-                          const getCellContent = () => {
-                            if (column.render) {
-                              return column.render(item);
-                            }
-                            return (
-                              <span className="block truncate opacity-90">
-                                {fallbackText}
-                              </span>
+                            const getCellContent = () => {
+                              if (column.render) {
+                                return column.render(item);
+                              }
+                              return (
+                                <span className="block truncate opacity-90">
+                                  {fallbackText}
+                                </span>
+                              );
+                            };
+
+                            const cellContent = (
+                              <div
+                                style={
+                                  needsTruncation
+                                    ? { maxWidth: column.maxWidth || "200px" }
+                                    : undefined
+                                }
+                                className={
+                                  needsTruncation
+                                    ? "min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap"
+                                    : "min-w-0"
+                                }
+                              >
+                                {getCellContent()}
+                              </div>
                             );
-                          };
 
-                          const cellContent = (
-                            <div
-                              style={
-                                needsTruncation
-                                  ? { maxWidth: column.maxWidth || "200px" }
-                                  : undefined
-                              }
-                              className={
-                                needsTruncation
-                                  ? "min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap"
-                                  : "min-w-0"
-                              }
-                            >
-                              {getCellContent()}
-                            </div>
-                          );
+                            const tooltipText = column.tooltip
+                              ? column.tooltip(item)
+                              : needsTruncation
+                                ? fallbackText
+                                : undefined;
 
-                          const tooltipText = column.tooltip
-                            ? column.tooltip(item)
-                            : needsTruncation
-                              ? fallbackText
-                              : undefined;
+                            if (tooltipText) {
+                              return (
+                                <td
+                                  key={column.key}
+                                  style={cellStyle}
+                                  className={`border-b border-[var(--border)]/20 px-3 py-1.5 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
+                                >
+                                  <Tooltip content={tooltipText}>
+                                    {cellContent}
+                                  </Tooltip>
+                                </td>
+                              );
+                            }
 
-                          if (tooltipText) {
                             return (
                               <td
                                 key={column.key}
                                 style={cellStyle}
                                 className={`border-b border-[var(--border)]/20 px-3 py-1.5 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
                               >
-                                <Tooltip content={tooltipText}>
-                                  {cellContent}
-                                </Tooltip>
+                                {cellContent}
                               </td>
                             );
-                          }
+                          })}
+                        </tr>
 
-                          return (
-                            <td
-                              key={column.key}
-                              style={cellStyle}
-                              className={`border-b border-[var(--border)]/20 px-3 py-1.5 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
-                            >
-                              {cellContent}
-                            </td>
-                          );
-                        })}
-                      </tr>
-
-                      <tr>
-                        <td
-                          colSpan={visibleColumns.length}
-                          className="p-0"
-                          style={{
-                            borderBottom: isExpanded
-                              ? "2px solid rgba(201,125,46,0.25)"
-                              : "1px solid rgba(0,0,0,0.04)",
-                          }}
-                        >
-                          <ExpandedPanel open={isExpanded}>
-                            {expandedRowRender?.(item)}
-                          </ExpandedPanel>
-                        </td>
-                      </tr>
-                    </React.Fragment>
-                  );
-                })}
+                        <tr>
+                          <td
+                            colSpan={visibleColumns.length}
+                            className="p-0"
+                            style={{
+                              borderBottom: isExpanded
+                                ? "2px solid rgba(201,125,46,0.25)"
+                                : "1px solid rgba(0,0,0,0.04)",
+                            }}
+                          >
+                            <ExpandedPanel open={isExpanded}>
+                              {expandedRowRender?.(item)}
+                            </ExpandedPanel>
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })}
                 </>
               )}
             </tbody>
@@ -485,7 +491,7 @@ const TableInner = <T extends Record<string, any>>({
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
-          onPageChange={onPageChange ?? (() => {})}
+          onPageChange={onPageChange ?? (() => { })}
         />
       </div>
     </div>

@@ -384,8 +384,9 @@ export async function getPartyDetails(
       Account.GetPartyDetails,
       { party, party_type }
     );
-    const res = resp?.data;
-
+    
+    const res = resp?.data?.message;   
+    
     if (res?.status_code !== 201) {
       throw new Error(res?.message || "Failed to fetch party details");
     }
@@ -400,7 +401,7 @@ export async function getPartyDetails(
       companyBankAccount: d?.company_bank_account ?? "",
       companyLedgerAccount: d?.company_account_ledger ?? "",
       companyLedgerCurrency: d?.company_account_ledger_currency ?? "",
-      companyDefaultCurrency: d?.company_default_currency ?? "", // NEW
+      companyDefaultCurrency: d?.company_default_currency ?? "",
       total_outstanding_amount: d?.total_outstanding_amount ?? null,
     };
   } catch (error: any) {
@@ -429,6 +430,10 @@ export async function getBankAccountOptions(filters: {
   party?: string;
   search?: string;
 }): Promise<BankAccountOption[]> {
+  console.log("STEP 6 👉 FINAL API PARAM:", {
+    party_type: filters.party_type,
+    party: filters.party,
+  });
   try {
     const params = new URLSearchParams();
     if (filters.company) params.append("company", "true");

@@ -2,24 +2,17 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { initTheme, setTheme, type Theme } from "../themes";
 
 const themes: { value: Theme; label: string }[] = [
-  { value: "midnight", label: "🌑 Midnight Blue" },
-  { value: "glass", label: "✨ Frosted Glass" },
-  { value: "luxury", label: "💎 Luxury Gold" },
-
+  { value: "saas-indigo", label: "🚀 SaaS Indigo" },
   { value: "corporate", label: "💼 Corporate" },
-  { value: "ocean", label: "🌊 Ocean Cyan" },
-  { value: "nordic", label: "🏔️ Nordic Slate" },
-
-  { value: "mint", label: "🍃 Fresh Mint" },
-  { value: "rose", label: "🌸 Pastel Rose" },
-  { value: "lavender", label: "🔮 Lavender" },
-  { value: "sunset", label: "🌇 Sunset Warm" },
-
   { value: "dark", label: "🌙 Classic Dark" },
+  { value: "ocean", label: "🌊 Ocean Cyan" },
+  { value: "mint", label: "🍃 Fresh Mint" },
+  { value: "lavender", label: "🔮 Lavender" },
   { value: "gold", label: "🏆 Classic Gold" },
-  { value: "cyber", label: "🚀 Cyber Neon" },
-
-  { value: "clinical-sanctuary", label: "🧪 Clinical Sanctuary"},
+  { value: "luxury", label: "💎 Luxury Gold" },
+  { value: "clinical-sanctuary", label: "🧪 Clinical Sanctuary" },
+  { value: "rola-theme", label: "🟠 rola-theme" },
+  { value: "udvell-theme", label: "🟣 udvell-theme" },
 ];
 
 export function ThemeSwitcher() {

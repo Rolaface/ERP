@@ -17,7 +17,8 @@ import type { Column } from "../../components/ui/Table/type";
 import type { Supplier } from "../../types/Supply/supplier";
 import type { SupplierFilters } from "../../api/procurement/supplierApi";
 import { showApiError, showSuccess } from "../../utils/alert";
-import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
+
+import { openPaymentEntryModal } from "../../store/modalStore";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
 type OutletContextType = {
@@ -55,19 +56,18 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
 
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPI, setSelectedPI] = useState<any | null>(null);
 
- const normalizeStatus = (status?: string) => {
-  if (!status) return "inactive";
 
-  const normalized = status.toLowerCase();
+  const normalizeStatus = (status?: string) => {
+    if (!status) return "inactive";
 
-  if (["inactive", "unactive"].includes(normalized)) return "inactive";
-  if (normalized === "active") return "active";
+    const normalized = status.toLowerCase();
 
-  return "inactive";
-};
+    if (["inactive", "unactive"].includes(normalized)) return "inactive";
+    if (normalized === "active") return "active";
+
+    return "inactive";
+  };
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));
@@ -77,33 +77,33 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-const fetchSuppliers = async () => {
-  try {
-    setLoading(true);
+  const fetchSuppliers = async () => {
+    try {
+      setLoading(true);
 
-    const res = await getSuppliers(page, pageSize, filters);
+      const res = await getSuppliers(page, pageSize, filters);
 
-    if (!res || res.status_code !== 200) return;
+      if (!res || res.status_code !== 200) return;
 
-    const list = (res.data || []).map((supplier: any) => {
-      const mapped = mapSupplierApi(supplier);
+      const list = (res.data || []).map((supplier: any) => {
+        const mapped = mapSupplierApi(supplier);
 
-      return {
-        ...mapped,
-        status: normalizeStatus(mapped.status),
-      };
-    });
+        return {
+          ...mapped,
+          status: normalizeStatus(mapped.status),
+        };
+      });
 
-    setAllSuppliers(list);
-    setTotalPages(res.pagination?.total_pages || 1);
-    setTotalItems(res.pagination?.total || 0);
+      setAllSuppliers(list);
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total || 0);
 
-  } catch (err) {
-    showApiError(err);
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     fetchSuppliers();
   }, [page, pageSize, filters]);
@@ -120,9 +120,9 @@ const fetchSuppliers = async () => {
       const res = await getSuppliers(1, 1000);
       if (!res || res.status_code !== 200) return;
 
-   const list = (res.data || []).map((supplier: any) =>
-  mapSupplierApi(supplier)
-);
+      const list = (res.data || []).map((supplier: any) =>
+        mapSupplierApi(supplier)
+      );
 
       setAllSuppliers(list);
     } catch (error) {
@@ -136,58 +136,85 @@ const fetchSuppliers = async () => {
     }
   };
 
- const handleRowClick = async (supplier: Supplier) => {
-  if (!supplier.supplierId) return;
+  const handleRowClick = async (supplier: Supplier) => {
+    if (!supplier.supplierId) return;
 
-  try {
-    setLoading(true);
-    await ensureAllSuppliers();
+    try {
+      setLoading(true);
+      await ensureAllSuppliers();
 
-    const res = await getSupplierById(supplier.supplierId);
+      const res = await getSupplierById(supplier.supplierId);
 
-    const data = res?.message?.data;
-    if (!data) return;
+      const data = res?.message?.data;
+      if (!data) return;
 
-    const mapped = mapSupplierApi(data);
-    setSelectedSupplier(mapped);
-    setViewMode("detail");
-  } finally {
-    setLoading(false);
-  }
-};
+      const mapped = mapSupplierApi(data);
+      setSelectedSupplier(mapped);
+      setViewMode("detail");
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleBack = () => {
     setViewMode("table");
     setSelectedSupplier(null);
   };
 
-const handleEditSupplier = async (supplier: Supplier) => {
-  if (!supplier.supplierId) return;
+  const handleEditSupplier = async (supplier: Supplier) => {
+    if (!supplier.supplierId) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  const res = await getSupplierById(supplier.supplierId);
-  const data = res?.message?.data; // ✅ FIX
+    const res = await getSupplierById(supplier.supplierId);
+    const data = res?.message?.data; // ✅ FIX
 
-  if (!data) {
+    if (!data) {
+      setLoading(false);
+      return;
+    }
+
+    const mapped = mapSupplierApi(data);
     setLoading(false);
-    return;
-  }
 
-  const mapped = mapSupplierApi(data);
-  setLoading(false);
-
-  openSupplierEdit(supplier.supplierId, mapped);
-};
+    openSupplierEdit(supplier.supplierId, mapped);
+  };
   const handleEditFromDetail = (supplier: Supplier) => handleEditSupplier(supplier);
 
   const handleMakePayment = (supplier: Supplier) => {
-    setSelectedPI(supplier);
-    setPaymentModalOpen(true);
+    openPaymentEntryModal(
+      {
+        paymentType: "Pay",
+        partyType: "Supplier",
+        partyName: {
+          label: supplier.supplierName,
+          value: supplier.supplierId,
+        },
+        partyId: supplier.supplierId,
+      },
+      false,
+      {
+        onSuccess: () => fetchSuppliers(),
+      }
+    );
   };
 
   const handleMakeAdvancePayment = (supplier: Supplier) => {
-    setSelectedPI({ ...supplier, isAdvance: true });
-    setPaymentModalOpen(true);
+    openPaymentEntryModal(
+      {
+        paymentType: "Pay",
+        partyType: "Supplier",
+        partyName: {
+          label: supplier.supplierName,
+          value: supplier.supplierId,
+        },
+        partyId: supplier.supplierId,
+        referenceName: `ADV-${supplier.supplierId}`,
+      },
+      false,
+      {
+        onSuccess: () => fetchSuppliers(),
+      }
+    );
   };
 
   const handleDeleteSupplier = async (supplier: Supplier) => {
@@ -302,8 +329,18 @@ const handleEditSupplier = async (supplier: Supplier) => {
             onClick={() => handleRowClick(supplier)}
             iconOnly
           />
+
+          <ActionButton
+            type="edit"
+            onClick={(e) => {
+              e?.stopPropagation();
+              handleEditSupplier(supplier);
+            }}
+            iconOnly
+            title="Edit Supplier"
+          />
+
           <ActionMenu
-            onEdit={() => handleEditSupplier(supplier)}
             onDelete={() => handleDeleteSupplier(supplier)}
             customActions={[
               {
@@ -333,6 +370,7 @@ const handleEditSupplier = async (supplier: Supplier) => {
         <Table
           columns={columns}
           data={allSuppliers}
+          tableId="supplier-management"
           showToolbar
           loading={loading}
           onPageSizeChange={(size) => setPageSize(size)}
@@ -359,26 +397,7 @@ const handleEditSupplier = async (supplier: Supplier) => {
         />
       ) : null}
 
-      <PaymentEntryModal
-        isOpen={paymentModalOpen}
-        onClose={() => {
-          setPaymentModalOpen(false);
-          setSelectedPI(null);
-        }}
-        defaultValues={
-          selectedPI
-            ? {
-                paymentType: "Pay",
-                partyType: "Supplier",
-                partyName: selectedPI.supplierName,
-                partyId: selectedPI.supplierId,
-                referenceName: selectedPI.isAdvance
-                  ? `ADV-${selectedPI.supplierId}`
-                  : undefined,
-              }
-            : undefined
-        }
-      />
+
     </div>
   );
 };

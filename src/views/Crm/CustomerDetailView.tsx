@@ -36,26 +36,7 @@ import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
 import CustomerdetailviewPayment from "./CustomerDetailViewPayments";
 import { getCustomerByCustomerCode } from "../../api/customerApi";
 
-// ─── API RESPONSE FIELD NOTES ─────────────────────────────────────────────────
-// customer.id                    → "CUST-2026-00009"
-// customer.name                  → display name
-// customer.type                  → "Individual" | "Company"
-// customer.tpin
-// customer.currency
-// customer.mobile                → flat mobile (top-level)
-// customer.email                 → flat email  (top-level)
-// customer.customerGroup
-// customer.customerTaxCategory   → NOT taxCategory
-// customer.contacts[]            → structured contacts array
-//   .fullName / .firstName / .lastName / .email / .mobile / .isPrimary
-// customer.addresses[]
-//   .type "Billing"|"Shipping"
-//   .line1/.line2/.city/.state/.postalCode/.country/.county
-// customer.terms.Selling         → capital S  (NOT selling)
-//   .general / .delivery / .cancellation / .warranty / .liability
-//   .payment.phases[] { id, name, percentage, condition, credit_days }
-//   .payment.dueDates / .lateCharges / .taxes / .notes
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 type OutletContextType = {
   openCustomerCreate: () => void;
@@ -583,7 +564,7 @@ const CustomerDetailView: React.FC<Props> = ({
             {activeTab === "bank" && (
               <div className="p-5 w-full min-w-0 overflow-hidden">
                 <CustomerBankDetails
-                  customerName={(customer as any).name}
+                  customerName={(customer as any).id}
                   onAdd={(refresh) => {
                     setEditingRow(null);
                     refreshBankAccounts.current = refresh;
@@ -609,7 +590,7 @@ const CustomerDetailView: React.FC<Props> = ({
             {/* ════ INVOICES ═══════════════════════════════════════════ */}
             {activeTab === "invoices" && (
               <div className="p-5 w-full min-w-0 overflow-hidden">
-                <CustomerInvoices customerName={(customer as any).name} />
+                <CustomerInvoices customerName={(customer as any).id} />
               </div>
             )}
 
@@ -630,14 +611,17 @@ const CustomerDetailView: React.FC<Props> = ({
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onSuccess={() => setShowPaymentModal(false)}
+        customerId={customer.id}
       />
       <AddBankAccountModal
         isOpen={showBankAccountModal}
+      
         onClose={() => { setShowBankAccountModal(false); setEditingRow(null); }}
         onSubmit={() => { setShowBankAccountModal(false); refreshBankAccounts.current?.(); }}
-        partyName={(customer as any).name}
+        partyName={(customer as any).id}
         defaultAccountFor="Customer"
         initialData={editingRow}
+         customerId={customer.id}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { CreditCard, FileText, AlertCircle, X, Loader2 } from "lucide-react";
-import Modal from "../../components/ui/modal/modal";
+import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
 import PaymentTaxesTab from "../../components/Payment/PaymentTaxesTab";
@@ -31,7 +31,11 @@ const ALL_TABS = [
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit?: (data?: any) => void; 
   onSuccess?: (paymentEntryName: string) => void;
+  modalId: string; 
+
+  customerId?: string; 
   defaultValues?: {
     paymentType?: "Pay" | "Receive" | "Internal Transfer";
     partyType?: string;
@@ -143,6 +147,7 @@ function buildPayload(
   return payload;
 }
 
+
 function validateForm(form: Record<string, any>): string | null {
   if (!form?.paymentType) return "Payment Type is required.";
 
@@ -155,8 +160,8 @@ function validateForm(form: Record<string, any>): string | null {
 
   if (!form?.date) return "Payment Date is required.";
   if (!form?.mode) return "Mode of Payment is required.";
-  if (!form?.glFrom) return "Account (GL) — Paid From is required.";
-  if (!form?.glTo) return "Account (GL) — Paid To is required.";
+  if (!form?.glFrom) return "Account (GL) — Paid From is required.";   
+  if (!form?.glTo) return "Account (GL) — Paid To is required.";      
 
   const fromCurrency = String(form?.currencyFrom ?? "").trim();
   const toCurrency = String(form?.currencyTo ?? "").trim();
@@ -168,11 +173,10 @@ function validateForm(form: Record<string, any>): string | null {
   }
 
   const amount = Number(form?.amountFrom ?? form?.amount ?? 0);
-  if (!amount || amount <= 0) return "Please enter a valid payment amount.";
+  if (!amount || amount <= 0) return "Please enter a valid payment amount."; 
 
   return null;
 }
-
 const getInitialForm = () => ({
   paymentType: "Pay",
   partyType: "",
@@ -201,7 +205,10 @@ const PaymentEntryModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onSuccess,
+  onSubmit,
+  customerId,
   defaultValues,
+  modalId,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>("details");
   const [form, setForm] = useState<Record<string, any>>({});
@@ -246,6 +253,11 @@ const PaymentEntryModal: React.FC<Props> = ({
   ...getInitialForm(),   
   ...(defaultValues ?? {}) 
 };
+
+if (customerId) {
+  base.partyId = customerId;
+  base.partyType = "Customer"; 
+}
     if (defaultValues?.referenceType) {
       base.referenceType = defaultValues.referenceType;
     } else if (base.referenceName && !base.referenceType) {
@@ -498,6 +510,7 @@ const handleSave = useCallback(async () => {
   if (validationError) {
     setError(validationError);
     setActiveTab("details");
+    showApiError(validationError);   
     return;
   }
 
@@ -553,8 +566,7 @@ const handleSave = useCallback(async () => {
     isInternalTransfer || Boolean(form?.partyId || form?.partyName);
   const hasAccounts = Boolean(form?.glFrom && form?.glTo);
   const hasAmount = Number(form?.amountFrom ?? form?.amount ?? 0) > 0;
-  const isSubmitDisabled =
-    isSaving || !hasExchangeRate || !hasPartySelection || !hasAccounts || !hasAmount;
+  const isSubmitDisabled = isSaving;
 
   const footer = (
     <>
@@ -575,7 +587,8 @@ const handleSave = useCallback(async () => {
   );
 
   return (
-    <Modal
+    <MinimizableModal
+     modalId={modalId}
       isOpen={isOpen}
       onClose={() => {
         resetModalState();
@@ -770,7 +783,7 @@ const handleSave = useCallback(async () => {
           </div>
         </div>
       </div>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

@@ -1,31 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Column } from "./types";
+import type { Column } from "./type";
 import { useLayoutEffect } from "react";
 
 interface ColumnSelectorProps {
   columns: Column<any>[];
   visibleKeys: string[];
-  toggleColumn: (key: string) => void;
-  setVisibleKeys: (keys: string[]) => void;
+  onApply: (keys: string[]) => void;
   allKeys: string[];
   className?: string;
   buttonLabel?: string;
 }
 
-/**
- * Dropdown content component rendered via Portal
- * This ensures the dropdown is not clipped by parent overflow
- */
+
 interface DropdownContentProps {
   isOpen: boolean;
   onClose: () => void;
   anchorRef: React.RefObject<HTMLButtonElement | null>;
   columns: Column<any>[];
   visibleKeys: string[];
-  toggleColumn: (key: string) => void;
-  setVisibleKeys: (keys: string[]) => void;
   allKeys: string[];
+  onApply: (keys: string[]) => void;
 }
 
 function DropdownContent({
@@ -34,16 +29,30 @@ function DropdownContent({
   anchorRef,
   columns,
   visibleKeys,
-  toggleColumn,
-  setVisibleKeys,
   allKeys,
+  onApply,
 }: DropdownContentProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [menuSearch, setMenuSearch] = useState("");
+  const [draftKeys, setDraftKeys] = useState<string[]>(visibleKeys);
+
   const [position, setPosition] = useState<{
     top: number;
     left: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDraftKeys(visibleKeys);
+      setMenuSearch("");
+    }
+  }, [isOpen]); 
+
+  const toggleDraft = (key: string) => {
+    setDraftKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  };
 
   useLayoutEffect(() => {
     if (!isOpen || !anchorRef.current) return;
@@ -58,6 +67,17 @@ function DropdownContent({
 
     setPosition({ top, left });
   }, [isOpen]);
+
+  const handleDone = () => {
+    onApply(draftKeys); 
+    onClose();
+    setMenuSearch("");
+  };
+
+  const handleCancel = () => {
+    onClose();         
+    setMenuSearch("");
+  };
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -76,6 +96,7 @@ function DropdownContent({
         setMenuSearch("");
       }
     };
+
 
     // Handle escape key to close dropdown
     const handleEscape = (event: KeyboardEvent) => {
@@ -124,7 +145,7 @@ function DropdownContent({
       {/* Header */}
       <div className="bg-primary px-4 py-3 flex items-center justify-between">
         <div className="text-sm font-semibold text-white">
-          Columns ({visibleKeys.length}/{columns.length})
+          Columns ({draftKeys.length}/{columns.length})
         </div>
         <button
           onClick={() => {
@@ -170,14 +191,14 @@ function DropdownContent({
       {/* Quick Actions */}
       <div className="flex items-center justify-between px-4 py-2 bg-card border-b border-[var(--border)]">
         <button
-          onClick={() => setVisibleKeys(allKeys)}
+          onClick={() => setDraftKeys(allKeys)}
           className="text-xs font-medium bg-primary text-white px-2 py-1 rounded hover:opacity-90 transition-opacity"
           type="button"
         >
           ✓ Show all
         </button>
         <button
-          onClick={() => setVisibleKeys([])}
+          onClick={() => setDraftKeys([])}
           className="text-xs font-medium text-[var(--danger)] hover:text-[var(--danger-700)] px-2 py-1 rounded transition-colors"
           type="button"
         >
@@ -196,15 +217,16 @@ function DropdownContent({
               >
                 <input
                   type="checkbox"
-                  checked={visibleKeys.includes(col.key)}
-                  onChange={() => toggleColumn(col.key)}
+                  checked={draftKeys.includes(col.key)}   
+                  onChange={() => toggleDraft(col.key)}    
                   onClick={(e) => e.stopPropagation()}
                   className="w-4 h-4 border border-[var(--border)] rounded bg-card accent-[var(--primary)] cursor-pointer"
                 />
+
                 <div className="flex-1 text-sm text-main font-medium">
                   {col.header}
                 </div>
-                {visibleKeys.includes(col.key) && (
+                {draftKeys.includes(col.key) && (
                   <svg
                     className="w-4 h-4 text-[var(--success)]"
                     viewBox="0 0 20 20"
@@ -231,20 +253,14 @@ function DropdownContent({
       {/* Footer Actions */}
       <div className="px-3 py-3 bg-card border-t border-[var(--border)] flex items-center justify-end gap-2">
         <button
-          onClick={() => {
-            onClose();
-            setMenuSearch("");
-          }}
+          onClick={handleCancel}
           className="text-sm px-4 py-1.5 rounded-md border border-[var(--border)] bg-card text-main hover:bg-row-hover transition-colors"
           type="button"
         >
           Cancel
         </button>
         <button
-          onClick={() => {
-            onClose();
-            setMenuSearch("");
-          }}
+          onClick={handleDone}
           className="text-sm px-4 py-1.5 rounded-md bg-primary text-white hover:opacity-90 transition-opacity"
           type="button"
         >
@@ -256,15 +272,11 @@ function DropdownContent({
   );
 }
 
-/**
- * Column Selector Component
- * Allows users to show/hide table columns with a searchable dropdown
- */
+
 export default function ColumnSelector({
   columns,
   visibleKeys,
-  toggleColumn,
-  setVisibleKeys,
+  onApply,
   allKeys,
   className,
   buttonLabel,
@@ -282,11 +294,10 @@ export default function ColumnSelector({
           e.stopPropagation();
           setOpen((prev) => !prev);
         }}
-        className={`px-3 py-2 rounded-xl text-sm border transaction-none flex items-center gap-2 ${
-          open
-            ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-            : "bg-card text-muted border-[var(--border)] hover:text-primary hover:border-primary"
-        }`}
+        className={`px-3 py-2 rounded-xl text-sm border transaction-none flex items-center gap-2 ${open
+          ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+          : "bg-card text-muted border-[var(--border)] hover:text-primary hover:border-primary"
+          }`}
         aria-haspopup="dialog"
         aria-expanded={open}
         title="Select visible columns"
@@ -324,9 +335,8 @@ export default function ColumnSelector({
         anchorRef={buttonRef}
         columns={columns}
         visibleKeys={visibleKeys}
-        toggleColumn={toggleColumn}
-        setVisibleKeys={setVisibleKeys}
         allKeys={allKeys}
+        onApply={onApply}     
       />
     </div>
   );

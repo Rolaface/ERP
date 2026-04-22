@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect} from "react";
 import { useOutletContext } from "react-router-dom";
 import PurchaseOrderView from "../../views/Procurement/purchaseorderview";
 import Table from "../../components/ui/Table/Table";
@@ -12,6 +12,7 @@ import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import type { Column } from "../../components/ui/Table/type";
 import type { PurchaseOrderDetail } from "../../types/Supply/purchaseOrder";
 import { createPurchaseInvoiceFromPO } from "../../api/procurement/PurchaseOrderApi";
+import { openPaymentEntryModal } from "../../store/modalStore";
 import {
   showApiError,
   showSuccess,
@@ -20,7 +21,7 @@ import {
 } from "../../utils/alert";
 import {
   getPurchaseOrders,
-  updatePurchaseOrderStatus,deletePo
+  updatePurchaseOrderStatus, deletePo
 } from "../../api/procurement/PurchaseOrderApi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -48,7 +49,7 @@ interface PurchaseOrder {
   amount: number;
   status: string;
   currency?: string;
-   supplierId: string;  
+  supplierId: string;
   deliveryDate: string;
   referenceNumber: string;
 }
@@ -57,7 +58,7 @@ interface PurchaseOrdersTableProps {
   onAdd?: () => void;
 }
 
-type POStatus = "Draft" | "Approved" |  "Cancelled" | "Completed";
+type POStatus = "Draft" | "Approved" | "Cancelled" | "Completed";
 
 const STATUS_TRANSITIONS: Record<POStatus, POStatus[]> = {
   Draft: ["Approved"],
@@ -77,7 +78,7 @@ const statusOptions = [
 
 const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const { openPOEdit } = useOutletContext<OutletContextType>();
-  
+
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -99,7 +100,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
   // ── Drawer (same pattern as ProformaInvoicesTable)
   const [drawerOpen, setDrawerOpen] = useState(false);
- const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(null);
+  const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
@@ -174,71 +175,77 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchOrders]);
 
-  const handleMakePayment = async (order: PurchaseOrder) => {
-    if (order.status !== "Approved") {
-      showApiError("Only Approved purchase orders can have payments");
+const handleMakePayment = async (order: PurchaseOrder) => {
+  if (order.status !== "Approved") {
+    showApiError("Only Approved purchase orders can have payments");
+    return;
+  }
+
+  try {
+    showLoading("Opening payment...");
+    const res = await getPurchaseOrderById(order.id);
+    closeSwal();
+
+    if (!res || res.status !== "success") {
+      showApiError("Failed to load purchase order");
       return;
     }
 
-    try {
-      showLoading("Opening payment...");
-      const res = await getPurchaseOrderById(order.id);
-      closeSwal();
+    const data = res.data ?? {};
 
-      if (!res || res.status !== "success") {
-        showApiError("Failed to load purchase order");
-        return;
+    openPaymentEntryModal(
+      {
+        paymentType: "Pay",
+        partyType: "Supplier",
+        partyName:
+          data.supplierName ||
+          data.supplier_name ||
+          data.partyName ||
+          order.supplier,
+        partyId:
+          data.supplierId ??
+          data.partyId ??
+          data.supplier_id ??
+          order.supplierId,
+        amount: Number(data.grandTotal ?? order.amount ?? 0),
+        referenceName: data.poId || order.id,
+        referenceType: "Purchase Order",
+      },
+      false,
+      {
+        onSuccess: (paymentId) => {
+          fetchOrders();
+          showSuccess(`Payment ${paymentId} created`);
+        },
       }
+    );
 
-      const data = res.data ?? {};
-      const supplierName =
-        data.supplierName ||
-        data.supplier_name ||
-        data.partyName ||
-        data.supplier ||
-        order.supplier;
-      const supplierId =
-        data.supplierId ??
-        data.partyId ??
-        data.supplier_id ??
-        order.supplierId;
-      const poId = data.poId || order.id;
-      const amount = Number(data.grandTotal ?? order.amount ?? 0);
-
-      setSelectedPOForPayment({
-        id: poId,
-        supplier: supplierName,
-        supplierId,
-        amount,
-      });
-      setPaymentModalOpen(true);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
-
-const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
-  try {
-    showLoading("Creating Purchase Invoice...");
-
-    const res = await createPurchaseInvoiceFromPO(order.id);
-
-    if (!res || res.status_code !== 201) {
-      throw new Error("Failed to create invoice");
-    }
-
-    closeSwal();
-    showSuccess("Purchase Invoice created successfully");
-
-    // OPTIONAL: refresh table
-    fetchOrders();
-
-  } catch (err: any) {
+  } catch (err) {
     closeSwal();
     showApiError(err);
   }
 };
+  const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
+    try {
+      showLoading("Creating Purchase Invoice...");
+
+      const res = await createPurchaseInvoiceFromPO(order.id);
+
+      if (!res || res.status_code !== 201) {
+        throw new Error("Failed to create invoice");
+      }
+
+      closeSwal();
+      showSuccess("Purchase Invoice created successfully");
+
+      // OPTIONAL: refresh table
+      fetchOrders();
+
+    } catch (err: any) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
   const handleDrawerPdf = async (poId: string) => {
     setDrawerPdfLoading(true);
@@ -304,7 +311,7 @@ const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
   };
 
   const handleEdit = (order: PurchaseOrder, e?: React.MouseEvent) => {
-  e?.stopPropagation();
+    e?.stopPropagation();
     if (order.status !== "Draft") {
       showApiError("Only Draft purchase orders can be edited");
       return;
@@ -313,40 +320,40 @@ const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
     openPOEdit(order.id);
   };
 
-const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
-  e.stopPropagation();
+  const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
+    e.stopPropagation();
 
-  const confirm = await fireManagedSwal({
-    icon: "warning",
-    title: "Are you sure?",
-    text: `Delete Purchase Order ${order.id}?`,
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, delete",
-  });
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete Purchase Order ${order.id}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+    });
 
-  if (!confirm.isConfirmed) return;
+    if (!confirm.isConfirmed) return;
 
-  try {
-    showLoading("Deleting Purchase Order...");
+    try {
+      showLoading("Deleting Purchase Order...");
 
-    const res = await deletePo(order.id);
+      const res = await deletePo(order.id);
 
-   
-    if (res.status < 200 || res.status >= 300) {
-      throw new Error("Delete failed");
+
+      if (res.status < 200 || res.status >= 300) {
+        throw new Error("Delete failed");
+      }
+
+      closeSwal();
+      showSuccess("Purchase Order deleted successfully");
+
+      await fetchOrders();
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
     }
-
-    closeSwal();
-    showSuccess("Purchase Order deleted successfully");
-
-    await fetchOrders();
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+  };
 
   // ── Export all pages
   const fetchAllPOsForExport = async () => {
@@ -472,46 +479,46 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
     }
   };
 
- 
+
   const columns: Column<PurchaseOrder>[] = [
     {
-  key: "id",
-  header: "PO ID",
-  align: "left",
-  render: (o) => (
-    <span className="truncate max-w-[120px] block">
-      {o.id || "—"}
-    </span>
-  ),
-  tooltip: (o) => o.id || "—",
-},
-   {
-  key: "supplier",
-  header: "Supplier",
-  align: "center",
-  render: (o) => (
-    <span className="truncate max-w-[160px] block">
-      {o.supplier || "—"}
-    </span>
-  ),
-  tooltip: (o) => o.supplier || "—",
-},
-  {
-  key: "date",
-  header: "Date",
-  align: "center",
-  render: (o) => (
-    <span>{o.date || "—"}</span>
-  ),
-  tooltip: (o) => o.date || "—",
-},
+      key: "id",
+      header: "PO ID",
+      align: "left",
+      render: (o) => (
+        <span className="truncate max-w-[120px] block">
+          {o.id || "—"}
+        </span>
+      ),
+      tooltip: (o) => o.id || "—",
+    },
+    {
+      key: "supplier",
+      header: "Supplier",
+      align: "center",
+      render: (o) => (
+        <span className="truncate max-w-[160px]">
+          {o.supplier || "—"}
+        </span>
+      ),
+      tooltip: (o) => o.supplier || "—",
+    },
+    {
+      key: "date",
+      header: "Date",
+      align: "center",
+      render: (o) => (
+        <span>{o.date || "—"}</span>
+      ),
+      tooltip: (o) => o.date || "—",
+    },
     {
       key: "amount",
       header: "Amount",
       align: "center",
       render: (o) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-         {o.currency} {Number(o.amount || 0).toFixed(2)}
+          {o.currency} {Number(o.amount || 0).toFixed(2)}
         </code>
       ),
     },
@@ -521,14 +528,14 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
       align: "center",
       render: (o) => <StatusBadge status={o.status} />,
     },
-   {
-  key: "deliveryDate",
-  header: "Required By",
-  align: "center",
-  render: (o) => (
-    <span>{o.deliveryDate || "—"}</span>
-  ),
-},
+    {
+      key: "deliveryDate",
+      header: "Required By",
+      align: "center",
+      render: (o) => (
+        <span>{o.deliveryDate || "—"}</span>
+      ),
+    },
     {
       key: "actions",
       header: "Actions",
@@ -560,21 +567,21 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
                 onClick: () => handlePreviewPDF(o),
               },
               ...(o.status === "Approved"
-    ? [
-        {
-          label: "Make Advance Payment",
-          onClick: () => handleMakePayment(o),
-        },
-      ]
-    : []),
-    ...(o.status === "Approved"
-  ? [
-      {
-        label: "Make Purchase Invoice",
-        onClick: () => handleCreateInvoiceFromPO(o),
-      },
-    ]
-  : []),
+                ? [
+                  {
+                    label: "Make Advance Payment",
+                    onClick: () => handleMakePayment(o),
+                  },
+                ]
+                : []),
+              ...(o.status === "Approved"
+                ? [
+                  {
+                    label: "Make Purchase Invoice",
+                    onClick: () => handleCreateInvoiceFromPO(o),
+                  },
+                ]
+                : []),
               ...(STATUS_TRANSITIONS[o.status as POStatus] ?? []).map(
                 (status) => ({
                   label: `Mark as ${status}`,
@@ -593,6 +600,7 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
     <div className="h-full min-h-0">
       <Table
         columns={columns}
+        tableId="purchase-orders"
         data={orders}
         showToolbar
         loading={loading}
@@ -635,9 +643,6 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
           </>
         }
       />
-
-
-
       <PurchaseOrderDetailModal
         open={drawerOpen}
         data={drawerData}
@@ -662,7 +667,6 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
         }}
       />
 
-
       <PdfPreviewModal
         open={pdfOpen}
         title="Purchase Order Preview"
@@ -679,10 +683,10 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
         }}
       />
 
-      {/* ── View modal — kept, do not remove ── */}
+
       {viewModalOpen && selectedOrder && (
         <PurchaseOrderView
-          poData={selectedOrder}
+          poData={selectedOrder as any}
           onClose={() => setViewModalOpen(false)}
           onEdit={() => {
             setViewModalOpen(false);
@@ -690,32 +694,8 @@ const handleDelete = async (order: PurchaseOrder, e: React.MouseEvent) => {
           }}
         />
       )}
-<PaymentEntryModal
-  isOpen={paymentModalOpen}
-  onClose={() => {
-    setPaymentModalOpen(false);
-    setSelectedPOForPayment(null);
-  }}
-  onSuccess={(paymentId) => {
-    fetchOrders();
-    setPaymentModalOpen(false);
-    setSelectedPOForPayment(null);
-    showSuccess(`Payment ${paymentId} created`);
-  }}
-  defaultValues={
-    selectedPOForPayment
-      ? {
-          paymentType: "Pay",
-          partyType: "Supplier",
-          partyName: selectedPOForPayment.supplier,
-          partyId: selectedPOForPayment.supplierId,
-          amount: selectedPOForPayment.amount,
-          referenceName: selectedPOForPayment.id,
-          referenceType: "Purchase Order",
-        }
-      : undefined
-  }
-/>
+      
+     
     </div>
   );
 };

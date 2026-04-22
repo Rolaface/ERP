@@ -513,6 +513,7 @@ const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
       <Table
         columns={columns}
         data={quotations}
+        tableId="sales-quotations"
         rowKey={(row) => row.quotationNumber}
         loading={isInitialLoad}
         isFetching={isFetching}

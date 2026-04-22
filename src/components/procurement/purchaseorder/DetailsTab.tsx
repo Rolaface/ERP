@@ -52,8 +52,8 @@ const POColumnHeaders: React.FC = () => (
     {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[180px]">
       Description
     </th> */}
-    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[10px]">
-      Pckg(Uxs)
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[10px]">
+      Pkg(UxS)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
       Required By
@@ -74,7 +74,7 @@ const POColumnHeaders: React.FC = () => (
       Tax(%)
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px] whitespace-nowrap">
-      Tax Name <span className="text-danger">*</span>
+      Tax Name
     </th>
     <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">
       Amount
@@ -199,49 +199,49 @@ export const DetailsTab = ({
           </Tooltip>
         </td> */}
 
+  
         {/* Packing */}
-     {/* Packing */}  
-<td className="px-2 py-[2px]">
-  <div className="flex items-center justify-center w-[70px]">
-    <Tooltip
-      content={`Packing: ${it.packingUnit || ""} × ${it.packingSize || ""}`}
-    >
-      <input
-        type="text"
-        value={
-  it.itemCode
-    ? `${it.packingUnit || ""}x${it.packingSize || ""}`
-    : ""
-}
-        onChange={(e) => {
-          const value = e.target.value;
-          const [unit, size] = value.split("x");
+        <td className="px-2 py-[2px]">
+          <div className="flex items-center justify-center w-[70px]">
+            <Tooltip
+              content={`Packing: ${it.packingUnit || ""} × ${it.packingSize || ""}`}
+            >
+              <input
+                type="text"
+                value={
+                  it.itemCode
+                    ? `${it.packingUnit || ""}x${it.packingSize || ""}`
+                    : ""
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const [unit, size] = value.split("x");
 
-          onItemChange(
-            {
-              target: {
-                name: "packingUnit",
-                value: unit || "",
-              },
-            } as any,
-            i
-          );
+                  onItemChange(
+                    {
+                      target: {
+                        name: "packingUnit",
+                        value: unit || "",
+                      },
+                    } as any,
+                    i
+                  );
 
-          onItemChange(
-            {
-              target: {
-                name: "packingSize",
-                value: size || "",
-              },
-            } as any,
-            i
-          );
-        }}
-        className="w-[60px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
-      />
-    </Tooltip>
-  </div>
-</td>
+                  onItemChange(
+                    {
+                      target: {
+                        name: "packingSize",
+                        value: size || "",
+                      },
+                    } as any,
+                    i
+                  );
+                }}
+                className="w-[60px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm "
+              />
+            </Tooltip>
+          </div>
+        </td>
 
         {/* Required By */}
         <td className="px-2 py-1">
@@ -332,6 +332,7 @@ export const DetailsTab = ({
               name="vatRate"
               value={it.vatRate}
               onChange={(e) => onItemChange(e, i)}
+              disabled
               className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
           </Tooltip>
@@ -339,11 +340,18 @@ export const DetailsTab = ({
 
         {/* VAT Code */}
         <td className="px-2 py-1">
-          <Tooltip content={`VAT Code: ${it.vatCd || "N/A"}`}>
+          <Tooltip
+    content={
+      it.taxTypes?.length
+        ? `Tax Types: ${it.taxTypes.join(", ")}`
+        : "No Tax Types"
+    }
+  >
             <input
               name="vatCd"
               value={it.vatCd || ""}
               onChange={(e) => onItemChange(e, i)}
+              disabled
               className="w-[46px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </Tooltip>
