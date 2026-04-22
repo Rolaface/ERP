@@ -5,6 +5,7 @@ import {
   getTrialBalance,
   type TrialBalanceFilters,
 } from "../../api/Accounting/AccountApi";
+import { getCompanyCurrentFiscalYear } from "../../api/utils/frappeUtilsApi";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
   AlertCircle,
@@ -96,6 +97,9 @@ const TrialBalance: React.FC = () => {
   const [data, setData] = useState<TBResponse["message"]["data"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fiscalYear, setFiscalYear] = useState<string>("");
+const [fiscalYearStartDate, setFiscalYearStartDate] = useState<string>("");
+const [fiscalYearEndDate, setFiscalYearEndDate] = useState<string>("");
 
   const tableData: TBAccount[] = React.useMemo(() => {
     if (!data) return [];
@@ -123,37 +127,62 @@ const TrialBalance: React.FC = () => {
   /*  Filters  */
 
   const currentYear = new Date().getFullYear();
+  useEffect(() => {
+  const loadFiscalYear = async () => {
+    try {
+      const res = await getCompanyCurrentFiscalYear();
+      setFiscalYear(res.data?.fiscal_year || "");
+      setFiscalYearStartDate(res.data?.start_date || "");
+      setFiscalYearEndDate(res.data?.end_date || "");
+    } catch (err) {
+      console.error("Failed to fetch fiscal year", err);
+    }
+  };
+
+  loadFiscalYear();
+}, []);
 
   const [filters, setFilters] = useState<TrialBalanceFilters>({
-    from_date: `01-01-${currentYear}`,
-    to_date: `31-12-${currentYear}`,
-    fiscal_year: String(currentYear),
+    from_date: "",
+    to_date: "",
+    fiscal_year: "",
     show_zero_values: false,
     with_period_closing_entry: 0,
     show_closing_entries: 0,
   });
 
   useEffect(() => {
-    const year = filters.fiscal_year;
+  if (!fiscalYear || !fiscalYearStartDate || !fiscalYearEndDate) return;
 
-    if (!/^\d{4}$/.test(year)) return;
+  setFilters((f) => ({
+    ...f,
+    fiscal_year: fiscalYear,
+    from_date: fiscalYearStartDate,
+    to_date: fiscalYearEndDate,
+  }));
+}, [fiscalYear, fiscalYearStartDate, fiscalYearEndDate]);
 
-    const newFrom = `01-01-${year}`;
-    const newTo = `31-12-${year}`;
+  // useEffect(() => {
+  //   const year = filters.fiscal_year;
 
-    setFilters((f) => {
-      if (f.from_date === newFrom && f.to_date === newTo) return f;
+  //   if (!/^\d{4}$/.test(year)) return;
 
-      return {
-        ...f,
-        from_date: newFrom,
-        to_date: newTo,
-      };
-    });
-  }, [filters.fiscal_year]);
+  //   const newFrom = `01-01-${year}`;
+  //   const newTo = `31-12-${year}`;
+
+  //   setFilters((f) => {
+  //     if (f.from_date === newFrom && f.to_date === newTo) return f;
+
+  //     return {
+  //       ...f,
+  //       from_date: newFrom,
+  //       to_date: newTo,
+  //     };
+  //   });
+  // }, [filters.fiscal_year]);
 
   useEffect(() => {
-    if (!/^\d{4}$/.test(String(filters.fiscal_year))) return;
+    if (!filters.fiscal_year) return;
 
     const timer = setTimeout(() => {
       fetchTB(filters);
@@ -169,7 +198,7 @@ const TrialBalance: React.FC = () => {
     setError(null);
 
     try {
-      if (!/^\d{4}$/.test(String(currentFilters.fiscal_year))) {
+      if (!currentFilters.fiscal_year) {
         setError("Fiscal year must be a 4 digit year.");
         setLoading(false);
         return;
@@ -219,16 +248,14 @@ const TrialBalance: React.FC = () => {
   /*  COLUMNS  */
 
   const toApiDate = (date: string) => {
-    if (!date || !date.includes("-")) return "";
-    const [y, m, d] = date.split("-");
-    return `${d}-${m}-${y}`;
-  };
+  if (!date) return "";
+  return date;
+};
 
   const fromApiDate = (date: string) => {
-    if (!date || !date.includes("-")) return "";
-    const [d, m, y] = date.split("-");
-    return `${y}-${m}-${d}`; // for DatePickerInput
-  };
+  if (!date) return "";
+  return date;
+};
 
   const columns: Column<TBAccount>[] = [
     {
