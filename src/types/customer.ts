@@ -11,7 +11,7 @@ export interface CustomerContact {
   salutation?: string;
   gender?: string;
   companyName?: string;
-  status?: string;           // "Active" | "Passive"
+  status?: string;           
   email: string;
   mobile: string;
   phone?: string;
@@ -27,7 +27,7 @@ export interface CustomerAddress {
   line1: string;
   line2?: string;
   city?: string;
-  county?: string | null;    // district / county — may be null
+  county?: string ;   
   state?: string;
   postalCode?: string;
   country?: string;

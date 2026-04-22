@@ -35,8 +35,8 @@ interface Props {
 }
 
 const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
-  const { 
-    openCustomerCreate, 
+  const {
+    openCustomerCreate,
     openCustomerEdit
   } =
     useOutletContext<OutletContextType>();
@@ -59,28 +59,28 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [taxCategory, setTaxCategory] = useState<string>("");
 
 
-const fetchCustomers = async () => {
-  try {
-    setCustLoading(true);
+  const fetchCustomers = async () => {
+    try {
+      setCustLoading(true);
 
-    const response = await getAllCustomers(
-      page,
-      pageSize,
-      taxCategory || undefined
-    );
+      const response = await getAllCustomers(
+        page,
+        pageSize,
+        taxCategory || undefined
+      );
 
-    setCustomers(response?.data || []);
-    setTotalPages(response?.pagination?.total_pages || 1);
-    setTotalItems(response?.pagination?.total || 0);
+      setCustomers(response?.data || []);
+      setTotalPages(response?.pagination?.total_pages || 1);
+      setTotalItems(response?.pagination?.total || 0);
 
-  } catch (error) {
-    console.error("Error loading customers:", error);
-    showApiError(error);
-  } finally {
-    setCustLoading(false);
-    setInitialLoad(false);
-  }
-};
+    } catch (error) {
+      console.error("Error loading customers:", error);
+      showApiError(error);
+    } finally {
+      setCustLoading(false);
+      setInitialLoad(false);
+    }
+  };
   useEffect(() => {
     fetchCustomers();
   }, [page, pageSize, taxCategory]);
@@ -111,22 +111,22 @@ const fetchCustomers = async () => {
     openCustomerCreate();
   };
 
-const handleMakePayment = (customer: CustomerSummary) => {
-  openPaymentEntryModal(
-    {
-      paymentType: "Receive",
-      partyType: "Customer",
-      partyName: customer.name,
-      partyId: customer.id,
-    },
-    false,
-    {
-      onSuccess: async () => {
-        await handleCustomerSaved();
+  const handleMakePayment = (customer: CustomerSummary) => {
+    openPaymentEntryModal(
+      {
+        paymentType: "Receive",
+        partyType: "Customer",
+        partyName: customer.name,
+        partyId: customer.id,
       },
-    }
-  );
-};
+      false,
+      {
+        onSuccess: async () => {
+          await handleCustomerSaved();
+        },
+      }
+    );
+  };
 
   const handleDelete = async (customerId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -296,8 +296,15 @@ const handleMakePayment = (customer: CustomerSummary) => {
             onClick={() => handleRowClick(customer)}
             iconOnly
           />
+
+          <ActionButton
+            type="edit"
+            onClick={(e) => handleEditCustomer(customer.id, e as any)}
+            iconOnly
+            title="Edit Customer"
+          />
+
           <ActionMenu
-            onEdit={(e) => handleEditCustomer(customer.id, e as any)}
             onDelete={(e) => handleDelete(customer.id, e as any)}
             customActions={[
               {
@@ -360,7 +367,7 @@ const handleMakePayment = (customer: CustomerSummary) => {
         />
       ) : null}
 
-      
+
     </div>
   );
 };

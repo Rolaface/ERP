@@ -28,7 +28,7 @@ export interface ContactEntry {
   department: string;
   email: string;
   mobileCode: string;
-  mobileNumber:string;
+  mobileNumber: string;
   mobile: string;
   phone: string;
   isPrimary: boolean;
@@ -48,7 +48,7 @@ export interface AddressEntry {
 }
 
 export interface CustomerFormState {
-  id: string;
+  id?: string;
   name: string;
   type: "" | "Company" | "Individual";
   tpin: string;
@@ -113,6 +113,7 @@ export const defaultContact: ContactEntry = {
   email: "",
   mobileCode: "",
   mobileNumber: "",
+  mobile: "",
   phone: "",
   isPrimary: true,
   isBilling: true,
@@ -188,40 +189,42 @@ export function mapApiResponseToFormState(
         taxCategory: c.taxCategory ?? "",
         email: c.email ?? "",
         mobileCode: mob.code,
-mobileNumber: mob.number,
+        mobileNumber: mob.number,
+        mobile: c.mobile ?? `${mob.code}${mob.number}`,
         phone: c.phone ?? "",
         isPrimary: c.isPrimary ?? false,
         isBilling: c.isBilling ?? false,
-        
+
       };
     });
   } else {
     const mob = splitMobile(data.mobile);
     contacts = [{
-        ...defaultContact,
-        firstName: data.contactPerson ?? "",
-        email: data.email ?? "",
-        mobileCode: mob.code,
-        mobile: mob.number,
-        isPrimary: true,
-        isBilling: true,
+      ...defaultContact,
+      firstName: data.contactPerson ?? "",
+      email: data.email ?? "",
+      mobileCode: mob.code,
+      mobileNumber: mob.number,
+      mobile: mob.code + mob.number,
+      isPrimary: true,
+      isBilling: true,
     }];
   }
 
   // ── Addresses ─────────────────────────────────────────────────────────────
   let addresses: AddressEntry[];
   if (data.addresses && data.addresses.length > 0) {
-   addresses = data.addresses.map((a: any) => ({
-  id: a.id,
-  type: a.type === "Shipping" ? "Shipping" : "Billing",
-  line1: a.line1 ?? "",
-  line2: a.line2 ?? "",
-  city: a.city ?? "",
-  state: a.state ?? "",
-  postalCode: a.postalCode ?? "",
-  country: a.country ?? "",
-  isPrimary: a.isPrimary ?? false,
-}));
+    addresses = data.addresses.map((a: any) => ({
+      id: a.id,
+      type: a.type === "Shipping" ? "Shipping" : "Billing",
+      line1: a.line1 ?? "",
+      line2: a.line2 ?? "",
+      city: a.city ?? "",
+      state: a.state ?? "",
+      postalCode: a.postalCode ?? "",
+      country: a.country ?? "",
+      isPrimary: a.isPrimary ?? false,
+    }));
     if (!addresses.some((a) => a.type === "Billing"))
       addresses.unshift({ ...defaultBillingAddress });
     if (!addresses.some((a) => a.type === "Shipping"))
@@ -277,32 +280,32 @@ mobileNumber: mob.number,
  */
 export function buildPayload(form: CustomerFormState): Record<string, any> {
   const { sameAsBilling, id, ...rest } = form;
-const contacts = form.contacts.map(
-  ({ mobileCode, mobileNumber, id, ...contact }) => ({
-    ...(id ? { id } : {}),
-    ...contact,
-    mobile: mobileNumber ? `${mobileCode}${mobileNumber}` : "",
-  }),
-);
+  const contacts = form.contacts.map(
+    ({ mobileCode, mobileNumber, id, ...contact }) => ({
+      ...(id ? { id } : {}),
+      ...contact,
+      mobile: mobileNumber ? `${mobileCode}${mobileNumber}` : "",
+    }),
+  );
 
-let addresses = form.addresses.map((addr) => ({
-  ...(addr.id ? { id: addr.id } : {}),
-  type: addr.type, 
-  line1: addr.line1,
-  line2: addr.line2,
-  city: addr.city,
-  state: addr.state,
-  postalCode: addr.postalCode,
-  country: addr.country,
-  isPrimary: addr.isPrimary,
-}));
- if (sameAsBilling) {
-  const billing = addresses.find((a) => a.type === "Billing");
+  let addresses = form.addresses.map((addr) => ({
+    ...(addr.id ? { id: addr.id } : {}),
+    type: addr.type,
+    line1: addr.line1,
+    line2: addr.line2,
+    city: addr.city,
+    state: addr.state,
+    postalCode: addr.postalCode,
+    country: addr.country,
+    isPrimary: addr.isPrimary,
+  }));
+  if (sameAsBilling) {
+    const billing = addresses.find((a) => a.type === "Billing");
 
-  addresses = addresses.map((a) =>
-    a.type === "Shipping" && billing
-      ? {
-          ...a, 
+    addresses = addresses.map((a) =>
+      a.type === "Shipping" && billing
+        ? {
+          ...a,
           line1: billing.line1,
           line2: billing.line2,
           city: billing.city,
@@ -311,9 +314,9 @@ let addresses = form.addresses.map((addr) => ({
           country: billing.country,
           isPrimary: false,
         }
-      : a
-  );
-}
+        : a
+    );
+  }
 
   return { ...rest, contacts, addresses };
 }
@@ -402,17 +405,17 @@ export function useCustomerForm({
   }, [form.name, form.contacts]);
 
   // ── Sync shipping ← billing when sameAsBilling ────────────────────────────
-useEffect(() => {
-  if (!form.sameAsBilling || isEditMode) return;
+  useEffect(() => {
+    if (!form.sameAsBilling || isEditMode) return;
 
-  const billing = form.addresses.find((a) => a.type === "Billing");
-  if (!billing) return;
+    const billing = form.addresses.find((a) => a.type === "Billing");
+    if (!billing) return;
 
-  setForm((prev) => ({
-    ...prev,
-    addresses: prev.addresses.map((a) =>
-      a.type === "Shipping"
-        ? {
+    setForm((prev) => ({
+      ...prev,
+      addresses: prev.addresses.map((a) =>
+        a.type === "Shipping"
+          ? {
             ...a,
             line1: billing.line1,
             line2: billing.line2,
@@ -422,18 +425,18 @@ useEffect(() => {
             country: billing.country,
             isPrimary: false,
           }
-        : a
-    ),
-  }));
-}, [
-  form.sameAsBilling,
-  form.addresses.find((a) => a.type === "Billing")?.line1,
-  form.addresses.find((a) => a.type === "Billing")?.line2,
-  form.addresses.find((a) => a.type === "Billing")?.city,
-  form.addresses.find((a) => a.type === "Billing")?.state,
-  form.addresses.find((a) => a.type === "Billing")?.postalCode,
-  form.addresses.find((a) => a.type === "Billing")?.country,
-]);
+          : a
+      ),
+    }));
+  }, [
+    form.sameAsBilling,
+    form.addresses.find((a) => a.type === "Billing")?.line1,
+    form.addresses.find((a) => a.type === "Billing")?.line2,
+    form.addresses.find((a) => a.type === "Billing")?.city,
+    form.addresses.find((a) => a.type === "Billing")?.state,
+    form.addresses.find((a) => a.type === "Billing")?.postalCode,
+    form.addresses.find((a) => a.type === "Billing")?.country,
+  ]);
 
   // ─── Field handlers ───────────────────────────────────────────────────────
 
@@ -450,26 +453,40 @@ useEffect(() => {
     }
   };
 
-const handlePrimaryContactChange = (e) => {
-  let { name, value } = e.target;
+  const handlePrimaryContactChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
 
-  if (name === "mobileCode") {
-    // always keep +
-    if (!value.startsWith("+")) {
-      value = "+" + value.replace(/\D/g, "");
+    updatePrimaryContact(name, value);
+  };
+
+  const updatePrimaryContact = (name: string, value: string) => {
+    if (name === "mobileCode") {
+      let val = value;
+
+      if (!val.startsWith("+")) {
+        val = "+" + val.replace(/\D/g, "");
+      }
+
+      val = "+" + val.replace(/\D/g, "");
+
+      setForm((prev) => ({
+        ...prev,
+        contacts: prev.contacts.map((c) =>
+          c.isPrimary ? { ...c, mobileCode: val } : c
+        ),
+      }));
+      return;
     }
 
-    // allow only + and numbers
-    value = "+" + value.replace(/\D/g, "");
-  }
-
-  setForm((prev) => ({
-    ...prev,
-    contacts: prev.contacts.map((c) =>
-      c.isPrimary ? { ...c, [name]: value } : c
-    ),
-  }));
-};
+    setForm((prev) => ({
+      ...prev,
+      contacts: prev.contacts.map((c) =>
+        c.isPrimary ? { ...c, [name]: value } : c
+      ),
+    }));
+  };
 
   const handleAddressChange = (
     addressType: "Billing" | "Shipping",
@@ -515,7 +532,7 @@ const handlePrimaryContactChange = (e) => {
     if (!form.currency) newErrors.currency = "Currency is required";
     if (!pc?.firstName?.trim())
       newErrors.contactFirstName = "First name is required";
-   if (!pc?.mobileCode || !pc?.mobileNumber)
+    if (!pc?.mobileCode || !pc?.mobileNumber)
       newErrors.contactMobile = "Mobile number is required";
     if (!pc?.email?.trim()) newErrors.contactEmail = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pc.email))
@@ -547,7 +564,7 @@ const handlePrimaryContactChange = (e) => {
       if (!form.name) missing.push("Customer Name");
       if (!pc?.firstName) missing.push("Contact First Name");
       if (!form.tpin) missing.push("TPIN");
-      if (!pc?.mobileCode || !pc?.mobile) missing.push("Mobile Number");
+      if (!pc?.mobileCode || !pc?.mobileNumber) missing.push("Mobile Number");
       if (!form.customerTaxCategory) missing.push("Tax Category");
       if (!form.currency) missing.push("Currency");
       if (!pc?.email) missing.push("Email");
@@ -665,9 +682,9 @@ const handlePrimaryContactChange = (e) => {
 
         const originalForm = mapApiResponseToFormState(initialData!, null);
         const originalPayload = buildPayload(originalForm);
-      const patchPayload = {
-  ...payload,
-};
+        const patchPayload = {
+          ...payload,
+        };
 
         if (Object.keys(patchPayload).length === 0) {
           closeSwal();
@@ -765,10 +782,10 @@ const handlePrimaryContactChange = (e) => {
     const base = initialData
       ? mapApiResponseToFormState(initialData, companySellingTerms)
       : {
-          ...emptyForm,
-          terms: { selling: companySellingTerms ?? defaultSellingTerms },
-          sameAsBilling: true,
-        };
+        ...emptyForm,
+        terms: { selling: companySellingTerms ?? defaultSellingTerms },
+        sameAsBilling: true,
+      };
 
     setErrors({});
 
@@ -834,6 +851,7 @@ const handlePrimaryContactChange = (e) => {
     shippingAddress,
     tabs,
     handleChange,
+    updatePrimaryContact,
     handlePrimaryContactChange,
     handleAddressChange,
     setSameAsBilling,

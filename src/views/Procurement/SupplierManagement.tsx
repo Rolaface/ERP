@@ -58,16 +58,16 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
 
 
 
- const normalizeStatus = (status?: string) => {
-  if (!status) return "inactive";
+  const normalizeStatus = (status?: string) => {
+    if (!status) return "inactive";
 
-  const normalized = status.toLowerCase();
+    const normalized = status.toLowerCase();
 
-  if (["inactive", "unactive"].includes(normalized)) return "inactive";
-  if (normalized === "active") return "active";
+    if (["inactive", "unactive"].includes(normalized)) return "inactive";
+    if (normalized === "active") return "active";
 
-  return "inactive";
-};
+    return "inactive";
+  };
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));
@@ -77,33 +77,33 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-const fetchSuppliers = async () => {
-  try {
-    setLoading(true);
+  const fetchSuppliers = async () => {
+    try {
+      setLoading(true);
 
-    const res = await getSuppliers(page, pageSize, filters);
+      const res = await getSuppliers(page, pageSize, filters);
 
-    if (!res || res.status_code !== 200) return;
+      if (!res || res.status_code !== 200) return;
 
-    const list = (res.data || []).map((supplier: any) => {
-      const mapped = mapSupplierApi(supplier);
+      const list = (res.data || []).map((supplier: any) => {
+        const mapped = mapSupplierApi(supplier);
 
-      return {
-        ...mapped,
-        status: normalizeStatus(mapped.status),
-      };
-    });
+        return {
+          ...mapped,
+          status: normalizeStatus(mapped.status),
+        };
+      });
 
-    setAllSuppliers(list);
-    setTotalPages(res.pagination?.total_pages || 1);
-    setTotalItems(res.pagination?.total || 0);
+      setAllSuppliers(list);
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total || 0);
 
-  } catch (err) {
-    showApiError(err);
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     fetchSuppliers();
   }, [page, pageSize, filters]);
@@ -120,9 +120,9 @@ const fetchSuppliers = async () => {
       const res = await getSuppliers(1, 1000);
       if (!res || res.status_code !== 200) return;
 
-   const list = (res.data || []).map((supplier: any) =>
-  mapSupplierApi(supplier)
-);
+      const list = (res.data || []).map((supplier: any) =>
+        mapSupplierApi(supplier)
+      );
 
       setAllSuppliers(list);
     } catch (error) {
@@ -136,86 +136,86 @@ const fetchSuppliers = async () => {
     }
   };
 
- const handleRowClick = async (supplier: Supplier) => {
-  if (!supplier.supplierId) return;
+  const handleRowClick = async (supplier: Supplier) => {
+    if (!supplier.supplierId) return;
 
-  try {
-    setLoading(true);
-    await ensureAllSuppliers();
+    try {
+      setLoading(true);
+      await ensureAllSuppliers();
 
-    const res = await getSupplierById(supplier.supplierId);
+      const res = await getSupplierById(supplier.supplierId);
 
-    const data = res?.message?.data;
-    if (!data) return;
+      const data = res?.message?.data;
+      if (!data) return;
 
-    const mapped = mapSupplierApi(data);
-    setSelectedSupplier(mapped);
-    setViewMode("detail");
-  } finally {
-    setLoading(false);
-  }
-};
+      const mapped = mapSupplierApi(data);
+      setSelectedSupplier(mapped);
+      setViewMode("detail");
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleBack = () => {
     setViewMode("table");
     setSelectedSupplier(null);
   };
 
-const handleEditSupplier = async (supplier: Supplier) => {
-  if (!supplier.supplierId) return;
+  const handleEditSupplier = async (supplier: Supplier) => {
+    if (!supplier.supplierId) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  const res = await getSupplierById(supplier.supplierId);
-  const data = res?.message?.data; // ✅ FIX
+    const res = await getSupplierById(supplier.supplierId);
+    const data = res?.message?.data; // ✅ FIX
 
-  if (!data) {
+    if (!data) {
+      setLoading(false);
+      return;
+    }
+
+    const mapped = mapSupplierApi(data);
     setLoading(false);
-    return;
-  }
 
-  const mapped = mapSupplierApi(data);
-  setLoading(false);
-
-  openSupplierEdit(supplier.supplierId, mapped);
-};
+    openSupplierEdit(supplier.supplierId, mapped);
+  };
   const handleEditFromDetail = (supplier: Supplier) => handleEditSupplier(supplier);
 
-const handleMakePayment = (supplier: Supplier) => {
-  openPaymentEntryModal(
-    {
-      paymentType: "Pay",
-      partyType: "Supplier",
-      partyName: {
-        label: supplier.supplierName,
-        value: supplier.supplierId,
+  const handleMakePayment = (supplier: Supplier) => {
+    openPaymentEntryModal(
+      {
+        paymentType: "Pay",
+        partyType: "Supplier",
+        partyName: {
+          label: supplier.supplierName,
+          value: supplier.supplierId,
+        },
+        partyId: supplier.supplierId,
       },
-      partyId: supplier.supplierId,
-    },
-    false,
-    {
-      onSuccess: () => fetchSuppliers(),
-    }
-  );
-};
+      false,
+      {
+        onSuccess: () => fetchSuppliers(),
+      }
+    );
+  };
 
-const handleMakeAdvancePayment = (supplier: Supplier) => {
-  openPaymentEntryModal(
-    {
-      paymentType: "Pay",
-      partyType: "Supplier",
-      partyName: {
-        label: supplier.supplierName,
-        value: supplier.supplierId,
+  const handleMakeAdvancePayment = (supplier: Supplier) => {
+    openPaymentEntryModal(
+      {
+        paymentType: "Pay",
+        partyType: "Supplier",
+        partyName: {
+          label: supplier.supplierName,
+          value: supplier.supplierId,
+        },
+        partyId: supplier.supplierId,
+        referenceName: `ADV-${supplier.supplierId}`,
       },
-      partyId: supplier.supplierId,
-      referenceName: `ADV-${supplier.supplierId}`,
-    },
-    false,
-    {
-      onSuccess: () => fetchSuppliers(),
-    }
-  );
-};
+      false,
+      {
+        onSuccess: () => fetchSuppliers(),
+      }
+    );
+  };
 
   const handleDeleteSupplier = async (supplier: Supplier) => {
     if (!supplier.supplierId) return;
@@ -246,7 +246,7 @@ const handleMakeAdvancePayment = (supplier: Supplier) => {
       align: "left",
       render: (supplier) => (
         <span className="block truncate text-sm">
-          {supplier.supplierId|| "-"}
+          {supplier.supplierId || "-"}
         </span>
       ),
       tooltip: (supplier) => supplier.supplierId || "-",
@@ -326,8 +326,18 @@ const handleMakeAdvancePayment = (supplier: Supplier) => {
             onClick={() => handleRowClick(supplier)}
             iconOnly
           />
+
+          <ActionButton
+            type="edit"
+            onClick={(e) => {
+              e?.stopPropagation();
+              handleEditSupplier(supplier);
+            }}
+            iconOnly
+            title="Edit Supplier"
+          />
+
           <ActionMenu
-            onEdit={() => handleEditSupplier(supplier)}
             onDelete={() => handleDeleteSupplier(supplier)}
             customActions={[
               { label: "Make Payment", onClick: () => handleMakePayment(supplier) },
@@ -381,7 +391,7 @@ const handleMakeAdvancePayment = (supplier: Supplier) => {
         />
       ) : null}
 
-      
+
     </div>
   );
 };
