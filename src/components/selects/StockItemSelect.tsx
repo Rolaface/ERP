@@ -121,6 +121,7 @@ export default function StockItemSelect({
 
       vatRate: totalTaxRate,
       vatCode: selectedTax.taxName || "",
+      taxInfo: row.taxInfo,
     });
   };
 
