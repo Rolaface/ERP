@@ -147,6 +147,7 @@ function buildPayload(
   return payload;
 }
 
+
 function validateForm(form: Record<string, any>): string | null {
   if (!form?.paymentType) return "Payment Type is required.";
 
@@ -159,8 +160,8 @@ function validateForm(form: Record<string, any>): string | null {
 
   if (!form?.date) return "Payment Date is required.";
   if (!form?.mode) return "Mode of Payment is required.";
-  if (!form?.glFrom) return "Account (GL) — Paid From is required.";
-  if (!form?.glTo) return "Account (GL) — Paid To is required.";
+  if (!form?.glFrom) return "Account (GL) — Paid From is required.";   
+  if (!form?.glTo) return "Account (GL) — Paid To is required.";      
 
   const fromCurrency = String(form?.currencyFrom ?? "").trim();
   const toCurrency = String(form?.currencyTo ?? "").trim();
@@ -172,11 +173,10 @@ function validateForm(form: Record<string, any>): string | null {
   }
 
   const amount = Number(form?.amountFrom ?? form?.amount ?? 0);
-  if (!amount || amount <= 0) return "Please enter a valid payment amount.";
+  if (!amount || amount <= 0) return "Please enter a valid payment amount."; 
 
   return null;
 }
-
 const getInitialForm = () => ({
   paymentType: "Pay",
   partyType: "",
@@ -510,6 +510,7 @@ const handleSave = useCallback(async () => {
   if (validationError) {
     setError(validationError);
     setActiveTab("details");
+    showApiError(validationError);   
     return;
   }
 
@@ -565,8 +566,7 @@ const handleSave = useCallback(async () => {
     isInternalTransfer || Boolean(form?.partyId || form?.partyName);
   const hasAccounts = Boolean(form?.glFrom && form?.glTo);
   const hasAmount = Number(form?.amountFrom ?? form?.amount ?? 0) > 0;
-  const isSubmitDisabled =
-    isSaving || !hasExchangeRate || !hasPartySelection || !hasAccounts || !hasAmount;
+  const isSubmitDisabled = isSaving;
 
   const footer = (
     <>
