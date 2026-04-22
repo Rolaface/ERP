@@ -19,6 +19,7 @@ interface Props {
   initialData?: BankAccount | null;
   currency?: string;
   customerId?: string;
+  partyId?: string;
 }
 
 type Option = {
@@ -38,6 +39,7 @@ const AddBankAccountModal: React.FC<Props> = ({
   initialData,
   currency,
   modalId,
+  partyId,
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const {
@@ -54,40 +56,50 @@ const AddBankAccountModal: React.FC<Props> = ({
   } = useBankAccLogic({ onSubmit, onClose });
 
   useEffect(() => {
-    if (currency) {
-      setForm((prev) => ({ ...prev, currency }));
-    }
-  }, [currency]);
-
-  useEffect(() => {
     if (!initialData && defaultAccountFor) {
       setForm((prev) => ({ ...prev, accountFor: defaultAccountFor }));
     }
-
-    if (partyName) {
-      if (defaultAccountFor === "Company") {
-        setForm((prev) => ({
-          ...prev,
-          name: partyName,
-          displayName: partyName,
-          accountHolder: partyName,
-          currency: prev.currency || currency || "",
-          accountHolderEdited: false,
-        }));
-      } else if (entities.length) {
-        const match = entities.find((e) => e.value === partyName);
-        setForm((prev) => ({
-          ...prev,
-          name: match?.value || partyName,
-          displayName: match?.label || partyName,
-          accountHolder: match?.label || partyName,
-          currency: prev.currency || currency || match?.meta?.currency || "",
-          accountHolderEdited: false,
-        }));
-      }
+    if (currency) {
+      setForm((prev) => ({ ...prev, currency }));
     }
-  }, [defaultAccountFor, partyName, entities, initialData, currency]);
+  }, [defaultAccountFor, initialData, currency]);
 
+  // Effect 2 — set name/holder once entities are loaded
+  useEffect(() => {
+    if (!partyName || !defaultAccountFor || initialData) return;
+
+    if (defaultAccountFor === "Company") {
+      setForm((prev) => ({
+        ...prev,
+        partyId: partyName,
+        name: partyName,
+        displayName: partyName,
+        accountHolder: prev.accountHolderEdited
+          ? prev.accountHolder
+          : partyName,
+        accountHolderEdited: false,
+      }));
+      return;
+    }
+
+    if (!entities.length) return;
+
+   const match = entities.find(
+  (e) => e.value === partyId
+);
+
+    setForm((prev) => ({
+      ...prev,
+      partyId: match?.value || "",
+      name: match?.value || "",
+      displayName: match?.label || partyName,
+      accountHolder: prev.accountHolderEdited
+        ? prev.accountHolder
+        : (match?.label ?? match?.value ?? partyName),
+      currency: prev.currency || currency || match?.meta?.currency || "",
+      accountHolderEdited: false,
+    }));
+  }, [partyName, defaultAccountFor, entities, initialData, currency]);
   // Clear individual error when field gets a value
   const clearError = (field: string) =>
     setErrors((prev) => {
@@ -99,12 +111,12 @@ const AddBankAccountModal: React.FC<Props> = ({
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.accountFor)   e.accountFor   = "Account For is required";
-    if (!form.name)         e.name         = "Name is required";
-    if (!form.bank)         e.bank         = "Bank is required";
+    if (!form.accountFor) e.accountFor = "Account For is required";
+    if (!form.name) e.name = "Name is required";
+    if (!form.bank) e.bank = "Bank is required";
     if (!form.accountNumber) e.accountNumber = "Account Number is required";
-    if (!form.sortCode)     e.sortCode     = "IFSC / Sort Code is required";
-    if (!form.currency)     e.currency     = "Currency is required";
+    if (!form.sortCode) e.sortCode = "IFSC / Sort Code is required";
+    if (!form.currency) e.currency = "Currency is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -150,10 +162,13 @@ const AddBankAccountModal: React.FC<Props> = ({
       customWidth="60vw"
       height="65vh"
     >
-      <form id="bankForm" onSubmit={handleSubmit} className="h-full overflow-hidden">
+      <form
+        id="bankForm"
+        onSubmit={handleSubmit}
+        className="h-full overflow-hidden"
+      >
         <div className="h-full overflow-y-auto p-8">
           <div className="grid grid-cols-3 gap-5">
-
             {/* Date */}
             <div className="w-[110px]">
               <DatePickerInput
@@ -178,7 +193,7 @@ const AddBankAccountModal: React.FC<Props> = ({
               options={[
                 { label: "Supplier", value: "Supplier" },
                 { label: "Customer", value: "Customer" },
-                { label: "Company",  value: "Company"  },
+                { label: "Company", value: "Company" },
               ]}
               required
               disabled={!!defaultAccountFor}
@@ -198,6 +213,7 @@ const AddBankAccountModal: React.FC<Props> = ({
                 onChange={(_, option: Option) => {
                   setForm((prev) => ({
                     ...prev,
+                    partyId: option?.value || "",
                     name: option?.value || "",
                     displayName: option?.label || "",
                     accountHolder: option?.label || "",
@@ -264,14 +280,19 @@ const AddBankAccountModal: React.FC<Props> = ({
                 value={form.currency}
                 disabled={!!defaultAccountFor}
                 onChange={(_: string, option: Option) => {
-                  setForm((prev) => ({ ...prev, currency: option?.value || "" }));
+                  setForm((prev) => ({
+                    ...prev,
+                    currency: option?.value || "",
+                  }));
                   clearError("currency");
                 }}
                 fetchOptions={fetchCurrencyOptions}
               />
               {/* ← error for Currency was missing */}
               {errors.currency && (
-                <span className="text-danger text-[10px]">{errors.currency}</span>
+                <span className="text-danger text-[10px]">
+                  {errors.currency}
+                </span>
               )}
             </div>
 
@@ -361,7 +382,6 @@ const AddBankAccountModal: React.FC<Props> = ({
               />
               <span className="text-sm text-main">Default Bank Account</span>
             </label>
-
           </div>
         </div>
       </form>

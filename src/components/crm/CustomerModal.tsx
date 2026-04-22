@@ -346,16 +346,18 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
           )}
 
           {activeTab === "bank" && (
-            <PaymentInfoTab
-              form={form as any}
-              onChange={handleChange}
-              errors={{ bankAccount: errors.accountNumber }}
-              isEditMode={isEditMode}
-              partyType="Customer"
-              partyName={form.name || initialData?.name || ""}
-              currency={form.currency}
-            />
-          )}
+  <PaymentInfoTab
+    form={form as any}
+    onChange={handleChange}
+    errors={{ bankAccount: errors.accountNumber }}
+    isEditMode={isEditMode}
+    partyType="Customer"
+    partyName={form.name || initialData?.name || ""}
+partyId={initialData?.id ? String(initialData.id) : undefined}
+          
+    currency={form.currency}
+  />
+)}
 
           {activeTab === "terms" && (
             <TermsAndCondition

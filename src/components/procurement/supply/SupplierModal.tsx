@@ -155,17 +155,18 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               errors={errors}
             />
           )}
-          {activeTab === "payment" && (
-            <PaymentInfoTab
-              form={form}
-              onChange={handleChange}
-              errors={errors}
-              isEditMode={isEditMode}
-              partyType="Supplier"
-              partyName={form.supplierName || initialData?.supplierName || ""}
-              currency={form.currency}
-            />
-          )}
+         {activeTab === "payment" && (
+  <PaymentInfoTab
+    form={form}
+    onChange={handleChange}
+    errors={errors}
+    isEditMode={isEditMode}
+    partyType="Supplier"
+    partyName={form.supplierName || initialData?.supplierName || ""}
+    partyId={initialData?.id ? String(initialData.id) : undefined}  // ← ADD
+    currency={form.currency}
+  />
+)}
           {activeTab === "address" && (
             <AddressTab form={form} onChange={handleChange} errors={errors} />
           )}
