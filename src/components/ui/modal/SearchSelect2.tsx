@@ -17,6 +17,7 @@ interface SearchSelectProps {
   error?: string;
   required?: boolean;
   allowCustomInput?: boolean;
+  loading?: boolean;
 }
 
 const DEBOUNCE_DELAY = 400;
@@ -32,6 +33,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
   error,
   required,
   allowCustomInput,
+  loading
 }) => {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");

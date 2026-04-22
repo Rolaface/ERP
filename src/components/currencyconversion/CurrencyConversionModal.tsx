@@ -1,17 +1,9 @@
-
-import React, { useState, useEffect, useCallback } from "react";
-import Modal from "../../components/ui/modal/modal";
+import React, { useState, useEffect } from "react";
+import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import DatePickerInput from "../calendar/DatePickerInput";
-import { getBankAccounts } from "../../api/BankAccountApi";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
-import {
-  showValidationError,
-  showApiError,
-  showSuccess,
-  showLoading,
-  closeSwal,
-} from "../../utils/alert"; 
+import { showApiError } from "../../utils/alert";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 
@@ -32,9 +24,10 @@ interface EditData {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: any) => void;
+  onSubmit?: (data?: any) => void;
   editData?: EditData | null;
-  actionLoading: boolean;
+  actionLoading?: boolean;
+  modalId: string;
 }
 
 interface FormState {
@@ -58,9 +51,7 @@ interface FormErrors {
 // Constants
 // ─────────────────────────────────────────────
 
-const getTodayDate = () => {
-  return new Date().toISOString().split("T")[0]; 
-};
+const getTodayDate = () => new Date().toISOString().split("T")[0];
 
 const EMPTY_FORM: FormState = {
   date: getTodayDate(),
@@ -70,6 +61,7 @@ const EMPTY_FORM: FormState = {
   isBuying: false,
   isSelling: false,
 };
+
 // ─────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────
@@ -77,17 +69,18 @@ const EMPTY_FORM: FormState = {
 const CurrencyConversionModal: React.FC<Props> = ({
   isOpen,
   onClose,
-  onSave,
+  onSubmit,
   editData = null,
-  actionLoading,
+  actionLoading = false,
+  modalId,
 }) => {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [submitting, setSubmitting] = useState(false);
 
   // ── Reset / pre-fill on open ──────────────────
   useEffect(() => {
     if (!isOpen) return;
-
     if (editData) {
       setForm({
         date:         editData.date,
@@ -100,23 +93,10 @@ const CurrencyConversionModal: React.FC<Props> = ({
     } else {
       setForm(EMPTY_FORM);
     }
-
     setErrors({});
+    setSubmitting(false);
   }, [isOpen, editData]);
 
-  const fetchCurrencies = useCallback(async (search: string): Promise<{ label: string; value: string }[]> => {
-  try {
-    const options = await getBankAccounts("Currency");
-   
-    if (!search) return options;
-    return options.filter((opt) =>
-      opt.label.toLowerCase().includes(search.toLowerCase()) ||
-      opt.value.toLowerCase().includes(search.toLowerCase())
-    );
-  } catch {
-    return [];
-  }
-}, []);
   // ── Field helpers ─────────────────────────────
   const clearError = (key: keyof FormErrors) =>
     setErrors((prev) => ({ ...prev, [key]: undefined }));
@@ -125,46 +105,15 @@ const CurrencyConversionModal: React.FC<Props> = ({
     (field: "fromCurrency" | "toCurrency") => (value: string) => {
       setForm((prev) => ({ ...prev, [field]: value }));
       clearError(field);
-      // re-validate same-currency rule live
       if (field === "toCurrency" && value && value === form.fromCurrency) {
         setErrors((prev) => ({
           ...prev,
-          toCurrency: "From and To currencies cannot be same",
+          toCurrency: "From and To currencies cannot be the same",
         }));
       }
     };
-  const handleSubmit = async () => {
-  if (!validate()) return;
 
-  try {
-    const res: any = await onSave({
-      ...(editData?.id ? { id: editData.id } : {}),
-      date: form.date,
-      fromCurrency: form.fromCurrency,
-      toCurrency: form.toCurrency,
-      exchangeRate: Number(form.exchangeRate),
-      isBuying: form.isBuying,
-      isSelling: form.isSelling,
-    });
-
-    const backend = res?.message;
-
-    if (!backend || backend.status === "error" || backend.status_code >= 400) {
-      showApiError(res);
-      return;
-    }
-
-    showSuccess(backend.message);
-    onClose();
-
-  } catch (error) {
-    showApiError(error);
-  }
-};
-
-  const handleExchangeRateChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleExchangeRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, exchangeRate: e.target.value }));
     clearError("exchangeRate");
   };
@@ -172,6 +121,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setForm((prev) => ({ ...prev, [name]: checked }));
+    // Clear purpose error as soon as user ticks either checkbox
     clearError("purpose");
   };
 
@@ -188,7 +138,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
     if (!form.toCurrency)
       next.toCurrency = "To currency is required";
     else if (form.fromCurrency && form.fromCurrency === form.toCurrency)
-      next.toCurrency = "From and To currencies cannot be same";
+      next.toCurrency = "From and To currencies cannot be the same";
 
     if (!form.exchangeRate)
       next.exchangeRate = "Exchange rate is required";
@@ -202,35 +152,53 @@ const CurrencyConversionModal: React.FC<Props> = ({
     return Object.keys(next).length === 0;
   };
 
+  // ── Submit ────────────────────────────────────
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setSubmitting(true);
+    try {
+      await onSubmit?.({
+        ...(editData?.id ? { id: editData.id } : {}),
+        date:         form.date,
+        fromCurrency: form.fromCurrency,
+        toCurrency:   form.toCurrency,
+        exchangeRate: Number(form.exchangeRate),
+        isBuying:     form.isBuying,
+        isSelling:    form.isSelling,
+      });
+      onClose();
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
+  const isSaving = submitting || actionLoading;
 
   // ── Footer ────────────────────────────────────
- const footer = (
-  <>
-    <Button variant="secondary" onClick={onClose}>
-      Cancel
-    </Button>
-
-    <Button
-      variant="primary"
-      onClick={handleSubmit}
-      disabled={actionLoading}
-      className={actionLoading ? "opacity-60 cursor-not-allowed" : ""}
-    >
-      {actionLoading
-        ? "Saving..."
-        : editData
-        ? "Update"
-        : "Save"}
-    </Button>
-  </>
-);
+  const footer = (
+    <>
+      <Button variant="secondary" onClick={onClose} disabled={isSaving}>
+        Cancel
+      </Button>
+      <Button
+        variant="primary"
+        onClick={handleSubmit}
+        disabled={isSaving}
+        className={isSaving ? "opacity-60 cursor-not-allowed" : ""}
+      >
+        {isSaving ? "Saving..." : editData ? "Update" : "Save"}
+      </Button>
+    </>
+  );
 
   // ─────────────────────────────────────────────
   // Render
   // ─────────────────────────────────────────────
   return (
-    <Modal
+    <MinimizableModal
+      modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
       title="Currency Exchange"
@@ -260,28 +228,28 @@ const CurrencyConversionModal: React.FC<Props> = ({
 
           {/* FROM CURRENCY */}
           <div className="flex-1 min-w-[140px] flex flex-col gap-1">
-          <SearchSelect2
-  label="From Currency"
-  value={form.fromCurrency}
-  onChange={handleCurrencyChange("fromCurrency")}
-  fetchOptions={fetchCurrencyOptions}  // ← was fetchCurrencies
-  placeholder="Search currency...."
-  error={errors.fromCurrency}
-  required
-/>
+            <SearchSelect2
+              label="From Currency"
+              value={form.fromCurrency}
+              onChange={handleCurrencyChange("fromCurrency")}
+              fetchOptions={fetchCurrencyOptions}
+              placeholder="Search currency..."
+              error={errors.fromCurrency}
+              required
+            />
           </div>
 
           {/* TO CURRENCY */}
           <div className="flex-1 min-w-[140px] flex flex-col gap-1">
-          <SearchSelect2
-  label="To Currency"
-  value={form.toCurrency}
-  onChange={handleCurrencyChange("toCurrency")}
-  fetchOptions={fetchCurrencyOptions}  // ← was fetchCurrencies
-  placeholder="Search currency...."
-  error={errors.toCurrency}
-  required
-/>
+            <SearchSelect2
+              label="To Currency"
+              value={form.toCurrency}
+              onChange={handleCurrencyChange("toCurrency")}
+              fetchOptions={fetchCurrencyOptions}
+              placeholder="Search currency..."
+              error={errors.toCurrency}
+              required
+            />
           </div>
 
           {/* EXCHANGE RATE */}
@@ -301,7 +269,6 @@ const CurrencyConversionModal: React.FC<Props> = ({
 
           {/* BUYING / SELLING */}
           <div className="flex flex-col gap-1 mt-5">
-            
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-[11px] cursor-pointer">
                 <input
@@ -309,6 +276,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
                   name="isBuying"
                   checked={form.isBuying}
                   onChange={handleCheckboxChange}
+                  className="w-3.5 h-3.5 accent-primary"
                 />
                 Buying
               </label>
@@ -318,16 +286,22 @@ const CurrencyConversionModal: React.FC<Props> = ({
                   name="isSelling"
                   checked={form.isSelling}
                   onChange={handleCheckboxChange}
+                  className="w-3.5 h-3.5 accent-primary"
                 />
                 Selling
               </label>
             </div>
-          
+            {/* ← THIS WAS MISSING — purpose error now renders */}
+            {errors.purpose && (
+              <span className="text-danger text-[10px] mt-0.5">
+                {errors.purpose}
+              </span>
+            )}
           </div>
 
         </div>
       </div>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

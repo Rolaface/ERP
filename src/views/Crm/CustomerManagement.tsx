@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import CustomerDetailView from "./CustomerDetailView";
+import { openPaymentEntryModal } from "../../store/modalStore";
 import {
   showLoading,
   showApiError,
@@ -20,7 +21,7 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
-import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+
 import { fireManagedSwal } from "../../utils/swalManager";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
@@ -56,10 +57,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [totalItems, setTotalItems] = useState(0);
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<
-    CustomerSummary | null
-  >(null);
+
 
 const fetchCustomers = async () => {
   try {
@@ -113,10 +111,22 @@ const fetchCustomers = async () => {
     openCustomerCreate();
   };
 
-  const handleMakePayment = (customer: CustomerSummary) => {
-    setSelectedCustomerForPayment(customer);
-    setPaymentModalOpen(true);
-  };
+const handleMakePayment = (customer: CustomerSummary) => {
+  openPaymentEntryModal(
+    {
+      paymentType: "Receive",
+      partyType: "Customer",
+      partyName: customer.name,
+      partyId: customer.id,
+    },
+    false,
+    {
+      onSuccess: async () => {
+        await handleCustomerSaved();
+      },
+    }
+  );
+};
 
   const handleDelete = async (customerId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -350,29 +360,7 @@ const fetchCustomers = async () => {
         />
       ) : null}
 
-      <PaymentEntryModal
-        isOpen={paymentModalOpen}
-        
-        onClose={() => {
-          setPaymentModalOpen(false);
-          setSelectedCustomerForPayment(null);
-        }}
-        onSuccess={async () => {
-          setPaymentModalOpen(false);
-          setSelectedCustomerForPayment(null);
-          await handleCustomerSaved();
-        }}
-        defaultValues={
-          selectedCustomerForPayment
-            ? {
-                paymentType: "Receive",
-                partyType: "Customer",
-                partyName: selectedCustomerForPayment.name,
-                partyId: selectedCustomerForPayment.id,
-              }
-            : undefined
-        }
-      />
+      
     </div>
   );
 };
