@@ -1,7 +1,5 @@
 import type { TermSection } from "../termsAndCondition";
 
-// ─── RAW API SHAPES ───────────────────────────────────────────────────────────
-
 export interface SupplierContact {
   id: string;
   firstName: string;
@@ -11,7 +9,7 @@ export interface SupplierContact {
   salutation?: string;
   gender?: string;
   companyName?: string;
-  status: string;            // "Active" | "Passive" etc.
+  status: string;            
   email: string;
   mobile: string;
   phone?: string;
@@ -60,24 +58,18 @@ export interface BuyingTerms {
   payment: SupplierPaymentTerms;
 }
 
-// ─── FORM DATA (create / edit form fields) ────────────────────────────────────
 
 export interface SupplierFormData {
-  // identity
   id?: string;
   supplierId?: string;
   supplierName?: string;
   supplierCode?: string;
-
-  // classification
   taxCategory: string;
   paymentTerms: string;
   currency?: string;
   type?: string;
   supplierGroup?: string;
   status?: string;
-
-  // contact (flat — for form inputs)
   tpin?: string;
   contactPerson?: string;
   phoneCode?: string;
@@ -85,12 +77,8 @@ export interface SupplierFormData {
   alternateCode?: string;
   alternateNo?: string;
   emailId?: string;
-
-  // dates / financials
   dateOfAddition?: string;
   openingBalance?: string | number;
-
-  // address (flat — for form inputs)
   billingAddressLine1?: string;
   billingAddressLine2?: string;
   billingCity?: string;
@@ -99,12 +87,8 @@ export interface SupplierFormData {
   billingCountry?: string;
   billingCounty?: string;
   billingPostalCode?: string;
-
-  // arrays — kept after mapSupplierApi so detail views can iterate them
   contacts?: SupplierContact[];
   addresses?: SupplierAddress[];
-
- 
   terms?: {
     buying?: BuyingTerms | TermSection;
     Buying?: BuyingTerms; 
@@ -127,13 +111,11 @@ export interface SupplierBankAccount {
 // ─── STORE TYPE (union of form data + API-only fields) ───────────────────────
 
 export type Supplier = SupplierFormData & {
-  // API-only fields not present in the form
-  name?: string;                // API sends `name`; form uses `supplierName`
-  createdAt?: string;           // API sends `createdAt`; form uses `dateOfAddition`
-  supplierTaxCategory?: string; // API name for taxCategory
+  name?: string;                
+  createdAt?: string;           
+  supplierTaxCategory?: string;
 };
 
-// ─── EMPTY DEFAULTS ───────────────────────────────────────────────────────────
 
 export const emptySupplierForm: SupplierFormData = {
   tpin: "",
@@ -169,7 +151,7 @@ export const emptySupplierForm: SupplierFormData = {
   },
 };
 
-// ─── MISC ─────────────────────────────────────────────────────────────────────
+
 
 export type SupplierTab    = "supplier" | "payment" | "address" | "terms";
 export type SupplierStatus = "active" | "inactive";
