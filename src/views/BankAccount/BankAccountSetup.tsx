@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
-import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
+import { openBankAccountModal } from "../../store/modalStore";
 import { FaUniversity } from "react-icons/fa";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
@@ -226,20 +226,13 @@ const BankAccountSetup: React.FC = () => {
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
         addLabel="Add Bank Account"
-        onAdd={() => setShowModal(true)}
+        onAdd={() => openBankAccountModal(null, false, {
+  onSuccess: () => fetchAccounts(),
+})}
       />
 
 
-      {/* MODAL */}
-      {showModal && (
-        <AddBankAccountModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSubmit={() => {
-            fetchAccounts();
-          }}
-        />
-      )}
+    
     </div>
   );
 };

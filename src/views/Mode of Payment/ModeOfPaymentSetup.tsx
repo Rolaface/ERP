@@ -12,11 +12,12 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
+import { openModeOfPaymentModal } from "../../store/modalStore";
 
 const ModeOfPaymentSetup: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -129,7 +130,11 @@ const ModeOfPaymentSetup: React.FC = () => {
         showToolbar
         enableAdd
         addLabel="Add Mode of Payment"
-        onAdd={() => setShowModal(true)}
+       onAdd={() =>
+  openModeOfPaymentModal(null, false, {
+    onSuccess: () => fetchData(),
+  })
+}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
@@ -147,14 +152,6 @@ const ModeOfPaymentSetup: React.FC = () => {
         }}
       />
 
-      {/* MODAL */}
-      {showModal && (
-        <AddModeOfPaymentModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSubmit={fetchData}
-        />
-      )}
     </div>
   );
 };

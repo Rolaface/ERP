@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { CreditCard, FileText, AlertCircle, X, Loader2 } from "lucide-react";
-import Modal from "../../components/ui/modal/modal";
+import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
 import PaymentTaxesTab from "../../components/Payment/PaymentTaxesTab";
@@ -31,7 +31,9 @@ const ALL_TABS = [
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit?: (data?: any) => void; 
   onSuccess?: (paymentEntryName: string) => void;
+  modalId: string; 
 
   customerId?: string; 
   defaultValues?: {
@@ -203,8 +205,10 @@ const PaymentEntryModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onSuccess,
+  onSubmit,
   customerId,
   defaultValues,
+  modalId,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>("details");
   const [form, setForm] = useState<Record<string, any>>({});
@@ -583,7 +587,8 @@ const handleSave = useCallback(async () => {
   );
 
   return (
-    <Modal
+    <MinimizableModal
+     modalId={modalId}
       isOpen={isOpen}
       onClose={() => {
         resetModalState();
@@ -778,7 +783,7 @@ const handleSave = useCallback(async () => {
           </div>
         </div>
       </div>
-    </Modal>
+    </MinimizableModal>
   );
 };
 
