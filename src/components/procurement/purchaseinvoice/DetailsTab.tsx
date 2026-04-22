@@ -389,7 +389,13 @@ export const DetailsTab = ({
 
         {/* TAX CODE */}
         <td className="px-2 py-1">
-          <Tooltip content={`Tax Name: ${it.vatCd || "N/A"}`}>
+          <Tooltip
+    content={
+      it.taxTypes?.length
+        ? `Tax Types: ${it.taxTypes.join(", ")}`
+        : "No Tax Types"
+    }
+  >
             <input
               name="vatCd"
               value={it.vatCd || ""}

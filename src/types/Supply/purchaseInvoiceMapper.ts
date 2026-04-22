@@ -155,6 +155,10 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
           t.taxCategory?.toLowerCase?.() ===
           (api.taxCategory || "").toLowerCase()
       ) || (item.taxInfo || [])[0] || null;
+      const taxTypes = (item.taxInfo || [])
+  .flatMap((tax: any) => tax.taxRates || [])
+  .map((r: any) => r.tax_type)
+  .filter((t: string) => t && t.trim() !== "");
     return {
       itemCode: str(item.item_code || item.itemCode),
       itemName: str(item.item_name || item.itemName),
@@ -167,6 +171,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
         selectedTax?.taxName ||
         ""
       ),
+      taxTypes: taxTypes,
 
       vatRate: num(
         item.vatRate ||
