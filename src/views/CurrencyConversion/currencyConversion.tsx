@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React   from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import { FaExchangeAlt } from "react-icons/fa";
@@ -6,7 +6,7 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
-import CurrencyConversionModal from "../../components/currencyconversion/CurrencyConversionModal";
+import { openCurrencyExchangeModal } from "../../store/modalStore";
 import {
   useCurrencyConversion,
   type CurrencyConversionPayload,
@@ -19,9 +19,7 @@ import {
   showConfirm,
 } from "../../utils/alert";
 
-
 // Component
-
 
 const CurrencyConversion: React.FC = () => {
   const {
@@ -33,25 +31,23 @@ const CurrencyConversion: React.FC = () => {
     setSearch,
     addConversion,
     updateConversion,
-    actionLoading, 
+    actionLoading,
     deleteConversion,
   } = useCurrencyConversion();
 
-  const [showModal, setShowModal] = useState(false);
-  const [editData, setEditData] = useState<CurrencyConversionPayload | null>(null);
-
   // ── Handlers ─────────────────────────────────
-
-  const handleAdd = () => { setEditData(null); setShowModal(true); };
-  const handleEdit = (row: CurrencyConversionPayload) => { setEditData(row); setShowModal(true); };
-  const handleClose = () => { setShowModal(false); setEditData(null); };
-
-  const handleSave = async (payload: any) => {
-    if (actionLoading) return; 
-    if (payload.id) return await updateConversion(payload);
-    return await addConversion(payload);
-  };
-
+const handleAdd = () =>
+  openCurrencyExchangeModal(null, false, {
+    onSuccess: async (payload: any) => {
+      await addConversion(payload);
+    },
+  });
+ const handleEdit = (row: CurrencyConversionPayload) =>
+  openCurrencyExchangeModal(row, true, {
+    onSuccess: async (payload: any) => {
+      await updateConversion(payload);
+    },
+  });
   const handleSearch = (q: string) => {
     setSearch(q);
     setPagination((prev) => ({
@@ -151,11 +147,7 @@ const CurrencyConversion: React.FC = () => {
       render: (row) => (
         <ActionGroup>
           {/* ── Edit button — inline, outside menu ── */}
-          <ActionButton
-            type="edit"
-            onClick={() => handleEdit(row)}
-            iconOnly
-          />
+          <ActionButton type="edit" onClick={() => handleEdit(row)} iconOnly />
 
           {/* ── Delete inside menu ── */}
           <ActionMenu
@@ -163,7 +155,7 @@ const CurrencyConversion: React.FC = () => {
               {
                 label: "Delete",
                 onClick: async () => {
-                  if (actionLoading) return; 
+                  if (actionLoading) return;
                   const confirmed = await showConfirm(
                     "Do you want to delete this record?",
                   );
@@ -227,15 +219,6 @@ const CurrencyConversion: React.FC = () => {
         totalItems={pagination.totalItems}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
-      />
-
-      {/* MODAL */}
-      <CurrencyConversionModal
-        isOpen={showModal}
-        onClose={handleClose}
-        onSave={handleSave}
-        editData={editData}
-        actionLoading={actionLoading} 
       />
     </div>
   );

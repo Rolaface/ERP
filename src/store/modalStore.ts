@@ -17,8 +17,9 @@ export type ModalType =
   |"salesTax"
   | "taxCategory"
   | "bankAccount"
-  |"modeofpayment"
-  |"paymentEntry"  ;
+  |"modeOfPayment"
+  |"paymentEntry"
+  |"currencyExchange";
 
 export interface ModalContext {
   source?: string;
@@ -470,7 +471,7 @@ export const openModeOfPaymentModal = (
 ) =>
   useModalStore
     .getState()
-    .openModal("modeofpayment", initialData, isEdit, context, meta);  
+    .openModal("modeOfPayment", initialData, isEdit, context, meta);  
     export const openPaymentEntryModal = (
   initialData?: unknown,
   isEdit = false,
@@ -480,4 +481,15 @@ export const openModeOfPaymentModal = (
   useModalStore
     .getState()
     .openModal("paymentEntry", initialData, isEdit, context, meta);  
+
+
+export const openCurrencyExchangeModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("currencyExchange", initialData, isEdit, context, meta);    
 

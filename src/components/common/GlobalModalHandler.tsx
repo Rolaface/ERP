@@ -49,6 +49,9 @@ const AddModeOfPaymentModal = lazy(
 const PaymentEntryModal = lazy(
   () => import("../../views/PaymentEntry/PaymentEntryModal"),
 );
+const CurrencyConversionModal = lazy(
+  () => import("../currencyconversion/CurrencyConversionModal"),
+);
 
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
@@ -322,7 +325,7 @@ const GlobalModalHandler: React.FC = () => {
             isEditMode={modal.isEdit}
           />,
         );
-      case "modeofpayment":
+      case "modeOfPayment":
         return wrappedModal(
           <AddModeOfPaymentModal
             key={modal.id}
@@ -333,17 +336,29 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-     case "paymentEntry":
+      case "paymentEntry":
         return wrappedModal(
-          <PaymentEntryModal  
+          <PaymentEntryModal
             key={modal.id}
             modalId={modal.id}
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-           
           />,
-        );    
+        );
+
+      case "currencyExchange":
+  return wrappedModal(
+    <CurrencyConversionModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+      editData={getInitialData(modal.initialData) as any}  
+      actionLoading={false}                                
+    />,
+  );
 
       default:
         return null;
