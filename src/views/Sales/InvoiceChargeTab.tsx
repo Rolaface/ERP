@@ -93,7 +93,10 @@ onTaxChange,
 
   const selectedTemplateObj = templates.find((t) => t.name === selectedTemplate) ?? null;
 
-  const chargesTotal = charges.reduce((sum, ch) => sum + (Number(ch.amount) || 0), 0);
+  const chargesTotal = taxes.reduce(
+  (sum, t) => sum + (Number(t.taxAmount) || 0),
+  0
+);
 
   // CIF = subTotal + charges total + totalTax
   const cifValue = totals.subTotal + chargesTotal;
@@ -404,7 +407,6 @@ onTaxChange,
         {/* CIF */}
         <div className="bg-card border border-theme rounded-lg p-3">
           <div className="flex items-center gap-1.5 mb-2">
-            <span className="text-primary text-sm">$</span>
             <span className="text-xs font-semibold text-main">Summary</span>
           </div>
 
