@@ -295,7 +295,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
 
                   <div className="flex flex-col min-w-0">
                     <span className="block text-[10px] font-medium text-main mb-1">
-                      Mobile <span className="text-danger">*</span>
+                      Phone No <span className="text-danger">*</span>
                     </span>
 
                     <div className="flex">
@@ -303,6 +303,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                       <input
                         name="mobileCode"
                         value={primaryContact?.mobileCode ?? "+"}
+                         placeholder="+"
                         onChange={handlePrimaryContactChange}
                         onBlur={(e) => {
                           if (!e.target.value.startsWith("+")) {
