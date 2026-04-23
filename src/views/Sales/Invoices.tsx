@@ -555,7 +555,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   };
 
-  // Memoize columns to prevent re-renders
+// Memoize columns to prevent re-renders
   const columns: Column<InvoiceSummary>[] = useMemo(
     () => [
       {
@@ -563,8 +563,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Invoice No",
         align: "left",
         sortable: true,
+        width: "180px",
         render: (inv) => (
-          <span className="text-main whitespace-nowrap truncate block max-w-[140px]">
+          <span className="font-mono text-sm tabular-nums whitespace-nowrap">
             {inv.invoiceNumber}
           </span>
         ),
@@ -573,23 +574,21 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       {
         key: "invoiceType",
         header: "Type",
-        align: "center",
+        align: "left",
+        width: "120px",
         render: (inv) => (
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block max-w-[80px] truncate whitespace-nowrap overflow-hidden">
-            {inv.invoiceType}
-          </code>
+          <span className="whitespace-nowrap">{inv.invoiceType}</span>
         ),
         tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
       },
       {
         key: "customerName",
         header: "Customer",
-        align: "center",
+        align: "left",
         sortable: true,
+        width: "260px",
         render: (inv) => (
-          <span className="text-sm text-main whitespace-nowrap truncate block max-w-[160px] overflow-hidden">
-            {inv.customerName}
-          </span>
+          <span className="truncate block font-medium">{inv.customerName}</span>
         ),
         tooltip: (inv) => `Customer: ${inv.customerName}`,
       },
@@ -597,8 +596,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         key: "dateOfInvoice",
         header: "Date",
         align: "left",
+        width: "130px",
         render: (inv) => (
-          <span className="text-xs text-muted">
+          <span className="text-sm whitespace-nowrap">
             {inv.dateOfInvoice.toLocaleDateString()}
           </span>
         ),
@@ -608,8 +608,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Due Date",
         align: "left",
         sortable: true,
+        width: "130px",
         render: (inv) => (
-          <span className="text-xs text-muted">
+          <span className="text-sm whitespace-nowrap">
             {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
           </span>
         ),
@@ -619,40 +620,43 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Amount",
         align: "right",
         sortable: true,
+        width: "140px",
         render: (inv) => (
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
+          <span className="tabular-nums font-medium whitespace-nowrap">
             {inv.total.toLocaleString()} {inv.currency}
-          </code>
+          </span>
         ),
         tooltip: (inv) =>
           `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
       },
       {
         key: "outstandingAmount",
-        header: "OutStanding",
+        header: "Outstanding",
         align: "right",
         sortable: true,
+        width: "150px",
         render: (inv) => (
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
+          <span className="tabular-nums font-medium whitespace-nowrap">
             {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
-          </code>
+          </span>
         ),
         tooltip: (inv) =>
           `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency}`,
       },
-
       {
         key: "invoiceStatus",
         header: "Status",
-        align: "left",
+        align: "center",
+        width: "120px",
         render: (inv) => <StatusBadge status={inv.invoiceStatus} />,
       },
       {
         key: "actions",
         header: "Actions",
         align: "center",
+        width: "150px",
         render: (inv) => (
-          <ActionGroup>
+          <div className="flex items-center justify-center gap-2">
             <ActionButton
               type="view"
               onClick={(e) => handleView(inv.invoiceNumber, e)}
@@ -675,14 +679,14 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
               onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
               customActions={[
                 ...(inv.invoiceStatus !== "Draft" &&
-                  inv.invoiceStatus !== "Cancelled" &&
-                  inv.outstandingAmount > 0
+                inv.invoiceStatus !== "Cancelled" &&
+                inv.outstandingAmount > 0
                   ? [
-                    {
-                      label: "Receive Payment",
-                      onClick: () => handleReceivePayment(inv),
-                    },
-                  ]
+                      {
+                        label: "Receive Payment",
+                        onClick: () => handleReceivePayment(inv),
+                      },
+                    ]
                   : []),
                 {
                   label: "View PDF",
@@ -698,7 +702,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                 ),
               ]}
             />
-          </ActionGroup>
+          </div>
         ),
       },
     ],

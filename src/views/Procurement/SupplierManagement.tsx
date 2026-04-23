@@ -244,8 +244,9 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       key: "supplierID",
       header: "ID",
       align: "left",
+      width: "160px",
       render: (supplier) => (
-        <span className="block truncate text-sm">
+        <span className="font-medium whitespace-nowrap">
           {supplier.supplierId || "-"}
         </span>
       ),
@@ -254,9 +255,10 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "supplierName",
       header: "Supplier Name",
-      align: "center",
+      align: "left",
+      width: "280px",
       render: (supplier) => (
-        <span className="block truncate text-sm">
+        <span className="truncate block font-medium">
           {supplier.supplierName || "-"}
         </span>
       ),
@@ -265,45 +267,42 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "taxCategory",
       header: "Tax Category",
-      align: "center",
+      align: "left",
+      width: "140px",
       render: (supplier) => (
-        <span className="block truncate text-sm">
-          {supplier.taxCategory || "-"}
-        </span>
+        <span className="whitespace-nowrap">{supplier.taxCategory || "-"}</span>
       ),
       tooltip: (supplier) => supplier.taxCategory || "-",
     },
     {
       key: "phoneNo",
       header: "Phone",
-      align: "center",
+      align: "left",
+      width: "150px",
       render: (supplier) => (
-        <span className="block truncate text-sm">
-          {supplier.phoneNo || "-"}
-        </span>
+        <span className="whitespace-nowrap">{supplier.phoneNo || "-"}</span>
       ),
       tooltip: (supplier) => supplier.phoneNo || "-",
     },
     {
       key: "tpin",
       header: "TPIN",
-      align: "center",
-      render: (supplier) =>
-        supplier.tpin ? (
-          <code className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
-            {supplier.tpin}
-          </code>
-        ) : (
-          <span className="text-muted">-</span>
-        ),
+      align: "left",
+      width: "140px",
+      render: (supplier) => (
+        <span className="font-mono text-sm tabular-nums whitespace-nowrap">
+          {supplier.tpin || "-"}
+        </span>
+      ),
       tooltip: (supplier) => supplier.tpin || "-",
     },
     {
       key: "currency",
       header: "Currency",
       align: "center",
+      width: "90px",
       render: (supplier) => (
-        <span className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+        <span className="text-xs font-medium whitespace-nowrap">
           {supplier.currency || "-"}
         </span>
       ),
@@ -313,14 +312,18 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       key: "status",
       header: "Status",
       align: "center",
-      render: (supplier) => <StatusBadge status={supplier.status || "active"} />,
+      width: "110px",
+      render: (supplier) => (
+        <StatusBadge status={supplier.status || "active"} />
+      ),
     },
     {
       key: "actions",
       header: "Actions",
       align: "center",
+      width: "130px",
       render: (supplier) => (
-        <ActionGroup>
+        <div className="flex items-center justify-center gap-2">
           <ActionButton
             type="view"
             onClick={() => handleRowClick(supplier)}
@@ -340,14 +343,17 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
           <ActionMenu
             onDelete={() => handleDeleteSupplier(supplier)}
             customActions={[
-              { label: "Make Payment", onClick: () => handleMakePayment(supplier) },
+              {
+                label: "Make Payment",
+                onClick: () => handleMakePayment(supplier),
+              },
               {
                 label: "Make Advance Payment",
                 onClick: () => handleMakeAdvancePayment(supplier),
               },
             ]}
           />
-        </ActionGroup>
+        </div>
       ),
     },
   ];
