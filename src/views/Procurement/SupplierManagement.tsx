@@ -245,23 +245,32 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       key: "supplierID",
       header: "ID",
       align: "center",
-      render: (supplier) => (
-        <span className="block truncate text-sm">
-          {supplier.supplierId || "-"}
-        </span>
-      ),
+      render: (supplier) => {
+        const id = supplier.supplierId || "";
+        const shortId = id ? `**${id.slice(-4)}` : "-";
+
+        return (
+          <span className="block truncate text-sm">
+            {shortId}
+          </span>
+        );
+      },
       tooltip: (supplier) => supplier.supplierId || "-",
     },
     {
       key: "supplierName",
-      header: "Supplier Name",
+      header: "Name",
       align: "center",
+      maxWidth: "250px",
       render: (supplier) => (
         <span className="block truncate text-sm">
           {supplier.supplierName || "-"}
         </span>
       ),
-      tooltip: (supplier) => supplier.supplierName || "-",
+      tooltip: (supplier) => {
+        const name = supplier.supplierName || "";
+        return name.length > 20 ? name : undefined;
+      },
     },
     {
       key: "taxCategory",

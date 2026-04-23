@@ -361,84 +361,90 @@ const Items: React.FC = () => {
     {
       key: "id",
       header: "Item Code",
-      align: "left",
-      width: "160px",
-      render: (i) => (
-        <span className="font-mono text-sm tabular-nums whitespace-nowrap">
-          {i.id}
-        </span>
-      ),
+      align: "center",
+      render: (i) => {
+        const id = i.id || "";
+        const shortId = id ? `**${id.slice(-4)}` : "-";
+
+        return (
+          <span className="font-mono text-sm truncate block">
+            {shortId}
+          </span>
+        );
+      },
+      tooltip: (i) => i.id,
     },
     {
       key: "brand",
       header: "Brand",
-      align: "left",
-      width: "140px",
+      align: "center",
       render: (i) => <span className="truncate block">{i.brand || "-"}</span>,
+      tooltip: (i) => i.brand || "-",
     },
     {
       key: "itemName",
       header: "Name",
-      align: "left",
-      width: "300px",
+      align: "center",
       render: (i) => (
-        <span className="truncate block font-medium">{i.itemName}</span>
+        <span className="block font-medium">
+          {i.itemName}
+        </span>
       ),
+      tooltip: (i) => i.itemName,
     },
     {
       key: "itemGroup",
       header: "Category",
-      align: "left",
-      width: "160px",
+      align: "center",
       render: (i) => <span className="truncate block">{i.itemGroup}</span>,
+      tooltip: (i) => i.itemGroup,
     },
     {
       key: "minStockLevel",
       header: "Min",
-      align: "right",
-      width: "80px",
+      align: "center",
       render: (i) => (
         <span className="tabular-nums whitespace-nowrap">
           {i.minStockLevel ?? "-"}
         </span>
       ),
+      tooltip: (i) => i.minStockLevel ?? "-",
     },
     {
       key: "maxStockLevel",
       header: "Max",
-      align: "right",
-      width: "80px",
+      align: "center",
       render: (i) => (
         <span className="tabular-nums whitespace-nowrap">
           {i.maxStockLevel ?? "-"}
         </span>
       ),
+      tooltip: (i) => i.maxStockLevel ?? "-",
     },
     {
       key: "preferredVendorName",
       header: "Supplier",
-      align: "left",
-      width: "220px",
+      align: "center",
       render: (i) => (
         <span className="truncate block">{i.preferredVendorName || "-"}</span>
       ),
+      tooltip: (i) => i.preferredVendorName || "-",
     },
     {
       key: "sellingPrice",
       header: "Price",
-      align: "right",
-      width: "120px",
+      align: "center",
       render: (i) => (
         <span className="tabular-nums font-medium whitespace-nowrap">
           {i.sellingPrice}
         </span>
       ),
+      tooltip: (i) => i.sellingPrice,
     },
     {
       key: "actions",
       header: "Actions",
       align: "center",
-      width: "120px",
       render: (i) => (
         <div className="flex items-center justify-center gap-2">
           <ActionButton
