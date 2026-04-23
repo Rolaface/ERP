@@ -41,8 +41,11 @@ const Payments: React.FC = () => {
 
 const handleAddPayment = () => {
   openPaymentEntryModal(
-    null,   // no default values
-    false,  // create mode
+    {
+      paymentType: "Receive",
+      partyType: "Customer",
+    },
+    false,
     {
       onSuccess: () => fetchPayments(),
     }
