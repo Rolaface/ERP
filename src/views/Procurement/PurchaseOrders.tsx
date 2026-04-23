@@ -40,6 +40,7 @@ type OutletContextType = {
 };
 import PurchaseOrderDetailModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+import { Copy } from "lucide-react";
 
 
 interface PurchaseOrder {
@@ -489,10 +490,25 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
         const id = o.id || "";
         const shortId = id ? `**${id.slice(-4)}` : "—";
 
+        const handleCopy = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(id);
+        };
+
         return (
-          <span className="block text-sm font-mono">
-            {shortId}
-          </span>
+          <div className="flex items-center justify-center gap-1 group">
+            <span className="font-mono text-sm">
+              {shortId}
+            </span>
+
+            <button
+              onClick={handleCopy}
+              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
+              title="Copy full PO ID"
+            >
+              <Copy size={14} />
+            </button>
+          </div>
         );
       },
       tooltip: (o) => o.id || "—",

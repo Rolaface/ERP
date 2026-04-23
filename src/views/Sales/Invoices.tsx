@@ -45,6 +45,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
 import { fireManagedSwal } from "../../utils/swalManager";
+import { Copy } from "lucide-react";
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -567,10 +568,25 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           const id = inv.invoiceNumber || "";
           const shortId = id ? `**${id.slice(-4)}` : "-";
 
+          const handleCopy = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(id);
+          };
+
           return (
-            <span className="font-mono text-sm truncate block">
-              {shortId}
-            </span>
+            <div className="flex items-center justify-center gap-1 group">
+              <span className="font-mono text-sm">
+                {shortId}
+              </span>
+
+              <button
+                onClick={handleCopy}
+                className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
+                title="Copy full Invoice ID"
+              >
+                <Copy size={14} />
+              </button>
+            </div>
           );
         },
         tooltip: (inv) => inv.invoiceNumber,
@@ -590,7 +606,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "left",
         sortable: true,
         render: (inv) => (
-         <span className="block font-medium">{inv.customerName}</span>
+          <span className="block font-medium">{inv.customerName}</span>
         ),
         tooltip: (inv) => `Customer: ${inv.customerName}`,
       },

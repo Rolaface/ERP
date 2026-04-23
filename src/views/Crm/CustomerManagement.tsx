@@ -24,6 +24,7 @@ import { FilterSelect } from "../../components/ui/modal/modalComponent";
 
 import { fireManagedSwal } from "../../utils/swalManager";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import { Copy } from "lucide-react";
 
 type OutletContextType = {
   openCustomerCreate: () => void;
@@ -215,10 +216,25 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         const id = customer.id || "";
         const shortId = id ? `**${id.slice(-4)}` : "-";
 
+        const handleCopy = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(id);
+        };
+
         return (
-          <span className="font-mono text-sm truncate block">
-            {shortId}
-          </span>
+          <div className="flex items-center justify-center gap-1 group">
+            <span className="font-mono text-sm">
+              {shortId}
+            </span>
+
+            <button
+              onClick={handleCopy}
+              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
+              title="Copy full Customer ID"
+            >
+              <Copy size={14} />
+            </button>
+          </div>
         );
       },
       tooltip: (customer) => customer.id,
@@ -286,8 +302,8 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       render: (customer) => (
         <span
           className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
-              ? "bg-green-100 text-green-700"
-              : "bg-gray-100 text-gray-600"
+            ? "bg-green-100 text-green-700"
+            : "bg-gray-100 text-gray-600"
             }`}
         >
           {customer.status}
