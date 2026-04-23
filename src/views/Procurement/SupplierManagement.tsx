@@ -52,7 +52,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);       
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
@@ -95,7 +95,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
         };
       });
 
-     setSuppliers(list);
+      setSuppliers(list);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || 0);
 
@@ -244,10 +244,9 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "supplierID",
       header: "ID",
-      align: "left",
-      width: "160px",
+      align: "center",
       render: (supplier) => (
-        <span className="font-medium whitespace-nowrap">
+        <span className="block truncate text-sm">
           {supplier.supplierId || "-"}
         </span>
       ),
@@ -256,10 +255,9 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "supplierName",
       header: "Supplier Name",
-      align: "left",
-      width: "280px",
+      align: "center",
       render: (supplier) => (
-        <span className="truncate block font-medium">
+        <span className="block truncate text-sm">
           {supplier.supplierName || "-"}
         </span>
       ),
@@ -268,42 +266,41 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "taxCategory",
       header: "Tax Category",
-      align: "left",
-      width: "140px",
+      align: "center",
       render: (supplier) => (
-        <span className="whitespace-nowrap">{supplier.taxCategory || "-"}</span>
+        <span className="block truncate text-sm">{supplier.taxCategory || "-"}</span>
       ),
       tooltip: (supplier) => supplier.taxCategory || "-",
     },
     {
       key: "phoneNo",
       header: "Phone",
-      align: "left",
-      width: "150px",
+      align: "center",
       render: (supplier) => (
-        <span className="whitespace-nowrap">{supplier.phoneNo || "-"}</span>
+        <span className="block truncate text-sm">{supplier.phoneNo || "-"}</span>
       ),
       tooltip: (supplier) => supplier.phoneNo || "-",
     },
     {
       key: "tpin",
       header: "TPIN",
-      align: "left",
-      width: "140px",
-      render: (supplier) => (
-        <span className="font-mono text-sm tabular-nums whitespace-nowrap">
-          {supplier.tpin || "-"}
-        </span>
-      ),
+      align: "center",
+      render: (supplier) =>
+        supplier.tpin ? (
+          <code className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+            {supplier.tpin}
+          </code>
+        ) : (
+          <span className="text-muted">-</span>
+        ),
       tooltip: (supplier) => supplier.tpin || "-",
     },
     {
       key: "currency",
       header: "Currency",
       align: "center",
-      width: "90px",
       render: (supplier) => (
-        <span className="text-xs font-medium whitespace-nowrap">
+        <span className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
           {supplier.currency || "-"}
         </span>
       ),
@@ -313,18 +310,14 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       key: "status",
       header: "Status",
       align: "center",
-      width: "110px",
-      render: (supplier) => (
-        <StatusBadge status={supplier.status || "active"} />
-      ),
+      render: (supplier) => <StatusBadge status={supplier.status || "active"} />,
     },
     {
       key: "actions",
       header: "Actions",
       align: "center",
-      width: "130px",
       render: (supplier) => (
-        <div className="flex items-center justify-center gap-2">
+        <ActionGroup>
           <ActionButton
             type="view"
             onClick={() => handleRowClick(supplier)}
@@ -354,7 +347,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
               },
             ]}
           />
-        </div>
+        </ActionGroup>
       ),
     },
   ];
