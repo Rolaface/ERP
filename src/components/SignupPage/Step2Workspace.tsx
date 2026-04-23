@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import FormFieldPro from "../Form/FormFieldV2";
-import ButtonPro from "../Form/ButtonPro";
+import FormFieldPro from "../form/FormFieldV2";
+import ButtonPro from "../form/ButtonPro";
 import { ChevronDown } from "lucide-react";
 
 export default function Step2Workspace({
