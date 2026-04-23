@@ -98,7 +98,7 @@ const AddBankAccountModal: React.FC<Props> = ({
       accountHolderEdited: false,
     }));
   }, [partyName, defaultAccountFor, entities, initialData, currency]);
-  // Clear individual error when field gets a value
+  
   const clearError = (field: string) =>
     setErrors((prev) => {
       if (!prev[field]) return prev;
