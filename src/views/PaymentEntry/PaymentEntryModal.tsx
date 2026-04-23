@@ -525,15 +525,17 @@ const handleSave = useCallback(async () => {
     closeSwal();
 
 
-    if (response?.status === "success") {
-      showSuccess(response.message || "Payment created successfully");
+  if (response?.status === "success") {
+  showSuccess(response.message || "Payment created successfully");
 
-     
-      onSuccess?.(response.data?.paymentId || "");
+  const paymentId = response.data?.paymentId || "";
 
-      resetModalState();
-      onClose();
-    } else {
+  await onSubmit?.(paymentId);   
+  onSuccess?.(paymentId);
+
+  resetModalState();
+  onClose();
+}else {
       // fallback if backend sends unexpected structure
       showApiError(response);
     }

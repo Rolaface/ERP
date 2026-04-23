@@ -84,14 +84,12 @@ const AddBankAccountModal: React.FC<Props> = ({
 
     if (!entities.length) return;
 
-   const match = entities.find(
-  (e) => e.value === partyId
-);
+    const match = entities.find((e) => e.value === partyId);
 
     setForm((prev) => ({
       ...prev,
-      partyId: match?.value || "",
-      name: match?.value || "",
+      partyId: match?.value || partyId || "",
+      name: match?.value || partyId || "",
       displayName: match?.label || partyName,
       accountHolder: prev.accountHolderEdited
         ? prev.accountHolder
@@ -100,7 +98,7 @@ const AddBankAccountModal: React.FC<Props> = ({
       accountHolderEdited: false,
     }));
   }, [partyName, defaultAccountFor, entities, initialData, currency]);
-  // Clear individual error when field gets a value
+  
   const clearError = (field: string) =>
     setErrors((prev) => {
       if (!prev[field]) return prev;
@@ -112,7 +110,7 @@ const AddBankAccountModal: React.FC<Props> = ({
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.accountFor) e.accountFor = "Account For is required";
-    if (!form.name) e.name = "Name is required";
+    if (!form.name && !form.partyId) e.name = "Name is required";
     if (!form.bank) e.bank = "Bank is required";
     if (!form.accountNumber) e.accountNumber = "Account Number is required";
     if (!form.sortCode) e.sortCode = "IFSC / Sort Code is required";
