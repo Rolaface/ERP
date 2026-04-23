@@ -225,7 +225,7 @@ const CustomerDetailView: React.FC<Props> = ({
 
   // ── Sidebar list ────────────────────────────────────────────────────────────
   const SidebarList = () => (
-    <div className="flex flex-col h-[490px] ">
+    <div className="flex flex-col h-[490px] no-scrollbar">
       <div className="px-3 py-2.5 border-b border-theme shrink-0">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
@@ -238,7 +238,7 @@ const CustomerDetailView: React.FC<Props> = ({
           />
         </div>
       </div>
-      <div className="overflow-y-auto px-2 py-1.5 flex-1 rounded-2xl">
+      <div className="overflow-y-auto px-2 py-1.5 flex-1 rounded-2xl no-scrollbar">
         {filteredCustomers.length === 0 && (
           <p className="text-[10px] text-muted text-center py-6">No customers found</p>
         )}
@@ -416,7 +416,7 @@ const CustomerDetailView: React.FC<Props> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                   {/* Contact card */}
-                  <div className="bg-card rounded-2xl border border-theme overflow-auto h-[390px]">
+                  <div className="bg-card rounded-2xl border border-theme overflow-auto h-[390px] no-scrollbar">
                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-theme">
                       <Mail size={12} className="text-primary" />
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Contact Channels</h4>
@@ -486,14 +486,14 @@ const CustomerDetailView: React.FC<Props> = ({
                     )}
                   </div>
 
-                  {/* Terms card — reads terms.Selling (capital S) */}
-                  <div className="bg-card rounded-2xl border border-theme flex flex-col h-[390px]">
+                  {/* Terms card  */}
+                  <div className="bg-card rounded-2xl border border-theme flex flex-col h-[390px] no-scrollbar">
                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-theme shrink-0">
                       <FileText size={12} className="text-primary" />
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Terms & Conditions</h4>
                     </div>
 
-                    <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted">
+                    <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted no-scrollbar">
                       {sellingTerms?.general && (
                         <TermsSection title="General">
                           <p className="leading-relaxed">{sellingTerms.general}</p>

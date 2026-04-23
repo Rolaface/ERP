@@ -232,7 +232,7 @@ const SupplierDetailView: React.FC<Props> = ({
           />
         </div>
       </div>
-      <div className="overflow-y-auto px-2 py-1.5 flex-1 min-h-0">
+      <div className="overflow-y-auto px-2 py-1.5 flex-1 min-h-0 no-scrollbar">
         {filteredSuppliers.length === 0 && (
           <p className="text-[10px] text-muted text-center py-6">No suppliers found</p>
         )}
@@ -437,7 +437,7 @@ const SupplierDetailView: React.FC<Props> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                   {/* Contact card — from contacts[] & addresses[] */}
-                  <div className="bg-card rounded-2xl border border-theme overflow-hidden">
+                  <div className="bg-card rounded-2xl border border-theme overflow-hidden no-scrollbar">
                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-theme">
                       <Mail size={12} className="text-primary" />
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Contact Channels</h4>
@@ -514,7 +514,7 @@ const SupplierDetailView: React.FC<Props> = ({
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Terms & Conditions</h4>
                     </div>
 
-                    <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted">
+                  <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted no-scrollbar">
 
                       {/* General */}
                       {terms?.general && (
