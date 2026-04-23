@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import PurchaseOrderView from "../../views/Procurement/purchaseorderview";
 import Table from "../../components/ui/Table/Table";
@@ -175,56 +175,56 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchOrders]);
 
-const handleMakePayment = async (order: PurchaseOrder) => {
-  if (order.status !== "Approved") {
-    showApiError("Only Approved purchase orders can have payments");
-    return;
-  }
-
-  try {
-    showLoading("Opening payment...");
-    const res = await getPurchaseOrderById(order.id);
-    closeSwal();
-
-    if (!res || res.status !== "success") {
-      showApiError("Failed to load purchase order");
+  const handleMakePayment = async (order: PurchaseOrder) => {
+    if (order.status !== "Approved") {
+      showApiError("Only Approved purchase orders can have payments");
       return;
     }
 
-    const data = res.data ?? {};
+    try {
+      showLoading("Opening payment...");
+      const res = await getPurchaseOrderById(order.id);
+      closeSwal();
 
-    openPaymentEntryModal(
-      {
-        paymentType: "Pay",
-        partyType: "Supplier",
-        partyName:
-          data.supplierName ||
-          data.supplier_name ||
-          data.partyName ||
-          order.supplier,
-        partyId:
-          data.supplierId ??
-          data.partyId ??
-          data.supplier_id ??
-          order.supplierId,
-        amount: Number(data.grandTotal ?? order.amount ?? 0),
-        referenceName: data.poId || order.id,
-        referenceType: "Purchase Order",
-      },
-      false,
-      {
-        onSuccess: (paymentId) => {
-          fetchOrders();
-          showSuccess(`Payment ${paymentId} created`);
-        },
+      if (!res || res.status !== "success") {
+        showApiError("Failed to load purchase order");
+        return;
       }
-    );
 
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+      const data = res.data ?? {};
+
+      openPaymentEntryModal(
+        {
+          paymentType: "Pay",
+          partyType: "Supplier",
+          partyName:
+            data.supplierName ||
+            data.supplier_name ||
+            data.partyName ||
+            order.supplier,
+          partyId:
+            data.supplierId ??
+            data.partyId ??
+            data.supplier_id ??
+            order.supplierId,
+          amount: Number(data.grandTotal ?? order.amount ?? 0),
+          referenceName: data.poId || order.id,
+          referenceType: "Purchase Order",
+        },
+        false,
+        {
+          onSuccess: (paymentId) => {
+            fetchOrders();
+            showSuccess(`Payment ${paymentId} created`);
+          },
+        }
+      );
+
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
   const handleCreateInvoiceFromPO = async (order: PurchaseOrder) => {
     try {
       showLoading("Creating Purchase Invoice...");
@@ -484,12 +484,17 @@ const handleMakePayment = async (order: PurchaseOrder) => {
     {
       key: "id",
       header: "PO ID",
-      align: "left",
-      render: (o) => (
-        <span className="truncate max-w-[120px] block">
-          {o.id || "—"}
-        </span>
-      ),
+      align: "center",
+      render: (o) => {
+        const id = o.id || "";
+        const shortId = id ? `**${id.slice(-4)}` : "—";
+
+        return (
+          <span className="block text-sm font-mono">
+            {shortId}
+          </span>
+        );
+      },
       tooltip: (o) => o.id || "—",
     },
     {
@@ -497,7 +502,7 @@ const handleMakePayment = async (order: PurchaseOrder) => {
       header: "Supplier",
       align: "center",
       render: (o) => (
-        <span className="truncate max-w-[160px]">
+        <span className="block">
           {o.supplier || "—"}
         </span>
       ),
@@ -694,8 +699,8 @@ const handleMakePayment = async (order: PurchaseOrder) => {
           }}
         />
       )}
-      
-     
+
+
     </div>
   );
 };

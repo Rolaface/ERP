@@ -475,13 +475,28 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     {
       key: "pId",
       header: "PI ID",
-      align: "left",
+      align: "center",
+      render: (o) => {
+        const id = o.pId || "";
+        const shortId = id ? `****${id.slice(-4)}` : "—";
+
+        return (
+          <span className="block text-sm font-mono">
+            {shortId}
+          </span>
+        );
+      },
       tooltip: (o) => o.pId || "—",
     },
     {
       key: "supplier",
       header: "Supplier",
       align: "center",
+      render: (o) => (
+        <span className="block">
+          {o.supplier || "—"}
+        </span>
+      ),
       tooltip: (o) => o.supplier || "—",
     },
     {
@@ -567,11 +582,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
 
               ...(Number(o.outstanding_amount || 0) > 0
                 ? [
-                    {
-                      label: "Make Payment",
-                      onClick: () => handleMakePayment(o.pId),
-                    },
-                  ]
+                  {
+                    label: "Make Payment",
+                    onClick: () => handleMakePayment(o.pId),
+                  },
+                ]
                 : []),
 
               ...(STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
