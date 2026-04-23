@@ -1,6 +1,7 @@
 // ─── Raw API shapes (exact fields from server, no assumptions) ────────────────
 
 export interface SalesInvoiceRaw {
+  id: string; 
   invoiceNumber: string;
   customerName: string;
   customerTpin: string | null;
@@ -11,7 +12,7 @@ export interface SalesInvoiceRaw {
   dueDate: string | null;        // "YYYY-MM-DD" | null
   totalAmount: number;
   totalTax: number | null;
-  invoiceStatus: string | null;  // "Approved" | "Draft" | "Sent" | null
+  status: string | null;
   outstandingAmount: number;     // lowercase — use this one
   OutStandingAmount: number;     // PascalCase — backend duplicate, ignore
   invoiceTypeParent: string;

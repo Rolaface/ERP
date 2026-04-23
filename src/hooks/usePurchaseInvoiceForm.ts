@@ -705,20 +705,25 @@ export const usePurchaseInvoiceForm = ({
         };
       });
 
-      const hasExistingItems = form.items.some((i) => i.itemCode);
-      let finalItems = enrichedItems;
+   const hasExistingItems = form.items.some((i) => i.itemCode?.trim());
+      let finalItems = enrichedItems; // default: full replace with PO items
 
       if (hasExistingItems) {
         const action = await showPOConflictDialog(form.items.length, data.poId);
-        if (action === "cancel") return;
+
+        if (action === "cancel") return; // user aborted — touch nothing
 
         if (action === "keep") {
-          const existingCodes = new Set(form.items.map((i) => i.itemCode));
-          finalItems = [
-            ...form.items,
-            ...enrichedItems.filter((i: typeof enrichedItems[0]) => !existingCodes.has(i.itemCode)),
-          ];
+          // IMPORT: append PO items, skip any already in the table by itemCode
+          const existingCodes = new Set(
+            form.items.map((i) => i.itemCode?.trim()).filter(Boolean)
+          );
+          const newOnly = enrichedItems.filter(
+            (i: (typeof enrichedItems)[0]) => !existingCodes.has(i.itemCode?.trim())
+          );
+          finalItems = [...form.items, ...newOnly];
         }
+        // action === "replace" → finalItems stays as enrichedItems (full replace, default)
       }
 
 
@@ -825,6 +830,49 @@ export const usePurchaseInvoiceForm = ({
           ? { supplierDispatch: addressStub(dispatchAddrId, "Dispatch") }
           : {}),
       }));
+      // ── Fetch full address lists so AddressBox shows details, not just IDs ──
+      const freshSupplierId = str(data.supplierId);
+      if (freshSupplierId) {
+        const [companyAddrs, supplierBillingAddrs, supplierDispatchAddrs] =
+          await Promise.all([
+            getAddressList({ company: true }),
+            getAddressList({ supplierId: freshSupplierId, addressType: "Billing" }),
+            getAddressList({ supplierId: freshSupplierId }),
+          ]);
+
+        setAddresses((prev) => ({
+          ...prev,
+          companyBilling:  companyAddrs,
+          companyShipping: companyAddrs,
+          supplierBilling: supplierBillingAddrs,
+          supplierDispatch: supplierDispatchAddrs,
+        }));
+
+        const matchedCompanyBilling =
+          companyAddrs.find((a) => a.id === shippingAddrId) ?? companyAddrs[0] ?? null;
+        const matchedCompanyShipping =
+          companyAddrs.find((a) => a.id === shippingAddrId) ?? null;
+        const matchedSupplierBilling =
+          supplierBillingAddrs.find((a) => a.id === supplierAddrId) ??
+          supplierBillingAddrs[0] ?? null;
+        const matchedSupplierDispatch =
+          supplierDispatchAddrs.find((a) => a.id === dispatchAddrId) ??
+          supplierDispatchAddrs[0] ?? null;
+
+        setSelected({
+          companyBilling:  matchedCompanyBilling,
+          companyShipping: matchedCompanyShipping,
+          supplierBilling: matchedSupplierBilling,
+          supplierDispatch: matchedSupplierDispatch,
+        });
+
+        setSelectedIds({
+          companyBilling:  matchedCompanyBilling?.id  ?? shippingAddrId,
+          companyShipping: matchedCompanyShipping?.id ?? shippingAddrId,
+          supplierBilling: matchedSupplierBilling?.id ?? supplierAddrId,
+          supplierDispatch: matchedSupplierDispatch?.id ?? dispatchAddrId,
+        });
+      }
     } catch (e) {
       closeSwal();
       showApiError(e);
