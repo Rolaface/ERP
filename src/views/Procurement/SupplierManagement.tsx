@@ -20,6 +20,7 @@ import { showApiError, showSuccess } from "../../utils/alert";
 
 import { openPaymentEntryModal } from "../../store/modalStore";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import { Copy } from "lucide-react";
 
 type OutletContextType = {
   openSupplierCreate: () => void;
@@ -56,6 +57,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
 
 
@@ -245,16 +247,29 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       key: "supplierID",
       header: "ID",
       align: "center",
-      render: (supplier) => {
-        const id = supplier.supplierId || "";
-        const shortId = id ? `**${id.slice(-4)}` : "-";
+ render: (supplier) => {
+  const id = supplier.supplierId || "";
+  const shortId = id ? `**${id.slice(-4)}` : "-";
 
-        return (
-          <span className="block truncate text-sm">
-            {shortId}
-          </span>
-        );
-      },
+  return (
+    <div className="flex items-center justify-center gap-1 group">
+      <span className="font-mono text-sm">
+        {shortId}
+      </span>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(id);
+        }}
+        className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-500"
+        title="Copy full ID"
+      >
+        <Copy size={14} />
+      </button>
+    </div>
+  );
+},
       tooltip: (supplier) => supplier.supplierId || "-",
     },
     {

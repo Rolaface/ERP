@@ -28,6 +28,7 @@ import {
   REFRESH_KEYS,
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
+import { Copy } from "lucide-react";
 
 type OutletContextType = {
   openItemCreate: (context?: { onSuccess?: () => void }) => void;
@@ -366,10 +367,25 @@ const Items: React.FC = () => {
         const id = i.id || "";
         const shortId = id ? `**${id.slice(-4)}` : "-";
 
+        const handleCopy = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(id);
+        };
+
         return (
-          <span className="font-mono text-sm truncate block">
-            {shortId}
-          </span>
+          <div className="flex items-center justify-center gap-1 group">
+            <span className="font-mono text-sm">
+              {shortId}
+            </span>
+
+            <button
+              onClick={handleCopy}
+              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
+              title="Copy full Item Code"
+            >
+              <Copy size={14} />
+            </button>
+          </div>
         );
       },
       tooltip: (i) => i.id,
