@@ -210,79 +210,85 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "id",
       header: "Customer ID",
-      align: "left",
-      width: "160px",
-      render: (customer) => (
-        <span className="font-medium whitespace-nowrap">{customer.id}</span>
-      ),
+      align: "center",
+      render: (customer) => {
+        const id = customer.id || "";
+        const shortId = id ? `**${id.slice(-4)}` : "-";
+
+        return (
+          <span className="font-mono text-sm truncate block">
+            {shortId}
+          </span>
+        );
+      },
+      tooltip: (customer) => customer.id,
     },
     {
       key: "name",
       header: "Name",
-      align: "left",
+      align: "center",
       width: "280px",
       render: (customer) => (
-        <span className="cursor-pointer font-medium truncate block">
+        <span className="cursor-pointer font-medium block">
           {customer.name}
         </span>
       ),
+      tooltip: (customer) => customer.name,
     },
     {
       key: "type",
       header: "Type",
-      align: "left",
-      width: "110px",
+      align: "center",
       render: (customer) => (
         <span className="text-muted whitespace-nowrap">
           {customer.type ?? "-"}
         </span>
       ),
+      tooltip: (customer) => customer.type ?? "-",
     },
     {
       key: "tpin",
       header: "TPIN",
-      align: "left",
-      width: "140px",
+      align: "center",
       render: (customer) => (
         <span className="font-mono text-sm tabular-nums whitespace-nowrap">
           {customer.tpin}
         </span>
       ),
+      tooltip: (customer) => customer.tpin,
     },
     {
       key: "customerTaxCategory",
       header: "Tax Category",
-      align: "left",
-      width: "140px",
+      align: "center",
       render: (customer) => (
         <span className="whitespace-nowrap">
           {customer.customerTaxCategory ?? "-"}
         </span>
       ),
+      tooltip: (customer) => customer.customerTaxCategory ?? "-",
     },
     {
       key: "currency",
       header: "Currency",
       align: "center",
-      width: "90px",
       render: (customer) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main whitespace-nowrap block text-center">
           {customer.currency}
         </code>
       ),
+      tooltip: (customer) => customer.currency,
     },
     {
       key: "status",
       header: "Status",
       align: "center",
-      width: "110px",
       render: (customer) => (
         <span
-          className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
-            customer.status === "Active"
+          className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
               ? "bg-green-100 text-green-700"
               : "bg-gray-100 text-gray-600"
-          }`}
+            }`}
         >
           {customer.status}
         </span>
@@ -292,9 +298,8 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "actions",
       header: "Actions",
       align: "center",
-      width: "120px",
       render: (customer) => (
-        <div className="flex items-center justify-center gap-2">
+        <ActionGroup>
           <ActionButton
             type="view"
             onClick={() => handleRowClick(customer)}
@@ -317,7 +322,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
               },
             ]}
           />
-        </div>
+        </ActionGroup>
       ),
     },
   ];
