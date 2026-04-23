@@ -58,8 +58,8 @@ const EMPTY_FORM: FormState = {
   fromCurrency: "",
   toCurrency: "",
   exchangeRate: "",
-  isBuying: false,
-  isSelling: false,
+ isBuying: true,
+  isSelling: true,
 };
 
 // ─────────────────────────────────────────────

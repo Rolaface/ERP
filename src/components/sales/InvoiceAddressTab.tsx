@@ -221,12 +221,12 @@ const selectedBilling =
     ? { id: formData.billingAddress, title: formData.billingAddress }
     : null);
     //shipping block 
-   const selectedShipping =
+const selectedShipping =
   shippingList.find((a) => a.id === formData.shippingAddress) ||
+  billingList.find((a) => a.id === formData.shippingAddress) ||
   (typeof formData.shippingAddress === "string" && formData.shippingAddress
     ? { id: formData.shippingAddress, title: formData.shippingAddress }
     : null);
-
   const handleBilling = useCallback((addr: ApiAddress) => {
     onFormChange({
       target: { name: "billingAddress", value: addr.id },
