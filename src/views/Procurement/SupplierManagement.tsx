@@ -52,6 +52,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);       
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
@@ -94,7 +95,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
         };
       });
 
-      setAllSuppliers(list);
+     setSuppliers(list);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || 0);
 
@@ -363,7 +364,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       {viewMode === "table" ? (
         <Table
           columns={columns}
-          data={allSuppliers}
+          data={suppliers}
           tableId="supplier-management"
           showToolbar
           loading={loading}
