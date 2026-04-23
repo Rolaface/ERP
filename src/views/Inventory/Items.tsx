@@ -362,81 +362,85 @@ const Items: React.FC = () => {
       key: "id",
       header: "Item Code",
       align: "left",
-      maxWidth: "100px",
-      truncate: true,
-      render: (i) => <span className="truncate block">{i.id}</span>,
+      width: "160px",
+      render: (i) => (
+        <span className="font-mono text-sm tabular-nums whitespace-nowrap">
+          {i.id}
+        </span>
+      ),
     },
     {
       key: "brand",
       header: "Brand",
-      align: "center",
-      maxWidth: "100px",
-      truncate: true,
-      render: (i) => <span className="truncate block">{i.brand}</span>,
+      align: "left",
+      width: "140px",
+      render: (i) => <span className="truncate block">{i.brand || "-"}</span>,
     },
     {
       key: "itemName",
       header: "Name",
-      align: "center",
-      maxWidth: "200px",
-      truncate: true,
-      render: (i) => <span className="truncate block">{i.itemName}</span>,
+      align: "left",
+      width: "300px",
+      render: (i) => (
+        <span className="truncate block font-medium">{i.itemName}</span>
+      ),
     },
     {
       key: "itemGroup",
       header: "Category",
-      align: "center",
-      maxWidth: "90px",
-      truncate: true,
+      align: "left",
+      width: "160px",
       render: (i) => <span className="truncate block">{i.itemGroup}</span>,
     },
-
     {
       key: "minStockLevel",
       header: "Min",
-      align: "center",
-      maxWidth: "60px",
-      truncate: true,
+      align: "right",
+      width: "80px",
+      render: (i) => (
+        <span className="tabular-nums whitespace-nowrap">
+          {i.minStockLevel ?? "-"}
+        </span>
+      ),
     },
     {
       key: "maxStockLevel",
       header: "Max",
-      align: "center",
-      maxWidth: "60px",
-      truncate: true,
+      align: "right",
+      width: "80px",
+      render: (i) => (
+        <span className="tabular-nums whitespace-nowrap">
+          {i.maxStockLevel ?? "-"}
+        </span>
+      ),
     },
-
     {
       key: "preferredVendorName",
       header: "Supplier",
-      align: "center",
-      maxWidth: "180px",
-      truncate: true,
+      align: "left",
+      width: "220px",
       render: (i) => (
-        <span className="truncate block">{i.preferredVendorName}</span>
+        <span className="truncate block">{i.preferredVendorName || "-"}</span>
       ),
     },
-
     {
       key: "sellingPrice",
       header: "Price",
-      align: "center",
-      maxWidth: "90px",
-      truncate: true,
+      align: "right",
+      width: "120px",
       render: (i) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <span className="tabular-nums font-medium whitespace-nowrap">
           {i.sellingPrice}
-        </code>
+        </span>
       ),
     },
-
     {
       key: "actions",
       header: "Actions",
       align: "center",
-      maxWidth: "100px",
+      width: "120px",
       render: (i) => (
-        <ActionGroup>
+        <div className="flex items-center justify-center gap-2">
           <ActionButton
             type="view"
             iconOnly
@@ -449,7 +453,7 @@ const Items: React.FC = () => {
             onEdit={(e) => handleEdit(i.id, e as any)}
             onDelete={(e) => handleDeleteClick(i, e as any)}
           />
-        </ActionGroup>
+        </div>
       ),
     },
   ];

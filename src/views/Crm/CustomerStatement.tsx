@@ -67,10 +67,10 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
 
         const resp = await getCustomerStatement(customerId, page, pageSize);
 
-        if (resp?.status === "success") {
-          setData(resp.data);
-          setTotalPages(resp.data.pagination?.total_pages || 1);
-          setTotalItems(resp.data.pagination?.total || 0);
+        if (resp?.message?.status_code == 200) {
+          setData(resp.message.data);
+          setTotalPages(resp.message.data.pagination?.total_pages || 1);
+          setTotalItems(resp.message.data.pagination?.total || 0);
         } else {
           setError("Failed to load customer statement");
         }

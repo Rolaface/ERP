@@ -171,7 +171,7 @@ const SupplierDetailView: React.FC<Props> = ({
       try {
         setStatementLoading(true);
         const res = await getSupplierStatement(supplierId);
-        if (res?.status_code === 200) setStatement(res.data);
+        if (res?.message.status_code === 200) setStatement(res.message.data);
       } catch (err) {
         console.error("Failed to load supplier statement", err);
       } finally {

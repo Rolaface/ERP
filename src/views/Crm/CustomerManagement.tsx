@@ -211,20 +211,18 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "id",
       header: "Customer ID",
       align: "left",
-      maxWidth: "120px",
+      width: "160px",
       render: (customer) => (
-        <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
-          {customer.id}
-        </span>
+        <span className="font-medium whitespace-nowrap">{customer.id}</span>
       ),
     },
     {
       key: "name",
       header: "Name",
-      align: "center",
-      maxWidth: "200px",
+      align: "left",
+      width: "280px",
       render: (customer) => (
-        <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <span className="cursor-pointer font-medium truncate block">
           {customer.name}
         </span>
       ),
@@ -232,10 +230,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "type",
       header: "Type",
-      align: "center",
-      maxWidth: "100px",
+      align: "left",
+      width: "110px",
       render: (customer) => (
-        <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <span className="text-muted whitespace-nowrap">
           {customer.type ?? "-"}
         </span>
       ),
@@ -243,21 +241,21 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "tpin",
       header: "TPIN",
-      align: "center",
-      maxWidth: "100px",
+      align: "left",
+      width: "140px",
       render: (customer) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <span className="font-mono text-sm tabular-nums whitespace-nowrap">
           {customer.tpin}
-        </code>
+        </span>
       ),
     },
     {
       key: "customerTaxCategory",
       header: "Tax Category",
-      align: "center",
-      maxWidth: "120px",
+      align: "left",
+      width: "140px",
       render: (customer) => (
-        <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <span className="whitespace-nowrap">
           {customer.customerTaxCategory ?? "-"}
         </span>
       ),
@@ -266,9 +264,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "currency",
       header: "Currency",
       align: "center",
-      maxWidth: "80px",
+      width: "90px",
       render: (customer) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main whitespace-nowrap block text-center">
           {customer.currency}
         </code>
       ),
@@ -277,20 +275,26 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "status",
       header: "Status",
       align: "center",
-      maxWidth: "90px",
+      width: "110px",
       render: (customer) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <span
+          className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
+            customer.status === "Active"
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-gray-600"
+          }`}
+        >
           {customer.status}
-        </code>
+        </span>
       ),
     },
     {
       key: "actions",
       header: "Actions",
       align: "center",
-      width: "100px",
+      width: "120px",
       render: (customer) => (
-        <ActionGroup>
+        <div className="flex items-center justify-center gap-2">
           <ActionButton
             type="view"
             onClick={() => handleRowClick(customer)}
@@ -313,7 +317,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
               },
             ]}
           />
-        </ActionGroup>
+        </div>
       ),
     },
   ];
