@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useCallback } from "react";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { MoveRight, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
+import { showValidationError } from "../../utils/alert";
 import dayjs from "dayjs";
 import {
   usePaymentModes,
@@ -156,6 +157,11 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     }
   }, [fetchedRate, rateError, currenciesDiffer, isLoadingRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+  if (rateError && !isLoadingRate && currenciesDiffer) {
+    showValidationError(rateError); 
+  }
+}, [rateError, isLoadingRate, currenciesDiffer]);
   // ── Default date on mount ─────────────────────────────────────────────────
   useEffect(() => {
     if (!form.date) onFormChange({ date: dayjs().format("YYYY-MM-DD") });
@@ -890,7 +896,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                 />
               )}
             </div>
-            {rateError && !isLoadingRate && currenciesDiffer && (
+            {/* {rateError && !isLoadingRate && currenciesDiffer && (
               <div className="flex items-start gap-1 mt-0.5 w-full max-w-[160px]">
                 <AlertCircle
                   size={10}
@@ -900,7 +906,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                   {rateError}
                 </p>
               </div>
-            )}
+            )} */}
           </div>
 
           <div className="border-l border-[var(--border)] px-5 py-4 flex flex-col gap-1">
