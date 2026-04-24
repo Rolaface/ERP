@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import FormFieldPro from "../Form/FormFieldV2";
-import ButtonPro from "../Form/ButtonPro";
+import FormFieldPro from "../form/FormFieldV2";
+import ButtonPro from "../form/ButtonPro";
 import { Eye, EyeOff } from "lucide-react";
 
 const PERSONAL_DOMAINS = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"];

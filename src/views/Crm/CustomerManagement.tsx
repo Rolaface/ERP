@@ -195,7 +195,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       setSelectedCustomer(fullCustomer);
       setViewMode("detail");
     } catch (error) {
-      console.error("Failed to load customer detail:", error);
+     
       showApiError(error);
     } finally {
       setCustLoading(false);

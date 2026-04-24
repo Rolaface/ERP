@@ -57,8 +57,7 @@ export const mapSupplierApi = (d: any): Supplier => {
     dateOfAddition: d.createdAt ?? "",
 
     terms: {
-      buying: d.terms?.buying ?? null,
-      buying: d.terms?.buying ?? d.terms?.buying ?? { payment: { phases: [] } },
+      buying: d.terms?.buying ?? { payment: { phases: [] } },
     },
   } as Supplier;
 };
