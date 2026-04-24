@@ -174,7 +174,7 @@ const accountColumns: { key: keyof AccountRow; label: string; required?: boolean
   { key: "fixedAssetAccount",                label: "Fixed Asset Account" },
   { key: "accumulatedDepreciationAccount",   label: "Accumulated Dep. Account" },
   { key: "depreciationExpenseAccount",       label: "Dep. Expense Account" },
-  { key: "capitalWorkInProgressAccount",     label: "CWIP Account" },
+  { key: "capitalWorkInProgressAccount",     label: "Capital Work in Progress Account" },
 ];
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -371,7 +371,7 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
       {/* Finance Book Detail */}
       <div className="mb-5">
         <SectionHeading>Finance Book Detail</SectionHeading>
-        <p className="text-xs text-muted mb-3">Finance Books</p>
+
 
         <div className="rounded border border-theme mb-2">
           <table className="w-full text-xs border-collapse table-fixed">
@@ -452,7 +452,6 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
       {/* Accounts */}
       <div>
         <SectionHeading>Accounts</SectionHeading>
-        <p className="text-xs text-muted mb-3">Accounts</p>
 
         <div className="rounded border border-theme mb-2">
           <table className="w-full text-xs border-collapse table-fixed">
