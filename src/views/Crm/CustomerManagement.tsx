@@ -211,10 +211,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "id",
       header: "Customer ID",
-      align: "center",
+      align: "left",
       render: (customer) => {
         const id = customer.id || "";
-        const shortId = id ? `**${id.slice(-4)}` : "-";
+        const shortId = id ? `******${id.slice(-4)}` : "-";
 
         const handleCopy = (e: React.MouseEvent) => {
           e.stopPropagation();
@@ -222,7 +222,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         };
 
         return (
-          <div className="flex items-center justify-center gap-1 group">
+          <div className="flex items-center justify-start gap-1 group">
             <span className="font-mono text-sm">
               {shortId}
             </span>
@@ -242,7 +242,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "name",
       header: "Name",
-      align: "center",
+      align: "left",
       width: "280px",
       render: (customer) => (
         <span className="cursor-pointer font-medium block">
@@ -254,7 +254,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "type",
       header: "Type",
-      align: "center",
+      align: "left",
       render: (customer) => (
         <span className="text-muted whitespace-nowrap">
           {customer.type ?? "-"}
@@ -265,9 +265,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "tpin",
       header: "TPIN",
-      align: "center",
+      align: "left",
       render: (customer) => (
-        <span className="font-mono text-sm tabular-nums whitespace-nowrap">
+       <span className="font-mono text-sm tabular-nums whitespace-nowrap block text-left">
           {customer.tpin}
         </span>
       ),
@@ -276,7 +276,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "customerTaxCategory",
       header: "Tax Category",
-      align: "center",
+      align: "left",
       render: (customer) => (
         <span className="whitespace-nowrap">
           {customer.customerTaxCategory ?? "-"}
@@ -301,7 +301,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       align: "center",
       render: (customer) => (
         <span
-          className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
+          className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
             ? "bg-green-100 text-green-700"
             : "bg-gray-100 text-gray-600"
             }`}
