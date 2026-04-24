@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { Tag, Settings, Pencil, Trash2 } from "lucide-react";
+import { Tag, Settings, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
@@ -40,6 +40,10 @@ interface AssetCategoryModalProps {
   categoryId?: string | number;
   modalId?: string;
 }
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const ROWS_PER_PAGE =4;
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
 
@@ -95,24 +99,82 @@ const CellInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props)
   />
 );
 
+// ─── Pagination Controls ──────────────────────────────────────────────────────
+
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  totalRows: number;
+  onPrev: () => void;
+  onNext: () => void;
+}
+
+const TablePagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  totalRows,
+  onPrev,
+  onNext,
+}) => {
+  if (totalPages <= 1) return null;
+
+  const startRow = (currentPage - 1) * ROWS_PER_PAGE + 1;
+  const endRow = Math.min(currentPage * ROWS_PER_PAGE, totalRows);
+
+  return (
+    <div className="flex items-center justify-between mt-2 px-1">
+      <span className="text-[10px] text-muted">
+        {startRow}–{endRow} of {totalRows} rows
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={onPrev}
+          disabled={currentPage === 1}
+          className="flex items-center gap-1 px-2 py-1 text-[10px] rounded border border-theme
+            text-muted hover:text-main hover:border-primary transition-colors
+            disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft size={11} />
+          Previous
+        </button>
+        <span className="text-[10px] text-muted px-1">
+          {currentPage} / {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={currentPage === totalPages}
+          className="flex items-center gap-1 px-2 py-1 text-[10px] rounded border border-theme
+            text-muted hover:text-main hover:border-primary transition-colors
+            disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Next
+          <ChevronRight size={11} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // ─── Finance Books columns ────────────────────────────────────────────────────
 
 const financeBookColumns: { key: keyof FinanceBookRow; label: string }[] = [
   { key: "financeBook",                label: "Finance Book" },
   { key: "depreciationMethod",         label: "Depreciation Method" },
-  { key: "frequencyOfDepreciation",    label: "Frequency of Depreciation(Months)" },
-  { key: "totalNumberOfDepreciations", label: "Total Number of Depreciations" },
-  { key: "depreciationPostingDate",    label: "Depreciation Posting Date" },
+  { key: "frequencyOfDepreciation",    label: "Frequency (Months)" },
+  { key: "totalNumberOfDepreciations", label: "Total Depreciations" },
+  { key: "depreciationPostingDate",    label: "Posting Date" },
 ];
 
 // ─── Accounts columns ─────────────────────────────────────────────────────────
 
 const accountColumns: { key: keyof AccountRow; label: string; required?: boolean }[] = [
-  { key: "company",                          label: "Company",required: true },
+  { key: "company",                          label: "Company", required: true },
   { key: "fixedAssetAccount",                label: "Fixed Asset Account" },
-  { key: "accumulatedDepreciationAccount",   label: "Accumulated Depreciation Account" },
-  { key: "depreciationExpenseAccount",       label: "Depreciation Expense Account" },
-  { key: "capitalWorkInProgressAccount",     label: "Capital Work In Progress Account" },
+  { key: "accumulatedDepreciationAccount",   label: "Accumulated Dep. Account" },
+  { key: "depreciationExpenseAccount",       label: "Dep. Expense Account" },
+  { key: "capitalWorkInProgressAccount",     label: "CWIP Account" },
 ];
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -142,6 +204,10 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
   const [form, setForm] = useState<AssetCategoryForm>(defaultForm);
   const [internalSaving, setInternalSaving] = useState(false);
 
+  // ── Pagination state ────────────────────────────────────────
+  const [financeBookPage, setFinanceBookPage] = useState(1);
+  const [accountPage, setAccountPage] = useState(1);
+
   // ── Patch helper ────────────────────────────────────────────
   const patch = useCallback((p: Partial<AssetCategoryForm>) => {
     setForm((prev) => ({ ...prev, ...p }));
@@ -150,17 +216,31 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
 
   const handleReset = useCallback(() => {
     setForm(defaultForm());
+    setFinanceBookPage(1);
+    setAccountPage(1);
     resetDirty();
   }, [resetDirty]);
 
   // ── Finance book row ops ────────────────────────────────────
   const addFinanceRow = useCallback(() => {
-    setForm((p) => ({ ...p, financeBooks: [...p.financeBooks, defaultFinanceBookRow()] }));
+    setForm((p) => {
+      const updated = [...p.financeBooks, defaultFinanceBookRow()];
+      // Jump to the last page after adding
+      const newPage = Math.ceil(updated.length / ROWS_PER_PAGE);
+      setFinanceBookPage(newPage);
+      return { ...p, financeBooks: updated };
+    });
     markDirty();
   }, [markDirty]);
 
   const removeFinanceRow = useCallback((id: string) => {
-    setForm((p) => ({ ...p, financeBooks: p.financeBooks.filter((r) => r.id !== id) }));
+    setForm((p) => {
+      const updated = p.financeBooks.filter((r) => r.id !== id);
+      // Clamp page if needed
+      const maxPage = Math.max(1, Math.ceil(updated.length / ROWS_PER_PAGE));
+      setFinanceBookPage((prev) => Math.min(prev, maxPage));
+      return { ...p, financeBooks: updated };
+    });
     markDirty();
   }, [markDirty]);
 
@@ -174,12 +254,22 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
 
   // ── Account row ops ─────────────────────────────────────────
   const addAccountRow = useCallback(() => {
-    setForm((p) => ({ ...p, accounts: [...p.accounts, defaultAccountRow()] }));
+    setForm((p) => {
+      const updated = [...p.accounts, defaultAccountRow()];
+      const newPage = Math.ceil(updated.length / ROWS_PER_PAGE);
+      setAccountPage(newPage);
+      return { ...p, accounts: updated };
+    });
     markDirty();
   }, [markDirty]);
 
   const removeAccountRow = useCallback((id: string) => {
-    setForm((p) => ({ ...p, accounts: p.accounts.filter((r) => r.id !== id) }));
+    setForm((p) => {
+      const updated = p.accounts.filter((r) => r.id !== id);
+      const maxPage = Math.max(1, Math.ceil(updated.length / ROWS_PER_PAGE));
+      setAccountPage((prev) => Math.min(prev, maxPage));
+      return { ...p, accounts: updated };
+    });
     markDirty();
   }, [markDirty]);
 
@@ -190,6 +280,20 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
     }));
     markDirty();
   }, [markDirty]);
+
+  // ── Paginated slices ────────────────────────────────────────
+  const paginatedFinanceBooks = useMemo(() => {
+    const start = (financeBookPage - 1) * ROWS_PER_PAGE;
+    return form.financeBooks.slice(start, start + ROWS_PER_PAGE);
+  }, [form.financeBooks, financeBookPage]);
+
+  const paginatedAccounts = useMemo(() => {
+    const start = (accountPage - 1) * ROWS_PER_PAGE;
+    return form.accounts.slice(start, start + ROWS_PER_PAGE);
+  }, [form.accounts, accountPage]);
+
+  const financeBookTotalPages = Math.max(1, Math.ceil(form.financeBooks.length / ROWS_PER_PAGE));
+  const accountTotalPages = Math.max(1, Math.ceil(form.accounts.length / ROWS_PER_PAGE));
 
   // ── Submit ──────────────────────────────────────────────────
   const handleSubmitForm = useCallback(async () => {
@@ -228,9 +332,8 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
   const body = (
     <div className="p-6 flex flex-col gap-0" onChange={() => markDirty()}>
 
-      {/* Asset Category Name + checkboxes side by side */}
+      {/* Asset Category Name + checkboxes */}
       <div className="flex items-start gap-5 mb-5">
-        {/* Left: name field */}
         <div className="flex flex-col gap-1 w-80 shrink-0">
           <label className="text-xs font-medium text-muted">
             Asset Category Name <span className="text-red-500">*</span>
@@ -241,8 +344,6 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
             placeholder="Enter asset category name"
           />
         </div>
-
-        {/* Right: checkboxes in the remaining space */}
         <div className="flex flex-col gap-2 pt-5">
           <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
             <input
@@ -272,56 +373,78 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
         <SectionHeading>Finance Book Detail</SectionHeading>
         <p className="text-xs text-muted mb-3">Finance Books</p>
 
-        <div className="overflow-x-auto rounded border border-theme mb-3">
-          <table className="w-full text-xs border-collapse">
+        <div className="rounded border border-theme mb-2">
+          <table className="w-full text-xs border-collapse table-fixed">
+            <colgroup>
+              <col style={{ width: "28px" }} />
+              <col style={{ width: "32px" }} />
+              {financeBookColumns.map((col) => (
+                <col key={col.key} />
+              ))}
+              <col style={{ width: "32px" }} />
+            </colgroup>
             <thead>
               <tr className="bg-subtle">
-                <th className="w-3 p-2 border-b border-theme">
+                <th className="p-2 border-b border-theme">
                   <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
                 </th>
-                <th className="w-5 p-2 border-b border-theme text-left font-medium text-muted">No.</th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted">No.</th>
                 {financeBookColumns.map((col) => (
-                  <th key={col.key} className="p-2 border-b border-theme text-left font-medium text-muted whitespace-nowrap">
+                  <th key={col.key} className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
                     {col.label}
                   </th>
                 ))}
-                <th className="w-8 p-2 border-b border-theme">
+                <th className="p-2 border-b border-theme">
                   <Settings size={12} className="text-muted mx-auto" />
                 </th>
               </tr>
             </thead>
             <tbody>
-              {form.financeBooks.map((row, idx) => (
-                <tr key={row.id} className="hover:bg-subtle/50 transition-colors">
-                  <td className="p-2 border-b border-theme text-center">
-                    <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
-                  </td>
-                  <td className="p-2 border-b border-theme text-muted text-center">{idx + 1}</td>
-                  {financeBookColumns.map((col) => (
-                    <td key={col.key} className="border-b border-theme min-w-[130px]">
-                      <CellInput
-                        value={row[col.key]}
-                        placeholder=""
-                        onChange={(e) => changeFinanceRow(row.id, col.key, e.target.value)}
-                      />
+              {paginatedFinanceBooks.map((row, idx) => {
+                const globalIdx = (financeBookPage - 1) * ROWS_PER_PAGE + idx;
+                return (
+                  <tr key={row.id} className="hover:bg-subtle/50 transition-colors">
+                    <td className="p-2 border-b border-theme text-center">
+                      <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
                     </td>
-                  ))}
-                  <td className="p-2 border-b border-theme text-center">
-                    <button
-                      type="button"
-                      onClick={() => removeFinanceRow(row.id)}
-                      className="text-red-500 hover:text-red-700 transition-colors"
-                      title="Delete row"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    <td className="p-2 border-b border-theme text-muted text-center">{globalIdx + 1}</td>
+                    {financeBookColumns.map((col) => (
+                      <td key={col.key} className="border-b border-theme">
+                        <CellInput
+                          value={row[col.key]}
+                          placeholder=""
+                          onChange={(e) => changeFinanceRow(row.id, col.key, e.target.value)}
+                        />
+                      </td>
+                    ))}
+                    <td className="p-2 border-b border-theme text-center">
+                      <button
+                        type="button"
+                        onClick={() => removeFinanceRow(row.id)}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                        title="Delete row"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        <Button variant="secondary" onClick={addFinanceRow}>Add row</Button>
+
+        <TablePagination
+          currentPage={financeBookPage}
+          totalPages={financeBookTotalPages}
+          totalRows={form.financeBooks.length}
+          onPrev={() => setFinanceBookPage((p) => Math.max(1, p - 1))}
+          onNext={() => setFinanceBookPage((p) => Math.min(financeBookTotalPages, p + 1))}
+        />
+
+        <div className="mt-3">
+          <Button variant="secondary" onClick={addFinanceRow}>Add row</Button>
+        </div>
       </div>
 
       <Divider />
@@ -331,60 +454,82 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
         <SectionHeading>Accounts</SectionHeading>
         <p className="text-xs text-muted mb-3">Accounts</p>
 
-        <div className="overflow-x-auto rounded border border-theme mb-3">
-          <table className="w-full text-xs border-collapse">
+        <div className="rounded border border-theme mb-2">
+          <table className="w-full text-xs border-collapse table-fixed">
+            <colgroup>
+              <col style={{ width: "28px" }} />
+              <col style={{ width: "32px" }} />
+              {accountColumns.map((col) => (
+                <col key={col.key} />
+              ))}
+              <col style={{ width: "32px" }} />
+            </colgroup>
             <thead>
               <tr className="bg-subtle">
-                <th className="w-3 p-2 border-b border-theme">
+                <th className="p-2 border-b border-theme">
                   <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
                 </th>
-                <th className="w-5 p-2 border-b border-theme text-left font-medium text-muted">No.</th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted">No.</th>
                 {accountColumns.map((col) => (
-                  <th key={col.key} className="p-2 border-b border-theme text-left font-medium text-muted whitespace-nowrap">
+                  <th key={col.key} className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
                     {col.label}
                     {col.required && <span className="text-red-500 ml-0.5">*</span>}
                   </th>
                 ))}
-                <th className="w-8 p-2 border-b border-theme">
+                <th className="p-2 border-b border-theme">
                   <Settings size={12} className="text-muted mx-auto" />
                 </th>
               </tr>
             </thead>
             <tbody>
-              {form.accounts.map((row, idx) => (
-                <tr key={row.id} className="hover:bg-subtle/50 transition-colors">
-                  <td className="p-2 border-b border-theme text-center">
-                    <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
-                  </td>
-                  <td className="p-2 border-b border-theme text-muted text-center">{idx + 1}</td>
-                  {accountColumns.map((col) => (
-                    <td
-                      key={col.key}
-                      className={`border-b border-theme min-w-[150px] ${col.key === "company" ? "font-semibold" : ""}`}
-                    >
-                      <CellInput
-                        value={row[col.key]}
-                        placeholder=""
-                        onChange={(e) => changeAccountRow(row.id, col.key, e.target.value)}
-                      />
+              {paginatedAccounts.map((row, idx) => {
+                const globalIdx = (accountPage - 1) * ROWS_PER_PAGE + idx;
+                return (
+                  <tr key={row.id} className="hover:bg-subtle/50 transition-colors">
+                    <td className="p-2 border-b border-theme text-center">
+                      <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
                     </td>
-                  ))}
-                  <td className="p-2 border-b border-theme text-center">
-                    <button
-                      type="button"
-                      onClick={() => removeAccountRow(row.id)}
-                      className="text-red-500 hover:text-red-700 transition-colors"
-                      title="Delete row"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    <td className="p-2 border-b border-theme text-muted text-center">{globalIdx + 1}</td>
+                    {accountColumns.map((col) => (
+                      <td
+                        key={col.key}
+                        className={`border-b border-theme ${col.key === "company" ? "font-semibold" : ""}`}
+                      >
+                        <CellInput
+                          value={row[col.key]}
+                          placeholder=""
+                          onChange={(e) => changeAccountRow(row.id, col.key, e.target.value)}
+                        />
+                      </td>
+                    ))}
+                    <td className="p-2 border-b border-theme text-center">
+                      <button
+                        type="button"
+                        onClick={() => removeAccountRow(row.id)}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                        title="Delete row"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        <Button variant="secondary" onClick={addAccountRow}>Add row</Button>
+
+        <TablePagination
+          currentPage={accountPage}
+          totalPages={accountTotalPages}
+          totalRows={form.accounts.length}
+          onPrev={() => setAccountPage((p) => Math.max(1, p - 1))}
+          onNext={() => setAccountPage((p) => Math.min(accountTotalPages, p + 1))}
+        />
+
+        <div className="mt-3">
+          <Button variant="secondary" onClick={addAccountRow}>Add row</Button>
+        </div>
       </div>
 
     </div>
