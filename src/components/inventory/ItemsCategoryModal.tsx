@@ -166,7 +166,7 @@ const ItemsCategoryModal: React.FC<{
       subtitle="Manage Item Group Hierarchy"
       icon={Layers}
       customWidth="35vw"
-      height="45vh"
+      height="auto"
     >
       <form
         onChange={() => markDirty()}

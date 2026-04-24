@@ -182,7 +182,7 @@ handleClose();
       title={isEditMode ? "Edit Warehouse" : "New Warehouse"}
       subtitle="Manage your inventory locations"
       icon={Warehouse}
-      customWidth="32vw"
+      customWidth="35vw"
       height="auto"
     >
       <form
