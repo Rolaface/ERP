@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { FaWarehouse, FaChartPie } from "react-icons/fa";
 import FixedAssetDashboard from "./FA_Dashboard";
 import AssetRegister from "./AssetRegister";
-
+import Assetcategory from "./AssetCategory";
 const fixedAssetTabs = [
   { id: "dashboard", name: "Dashboard", icon: <FaChartPie /> },
   { id: "assets", name: "Assets", icon: <FaWarehouse /> },
+  { id: "categories", name: "Categories", icon: <FaWarehouse /> },
   { id: "maintenance", name: "Maintenance", icon: <FaWarehouse /> },
 ];
 
@@ -19,7 +20,7 @@ const FixedAssets: React.FC = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold flex items-center gap-3 text-gray-900">
             <FaWarehouse className="text-blue-600" />
-            Fixed Assets
+           Assets
           </h1>
         </div>
       </div>
@@ -47,7 +48,9 @@ const FixedAssets: React.FC = () => {
       {/* Content */}
       <div className="p-6">
         {activeTab === "dashboard" && <FixedAssetDashboard />}
+        {activeTab === "categories" && <Assetcategory />}
         {activeTab === "assets" && <AssetRegister />}
+        
       </div>
     </div>
   );

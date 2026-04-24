@@ -84,6 +84,10 @@ export const REFRESH_KEYS = {
   
   // Payment
   PAYMENT_LIST: "payment_list",
+  MODE_OF_PAYMENT_LIST: "mode_of_payment_list",
+  BANK_ACCOUNT_LIST: "bank_account_list",
+    FIXED_ASSET_LIST: "fixed_asset_list",
+  
 } as const;
 
 export type RefreshKey = typeof REFRESH_KEYS[keyof typeof REFRESH_KEYS];

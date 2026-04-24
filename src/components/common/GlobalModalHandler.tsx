@@ -52,6 +52,10 @@ const PaymentEntryModal = lazy(
 const CurrencyConversionModal = lazy(
   () => import("../currencyconversion/CurrencyConversionModal"),
 );
+const AddAssetModal = lazy(
+  () => import("../../components/FixedAsset/AddAssetModal"),
+);
+ 
 
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
@@ -367,6 +371,19 @@ const GlobalModalHandler: React.FC = () => {
       actionLoading={false}                                
     />,
   );
+       case "fixedAsset":
+        return wrappedModal(
+          <AddAssetModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={getRecordInitialData(modal.initialData) as any}
+            mode={modal.isEdit ? "edit" : "create"}
+          />,
+        );
+ 
 
       default:
         return null;
