@@ -9,8 +9,8 @@ import {
   deleteItemByItemCode,
 } from "../../api/itemApi";
 import { ItemFilters } from "../../api/itemApi";
-
-import DeleteModal from "../../components/actionModal/DeleteModal";
+import { fireManagedSwal } from "../../utils/swalManager";
+import { showLoading, closeSwal } from "../../utils/alert";
 import ItemDetailView, {
   type SalesInvoice,
   type PurchaseInvoice,
@@ -121,11 +121,6 @@ const Items: React.FC = () => {
   const [loadingSales] = useState(false);
   const [loadingPurchase] = useState(false);
   const [loadingStock] = useState(false);
-
-  /* ── Delete modal state ── */
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<ItemSummary | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   /* ── Search debounce ── */
   useEffect(() => {
@@ -303,41 +298,47 @@ const Items: React.FC = () => {
     }
   };
 
-  /* ── Delete ── */
-  const handleDeleteClick = (item: ItemSummary, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setItemToDelete(item);
-    setDeleteOpen(true);
-  };
 
-  const confirmDelete = async () => {
-    if (!itemToDelete) return;
+  const handleDeleteClick = async (item: ItemSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete Item ${item.itemName}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
 
     try {
-      setDeleting(true);
-
-      const res = await deleteItemByItemCode(itemToDelete.id);
+      showLoading("Deleting Item...");
+      const res = await deleteItemByItemCode(item.id);
 
       if (res.status !== 200) {
+        closeSwal();
         showApiError(res);
         return;
       }
 
+      closeSwal();
       showSuccess("Item deleted successfully");
-      setDeleteOpen(false);
 
-      if (activeSummary?.id === itemToDelete.id) {
+      if (activeSummary?.id === item.id) {
         handleBack();
       }
 
       triggerRefresh(REFRESH_KEYS.ITEM_LIST);
     } catch (err: any) {
+      closeSwal();
       showApiError(err);
-    } finally {
-      setDeleting(false);
-      setItemToDelete(null);
     }
   };
+
+
 
   /* ── Detail view action handlers ── */
   const handleDetailEdit = async () => {
@@ -351,10 +352,9 @@ const Items: React.FC = () => {
     }
   };
 
-  const handleDetailDelete = () => {
+  const handleDetailDelete = async () => {
     if (!activeSummary) return;
-    setItemToDelete(activeSummary);
-    setDeleteOpen(true);
+    await handleDeleteClick(activeSummary, {} as React.MouseEvent);
   };
 
   /* ── Table columns ── */
@@ -552,19 +552,6 @@ const Items: React.FC = () => {
         </div>
       )}
 
-      {deleteOpen && itemToDelete && (
-        <DeleteModal
-          entityName="Item"
-          entityId={itemToDelete.id}
-          entityDisplayName={itemToDelete.itemName}
-          isLoading={deleting}
-          onClose={() => {
-            setDeleteOpen(false);
-            setItemToDelete(null);
-          }}
-          onDelete={confirmDelete}
-        />
-      )}
     </>
   );
 };

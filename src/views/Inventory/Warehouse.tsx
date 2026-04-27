@@ -2,9 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import ExpandableTreeTable, { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
-import DeleteModal from "../../components/actionModal/DeleteModal";
-import { showApiError, showSuccess } from "../../utils/alert";
-
+import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import { fireManagedSwal } from "../../utils/swalManager";
 import { getWarehouseTree, deleteWarehouseById } from "../../api/WarehouseApi";
 
 import {
@@ -160,11 +159,6 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [warehouseToDelete, setWarehouseToDelete] =
-    useState<WarehouseNode | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
   const fetchTree = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -206,30 +200,37 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
     });
   };
 
-  const confirmDelete = async () => {
-    if (!warehouseToDelete) return;
-    try {
-      setDeleting(true);
-      const res = await deleteWarehouseById(warehouseToDelete.name);
+  const handleDelete = async (row: WarehouseNode) => {
+  const confirm = await fireManagedSwal({
+    icon: "warning",
+    title: "Are you sure?",
+    text: `Delete Warehouse "${row.warehouse_name}"?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, delete",
+  });
 
-      if (!res || ![200, 202].includes(res.status)) {
-        showApiError(res);
-        return;
-      }
+  if (!confirm.isConfirmed) return;
 
-      showSuccess(
-        res.message ||
-          `Warehouse ${warehouseToDelete.warehouse_name} deleted successfully`,
-      );
-      setDeleteModalOpen(false);
-      fetchTree();
-    } catch (err: any) {
-      showApiError(err);
-    } finally {
-      setDeleting(false);
-      setWarehouseToDelete(null);
+  try {
+    showLoading("Deleting Warehouse...");
+    const res = await deleteWarehouseById(row.name);
+
+    if (!res || ![200, 202].includes(res.status)) {
+      closeSwal();
+      showApiError(res);
+      return;
     }
-  };
+
+    closeSwal();
+    showSuccess(res.message || `Warehouse ${row.warehouse_name} deleted successfully`);
+    fetchTree();
+  } catch (err: any) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   if (loading && treeData.length === 0) {
     return (
@@ -335,10 +336,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
           {
             label: "Delete",
             icon: <Trash2 size={12} />,
-            onClick: () => {
-              setWarehouseToDelete(row);
-              setDeleteModalOpen(true);
-            },
+            onClick: () => handleDelete(row),
             danger: true,
             dividerBefore: true,
           },
@@ -384,20 +382,6 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
           </button>
         }
       />
-
-      {deleteModalOpen && warehouseToDelete && (
-        <DeleteModal
-          entityName="Warehouse"
-          entityId={warehouseToDelete.name}
-          entityDisplayName={warehouseToDelete.warehouse_name}
-          isLoading={deleting}
-          onClose={() => {
-            setDeleteModalOpen(false);
-            setWarehouseToDelete(null);
-          }}
-          onDelete={confirmDelete}
-        />
-      )}
     </div>
   );
 };
