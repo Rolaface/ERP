@@ -42,7 +42,7 @@ interface ItemNestedInitialData extends Partial<ItemFormData> {
       | "has_expiry_date"
       | "expiryDate"
       | "manufacturingDate"
-      | "shelfLifeInDays"
+      | "shelfLife"
       | "endOfLife"
     >
   >;
@@ -158,7 +158,7 @@ export const emptyForm: ItemFormData = {
   brand: "",
   expiryDate: "",
   manufacturingDate: "",
-  shelfLifeInDays: "",
+  shelfLife: "",
   endOfLife: "",
   trackInventory: false,
   has_batch_no: false,
@@ -218,7 +218,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
       has_expiry_date: form.has_expiry_date,
       expiryDate: form.has_expiry_date ? form.expiryDate : "",
       manufacturingDate: form.has_expiry_date ? form.manufacturingDate : "",
-      shelfLifeInDays: Number(form.shelfLifeInDays) || 52,
+      shelfLife: Number(form.shelfLife),
       endOfLife: form.endOfLife,
     },
   }),

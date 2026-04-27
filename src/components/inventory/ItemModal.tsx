@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import { ToolCase } from "lucide-react";
-import { getAllTemplates } from "../../api/TaxTemplateApi";
+import { getAllTemplates, getEnabledTemplates } from "../../api/TaxTemplateApi";
 import { useItemForm } from "../../hooks/Useitemform";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import type { StandardModalProps } from "../../types/modal";
@@ -119,12 +119,6 @@ const ItemModal: React.FC<ItemModalProps> = ({
   const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([EMPTY_TAX_ROW]);
   const [taxPage, setTaxPage] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  /**
-   * Cache: template value (name) → taxes array.
-   * Populated whenever fetchTaxTemplateOptions is called and results are returned.
-   * Using useRef so updates don't trigger re-renders.
-   */
   const templateTaxCacheRef = useRef<Map<string, TemplateTax[]>>(new Map());
 
   useEffect(() => {
@@ -142,22 +136,18 @@ const ItemModal: React.FC<ItemModalProps> = ({
     setTaxPage(0);
   }, [initialData?.taxInfo, initialData?.taxes, isEditMode, isOpen]);
 
-  /**
-   * Fetches tax template options for SearchSelect2.
-   * Also populates templateTaxCacheRef so hovering a selected template
-   * can show its tax breakdown via tooltip.
-   */
+ 
   const fetchTaxTemplateOptions = useCallback(
     async (search: string): Promise<TaxTemplateOption[]> => {
       try {
-        const response = (await getAllTemplates(
+        const response = (await getEnabledTemplates(
           1,
           20,
           search || undefined,
         )) as TaxTemplateResponse;
         const templates = response.data?.templates ?? [];
 
-        // Populate cache with tax details for each returned template
+
         templates.forEach((template) => {
           if (template.taxes) {
             templateTaxCacheRef.current.set(template.name, template.taxes);
@@ -175,10 +165,6 @@ const ItemModal: React.FC<ItemModalProps> = ({
     [],
   );
 
-  /**
-   * Look up cached taxes for a given template value (name).
-   * Returns undefined if the template has not been fetched yet.
-   */
   const getTemplateTaxes = useCallback(
     (templateValue: string): TemplateTax[] | undefined =>
       templateTaxCacheRef.current.get(templateValue),
@@ -305,7 +291,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
           maxStockLevel: "",
           expiryDate: "",
           manufacturingDate: "",
-          shelfLifeInDays: "",
+          shelfLife: "",
           endOfLife: "",
           trackInventory: false,
           has_batch_no: false,

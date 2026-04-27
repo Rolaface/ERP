@@ -3,6 +3,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "../../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import type { SupplierRow, ItemRow } from "../../../types/Supply/rfq";
+import DatePickerInput from "../../calendar/DatePickerInput";
 
 interface DetailsTabProps {
   rfqNumber: string;
@@ -75,37 +76,40 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
   );
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-app text-main">
+     <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
 
       {/* ---------- HEADER ---------- */}
-      <div className="grid grid-cols-4 gap-3">
-        <ModalInput
-          label="RFQ Number"
-          value={rfqNumber}
-          onChange={(e) => onRfqNumberChange(e.target.value)}
-        />
-        <ModalInput
-          type="date"
-          label="Request Date"
+     <div className="bg-app">
+        <div className="flex flex-wrap gap-x-2 gap-y-3 items-end mb-3">
+        <div className="w-[120px]">
+        <DatePickerInput
+          name="Request Date"
           value={requestDate}
-          onChange={(e) => onRequestDateChange(e.target.value)}
+           onChange={(name, value) =>
+                onRequestDateChange({ target: { name, value } } as any)
+              }
         />
-        <ModalInput
-          type="date"
-          label="Quote Deadline"
+        </div>
+          <div className="w-[120px]">
+        <DatePickerInput
+          name="Quote Deadline"
           value={quoteDeadline}
-          onChange={(e) => onQuoteDeadlineChange(e.target.value)}
+           onChange={(name, value) =>
+                onQuoteDeadlineChange({ target: { name, value } } as any)
+              }
         />
+        </div>
+          <div className="w-[120px]">
         <ModalSelect
           label="Status"
           value={status}
           onChange={(e) => onStatusChange(e.target.value)}
           options={[
             { value: "Draft", label: "Draft" },
-            { value: "Sent", label: "Sent" },
-            { value: "Received", label: "Received" },
           ]}
         />
+        </div>
+      </div>
       </div>
 
       {/* ---------- BODY ---------- */}
