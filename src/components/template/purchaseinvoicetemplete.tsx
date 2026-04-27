@@ -126,7 +126,7 @@ export const generatePurchaseInvoicePDF = async (
   const TX = LOGO_X + LOGO_SZ + 6;
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(15);
+  doc.setFontSize(13);
   doc.setTextColor(...INK);
   doc.text((company?.companyName ?? "").toUpperCase(), TX, 14);
 
@@ -247,8 +247,18 @@ export const generatePurchaseInvoicePDF = async (
   };
 
   drawBox(M, "Supplier", supplierL, pi?.supplierName ?? "-");
-  drawBox(M + colW + gap, "Dispatch Address", dispatchL);
-  drawBox(M + (colW + gap) * 2, "Ship To", shippingL);
+  drawBox(
+  M + colW + gap,
+  "Dispatch Address",
+  dispatchL,
+  pi?.supplierName ?? "-"
+);
+drawBox(
+  M + (colW + gap) * 2,
+  "Ship To",
+  shippingL,
+  company?.companyName ?? "-"
+);
 
   const afterBoxY = AY + boxH + 4;
   autoTable(doc, {

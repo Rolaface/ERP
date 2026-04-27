@@ -17,7 +17,7 @@ const px = (path: string): string => {
 
 const fmt2 = (n: any) => Number(n ?? 0).toFixed(2);
 
-// ✅ NEW: Parse HTML address display strings (e.g. "Line1<br>\nLine2<br>...")
+
 const parseAddressDisplay = (html: string): string[] => {
   if (!html) return [];
   return html
@@ -93,7 +93,7 @@ export const generatePurchaseOrderPDF = async (
 
   const TX = LOGO_X + LOGO_SZ + 6;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(15);
+  doc.setFontSize(13);
   doc.setTextColor(...INK);
   doc.text((company?.companyName ?? "").toUpperCase(), TX, 14);
 
@@ -221,8 +221,19 @@ export const generatePurchaseOrderPDF = async (
   };
 
   drawBox(M, "Supplier", supplierL, po?.supplierName ?? "-");
-  drawBox(M + colW + gap, "Dispatch Address", dispatchL);
-  drawBox(M + (colW + gap) * 2, "Ship To", shippingL);
+drawBox(
+  M + colW + gap,
+  "Dispatch Address",
+  dispatchL,
+  po?.supplierName ?? "-"
+);
+
+drawBox(
+  M + (colW + gap) * 2,
+  "Ship To",
+  shippingL,
+  company?.companyName ?? "-"
+);
 
   const afterBoxY = AY + boxH + 4;
 
@@ -239,6 +250,7 @@ export const generatePurchaseOrderPDF = async (
         "#",
         "Item",
         "Required By",
+        "Shelf Life",
         "Packing",
         "Qty",
         "UOM",
@@ -263,7 +275,8 @@ export const generatePurchaseOrderPDF = async (
       return [
         idx + 1,
         item.itemName ?? "-",                        // ✅ was: item.item_name
-        fmtDate(item.requiredBy),                    // ✅ was: item.schedule_date
+        fmtDate(item.requiredBy),  
+         item.shelfLife ?? "-",                  // ✅ was: item.schedule_date
         packing,
         Math.round(Number(item.quantity ?? 0)),      // ✅ was: item.qty
         item.uom ?? "-",
@@ -289,22 +302,18 @@ export const generatePurchaseOrderPDF = async (
       cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
     },
 
-    columnStyles: {
-      0: { cellWidth: 7, halign: "center" },
-      1: { cellWidth: 36, halign: "left" },
-      2: { cellWidth: 22, halign: "center" },
-      3: { cellWidth: 16, halign: "center" },
-      4: { cellWidth: 17, halign: "center" },
-      5: { cellWidth: 20, halign: "center" },
-      6: { cellWidth: 18, halign: "center" },
-      7: { cellWidth: 20, halign: "center" },
-      8: {
-        cellWidth: TOTAL_W,
-        halign: "center",
-        textColor: [0, 0, 0],
-        fontSize: 7.5,
-      },
-    },
+   columnStyles: {
+  0: { cellWidth: 7, halign: "center" },   
+  1: { cellWidth: 32, halign: "left" },    
+  2: { cellWidth: 20, halign: "center" }, 
+  3: { cellWidth: 18, halign: "center" },  
+  4: { cellWidth: 14, halign: "center" }, 
+  5: { cellWidth: 15, halign: "center" },  
+  6: { cellWidth: 18, halign: "center" }, 
+  7: { cellWidth: 14, halign: "center" },  
+  8: { cellWidth: 18, halign: "center" },  
+  9: { cellWidth: TOTAL_W, halign: "center" }, 
+},
 
     margin: { left: M, right: M },
     tableWidth: W - M * 2,
