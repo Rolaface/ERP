@@ -4,6 +4,7 @@ import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { showApiError, showValidationError } from "../../utils/alert";
+import type {  } from "../../types/company";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
