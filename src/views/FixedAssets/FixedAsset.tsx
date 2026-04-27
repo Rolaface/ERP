@@ -1,56 +1,73 @@
-import React, { useState } from "react";
-import { FaWarehouse, FaChartPie } from "react-icons/fa";
-import FixedAssetDashboard from "./FA_Dashboard";
-import AssetRegister from "./AssetRegister";
+import React, { useMemo, useCallback } from "react";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { FaWarehouse, FaChartPie, FaTags, FaList } from "react-icons/fa";
 
-const fixedAssetTabs = [
-  { id: "dashboard", name: "Dashboard", icon: <FaChartPie /> },
-  { id: "assets", name: "Assets", icon: <FaWarehouse /> },
-  { id: "maintenance", name: "Maintenance", icon: <FaWarehouse /> },
+import {
+  AppPage,
+  AppPageHeader,
+  AppPageBody,
+  AppTabs,
+} from "../../components/ui/app-shell";
+
+// Lazy modules
+const FADashboard = React.lazy(() => import("./FA_Dashboard"));
+const AssetCategory = React.lazy(() => import("./AssetCategory"));
+const FixedAssetregister = React.lazy(() => import("./AssetRegister"));
+const AssetMovements = React.lazy(() => import("./AssetMovement"));
+
+const DEFAULT_TAB = "dashboard";
+
+const allTabs = [
+  { id: "dashboard", label: "Dashboard", icon: <FaChartPie /> },
+  { id: "category", label: "Asset Category", icon: <FaTags /> },
+  { id: "assets", label: "Fixed Assets", icon: <FaList /> },
+  { id: "assetmovements", label: "Asset Movements", icon: <FaList /> },
 ];
 
-const FixedAssets: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>("dashboard");
+const FixedAssetsModule: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
+
+  const handleTabChange = useCallback((tabId: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", tabId);
+    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
+  }, [navigate, location.pathname, searchParams]);
+
+  // Memoized tabs (NO remount issue)
+  const tabComponents = useMemo(() => ({
+    dashboard: <FADashboard />,
+    category: <AssetCategory />,
+    assets: <FixedAssetregister />,
+    assetmovements: <AssetMovements />,
+  }), []);
+
+  const currentTab =
+    tabComponents[activeTab as keyof typeof tabComponents] ||
+    tabComponents.dashboard;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold flex items-center gap-3 text-gray-900">
-            <FaWarehouse className="text-blue-600" />
-            Fixed Assets
-          </h1>
-        </div>
-      </div>
+    <AppPage>
+      <AppPageHeader
+        title="Fixed Assets"
+        description="Track assets, categories, and financial impact."
+        icon={<FaWarehouse />}
+      />
 
-      {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6">
-        <div className="flex gap-1 overflow-x-auto">
-          {fixedAssetTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${
-                activeTab === tab.id
-                  ? "text-blue-600 border-blue-600"
-                  : "text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300"
-              }`}
-            >
-              <span className="text-lg">{tab.icon}</span>
-              {tab.name}
-            </button>
-          ))}
-        </div>
-      </div>
+      <AppTabs
+        tabs={allTabs}
+        activeTab={activeTab}
+        onChange={handleTabChange}
+      />
 
-      {/* Content */}
-      <div className="p-6">
-        {activeTab === "dashboard" && <FixedAssetDashboard />}
-        {activeTab === "assets" && <AssetRegister />}
-      </div>
-    </div>
+      <AppPageBody>
+        {currentTab}
+      </AppPageBody>
+    </AppPage>
   );
 };
 
-export default FixedAssets;
+export default FixedAssetsModule;

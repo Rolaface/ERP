@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Minus, X } from "lucide-react";
@@ -28,7 +28,6 @@ export interface MinimizableModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   summaryBar?: React.ReactNode;
-
   maxWidth?:
     | "sm"
     | "md"
@@ -58,20 +57,26 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
   customWidth,
   summaryBar,
 }) => {
-  // Optimized: Select only the specific modal instead of entire array
-  const modalMeta = useModalStore((state) => 
-    state.modals.find((m) => m.id === modalId)
+  const modalMeta = useModalStore((state) =>
+    state.modals.find((m) => m.id === modalId),
   );
-  const swalDepth = useModalStore((state) => state.swalDepth);
-  const { minimizeModal, bringToFront, registerModalMeta } = useModalStore();
+  const { minimizeModal } = useModalStore();
+
+  // ── FIX: use useRef to track if we've already registered, and call
+  //    getState() directly so registerModalMeta never enters the dep array ──
+  const registeredRef = useRef(false);
 
   React.useEffect(() => {
-    if (isOpen) {
-      registerModalMeta(modalId, { title, subtitle, icon });
+    if (isOpen && !registeredRef.current) {
+      registeredRef.current = true;
+      useModalStore.getState().registerModalMeta(modalId, { title, subtitle, icon });
     }
-  }, [isOpen, modalId, title, subtitle, icon, registerModalMeta]);
+    if (!isOpen) {
+      registeredRef.current = false;
+    }
+  }, [isOpen, modalId, title, subtitle, icon]);
+  // ─────────────────────────────────────────────────────────────────────────
 
-  // Optimized: Calculate layer only when needed
   const modals = useModalStore((state) => state.modals);
   const layer = useMemo(() => {
     const visible = modals
@@ -110,7 +115,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
             panelZIndex={layer.panel}
             onClose={onClose}
             onMinimize={() => minimizeModal(modalId)}
-            summaryBar={summaryBar} 
+            summaryBar={summaryBar}
           >
             {children}
           </ModalShell>
@@ -199,10 +204,11 @@ const ModalShell: React.FC<ModalShellProps> = ({
             width: customWidth || undefined,
             maxWidth: customWidth ? "calc(100vw - 32px)" : undefined,
             maxHeight: "calc(100vh - 32px)",
-            boxShadow: "0 28px 70px rgba(15,23,42,0.28), 0 0 0 1px rgba(15,23,42,0.06)",
+            boxShadow:
+              "0 28px 70px rgba(15,23,42,0.28), 0 0 0 1px rgba(15,23,42,0.06)",
           }}
         >
-<header className="relative overflow-hidden bg-primary px-4 py-3">
+          <header className="relative overflow-hidden bg-primary px-4 py-3">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)" />
             <div className="relative flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -220,7 +226,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
                   )}
                 </div>
               </div>
-<div className="flex items-center gap-1">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   aria-label="Minimize"
@@ -245,9 +251,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
                 </button>
               </div>
             </div>
-            {summaryBar && (
-    <div className="relative mt-1">{summaryBar}</div>
-  )}
+            {summaryBar && <div className="relative mt-1">{summaryBar}</div>}
           </header>
 
           <section className="min-h-0 flex-1 overflow-x-auto overflow-y-auto bg-app px-4 py-3 text-sm text-main">

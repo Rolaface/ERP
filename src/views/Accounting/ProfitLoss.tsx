@@ -418,7 +418,7 @@ const ProfitLoss: React.FC = () => {
           return {
             key: "account_name",
             header: col.label,
-            width: 220,
+            width: "220px",
             align: "left" as const,
             render: (row: PLNode) => (
               <span className={row.is_group ? "font-semibold" : ""}>
@@ -431,7 +431,7 @@ const ProfitLoss: React.FC = () => {
         return {
           key: col.fieldname,
           header: col.label,
-          width: Math.min(col.width ?? 100, 90),
+          width: `${Math.min(col.width ?? 100, 90)}px`,
           align: "right" as const,
           render: (row: PLNode) =>
             nf(row.periods?.[col.fieldname] ?? 0, row.currency)

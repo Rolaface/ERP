@@ -37,6 +37,7 @@ const menuItems = [
   { name: "Procurement",    to: "/procurement", icon: <FaShoppingBag /> },
   { name: "Inventory",      to: "/inventory",   icon: <FaBoxes /> },
   { name: "Accounting",     to: "/accounting",  icon: <FaBriefcase /> },
+  {name:"Fixed Assets",     to:"/fasset", icon:<FaBuilding />},
   { name: "Human Resource", to: "/hr",          icon: <FaUserTie /> },
 ];
 

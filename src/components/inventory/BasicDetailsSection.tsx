@@ -22,7 +22,7 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
     const categoryPlaceholder = "Select Category";
 
     return (
-      <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-5">
+      <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-6">
         {/* Item Type */}
         <ModalSelect
           label="Item Type"
