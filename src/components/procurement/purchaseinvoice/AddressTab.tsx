@@ -5,6 +5,7 @@ import {
   Search,
   Plus,
   Check,
+  X,
 } from "lucide-react";
 import { ModalInput } from "../../ui/modal/modalComponent";
 import type { PurchaseOrderFormData } from "../../../types/Supply/purchaseOrder";
@@ -62,6 +63,7 @@ interface AddressTabProps {
   loading: Record<BoxType, boolean>;
   setLoading: React.Dispatch<React.SetStateAction<Record<BoxType, boolean>>>;
   handleAddressSelect: (boxKey: BoxType, addr: ApiAddress) => void;
+  handleAddressRemove: (boxKey: BoxType) => void; // ← NEW
   handleCopyBillingToShipping: (checked: boolean) => void;
   handleCopySupplierToDispatch: (checked: boolean) => void;
 }
@@ -143,14 +145,6 @@ const AddressPicker: React.FC<{
           })
         )}
       </div>
-      {/* <div className="border-t border-theme px-2 py-1.5">
-        <button
-          type="button"
-          className="flex items-center gap-1 text-xs text-primary hover:opacity-80 transition-opacity"
-        >
-          <Plus size={11} /> Add new
-        </button>
-      </div> */}
     </div>
   );
 });
@@ -166,7 +160,8 @@ const AddressBox: React.FC<{
   selectedAddr: ApiAddress | null;
   loading: boolean;
   onSelect: (addr: ApiAddress) => void;
-}> = memo(({ config, addresses, selectedAddr, loading, onSelect }) => {
+  onRemove: () => void; // ← NEW
+}> = memo(({ config, addresses, selectedAddr, loading, onSelect, onRemove }) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -186,6 +181,17 @@ const AddressBox: React.FC<{
     },
     [onSelect],
   );
+
+  // ← NEW: handle remove with picker close
+  const handleRemove = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setPickerOpen(false);
+      onRemove();
+    },
+    [onRemove],
+  );
+
   const togglePicker = () => {
     setPickerOpen((v) => !v);
   };
@@ -203,14 +209,37 @@ const AddressBox: React.FC<{
           </div>
           <p className="text-xs font-semibold text-main">{config.title}</p>
         </div>
-        <button
-          type="button"
-          onClick={togglePicker}
-          className="p-0.5 rounded row-hover"
-        >
-          {pickerOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
+
+        {/* Header actions: remove (when selected) + collapse toggle */}
+        <div className="flex items-center gap-1">
+          {selectedAddr && (
+            <button
+              type="button"
+              onClick={handleRemove}
+              title="Remove address"
+              className="
+                flex items-center gap-1 px-1.5 py-0.5 rounded
+                text-[10px] font-medium
+                text-sub hover:text-red-500
+                border border-transparent hover:border-red-200
+                hover:bg-red-50 dark:hover:bg-red-500/10
+                transition-all duration-150
+              "
+            >
+              <X size={11} />
+              <span className="hidden sm:inline">Remove</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={togglePicker}
+            className="p-0.5 rounded row-hover"
+          >
+            {pickerOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
       </div>
+
       <div className="px-3 py-2">
         {selectedAddr ? (
           <div className="flex items-start gap-2">
@@ -246,15 +275,23 @@ const AddressBox: React.FC<{
             </button>
           </div>
         ) : (
+          /* Empty state — visually distinct "not set" indicator */
           <button
             type="button"
             onClick={togglePicker}
-            className="w-full flex items-center justify-center gap-1.5 py-2 rounded border border-dashed border-theme text-[10px] text-sub hover:border-primary/50 hover:text-primary transition-colors"
+            className="
+              w-full flex items-center justify-center gap-1.5 py-2 rounded
+              border border-dashed border-theme
+              text-[10px] text-sub
+              hover:border-primary/50 hover:text-primary
+              transition-colors
+            "
           >
             <Plus size={12} /> Select address
           </button>
         )}
       </div>
+
       {pickerOpen && (
         <div className="px-3 pb-3">
           <AddressPicker
@@ -280,94 +317,65 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
   addresses,
   loading,
   handleAddressSelect,
+  handleAddressRemove, // ← NEW
 }) => {
   const [incotermLabel, setIncotermLabel] = useState("");
   const [shippingLabel, setShippingLabel] = useState("");
 
-
-  //SHOW API FIRST VALUE DEFUALT
+  // SHOW API FIRST VALUE DEFAULT
   useEffect(() => {
     const loadDefaultIncoterm = async () => {
       const list = await getIncoterms("");
-
       if (!list || list.length === 0) return;
-
       const first = list[0];
-
-      onFormChange({
-        target: { name: "incoterm", value: first.value },
-      });
-
+      onFormChange({ target: { name: "incoterm", value: first.value } });
       setIncotermLabel(first.label);
     };
-
-    if (!incotermLabel) {
-      loadDefaultIncoterm();
-    }
+    if (!incotermLabel) loadDefaultIncoterm();
   }, [incotermLabel]);
-  //incoterm edit
+
+  // incoterm edit
   useEffect(() => {
     if (form.incoterm && !incotermLabel) {
       const loadLabel = async () => {
         const list = await getIncoterms("");
-
         const found = list.find((i) => i.value === form.incoterm);
         if (found) setIncotermLabel(found.label);
       };
-
       loadLabel();
     }
   }, [form.incoterm]);
 
-  //shipping
+  // shipping
   useEffect(() => {
     const loadDefaultShipping = async () => {
       const list = await getShippingRules("");
-
       if (!list || list.length === 0) return;
-
       const first = list[0];
-
-      onFormChange({
-        target: { name: "shippingRule", value: first.value },
-      });
-
+      onFormChange({ target: { name: "shippingRule", value: first.value } });
       setShippingLabel(first.label);
     };
-
-    if (!shippingLabel) {
-      loadDefaultShipping();
-    }
+    if (!shippingLabel) loadDefaultShipping();
   }, [shippingLabel]);
 
   const fetchShippingRules = async (q: string) => {
     const list = await getShippingRules(q);
-
-    return list.map((item) => ({
-      label: item.label,
-      value: item.value,
-    }));
+    return list.map((item) => ({ label: item.label, value: item.value }));
   };
+
   const handleResetShippingRule = useCallback(() => {
     setCustomShippingRule("");
-    onFormChange({
-      target: { name: "shippingRule", value: "" },
-    });
+    onFormChange({ target: { name: "shippingRule", value: "" } });
   }, [setCustomShippingRule, onFormChange]);
+
   const fetchIncoterms = async (q: string) => {
     const list = await getIncoterms(q);
-
-    return list.map((item) => ({
-      label: item.label,
-      value: item.value,
-    }));
+    return list.map((item) => ({ label: item.label, value: item.value }));
   };
 
   const handleResetIncoterm = useCallback(() => {
     setCustomIncoterm("");
-    onFormChange({
-      target: { name: "incoterm", value: "" },
-    });
+    onFormChange({ target: { name: "incoterm", value: "" } });
   }, [setCustomIncoterm, onFormChange]);
 
   return (
@@ -378,12 +386,8 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             label="Shipping Rule"
             value={form.shippingRule}
             onChange={(val, option) => {
-              onFormChange({
-                target: { name: "shippingRule", value: val },
-              });
-
+              onFormChange({ target: { name: "shippingRule", value: val } });
               setShippingLabel(option.label);
-
               if (val !== "OTHER") setCustomShippingRule("");
             }}
             fetchOptions={fetchShippingRules}
@@ -408,17 +412,14 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             </div>
           )}
         </div>
+
         <div className="relative">
           <SearchSelect2
             label="Incoterm"
             value={incotermLabel}
             onChange={(val, option) => {
-              onFormChange({
-                target: { name: "incoterm", value: val },
-              });
-
+              onFormChange({ target: { name: "incoterm", value: val } });
               setIncotermLabel(option.label);
-
               if (val !== "OTHER") setCustomIncoterm("");
             }}
             fetchOptions={fetchIncoterms}
@@ -443,6 +444,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             </div>
           )}
         </div>
+
         <ModalInput
           label="Supplier Contact"
           name="supplierContactDisplay"
@@ -450,6 +452,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
           onChange={onFormChange}
         />
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3 pb-3">
         <div className="space-y-3">
           <AddressBox
@@ -461,6 +464,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             }
             loading={loading.companyBilling}
             onSelect={(addr) => handleAddressSelect("companyBilling", addr)}
+            onRemove={() => handleAddressRemove("companyBilling")}
           />
           <AddressBox
             config={BOX_CONFIGS[1]}
@@ -471,6 +475,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             }
             loading={loading.supplierBilling}
             onSelect={(addr) => handleAddressSelect("supplierBilling", addr)}
+            onRemove={() => handleAddressRemove("supplierBilling")}
           />
         </div>
         <div className="space-y-3">
@@ -483,6 +488,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             }
             loading={loading.companyShipping}
             onSelect={(addr) => handleAddressSelect("companyShipping", addr)}
+            onRemove={() => handleAddressRemove("companyShipping")}
           />
           <AddressBox
             config={BOX_CONFIGS[3]}
@@ -493,6 +499,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
             }
             loading={loading.supplierDispatch}
             onSelect={(addr) => handleAddressSelect("supplierDispatch", addr)}
+            onRemove={() => handleAddressRemove("supplierDispatch")}
           />
         </div>
       </div>

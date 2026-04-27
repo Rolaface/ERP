@@ -169,6 +169,25 @@ export const usePurchaseOrderForm = ({
     setLoading: setAddressLoading,
     onFormChange: handleFormChange,
   });
+  const handleAddressRemove = useCallback(
+  (boxKey: BoxType) => {
+    setAddressSelected((prev) => ({ ...prev, [boxKey]: null }));
+    setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: "" }));
+    const formKeyMap: Record<BoxType, string> = {
+      companyBilling:  "companyBillingAddress",
+      supplierBilling: "supplierAddress",
+      companyShipping: "shippingAddress",
+      supplierDispatch: "dispatchAddress",
+    };
+    handleFormChange({
+      target: {
+        name: `addresses.${formKeyMap[boxKey]}`,
+        value: { id: "", addressTitle: "", addressType: "", addressLine1: "", addressLine2: "", city: "", state: "", country: "", postalCode: "", phone: "", email: "" },
+      },
+    });
+  },
+  [handleFormChange],
+);
 
   // ── Company addresses: load ONCE when modal opens ──
   const companyAddressLoadedRef = useRef(false);
@@ -985,5 +1004,6 @@ export const usePurchaseOrderForm = ({
     handleCopyBillingToShipping,
     handleCopySupplierToDispatch,
     loadAddresses,
+    handleAddressRemove,
   };
 };
