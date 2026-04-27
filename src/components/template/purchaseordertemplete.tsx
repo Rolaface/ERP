@@ -148,7 +148,7 @@ export const generatePurchaseOrderPDF = async (
 
   const metaLines = [
     `PO Date: ${fmtDate(po.poDate)}`,
-    `Incoterm: ${po.incoterms ?? "-"}`,            // ✅ was: po.incoterm
+    `Incoterm: ${po.incoterms ?? "-"}`,           
     `Currency: ${cur}`,
   ];
 
@@ -168,7 +168,6 @@ export const generatePurchaseOrderPDF = async (
   const dispatchL = parseAddressDisplay(po.dispatchAddressDisplay);
   const shippingL = parseAddressDisplay(po.shippingAddressDisplay);
 
-  // ✅ REMOVED: supplierAddress.email / .phone — not available in new API response
 
   const calcBoxH = (lines: string[], hasBoldTop = false) => {
     let h = BOX_HDR + PAD * 2;
@@ -261,9 +260,9 @@ drawBox(
     ],
     body: po.items.map((item: any, idx: number) => {
       const packing =
-        item.packingUnit && item.packingSize
-          ? `${item.packingUnit}×${item.packingSize}`
-          : "-";
+  item.packingUnit && item.packingSize
+    ? `${Math.abs(Math.round(Number(item.packingUnit)))}×${Math.abs(Math.round(Number(item.packingSize)))}`
+    : "-";
 
       
       const amount = Number(item.quantity ?? 0) * Number(item.rate ?? 0);
@@ -276,14 +275,9 @@ drawBox(
         idx + 1,
         item.itemName ?? "-",                       
         fmtDate(item.requiredBy),  
-        item.shelfLife
-  ? (() => {
-      const months = Number(item.shelfLife) / 30;
-      return Number.isInteger(months)
-        ? `${months}`
-        : `${months.toFixed(1)}`;
-    })()
-  : "-",               
+      item.shelfLife
+  ? `${Math.abs(Math.floor(Number(item.shelfLife) / 30))}`
+  : "-",         
         packing,
         Math.round(Number(item.quantity ?? "-")),     
         item.uom ?? "-",
