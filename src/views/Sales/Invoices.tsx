@@ -566,7 +566,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         sortable: true,
         render: (inv) => {
           const id = inv.invoiceNumber || "";
-          const shortId = id ? `**${id.slice(-4)}` : "-";
+          const shortId = id ? `--${id.slice(-4)}` : "-";
 
           const handleCopy = (e: React.MouseEvent) => {
             e.stopPropagation();

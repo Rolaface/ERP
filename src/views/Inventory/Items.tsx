@@ -365,7 +365,7 @@ const Items: React.FC = () => {
       align: "center",
       render: (i) => {
         const id = i.id || "";
-        const shortId = id ? `**${id.slice(-4)}` : "-";
+        const shortId = id ? `--${id.slice(-4)}` : "-";
 
         const handleCopy = (e: React.MouseEvent) => {
           e.stopPropagation();

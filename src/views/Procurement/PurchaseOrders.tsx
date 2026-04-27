@@ -488,7 +488,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       align: "center",
       render: (o) => {
         const id = o.id || "";
-        const shortId = id ? `**${id.slice(-4)}` : "—";
+        const shortId = id ? `--${id.slice(-4)}` : "—";
 
         const handleCopy = (e: React.MouseEvent) => {
           e.stopPropagation();

@@ -158,7 +158,7 @@ const Items: React.FC = () => {
       header: "Item Code",
       render: (row) => {
         const id = row.itemCode || "";
-        const shortId = id ? `**${id.slice(-4)}` : "-";
+        const shortId = id ? `--${id.slice(-4)}` : "-";
 
         const handleCopy = (e: React.MouseEvent) => {
           e.stopPropagation();
