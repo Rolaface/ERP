@@ -179,16 +179,10 @@ const addressBoxes = [
   {
     title: "Ship To",
     lines: shippingL,
-    boldTop: po?.shippingAddress ?? "-",
+    boldTop: company?.companyName ?? "-",
   },
 ].filter((box) => box.lines && box.lines.length > 0);
-  const colCount = addressBoxes.length || 1;
-const colW = (W - M * 2 - gap * (colCount - 1)) / colCount;
-
- 
-
-
-
+  const colCount = addressBoxes.length || 1;const colW = (W - M * 2 - gap * (colCount - 1)) / colCount;
   const calcBoxH = (lines: string[], hasBoldTop = false) => {
     let h = BOX_HDR + PAD * 2;
     if (hasBoldTop) h += LH + 1;
