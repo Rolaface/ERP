@@ -275,9 +275,9 @@ drawBox(
         idx + 1,
         item.itemName ?? "-",                       
         fmtDate(item.requiredBy),  
-        item.shelfLife
-  ? `${Math.round(Number(item.shelfLife) / 30)}`
-  : "-",          
+      item.shelfLife
+  ? `${Math.abs(Math.floor(Number(item.shelfLife) / 30))}`
+  : "-",         
         packing,
         Math.round(Number(item.quantity ?? "-")),     
         item.uom ?? "-",
