@@ -201,6 +201,14 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
             checked={!!form.has_expiry_date}
             onChange={(checked) => setField("has_expiry_date", checked)}
           />
+          <ModalInput
+            label="Shelf Life (in days)"
+            name="shelfLife"
+            value={form.shelfLife ?? ""}
+            onChange={onFormChange}
+            placeholder="e.g. 365"
+            disabled={!form.has_expiry_date}
+          />
           <InlineCheckbox
             id="trackInventory"
             label="Track Inventory"

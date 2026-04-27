@@ -11,14 +11,14 @@ import {
   getStockById,
   deleteStockEntry,
 } from "../../api/stockApi";
+import { fireManagedSwal } from "../../utils/swalManager";
 import { ChevronRight, ChevronDown, Upload, Copy } from "lucide-react";
 import StockCorrectionModal from "../../components/inventory/stock/Stockcorrectionmodal";
 import BulkUploadModal from "../../components/inventory/stock/BulkUploadModal";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
-import DeleteModal from "../../components/actionModal/DeleteModal";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
-import type { ItemSummary, Item } from "../../types/item";
+
 
 const Items: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
@@ -36,15 +36,10 @@ const Items: React.FC = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewStockData, setViewStockData] = useState<any>(null);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<ItemSummary | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
-  // ── Stock Correction modal state ──────────────────────────────────────────
   const [showStockCorrection, setShowStockCorrection] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<any>(null);
 
-  // ─── FETCH ────────────────────────────────────────────────────────────────
 
   const fetchItems = async () => {
     try {
@@ -86,51 +81,51 @@ const Items: React.FC = () => {
   const toggleRow = (id: string) =>
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
 
-  /** Opens StockCorrectionModal pre-filled with the batch's data */
   const handleStockCorrection = (batch: any) => {
     console.log("Opening modal", batch);
     setSelectedBatch(batch);
     setShowStockCorrection(true);
   };
   const handleBatchDelete = (batch: any) => {
-    setItemToDelete({ id: batch.batch_no, ...batch });
-    setDeleteModalOpen(true);
+    handleDelete({ id: batch.batch_no, ...batch });
   };
 
   const handleBatchLedger = (batch: any) => {
     console.log("Open ledger for batch:", batch.batch_no);
   };
 
-  const handleDeleteClick = (item: ItemSummary, e?: React.MouseEvent<Element>) => {
-    e?.stopPropagation();
-    setItemToDelete(item);
-    setDeleteModalOpen(true);
-  };
 
-  const confirmDelete = async () => {
-    if (!itemToDelete) return;
+  const handleDelete = async (item: { id: string;[key: string]: any }) => {
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete Stock Entry ${item.id}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
     try {
-      setDeleting(true);
       showLoading("Deleting Stock Entry...");
-      const res = await deleteStockEntry({ stock_entry_id: itemToDelete.id });
+      const res = await deleteStockEntry({ stock_entry_id: item.id });
+
       if (res?.status_code !== 200 || res?.status !== "success") {
         closeSwal();
         showApiError(res?.message || "Delete failed");
         return;
       }
+
       closeSwal();
       showSuccess("Stock entry deleted successfully");
-      setItems(prev => prev.filter(i => i.id !== itemToDelete.id));
-      setDeleteModalOpen(false);
+      setItems(prev => prev.filter(i => i.id !== item.id));
     } catch (error: any) {
       closeSwal();
       showApiError(error);
-    } finally {
-      setDeleting(false);
-      setItemToDelete(null);
     }
   };
-
   const handleBulkSaved = async () => {
     setShowBulkModal(false);
     try {
@@ -163,7 +158,7 @@ const Items: React.FC = () => {
       header: "Item Code",
       render: (row) => {
         const id = row.itemCode || "";
-        const shortId = id ? `**${id.slice(-4)}` : "-";
+        const shortId = id ? `--${id.slice(-4)}` : "-";
 
         const handleCopy = (e: React.MouseEvent) => {
           e.stopPropagation();
@@ -277,17 +272,6 @@ const Items: React.FC = () => {
         onSubmit={handleBulkSaved}
       />
 
-
-      {deleteModalOpen && itemToDelete && (
-        <DeleteModal
-          entityName="Stock Item"
-          entityId={itemToDelete.id}
-          entityDisplayName={itemToDelete.id}
-          isLoading={deleting}
-          onClose={() => { setDeleteModalOpen(false); setItemToDelete(null); }}
-          onDelete={confirmDelete}
-        />
-      )}
     </div>
   );
 };

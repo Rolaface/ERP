@@ -214,7 +214,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       align: "left",
       render: (customer) => {
         const id = customer.id || "";
-        const shortId = id ? `******${id.slice(-4)}` : "-";
+        const shortId = id ? `--${id.slice(-4)}` : "-";
 
         const handleCopy = (e: React.MouseEvent) => {
           e.stopPropagation();

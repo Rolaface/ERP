@@ -12,7 +12,8 @@ import {
 // Lazy modules
 const FADashboard = React.lazy(() => import("./FA_Dashboard"));
 const AssetCategory = React.lazy(() => import("./AssetCategory"));
-const FixedAssetList = React.lazy(() => import("./AssetRegister"));
+const FixedAssetregister = React.lazy(() => import("./AssetRegister"));
+const AssetMovements = React.lazy(() => import("./AssetMovement"));
 
 const DEFAULT_TAB = "dashboard";
 
@@ -20,6 +21,7 @@ const allTabs = [
   { id: "dashboard", label: "Dashboard", icon: <FaChartPie /> },
   { id: "category", label: "Asset Category", icon: <FaTags /> },
   { id: "assets", label: "Fixed Assets", icon: <FaList /> },
+  { id: "assetmovements", label: "Asset Movements", icon: <FaList /> },
 ];
 
 const FixedAssetsModule: React.FC = () => {
@@ -39,7 +41,8 @@ const FixedAssetsModule: React.FC = () => {
   const tabComponents = useMemo(() => ({
     dashboard: <FADashboard />,
     category: <AssetCategory />,
-    assets: <FixedAssetList />,
+    assets: <FixedAssetregister />,
+    assetmovements: <AssetMovements />,
   }), []);
 
   const currentTab =

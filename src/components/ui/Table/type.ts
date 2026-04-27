@@ -9,7 +9,6 @@ export interface Column<T> {
   tooltip?: (item: T) => React.ReactNode;
   width?: string;
   maxWidth?: string;
-   minWidth?: string;   
-  width?: string; 
+  minWidth?: string;   
   truncate?: boolean;
 }

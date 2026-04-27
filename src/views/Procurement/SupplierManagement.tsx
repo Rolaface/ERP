@@ -249,7 +249,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       align: "center",
  render: (supplier) => {
   const id = supplier.supplierId || "";
-  const shortId = id ? `**${id.slice(-4)}` : "-";
+  const shortId = id ? `--${id.slice(-4)}` : "-";
 
   return (
     <div className="flex items-center justify-center gap-1 group">
