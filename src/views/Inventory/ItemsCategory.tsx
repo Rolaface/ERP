@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import ExpandableTreeTable, { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
-import DeleteModal from "../../components/actionModal/DeleteModal";
-import { showApiError, showSuccess } from "../../utils/alert";
-
+import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import { fireManagedSwal } from "../../utils/swalManager";
 import {
   getItemGroupTree,
   deleteItemGroupById,
@@ -28,10 +27,10 @@ import {
 
 type OutletContextType = {
   openCategoryCreate: (options?: {
-  parent?: string;
-  onSuccess?: () => void;
-}) => void;
-  openCategoryEdit: (id: string, data?: any) => void; 
+    parent?: string;
+    onSuccess?: () => void;
+  }) => void;
+  openCategoryEdit: (id: string, data?: any) => void;
 };
 
 export interface ItemGroupNode {
@@ -118,10 +117,9 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
               }}
               className={`
                 w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
-                ${
-                  action.danger
-                    ? "text-danger hover:bg-danger/10"
-                    : "text-main hover:bg-row-hover"
+                ${action.danger
+                  ? "text-danger hover:bg-danger/10"
+                  : "text-main hover:bg-row-hover"
                 }
               `}
             >
@@ -147,25 +145,21 @@ const ItemsCategory: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [groupToDelete, setGroupToDelete] = useState<ItemGroupNode | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
   const fetchTree = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res: any = await getItemGroupTree(); 
+      const res: any = await getItemGroupTree();
       const responseBody = res?.message || res;
 
       if (responseBody?.status_code === 200 && responseBody?.data) {
         const normalizedGroups = normalizeItemGroups(responseBody.data.item_groups);
         setTreeData(normalizedGroups);
       } else {
-        const errorText = typeof responseBody?.message === 'string' 
-            ? responseBody.message 
-            : "Failed to load item groups.";
-            
+        const errorText = typeof responseBody?.message === 'string'
+          ? responseBody.message
+          : "Failed to load item groups.";
+
         setError(errorText);
       }
     } catch (err: any) {
@@ -179,35 +173,46 @@ const ItemsCategory: React.FC = () => {
     fetchTree();
   }, [fetchTree]);
 
-const handleAddChild = (row: ItemGroupNode) => {
-  openCategoryCreate({
-    parent: row.name,
-    onSuccess: fetchTree,
-  });
-};
-  
 
-  const confirmDelete = async () => {
-    if (!groupToDelete) return;
+  const handleDelete = async (row: ItemGroupNode) => {
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete Item Group "${row.item_group_name}"?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
 
     try {
-      setDeleting(true);
-      const res = await deleteItemGroupById(groupToDelete.name);
-      if (!res || ![200,202].includes(res.status)) {
+      showLoading("Deleting Item Group...");
+      const res = await deleteItemGroupById(row.name);
+
+      if (!res || ![200, 202].includes(res.status)) {
+        closeSwal();
         showApiError(res);
         return;
       }
 
-      showSuccess(res.message || `Item Group ${groupToDelete.item_group_name} deleted succesfully`);
-      setDeleteModalOpen(false);
+      closeSwal();
+      showSuccess(res.message || `Item Group ${row.item_group_name} deleted successfully`);
       fetchTree();
     } catch (err: any) {
+      closeSwal();
       showApiError(err);
-    } finally {
-      setDeleting(false);
-      setGroupToDelete(null);
     }
   };
+
+  const handleAddChild = (row: ItemGroupNode) => {
+    openCategoryCreate({
+      parent: row.name,
+      onSuccess: fetchTree,
+    });
+  };
+
 
   if (loading && treeData.length === 0) {
     return (
@@ -285,29 +290,26 @@ const handleAddChild = (row: ItemGroupNode) => {
           },
           ...(row.is_group === 1
             ? [
-                {
-                  label: "Add Child",
-                  icon: <GitBranch size={12} />,
-                  onClick: () => handleAddChild(row),
-                },
-              ]
+              {
+                label: "Add Child",
+                icon: <GitBranch size={12} />,
+                onClick: () => handleAddChild(row),
+              },
+            ]
             : [
-                {
-                  label: "View Items",
-                  icon: <PackageSearch size={12} />,
-                  onClick: () =>
-                    navigate("/items", {
-                      state: { item_group: row.name },
-                    }),
-                },
-              ]),
+              {
+                label: "View Items",
+                icon: <PackageSearch size={12} />,
+                onClick: () =>
+                  navigate("/items", {
+                    state: { item_group: row.name },
+                  }),
+              },
+            ]),
           {
             label: "Delete",
             icon: <Trash2 size={12} />,
-            onClick: () => {
-              setGroupToDelete(row);
-              setDeleteModalOpen(true);
-            },
+            onClick: () => handleDelete(row),
             danger: true,
             dividerBefore: true,
           },
@@ -341,11 +343,11 @@ const handleAddChild = (row: ItemGroupNode) => {
           <button
             type="button"
             onClick={() =>
-  openCategoryCreate({
-    parent: treeData?.[0]?.name,
-    onSuccess: fetchTree,
-  })
-}
+              openCategoryCreate({
+                parent: treeData?.[0]?.name,
+                onSuccess: fetchTree,
+              })
+            }
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
           >
             <Plus size={13} />
@@ -354,19 +356,7 @@ const handleAddChild = (row: ItemGroupNode) => {
         }
       />
 
-      {deleteModalOpen && groupToDelete && (
-        <DeleteModal
-          entityName="Item Group"
-          entityId={groupToDelete.name}
-          entityDisplayName={groupToDelete.item_group_name}
-          isLoading={deleting}
-          onClose={() => {
-            setDeleteModalOpen(false);
-            setGroupToDelete(null);
-          }}
-          onDelete={confirmDelete}
-        />
-      )}
+
     </div>
   );
 };
