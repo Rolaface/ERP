@@ -479,7 +479,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       align: "center",
       render: (o) => {
         const id = o.pId || "";
-        const shortId = id ? `****${id.slice(-4)}` : "—";
+        const shortId = id ? `--${id.slice(-4)}` : "—";
 
         const handleCopy = (e: React.MouseEvent) => {
           e.stopPropagation();
