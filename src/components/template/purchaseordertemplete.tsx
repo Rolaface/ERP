@@ -269,20 +269,20 @@ drawBox(
       const amount = Number(item.quantity ?? 0) * Number(item.rate ?? 0);
 
       
-      const taxName = item.taxInfo?.[0]?.taxName ?? "-";
-      const taxRate = item.taxInfo?.[0]?.totalTaxRate ?? "0";
+      const taxName = item.taxInfo?.[0]?.taxName ?? "";
+      const taxRate = item.taxInfo?.[0]?.totalTaxRate ?? "";
 
       return [
         idx + 1,
-        item.itemName ?? "-",                        // ✅ was: item.item_name
+        item.itemName ?? "-",                       
         fmtDate(item.requiredBy),  
-         item.shelfLife ?? "-",                  // ✅ was: item.schedule_date
+         item.shelfLife ?? "-",                  
         packing,
-        Math.round(Number(item.quantity ?? 0)),      // ✅ was: item.qty
+        Math.round(Number(item.quantity ?? "-")),     
         item.uom ?? "-",
         fmt2(item.rate),
         `${taxName} (${taxRate}%)`,                 
-        fmt2(amount),                                // ✅ was: item.amount (computed)
+        fmt2(amount),                               
       ];
     }),
     styles: {
@@ -304,7 +304,7 @@ drawBox(
 
    columnStyles: {
   0: { cellWidth: 7, halign: "center" },   
-  1: { cellWidth: 32, halign: "left" },    
+  1: { cellWidth: 32, halign: "center" },    
   2: { cellWidth: 20, halign: "center" }, 
   3: { cellWidth: 18, halign: "center" },  
   4: { cellWidth: 14, halign: "center" }, 
