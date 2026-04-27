@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Building2, FileText } from "lucide-react";
-import Modal from "../../ui/modal/modal";
 import { Button } from "../../ui/modal/formComponent";
 import { DetailsTab } from "./DetailsTab";
 import TermsAndCondition from "../../TermsAndCondition";
@@ -8,15 +7,19 @@ import { useRfqForm } from "../../../hooks/useRfqForm";
 import type { RfqFormData, RfqTab } from "../../../types/Supply/rfq";
 // import { EmailTemplateTab } from "./EmailTemplateTab";
 // import { TermsTab } from "./TermsTab";
+import { MinimizableModal } from "../../common/MinimizableModal";
+import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 
 
 interface RfqModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (data: RfqFormData) => void;
+  modalId: string;
+  initialData?: RfqFormData;
 }
 
-/* ---------- TABS (PO STYLE) ---------- */
+/* ---------- TABS ---------- */
 
 const tabs: { key: RfqTab; icon: typeof Building2; label: string }[] = [
   { key: "details", icon: Building2, label: "Details" },
@@ -27,7 +30,10 @@ const RfqModal: React.FC<RfqModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  modalId,
+  initialData,
 }) => {
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     form,
     activeTab,
@@ -44,52 +50,78 @@ const RfqModal: React.FC<RfqModalProps> = ({
     removeItem,
     setTermsBuying,
     handleSubmit,
+    saving,
     reset,
   } = useRfqForm({
     onSuccess: onSubmit,
     onClose,
   });
 
-  /* ---------- FOOTER (PO STYLE) ---------- */
+  /* ---------- FOOTER  ---------- */
 
-  const footer = (
-    <>
-      <Button variant="secondary" onClick={onClose}>
-        Cancel
-      </Button>
-
-      <div className="flex gap-2">
-        <Button variant="secondary" onClick={reset}>
-          Reset
-        </Button>
-
+  const footer = useMemo(
+    () => (
+      <>
         <Button
-          variant="primary"
-          type="submit"
-          form="rfqForm"
+          variant="secondary"
+          onClick={() => handleCloseWithConfirm(onClose, modalId)}
         >
-          Save RFQ
+          Cancel
         </Button>
-      </div>
-    </>
-  );
 
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              resetDirty();
+              reset();
+            }}
+          >
+            Reset
+          </Button>
+
+          <Button
+            variant="primary"
+            type="submit"
+            form="rfqForm"
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save RFQ"}
+          </Button>
+        </div>
+      </>
+    ),
+    [
+      handleCloseWithConfirm,
+      onClose,
+      modalId,
+      resetDirty,
+      reset,
+      saving,
+    ]
+  );
   return (
-    <Modal
+    <MinimizableModal
+      modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title="New Request For Quotation"
       subtitle="Create and send RFQ to suppliers"
       icon={Building2}
-      maxWidth="6xl"
-      height="81vh"   // same as PO
+      customWidth="80vw"
+      height="81vh"
       footer={footer}
     >
-      {/* ---------- FORM WRAPPER (PO STYLE) ---------- */}
+      {/* ---------- FORM WRAPPER  ---------- */}
 
       <form
         id="rfqForm"
-        onSubmit={handleSubmit}
+        onChange={() => markDirty()}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          resetDirty();
+          await handleSubmit(e);
+        }}
         className="h-full flex flex-col"
       >
 
@@ -104,11 +136,10 @@ const RfqModal: React.FC<RfqModalProps> = ({
                 type="button"
                 onClick={() => setActiveTab(key)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2
-                ${
-                  activeTab === key
+                ${activeTab === key
                     ? "text-primary border-b-[3px] border-primary"
                     : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+                  }`}
               >
                 <Icon size={14} />
                 {label}
@@ -120,7 +151,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
 
         {/* ---------- TAB BODY ---------- */}
 
-        <section className="flex-1 overflow-y-auto p-4 space-y-6">
+        <section className="flex-1 overflow-y-auto ">
 
           {/* ===== DETAILS ===== */}
 
@@ -159,7 +190,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
 
         </section>
       </form>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

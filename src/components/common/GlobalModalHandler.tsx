@@ -55,7 +55,8 @@ const CurrencyConversionModal = lazy(
 const AddAssetModal = lazy(
   () => import("../../components/FixedAsset/AddAssetModal"),
 );
- 
+
+const RfqModal = lazy(() => import("../procurement/rfq/RfqModal"))
 
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
@@ -317,25 +318,25 @@ const GlobalModalHandler: React.FC = () => {
             isEditMode={modal.isEdit}
           />,
         );
-     case "bankAccount": {
-  const bankData = isRecord(modal.initialData) ? modal.initialData : null;
-  return wrappedModal(
-    <AddBankAccountModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={handleSubmit}
-      initialData={modal.isEdit ? getInitialData<BankAccount>(modal.initialData) : null}
-      isEditMode={modal.isEdit}
-    
-      defaultAccountFor={bankData?.accountFor as any}
-      partyName={bankData?.partyName as string | undefined}
-       partyId={bankData?.partyId as string | undefined}  
-      currency={bankData?.currency as string | undefined}
-    />,
-  );
-}
+      case "bankAccount": {
+        const bankData = isRecord(modal.initialData) ? modal.initialData : null;
+        return wrappedModal(
+          <AddBankAccountModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={modal.isEdit ? getInitialData<BankAccount>(modal.initialData) : null}
+            isEditMode={modal.isEdit}
+
+            defaultAccountFor={bankData?.accountFor as any}
+            partyName={bankData?.partyName as string | undefined}
+            partyId={bankData?.partyId as string | undefined}
+            currency={bankData?.currency as string | undefined}
+          />,
+        );
+      }
       case "modeOfPayment":
         return wrappedModal(
           <AddModeOfPaymentModal
@@ -360,18 +361,18 @@ const GlobalModalHandler: React.FC = () => {
         );
 
       case "currencyExchange":
-  return wrappedModal(
-    <CurrencyConversionModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={handleSubmit}
-      editData={getInitialData(modal.initialData) as any}  
-      actionLoading={false}                                
-    />,
-  );
-       case "fixedAsset":
+        return wrappedModal(
+          <CurrencyConversionModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            editData={getInitialData(modal.initialData) as any}
+            actionLoading={false}
+          />,
+        );
+      case "fixedAsset":
         return wrappedModal(
           <AddAssetModal
             key={modal.id}
@@ -383,7 +384,17 @@ const GlobalModalHandler: React.FC = () => {
             mode={modal.isEdit ? "edit" : "create"}
           />,
         );
- 
+      case "Rfq":
+        return wrappedModal(
+          <RfqModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={getRecordInitialData(modal.initialData) as any}
+          />,
+        );
 
       default:
         return null;

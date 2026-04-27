@@ -1,11 +1,10 @@
 import React, { useState, useMemo } from "react";
-import { Search, Plus, Edit2, Trash2 } from "lucide-react";
-import RfqTabsModal from "../../components/procurement/rfq/RfqModal";
+import { openRfqModal } from "../../store/modalStore";
 import toast from "react-hot-toast";
 import { useEffect } from "react";
 import type { Column } from "../../components/ui/Table/type";
 import Table from "../../components/ui/Table/Table";
-import StatusBadge from "../../components/ui/Table/StatusBadge";  
+import StatusBadge from "../../components/ui/Table/StatusBadge";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -28,9 +27,6 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
   const [rfqs, setRfqs] = useState<RFQ[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedRFQ, setSelectedRFQ] = useState<RFQ | null>(null);
 
   // ================= FETCH RFQs =================
   const fetchRFQs = async () => {
@@ -66,15 +62,19 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
 
   // ================= MODAL HANDLERS =================
   const handleAddClick = () => {
-    setSelectedRFQ(null);
-    setModalOpen(true);
+    openRfqModal(null, false, {
+      onSuccess: () => fetchRFQs(),
+    });
+
     onAdd?.();
   };
 
   const handleEdit = (rfq: RFQ, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedRFQ(rfq);
-    setModalOpen(true);
+
+    openRfqModal(rfq.id, true, {
+      onSuccess: () => fetchRFQs(),
+    });
   };
 
   const handleDelete = (rfq: RFQ, e: React.MouseEvent) => {
@@ -84,7 +84,6 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
     }
   };
 
-  const handleCloseModal = () => setModalOpen(false);
 
   // ================= TABLE COLUMNS =================
   const columns: Column<RFQ>[] = [
@@ -140,14 +139,12 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
         onSearch={setSearchTerm}
         enableAdd
         addLabel="Add RFQ"
-        onAdd={handleAddClick}
         enableColumnSelector
-      />
-
-      {/* Modal */}
-      <RfqTabsModal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
+        onAdd={() =>
+          openRfqModal(null, false, {
+            onSuccess: fetchRFQs,
+          })
+        }
       />
     </div>
   );

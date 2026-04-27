@@ -506,6 +506,7 @@ export const DetailsTab = ({
             </Tooltip>
           </div>
         </div>
+     
       </div>
 
       {/* ── Main body ─────────────────────────────────────────────────────── */}
