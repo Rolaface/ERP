@@ -161,19 +161,14 @@ export const generatePurchaseOrderPDF = async (
   const LH = 4.5;
   const PAD = 3;
   const gap = 3;
-    const supplierL = parseAddressDisplay(po.supplierAddressDisplay);
-const dispatchL = parseAddressDisplay(po.dispatchAddressDisplay);
+  const supplierL = parseAddressDisplay(po.supplierAddressDisplay);
+
 const shippingL = parseAddressDisplay(po.shippingAddressDisplay);
 
 const addressBoxes = [
   {
     title: "Supplier",
     lines: supplierL,
-    boldTop: po?.supplierName ?? "-",
-  },
-  {
-    title: "Dispatch Address",
-    lines: dispatchL,
     boldTop: po?.supplierName ?? "-",
   },
   {
