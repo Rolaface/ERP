@@ -225,12 +225,15 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
       const res = await createRFQ(payload);
       closeSwal();
 
-      if (!res || ![200, 201].includes(res.status_code)) {
-        showApiError(res);
+      const apiResponse = res?.message ?? res; // supports wrapped + normal response
+      const statusCode = Number(apiResponse?.status_code);
+
+      if (![200, 201].includes(statusCode)) {
+        showApiError(apiResponse);
         return;
       }
 
-      showSuccess("RFQ created successfully!");
+      showSuccess(apiResponse?.message || "RFQ created successfully!");
       useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.RFQ_LIST);
       onSuccess?.(form);
       reset();

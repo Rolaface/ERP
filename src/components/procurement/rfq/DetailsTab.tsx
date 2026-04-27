@@ -78,7 +78,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
   );
 
   return (
-    <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
+   <div className="flex flex-col gap-4 overflow-visible p-4 relative bg-app text-main">
       {/* ── HEADER ── */}
       <div className="bg-app">
         <div className="flex flex-wrap gap-x-2 gap-y-3 items-end mb-3">
@@ -264,7 +264,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
           </div>
 
           {/* ITEMS TABLE */}
-          <div className="bg-card rounded-lg p-2 shadow-sm">
+          <div className="bg-card rounded-lg p-2 shadow-sm overflow-visible relative">
             <h3 className="text-sm font-semibold mb-2">Items</h3>
 
             <table className="w-full border-collapse text-[11px]">

@@ -151,7 +151,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
 
         {/* ---------- TAB BODY ---------- */}
 
-        <section className="flex-1 overflow-y-auto ">
+       <section className="flex-1 overflow-y-auto overflow-x-visible relative">
 
           {/* ===== DETAILS ===== */}
 
