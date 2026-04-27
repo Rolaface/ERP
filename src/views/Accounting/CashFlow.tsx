@@ -409,7 +409,7 @@ const CashFlow: React.FC = () => {
                     return {
                         key: "section",
                         header: col.label,
-                        width: 260,
+                        width: "260px",
                         align: "left",
                         render: (row) => {
                             const isNet = isNetRow(row.section, row.parent_section);

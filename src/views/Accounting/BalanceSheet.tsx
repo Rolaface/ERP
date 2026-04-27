@@ -523,7 +523,7 @@ const BalanceSheet: React.FC = () => {
             return {
               key: "account_name",
               header: col.label,
-              width: 240,
+              width: "240px",
               align: "left" as const,
               render: (row: BSNode) => (
                 <span className={row.is_group ? "font-semibold" : ""}>
@@ -536,7 +536,7 @@ const BalanceSheet: React.FC = () => {
           return {
             key: col.fieldname,
             header: col.label,
-            width: Math.min(col.width ?? 100, 130),
+            width: `${Math.min(col.width ?? 100, 130)}px`,
             align: "right" as const,
             render: (row: BSNode) =>
               nf(row.periods?.[col.fieldname] ?? 0, row.currency),
