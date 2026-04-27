@@ -35,7 +35,7 @@ import { useFieldDefault } from "./useFieldDefault";
 import { fetchCostCenters, fetchProjects } from "../api/getAllApi";
 import { getAllWarehouses } from "../api/WarehouseApi";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
-import type { ApiAddress,BoxType } from "./useAddressLogic";
+import type { ApiAddress, BoxType } from "./useAddressLogic";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 interface UsePurchaseOrderFormProps {
@@ -57,14 +57,14 @@ export const usePurchaseOrderForm = ({
   const [saving, setSaving] = useState(false);
   const [customShippingRule, setCustomShippingRule] = useState("");
   const [customIncoterm, setCustomIncoterm] = useState("");
- const [addressSelected, setAddressSelected] = useState<
-  Record<BoxType, ApiAddress | null>
->({
-  companyBilling: null,
-  supplierBilling: null,
-  companyShipping: null,
-  supplierDispatch: null,
-});
+  const [addressSelected, setAddressSelected] = useState<
+    Record<BoxType, ApiAddress | null>
+  >({
+    companyBilling: null,
+    supplierBilling: null,
+    companyShipping: null,
+    supplierDispatch: null,
+  });
   const [addressSelectedIds, setAddressSelectedIds] = useState<
     Record<string, string>
   >({
@@ -73,14 +73,14 @@ export const usePurchaseOrderForm = ({
     companyShipping: "",
     supplierDispatch: "",
   });
-const [addressList, setAddressList] = useState<
-  Record<BoxType, ApiAddress[]>
->({
-  companyBilling: [],
-  supplierBilling: [],
-  companyShipping: [],
-  supplierDispatch: [],
-});
+  const [addressList, setAddressList] = useState<
+    Record<BoxType, ApiAddress[]>
+  >({
+    companyBilling: [],
+    supplierBilling: [],
+    companyShipping: [],
+    supplierDispatch: [],
+  });
   const [addressLoading, setAddressLoading] = useState<Record<string, boolean>>(
     {
       companyBilling: false,
@@ -152,38 +152,27 @@ const [addressList, setAddressList] = useState<
     [],
   );
   // ── Instantiate useAddressLogic here so we can call loadAddresses imperatively
-const {
-  loadAddresses,
-  handleSelect:handleAddressSelect,
-  handleCopyBillingToShipping,
-  handleCopySupplierToDispatch,
-} = useAddressLogic({
-  supplierId:     form.supplierId,
-  selected:       addressSelected,
-  setSelected:    setAddressSelected,
-  selectedIds:    addressSelectedIds,
-  setSelectedIds: setAddressSelectedIds,
-  addresses:      addressList,
-  setAddresses:   setAddressList,
-  loading:        addressLoading,
-  setLoading:     setAddressLoading,
-  onFormChange:   handleFormChange,
-});
+  const {
+    loadAddresses,
+    handleSelect: handleAddressSelect,
+    handleCopyBillingToShipping,
+    handleCopySupplierToDispatch,
+  } = useAddressLogic({
+    supplierId: form.supplierId,
+    selected: addressSelected,
+    setSelected: setAddressSelected,
+    selectedIds: addressSelectedIds,
+    setSelectedIds: setAddressSelectedIds,
+    addresses: addressList,
+    setAddresses: setAddressList,
+    loading: addressLoading,
+    setLoading: setAddressLoading,
+    onFormChange: handleFormChange,
+  });
 
-// ── Company addresses: load ONCE when modal opens ──
-const companyAddressLoadedRef = useRef(false);
-useEffect(() => {
-  if (!isOpen) {
-    companyAddressLoadedRef.current = false;
-    return;
-  }
-  if (companyAddressLoadedRef.current) return;
-  companyAddressLoadedRef.current = true;
+  // ── Company addresses: load ONCE when modal opens ──
+  const companyAddressLoadedRef = useRef(false);
 
-  loadAddresses("companyBilling");
-  loadAddresses("companyShipping");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [isOpen]);
 
   const handleBulkItemChange = useCallback(
     (field: keyof ItemRow, value: string) => {
@@ -199,7 +188,7 @@ useEffect(() => {
       setForm(emptyPOForm);
       setActiveTab("details");
     }
-  }, [isOpen]);
+  }, [isOpen, poId]);
 
   const isEditMode = !!poId;
 
@@ -247,6 +236,40 @@ useEffect(() => {
             companyBillingAddress,
           },
         }));
+
+        if (company.address) {
+          const companyApiAddress: ApiAddress = {
+            id: company.address?.name || COMPANY_ID,
+            title: company.address?.name || company.companyName,
+            addressType: company.address?.addressType || "Billing",
+            addressLine1: company.address?.addressLine1 || "",
+            addressLine2: company.address?.addressLine2 || "",
+            city: company.address?.city || "",
+            state: company.address?.province || "",
+            country: company.address?.country || "",
+            pincode: company.address?.postalCode || "",
+            phone: company.contactInfo?.companyPhone || "",
+            email: company.contactInfo?.companyEmail || "",
+          };
+
+          setAddressSelected((prev) => ({
+            ...prev,
+            companyBilling: prev.companyBilling ?? companyApiAddress,
+            companyShipping: prev.companyShipping ?? companyApiAddress,
+          }));
+
+          setAddressList((prev) => ({
+            ...prev,
+            companyBilling:
+              prev.companyBilling.length > 0 ? prev.companyBilling : [companyApiAddress],
+            companyShipping:
+              prev.companyShipping.length > 0 ? prev.companyShipping : [companyApiAddress],
+          }));
+        }
+
+        // Also call loadAddresses after loadCompanyData() call in the useEffect body
+        loadAddresses("companyBilling");
+        loadAddresses("companyShipping");
       } catch (e) {
         console.error("Failed to load company data", e);
       }
@@ -269,62 +292,43 @@ useEffect(() => {
 
   // Load PO Data in Edit Mode
   const hasLoadedRef = useRef(false);
+  const lastLoadedPoIdRef = useRef<string | number | undefined>(undefined);
 
   useEffect(() => {
-    if (!isOpen || !poId || hasLoadedRef.current) return;
+    if (!isOpen || !poId) return;
+
+    // Reset if a different PO is being opened
+    if (lastLoadedPoIdRef.current !== poId) {
+      hasLoadedRef.current = false;
+      lastLoadedPoIdRef.current = poId;
+    }
+
+    if (hasLoadedRef.current) return;
 
     const loadPO = async () => {
+      hasLoadedRef.current = true
       const apiData = await getPurchaseOrderById(poId);
       const mapped = mapApiToUI(apiData);
 
       setForm(mapped);
 
-      setAddressSelected({
+
+      setAddressSelected((prev) => ({
+        companyBilling: prev.companyBilling,
+
         supplierBilling: mapped.addresses.supplierAddress.id
           ? {
             id: mapped.addresses.supplierAddress.id,
-            title: mapped.addresses.supplierAddress.id, 
+            title: mapped.addresses.supplierAddress.id,
             addressType: "Billing",
-            addressLine1: "",
-            addressLine2: "",
-            city: "",
-            state: "",
-            country: "",
-            pincode: "",
-            phone: "",
-            email: "",
-          }
-          : null,
-
-        supplierDispatch: mapped.addresses.dispatchAddress.id
-          ? {
-            id: mapped.addresses.dispatchAddress.id,
-            title: mapped.addresses.dispatchAddress.id,
-            addressType: "Dispatch",
-            addressLine1: "",
-            addressLine2: "",
-            city: "",
-            state: "",
-            country: "",
-            pincode: "",
-            phone: "",
-            email: "",
-          }
-          : null,
-
-        companyBilling: mapped.addresses.companyBillingAddress.id
-          ? {
-            id: mapped.addresses.companyBillingAddress.id,
-            title: mapped.addresses.companyBillingAddress.id,
-            addressType: "Billing",
-            addressLine1: "",
-            addressLine2: "",
-            city: "",
-            state: "",
-            country: "",
-            pincode: "",
-            phone: "",
-            email: "",
+            addressLine1: mapped.addresses.supplierAddress.addressLine1 || "",
+            addressLine2: mapped.addresses.supplierAddress.addressLine2 || "",
+            city: mapped.addresses.supplierAddress.city || "",
+            state: mapped.addresses.supplierAddress.state || "",
+            country: mapped.addresses.supplierAddress.country || "",
+            pincode: mapped.addresses.supplierAddress.postalCode || "",
+            phone: mapped.addresses.supplierAddress.phone || "",
+            email: mapped.addresses.supplierAddress.email || "",
           }
           : null,
 
@@ -333,17 +337,33 @@ useEffect(() => {
             id: mapped.addresses.shippingAddress.id,
             title: mapped.addresses.shippingAddress.id,
             addressType: "Shipping",
-            addressLine1: "",
-            addressLine2: "",
-            city: "",
-            state: "",
-            country: "",
-            pincode: "",
-            phone: "",
-            email: "",
+            addressLine1: mapped.addresses.shippingAddress.addressLine1 || "",
+            addressLine2: mapped.addresses.shippingAddress.addressLine2 || "",
+            city: mapped.addresses.shippingAddress.city || "",
+            state: mapped.addresses.shippingAddress.state || "",
+            country: mapped.addresses.shippingAddress.country || "",
+            pincode: mapped.addresses.shippingAddress.postalCode || "",
+            phone: mapped.addresses.shippingAddress.phone || "",
+            email: mapped.addresses.shippingAddress.email || "",
+          }
+          : prev.companyShipping,
+
+        supplierDispatch: mapped.addresses.dispatchAddress.id
+          ? {
+            id: mapped.addresses.dispatchAddress.id,
+            title: mapped.addresses.dispatchAddress.id,
+            addressType: "Dispatch",
+            addressLine1: mapped.addresses.dispatchAddress.addressLine1 || "",
+            addressLine2: mapped.addresses.dispatchAddress.addressLine2 || "",
+            city: mapped.addresses.dispatchAddress.city || "",
+            state: mapped.addresses.dispatchAddress.state || "",
+            country: mapped.addresses.dispatchAddress.country || "",
+            pincode: mapped.addresses.dispatchAddress.postalCode || "",
+            phone: mapped.addresses.dispatchAddress.phone || "",
+            email: mapped.addresses.dispatchAddress.email || "",
           }
           : null,
-      });
+      }));
       setAddressSelectedIds({
         supplierBilling: mapped.addresses.supplierAddress.id || "",
         supplierDispatch: mapped.addresses.dispatchAddress.id || "",
@@ -351,6 +371,11 @@ useEffect(() => {
         companyShipping: mapped.addresses.shippingAddress.id || "",
       });
 
+
+      if (mapped.supplierId) {
+        loadAddressesForSupplier(mapped.supplierId, "supplierBilling");
+        loadAddressesForSupplier(mapped.supplierId, "supplierDispatch");
+      }
       hasLoadedRef.current = true;
     };
 
@@ -439,60 +464,60 @@ useEffect(() => {
     }));
   };
 
-    // Fetches supplier addresses using the FRESH supplierId from the API response,
-// not form.supplierId (which may still be stale at the time of the call).
-const loadAddressesForSupplier = useCallback(
-  async (freshSupplierId: string, boxKey: "supplierBilling" | "supplierDispatch") => {
-    if (!freshSupplierId) return;
+  // Fetches supplier addresses using the FRESH supplierId from the API response,
+  // not form.supplierId (which may still be stale at the time of the call).
+  const loadAddressesForSupplier = useCallback(
+    async (freshSupplierId: string, boxKey: "supplierBilling" | "supplierDispatch") => {
+      if (!freshSupplierId) return;
 
-    const { getAddressList } = await import("../api/Adressapi");
+      const { getAddressList } = await import("../api/Adressapi");
 
-    const apiParams: { supplierId: string; addressType?: string } = {
-      supplierId: freshSupplierId,
-    };
-    if (boxKey === "supplierBilling") {
-      apiParams.addressType = "Billing";
-    }
-
-    setAddressLoading((prev) => ({ ...prev, [boxKey]: true }));
-
-    try {
-      const data = await getAddressList(apiParams);
-      setAddressList((prev) => ({ ...prev, [boxKey]: data }));
-
-      if (data?.length > 0) {
-        const first = data[0];
-        setAddressSelected((prev)    => ({ ...prev, [boxKey]: first }));
-        setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: first.id }));
-
-        const prefix = boxKey === "supplierBilling" ? "supplierAddress" : "dispatchAddress";
-        handleFormChange({
-          target: {
-            name: `addresses.${prefix}`,
-            value: {
-              id:           first.id,
-              addressTitle: first.title,
-              addressType:  first.addressType,
-              addressLine1: first.addressLine1 ?? "",
-              addressLine2: first.addressLine2 ?? "",
-              city:         first.city         ?? "",
-              state:        first.state        ?? "",
-              country:      first.country      ?? "",
-              postalCode:   first.pincode      ?? "",
-              phone:        first.phone        ?? "",
-              email:        first.email        ?? "",
-            },
-          },
-        });
+      const apiParams: { supplierId: string; addressType?: string } = {
+        supplierId: freshSupplierId,
+      };
+      if (boxKey === "supplierBilling") {
+        apiParams.addressType = "Billing";
       }
-    } catch (err) {
-      console.error(`[usePurchaseOrderForm] Failed to load "${boxKey}":`, err);
-    } finally {
-      setAddressLoading((prev) => ({ ...prev, [boxKey]: false }));
-    }
-  },
-  [handleFormChange],
-);
+
+      setAddressLoading((prev) => ({ ...prev, [boxKey]: true }));
+
+      try {
+        const data = await getAddressList(apiParams);
+        setAddressList((prev) => ({ ...prev, [boxKey]: data }));
+
+        if (data?.length > 0) {
+          const first = data[0];
+          setAddressSelected((prev) => ({ ...prev, [boxKey]: first }));
+          setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: first.id }));
+
+          const prefix = boxKey === "supplierBilling" ? "supplierAddress" : "dispatchAddress";
+          handleFormChange({
+            target: {
+              name: `addresses.${prefix}`,
+              value: {
+                id: first.id,
+                addressTitle: first.title,
+                addressType: first.addressType,
+                addressLine1: first.addressLine1 ?? "",
+                addressLine2: first.addressLine2 ?? "",
+                city: first.city ?? "",
+                state: first.state ?? "",
+                country: first.country ?? "",
+                postalCode: first.pincode ?? "",
+                phone: first.phone ?? "",
+                email: first.email ?? "",
+              },
+            },
+          });
+        }
+      } catch (err) {
+        console.error(`[usePurchaseOrderForm] Failed to load "${boxKey}":`, err);
+      } finally {
+        setAddressLoading((prev) => ({ ...prev, [boxKey]: false }));
+      }
+    },
+    [handleFormChange],
+  );
 
   const handleSupplierChange = useCallback(async (sup: any) => {
     if (!sup?.id) return;
@@ -565,7 +590,7 @@ const loadAddressesForSupplier = useCallback(
             postalCode: primaryAddress?.postalCode || "",
           },
         },
-       }));
+      }));
 
       // ── Auto-load supplier address boxes on supplier select ──
       await Promise.all([
@@ -725,48 +750,48 @@ const loadAddressesForSupplier = useCallback(
     }
   };
 
- const validateTab = (tab: POTab): string | null => {
-  if (tab === "details") {
-    if (!form.supplierId) {
-      return "Please select a supplier";
+  const validateTab = (tab: POTab): string | null => {
+    if (tab === "details") {
+      if (!form.supplierId) {
+        return "Please select a supplier";
+      }
+
+      if (!form.items.length) {
+        return "Please add at least one item";
+      }
+
+      for (let i = 0; i < form.items.length; i++) {
+        const it = form.items[i];
+
+        // Item
+        if (!it.itemCode) {
+          return `Row ${i + 1}: Item is required`;
+        }
+
+        // Qty
+        if (!it.quantity || Number(it.quantity) <= 0) {
+          return `Row ${i + 1}: Quantity is required`;
+        }
+
+        // Rate 
+        if (!it.rate || Number(it.rate) <= 0) {
+          return `Row ${i + 1}: Rate is required`;
+        }
+
+        // Warehouse
+        if (!it.warehouse) {
+          return `Row ${i + 1}: Warehouse is required`;
+        }
+
+        // VAT Code
+        // if (!it.vatCd || it.vatCd.trim() === "") {
+        //   return `Row ${i + 1}: Tax Name is required`;
+        // }   
+      }
     }
 
-    if (!form.items.length) {
-      return "Please add at least one item";
-    }
-
-    for (let i = 0; i < form.items.length; i++) {
-      const it = form.items[i];
-
-      // Item
-      if (!it.itemCode) {
-        return `Row ${i + 1}: Item is required`;
-      }
-
-      // Qty
-      if (!it.quantity || Number(it.quantity) <= 0) {
-        return `Row ${i + 1}: Quantity is required`;
-      }
-
-      // Rate 
-      if (!it.rate || Number(it.rate) <= 0) {
-        return `Row ${i + 1}: Rate is required`;
-      }
-
-      // Warehouse
-      if (!it.warehouse) {
-        return `Row ${i + 1}: Warehouse is required`;
-      }
-
-      // VAT Code
-      // if (!it.vatCd || it.vatCd.trim() === "") {
-      //   return `Row ${i + 1}: Tax Name is required`;
-      // }   
-    }
-  }
-
-  return null;
-};
+    return null;
+  };
   const handleItemSelect = useCallback(async (itemId: string, idx: number) => {
     try {
       const res = await getItemByItemCode(itemId, form.taxCategory);
@@ -787,9 +812,9 @@ const loadAddressesForSupplier = useCallback(
 
       const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
       const taxTypes = (data.taxInfo || [])
-  .flatMap((tax: any) => tax.taxRates || [])
-  .map((r: any) => r.tax_type)
-  .filter((t: string) => t && t.trim() !== "");
+        .flatMap((tax: any) => tax.taxRates || [])
+        .map((r: any) => r.tax_type)
+        .filter((t: string) => t && t.trim() !== "");
 
       setForm((prev) => {
         const items = [...prev.items];
@@ -902,18 +927,20 @@ const loadAddressesForSupplier = useCallback(
 
     setActiveTab("details");
     setAddressSelected({
-  companyBilling: null, supplierBilling: null,
-  companyShipping: null, supplierDispatch: null,
-});
-setAddressSelectedIds({
-  companyBilling: "", supplierBilling: "",
-  companyShipping: "", supplierDispatch: "",
-});
-setAddressList({
-  companyBilling: [], supplierBilling: [],
-  companyShipping: [], supplierDispatch: [],
-});
-companyAddressLoadedRef.current = false;
+      companyBilling: null, supplierBilling: null,
+      companyShipping: null, supplierDispatch: null,
+    });
+    setAddressSelectedIds({
+      companyBilling: "", supplierBilling: "",
+      companyShipping: "", supplierDispatch: "",
+    });
+    setAddressList({
+      companyBilling: [], supplierBilling: [],
+      companyShipping: [], supplierDispatch: [],
+    });
+    companyAddressLoadedRef.current = false;
+    hasLoadedRef.current = false;
+    lastLoadedPoIdRef.current = undefined;
   };
   return {
     form: { ...form, ...totals },
@@ -955,8 +982,8 @@ companyAddressLoadedRef.current = false;
     addressLoading,
     setAddressLoading,
     handleAddressSelect,
-handleCopyBillingToShipping,
-handleCopySupplierToDispatch,
-loadAddresses,
+    handleCopyBillingToShipping,
+    handleCopySupplierToDispatch,
+    loadAddresses,
   };
 };
