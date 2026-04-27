@@ -250,7 +250,7 @@ drawBox(
         "#",
         "Item",
         "Required By",
-        "Shelf Life",
+        "Shelf Life (Months)",
         "Packing",
         "Qty",
         "UOM",
@@ -265,10 +265,10 @@ drawBox(
           ? `${item.packingUnit}×${item.packingSize}`
           : "-";
 
-      // ✅ Computed: amount = quantity * rate (not in API response)
+      
       const amount = Number(item.quantity ?? 0) * Number(item.rate ?? 0);
 
-      // ✅ Tax info from taxInfo array
+      
       const taxName = item.taxInfo?.[0]?.taxName ?? "-";
       const taxRate = item.taxInfo?.[0]?.totalTaxRate ?? "0";
 
@@ -281,7 +281,7 @@ drawBox(
         Math.round(Number(item.quantity ?? 0)),      // ✅ was: item.qty
         item.uom ?? "-",
         fmt2(item.rate),
-        `${taxName} (${taxRate}%)`,                  // ✅ was: item.vatCd / item.vatRate
+        `${taxName} (${taxRate}%)`,                 
         fmt2(amount),                                // ✅ was: item.amount (computed)
       ];
     }),
