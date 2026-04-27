@@ -149,7 +149,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                       <td className="px-2 py-1">
                         <div className="w-[180px]">
                           <SupplierSelect
-                            label=""    
+                            label=""
                             value={sup.supplierName}
                             selectedId={sup.supplier}
                             onChange={async (selected: any) => {
@@ -175,6 +175,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                       {/* Contact */}
                       <td className="px-2 py-1">
                         <input
+                          readOnly
                           value={sup.contact}
                           placeholder="Auto-filled"
                           className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main opacity-70"
@@ -184,6 +185,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                       {/* Email — read-only, auto-filled */}
                       <td className="px-2 py-1">
                         <input
+                          readOnly
                           value={sup.email}
                           placeholder="Auto-filled"
                           className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main opacity-70"

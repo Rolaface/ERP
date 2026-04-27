@@ -108,7 +108,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
       title="New Request For Quotation"
       subtitle="Create and send RFQ to suppliers"
       icon={Building2}
-      customWidth="80vw"
+      customWidth="65vw"
       height="81vh"
       footer={footer}
     >
