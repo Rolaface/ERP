@@ -10,7 +10,7 @@ interface SearchOption {
   value: string;
 }
 
-/** Shape of a single tax line returned by the API */
+
 interface TemplateTax {
   tax_type: string;
   tax_rate: number;
@@ -22,10 +22,6 @@ interface TaxSectionProps {
   taxPage: number;
   itemsPerPage: number;
   fetchTaxTemplateOptions: (search: string) => Promise<SearchOption[]>;
-  /**
-   * Given a template value (name), return the cached taxes for that template.
-   * Returns undefined if the template hasn't been fetched yet.
-   */
   getTemplateTaxes: (templateValue: string) => TemplateTax[] | undefined;
   onTaxRowChange: (
     absoluteIndex: number,
@@ -39,7 +35,7 @@ interface TaxSectionProps {
   errors?: Record<string, string>;
 }
 
-/** Renders the tax breakdown tooltip content */
+
 const TaxTooltipContent: React.FC<{ taxes: TemplateTax[] }> = ({ taxes }) => (
   <div className="min-w-[160px]">
     <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide opacity-70">
@@ -145,7 +141,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                         </div>
                       </div>
                     </td>
-                    {/* Tax Template cell — wrap with tooltip only when taxes are available */}
+
                     <td className="min-w-[220px] px-1 py-1 align-middle">
                       <div
                         className={[
@@ -188,7 +184,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
           </table>
         </div>
 
-        {/* Footer: Add Row + Pagination */}
+        {/* Footer */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"

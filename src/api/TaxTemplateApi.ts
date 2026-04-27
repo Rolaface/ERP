@@ -16,11 +16,29 @@ export async function getAllTemplates(
       page,
       page_size: pageSize,
       order_by: "title",
-      ...(search ? { search } : {}), // ← search param for DB filter
+      ...(search ? { search } : {}), 
     },
   });
   return resp.data;
 }
+
+export async function getEnabledTemplates(
+  page: number,
+  pageSize: number,
+  search?: string
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(TemplateAPI.getTemplates, {
+    params: {
+      page,
+      page_size: pageSize,
+      order_by: "title",
+      disabled: 0,
+      ...(search ? { search } : {}),
+    },
+  });
+  return resp.data;
+}
+
 
 //  GET GL Accounts with optional search 
 export async function getGlAccounts(search?: string): Promise<any> {
