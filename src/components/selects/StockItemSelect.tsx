@@ -121,6 +121,7 @@ export default function StockItemSelect({
 
       vatRate: totalTaxRate,
       vatCode: selectedTax.taxName || "",
+      taxInfo: row.taxInfo,
     });
   };
 
@@ -240,8 +241,15 @@ export default function StockItemSelect({
               {filtered.map((row, i) => (
                 <div
                   key={i}
-                  onClick={() => handleSelect(row)}
-                  className="grid grid-cols-6 gap-3 px-3 py-2 text-[11px] cursor-pointer row-hover border-b border-theme last:border-none"
+                  onClick={() => {
+                    if ((row.qty ?? 0) <= 0) return;
+                    handleSelect(row);
+                  }}
+                  className={`grid grid-cols-6 gap-3 px-3 py-2 text-[11px] border-b border-theme last:border-none ${
+                    (row.qty ?? 0) <= 0
+                      ? "opacity-40 cursor-not-allowed"
+                      : "cursor-pointer row-hover"
+                  }`}
                 >
                   <div className="flex flex-col leading-tight">
                     <span className="text-[12px] font-medium text-main truncate">
@@ -255,7 +263,9 @@ export default function StockItemSelect({
                   <div>{fmt(row.mfgDate)}</div>
                   <div>{fmt(row.expiryDate)}</div>
                   <div className="truncate">{row.warehouse || "-"}</div>
-                  <div className="text-right font-medium text-success">
+                  <div
+                    className={`text-right font-medium ${(row.qty ?? 0) <= 0 ? "text-danger" : "text-success"}`}
+                  >
                     {row.qty ?? 0}
                   </div>
                 </div>

@@ -99,6 +99,7 @@ export interface ItemRow {
   vatCd: string;
   taxCategory:string;
   vatRate: number;
+  taxTypes?: string[];
   packing?: string;
   packingUnit?: number;
   packingSize?: number;
@@ -211,11 +212,11 @@ export const emptyItem: ItemRow = {
   vatCd: "",
   vatRate: 0,
   taxCategory:"",
+  taxTypes: [],
   packing: "",
   packingUnit: 0,
   packingSize: 0,
   description: "",
-  taxCategory: "",
 };
 
 export const emptyTaxRow: TaxRow = {

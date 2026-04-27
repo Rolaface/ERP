@@ -171,7 +171,7 @@ const SupplierDetailView: React.FC<Props> = ({
       try {
         setStatementLoading(true);
         const res = await getSupplierStatement(supplierId);
-        if (res?.status_code === 200) setStatement(res.data);
+        if (res?.message.status_code === 200) setStatement(res.message.data);
       } catch (err) {
         console.error("Failed to load supplier statement", err);
       } finally {
@@ -219,7 +219,7 @@ const SupplierDetailView: React.FC<Props> = ({
 
   // ── Sidebar List ────────────────────────────────────────────────────────
   const SidebarList = () => (
-    <div className="flex flex-col h-full min-h-0">
+      <div className="flex flex-col h-[450px]">
       <div className="px-3 py-2.5 border-b border-theme shrink-0">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
@@ -232,7 +232,7 @@ const SupplierDetailView: React.FC<Props> = ({
           />
         </div>
       </div>
-      <div className="overflow-y-auto px-2 py-1.5 flex-1">
+      <div className="overflow-y-auto px-2 py-1.5 flex-1 min-h-0 no-scrollbar">
         {filteredSuppliers.length === 0 && (
           <p className="text-[10px] text-muted text-center py-6">No suppliers found</p>
         )}
@@ -318,9 +318,6 @@ const SupplierDetailView: React.FC<Props> = ({
                   </span>
                 )}
               </div>
-              <p className="text-[9px] text-muted font-bold uppercase tracking-wider mt-0.5 hidden sm:block">
-                Supplier Insight Center
-              </p>
             </div>
           </div>
         </div>
@@ -406,7 +403,17 @@ const SupplierDetailView: React.FC<Props> = ({
               <div className="p-4 space-y-4">
 
                 {/* KPI strip — 4 cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                    <KpiCard
+                    icon={<Users size={15} />}
+                    label="Supplier Type"
+                    value={(supplier as any)?.type ?? (supplier as any)?.supplierType}
+                  />
+                     <KpiCard
+                    icon={<Banknote size={15} />}
+                    label="Currency"
+                    value={(supplier as any)?.currency ?? supplier?.currency}
+                  />
                   <KpiCard
                     icon={<Tag size={15} />}
                     label="Tax Category"
@@ -418,37 +425,19 @@ const SupplierDetailView: React.FC<Props> = ({
                     value={supplier?.tpin}
                     mono
                   />
-                  <KpiCard
-                    icon={<Users size={15} />}
-                    label="Supplier Type"
-                    value={(supplier as any)?.type ?? (supplier as any)?.supplierType}
-                  />
-                  <KpiCard
-                    icon={<Banknote size={15} />}
-                    label="Currency"
-                    value={(supplier as any)?.currency ?? supplier?.currency}
-                  />
-                </div>
-
-                {/* Second row: Group + Status */}
-                <div className="grid grid-cols-2 gap-3">
-                  <KpiCard
+                   <KpiCard
                     icon={<Layers size={15} />}
                     label="Supplier Group"
                     value={(supplier as any)?.supplierGroup}
                   />
-                  <KpiCard
-                    icon={<Clock size={15} />}
-                    label="Member Since"
-                    value={fmtDate(createdAt)}
-                  />
                 </div>
+
 
                 {/* Contact + Terms */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                   {/* Contact card — from contacts[] & addresses[] */}
-                  <div className="bg-card rounded-2xl border border-theme overflow-hidden">
+                  <div className="bg-card rounded-2xl border border-theme overflow-hidden no-scrollbar">
                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-theme">
                       <Mail size={12} className="text-primary" />
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Contact Channels</h4>
@@ -525,7 +514,7 @@ const SupplierDetailView: React.FC<Props> = ({
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Terms & Conditions</h4>
                     </div>
 
-                    <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted">
+                  <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted no-scrollbar">
 
                       {/* General */}
                       {terms?.general && (
@@ -657,6 +646,7 @@ const SupplierDetailView: React.FC<Props> = ({
       <PaymentEntryModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
+        
       />
 
       <AddBankAccountModal

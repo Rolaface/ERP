@@ -759,6 +759,10 @@ export const useInvoiceForm = (
           exclusiveBase > 0
             ? Number(((taxAmount / exclusiveBase) * 100).toFixed(2))
             : 0;
+            const taxTypes = (it.taxInfo || [])
+  .flatMap((tax: any) => tax.taxRates || [])
+  .map((r: any) => r.tax_type)
+  .filter((t: string) => t && t.trim() !== "");
         return {
           itemCode: it.itemCode,
           itemName: it.itemName ?? "",
@@ -768,6 +772,7 @@ export const useInvoiceForm = (
           discount,
           vatRate: it.taxInfo?.[0]?.totalTaxRate ?? taxRate,
           vatCode: it.itemTaxTemplate ?? it.vatCode ?? "",
+          taxTypes: taxTypes,
           packingUnit: it.packingUnit ?? "",
           packingSize: it.packingSize ?? "",
           batchNo: it.batchNo ?? "",

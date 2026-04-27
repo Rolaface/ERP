@@ -36,26 +36,7 @@ import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
 import CustomerdetailviewPayment from "./CustomerDetailViewPayments";
 import { getCustomerByCustomerCode } from "../../api/customerApi";
 
-// ─── API RESPONSE FIELD NOTES ─────────────────────────────────────────────────
-// customer.id                    → "CUST-2026-00009"
-// customer.name                  → display name
-// customer.type                  → "Individual" | "Company"
-// customer.tpin
-// customer.currency
-// customer.mobile                → flat mobile (top-level)
-// customer.email                 → flat email  (top-level)
-// customer.customerGroup
-// customer.customerTaxCategory   → NOT taxCategory
-// customer.contacts[]            → structured contacts array
-//   .fullName / .firstName / .lastName / .email / .mobile / .isPrimary
-// customer.addresses[]
-//   .type "Billing"|"Shipping"
-//   .line1/.line2/.city/.state/.postalCode/.country/.county
-// customer.terms.Selling         → capital S  (NOT selling)
-//   .general / .delivery / .cancellation / .warranty / .liability
-//   .payment.phases[] { id, name, percentage, condition, credit_days }
-//   .payment.dueDates / .lateCharges / .taxes / .notes
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 type OutletContextType = {
   openCustomerCreate: () => void;
@@ -244,7 +225,7 @@ const CustomerDetailView: React.FC<Props> = ({
 
   // ── Sidebar list ────────────────────────────────────────────────────────────
   const SidebarList = () => (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-[490px] no-scrollbar">
       <div className="px-3 py-2.5 border-b border-theme shrink-0">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
@@ -257,7 +238,7 @@ const CustomerDetailView: React.FC<Props> = ({
           />
         </div>
       </div>
-      <div className="overflow-y-auto px-2 py-1.5 flex-1">
+      <div className="overflow-y-auto px-2 py-1.5 flex-1 rounded-2xl no-scrollbar">
         {filteredCustomers.length === 0 && (
           <p className="text-[10px] text-muted text-center py-6">No customers found</p>
         )}
@@ -342,9 +323,6 @@ const CustomerDetailView: React.FC<Props> = ({
                   </span>
                 )}
               </div>
-              <p className="text-[9px] text-muted font-bold uppercase tracking-wider mt-0.5 hidden sm:block">
-                Customer Insight Center
-              </p>
             </div>
           </div>
         </div>
@@ -424,24 +402,21 @@ const CustomerDetailView: React.FC<Props> = ({
               <div className="p-4 space-y-4">
 
                 {/* KPI strip row 1 — 4 cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                   <KpiCard icon={<Building2 size={15} />} label="Customer Type"     value={(customer as any).type} />
-                  <KpiCard icon={<BadgeCheck size={15} />} label="TPIN"             value={(customer as any).tpin} mono />
-                  <KpiCard icon={<Banknote size={15} />}  label="Base Currency"     value={(customer as any).currency} />
+                   <KpiCard icon={<Banknote size={15} />}  label="Currency"     value={(customer as any).currency} />              
                   <KpiCard icon={<Tag size={15} />}       label="Tax Category"      value={taxCategory} />
+                  <KpiCard icon={<BadgeCheck size={15} />} label="TPIN"             value={(customer as any).tpin} mono />
+                  <KpiCard icon={<Layers size={15} />}    label="Customer Group"   value={customerGroup} />
                 </div>
 
-                {/* KPI strip row 2 */}
-                <div className="grid grid-cols-2 gap-3">
-                  <KpiCard icon={<Layers size={15} />}    label="Customer Group"   value={customerGroup} />
-                  <KpiCard icon={<CalendarDays size={15} />} label="Member Since"  value={fmtDate(createdAt)} />
-                </div>
+                
 
                 {/* Contact + Terms */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                   {/* Contact card */}
-                  <div className="bg-card rounded-2xl border border-theme overflow-hidden">
+                  <div className="bg-card rounded-2xl border border-theme overflow-auto h-[390px] no-scrollbar">
                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-theme">
                       <Mail size={12} className="text-primary" />
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Contact Channels</h4>
@@ -511,14 +486,14 @@ const CustomerDetailView: React.FC<Props> = ({
                     )}
                   </div>
 
-                  {/* Terms card — reads terms.Selling (capital S) */}
-                  <div className="bg-card rounded-2xl border border-theme flex flex-col" style={{ maxHeight: 480 }}>
+                  {/* Terms card  */}
+                  <div className="bg-card rounded-2xl border border-theme flex flex-col h-[390px] no-scrollbar">
                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-theme shrink-0">
                       <FileText size={12} className="text-primary" />
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Terms & Conditions</h4>
                     </div>
 
-                    <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted">
+                    <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted no-scrollbar">
                       {sellingTerms?.general && (
                         <TermsSection title="General">
                           <p className="leading-relaxed">{sellingTerms.general}</p>
@@ -583,7 +558,7 @@ const CustomerDetailView: React.FC<Props> = ({
             {activeTab === "bank" && (
               <div className="p-5 w-full min-w-0 overflow-hidden">
                 <CustomerBankDetails
-                  customerName={(customer as any).name}
+                  customerName={(customer as any).id}
                   onAdd={(refresh) => {
                     setEditingRow(null);
                     refreshBankAccounts.current = refresh;
@@ -609,7 +584,7 @@ const CustomerDetailView: React.FC<Props> = ({
             {/* ════ INVOICES ═══════════════════════════════════════════ */}
             {activeTab === "invoices" && (
               <div className="p-5 w-full min-w-0 overflow-hidden">
-                <CustomerInvoices customerName={(customer as any).name} />
+                <CustomerInvoices customerName={(customer as any).id} />
               </div>
             )}
 
@@ -630,14 +605,17 @@ const CustomerDetailView: React.FC<Props> = ({
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onSuccess={() => setShowPaymentModal(false)}
+        customerId={customer.id}
       />
       <AddBankAccountModal
         isOpen={showBankAccountModal}
+      
         onClose={() => { setShowBankAccountModal(false); setEditingRow(null); }}
         onSubmit={() => { setShowBankAccountModal(false); refreshBankAccounts.current?.(); }}
-        partyName={(customer as any).name}
+        partyName={(customer as any).id}
         defaultAccountFor="Customer"
         initialData={editingRow}
+         customerId={customer.id}
       />
     </div>
   );

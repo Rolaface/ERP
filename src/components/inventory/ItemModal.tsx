@@ -17,6 +17,7 @@ import BasicDetailsSection from "./BasicDetailsSection";
 import InventorySection from "./InventorySection";
 import PricingSection from "./PricingSection";
 import TaxSection from "./TaxSection";
+import ItemSummaryBar from "./Itemsummarybar";
 import type {
   ItemFormData,
   ItemModalTab,
@@ -399,7 +400,9 @@ if (!isOpen) return null;
     return result !== false;
   };
 
-  const footer = (
+const footer = (
+  <>
+    
     <ModalFooter
       onCancel={handleCloseRequest}
       onReset={handleReset}
@@ -414,7 +417,8 @@ if (!isOpen) return null;
       totalTabs={tabs.length}
       isSubmitting={loading}
     />
-  );
+  </>
+);
 
   return (
     <MinimizableModal
@@ -427,7 +431,9 @@ if (!isOpen) return null;
       footer={footer}
       customWidth="min(92vw, 1280px)"
       height="64vh"
+       summaryBar={<ItemSummaryBar form={form} taxRows={taxRows} />} 
     >
+   
       <form
         id={itemFormId}
         onChange={markDirty}

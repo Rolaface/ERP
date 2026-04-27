@@ -15,7 +15,11 @@ export type ModalType =
   | "warehouse"
   | "taxTemplate"
   |"salesTax"
-  | "taxCategory";
+  | "taxCategory"
+  | "bankAccount"
+  |"modeOfPayment"
+  |"paymentEntry"
+  |"currencyExchange";
 
 export interface ModalContext {
   source?: string;
@@ -449,4 +453,43 @@ export const openSalesTaxTemplateModal = (
     .getState()
     .openModal("salesTax", initialData, isEdit, context, meta);
 
+export const openBankAccountModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("bankAccount", initialData, isEdit, context, meta);    
         
+export const openModeOfPaymentModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("modeOfPayment", initialData, isEdit, context, meta);  
+    export const openPaymentEntryModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("paymentEntry", initialData, isEdit, context, meta);  
+
+
+export const openCurrencyExchangeModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("currencyExchange", initialData, isEdit, context, meta);    
+

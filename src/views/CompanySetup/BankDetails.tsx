@@ -1,13 +1,17 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
-import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
+import { openBankAccountModal } from "../../store/modalStore";
+
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
-import { getAllBankAccounts, updateBankAccountStatus } from "../../api/BankAccountApi";
+import {
+  getAllBankAccounts,
+  updateBankAccountStatus,
+} from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
 
 const mask = (val?: string | number | null) => {
@@ -19,8 +23,7 @@ const mask = (val?: string | number | null) => {
 
 const BankDetails: React.FC = () => {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const [editingRow, setEditingRow] = useState<BankAccount | null>(null);
+
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -28,7 +31,6 @@ const BankDetails: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
 
   const fetchAccounts = useCallback(async () => {
     try {
@@ -43,7 +45,6 @@ const BankDetails: React.FC = () => {
       setBankAccounts(res.data);
       setTotalPages(res.pagination.total_pages);
       setTotalItems(res.pagination.total);
-
     } catch (err: any) {
       showApiError(err?.message || "Failed to load bank accounts");
     } finally {
@@ -51,11 +52,9 @@ const BankDetails: React.FC = () => {
     }
   }, [page, pageSize]);
 
-
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
-
 
   const filteredData = useMemo(() => {
     const q = search.toLowerCase();
@@ -69,74 +68,79 @@ const BankDetails: React.FC = () => {
       ]
         .join(" ")
         .toLowerCase()
-        .includes(q)
+        .includes(q),
     );
   }, [bankAccounts, search]);
 
-  const handleSetDefault = useCallback(async (row: BankAccount) => {
-    if (row.isDisabled) {
-      showApiError("Disabled account cannot be default");
-      return;
-    }
+  const handleSetDefault = useCallback(
+    async (row: BankAccount) => {
+      if (row.isDisabled) {
+        showApiError("Disabled account cannot be default");
+        return;
+      }
 
-    try {
-      setActionLoadingId(String(row.id));
+      try {
+        setActionLoadingId(String(row.id));
 
-      await updateBankAccountStatus({
-        bankAccountId: String(row.id),
-        isDefault: 1,
-        isDisabled: 0,
-      });
+        await updateBankAccountStatus({
+          bankAccountId: String(row.id),
+          isDefault: 1,
+          isDisabled: 0,
+        });
 
-      await fetchAccounts();
-    } catch (err: any) {
-      showApiError(err.message);
-    } finally {
-      setActionLoadingId(null);
-    }
-  }, [fetchAccounts]);
+        await fetchAccounts();
+      } catch (err: any) {
+        showApiError(err.message);
+      } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [fetchAccounts],
+  );
 
-  const handleToggleDisable = useCallback(async (row: BankAccount) => {
-    try {
-      setActionLoadingId(String(row.id));
+  const handleToggleDisable = useCallback(
+    async (row: BankAccount) => {
+      try {
+        setActionLoadingId(String(row.id));
 
-      await updateBankAccountStatus({
-        bankAccountId: String(row.id),
-        isDisabled: row.isDisabled ? 0 : 1,
-        isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
-      });
+        await updateBankAccountStatus({
+          bankAccountId: String(row.id),
+          isDisabled: row.isDisabled ? 0 : 1,
+          isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
+        });
 
-      await fetchAccounts();
-    } catch (err: any) {
-      showApiError(err.message);
-    } finally {
-      setActionLoadingId(null);
-    }
-  }, [fetchAccounts]);
+        await fetchAccounts();
+      } catch (err: any) {
+        showApiError(err.message);
+      } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [fetchAccounts],
+  );
 
   const columns: Column<BankAccount>[] = [
     {
       key: "dateAdded",
       header: "Date Added",
       render: (row) =>
-        row.dateAdded
-          ? new Date(row.dateAdded).toLocaleDateString()
-          : "—",
+        row.dateAdded ? new Date(row.dateAdded).toLocaleDateString() : "—",
     },
     {
       key: "bankName",
       header: "Bank",
       render: (row) => (
-        <span className="font-semibold">
-          {row.bankName || "—"}
-        </span>
+        <span className="font-semibold">{row.bankName || "—"}</span>
       ),
     },
     {
       key: "accountNo",
       header: "Account No",
       render: (row) => (
-        <span title={row.accountNo ? String(row.accountNo) : ""} className="cursor-pointer">
+        <span
+          title={row.accountNo ? String(row.accountNo) : ""}
+          className="cursor-pointer"
+        >
           {mask(row.accountNo)}
         </span>
       ),
@@ -150,7 +154,10 @@ const BankDetails: React.FC = () => {
       key: "sortCode",
       header: "IFSC / Sort Code",
       render: (row) => (
-        <span title={row.sortCode ? String(row.sortCode) : ""} className="cursor-pointer">
+        <span
+          title={row.sortCode ? String(row.sortCode) : ""}
+          className="cursor-pointer"
+        >
           {mask(row.sortCode)}
         </span>
       ),
@@ -158,9 +165,7 @@ const BankDetails: React.FC = () => {
     {
       key: "currency",
       header: "Currency",
-      render: (row) => (
-        <span>{row.currency || "—"}</span>
-      ),
+      render: (row) => <span>{row.currency || "—"}</span>,
     },
 
     {
@@ -192,8 +197,13 @@ const BankDetails: React.FC = () => {
           <ActionButton
             type="edit"
             onClick={() => {
-              setEditingRow(row);
-              setShowModal(true);
+              openBankAccountModal(
+                row, // initial data
+                true, // edit mode
+                {
+                  onSuccess: () => fetchAccounts(),
+                },
+              );
             }}
             iconOnly
           />
@@ -212,7 +222,6 @@ const BankDetails: React.FC = () => {
               },
             ]}
           />
-
         </ActionGroup>
       ),
     },
@@ -229,17 +238,27 @@ const BankDetails: React.FC = () => {
         searchValue={search}
         onSearch={setSearch}
         enableAdd
+        enableColumnSelector
+        tableId="bank-details"
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
         addLabel="Add Bank Account"
         onAdd={() => {
-          setEditingRow(null);
-          setShowModal(true);
+          openBankAccountModal(
+            null, // no initial data
+            false, // create mode
+            {
+              onSuccess: () => fetchAccounts(),
+            },
+          );
         }}
       />
 
@@ -247,21 +266,6 @@ const BankDetails: React.FC = () => {
         <div className="text-center text-gray-500 py-10">
           No bank accounts found
         </div>
-      )}
-
-      {showModal && (
-        <AddBankAccountModal
-          isOpen={showModal}
-          onClose={() => {
-            setShowModal(false);
-            setEditingRow(null);
-          }}
-          onSubmit={() => {
-            fetchAccounts();
-          }}
-          initialData={editingRow}
-          defaultAccountFor="Company"
-        />
       )}
     </div>
   );

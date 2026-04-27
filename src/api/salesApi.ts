@@ -27,23 +27,27 @@ export async function getAllSalesInvoices(
   page: number = 1,
   page_size: number = 10,
   sortBy: string = "",
-  sortOrder: "asc" | "desc" = "asc",   
+  sortOrder: "asc" | "desc" = "asc",
   search?: string,
   customer?: string,
   minOutstanding?: number,
-  status?: string[],  
+  status?: string,
+  from_date?: string,
+  to_date?: string,
 ): Promise<any> {
 
-// AFTER
+  // AFTER
   const params = new URLSearchParams();
   params.set("page", String(page));
   params.set("page_size", String(page_size));
-  if (sortBy)             params.set("sortBy", sortBy);
-  if (sortOrder)          params.set("sortOrder", sortOrder);
-  if (search)             params.set("search", search);
-  if (customer)           params.set("customer", customer);
+  if (sortBy) params.set("sortBy", sortBy);
+  if (sortOrder) params.set("sortOrder", sortOrder);
+  if (search) params.set("search", search);
+  if (customer) params.set("customer", customer);
   if (minOutstanding != null) params.set("minOutstanding", String(minOutstanding));
-  if (status?.length)     status.forEach((s) => params.append("status", s));
+  if (status) params.set("status", status);       
+  if (from_date) params.set("from_date", from_date); 
+  if (to_date) params.set("to_date", to_date);    
 
   const resp: AxiosResponse = await api.get(InvoiceAPI.getAll, { params });
 

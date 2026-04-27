@@ -1,5 +1,5 @@
 import { Pencil, Check, MoveLeftIcon } from "lucide-react";
-import ButtonPro from "../Form/ButtonPro";
+import ButtonPro from "../form/ButtonPro";
 import { useState } from "react";
 
 export default function Step3Review({

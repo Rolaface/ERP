@@ -1,5 +1,5 @@
 import React from "react";
-import Modal from "../../components/ui/modal/modal";
+import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import {
   ModalInput,
@@ -12,13 +12,15 @@ import { useModeOfPaymentLogic } from "./useModeOfPaymentLogic";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (data?: any) => void;  
+ modalId: string;
 }
 
 const AddModeOfPaymentModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onSubmit,
+   modalId
 }) => {
   const {
     form,
@@ -45,7 +47,8 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
   );
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
       title="Add Mode of Payment"
@@ -54,10 +57,8 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
       customWidth="60vw"
     >
       <div className="p-6 space-y-6">
-
         {/* FORM */}
         <div className="grid grid-cols-3 gap-4">
-
           <ModalInput
             label="Mode of Payment"
             name="name"
@@ -95,7 +96,6 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
 
         {/* TABLE */}
         <div className="border rounded-2xl overflow-hidden bg-white">
-
           <div className="grid grid-cols-[60px_1fr_1fr] px-4 py-3 text-sm font-semibold border-b bg-gray-50">
             <div>No.</div>
             <div>Company</div>
@@ -118,8 +118,8 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
                 const query = q.toLowerCase();
                 return Promise.resolve(
                   companies.filter((c) =>
-                    c.label.toLowerCase().includes(query)
-                  )
+                    c.label.toLowerCase().includes(query),
+                  ),
                 );
               }}
               loading={companyLoading}
@@ -138,9 +138,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
               fetchOptions={(q) => {
                 const query = q.toLowerCase();
                 return Promise.resolve(
-                  accounts.filter((a) =>
-                    a.label.toLowerCase().includes(query)
-                  )
+                  accounts.filter((a) => a.label.toLowerCase().includes(query)),
                 );
               }}
               loading={accLoading}
@@ -149,7 +147,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
           </div>
         </div>
       </div>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

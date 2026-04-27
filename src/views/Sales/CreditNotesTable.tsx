@@ -253,6 +253,7 @@ const CreditNotesTable: React.FC = () => {
       <Table
         columns={columns}
         data={data}
+        tableId="sales-creditnote"
         rowKey={(row) => row.noteNo}
         loading={loading || initialLoad}
         showToolbar

@@ -372,6 +372,7 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
     <Table
       columns={columns}
       data={templates}
+      tableId="sales-taxtemplates"
       showToolbar
       loading={loading || initialLoad}
       rowKey={(row) => row.name}

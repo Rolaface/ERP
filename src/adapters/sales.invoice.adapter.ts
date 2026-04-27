@@ -36,7 +36,7 @@ function normalizeSalesInvoice(raw: SalesInvoiceRaw): NormalizedInvoice {
   const totalAmount = Number(raw.totalAmount ?? 0);
 
   return {
-    invoiceNumber: raw.invoiceNumber,
+   invoiceNumber: raw.invoiceNumber ?? (raw as any).id,  
     partyName: raw.customerName ?? "",
     invoiceDate: formatDate(raw.dateOfInvoice),
     dueDate: formatDate(raw.dueDate),
@@ -44,7 +44,7 @@ function normalizeSalesInvoice(raw: SalesInvoiceRaw): NormalizedInvoice {
     totalAmount,
     paid: totalAmount - outstanding,
     outstanding,
-    status: raw.invoiceStatus ?? "Unknown",
+    status: raw.status ?? (raw as any).status ?? "Unknown",
   };
 }
 
@@ -71,6 +71,7 @@ export const salesInvoiceAdapter: InvoiceAdapter = {
       1, 1000, "dueDate", "asc", undefined, partyId, 0.01,
       ["Partly Paid", "Unpaid", "Overdue"]
     );
+    console.log(res?.data?.[0]) 
 
     const raw: SalesInvoiceRaw[] = res?.data ?? [];
 

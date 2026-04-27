@@ -28,6 +28,7 @@ import {
   REFRESH_KEYS,
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
+import { Copy } from "lucide-react";
 
 type OutletContextType = {
   openItemCreate: (context?: { onSuccess?: () => void }) => void;
@@ -361,82 +362,107 @@ const Items: React.FC = () => {
     {
       key: "id",
       header: "Item Code",
-      align: "left",
-      maxWidth: "100px",
-      truncate: true,
-      render: (i) => <span className="truncate block">{i.id}</span>,
+      align: "center",
+      render: (i) => {
+        const id = i.id || "";
+        const shortId = id ? `**${id.slice(-4)}` : "-";
+
+        const handleCopy = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(id);
+        };
+
+        return (
+          <div className="flex items-center justify-center gap-1 group">
+            <span className="font-mono text-sm">
+              {shortId}
+            </span>
+
+            <button
+              onClick={handleCopy}
+              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
+              title="Copy full Item Code"
+            >
+              <Copy size={14} />
+            </button>
+          </div>
+        );
+      },
+      tooltip: (i) => i.id,
     },
     {
       key: "brand",
       header: "Brand",
       align: "center",
-      maxWidth: "100px",
-      truncate: true,
-      render: (i) => <span className="truncate block">{i.brand}</span>,
+      render: (i) => <span className="truncate block">{i.brand || "-"}</span>,
+      tooltip: (i) => i.brand || "-",
     },
     {
       key: "itemName",
       header: "Name",
       align: "center",
-      maxWidth: "200px",
-      truncate: true,
-      render: (i) => <span className="truncate block">{i.itemName}</span>,
+      render: (i) => (
+        <span className="block font-medium">
+          {i.itemName}
+        </span>
+      ),
+      tooltip: (i) => i.itemName,
     },
     {
       key: "itemGroup",
       header: "Category",
       align: "center",
-      maxWidth: "90px",
-      truncate: true,
       render: (i) => <span className="truncate block">{i.itemGroup}</span>,
+      tooltip: (i) => i.itemGroup,
     },
-
     {
       key: "minStockLevel",
       header: "Min",
       align: "center",
-      maxWidth: "60px",
-      truncate: true,
+      render: (i) => (
+        <span className="tabular-nums whitespace-nowrap">
+          {i.minStockLevel ?? "-"}
+        </span>
+      ),
+      tooltip: (i) => i.minStockLevel ?? "-",
     },
     {
       key: "maxStockLevel",
       header: "Max",
       align: "center",
-      maxWidth: "60px",
-      truncate: true,
+      render: (i) => (
+        <span className="tabular-nums whitespace-nowrap">
+          {i.maxStockLevel ?? "-"}
+        </span>
+      ),
+      tooltip: (i) => i.maxStockLevel ?? "-",
     },
-
     {
       key: "preferredVendorName",
       header: "Supplier",
       align: "center",
-      maxWidth: "180px",
-      truncate: true,
       render: (i) => (
-        <span className="truncate block">{i.preferredVendorName}</span>
+        <span className="truncate block">{i.preferredVendorName || "-"}</span>
       ),
+      tooltip: (i) => i.preferredVendorName || "-",
     },
-
     {
       key: "sellingPrice",
       header: "Price",
       align: "center",
-      maxWidth: "90px",
-      truncate: true,
       render: (i) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <span className="tabular-nums font-medium whitespace-nowrap">
           {i.sellingPrice}
-        </code>
+        </span>
       ),
+      tooltip: (i) => i.sellingPrice,
     },
-
     {
       key: "actions",
       header: "Actions",
       align: "center",
-      maxWidth: "100px",
       render: (i) => (
-        <ActionGroup>
+        <div className="flex items-center justify-center gap-2">
           <ActionButton
             type="view"
             iconOnly
@@ -449,7 +475,7 @@ const Items: React.FC = () => {
             onEdit={(e) => handleEdit(i.id, e as any)}
             onDelete={(e) => handleDeleteClick(i, e as any)}
           />
-        </ActionGroup>
+        </div>
       ),
     },
   ];

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import PurchaseInvoiceView from "../../views/Procurement/PurchaseInvoiceView";
 // Shared UI Table Components
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
+import { openPaymentEntryModal } from "../../store/modalStore";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -31,12 +32,13 @@ import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import PurchaseInvoiceDetailModal, {
   type PurchaseInvoiceDetail,
 } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
-import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
+
 import {
   REFRESH_KEYS,
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
 import { fireManagedSwal } from "../../utils/swalManager";
+import { Copy } from "lucide-react";
 
 interface Purchaseinvoice {
   pId: string;
@@ -107,8 +109,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
   const [company, setCompany] = useState<any | null>(null);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPI, setSelectedPI] = useState<any | null>(null);
 
   // ── PDF preview modal
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -116,31 +116,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
 
   // ── Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerData, setDrawerData] = useState<PurchaseInvoiceDetail | null>(
-    null,
-  );
+  const [drawerData, setDrawerData] = useState<PurchaseInvoiceDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
-
-  const handleMakePayment = async (pId: string) => {
-    try {
-      showLoading("Opening payment...");
-      const res = await getPurchaseInvoiceById(pId);
-      closeSwal();
-
-      if (!res || res.status !== "success") {
-        showApiError("Failed to load invoice");
-        return;
-      }
-
-      setSelectedPI(res.data);
-      setPaymentModalOpen(true);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -159,7 +138,9 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   }, []);
 
   // ── Fetch invoices ──────────────────────────
-  const fetchInvoice = async () => {
+  // IMPORTANT: fetchInvoice must be defined BEFORE handleMakePayment
+  // so the onSuccess callback can close over the latest reference.
+  const fetchInvoice = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -175,7 +156,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || 0);
 
-      const mappedInvoice: Purchaseinvoice[] = res.data.map((pi: any) => ({
+      const mappedInvoice = res.data.map((pi: any) => ({
         pId: pi.pId,
         supplier: pi.supplierName,
         podate: pi.poDate,
@@ -195,11 +176,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, filters]);
 
   useEffect(() => {
     fetchInvoice();
-  }, [page, pageSize, filters]);
+  }, [fetchInvoice]);
 
   const subscribeToRefresh = useDataRefreshStore(
     (state) => state.subscribeToRefresh,
@@ -208,12 +189,62 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(
       REFRESH_KEYS.PURCHASE_INVOICE_LIST,
-      () => {
-        fetchInvoice();
-      },
+      fetchInvoice,
     );
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchInvoice]);
+
+  // ── Make Payment ────────────────────────────
+  // Defined AFTER fetchInvoice so the onSuccess callback can call it directly.
+  // We also trigger via the store key as a belt-and-suspenders approach.
+  const handleMakePayment = useCallback(async (pId: string) => {
+    try {
+      showLoading("Opening payment...");
+      const res = await getPurchaseInvoiceById(pId);
+      closeSwal();
+
+      if (!res || res.status !== "success") {
+        showApiError("Failed to load invoice");
+        return;
+      }
+
+      const data = res.data ?? {};
+
+      openPaymentEntryModal(
+        {
+          paymentType: "Pay",
+          partyType: "Supplier",
+          partyName: data.supplierName,
+          partyId: data.supplierId ?? data.pId,
+          amount: data.grandTotal,
+          referenceName: data.pId,
+          referenceType: "Purchase Invoice",
+        },
+        false,
+        {
+          // onSuccess is called by GlobalModalHandler's handleSubmit
+          // when PaymentEntryModal calls its onSubmit prop successfully.
+          onSuccess: (result) => {
+            // 1. Directly call fetchInvoice (most reliable — no subscription lag)
+            fetchInvoice();
+            // 2. Also trigger the store key so any other subscribers update too
+            useDataRefreshStore
+              .getState()
+              .triggerRefresh(REFRESH_KEYS.PURCHASE_INVOICE_LIST);
+
+            const paymentId =
+              typeof result === "string"
+                ? result
+                : (result as any)?.paymentId ?? (result as any)?.id ?? "";
+            showSuccess(paymentId ? `Payment ${paymentId} created` : "Payment created successfully");
+          },
+        },
+      );
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  }, [fetchInvoice]);
 
   // ── Drawer: open + fetch ────────────────────
   const handleViewClick = async (pId: string, e?: React.MouseEvent) => {
@@ -249,11 +280,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         showApiError(res);
         return;
       }
-      const blobUrl = await generatePurchaseInvoicePDF(
-        res.data,
-        company,
-        "bloburl",
-      );
+      const blobUrl = await generatePurchaseInvoicePDF(res.data, company, "bloburl");
       setDrawerPdfUrl(blobUrl);
     } catch (err) {
       showApiError(err);
@@ -263,10 +290,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   };
 
   // ── PDF preview modal (table row "View PDF" action) ─────────
-  const handleOpenPDF = async (
-    invoice: Purchaseinvoice,
-    e?: React.MouseEvent,
-  ) => {
+  const handleOpenPDF = async (invoice: Purchaseinvoice, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
       showLoading("Generating PDF...");
@@ -284,11 +308,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         return;
       }
 
-      const blobUrl = await generatePurchaseInvoicePDF(
-        res.data,
-        company,
-        "bloburl",
-      );
+      const blobUrl = await generatePurchaseInvoicePDF(res.data, company, "bloburl");
       closeSwal();
       setSelectedInvoice(res.data);
       setPdfUrl(blobUrl);
@@ -317,10 +337,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     openPIEdit(invoice.pId);
   };
 
-  const handleDelete = async (
-    invoice: Purchaseinvoice,
-    e: React.MouseEvent,
-  ) => {
+  const handleDelete = async (invoice: Purchaseinvoice, e: React.MouseEvent) => {
     e.stopPropagation();
     const confirm = await fireManagedSwal({
       icon: "warning",
@@ -459,13 +476,43 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     {
       key: "pId",
       header: "PI ID",
-      align: "left",
+      align: "center",
+      render: (o) => {
+        const id = o.pId || "";
+        const shortId = id ? `****${id.slice(-4)}` : "—";
+
+        const handleCopy = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(id);
+        };
+
+        return (
+          <div className="flex items-center justify-center gap-1 group">
+            <span className="font-mono text-sm">
+              {shortId}
+            </span>
+
+            <button
+              onClick={handleCopy}
+              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
+              title="Copy full PI ID"
+            >
+              <Copy size={14} />
+            </button>
+          </div>
+        );
+      },
       tooltip: (o) => o.pId || "—",
     },
     {
       key: "supplier",
       header: "Supplier",
       align: "center",
+      render: (o) => (
+        <span className="block">
+          {o.supplier || "—"}
+        </span>
+      ),
       tooltip: (o) => o.supplier || "—",
     },
     {
@@ -522,7 +569,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     {
       key: "actions",
       header: "Actions",
-      align: "left",
+      align: "center",
       render: (o) => (
         <ActionGroup>
           <ActionButton
@@ -543,30 +590,29 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
           />
           <ActionMenu
             onDelete={(e) => handleDelete(o, e as any)}
-           customActions={[
-  {
-    label: "View PDF",
-    onClick: () => handleOpenPDF(o),
-  },
+            customActions={[
+              {
+                label: "View PDF",
+                onClick: () => handleOpenPDF(o),
+              },
 
-  ...(Number(o.outstanding_amount || 0) > 0
-    ? [
-        {
-          label: "Make Payment",
-          onClick: () => handleMakePayment(o.pId),
-        },
-      ]
-    : []),
+              ...(Number(o.outstanding_amount || 0) > 0
+                ? [
+                  {
+                    label: "Make Payment",
+                    onClick: () => handleMakePayment(o.pId),
+                  },
+                ]
+                : []),
 
-  ...(STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
-    (status) => ({
-      label: `Mark as ${status}`,
-      danger:
-        status === "Cancelled" || status === "Debit Note Issued",
-      onClick: () => handleStatusChange(o.pId, status),
-    })
-  ),
-]}
+              ...(STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
+                (status) => ({
+                  label: `Mark as ${status}`,
+                  danger: status === "Cancelled" || status === "Debit Note Issued",
+                  onClick: () => handleStatusChange(o.pId, status),
+                }),
+              ),
+            ]}
           />
         </ActionGroup>
       ),
@@ -579,6 +625,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         columns={columns}
         data={orders}
         showToolbar
+        tableId="purchase-invoices"
         loading={loading}
         searchValue={searchTerm}
         onSearch={setSearchTerm}
@@ -639,8 +686,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
           generatePurchaseInvoicePDF(drawerData, company, "save")
         }
         onClosePdf={() => {
-          if (drawerPdfUrl?.startsWith("blob:"))
-            URL.revokeObjectURL(drawerPdfUrl);
+          if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl);
           setDrawerPdfUrl(null);
         }}
       />
@@ -673,34 +719,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
           }}
         />
       )}
-
-      <PaymentEntryModal
-        isOpen={paymentModalOpen}
-        onSuccess={(paymentId) => {
-          fetchInvoice();
-          setPaymentModalOpen(false);
-          setSelectedPI(null);
-
-          showSuccess(`Payment ${paymentId} created`);
-        }}
-        onClose={() => {
-          setPaymentModalOpen(false);
-          setSelectedPI(null);
-        }}
-        defaultValues={
-          selectedPI
-            ? {
-                paymentType: "Pay",
-                partyType: "Supplier",
-                partyName: selectedPI.supplierName,
-                partyId: selectedPI.supplierId ?? selectedPI.pId,
-                amount: selectedPI.grandTotal,
-                referenceName: selectedPI.pId,
-                referenceType: "Purchase Invoice",
-              }
-            : undefined
-        }
-      />
     </div>
   );
 };

@@ -44,8 +44,6 @@ type UsePartyOptionsReturn = {
   fetchParties: (search?: string) => Promise<PartyOption[]>;
 };
 
-
-
 // ── Hook 1: Mode of Payment options ──────────────────────────────────────────
 export function usePaymentModes(): UseModeOfPaymentReturn {
   const [options, setOptions] = useState<ModeOfPaymentOption[]>([]);
@@ -64,7 +62,7 @@ export function usePaymentModes(): UseModeOfPaymentReturn {
         currency: item.currency ?? "",
       }));
       setOptions(mapped);
-      return mapped;  // return the fresh data
+      return mapped; // return the fresh data
     } catch (err: any) {
       setError(err.message || "Failed to load payment modes");
       return [];
@@ -80,35 +78,48 @@ export function usePaymentModes(): UseModeOfPaymentReturn {
   return { options, isLoading, error, fetchModes };
 }
 
-// ── Hook 2: Party options 
+// ── Hook 2: Party options
 export function usePartyOptions(
-  partyType: "Supplier" | "Customer" | "Company" | "Shareholder" | "Employee" | ""
+  partyType:
+    | "Supplier"
+    | "Customer"
+    | "Company"
+    | "Shareholder"
+    | "Employee"
+    | "",
 ): UsePartyOptionsReturn {
   const [partyOptions, setPartyOptions] = useState<PartyOption[]>([]);
   const [isLoadingParties, setIsLoadingParties] = useState(false);
 
-  const fetchParties = useCallback(async (search?: string) => {
-    if (!partyType || partyType === "Company") {
-      setPartyOptions([]);
-      return [];
-    }
-    setIsLoadingParties(true);
-    try {
-      const opts = await getBankAccounts(
-        partyType as "Supplier" | "Customer" | "Shareholder" | "Employee",
-        undefined,
-        search
-      );
-      const mapped = opts.map((o) => ({ label: o.label, value: o.value }));
-      setPartyOptions(mapped);
-      return mapped;  // ← return fresh data
-    } catch {
-      setPartyOptions([]);
-      return [];
-    } finally {
-      setIsLoadingParties(false);
-    }
-  }, [partyType]);
+  const fetchParties = useCallback(
+    async (search?: string) => {
+      if (!partyType || partyType === "Company") {
+        setPartyOptions([]);
+        return [];
+      }
+      setIsLoadingParties(true);
+      try {
+        const opts = await getBankAccounts(
+          partyType as "Supplier" | "Customer" | "Shareholder" | "Employee",
+          undefined,
+          search,
+        );
+       const mapped = opts.map((o: any) => ({
+  label: o.label || o.name,
+  value: o.partyName || o.id || o.value,  
+}));
+
+        setPartyOptions(mapped);
+        return mapped; // ← return fresh data
+      } catch {
+        setPartyOptions([]);
+        return [];
+      } finally {
+        setIsLoadingParties(false);
+      }
+    },
+    [partyType],
+  );
 
   useEffect(() => {
     fetchParties(); // initial load when partyType changes
@@ -121,7 +132,7 @@ export function usePartyOptions(
 type UsePartyDetailsReturn = {
   fetchPartyDetails: (
     party: string,
-    partyType: "Supplier" | "Customer" | "Employee" | "Shareholder"
+    partyType: "Supplier" | "Customer" | "Employee" | "Shareholder",
   ) => Promise<PartyDetails | null>;
   isLoadingDetails: boolean;
 };
@@ -129,21 +140,24 @@ type UsePartyDetailsReturn = {
 export function usePartyDetails(): UsePartyDetailsReturn {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
-  const fetchPartyDetails = useCallback(async (
-    party: string,
-    partyType: "Supplier" | "Customer" | "Employee" | "Shareholder"
-  ): Promise<PartyDetails | null> => {
-    setIsLoadingDetails(true);
-    try {
-      const details = await getPartyDetails(party, partyType);
-      return details;
-    } catch (err) {
-      console.error("Party details fetch failed:", err);
-      return null;
-    } finally {
-      setIsLoadingDetails(false);
-    }
-  }, []);
+  const fetchPartyDetails = useCallback(
+    async (
+      party: string,
+      partyType: "Supplier" | "Customer" | "Employee" | "Shareholder",
+    ): Promise<PartyDetails | null> => {
+      setIsLoadingDetails(true);
+      try {
+        const details = await getPartyDetails(party, partyType);
+        return details;
+      } catch (err) {
+        console.error("Party details fetch failed:", err);
+        return null;
+      } finally {
+        setIsLoadingDetails(false);
+      }
+    },
+    [],
+  );
 
   return { fetchPartyDetails, isLoadingDetails };
 }
@@ -161,7 +175,7 @@ export function useCompanyBankAccounts() {
       return data;
     } catch {
       setOptions([]);
-      return [];    
+      return [];
     } finally {
       setIsLoading(false);
     }
@@ -181,19 +195,26 @@ export function usePartyBankAccounts() {
   const [options, setOptions] = useState<BankAccountOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchPartyBanks = useCallback(async (party_type: string, party: string, search?: string) => {
-    setIsLoading(true);
-    try {
-      const data = await getBankAccountOptions({ party_type, party, search });
-      setOptions(data);
-      return data;
-    } catch {
-      setOptions([]);
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const fetchPartyBanks = useCallback(
+    async (party_type: string, party: string, search?: string) => {
+      console.log("STEP 5 👉 Hook received:", {
+        party_type,
+        party,
+      });
+      setIsLoading(true);
+      try {
+        const data = await getBankAccountOptions({ party_type, party, search });
+        setOptions(data);
+        return data;
+      } catch {
+        setOptions([]);
+        return [];
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   const clearPartyBanks = useCallback(() => setOptions([]), []);
 
@@ -235,7 +256,7 @@ export function useLedgerAccounts(
               label: item.name,
               value: item.name,
               currency: item.account_currency,
-            }))
+            })),
           );
         }
       })
@@ -246,7 +267,9 @@ export function useLedgerAccounts(
         if (!cancelled) setIsLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [payment_type, filter, partyType]);
 
   return { options, isLoading };
@@ -254,7 +277,9 @@ export function useLedgerAccounts(
 
 // ── Hook 7: Currency options — backend search supported ───────────────────────
 export function useCurrencyOptions() {
-  const [currencyOptions, setCurrencyOptions] = useState<{ label: string; value: string }[]>([]);
+  const [currencyOptions, setCurrencyOptions] = useState<
+    { label: string; value: string }[]
+  >([]);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(false);
 
   const fetchCurrencies = useCallback(async (search?: string) => {
@@ -285,10 +310,11 @@ export function useLedgerOptions(
   const [toOptions, setToOptions] = useState<LedgerOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-
   useEffect(() => {
     const fetchableType =
-      paymentType === "Pay" || paymentType === "Receive" || paymentType === "Internal Transfer"
+      paymentType === "Pay" ||
+      paymentType === "Receive" ||
+      paymentType === "Internal Transfer"
         ? paymentType
         : null;
 
@@ -321,8 +347,20 @@ export function useLedgerOptions(
     ])
       .then(([from, to]) => {
         if (cancelled) return;
-        setFromOptions(from.map((i) => ({ label: i.name, value: i.name, currency: i.account_currency })));
-        setToOptions(to.map((i) => ({ label: i.name, value: i.name, currency: i.account_currency })));
+        setFromOptions(
+          from.map((i) => ({
+            label: i.name,
+            value: i.name,
+            currency: i.account_currency,
+          })),
+        );
+        setToOptions(
+          to.map((i) => ({
+            label: i.name,
+            value: i.name,
+            currency: i.account_currency,
+          })),
+        );
       })
       .catch(() => {
         if (!cancelled) {
@@ -334,45 +372,82 @@ export function useLedgerOptions(
         if (!cancelled) setIsLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [paymentType, partyType]);
 
-  const fetchFromOptions = useCallback(async (search?: string) => {
-    const fetchableType =
-      paymentType === "Pay" || paymentType === "Receive" || paymentType === "Internal Transfer"
-        ? paymentType
-        : null;
-    if (!fetchableType) return [];
-    if ((paymentType === "Pay" || paymentType === "Receive") && !partyType) return [];
-    try {
-      const data = await getLedgerAccount(fetchableType, "from", partyType, search);
-      const mapped = data.map((i) => ({ label: i.name, value: i.name, currency: i.account_currency }));
-      setFromOptions(mapped);
-      return mapped;
-    } catch {
-      return [];
-    }
-  }, [paymentType, partyType]);
+  const fetchFromOptions = useCallback(
+    async (search?: string) => {
+      const fetchableType =
+        paymentType === "Pay" ||
+        paymentType === "Receive" ||
+        paymentType === "Internal Transfer"
+          ? paymentType
+          : null;
+      if (!fetchableType) return [];
+      if ((paymentType === "Pay" || paymentType === "Receive") && !partyType)
+        return [];
+      try {
+        const data = await getLedgerAccount(
+          fetchableType,
+          "from",
+          partyType,
+          search,
+        );
+        const mapped = data.map((i) => ({
+          label: i.name,
+          value: i.name,
+          currency: i.account_currency,
+        }));
+        setFromOptions(mapped);
+        return mapped;
+      } catch {
+        return [];
+      }
+    },
+    [paymentType, partyType],
+  );
 
-  const fetchToOptions = useCallback(async (search?: string) => {
+  const fetchToOptions = useCallback(
+    async (search?: string) => {
+      const fetchableType =
+        paymentType === "Pay" ||
+        paymentType === "Receive" ||
+        paymentType === "Internal Transfer"
+          ? paymentType
+          : null;
+      if (!fetchableType) return [];
+      if ((paymentType === "Pay" || paymentType === "Receive") && !partyType)
+        return [];
+      try {
+        const data = await getLedgerAccount(
+          fetchableType,
+          "to",
+          partyType,
+          search,
+        );
+        const mapped = data.map((i) => ({
+          label: i.name,
+          value: i.name,
+          currency: i.account_currency,
+        }));
+        setToOptions(mapped);
+        return mapped;
+      } catch {
+        return [];
+      }
+    },
+    [paymentType, partyType],
+  );
 
-    const fetchableType =
-      paymentType === "Pay" || paymentType === "Receive" || paymentType === "Internal Transfer"
-        ? paymentType
-        : null;
-    if (!fetchableType) return [];
-    if ((paymentType === "Pay" || paymentType === "Receive") && !partyType) return [];
-    try {
-      const data = await getLedgerAccount(fetchableType, "to", partyType, search);
-      const mapped = data.map((i) => ({ label: i.name, value: i.name, currency: i.account_currency }));
-      setToOptions(mapped);
-      return mapped;
-    } catch {
-      return [];
-    }
-  }, [paymentType, partyType]);
-
-  return { fromOptions, toOptions, isLoadingLedgers: isLoading, fetchFromOptions, fetchToOptions };
+  return {
+    fromOptions,
+    toOptions,
+    isLoadingLedgers: isLoading,
+    fetchFromOptions,
+    fetchToOptions,
+  };
 }
 
 // ── Hook 9: Exchange rate — debounced, fires when currencies differ ───────────

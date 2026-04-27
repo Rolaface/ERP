@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import CustomerDetailView from "./CustomerDetailView";
+import { openPaymentEntryModal } from "../../store/modalStore";
 import {
   showLoading,
   showApiError,
@@ -20,9 +21,10 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
-import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+
 import { fireManagedSwal } from "../../utils/swalManager";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import { Copy } from "lucide-react";
 
 type OutletContextType = {
   openCustomerCreate: () => void;
@@ -34,8 +36,8 @@ interface Props {
 }
 
 const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
-  const { 
-    openCustomerCreate, 
+  const {
+    openCustomerCreate,
     openCustomerEdit
   } =
     useOutletContext<OutletContextType>();
@@ -56,33 +58,30 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [totalItems, setTotalItems] = useState(0);
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<
-    CustomerSummary | null
-  >(null);
 
-const fetchCustomers = async () => {
-  try {
-    setCustLoading(true);
 
-    const response = await getAllCustomers(
-      page,
-      pageSize,
-      taxCategory || undefined
-    );
+  const fetchCustomers = async () => {
+    try {
+      setCustLoading(true);
 
-    setCustomers(response?.data || []);
-    setTotalPages(response?.pagination?.total_pages || 1);
-    setTotalItems(response?.pagination?.total || 0);
+      const response = await getAllCustomers(
+        page,
+        pageSize,
+        taxCategory || undefined
+      );
 
-  } catch (error) {
-    console.error("Error loading customers:", error);
-    showApiError(error);
-  } finally {
-    setCustLoading(false);
-    setInitialLoad(false);
-  }
-};
+      setCustomers(response?.data || []);
+      setTotalPages(response?.pagination?.total_pages || 1);
+      setTotalItems(response?.pagination?.total || 0);
+
+    } catch (error) {
+      console.error("Error loading customers:", error);
+      showApiError(error);
+    } finally {
+      setCustLoading(false);
+      setInitialLoad(false);
+    }
+  };
   useEffect(() => {
     fetchCustomers();
   }, [page, pageSize, taxCategory]);
@@ -114,8 +113,20 @@ const fetchCustomers = async () => {
   };
 
   const handleMakePayment = (customer: CustomerSummary) => {
-    setSelectedCustomerForPayment(customer);
-    setPaymentModalOpen(true);
+    openPaymentEntryModal(
+      {
+        paymentType: "Receive",
+        partyType: "Customer",
+        partyName: customer.name,
+        partyId: customer.id,
+      },
+      false,
+      {
+        onSuccess: async () => {
+          await handleCustomerSaved();
+        },
+      }
+    );
   };
 
   const handleDelete = async (customerId: string, e: React.MouseEvent) => {
@@ -201,84 +212,108 @@ const fetchCustomers = async () => {
       key: "id",
       header: "Customer ID",
       align: "left",
-      maxWidth: "120px",
-      render: (customer) => (
-        <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
-          {customer.id}
-        </span>
-      ),
+      render: (customer) => {
+        const id = customer.id || "";
+        const shortId = id ? `******${id.slice(-4)}` : "-";
+
+        const handleCopy = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(id);
+        };
+
+        return (
+          <div className="flex items-center justify-start gap-1 group">
+            <span className="font-mono text-sm">
+              {shortId}
+            </span>
+
+            <button
+              onClick={handleCopy}
+              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
+              title="Copy full Customer ID"
+            >
+              <Copy size={14} />
+            </button>
+          </div>
+        );
+      },
+      tooltip: (customer) => customer.id,
     },
     {
       key: "name",
       header: "Name",
-      align: "center",
-      maxWidth: "200px",
+      align: "left",
+      width: "280px",
       render: (customer) => (
-        <span className="cursor-pointer block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <span className="cursor-pointer font-medium block">
           {customer.name}
         </span>
       ),
+      tooltip: (customer) => customer.name,
     },
     {
       key: "type",
       header: "Type",
-      align: "center",
-      maxWidth: "100px",
+      align: "left",
       render: (customer) => (
-        <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <span className="text-muted whitespace-nowrap">
           {customer.type ?? "-"}
         </span>
       ),
+      tooltip: (customer) => customer.type ?? "-",
     },
     {
       key: "tpin",
       header: "TPIN",
-      align: "center",
-      maxWidth: "100px",
+      align: "left",
       render: (customer) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+       <span className="font-mono text-sm tabular-nums whitespace-nowrap block text-left">
           {customer.tpin}
-        </code>
+        </span>
       ),
+      tooltip: (customer) => customer.tpin,
     },
     {
       key: "customerTaxCategory",
       header: "Tax Category",
-      align: "center",
-      maxWidth: "120px",
+      align: "left",
       render: (customer) => (
-        <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <span className="whitespace-nowrap">
           {customer.customerTaxCategory ?? "-"}
         </span>
       ),
+      tooltip: (customer) => customer.customerTaxCategory ?? "-",
     },
     {
       key: "currency",
       header: "Currency",
       align: "center",
-      maxWidth: "80px",
       render: (customer) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main whitespace-nowrap block text-center">
           {customer.currency}
         </code>
       ),
+      tooltip: (customer) => customer.currency,
     },
     {
       key: "status",
       header: "Status",
       align: "center",
-      maxWidth: "90px",
       render: (customer) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+        <span
+          className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
+            ? "bg-green-100 text-green-700"
+            : "bg-gray-100 text-gray-600"
+            }`}
+        >
           {customer.status}
-        </code>
+        </span>
       ),
     },
     {
       key: "actions",
       header: "Actions",
       align: "center",
-      width: "100px",
       render: (customer) => (
         <ActionGroup>
           <ActionButton
@@ -286,8 +321,15 @@ const fetchCustomers = async () => {
             onClick={() => handleRowClick(customer)}
             iconOnly
           />
+
+          <ActionButton
+            type="edit"
+            onClick={(e) => handleEditCustomer(customer.id, e as any)}
+            iconOnly
+            title="Edit Customer"
+          />
+
           <ActionMenu
-            onEdit={(e) => handleEditCustomer(customer.id, e as any)}
             onDelete={(e) => handleDelete(customer.id, e as any)}
             customActions={[
               {
@@ -307,6 +349,7 @@ const fetchCustomers = async () => {
         <Table
           columns={columns}
           data={customers}
+          tableId="customer-management"
           showToolbar
           loading={custLoading || initialLoad}
           onPageSizeChange={(size) => setPageSize(size)}
@@ -349,28 +392,7 @@ const fetchCustomers = async () => {
         />
       ) : null}
 
-      <PaymentEntryModal
-        isOpen={paymentModalOpen}
-        onClose={() => {
-          setPaymentModalOpen(false);
-          setSelectedCustomerForPayment(null);
-        }}
-        onSuccess={async () => {
-          setPaymentModalOpen(false);
-          setSelectedCustomerForPayment(null);
-          await handleCustomerSaved();
-        }}
-        defaultValues={
-          selectedCustomerForPayment
-            ? {
-                paymentType: "Receive",
-                partyType: "Customer",
-                partyName: selectedCustomerForPayment.name,
-                partyId: selectedCustomerForPayment.id,
-              }
-            : undefined
-        }
-      />
+
     </div>
   );
 };

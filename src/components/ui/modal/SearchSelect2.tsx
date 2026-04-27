@@ -17,6 +17,7 @@ interface SearchSelectProps {
   error?: string;
   required?: boolean;
   allowCustomInput?: boolean;
+  loading?: boolean;
 }
 
 const DEBOUNCE_DELAY = 400;
@@ -32,6 +33,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
   error,
   required,
   allowCustomInput,
+  loading
 }) => {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -146,9 +148,9 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
        {label && (
   <label className="text-[10px] font-medium mb-1">
     {label}
+    {required && <span className="text-danger"> *</span>}
   </label>
 )}
-
         <div className="relative w-full">
           <input
             ref={inputRef}

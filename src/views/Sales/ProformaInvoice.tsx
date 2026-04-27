@@ -606,7 +606,8 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
       <Table
         loading={loading || initialLoad}
         columns={columns}
-        data={invoices} // ← raw server data, no local filter
+        data={invoices} 
+        tableId="sales-proformainvoices"
         rowKey={(row) => row.proformaId}
         showToolbar
         searchValue={searchTerm}

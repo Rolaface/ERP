@@ -1,5 +1,14 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useOutletContext } from "react-router-dom";
+import { FilterSelect } from "../../components/ui/modal/modalComponent";
+import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
+import { openPaymentEntryModal } from "../../store/modalStore";
 import {
   getAllSalesInvoices,
   updateInvoiceStatus,
@@ -11,7 +20,10 @@ import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
 import PdfPreviewModal from "./PdfPreviewModal";
 import InvoiceDetailModal, { type InvoiceDetail } from "./InvoiceDetailsModal";
-import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../store/dataRefreshStore";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
@@ -31,8 +43,9 @@ import {
 import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
+
 import { fireManagedSwal } from "../../utils/swalManager";
+import { Copy } from "lucide-react";
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -54,6 +67,13 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 // };
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
+
+const statusOptions = [
+  { label: "Draft", value: "Draft" },
+  { label: "Approved", value: "Approved" },
+  { label: "Paid", value: "Paid" },
+  { label: "Cancelled", value: "Cancelled" },
+];
 
 interface InvoiceTableProps {
   onAddInvoice?: () => void;
@@ -81,17 +101,17 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+  const [filters, setFilters] = useState<{
+    status?: string;
+    from_date?: string;
+    to_date?: string;
+  }>({});
 
   // ── Pagination (server)
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
-  const [paymentOpen, setPaymentOpen] = useState(false);
-  const [paymentInvoice, setPaymentInvoice] = useState<InvoiceSummary | null>(
-    null,
-  );
 
   // ── Search (server)
   const [searchTerm, setSearchTerm] = useState("");
@@ -103,6 +123,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   // ── Fetch company once
   useEffect(() => {
@@ -116,7 +140,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   // ── Fetch invoices with stale-while-revalidate pattern
   const fetchInvoices = useCallback(async () => {
     if (!mountedRef.current) return;
-    
+
     setIsFetching(true);
     try {
       const res = await getAllSalesInvoices(
@@ -125,6 +149,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         sortBy,
         sortOrder,
         searchTerm,
+        undefined,
+        undefined,
+        filters.status,
+        filters.from_date,
+        filters.to_date,
       );
       if (!res || res.status_code !== 200) return;
 
@@ -155,20 +184,21 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
-
+  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
 
   useEffect(() => {
     mountedRef.current = true;
     fetchInvoices();
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   // Refetch on dependencies (not initial)
   useEffect(() => {
     if (isInitialLoad) return;
     fetchInvoices();
-  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
+  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
 
   // Auto-refresh when invoice is created or edited from modal
   useEffect(() => {
@@ -191,24 +221,26 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setSortOrder(order);
     setPage(1);
   };
-  const handleTakePayment = async (invoiceNumber: string) => {
-    try {
-      console.log("Take payment for:", invoiceNumber);
-
-      // open payment modal or redirect
-      // example
-      // setPaymentInvoice(invoiceNumber);
-      // setPaymentModalOpen(true);
-
-      showSuccess(`Opening payment for invoice ${invoiceNumber}`);
-    } catch (err) {
-      showApiError(err);
-    }
-  };
 
   const handleReceivePayment = (inv: InvoiceSummary) => {
-    setPaymentInvoice(inv);
-    setPaymentOpen(true);
+    openPaymentEntryModal(
+      {
+        paymentType: "Receive",
+        partyType: "Customer",
+        partyName: inv.customerName,
+        partyId: inv.customerId,
+        amount: inv.outstandingAmount,
+        referenceName: inv.invoiceNumber,
+        referenceType: "Sales Invoice",
+      },
+      false,
+      {
+        onSuccess: (paymentId) => {
+          fetchInvoices();
+          showSuccess(`Payment ${paymentId} created`);
+        },
+      },
+    );
   };
 
   const fetchAllInvoicesForExport = async (): Promise<InvoiceSummary[]> => {
@@ -333,7 +365,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setDrawerData(null);
     try {
       const res = await getSalesInvoiceById(invoiceNumber);
-      if (res?.message.status_code === 200) setDrawerData(res.message.data as InvoiceDetail);
+      if (res?.message.status_code === 200)
+        setDrawerData(res.message.data as InvoiceDetail);
     } finally {
       setDrawerLoading(false);
     }
@@ -376,7 +409,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       }
 
       const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
-      console.log("🚀 ~ handlePreviewPDF ~ invoiceRes:", invoiceRes)
+      console.log("🚀 ~ handlePreviewPDF ~ invoiceRes:", invoiceRes);
       if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
         closeSwal();
         showApiError("Failed to load invoice");
@@ -416,7 +449,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         return;
       }
 
-      await generateInvoicePDF(invoiceRes.message.data as Invoice, company, "save");
+      await generateInvoicePDF(
+        invoiceRes.message.data as Invoice,
+        company,
+        "save",
+      );
       closeSwal();
       showSuccess("Invoice downloaded successfully!");
     } catch (err: any) {
@@ -455,28 +492,28 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     try {
       showLoading("Updating invoice status...");
 
-    const res = await updateInvoiceStatus(invoiceNumber, status);
-    console.log("🚀 ~ handleRowStatusChange ~ res:", res)
+      const res = await updateInvoiceStatus(invoiceNumber, status);
+      console.log("🚀 ~ handleRowStatusChange ~ res:", res);
 
-closeSwal();
+      closeSwal();
 
-if (!res.message || res.message.status_code !== 200) {
-  showApiError(res?.message.message || "Failed to update invoice status");
-  return;
-}
+      if (!res.message || res.message.status_code !== 200) {
+        showApiError(res?.message.message || "Failed to update invoice status");
+        return;
+      }
 
-// ✅ WHY THIS KOLAVERI DI?
-const updatedStatus = res.message.data?.status;
+      // ✅ WHY THIS KOLAVERI DI?
+      const updatedStatus = res.message.data?.status;
 
-setInvoices((prev) =>
-  prev.map((inv) =>
-    inv.invoiceNumber === invoiceNumber
-      ? { ...inv, invoiceStatus: updatedStatus }
-      : inv,
-  ),
-);
+      setInvoices((prev) =>
+        prev.map((inv) =>
+          inv.invoiceNumber === invoiceNumber
+            ? { ...inv, invoiceStatus: updatedStatus }
+            : inv,
+        ),
+      );
 
-showSuccess(`Invoice marked as ${status}`);
+      showSuccess(`Invoice marked as ${status}`);
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -519,146 +556,178 @@ showSuccess(`Invoice marked as ${status}`);
     }
   };
 
-// Memoize columns to prevent re-renders
-  const columns: Column<InvoiceSummary>[] = useMemo(() => [
-    {
-      key: "invoiceNumber",
-      header: "Invoice No",
-      align: "left",
-      sortable: true,
-      render: (inv) => (
-       <span className="text-main whitespace-nowrap truncate block max-w-[140px]">{inv.invoiceNumber}</span>
-      ),
-      tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
-    },
-    {
-      key: "invoiceType",
-      header: "Type",
-      align: "center",
-      render: (inv) => (
-         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main block max-w-[80px] truncate whitespace-nowrap overflow-hidden">
-          {inv.invoiceType}
-        </code>
-      ),
-      tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
-    },
-    {
-      key: "customerName",
-      header: "Customer",
-      align: "center",
-      sortable: true,
-      render: (inv) => (
-          <span className="text-sm text-main whitespace-nowrap truncate block max-w-[160px] overflow-hidden">{inv.customerName}</span>
-      ),
-      tooltip: (inv) => `Customer: ${inv.customerName}`,
-    },
-    {
-      key: "dateOfInvoice",
-      header: "Date",
-      align: "left",
-      render: (inv) => (
-        <span className="text-xs text-muted">
-          {inv.dateOfInvoice.toLocaleDateString()}
-        </span>
-      ),
-    },
-    {
-      key: "dueDate",
-      header: "Due Date",
-      align: "left",
-      sortable: true,
-      render: (inv) => (
-        <span className="text-xs text-muted">
-          {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
-        </span>
-      ),
-    },
-    {
-      key: "total",
-      header: "Amount",
-      align: "right",
-      sortable: true,
-      render: (inv) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
-          {inv.total.toLocaleString()} {inv.currency}
-        </code>
-      ),
-      tooltip: (inv) => `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
-    },
-    {
-      key: "outstandingAmount",
-      header: "OutStanding",
-      align: "right",
-      sortable: true,
-      render: (inv) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
-          {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
-        </code>
-      ),
-      tooltip: (inv) => `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency}`,
-    },
-
-    {
-      key: "invoiceStatus",
-      header: "Status",
-      align: "left",
-      render: (inv) => <StatusBadge status={inv.invoiceStatus} />,
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (inv) => (
-        <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={(e) => handleView(inv.invoiceNumber, e)}
-            iconOnly
-          />
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(inv.invoiceNumber, e)}
-            iconOnly
-            disabled={inv.invoiceStatus !== "Draft"}
-            title={
-              inv.invoiceStatus !== "Draft"
-                ? "Only Draft invoices can be edited"
-                : "Edit Invoice"
-            }
-          />
-          <ActionMenu
-            showDownload
-            onDownload={(e) => handleDownload(inv, e)}
-            onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
-            customActions={[
-...(inv.invoiceStatus !== "Draft" &&
-   inv.invoiceStatus !== "Cancelled" &&
-   inv.outstandingAmount > 0
-  ? [
+  // Memoize columns to prevent re-renders
+  const columns: Column<InvoiceSummary>[] = useMemo(
+    () => [
       {
-        label: "Receive Payment",
-        onClick: () => handleReceivePayment(inv),
+        key: "invoiceNumber",
+        header: "Invoice No",
+        align: "center",
+        sortable: true,
+        render: (inv) => {
+          const id = inv.invoiceNumber || "";
+          const shortId = id ? `**${id.slice(-4)}` : "-";
+
+          const handleCopy = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(id);
+          };
+
+          return (
+            <div className="flex items-center justify-center gap-1 group">
+              <span className="font-mono text-sm">
+                {shortId}
+              </span>
+
+              <button
+                onClick={handleCopy}
+                className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
+                title="Copy full Invoice ID"
+              >
+                <Copy size={14} />
+              </button>
+            </div>
+          );
+        },
+        tooltip: (inv) => inv.invoiceNumber,
       },
-    ]
-  : []),
-              {
-                label: "View PDF",
-                onClick: () => handlePreviewPDF(inv),
-              },
-              ...(STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
-                (status) => ({
-                  label: `Mark as ${status}`,
-                  danger: status === "Paid",
-                  onClick: () =>
-                    handleRowStatusChange(inv.invoiceNumber, status),
-                }),
-              ),
-            ]}
-          />
-        </ActionGroup>
-      ),
-    },
-  ], [handleEdit, handleDelete, handleView, handleDownload, handleReceivePayment, handleRowStatusChange, handlePreviewPDF]);
+      {
+        key: "invoiceType",
+        header: "Type",
+        align: "center",
+        render: (inv) => (
+          <span className="whitespace-nowrap">{inv.invoiceType}</span>
+        ),
+        tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
+      },
+      {
+        key: "customerName",
+        header: "Customer",
+        align: "left",
+        sortable: true,
+        render: (inv) => (
+          <span className="block font-medium">{inv.customerName}</span>
+        ),
+        tooltip: (inv) => `Customer: ${inv.customerName}`,
+      },
+      {
+        key: "dateOfInvoice",
+        header: "Date",
+        align: "center",
+        render: (inv) => (
+          <span className="text-sm whitespace-nowrap">
+            {inv.dateOfInvoice.toLocaleDateString()}
+          </span>
+        ),
+      },
+      {
+        key: "dueDate",
+        header: "Due Date",
+        align: "center",
+        sortable: true,
+        render: (inv) => (
+          <span className="text-sm whitespace-nowrap">
+            {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
+          </span>
+        ),
+      },
+      {
+        key: "total",
+        header: "Amount",
+        align: "center",
+        sortable: true,
+        render: (inv) => (
+          <span className="tabular-nums font-medium whitespace-nowrap">
+            {inv.total.toLocaleString()} {inv.currency}
+          </span>
+        ),
+        tooltip: (inv) =>
+          `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
+      },
+      {
+        key: "outstandingAmount",
+        header: "Outstanding",
+        align: "center",
+        sortable: true,
+        render: (inv) => (
+          <span className="tabular-nums font-medium whitespace-nowrap">
+            {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
+          </span>
+        ),
+        tooltip: (inv) =>
+          `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency}`,
+      },
+      {
+        key: "invoiceStatus",
+        header: "Status",
+        align: "center",
+        render: (inv) => <StatusBadge status={inv.invoiceStatus} />,
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        align: "center",
+        render: (inv) => (
+          <div className="flex items-center justify-center gap-2">
+            <ActionButton
+              type="view"
+              onClick={(e) => handleView(inv.invoiceNumber, e)}
+              iconOnly
+            />
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(inv.invoiceNumber, e)}
+              iconOnly
+              disabled={inv.invoiceStatus !== "Draft"}
+              title={
+                inv.invoiceStatus !== "Draft"
+                  ? "Only Draft invoices can be edited"
+                  : "Edit Invoice"
+              }
+            />
+            <ActionMenu
+              showDownload
+              onDownload={(e) => handleDownload(inv, e)}
+              onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
+              customActions={[
+                ...(inv.invoiceStatus !== "Draft" &&
+                  inv.invoiceStatus !== "Cancelled" &&
+                  inv.outstandingAmount > 0
+                  ? [
+                    {
+                      label: "Receive Payment",
+                      onClick: () => handleReceivePayment(inv),
+                    },
+                  ]
+                  : []),
+                {
+                  label: "View PDF",
+                  onClick: () => handlePreviewPDF(inv),
+                },
+                ...(STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
+                  (status) => ({
+                    label: `Mark as ${status}`,
+                    danger: status === "Paid",
+                    onClick: () =>
+                      handleRowStatusChange(inv.invoiceNumber, status),
+                  }),
+                ),
+              ]}
+            />
+          </div>
+        ),
+      },
+    ],
+    [
+      handleEdit,
+      handleDelete,
+      handleView,
+      handleDownload,
+      handleReceivePayment,
+      handleRowStatusChange,
+      handlePreviewPDF,
+    ],
+  );
 
   return (
     <div className="h-full min-h-0">
@@ -666,6 +735,7 @@ showSuccess(`Invoice marked as ${status}`);
         columns={columns}
         data={invoices}
         rowKey={(row) => row.invoiceNumber}
+        tableId="sales-invoices"
         loading={isInitialLoad}
         isFetching={isFetching}
         showToolbar
@@ -693,6 +763,29 @@ showSuccess(`Invoice marked as ${status}`);
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        extraFilters={
+          <>
+            <FilterSelect
+              value={filters.status ?? ""}
+              options={statusOptions}
+              onChange={(e) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  status: e.target.value || undefined,
+                }));
+                setPage(1);
+              }}
+            />
+            <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range) => {
+                setFilters((prev) => ({ ...prev, ...range }));
+                setPage(1);
+              }}
+            />
+          </>
+        }
       />
 
       {/* ── Drawer modal ── */}
@@ -707,9 +800,7 @@ showSuccess(`Invoice marked as ${status}`);
         }}
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
-        onViewPdf={() =>
-          drawerData && handleDrawerPdf(drawerData.id)
-        }
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.id)}
         onDownload={() =>
           drawerData &&
           company &&
@@ -732,26 +823,6 @@ showSuccess(`Invoice marked as ${status}`);
           selectedInvoice &&
           company &&
           generateInvoicePDF(selectedInvoice, company, "save")
-        }
-      />
-      <PaymentEntryModal
-        isOpen={paymentOpen}
-        onClose={() => {
-          setPaymentOpen(false);
-          setPaymentInvoice(null);
-        }}
-        defaultValues={
-          paymentInvoice
-            ? {
-                paymentType: "Receive",
-                partyType: "Customer",
-                partyName: paymentInvoice.customerName,
-                partyId: paymentInvoice.customerId,
-                amount: paymentInvoice.outstandingAmount,
-                referenceName: paymentInvoice.invoiceNumber,
-                referenceType: "Sales Invoice",
-              }
-            : undefined
         }
       />
     </div>

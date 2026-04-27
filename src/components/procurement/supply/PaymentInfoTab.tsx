@@ -1,12 +1,12 @@
 import React, { useState, useEffect,useMemo } from "react";
 import type { SupplierFormData } from "../../../types/Supply/supplier";
 import { Plus, Trash2 } from "lucide-react";
-import AddBankAccountModal from "../../../components/CompanySetup/AddBankAccountModal";
+
 import { getAllBankAccounts } from "../../../api/BankAccountApi";
 import { showApiError } from "../../../utils/alert";
 import Table from "../../ui/Table/Table";
 import type { Column } from "../../ui/Table/type";
-
+import { openBankAccountModal } from "../../../store/modalStore";
 interface PaymentInfoTabProps {
   form: SupplierFormData;
   onChange: (e: React.ChangeEvent<any>) => void;
@@ -15,6 +15,7 @@ interface PaymentInfoTabProps {
   partyType: "Supplier" | "Customer" | "Company";
   partyName: string;
   currency?: string;
+   partyId?: string;
 }
 
 export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
@@ -25,8 +26,9 @@ export const PaymentInfoTab: React.FC<PaymentInfoTabProps> = ({
   partyType,
   partyName,
   currency,
+    partyId,
 }) => {
-  const [showModal, setShowModal] = useState(false);
+
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const accounts = form.bankAccounts || [];
 const columns: Column<any>[] = useMemo(() => [
@@ -86,7 +88,7 @@ const columns: Column<any>[] = useMemo(() => [
         const res = await getAllBankAccounts({
            party_type:
     partyType === "Company" ? undefined : partyType,
-          party: partyName,
+         party: partyId || partyName, 
         });
 
         const mapped = (res.data || []).map((acc: any) => ({
@@ -151,7 +153,24 @@ const columns: Column<any>[] = useMemo(() => [
 
         <button
           type="button"
-          onClick={() => isEditMode && setShowModal(true)}
+          onClick={() => {
+  if (!isEditMode) return;
+
+  openBankAccountModal(
+  {
+    accountFor: partyType,
+    partyName: partyName,        
+    partyId: partyId, 
+    currency: currency,
+  },
+    false,
+    {
+      onSuccess: (data) => {
+        handleAddAccount(data);
+      },
+    }
+  );
+}}
           disabled={!isEditMode}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all
             ${
@@ -233,15 +252,7 @@ const columns: Column<any>[] = useMemo(() => [
   </div>
 )}
 
-      {/* MODAL */}
-      <AddBankAccountModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        defaultAccountFor={partyType}
-        partyName={partyName}
-        onSubmit={handleAddAccount}
-        currency={currency}
-      />
+      
     </div>
   );
 };

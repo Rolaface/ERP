@@ -19,6 +19,7 @@ import {
 } from "../../hooks/Usecustomerform";
 import type { CustomerDetail } from "../../types/customer";
 import type { StandardModalProps } from "../../types/modal";
+import type { ActiveTab } from "../../hooks/Usecustomerform";
 
 type CustomerModalProps = StandardModalProps<unknown, CustomerDetail>;
 
@@ -50,6 +51,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     shippingAddress,
     handleChange,
     handlePrimaryContactChange,
+    updatePrimaryContact,
     handleAddressChange,
     setSameAsBilling,
     handleNext,
@@ -119,8 +121,8 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === tab
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  ? "text-primary border-b-[3px] border-primary"
+                  : "text-muted border-b-[3px] border-transparent hover:text-main"
                   }`}
               >
                 {tab === "details" && <User className="w-4 h-4" />}
@@ -293,7 +295,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
 
                   <div className="flex flex-col min-w-0">
                     <span className="block text-[10px] font-medium text-main mb-1">
-                      Mobile <span className="text-danger">*</span>
+                      Phone No <span className="text-danger">*</span>
                     </span>
 
                     <div className="flex">
@@ -301,15 +303,11 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                       <input
                         name="mobileCode"
                         value={primaryContact?.mobileCode ?? "+"}
+                         placeholder="+"
                         onChange={handlePrimaryContactChange}
                         onBlur={(e) => {
                           if (!e.target.value.startsWith("+")) {
-                            handlePrimaryContactChange({
-                              target: {
-                                name: "mobileCode",
-                                value: "+" + e.target.value,
-                              },
-                            });
+                            updatePrimaryContact("mobileCode", "+" + e.target.value);
                           }
                         }}
                         maxLength={5}
@@ -353,6 +351,8 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               isEditMode={isEditMode}
               partyType="Customer"
               partyName={form.name || initialData?.name || ""}
+              partyId={initialData?.id ? String(initialData.id) : undefined}
+
               currency={form.currency}
             />
           )}
