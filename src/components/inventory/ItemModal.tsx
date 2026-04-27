@@ -291,7 +291,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
           maxStockLevel: "",
           expiryDate: "",
           manufacturingDate: "",
-          shelfLifeInDays: "",
+          shelfLife: "",
           endOfLife: "",
           trackInventory: false,
           has_batch_no: false,

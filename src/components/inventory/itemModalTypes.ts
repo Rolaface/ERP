@@ -64,7 +64,7 @@ export interface ItemFormData {
   brand: string;
   expiryDate: string;
   manufacturingDate: string;
-  shelfLifeInDays: string | number;
+  shelfLife: string | number;
   endOfLife: string;
   trackInventory: boolean;
   has_batch_no: boolean;
