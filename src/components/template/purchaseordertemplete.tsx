@@ -276,7 +276,14 @@ drawBox(
         idx + 1,
         item.itemName ?? "-",                       
         fmtDate(item.requiredBy),  
-         item.shelfLife ? `${item.shelfLife} days` : "-",                
+        item.shelfLife
+  ? (() => {
+      const months = Number(item.shelfLife) / 30;
+      return Number.isInteger(months)
+        ? `${months}`
+        : `${months.toFixed(1)}`;
+    })()
+  : "-",               
         packing,
         Math.round(Number(item.quantity ?? "-")),     
         item.uom ?? "-",
