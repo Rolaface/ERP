@@ -309,6 +309,10 @@ export const API = {
     editInvoice: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
   },
 
+  CreditNote:{
+    Create:`${ERP_BASE}/api/resource/Sales Invoice`,
+  },
+
   /* =========================
    * STOCK
    * ========================= */
