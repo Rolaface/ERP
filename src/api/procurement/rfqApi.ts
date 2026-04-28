@@ -38,7 +38,7 @@ export async function getRFQById(name: string): Promise<any> {
 }
 
 export async function updateRFQ(name: string, payload: any): Promise<any> {
-  const resp: AxiosResponse = await api.post(
+  const resp: AxiosResponse = await api.put(
     `${rfqapi.update}?id=${encodeURIComponent(name)}`,
     payload
   );
