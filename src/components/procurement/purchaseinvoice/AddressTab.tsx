@@ -323,70 +323,60 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
    isEditMode,
 }) => {
 
+
+
 const [incotermLabel, setIncotermLabel] = useState("");
 const [shippingLabel, setShippingLabel] = useState("");
-const shippingDefaultLoadedRef = useRef(false);
-const incotermDefaultLoadedRef = useRef(false);
+const defaultsSetRef = useRef(false); // only blocks create-mode default from firing twice
 
-// Incoterm default — create mode only
-useEffect(() => {
-  if (incotermDefaultLoadedRef.current) return;
-
-  const loadDefaultIncoterm = async () => {
-    const list = await getIncoterms("");
-    if (!list || list.length === 0) return;
-    incotermDefaultLoadedRef.current = true;
-
-    if (isEditMode) {
-      return;
-    }
-    const first = list[0];
-    onFormChange({ target: { name: "incoterm", value: first.value } });
-    setIncotermLabel(first.label);
-  };
-  loadDefaultIncoterm();
-}, []);
-
-
+// Edit mode: sync label whenever form value is set/changes (e.g. after PO data loads)
 useEffect(() => {
   if (!form.incoterm) return;
-  const syncLabel = async () => {
-    const list = await getIncoterms("");
+  let cancelled = false;
+  getIncoterms("").then((list) => {
+    if (cancelled) return;
     const found = list.find((i) => i.value === form.incoterm);
     if (found) setIncotermLabel(found.label);
-  };
-  syncLabel();
-}, [form.incoterm]); // ← fires whenever PO data populates the field
+  });
+  return () => { cancelled = true; };
+}, [form.incoterm]);
 
-// Shipping default — create mode only
-useEffect(() => {
-  if (shippingDefaultLoadedRef.current) return;
-
-  const loadDefaultShipping = async () => {
-    const list = await getShippingRules("");
-    if (!list || list.length === 0) return;
-    shippingDefaultLoadedRef.current = true;
-
-    if (isEditMode) {
-      return;
-    }
-    const first = list[0];
-    onFormChange({ target: { name: "shippingRule", value: first.value } });
-    setShippingLabel(first.label);
-  };
-  loadDefaultShipping();
-}, []); 
-
-
+// Edit mode: sync label whenever form value is set/changes
 useEffect(() => {
   if (!form.shippingRule) return;
-  const syncLabel = async () => {
-    const list = await getShippingRules("");
+  let cancelled = false;
+  getShippingRules("").then((list) => {
+    if (cancelled) return;
     const found = list.find((i) => i.value === form.shippingRule);
     if (found) setShippingLabel(found.label);
+  });
+  return () => { cancelled = true; };
+}, [form.shippingRule]);
+
+// Create mode only: set first API value as default (runs once)
+useEffect(() => {
+  if (isEditMode || defaultsSetRef.current) return;
+  defaultsSetRef.current = true;
+
+  const setDefaults = async () => {
+    const [incotermList, shippingList] = await Promise.all([
+      getIncoterms(""),
+      getShippingRules(""),
+    ]);
+
+    if (incotermList.length && !form.incoterm) {
+      onFormChange({ target: { name: "incoterm", value: incotermList[0].value } });
+      setIncotermLabel(incotermList[0].label);
+    }
+    if (shippingList.length && !form.shippingRule) {
+      onFormChange({ target: { name: "shippingRule", value: shippingList[0].value } });
+      setShippingLabel(shippingList[0].label);
+    }
   };
-  syncLabel();
-}, [form.shippingRule]); 
+  setDefaults();
+}, [isEditMode]); // ← isEditMode is stable, so this runs exactly once in create mode
+
+
 
   const fetchShippingRules = async (q: string) => {
     const list = await getShippingRules(q);

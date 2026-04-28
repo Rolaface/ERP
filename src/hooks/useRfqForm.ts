@@ -14,9 +14,9 @@ import {
   emptyItem,
   emptyPaymentRow,
 } from "../types/Supply/rfq";
-
+import { getRFQById } from "../api/procurement/rfqApi";
 import type { TermSection } from "../types/termsAndCondition";
-import { createRFQ } from "../api/procurement/rfqApi";
+import { createRFQ , updateRFQ } from "../api/procurement/rfqApi";
 import {
   showSuccess,
   showApiError,
@@ -32,8 +32,11 @@ interface UseRfqFormProps {
 
 export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
   const [form, setForm] = useState<RfqFormData>(emptyRfqForm);
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<RfqTab>("details");
   const [saving, setSaving] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+const [rfqId, setRfqId] = useState<string>("");
 
   /*  BASIC  */
 
@@ -48,6 +51,68 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
 
   const setStatus = (value: string) =>
     setForm((p) => ({ ...p, status: value }));
+
+  const fetchRFQById = async (id: string) => {
+    try {
+      setLoading(true);
+
+      const res = await getRFQById(id);
+
+      setForm({
+        rfqNumber: res.name || "",
+        requestDate: res.transaction_date || "",
+        quoteDeadline: res.schedule_date || "",
+        status: res.status || "Draft",
+
+        suppliers:
+          res.suppliers?.length > 0
+            ? res.suppliers.map((s: any) => ({
+              supplier: s.supplier || "",
+              supplierName: s.supplier_name || "",
+              contact: s.contact || "",
+              email: s.email_id || "",
+              sendEmail: Boolean(s.send_email),
+            }))
+            : [{ ...emptySupplier }],
+
+        items:
+          res.items?.length > 0
+            ? res.items.map((it: any) => ({
+              itemCode: it.item_code || "",
+              itemName: it.item_code || "",
+              description: it.description || "",
+              uom: it.uom || "",
+              warehouse: it.warehouse || "",
+              quantity: Number(it.qty) || 1,
+              requiredDate: it.schedule_date || "",
+              conversionFactor: Number(it.conversion_factor) || 1,
+            }))
+            : [{ ...emptyItem }],
+
+        paymentRows: [{ ...emptyPaymentRow }],
+
+        terms: {
+          buying: res.terms
+            ? JSON.parse(res.terms)
+            : emptyRfqForm.terms!.buying,
+        },
+
+        templateName: "",
+        templateType: "Quote Email",
+        subject: res.subject || "",
+        messageHtml: res.message_for_supplier || "",
+        sendAttachedFiles: Boolean(res.send_attached_files),
+        sendPrint: Boolean(res.send_document_print),
+      });
+setIsEditMode(true);
+setRfqId(id);
+    } catch (error) {
+      showApiError("Failed to load RFQ");
+    } finally {
+      setLoading(false);
+    }
+    
+  };
 
   /*  SUPPLIERS  */
 
@@ -222,7 +287,9 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
           })),
       };
 
-      const res = await createRFQ(payload);
+     const res = isEditMode
+  ? await updateRFQ(rfqId, payload)
+  : await createRFQ(payload);
       closeSwal();
 
       const apiResponse = res?.message ?? res; // supports wrapped + normal response
@@ -233,7 +300,7 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
         return;
       }
 
-      showSuccess(apiResponse?.message || "RFQ created successfully!");
+     showSuccess(apiResponse?.message || (isEditMode ? "RFQ updated successfully!" : "RFQ created successfully!"));
       useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.RFQ_LIST);
       onSuccess?.(form);
       reset();
@@ -251,6 +318,8 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
   const reset = () => {
     setForm(emptyRfqForm);
     setActiveTab("details");
+    setIsEditMode(false);   
+  setRfqId("");           
   };
 
   /*  RETURN  */
@@ -284,5 +353,8 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
     resetTemplate,
     handleSubmit,
     reset,
+    fetchRFQById,
+    loading,
+  isEditMode,
   };
 };

@@ -406,7 +406,8 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={getRecordInitialData(modal.initialData) as any}
+            initialData={modal.initialData as string}
+            isEdit={modal.isEdit}
           />,
         );
 

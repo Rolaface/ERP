@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-//  export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+  export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -373,6 +373,8 @@ export const API = {
 
   rfq:{
     create: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.create_rfq`,
+    GetAll: `${ERP_BASE}/api/resource/Request for Quotation`,
+    update: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.update_rfq`
   },
 
   

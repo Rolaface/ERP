@@ -317,8 +317,8 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
     project: str(api.project),
 
     destnCountryCd: str(api.destnCountryCd || api.exportToCountry),
-    shippingRule: str(api.shippingRule),
-    incoterm: str(api.incoterm),
+    shippingRule: str(api.shippingRule || api.shippingRules),
+    incoterm: str(api.incoterms || api.incoterm),
     placeOfSupply: str(api.placeOfSupply),
     taxesChargesTemplate: str(api.taxesChargesTemplate),
     paymentTermsTemplate: str(api.paymentTermsTemplate),
