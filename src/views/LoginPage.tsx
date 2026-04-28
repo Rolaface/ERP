@@ -64,11 +64,13 @@ const Login = () => {
           </div>
 
           {/* Error */}
-          {error && (
-            <div className="mb-6 p-3 rounded-lg bg-danger/10 border border-danger/20">
-              <p className="text-danger text-sm">{error}</p>
-            </div>
-          )}
+          <div className="mb-6 min-h-[44px]">
+            {error && (
+              <div className="p-3 rounded-lg bg-danger/10 border border-danger/20 motion-fade-in">
+                <p className="text-danger text-sm">{error}</p>
+              </div>
+            )}
+          </div>
 
           {/* ================= FORM ================= */}
           <form onSubmit={handleSubmit} className="form-section space-y-6 animate-fade-up delay-3">
@@ -80,9 +82,11 @@ const Login = () => {
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-base transition-all duration-200 ease-out 
-          focus:ring-2 focus:ring-primary/30 focus:border-primary 
-          hover:shadow-sm focus:shadow-md"
+                className="input-base 
+transition-all duration-[120ms] ease-out
+focus:ring-2 focus:ring-primary/30 focus:border-primary 
+hover:shadow-sm focus:shadow-md
+focus:scale-[1.01]"
                 placeholder="name@company.com"
                 required
               />
@@ -141,22 +145,31 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn btn-primary group w-full h-12  flex items-center justify-center gap-2
-          relative overflow-hidden
-          transition-all duration-200 ease-out
-          hover:shadow-lg hover:-translate-y-[1px]
-          active:scale-[0.98] active:shadow-md
-          disabled:opacity-70 disabled:cursor-not-allowed"
+                className="btn btn-primary group w-full h-12 flex items-center justify-center gap-2
+  relative overflow-hidden
+  transition-all duration-[120ms] ease-out
+  hover:shadow-lg hover:-translate-y-[1px]
+  active:scale-[0.97] active:shadow-md
+  disabled:opacity-70 disabled:cursor-not-allowed"
               >
+
+                {/* Gradient overlay */}
                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-300" />
 
-                <span className="relative flex items-center gap-2">
-                  {isSubmitting ? "Signing In..." : "Sign In"}
+                {/* ✅ ADD IT HERE */}
+                {isSubmitting && (
+                  <span className="absolute inset-0 bg-white/10 animate-pulse z-10" />
+                )}
+
+                {/* Content */}
+                <span className="relative flex items-center gap-2 z-20">
+                  {isSubmitting ? "Checking..." : "Sign In"}
                   <ArrowRight
                     size={18}
                     className="transition-transform duration-200 group-hover:translate-x-1"
                   />
                 </span>
+
               </button>
             </div>
 
@@ -183,7 +196,7 @@ const Login = () => {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 w-full max-w-md px-8 space-y-6">
+        <div className="relative z-10 w-full max-w-md px-8 space-y-6 animate-float-slow">
 
           <div className="text-sm text-muted mb-2 px-1">
             Your business at a glance
