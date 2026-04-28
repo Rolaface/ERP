@@ -338,19 +338,16 @@ useEffect(() => {
     incotermDefaultLoadedRef.current = true;
 
     if (isEditMode) {
-      // Edit mode: only set the label for display, never overwrite form value
-      // Wait for form.incoterm to be populated by PO load
       return;
     }
-    // Create mode: set first value as default
     const first = list[0];
     onFormChange({ target: { name: "incoterm", value: first.value } });
     setIncotermLabel(first.label);
   };
   loadDefaultIncoterm();
-}, []); // runs once on mount
+}, []);
 
-// Sync incoterm label when form.incoterm changes (handles edit mode PO load)
+
 useEffect(() => {
   if (!form.incoterm) return;
   const syncLabel = async () => {
@@ -371,18 +368,16 @@ useEffect(() => {
     shippingDefaultLoadedRef.current = true;
 
     if (isEditMode) {
-      // Edit mode: don't overwrite, label will sync via form.shippingRule effect
       return;
     }
-    // Create mode: set first value as default
     const first = list[0];
     onFormChange({ target: { name: "shippingRule", value: first.value } });
     setShippingLabel(first.label);
   };
   loadDefaultShipping();
-}, []); // runs once on mount
+}, []); 
 
-// Sync shipping label when form.shippingRule changes (handles edit mode PO load)
+
 useEffect(() => {
   if (!form.shippingRule) return;
   const syncLabel = async () => {
@@ -391,7 +386,7 @@ useEffect(() => {
     if (found) setShippingLabel(found.label);
   };
   syncLabel();
-}, [form.shippingRule]); // ← fires when PO data sets the field
+}, [form.shippingRule]); 
 
   const fetchShippingRules = async (q: string) => {
     const list = await getShippingRules(q);
