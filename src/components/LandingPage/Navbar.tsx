@@ -6,7 +6,7 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      setIsScrolled(window.scrollY > 8);
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -15,10 +15,17 @@ const Navbar: React.FC = () => {
 
   return (
     <nav
-      className={`sticky top-0 z-50 w-full transition-all duration-500 ${
+      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         isScrolled
-          ? "bg-card/80 backdrop-blur-xl border-b border-theme shadow-md"
-          : "bg-card/60 backdrop-blur-lg border-b border-transparent"
+          ? `
+            bg-card/70 backdrop-blur-2xl 
+            border-b border-theme/60 
+            shadow-[0_4px_20px_rgba(0,0,0,0.04)]
+          `
+          : `
+            bg-card/50 backdrop-blur-xl 
+            border-b border-transparent
+          `
       }`}
     >
       <div className="container-app flex items-center justify-between h-16">
@@ -34,7 +41,6 @@ const Navbar: React.FC = () => {
               YourERP
             </span>
 
-            {/* Tiny Trust Signal */}
             <span className="text-[10px] text-muted hidden md:block">
               Trusted by 500+ businesses
             </span>
@@ -42,7 +48,7 @@ const Navbar: React.FC = () => {
         </div>
 
         {/* CENTER: NAV LINKS */}
-        <div className="hidden md:flex items-center gap-[var(--density-gap)] text-sm font-medium text-muted">
+        <div className="hidden md:flex items-center gap-5 text-sm font-medium text-muted">
           {[
             { name: "Features", href: "#features" },
             { name: "Pricing", href: "#pricing" },
@@ -52,35 +58,50 @@ const Navbar: React.FC = () => {
             <a
               key={item.name}
               href={item.href}
-              className="relative group px-1 py-1 transition-colors"
+              className="relative group px-1 py-1"
             >
-              <span className="transition-colors group-hover:text-main">
+              <span className="transition-colors duration-150 group-hover:text-main">
                 {item.name}
               </span>
 
-              {/* Premium underline (center grow) */}
-              <span className="absolute left-1/2 -bottom-1 h-[2px] w-0 bg-primary transition-all duration-300 group-hover:w-full group-hover:left-0"></span>
+              {/* Premium underline (left → right) */}
+              <span className="absolute left-0 -bottom-1 h-[2px] w-full bg-primary scale-x-0 origin-left transition-transform duration-150 ease-out group-hover:scale-x-100"></span>
             </a>
           ))}
         </div>
 
         {/* RIGHT: LOGIN + CTA */}
-        <div className="flex items-center gap-[var(--density-gap)]">
+        <div className="flex items-center gap-3">
           
-          {/* Login (Secondary Action) */}
+          {/* Login */}
           <Link
             to="/login"
-            className="hidden md:block text-sm font-medium text-muted hover:text-main transition-all duration-200"
+            className="hidden md:block text-sm font-medium text-muted hover:text-main transition-colors duration-150"
           >
             Login
           </Link>
 
-          {/* Sign Up CTA */}
+          {/* CTA */}
           <Link to="/signup">
-            <button className="relative inline-flex items-center justify-center px-[var(--density-padding-lg)] py-[var(--density-padding-sm)] text-sm font-semibold text-white rounded-[var(--density-radius)] bg-primary shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]">
-              
-              {/* Glow */}
-              <span className="absolute inset-0 rounded-[var(--density-radius)] bg-primary opacity-0 blur-xl transition-opacity duration-300 hover:opacity-30"></span>
+            <button
+              className={`
+                relative inline-flex items-center justify-center
+                px-[var(--density-padding-lg)] py-[var(--density-padding-sm)]
+                text-sm font-semibold text-white
+                rounded-[var(--density-radius)]
+                bg-primary
+
+                shadow-[0_2px_6px_rgba(0,0,0,0.08)]
+                transition-all duration-200
+
+                hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]
+                hover:scale-[1.02]
+
+                active:scale-[0.98]
+              `}
+            >
+              {/* Soft glow */}
+              <span className="absolute inset-0 rounded-[var(--density-radius)] bg-primary opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-20"></span>
 
               <span className="relative z-10">Sign Up</span>
             </button>
