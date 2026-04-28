@@ -104,7 +104,8 @@ const FixedAssetDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<AssetDashboardSummary | null>(null);
 
-  const chartsLoading = loading || !summary;
+  // const chartsLoading = loading || !summary;
+  const chartsLoading = loading || (!summary && !error);
 
   useEffect(() => {
     let mounted = true;
