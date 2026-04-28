@@ -161,8 +161,10 @@ export const generatePurchaseOrderPDF = async (
   const LH = 4.5;
   const PAD = 3;
   const gap = 3;
-  const supplierL = parseAddressDisplay(po.supplierAddressDisplay);
-
+const supplierL = parseAddressDisplay(po.supplierAddressDisplay);
+const dispatchL = parseAddressDisplay(
+  po.dispatchAddressDisplay || po.dispatchAddress
+);
 const shippingL = parseAddressDisplay(po.shippingAddressDisplay);
 
 const addressBoxes = [
@@ -171,6 +173,16 @@ const addressBoxes = [
     lines: supplierL,
     boldTop: po?.supplierName ?? "-",
   },
+  ...(po.dispatchAddress
+    ? [
+        {
+          title: "Dispatch Address",
+          lines: dispatchL,
+          boldTop: po?.supplierName ?? "-",
+        },
+      ]
+    : []),
+
   {
     title: "Ship To",
     lines: shippingL,
@@ -301,7 +313,7 @@ addressBoxes.forEach((box, index) => {
 
    columnStyles: {
   0: { cellWidth: 7, halign: "center" },   
-  1: { cellWidth: 32, halign: "center" },    
+  1: { cellWidth: 32, halign: "left" },    
   2: { cellWidth: 20, halign: "center" }, 
   3: { cellWidth: 18, halign: "center" },  
   4: { cellWidth: 14, halign: "center" }, 

@@ -94,7 +94,7 @@ onTaxChange,
   const selectedTemplateObj = templates.find((t) => t.name === selectedTemplate) ?? null;
 
   const chargesTotal = taxes.reduce(
-  (sum, t) => sum + (Number(t.taxAmount) || 0),
+  (sum, t) => sum + (Number(t.amount) || 0),
   0
 );
 
@@ -253,9 +253,9 @@ onTaxChange,
             <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
               <input
                 type="number"
-                value={tax.taxAmount}
+                value={tax.amount}
                 onChange={(e) =>
-                  onTaxChange?.(i, "taxAmount", e.target.value)
+                  onTaxChange?.(i, "amount", e.target.value)
                 }
                 className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
               />
