@@ -148,11 +148,11 @@ const CRMDashboard: React.FC = () => {
 
 
 
-      {summaryError && (
+      {/* {summaryError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
           {summaryError}
         </div>
-      )}
+      )} */}
 
       {/* ── Charts ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

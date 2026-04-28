@@ -198,11 +198,11 @@ const FixedAssetDashboard: React.FC = () => {
       </div>
 
       {/* ── Error Banner ─────────────────────────────────────────────────── */}
-      {error && (
+      {/* {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
           {error}
         </div>
-      )}
+      )} */}
 
       {/* ── Asset Value Analytics (full width line / area chart) ─────────── */}
       <AppSectionCard title="Asset Value Analytics">
