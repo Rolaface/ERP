@@ -5,6 +5,7 @@ import {
   deleteCurrencyExchange,
   updateCurrencyExchange,
 } from "../api/currencyExchangeApi";
+import { showSuccess, showApiError } from "../utils/alert";
 
 export interface CurrencyConversionPayload {
   id: string;
@@ -105,6 +106,7 @@ export const useCurrencyConversion = () => {
         for_selling: payload.isSelling ? 1 : 0,
       });
       await fetchConversions();
+      showSuccess("Currency exchange rate added successfully!");
       return res;
     } finally {
       setActionLoading(false);
@@ -125,6 +127,7 @@ export const useCurrencyConversion = () => {
       });
 
       await fetchConversions();
+      showSuccess("Currency exchange rate updated successfully!");
       return res;
     } finally {
       setActionLoading(false);
@@ -139,6 +142,7 @@ export const useCurrencyConversion = () => {
     try {
       const res = await deleteCurrencyExchange(id);
       await fetchConversions();
+      showSuccess("Currency exchange rate deleted successfully!");
       return res;
     } finally {
       setActionLoading(false);

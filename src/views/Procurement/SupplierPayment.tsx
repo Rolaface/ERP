@@ -124,7 +124,7 @@ const Payments: React.FC = () => {
       key: "modeOfPayment",
       header: "Mode of Payment",
       align: "left",
-      render: (p) => p.modeOfPayment || "—",
+      render: (p) => <div className="py-1.5">{p.modeOfPayment || "—"}</div>
     },
     {
       key: "amount",
