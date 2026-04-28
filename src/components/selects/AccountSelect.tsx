@@ -25,7 +25,7 @@ export default function AccountSelect({
   disabled = false,
 }: AccountSelectProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(false); // Changed to false initially
+  const [loading, setLoading] = useState(false); 
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
   
@@ -40,7 +40,7 @@ export default function AccountSelect({
       const res = await getComponentById(
         "Account",
         ["name", "account_currency"],
-        [["is_group", "=", 1]]
+        [["is_group", "=", 0]]
       );
 
       const rawAccounts =
