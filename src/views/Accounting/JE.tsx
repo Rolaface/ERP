@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import DeleteModal from "../../components/actionModal/DeleteModal";
 
-// Assuming this triggers your global modal store
 import { JournalEntriesModal } from "../../store/modalStore";
 
 import { 
@@ -26,7 +25,7 @@ import {
   deleteJournalEntryById, 
   updateJournalEntryStatus 
 } from "../../api/Accounting/JournalEntryApi";
-import { showApiError, showSuccess } from "../../utils/alert";
+import { showApiError, showSuccess, showConfirm } from "../../utils/alert";
 
 export interface JETabProps {
   searchTerm: string;
@@ -174,7 +173,15 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   };
 
   const handleCancelEntry = async (id: string) => {
-    if (!window.confirm(`Are you sure you want to cancel entry ${id}?`)) return;
+   const isConfirmed = await showConfirm(
+      `Are you sure you want to cancel entry ${id}?`,
+      { 
+        title: "Cancel Entry", 
+        confirmButtonText: "Yes, Cancel", 
+        confirmButtonColor: "#ef4444" 
+      }
+    );
+    if (!isConfirmed) return;
 
     try {
       setLoading(true);
