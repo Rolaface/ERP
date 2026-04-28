@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const problems = [
   {
@@ -24,112 +24,184 @@ const problems = [
 ];
 
 const ProblemSection: React.FC = () => {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [visible, setVisible] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Scroll-triggered reveal
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect(); // run once
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="section relative overflow-hidden bg-white">
+    <section
+      ref={sectionRef}
+      className="section-lg section-default relative overflow-hidden"
+    >
+      {/* Background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.02), rgba(0,0,0,0.04))",
+        }}
+      />
+      <div className="absolute inset-0 bg-grid-subtle opacity-10 pointer-events-none" />
 
-      {/* 🌤️ Soft Premium Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,0,0,0.04),transparent_60%)] pointer-events-none"></div>
-
-      <div className="container-app">
+      <div className="container-wide relative z-10">
 
         {/* HEADER */}
-        <div className="text-center max-w-2xl mx-auto stack-md">
-
-          <h2 className="text-[34px] md:text-[42px] font-semibold leading-tight text-gray-900 tracking-tight">
+        <div
+          className={`
+            max-w-2xl mx-auto text-center stack-md
+            transition-all duration-700
+            ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
+          `}
+        >
+          <h2 className="text-[34px] md:text-[42px] font-semibold leading-tight tracking-tight text-main">
             Running your business shouldn’t feel this chaotic
           </h2>
 
-          <p className="text-[16px] text-gray-600 leading-relaxed">
-            Yet most businesses are stuck with disconnected tools, manual work, and constant guesswork.
+          <p className="text-[16px] text-muted leading-relaxed">
+            Yet most businesses are stuck with disconnected tools, manual work,
+            and constant guesswork.
           </p>
-
         </div>
 
         {/* MAIN GRID */}
-        <div className="grid lg:grid-cols-2 gap-12 items-start mt-14">
+        <div className="grid lg:grid-cols-2 gap-16 items-center mt-16">
 
-          {/* LEFT: SYSTEM PANEL */}
-          <div className="relative">
+          {/* LEFT PANEL */}
+          <div
+            className={`
+              relative transition-all duration-700 delay-100
+              ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}
+            `}
+          >
+            <div
+              className="absolute inset-0 blur-3xl rounded-3xl opacity-20"
+              style={{ background: "var(--danger)" }}
+            />
 
-            {/* Subtle glow (neutral, not aggressive) */}
-            <div className="absolute inset-0 bg-gray-200/60 blur-3xl rounded-3xl opacity-40"></div>
-
-            <div className="relative rounded-2xl p-6 border border-gray-200 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
-
-              <p className="text-[11px] text-gray-500 mb-5 tracking-[0.15em] uppercase">
-                System Alert
+            <div className="relative bg-surface-2 border border-theme rounded-2xl p-6 shadow-soft-xl backdrop-blur-md">
+              <p className="text-[11px] text-muted mb-5 tracking-[0.15em] uppercase">
+                System Errors
               </p>
 
               <div className="space-y-4">
-
                 <div className="flex items-center justify-between text-[14px]">
-                  <span className="text-gray-700">Invoice #2345</span>
-                  <span className="text-red-500/80 font-medium">Mismatch</span>
+                  <span className="text-main">Invoice #2345</span>
+                  <span className="text-danger font-medium">Mismatch</span>
                 </div>
 
                 <div className="flex items-center justify-between text-[14px]">
-                  <span className="text-gray-700">Payment Status</span>
-                  <span className="text-amber-500/80 font-medium">Unclear</span>
+                  <span className="text-main">Payment Status</span>
+                  <span className="text-warning font-medium">Unclear</span>
                 </div>
 
                 <div className="flex items-center justify-between text-[14px]">
-                  <span className="text-gray-700">Stock Count</span>
-                  <span className="text-red-500/80 font-medium">Out of sync</span>
+                  <span className="text-main">Stock Count</span>
+                  <span className="text-danger font-medium">Out of sync</span>
                 </div>
-
               </div>
 
-              <div className="divider bg-gray-200 my-5" />
+              <div className="divider my-5" />
 
-              <p className="text-[12px] text-gray-500 leading-relaxed">
+              <p className="text-[12px] text-muted leading-relaxed">
                 Your systems aren’t aligned — and it’s costing you time and money.
               </p>
-
             </div>
-
           </div>
 
-          {/* RIGHT: PROBLEMS */}
-          <div className="grid sm:grid-cols-2 gap-6">
+          {/* RIGHT: CARDS */}
+          <div className="flex flex-col gap-4">
 
-            {problems.map((item, i) => (
-              <div
-                key={i}
-                className="group relative rounded-xl border border-gray-200 bg-gray-50 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_rgba(0,0,0,0.06)] hover:bg-white"
-              >
+            {problems.map((item, i) => {
+              const isActive = activeIndex === i;
 
-                {/* Icon */}
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-bold mb-3 transition-all group-hover:bg-red-500/10 group-hover:text-red-500">
-                  !
+              return (
+                <div
+                  key={i}
+                  onMouseEnter={() => setActiveIndex(i)}
+                  onMouseLeave={() => setActiveIndex(null)}
+                  className={`
+                    card-interactive group relative rounded-xl p-5 border border-theme
+                    transition-all duration-500 cursor-pointer
+                    ${isActive ? "shadow-soft-xl scale-[1.02]" : "opacity-80"}
+                    ${activeIndex !== null && !isActive ? "opacity-40 blur-[1px]" : ""}
+                    ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}
+                  `}
+                  style={{
+                    background: "var(--surface-1)",
+                    transitionDelay: `${i * 80 + 200}ms`, // ✅ stagger
+                  }}
+                >
+                  {/* Glow */}
+                  <div
+                    className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{
+                      background:
+                        "radial-gradient(circle at 20% 20%, rgba(220,38,38,0.08), transparent 60%)",
+                    }}
+                  />
+
+                  <div className="relative flex items-start gap-4">
+                    <div
+                      className="mt-1 w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold"
+                      style={{
+                        background: "rgba(220,38,38,0.12)",
+                        color: "var(--danger)",
+                      }}
+                    >
+                      !
+                    </div>
+
+                    <div>
+                      <h3 className="text-[15px] font-semibold text-main leading-snug">
+                        {item.title}
+                      </h3>
+
+                      <p className="text-[13px] text-muted leading-relaxed mt-1 max-w-[420px]">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-
-                {/* Text */}
-                <h3 className="text-[14px] font-semibold text-gray-900 leading-snug">
-                  {item.title}
-                </h3>
-
-                <p className="text-[13px] text-gray-600 leading-relaxed mt-1">
-                  {item.desc}
-                </p>
-
-              </div>
-            ))}
+              );
+            })}
 
           </div>
-
         </div>
 
-        {/* 🔥 EMOTIONAL CLOSE */}
-        <div className="text-center mt-20">
-
-          <p className="text-[18px] text-gray-600 max-w-xl mx-auto leading-relaxed">
+        {/* FOOTER */}
+        <div
+          className={`
+            text-center mt-20 transition-all duration-700 delay-500
+            ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
+          `}
+        >
+          <p className="text-[18px] text-muted max-w-xl mx-auto leading-relaxed">
             Manual errors. Lost revenue. Delayed decisions.
             <br />
-            <span className="text-gray-900 font-medium">
+            <span className="text-main font-medium">
               Your business deserves better systems.
             </span>
           </p>
-
         </div>
 
       </div>
