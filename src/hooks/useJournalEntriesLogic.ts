@@ -113,6 +113,7 @@ export const useJournalEntryLogic = (isOpen: boolean, onSuccess?: () => void, en
   const [customerOptions, setCustomerOptions] = useState<{label: string, value: string}[]>([]);
   const [supplierOptions, setSupplierOptions] = useState<{label: string, value: string}[]>([]);
   const [currencyOptions, setCurrencyOptions] = useState<{label: string, value: string}[]>([]);
+  const [missingExchanges, setMissingExchanges] = useState<string[]>([]);
 
 const reset = useCallback(() => {
     setForm(emptyForm());
@@ -142,38 +143,6 @@ const reset = useCallback(() => {
   }
 };
 
-// useEffect(() => {
-//   const fetchInitialOptions = async () => {
-//     try {
-//       const [accRes, ptRes] = await Promise.all([
-//         getComponentById("Account", ["name", "account_currency"], [["is_group", "=", "0"]]).catch(() => null),
-//         getComponentById("Party Type").catch(() => null),
-//       ]);
-
-//       const rawAccounts = 
-//         accRes?.data?.message?.data || 
-//         accRes?.data?.message || 
-//         accRes?.data?.data || 
-//         accRes?.data || [];
-
-//       // 2. Map it to include both name and currency in the label
-//       const formattedAccountOptions = Array.isArray(rawAccounts) ? rawAccounts.map((item: any) => ({
-//         label: `${item.name} -> (${item.account_currency})`,
-//         value: item.name,
-//         currency: item.account_currency || "",
-//       })) : [];
-
-//       setAccountOptions(formattedAccountOptions);
-      
-//       // Leave Party Types using the generic mapper
-//       setPartyTypeOptions(mapOptions(ptRes));
-//     } catch (err) {
-//       console.error("Failed to fetch dropdown options", err);
-//     }
-//   };
-  
-//   fetchInitialOptions();
-// }, []);
 useEffect(() => {
   const fetchInitialOptions = async () => {
     try {
@@ -278,9 +247,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement 
       updateExchangeRates(entries, val as string);
     }
   };
-
-// HELPER 1: Calculates Row 2 amount based on Row 1 and current exchange rates
-// HELPER 1: Calculates Row amount based on its specific partner
+ 
 const calculateAmounts = (currentEntries: JournalEntryLine[], editedIndex: number) => {
   const newEntries = [...currentEntries];
 
@@ -297,7 +264,10 @@ const calculateAmounts = (currentEntries: JournalEntryLine[], editedIndex: numbe
       const rate2 = parseFloat(newEntries[pairIndex].exchange_rate) || 1;
 
       const convertedAmount = (inputAmount * rate1) / rate2;
-      newEntries[pairIndex].amount = convertedAmount ? Number(convertedAmount.toFixed(2)).toString() : "";
+      // newEntries[pairIndex].amount = convertedAmount ? Number(convertedAmount.toFixed(2)).toString() : "";
+      newEntries[pairIndex].amount = convertedAmount 
+        ? parseFloat(convertedAmount.toFixed(6)).toString() 
+        : "";
     } else if (inputAmount > 0 && !newEntries[pairIndex].ccy) {
       newEntries[pairIndex].amount = inputAmount.toString();
     } else if (!inputAmount) {
@@ -309,8 +279,7 @@ const calculateAmounts = (currentEntries: JournalEntryLine[], editedIndex: numbe
 
 const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: string, triggerIndex?: number) => {
   let newEntries = [...currentEntries];
-
-  // Internal helper to fetch rates for a specific pair of rows
+  const missingExchanges: Set<string> = new Set();
   const processPair = async (index: number) => {
     const isEven = index % 2 === 0;
     const idx1 = isEven ? index : index - 1;
@@ -321,9 +290,8 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
     const ccy1 = newEntries[idx1].ccy;
     const ccy2 = newEntries[idx2].ccy;
 
-    if (!ccy1 && !ccy2) return;
+    if (!ccy1 || !ccy2) return;
 
-    // If currencies are the same, rate is 1
     if (ccy1 === ccy2) {
       newEntries[idx1].exchange_rate = ccy1 ? "1" : "";
       newEntries[idx2].exchange_rate = ccy2 ? "1" : "";
@@ -338,12 +306,17 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
         newEntries[idx1].exchange_rate = data[0].exchange_rate.toString();
         newEntries[idx2].exchange_rate = "1";
       } else {
-        // Try the reverse pair if the first fails
         res = await getAllCurrencyExchanges(1, 10, undefined, ccy2, ccy1, date);
         data = res?.message?.data?.data || [];
         if (data.length > 0) {
           newEntries[idx2].exchange_rate = data[0].exchange_rate.toString();
           newEntries[idx1].exchange_rate = "1";
+        }
+        else {
+          missingExchanges.add(`${ccy1} to ${ccy2}`);
+          
+          newEntries[idx1].exchange_rate = "";
+          newEntries[idx2].exchange_rate = "";
         }
       }
     } catch (error) {
@@ -364,56 +337,71 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
   }
 
   setEntries(newEntries);
+  const missingArray = Array.from(missingExchanges);
+  setMissingExchanges(missingArray);
+  if (missingExchanges.size > 0) {
+    const missingList = Array.from(missingExchanges).join(", ");
+    showApiError(`Please maintain the currency exchange first for: ${missingList}`);
+  }
 };
   
-const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: string) => {
-    // 1. Build the new state synchronously
-    let updatedEntries = [...entries];
-    const updatedRow = { ...updatedEntries[index], [field]: value };
+// Add `extraUpdates` as a 4th optional parameter
+const handleEntryChange = (
+  index: number,
+  field: keyof JournalEntryLine,
+  value: string,
+  extraUpdates?: Partial<JournalEntryLine>
+) => {
+  // 1. Build the new state synchronously
+  let updatedEntries = [...entries];
+  let updatedRow = { ...updatedEntries[index], [field]: value };
 
-    if (field === "account") {
-      const selectedAccount = accountOptions.find((opt) => opt.value === value);
-      if (selectedAccount && selectedAccount.currency) {
-        updatedRow.ccy = selectedAccount.currency;
-      } else {
-        updatedRow.ccy = "";
-        updatedRow.exchange_rate = "";
-      }
+  // Apply any extra fields passed in (like CCY and Exchange Rate)
+  if (extraUpdates) {
+    updatedRow = { ...updatedRow, ...extraUpdates };
+  }
+
+  // --- REMOVED THE OLD if (field === "account") BLOCK HERE ---
+
+  if (field === "partyType") {
+    updatedRow.party = "";
+  }
+
+  updatedEntries[index] = updatedRow;
+
+  if (field === "entryType") {
+    const isEven = index % 2 === 0;
+    const pairIndex = isEven ? index + 1 : index - 1;
+    
+    // Make sure the partner row exists
+    if (updatedEntries[pairIndex]) {
+      updatedEntries[pairIndex].entryType = value === "Dr" ? "Cr" : "Dr";
     }
+  }
+  
+  if (field === "amount") {
+    updatedEntries = calculateAmounts(updatedEntries, index);
+  }
 
-    if (field === "partyType") {
-      updatedRow.party = ""; 
+  // 3. Update UI state
+  setEntries(updatedEntries);
+
+  // 4. Lazy Load Party Options
+  if (field === "partyType") {
+    if (value === "Customer" && customerOptions.length === 0) {
+      getCustomerListJe().then((res) => setCustomerOptions(mapOptions(res))).catch(console.error);
+    } else if (value === "Supplier" && supplierOptions.length === 0) {
+      getSupplierList().then((res) => setSupplierOptions(mapOptions(res))).catch(console.error);
     }
+  }
 
-    updatedEntries[index] = updatedRow;
-    if (field === "amount") {
-  // PASS THE INDEX HERE
-  updatedEntries = calculateAmounts(updatedEntries, index);
-}
+  // 5. Trigger API ONLY if the account (and therefore currency) changed
+  if (field === "account") {
+    updateExchangeRates(updatedEntries, form.postingDate, index);
+  }
+};
 
-    // 3. Update UI state
-    setEntries(updatedEntries);
-
-    // 4. Lazy Load Party Options
-    if (field === "partyType") {
-      if (value === "Customer" && customerOptions.length === 0) {
-        getCustomerListJe().then((res) => setCustomerOptions(mapOptions(res))).catch(console.error);
-      } else if (value === "Supplier" && supplierOptions.length === 0) {
-        getSupplierList().then((res) => setSupplierOptions(mapOptions(res))).catch(console.error);
-      }
-    }
-
-    // 5. Trigger API ONLY if the account (and therefore currency) changed
-    // if (field === "account") {
-    //   updateExchangeRates(updatedEntries, form.postingDate);
-    // }
-    if (field === "account") {
-  // PASS THE INDEX HERE
-  updateExchangeRates(updatedEntries, form.postingDate, index);
-}
-  };
-// const handleAddRow = () => setEntries((prev) => [...prev, { ...emptyEntry(), entryType: "Dr" }]);
-const handleAddRow = () => {
+ const handleAddRow = () => {
   setEntries((prev) => [
     ...prev, 
     { ...emptyEntry(), entryType: "Dr" }, 
@@ -427,18 +415,26 @@ const handleAddRow = () => {
     if (!form.postingDate) newErrors.postingDate = "Posting Date is required";
     setErrors(newErrors);
 
+    if (missingExchanges.length > 0) {
+      showApiError(`Please maintain the currency exchange first for: ${missingExchanges.join(", ")}`);
+      return false;
+    }
+
     if (entries.filter(e => e.account.trim()).length < 2) {
       showApiError("A journal entry requires at least two valid rows.");
       return false;
     }
+
     // if (totals.debit === 0 && totals.credit === 0) {
     //   showApiError("Total Debit and Credit cannot be zero.");
     //   return false;
     // }
+    
     // if (Math.abs(totals.debit - totals.credit) > 0.01) { 
     //   showApiError(`Entries do not balance. Difference: ${Math.abs(totals.debit - totals.credit).toFixed(2)}`);
     //   return false;
     // }
+
     return Object.keys(newErrors).length === 0;
   };
 

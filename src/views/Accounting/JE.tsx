@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import ExpandableTreeTable, { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
 import { useNavigate } from "react-router-dom";
@@ -17,14 +17,16 @@ import {
   CheckCircle
 } from "lucide-react";
 import DeleteModal from "../../components/actionModal/DeleteModal";
-import JournalEntryModal from "../../components/JournalEntries/JournalEntriesModal";
+
+// Assuming this triggers your global modal store
+import { JournalEntriesModal } from "../../store/modalStore";
+
 import { 
   getJournalEntries, 
   deleteJournalEntryById, 
-  updateJournalEntryStatus // Make sure this is exported from your API file
+  updateJournalEntryStatus 
 } from "../../api/Accounting/JournalEntryApi";
 import { showApiError, showSuccess } from "../../utils/alert";
-import Portal from "@mui/material/Portal";
 
 export interface JETabProps {
   searchTerm: string;
@@ -38,14 +40,6 @@ export interface JournalEntry {
   total_credit?: number;
   docstatus?: number; // 0 = Draft, 1 = Submitted, 2 = Cancelled
   user_remark?: string;
-}
-
-export interface JEResponse {
-  data?: JournalEntry[];
-  message?: {
-    status_code: number;
-    data: JournalEntry[];
-  };
 }
 
 function matchJENode(node: JournalEntry, term: string): boolean {
@@ -110,6 +104,7 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
     </div>
   );
 };
+
 // ─── Main Component ────────────────────────────────────────────────────────
 const PAGE_SIZE = 20;
 
@@ -122,11 +117,6 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  
-  // --- Form Modal States ---
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
-  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
   
   const navigate = useNavigate();
 
@@ -171,13 +161,6 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     fetchJE();
   }, [fetchJE]);
 
-  // --- Handlers for Actions ---
-  const handleOpenModal = (id?: string, mode: "create" | "edit" | "view" = "create") => {
-    setSelectedEntryId(id || null);
-    setModalMode(mode);
-    setShowNewModal(true);
-  };
-
   const handleSubmitEntry = async (id: string) => {
     try {
       setLoading(true);
@@ -191,7 +174,6 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   };
 
   const handleCancelEntry = async (id: string) => {
-    // Optional: Add a native confirm dialog so they don't accidentally cancel
     if (!window.confirm(`Are you sure you want to cancel entry ${id}?`)) return;
 
     try {
@@ -205,13 +187,11 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     }
   };
 
-  // Triggered when user clicks "Delete" from dropdown
   const initiateDelete = (id: string) => {
     setItemToDelete(id);
     setDeleteModalOpen(true);
   };
 
-  // Triggered when user confirms deletion inside DeleteModal
   const confirmDelete = async () => {
     if (!itemToDelete) return;
     try {
@@ -330,43 +310,6 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         </span>
       ),
     },
-    // {
-    //   key: "actions",
-    //   header: "Actions",
-    //   align: "right",
-    //   render: (row: JournalEntry) => {
-    //     const actions: MenuAction[] = [
-    //       {
-    //         label: "View Entry",
-    //         icon: <Eye size={12} />,
-    //         onClick: () => handleOpenModal(row.name, "view"),
-    //       },
-    //       ...(row.docstatus === 0
-    //         ? [
-    //             {
-    //               label: "Submit",
-    //               icon: <CheckCircle size={12} className="text-success" />,
-    //               onClick: () => handleSubmitEntry(row.name),
-    //             },
-    //             {
-    //               label: "Edit",
-    //               icon: <Pencil size={12} />,
-    //               onClick: () => handleOpenModal(row.name, "edit"),
-    //             },
-    //           ]
-    //         : []),
-    //       {
-    //         label: row.docstatus === 1 ? "Cancel Entry" : "Delete",
-    //         icon: <Trash2 size={12} />,
-    //         onClick: () => initiateDelete(row.name), 
-    //         danger: true,
-    //         dividerBefore: true,
-    //       },
-    //     ];
-
-    //     return <RowActionMenu actions={actions} />;
-    //   },
-    // },
     {
       key: "actions",
       header: "Actions",
@@ -376,32 +319,31 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
           {
             label: "View Entry",
             icon: <Eye size={12} />,
-            onClick: () => handleOpenModal(row.name, "view"),
+            // Passed isReadOnly through context so your global modal knows to disable inputs
+            onClick: () => JournalEntriesModal(row.name, false, { isReadOnly: true } as any),
           },
           ...(row.docstatus === 0
             ? [
                 {
                   label: "Submit",
                   icon: <CheckCircle size={12} className="text-success" />,
-                  // Passes "approved" behind the scenes based on your existing setup
                   onClick: () => handleSubmitEntry(row.name), 
                 },
                 {
                   label: "Edit",
                   icon: <Pencil size={12} />,
-                  onClick: () => handleOpenModal(row.name, "edit"),
+                  onClick: () => JournalEntriesModal(row.name, true, { onSuccess: fetchJE }),
                 },
               ]
             : []),
           {
-            // If it's submitted (1), we cancel it. If Draft (0) or Cancelled (2), we delete it.
             label: row.docstatus === 1 ? "Cancel Entry" : "Delete",
             icon: <Trash2 size={12} />,
             onClick: () => {
               if (row.docstatus === 1) {
-                handleCancelEntry(row.name); // Calls updateJournalEntryStatus with "cancelled"
+                handleCancelEntry(row.name);
               } else {
-                initiateDelete(row.name); // Opens DeleteModal -> deleteJournalEntryById
+                initiateDelete(row.name);
               }
             }, 
             danger: true,
@@ -416,23 +358,6 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Ensure JournalEntryModal supports `isReadOnly`.
-        When isReadOnly={true}, you should disable inputs and hide the submit buttons inside it.
-      */}
-      <JournalEntryModal
-        isOpen={showNewModal}
-        entryId={selectedEntryId}
-        isReadOnly={modalMode === "view"} 
-        onClose={() => {
-          setShowNewModal(false);
-          setSelectedEntryId(null);
-        }}
-        onSuccess={() => {
-          if (!selectedEntryId) setCurrentPage(1);
-          fetchJE();
-        }}
-      />
-      
       <div className="relative">
         {loading && (
           <div className="absolute inset-0 z-10 bg-white/50 flex items-center justify-center rounded-2xl backdrop-blur-[1px]">
@@ -456,7 +381,8 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
           extraFilters={
             <button
               type="button"
-              onClick={() => handleOpenModal(undefined, "create")}
+              // FIX: Correctly invoked JournalEntriesModal here
+              onClick={() => JournalEntriesModal(null, false, { onSuccess: fetchJE })}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
             >
               <Plus size={13} />
@@ -489,7 +415,6 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         </div>
       </div>
       
-      {/* Properly formatted DeleteModal */}
       {deleteModalOpen && itemToDelete && (
         <DeleteModal
           entityName="Journal Entry"

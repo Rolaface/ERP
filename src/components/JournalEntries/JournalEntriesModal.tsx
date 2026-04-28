@@ -1,17 +1,30 @@
 import React, { useState, useEffect } from "react";
-import Modal from "../../components/ui/modal/modal";
+import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
-import { ModalInput, ModalSelect } from "../../components/ui/modal/modalComponent";
-import { FileText, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ModalInput,
+  ModalSelect,
+} from "../../components/ui/modal/modalComponent";
+import {
+  FileText,
+  Plus,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useJournalEntryLogic } from "../../hooks/useJournalEntriesLogic";
 import AccountSelect from "../selects/AccountSelect";
+
+// IMPORT YOUR STORE
+import { useModalStore } from "../../store/modalStore";
 
 interface JournalEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSubmit: (data: any) => void;
   entryId?: string | null;
-  isReadOnly?: boolean; // Fixed the TypeScript error!
+  isReadOnly?: boolean; 
+  modalId: string;
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -19,10 +32,19 @@ const ITEMS_PER_PAGE = 6;
 const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   isOpen,
   onClose,
-  onSuccess,
-  entryId,
-  isReadOnly = false, // Default to false
+  onSubmit,
+  modalId,
+  entryId, // Coming from props (likely undefined if using global store)
+  isReadOnly = false, // Defaults to false
 }) => {
+  // 1. PULL DATA FROM THE GLOBAL STORE
+  const modalState = useModalStore((state) => state.getModalById(modalId));
+  
+  // 2. DETERMINE ACTUAL VALUES (Fallback to props if store data isn't present)
+  const actualEntryId = (modalState?.initialData as string) || entryId;
+  const actualIsReadOnly = modalState?.context?.isReadOnly || isReadOnly;
+
+  // 3. PASS THE ACTUAL ID TO YOUR HOOK SO IT FETCHES THE DATA
   const {
     form,
     entries,
@@ -41,10 +63,14 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
     handleRemoveRow,
     handleSubmit,
     reset,
-  } = useJournalEntryLogic(isOpen,() => {
-    onSuccess();
-    onClose();
-  }, entryId || undefined);
+  } = useJournalEntryLogic(
+    isOpen,
+    () => {
+      if (onSubmit) onSubmit({});
+      onClose();
+    },
+    actualEntryId || undefined, 
+  );
 
   // --- Pagination Logic ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,13 +94,20 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   const footer = (
     <>
       <Button variant="secondary" type="button" onClick={onClose}>
-        {isReadOnly ? "Close" : "Cancel"}
+        {actualIsReadOnly ? "Close" : "Cancel"}
       </Button>
-      
+
       {/* Hide action buttons if in View Mode */}
-      {!isReadOnly && (
+      {!actualIsReadOnly && (
         <div className="flex gap-3">
-          <Button variant="secondary" type="button" onClick={() => { reset(); setCurrentPage(1); }}>
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => {
+              reset();
+              setCurrentPage(1);
+            }}
+          >
             Reset
           </Button>
           <Button
@@ -83,7 +116,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
             loading={loading}
             onClick={handleSubmit}
           >
-            {entryId ? "Update Entry" : "Save Entry"}
+            {actualEntryId ? "Update Entry" : "Save Entry"}
           </Button>
         </div>
       )}
@@ -91,18 +124,30 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   );
 
   return (
-    <Modal
+    <MinimizableModal
+      modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isReadOnly ? `View Entry: ${entryId}` : entryId ? `Edit Entry: ${entryId}` : "New Journal Entry"}
-      subtitle={isReadOnly ? "Viewing journal entry details" : entryId ? "Update existing manual journal entry" : "Create a new manual journal entry"}
+      title={
+        actualIsReadOnly
+          ? `View Entry: ${actualEntryId}`
+          : actualEntryId
+            ? `Edit Entry: ${actualEntryId}`
+            : "New Journal Entry"
+      }
+      subtitle={
+        actualIsReadOnly
+          ? "Viewing journal entry details"
+          : actualEntryId
+            ? "Update existing manual journal entry"
+            : "Create a new manual journal entry"
+      }
       icon={FileText}
       footer={footer}
-      customWidth="80vw" 
+      customWidth="80vw"
       height="80vh"
     >
       <div className="flex flex-col gap-6 py-3 px-1">
-        
         {/* TOP SECTION */}
         <div className="flex flex-row items-start gap-6 w-full">
           <div className="flex flex-col gap-1 w-1/4 min-w-[150px]">
@@ -114,7 +159,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
               onChange={handleChange}
               required
               error={errors.postingDate}
-              disabled={isReadOnly}
+              disabled={actualIsReadOnly}
             />
           </div>
 
@@ -126,21 +171,25 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
               onChange={handleChange}
               placeholder="Enter remarks for this journal entry..."
               error={errors.remarks}
-              disabled={isReadOnly}
+              disabled={actualIsReadOnly}
             />
           </div>
 
           <div className="flex flex-col gap-1 justify-center mt-7 min-w-max">
-            <label className={`flex items-center gap-2 w-fit ${isReadOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}>
+            <label
+              className={`flex items-center gap-2 w-fit ${actualIsReadOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+            >
               <input
                 type="checkbox"
                 name="isOpening"
                 checked={form.isOpening}
                 onChange={handleChange}
                 className="w-4 h-4 accent-primary"
-                disabled={isReadOnly}
+                disabled={actualIsReadOnly}
               />
-              <span className="text-sm font-medium text-main">Is Opening Entry</span>
+              <span className="text-sm font-medium text-main">
+                Is Opening Entry
+              </span>
             </label>
           </div>
         </div>
@@ -149,15 +198,20 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
         <div className="flex flex-col gap-3 mt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-main">Entry Lines</h3>
-            
+
             {/* Hide Add Rows button if in View Mode */}
-            {!isReadOnly && (
-              <Button variant="secondary" type="button" onClick={handleAddDoubleRow} className="text-xs py-1 px-2 flex items-center gap-1">
+            {!actualIsReadOnly && (
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={handleAddDoubleRow}
+                className="text-xs py-1 px-2 flex items-center gap-1"
+              >
                 <Plus size={14} /> Add Rows
               </Button>
             )}
           </div>
-          
+
           <div className="w-full border border-gray-200 rounded-md">
             <div className="w-full overflow-x-auto">
               <table className="w-full text-left text-sm text-main whitespace-nowrap">
@@ -165,147 +219,199 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                   <tr>
                     <th className="px-3 py-2 font-medium w-48">Account</th>
                     <th className="px-3 py-2 font-medium w-14">CCY</th>
-                    <th className="px-3 py-2 font-medium w-20">Type</th> 
+                    <th className="px-3 py-2 font-medium w-20">Type</th>
                     <th className="px-3 py-2 font-medium w-28">Amount</th>
                     <th className="px-3 py-2 font-medium w-32">Party Type</th>
                     <th className="px-3 py-2 font-medium w-48">Party</th>
                     <th className="px-3 py-2 font-medium w-10">Exc. Rate</th>
                     <th className="px-3 py-2 font-medium">Remark</th>
-                    {!isReadOnly && <th className="px-3 py-2 font-medium w-10"></th>}
+                    {!actualIsReadOnly && (
+                      <th className="px-3 py-2 font-medium w-10"></th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {currentEntries.map((entry, index) => {
                     const actualIndex = startIndex + index;
-                    const isDropdown = entry.partyType === "Customer" || entry.partyType === "Supplier";
-                    
+                    const isDropdown =
+                      entry.partyType === "Customer" ||
+                      entry.partyType === "Supplier";
+
                     let rowPartyOptions = [{ label: "", value: "" }];
 
                     if (entry.partyType === "Customer") {
-  rowPartyOptions = [
-   ...customerOptions.map((opt) => ({ label: opt.label, value: opt.value }))
-  ];
-} else if (entry.partyType === "Supplier") {
-  rowPartyOptions = [
-    ...supplierOptions.map((opt) => ({ label: opt.label, value: opt.value }))
-  ];
-}
-                    
+                      rowPartyOptions = [
+                        ...customerOptions.map((opt) => ({
+                          label: opt.label,
+                          value: opt.value,
+                        })),
+                      ];
+                    } else if (entry.partyType === "Supplier") {
+                      rowPartyOptions = [
+                        ...supplierOptions.map((opt) => ({
+                          label: opt.label,
+                          value: opt.value,
+                        })),
+                      ];
+                    }
+
                     return (
-                      <tr key={actualIndex} className="border-b border-gray-100 last:border-none">
+                      <tr
+                        key={actualIndex}
+                        className="border-b border-gray-100 last:border-none"
+                      >
                         <td className="px-2 py-1">
-                          {/* <ModalSelect 
-                             label="" 
-                             name={`account-${actualIndex}`} 
-                             value={entry.account} 
-                             onChange={(e) => handleEntryChange(actualIndex, 'account', e.target.value)}
-                             onFocus={fetchAccountOptions}
-                             options={[...accountOptions]}
-                             disabled={isReadOnly}
-                          /> */}
-                          <AccountSelect 
-  label="" 
-  value={entry.account} 
-  onChange={(accountObj) => {
-     handleEntryChange(actualIndex, 'account', accountObj.name);
-     handleEntryChange(actualIndex, 'ccy', accountObj.currency);
-  }}
-  disabled={isReadOnly}
-  className="w-full"
-/>
+                          <AccountSelect
+                            label=""
+                            value={entry.account}
+                            onChange={(accountObj) => {
+                              handleEntryChange(
+                                actualIndex,
+                                "account",
+                                accountObj.name,
+                                {
+                                  ccy: accountObj.currency,
+                                  exchange_rate: accountObj.currency ? "1" : "",
+                                },
+                              );
+                            }}
+                            disabled={actualIsReadOnly}
+                            className="w-full"
+                          />
                         </td>
+
                         <td className="px-2 py-1">
-  <ModalInput 
-     label="" 
-     name={`ccy-${actualIndex}`} 
-     value={entry.ccy} 
-     onChange={() => {}} // Empty function since it's read-only
-     disabled={true} // Permanently disabled so users cannot edit it
-     placeholder="CCY"
-     className="w-full"
-  />
-</td>
-                        <td className="px-2 py-1">
-                          <ModalSelect 
-                             label="" 
-                             name={`type-${actualIndex}`} 
-                             value={entry.entryType} 
-                             onChange={(e) => handleEntryChange(actualIndex, 'entryType', e.target.value)}
-                             options={[
-                               { label: 'Dr', value: 'Dr' },
-                               { label: 'Cr', value: 'Cr' },
-                             ]}
-                             disabled={isReadOnly}
+                          <ModalInput
+                            label=""
+                            name={`ccy-${actualIndex}`}
+                            value={entry.ccy}
+                            onChange={() => {}}
+                            disabled={true}
+                            placeholder="CCY"
+                            className="w-full"
                           />
                         </td>
                         <td className="px-2 py-1">
-                          <ModalInput 
-                             label="" 
-                             name={`amount-${actualIndex}`} 
-                             type="number" 
-                             value={entry.amount} 
-                             onChange={(e) => handleEntryChange(actualIndex, 'amount', e.target.value)} 
-                             disabled={isReadOnly}
-                             className="w-full"
+                          <ModalSelect
+                            label=""
+                            name={`type-${actualIndex}`}
+                            value={entry.entryType}
+                            onChange={(e) =>
+                              handleEntryChange(
+                                actualIndex,
+                                "entryType",
+                                e.target.value,
+                              )
+                            }
+                            options={[
+                              { label: "Dr", value: "Dr" },
+                              { label: "Cr", value: "Cr" },
+                            ]}
+                            disabled={actualIsReadOnly}
                           />
                         </td>
                         <td className="px-2 py-1">
-                           <ModalSelect 
-                             label="" 
-                             name={`partyType-${actualIndex}`} 
-                             value={entry.partyType} 
-                             onChange={(e) => handleEntryChange(actualIndex, 'partyType', e.target.value)}
-                             options={[...partyTypeOptions]}
-                             disabled={isReadOnly}
+                          <ModalInput
+                            label=""
+                            name={`amount-${actualIndex}`}
+                            type="number"
+                            value={entry.amount}
+                            onChange={(e) =>
+                              handleEntryChange(
+                                actualIndex,
+                                "amount",
+                                e.target.value,
+                              )
+                            }
+                            disabled={actualIsReadOnly}
+                            className="w-full"
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <ModalSelect
+                            label=""
+                            name={`partyType-${actualIndex}`}
+                            value={entry.partyType}
+                            onChange={(e) =>
+                              handleEntryChange(
+                                actualIndex,
+                                "partyType",
+                                e.target.value,
+                              )
+                            }
+                            options={[...partyTypeOptions]}
+                            disabled={actualIsReadOnly}
                           />
                         </td>
                         <td className="px-2 py-1">
                           {isDropdown ? (
-                            <ModalSelect 
-                              label="" 
-                              name={`party-${actualIndex}`} 
-                              value={entry.party} 
-                              onChange={(e) => handleEntryChange(actualIndex, 'party', e.target.value)}
+                            <ModalSelect
+                              label=""
+                              name={`party-${actualIndex}`}
+                              value={entry.party}
+                              onChange={(e) =>
+                                handleEntryChange(
+                                  actualIndex,
+                                  "party",
+                                  e.target.value,
+                                )
+                              }
                               options={rowPartyOptions}
-                              disabled={isReadOnly}
+                              disabled={actualIsReadOnly}
                             />
                           ) : (
-                            <ModalInput 
-                              label="" 
-                              name={`party-${actualIndex}`} 
-                              value={entry.party} 
-                              onChange={(e) => handleEntryChange(actualIndex, 'party', e.target.value)}
+                            <ModalInput
+                              label=""
+                              name={`party-${actualIndex}`}
+                              value={entry.party}
+                              onChange={(e) =>
+                                handleEntryChange(
+                                  actualIndex,
+                                  "party",
+                                  e.target.value,
+                                )
+                              }
                               placeholder="Enter Party Name"
-                              disabled={isReadOnly}
+                              disabled={actualIsReadOnly}
                             />
                           )}
                         </td>
 
                         <td className="px-2 py-1">
-  <ModalInput 
-     label="" 
-     name={`exchangeRate-${actualIndex}`} 
-     type="number" 
-     value={entry.exchange_rate} 
-     onChange={() => {}} 
-     disabled={true}  
-     className="w-full bg-gray-50 text-gray-500 cursor-not-allowed"
-  />
-</td>
-                        <td className="px-2 py-1">
-                          <ModalInput 
-                             label="" 
-                             name={`remark-${actualIndex}`} 
-                             value={entry.remark} 
-                             onChange={(e) => handleEntryChange(actualIndex, 'remark', e.target.value)} 
-                             disabled={isReadOnly}
+                          <ModalInput
+                            label=""
+                            name={`exchangeRate-${actualIndex}`}
+                            type="number"
+                            value={entry.exchange_rate}
+                            onChange={() => {}}
+                            disabled={true}
+                            className="w-full bg-gray-50 text-gray-500 cursor-not-allowed"
                           />
                         </td>
-                        
+                        <td className="px-2 py-1">
+                          <ModalInput
+                            label=""
+                            name={`remark-${actualIndex}`}
+                            value={entry.remark}
+                            onChange={(e) =>
+                              handleEntryChange(
+                                actualIndex,
+                                "remark",
+                                e.target.value,
+                              )
+                            }
+                            disabled={actualIsReadOnly}
+                          />
+                        </td>
+
                         {/* Hide Trash Button if in View Mode */}
-                        {!isReadOnly && (
+                        {!actualIsReadOnly && (
                           <td className="px-2 py-1 text-center">
-                            <button type="button" onClick={() => handleRemoveRow(actualIndex)} className="text-red-500 hover:text-red-700 transition-colors">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveRow(actualIndex)}
+                              className="text-red-500 hover:text-red-700 transition-colors"
+                            >
                               <Trash2 size={16} />
                             </button>
                           </td>
@@ -320,50 +426,83 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
             {entries.length > ITEMS_PER_PAGE && (
               <div className="flex items-center justify-between px-4 py-2 border-t border-gray-200 bg-gray-50/50 rounded-b-md">
                 <span className="text-xs text-muted">
-                  Showing <span className="font-medium text-main">{startIndex + 1}</span> to <span className="font-medium text-main">{Math.min(startIndex + ITEMS_PER_PAGE, entries.length)}</span> of <span className="font-medium text-main">{entries.length}</span> entries
+                  Showing{" "}
+                  <span className="font-medium text-main">
+                    {startIndex + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium text-main">
+                    {Math.min(startIndex + ITEMS_PER_PAGE, entries.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium text-main">
+                    {entries.length}
+                  </span>{" "}
+                  entries
                 </span>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-main"><ChevronLeft size={16} /></button>
-                  <span className="text-xs font-medium text-main">Page {currentPage} of {totalPages}</span>
-                  <button type="button" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages} className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-main"><ChevronRight size={16} /></button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    disabled={currentPage === 1}
+                    className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-main"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="text-xs font-medium text-main">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-main"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
                 </div>
               </div>
             )}
           </div>
         </div>
         <div className="flex justify-end items-center gap-12 bg-gray-50 p-4 rounded-md border border-gray-200 mt-2">
-          
           <div className="flex flex-col text-right">
-            {/* Added "(Base)" or you can hardcode "(INR)" */}
-            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Debit (Base)</span>
-            <span className="text-lg font-bold text-main">{totals.debit.toFixed(2)}</span>
-          </div>
-          
-          <div className="flex flex-col text-right">
-            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Total Credit (Base)</span>
-            <span className="text-lg font-bold text-main">{totals.credit.toFixed(2)}</span>
+            <span className="text-xs text-muted uppercase font-semibold tracking-wider">
+              Total Debit (Base)
+            </span>
+            <span className="text-lg font-bold text-main">
+              {totals.debit.toFixed(2)}
+            </span>
           </div>
 
-          {/* Vertical Divider */}
+          <div className="flex flex-col text-right">
+            <span className="text-xs text-muted uppercase font-semibold tracking-wider">
+              Total Credit (Base)
+            </span>
+            <span className="text-lg font-bold text-main">
+              {totals.credit.toFixed(2)}
+            </span>
+          </div>
+
           <div className="h-10 border-l border-gray-300"></div>
 
           <div className="flex flex-col text-right min-w-[120px]">
-            <span className="text-xs text-muted uppercase font-semibold tracking-wider">Net Balance</span>
-            <span 
+            <span className="text-xs text-muted uppercase font-semibold tracking-wider">
+              Net Balance
+            </span>
+            <span
               className={`text-lg font-bold ${
-                Math.abs(totals.debit - totals.credit) > 0.001 
-                  ? "text-red-500" 
+                Math.abs(totals.debit - totals.credit) > 0.001
+                  ? "text-red-500"
                   : "text-green-600"
               }`}
             >
               {Math.abs(totals.debit - totals.credit).toFixed(2)}
             </span>
           </div>
-          
         </div>
-
       </div>
-    </Modal>
+    </MinimizableModal>
   );
 };
 

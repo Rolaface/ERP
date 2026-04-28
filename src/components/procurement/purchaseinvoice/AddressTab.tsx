@@ -39,6 +39,7 @@ const mapFormAddressToApi = (addr: any): ApiAddress | null => {
 
 interface AddressTabProps {
   form: PurchaseOrderFormData | PurchaseInvoiceFormData;
+    removedBoxes: Set<string>;
   onFormChange: (
     e:
       | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -469,10 +470,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
           <AddressBox
             config={BOX_CONFIGS[1]}
             addresses={addresses.supplierBilling}
-            selectedAddr={
-              selected.supplierBilling
-              ?? mapFormAddressToApi(form.addresses?.supplierAddress)
-            }
+           selectedAddr={selected.supplierBilling ?? null}
             loading={loading.supplierBilling}
             onSelect={(addr) => handleAddressSelect("supplierBilling", addr)}
             onRemove={() => handleAddressRemove("supplierBilling")}
@@ -493,10 +491,7 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
           <AddressBox
             config={BOX_CONFIGS[3]}
             addresses={addresses.supplierDispatch}
-            selectedAddr={
-              selected.supplierDispatch
-              ?? mapFormAddressToApi(form.addresses?.dispatchAddress)
-            }
+           selectedAddr={selected.supplierDispatch ?? null}
             loading={loading.supplierDispatch}
             onSelect={(addr) => handleAddressSelect("supplierDispatch", addr)}
             onRemove={() => handleAddressRemove("supplierDispatch")}
