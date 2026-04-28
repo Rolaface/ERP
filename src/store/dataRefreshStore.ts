@@ -67,6 +67,7 @@ export const REFRESH_KEYS = {
   SUPPLIER_DETAIL: "supplier_detail",
   PURCHASE_ORDER_LIST: "purchase_order_list",
   PURCHASE_INVOICE_LIST: "purchase_invoice_list",
+  RFQ_LIST: "rfq_list",
   
   // Sales
   INVOICE_LIST: "invoice_list",
@@ -87,6 +88,7 @@ export const REFRESH_KEYS = {
   MODE_OF_PAYMENT_LIST: "mode_of_payment_list",
   BANK_ACCOUNT_LIST: "bank_account_list",
     FIXED_ASSET_LIST: "fixed_asset_list",
+
   
 } as const;
 

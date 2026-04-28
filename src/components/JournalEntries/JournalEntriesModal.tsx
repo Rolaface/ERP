@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../../components/ui/modal/modalComponent";
 import { FileText, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useJournalEntryLogic } from "../../hooks/useJournalEntriesLogic";
+import AccountSelect from "../selects/AccountSelect";
 
 interface JournalEntryModalProps {
   isOpen: boolean;
@@ -192,24 +193,29 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                     
                     return (
                       <tr key={actualIndex} className="border-b border-gray-100 last:border-none">
-                        <td className="px-2 py-1">
-                          <ModalSelect 
-                             label="" 
-                             name={`account-${actualIndex}`} 
-                             value={entry.account} 
-                             onChange={(e) => handleEntryChange(actualIndex, 'account', e.target.value)}
-                             onFocus={fetchAccountOptions}
-                             options={[...accountOptions]}
-                             disabled={isReadOnly}
-                          />
-                        </td>
+
+<td className="px-2 py-1">
+  <AccountSelect 
+    label="" 
+    value={entry.account} 
+    onChange={(accountObj) => {
+       handleEntryChange(actualIndex, 'account', accountObj.name, {
+        ccy: accountObj.currency,
+        exchange_rate: accountObj.currency ? "1" : "" 
+      });
+    }}
+    disabled={isReadOnly}
+    className="w-full"
+  />
+</td>
+
                         <td className="px-2 py-1">
   <ModalInput 
      label="" 
      name={`ccy-${actualIndex}`} 
      value={entry.ccy} 
-     onChange={() => {}} // Empty function since it's read-only
-     disabled={true} // Permanently disabled so users cannot edit it
+     onChange={() => {}}  
+     disabled={true}  
      placeholder="CCY"
      className="w-full"
   />

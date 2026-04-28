@@ -462,7 +462,7 @@ const Items: React.FC = () => {
       header: "Actions",
       align: "center",
       render: (i) => (
-        <div className="flex items-center justify-center gap-2">
+        <ActionGroup>
           <ActionButton
             type="view"
             iconOnly
@@ -471,11 +471,21 @@ const Items: React.FC = () => {
               handleRowClick(i);
             }}
           />
+
+          <ActionButton
+            type="edit"
+            iconOnly
+            title="Edit Item"
+            onClick={(e?: React.MouseEvent<HTMLButtonElement>) => {
+              e?.stopPropagation();
+              handleEdit(i.id, e as any);
+            }}
+          />
+
           <ActionMenu
-            onEdit={(e) => handleEdit(i.id, e as any)}
             onDelete={(e) => handleDeleteClick(i, e as any)}
           />
-        </div>
+        </ActionGroup>
       ),
     },
   ];

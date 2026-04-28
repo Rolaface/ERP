@@ -1,5 +1,4 @@
 import { useState } from "react";
-import toast from "react-hot-toast";
 
 import type {
   RfqFormData,
@@ -17,6 +16,14 @@ import {
 } from "../types/Supply/rfq";
 
 import type { TermSection } from "../types/termsAndCondition";
+import { createRFQ } from "../api/procurement/rfqApi";
+import {
+  showSuccess,
+  showApiError,
+  showLoading,
+  closeSwal,
+} from "../utils/alert";
+import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 
 interface UseRfqFormProps {
   onSuccess?: (data: RfqFormData) => void;
@@ -26,6 +33,7 @@ interface UseRfqFormProps {
 export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
   const [form, setForm] = useState<RfqFormData>(emptyRfqForm);
   const [activeTab, setActiveTab] = useState<RfqTab>("details");
+  const [saving, setSaving] = useState(false);
 
   /*  BASIC  */
 
@@ -46,7 +54,7 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
   const handleSupplierChange = (
     idx: number,
     field: keyof SupplierRow,
-    value: any
+    value: any,
   ) => {
     setForm((p) => {
       const suppliers = [...p.suppliers];
@@ -74,11 +82,7 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
 
   /*  ITEMS  */
 
-  const handleItemChange = (
-    idx: number,
-    field: keyof ItemRow,
-    value: any
-  ) => {
+  const handleItemChange = (idx: number, field: keyof ItemRow, value: any) => {
     setForm((p) => {
       const items = [...p.items];
       items[idx] = { ...items[idx], [field]: value };
@@ -108,14 +112,11 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
   const handlePaymentRowChange = (
     idx: number,
     field: keyof PaymentRow,
-    value: any
+    value: any,
   ) => {
     setForm((p) => {
       const paymentRows = [...p.paymentRows];
-      paymentRows[idx] = {
-        ...paymentRows[idx],
-        [field]: value,
-      };
+      paymentRows[idx] = { ...paymentRows[idx], [field]: value };
       return { ...p, paymentRows };
     });
   };
@@ -137,15 +138,12 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
     });
   };
 
-  /*  TERMS (PO STYLE)  */
+  /*  TERMS  */
 
   const setTermsBuying = (updated: TermSection) => {
     setForm((prev) => ({
       ...prev,
-      terms: {
-        ...prev.terms,
-        buying: updated,
-      },
+      terms: { ...prev.terms, buying: updated },
     }));
   };
 
@@ -176,7 +174,6 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
       subject: form.subject,
       messageHtml: form.messageHtml,
     });
-    toast.success("Template saved!");
   };
 
   const resetTemplate = () => {
@@ -194,14 +191,55 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
   /*  SUBMIT  */
 
   const handleSubmit = async () => {
+    if (saving) return;
+
     try {
-      console.log("RFQ Data:", form);
-      toast.success("RFQ saved successfully!");
+      setSaving(true);
+      showLoading("Saving RFQ...");
+
+      const payload = {
+        transaction_date: form.requestDate,
+        schedule_date: form.quoteDeadline,
+        message_for_supplier: "",
+        terms: form.terms?.buying ?? {},
+        suppliers: form.suppliers
+          .filter((s) => s.supplier.trim() !== "")
+          .map((s) => ({
+            supplier: s.supplier,   // ID e.g. "SUP-2026-00012"
+            contact: s.contact,     // contact ID
+            email_id: s.email,
+          })),
+        items: form.items
+          .filter((it) => it.itemCode.trim() !== "")
+          .map((it) => ({
+            item_code: it.itemCode,
+            qty: it.quantity,
+            uom: it.uom,
+            conversion_factor: it.conversionFactor ?? 1,
+            schedule_date: it.requiredDate,
+            warehouse: it.warehouse,
+            description: it.description,
+          })),
+      };
+
+      const res = await createRFQ(payload);
+      closeSwal();
+
+      if (!res || ![200, 201].includes(res.status_code)) {
+        showApiError(res);
+        return;
+      }
+
+      showSuccess("RFQ created successfully!");
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.RFQ_LIST);
       onSuccess?.(form);
       reset();
       onClose?.();
     } catch (err: any) {
-      toast.error(err.message || "Failed to save RFQ");
+      closeSwal();
+      showApiError(err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -218,6 +256,7 @@ export const useRfqForm = ({ onSuccess, onClose }: UseRfqFormProps) => {
     form,
     activeTab,
     setActiveTab,
+    saving,
     setRfqNumber,
     setRequestDate,
     setQuoteDeadline,

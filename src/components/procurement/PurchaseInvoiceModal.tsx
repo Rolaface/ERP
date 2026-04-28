@@ -75,6 +75,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     loading,
     setLoading,
     handleAddressSelect,
+      handleAddressRemove, 
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
   // ── Submit: runs full validatePI via handleSubmit ──────────
@@ -196,6 +197,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             customIncoterm={customIncoterm}
             setCustomIncoterm={setCustomIncoterm}
             supplierId={form.supplierId}
+           removedBoxes={new Set()}     
             selected={selected}
             setSelected={setSelected}
             selectedIds={selectedIds}
@@ -204,6 +206,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             setAddresses={setAddresses}
             loading={loading}
             setLoading={setLoading}
+            handleAddressRemove={handleAddressRemove} 
             handleAddressSelect={handleAddressSelect}
             handleCopyBillingToShipping={() => { }}
             handleCopySupplierToDispatch={() => { }}
@@ -250,6 +253,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
       setAddresses,
       loading,
       setLoading,
+      handleAddressRemove,
+      handleAddressSelect,
     ],
   );
 

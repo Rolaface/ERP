@@ -265,11 +265,16 @@ const mapApiToForm = (item: any) => {
     trackingMethod: item.inventoryInfo?.trackingMethod || "",
     reorderLevel: item.inventoryInfo?.reorderLevel || "",
     maxStockLevel: item.inventoryInfo?.maxStockLevel || "",
+    trackInventory:
+      !!item.inventoryInfo ||
+      !!item.batchInfo ||
+      !!item.inventoryInfo?.trackingMethod,
     minStockLevel: item.inventoryInfo?.minStockLevel || "",
 
     // BATCH
     has_batch_no: item.batchInfo?.has_batch_no || false,
     has_expiry_date: item.batchInfo?.has_expiry_date || false,
+    shelfLife: String(item.batchInfo?.shelfLife || ""),
 
     // TAX
     taxRows: item.taxInfo?.map((t: any) => ({

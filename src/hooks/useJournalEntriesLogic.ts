@@ -309,8 +309,7 @@ const calculateAmounts = (currentEntries: JournalEntryLine[], editedIndex: numbe
 
 const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: string, triggerIndex?: number) => {
   let newEntries = [...currentEntries];
-
-  // Internal helper to fetch rates for a specific pair of rows
+  const missingExchanges: Set<string> = new Set();
   const processPair = async (index: number) => {
     const isEven = index % 2 === 0;
     const idx1 = isEven ? index : index - 1;
@@ -321,9 +320,8 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
     const ccy1 = newEntries[idx1].ccy;
     const ccy2 = newEntries[idx2].ccy;
 
-    if (!ccy1 && !ccy2) return;
+    if (!ccy1 || !ccy2) return;
 
-    // If currencies are the same, rate is 1
     if (ccy1 === ccy2) {
       newEntries[idx1].exchange_rate = ccy1 ? "1" : "";
       newEntries[idx2].exchange_rate = ccy2 ? "1" : "";
@@ -338,12 +336,17 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
         newEntries[idx1].exchange_rate = data[0].exchange_rate.toString();
         newEntries[idx2].exchange_rate = "1";
       } else {
-        // Try the reverse pair if the first fails
         res = await getAllCurrencyExchanges(1, 10, undefined, ccy2, ccy1, date);
         data = res?.message?.data?.data || [];
         if (data.length > 0) {
           newEntries[idx2].exchange_rate = data[0].exchange_rate.toString();
           newEntries[idx1].exchange_rate = "1";
+        }
+        else {
+          missingExchanges.add(`${ccy1} to ${ccy2}`);
+          
+          newEntries[idx1].exchange_rate = "";
+          newEntries[idx2].exchange_rate = "";
         }
       }
     } catch (error) {
@@ -364,56 +367,59 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
   }
 
   setEntries(newEntries);
+  if (missingExchanges.size > 0) {
+    const missingList = Array.from(missingExchanges).join(", ");
+    showApiError(`Please maintain the currency exchange first for: ${missingList}`);
+  }
 };
   
-const handleEntryChange = (index: number, field: keyof JournalEntryLine, value: string) => {
-    // 1. Build the new state synchronously
-    let updatedEntries = [...entries];
-    const updatedRow = { ...updatedEntries[index], [field]: value };
+// Add `extraUpdates` as a 4th optional parameter
+const handleEntryChange = (
+  index: number,
+  field: keyof JournalEntryLine,
+  value: string,
+  extraUpdates?: Partial<JournalEntryLine>
+) => {
+  // 1. Build the new state synchronously
+  let updatedEntries = [...entries];
+  let updatedRow = { ...updatedEntries[index], [field]: value };
 
-    if (field === "account") {
-      const selectedAccount = accountOptions.find((opt) => opt.value === value);
-      if (selectedAccount && selectedAccount.currency) {
-        updatedRow.ccy = selectedAccount.currency;
-      } else {
-        updatedRow.ccy = "";
-        updatedRow.exchange_rate = "";
-      }
+  // Apply any extra fields passed in (like CCY and Exchange Rate)
+  if (extraUpdates) {
+    updatedRow = { ...updatedRow, ...extraUpdates };
+  }
+
+  // --- REMOVED THE OLD if (field === "account") BLOCK HERE ---
+
+  if (field === "partyType") {
+    updatedRow.party = "";
+  }
+
+  updatedEntries[index] = updatedRow;
+  
+  if (field === "amount") {
+    updatedEntries = calculateAmounts(updatedEntries, index);
+  }
+
+  // 3. Update UI state
+  setEntries(updatedEntries);
+
+  // 4. Lazy Load Party Options
+  if (field === "partyType") {
+    if (value === "Customer" && customerOptions.length === 0) {
+      getCustomerListJe().then((res) => setCustomerOptions(mapOptions(res))).catch(console.error);
+    } else if (value === "Supplier" && supplierOptions.length === 0) {
+      getSupplierList().then((res) => setSupplierOptions(mapOptions(res))).catch(console.error);
     }
+  }
 
-    if (field === "partyType") {
-      updatedRow.party = ""; 
-    }
+  // 5. Trigger API ONLY if the account (and therefore currency) changed
+  if (field === "account") {
+    updateExchangeRates(updatedEntries, form.postingDate, index);
+  }
+};
 
-    updatedEntries[index] = updatedRow;
-    if (field === "amount") {
-  // PASS THE INDEX HERE
-  updatedEntries = calculateAmounts(updatedEntries, index);
-}
-
-    // 3. Update UI state
-    setEntries(updatedEntries);
-
-    // 4. Lazy Load Party Options
-    if (field === "partyType") {
-      if (value === "Customer" && customerOptions.length === 0) {
-        getCustomerListJe().then((res) => setCustomerOptions(mapOptions(res))).catch(console.error);
-      } else if (value === "Supplier" && supplierOptions.length === 0) {
-        getSupplierList().then((res) => setSupplierOptions(mapOptions(res))).catch(console.error);
-      }
-    }
-
-    // 5. Trigger API ONLY if the account (and therefore currency) changed
-    // if (field === "account") {
-    //   updateExchangeRates(updatedEntries, form.postingDate);
-    // }
-    if (field === "account") {
-  // PASS THE INDEX HERE
-  updateExchangeRates(updatedEntries, form.postingDate, index);
-}
-  };
-// const handleAddRow = () => setEntries((prev) => [...prev, { ...emptyEntry(), entryType: "Dr" }]);
-const handleAddRow = () => {
+ const handleAddRow = () => {
   setEntries((prev) => [
     ...prev, 
     { ...emptyEntry(), entryType: "Dr" }, 
