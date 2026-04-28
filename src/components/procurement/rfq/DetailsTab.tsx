@@ -78,7 +78,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
   );
 
   return (
-    <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
+    <div className="flex flex-col gap-4 overflow-visible p-4 relative bg-app text-main">
       {/* ── HEADER ── */}
       <div className="bg-app">
         <div className="flex flex-wrap gap-x-2 gap-y-3 items-end mb-3">
@@ -110,6 +110,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
               value={status}
               onChange={(e) => onStatusChange(e.target.value)}
               options={[{ value: "Draft", label: "Draft" }]}
+              disabled
             />
           </div>
 
@@ -130,7 +131,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
               <thead>
                 <tr className="border-b border-theme text-muted">
                   <th className="px-2 py-1 text-left w-[25px]">#</th>
-                  <th className="px-2 py-1 text-left w-[180px]">Supplier</th>
+                  <th className="px-2 py-1 text-left w-[180px]">Supplier <span className="text-danger">*</span></th>
                   <th className="px-2 py-1 text-left">Contact</th>
                   <th className="px-2 py-1 text-left">Email</th>
                   <th className="px-2 py-1 text-center w-[50px]">Send</th>
@@ -152,6 +153,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                             label=""
                             value={sup.supplierName}
                             selectedId={sup.supplier}
+                            required
                             onChange={async (selected: any) => {
                               onSupplierChange(i, "supplier", selected.id ?? "");
                               onSupplierChange(i, "supplierName", selected.name ?? "");
@@ -264,18 +266,18 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
           </div>
 
           {/* ITEMS TABLE */}
-          <div className="bg-card rounded-lg p-2 shadow-sm">
+          <div className="bg-card rounded-lg p-2 shadow-sm overflow-visible relative">
             <h3 className="text-sm font-semibold mb-2">Items</h3>
 
             <table className="w-full border-collapse text-[11px]">
               <thead>
                 <tr className="border-b border-theme text-muted">
                   <th className="px-2 py-1 text-left w-[25px]">#</th>
-                  <th className="px-2 py-1 text-left w-[180px]">Item</th>
-                  <th className="px-2 py-1 text-left w-[130px]">Date</th>
+                  <th className="px-2 py-1 text-left w-[180px]">Item <span className="text-danger">*</span></th>
+                  <th className="px-2 py-1 text-left w-[130px]">Required By <span className="text-danger">*</span></th>
                   <th className="px-2 py-1 text-left w-[80px]">Qty</th>
                   <th className="px-2 py-1 text-left w-[80px]">UOM</th>
-                  <th className="px-2 py-1 text-left w-[130px]">Warehouse</th>
+                  <th className="px-2 py-1 text-left w-[130px]">Warehouse <span className="text-danger">*</span></th>
                   <th className="px-2 py-1 text-center w-[40px]">-</th>
                 </tr>
               </thead>
@@ -287,11 +289,12 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                     <tr key={i} className="border-b border-theme row-hover">
                       <td className="px-2 py-1 text-[10px]">{i + 1}</td>
 
-                      {/* Item — RfqItemSelect, shows itemName, no ID */}
+
                       <td className="px-2 py-1">
                         <div className="w-[180px]">
                           <RfqItemSelect
                             value={it.itemName}
+                            required
                             selectedId={it.itemCode}
                             onChange={(detail: any) => {
                               onItemChange(i, "itemCode", detail.id ?? "");
@@ -324,6 +327,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                             onChange={(name, value) =>
                               onItemChange(i, "requiredDate", value)
                             }
+                            required
                           />
                         </div>
                       </td>
@@ -351,7 +355,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         />
                       </td>
 
-                      {/* Warehouse — WarehouseSelect */}
+                      {/* Warehouse  */}
                       <td className="px-2 py-1">
                         <WarehouseSelect
                           compact
@@ -359,6 +363,10 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                           onChange={(e) =>
                             onItemChange(i, "warehouse", e.target.value)
                           }
+                          onDefaultLoad={(firstWarehouse) =>
+                            onItemChange(i, "warehouse", firstWarehouse)
+                          }
+                          required
                         />
                       </td>
 

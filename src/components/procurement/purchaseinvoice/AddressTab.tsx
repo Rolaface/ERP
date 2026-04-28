@@ -51,6 +51,7 @@ interface AddressTabProps {
   setCustomIncoterm: React.Dispatch<React.SetStateAction<string>>;
   supplierId?: string;
   companyId?: string;
+  isEditMode?: boolean;
   selected: Record<BoxType, ApiAddress | null>;
   setSelected: React.Dispatch<
     React.SetStateAction<Record<BoxType, ApiAddress | null>>
@@ -64,7 +65,7 @@ interface AddressTabProps {
   loading: Record<BoxType, boolean>;
   setLoading: React.Dispatch<React.SetStateAction<Record<BoxType, boolean>>>;
   handleAddressSelect: (boxKey: BoxType, addr: ApiAddress) => void;
-  handleAddressRemove: (boxKey: BoxType) => void; // ← NEW
+  handleAddressRemove: (boxKey: BoxType) => void; 
   handleCopyBillingToShipping: (checked: boolean) => void;
   handleCopySupplierToDispatch: (checked: boolean) => void;
 }
@@ -318,46 +319,64 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
   addresses,
   loading,
   handleAddressSelect,
-  handleAddressRemove, // ← NEW
+  handleAddressRemove, 
+   isEditMode,
 }) => {
-  const [incotermLabel, setIncotermLabel] = useState("");
-  const [shippingLabel, setShippingLabel] = useState("");
 
-  // SHOW API FIRST VALUE DEFAULT
-  useEffect(() => {
-    const loadDefaultIncoterm = async () => {
-      const list = await getIncoterms("");
-      if (!list || list.length === 0) return;
-      const first = list[0];
-      onFormChange({ target: { name: "incoterm", value: first.value } });
-      setIncotermLabel(first.label);
-    };
-    if (!incotermLabel) loadDefaultIncoterm();
-  }, [incotermLabel]);
 
-  // incoterm edit
-  useEffect(() => {
-    if (form.incoterm && !incotermLabel) {
-      const loadLabel = async () => {
-        const list = await getIncoterms("");
-        const found = list.find((i) => i.value === form.incoterm);
-        if (found) setIncotermLabel(found.label);
-      };
-      loadLabel();
+
+const [incotermLabel, setIncotermLabel] = useState("");
+const [shippingLabel, setShippingLabel] = useState("");
+const defaultsSetRef = useRef(false); // only blocks create-mode default from firing twice
+
+// Edit mode: sync label whenever form value is set/changes (e.g. after PO data loads)
+useEffect(() => {
+  if (!form.incoterm) return;
+  let cancelled = false;
+  getIncoterms("").then((list) => {
+    if (cancelled) return;
+    const found = list.find((i) => i.value === form.incoterm);
+    if (found) setIncotermLabel(found.label);
+  });
+  return () => { cancelled = true; };
+}, [form.incoterm]);
+
+// Edit mode: sync label whenever form value is set/changes
+useEffect(() => {
+  if (!form.shippingRule) return;
+  let cancelled = false;
+  getShippingRules("").then((list) => {
+    if (cancelled) return;
+    const found = list.find((i) => i.value === form.shippingRule);
+    if (found) setShippingLabel(found.label);
+  });
+  return () => { cancelled = true; };
+}, [form.shippingRule]);
+
+// Create mode only: set first API value as default (runs once)
+useEffect(() => {
+  if (isEditMode || defaultsSetRef.current) return;
+  defaultsSetRef.current = true;
+
+  const setDefaults = async () => {
+    const [incotermList, shippingList] = await Promise.all([
+      getIncoterms(""),
+      getShippingRules(""),
+    ]);
+
+    if (incotermList.length && !form.incoterm) {
+      onFormChange({ target: { name: "incoterm", value: incotermList[0].value } });
+      setIncotermLabel(incotermList[0].label);
     }
-  }, [form.incoterm]);
+    if (shippingList.length && !form.shippingRule) {
+      onFormChange({ target: { name: "shippingRule", value: shippingList[0].value } });
+      setShippingLabel(shippingList[0].label);
+    }
+  };
+  setDefaults();
+}, [isEditMode]); // ← isEditMode is stable, so this runs exactly once in create mode
 
-  // shipping
-  useEffect(() => {
-    const loadDefaultShipping = async () => {
-      const list = await getShippingRules("");
-      if (!list || list.length === 0) return;
-      const first = list[0];
-      onFormChange({ target: { name: "shippingRule", value: first.value } });
-      setShippingLabel(first.label);
-    };
-    if (!shippingLabel) loadDefaultShipping();
-  }, [shippingLabel]);
+
 
   const fetchShippingRules = async (q: string) => {
     const list = await getShippingRules(q);

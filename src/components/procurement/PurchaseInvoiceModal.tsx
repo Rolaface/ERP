@@ -176,6 +176,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             onItemChange={handleItemChange}
             onAddItem={addItem}
             onRemoveItem={removeItem}
+            isEditMode={!!pId}
             onDuplicateItem={duplicateItem}
             getCurrencySymbol={getCurrencySymbol}
             onItemSelect={handleItemSelect}
@@ -193,6 +194,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             form={form}
             onFormChange={(e: any) => handleFormChange(e)}
             customShippingRule={customShippingRule}
+            isEditMode={!!pId}    
             setCustomShippingRule={setCustomShippingRule}
             customIncoterm={customIncoterm}
             setCustomIncoterm={setCustomIncoterm}

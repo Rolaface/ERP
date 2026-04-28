@@ -257,8 +257,8 @@ const addresses = {
     project: api.project || "",
 
     destnCountryCd: api.destnCountryCd || api.exportToCountry || "",
-    shippingRule: api.shippingRule || "",
-    incoterm: api.incoterm || "",
+    shippingRule: api.shippingRule || api.shipping_rule || "",
+    incoterm: api.incoterms || api.incoterm || "", 
     placeOfSupply: api.placeOfSupply || "",
     taxesChargesTemplate: api.taxesChargesTemplate || "",
     paymentTermsTemplate: api.paymentTermsTemplate || "",

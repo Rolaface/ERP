@@ -113,6 +113,7 @@ export const useJournalEntryLogic = (isOpen: boolean, onSuccess?: () => void, en
   const [customerOptions, setCustomerOptions] = useState<{label: string, value: string}[]>([]);
   const [supplierOptions, setSupplierOptions] = useState<{label: string, value: string}[]>([]);
   const [currencyOptions, setCurrencyOptions] = useState<{label: string, value: string}[]>([]);
+  const [missingExchanges, setMissingExchanges] = useState<string[]>([]);
 
 const reset = useCallback(() => {
     setForm(emptyForm());
@@ -142,38 +143,6 @@ const reset = useCallback(() => {
   }
 };
 
-// useEffect(() => {
-//   const fetchInitialOptions = async () => {
-//     try {
-//       const [accRes, ptRes] = await Promise.all([
-//         getComponentById("Account", ["name", "account_currency"], [["is_group", "=", "0"]]).catch(() => null),
-//         getComponentById("Party Type").catch(() => null),
-//       ]);
-
-//       const rawAccounts = 
-//         accRes?.data?.message?.data || 
-//         accRes?.data?.message || 
-//         accRes?.data?.data || 
-//         accRes?.data || [];
-
-//       // 2. Map it to include both name and currency in the label
-//       const formattedAccountOptions = Array.isArray(rawAccounts) ? rawAccounts.map((item: any) => ({
-//         label: `${item.name} -> (${item.account_currency})`,
-//         value: item.name,
-//         currency: item.account_currency || "",
-//       })) : [];
-
-//       setAccountOptions(formattedAccountOptions);
-      
-//       // Leave Party Types using the generic mapper
-//       setPartyTypeOptions(mapOptions(ptRes));
-//     } catch (err) {
-//       console.error("Failed to fetch dropdown options", err);
-//     }
-//   };
-  
-//   fetchInitialOptions();
-// }, []);
 useEffect(() => {
   const fetchInitialOptions = async () => {
     try {
@@ -278,9 +247,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement 
       updateExchangeRates(entries, val as string);
     }
   };
-
-// HELPER 1: Calculates Row 2 amount based on Row 1 and current exchange rates
-// HELPER 1: Calculates Row amount based on its specific partner
+ 
 const calculateAmounts = (currentEntries: JournalEntryLine[], editedIndex: number) => {
   const newEntries = [...currentEntries];
 
@@ -297,7 +264,10 @@ const calculateAmounts = (currentEntries: JournalEntryLine[], editedIndex: numbe
       const rate2 = parseFloat(newEntries[pairIndex].exchange_rate) || 1;
 
       const convertedAmount = (inputAmount * rate1) / rate2;
-      newEntries[pairIndex].amount = convertedAmount ? Number(convertedAmount.toFixed(2)).toString() : "";
+      // newEntries[pairIndex].amount = convertedAmount ? Number(convertedAmount.toFixed(2)).toString() : "";
+      newEntries[pairIndex].amount = convertedAmount 
+        ? parseFloat(convertedAmount.toFixed(6)).toString() 
+        : "";
     } else if (inputAmount > 0 && !newEntries[pairIndex].ccy) {
       newEntries[pairIndex].amount = inputAmount.toString();
     } else if (!inputAmount) {
@@ -367,6 +337,8 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
   }
 
   setEntries(newEntries);
+  const missingArray = Array.from(missingExchanges);
+  setMissingExchanges(missingArray);
   if (missingExchanges.size > 0) {
     const missingList = Array.from(missingExchanges).join(", ");
     showApiError(`Please maintain the currency exchange first for: ${missingList}`);
@@ -396,6 +368,16 @@ const handleEntryChange = (
   }
 
   updatedEntries[index] = updatedRow;
+
+  if (field === "entryType") {
+    const isEven = index % 2 === 0;
+    const pairIndex = isEven ? index + 1 : index - 1;
+    
+    // Make sure the partner row exists
+    if (updatedEntries[pairIndex]) {
+      updatedEntries[pairIndex].entryType = value === "Dr" ? "Cr" : "Dr";
+    }
+  }
   
   if (field === "amount") {
     updatedEntries = calculateAmounts(updatedEntries, index);
@@ -433,18 +415,26 @@ const handleEntryChange = (
     if (!form.postingDate) newErrors.postingDate = "Posting Date is required";
     setErrors(newErrors);
 
+    if (missingExchanges.length > 0) {
+      showApiError(`Please maintain the currency exchange first for: ${missingExchanges.join(", ")}`);
+      return false;
+    }
+
     if (entries.filter(e => e.account.trim()).length < 2) {
       showApiError("A journal entry requires at least two valid rows.");
       return false;
     }
+
     // if (totals.debit === 0 && totals.credit === 0) {
     //   showApiError("Total Debit and Credit cannot be zero.");
     //   return false;
     // }
+    
     // if (Math.abs(totals.debit - totals.credit) > 0.01) { 
     //   showApiError(`Entries do not balance. Difference: ${Math.abs(totals.debit - totals.credit).toFixed(2)}`);
     //   return false;
     // }
+
     return Object.keys(newErrors).length === 0;
   };
 

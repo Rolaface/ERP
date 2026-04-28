@@ -40,92 +40,79 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
   const [options, setOptions] = useState<Option[]>([]);
   const [open, setOpen] = useState(false);
   const [isCustom, setIsCustom] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  });
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
-
-  // stable fetch ref
   const fetchOptionsRef = useRef(fetchOptions);
+  const userEditingRef = useRef(false);
+  const searchRef = useRef(search);
+const prevValueRef = useRef(value);
+
+useEffect(() => {
+  if (value !== prevValueRef.current) {
+    prevValueRef.current = value;
+    if (!userEditingRef.current) {
+      setSearch(value ?? "");
+    }
+  } else if (!open && value && !userEditingRef.current) {
+    setSearch(value);
+  }
+}, [value, open]);
+
   useEffect(() => {
     fetchOptionsRef.current = fetchOptions;
   }, [fetchOptions]);
 
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, DEBOUNCE_DELAY);
+    searchRef.current = search;
+  }, [search]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), DEBOUNCE_DELAY);
     return () => clearTimeout(timer);
   }, [search]);
 
-
   useEffect(() => {
     if (!open) return;
-
-
     if (!debouncedSearch) {
       fetchOptionsRef.current("").then(setOptions);
       return;
     }
-
     if (debouncedSearch.length < MIN_SEARCH_LENGTH) return;
-
     const id = ++requestIdRef.current;
-
-    const run = async () => {
-      const data = await fetchOptionsRef.current(debouncedSearch);
-
+    fetchOptionsRef.current(debouncedSearch).then((data) => {
       if (id !== requestIdRef.current) return;
-
       setOptions(data);
-    };
-
-    run();
+    });
   }, [debouncedSearch, open]);
-
 
   useEffect(() => {
     if (open && wrapperRef.current) {
       const rect = wrapperRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom ,
-        left: rect.left ,
-        width: rect.width,
-      });
+      setDropdownPos({ top: rect.bottom, left: rect.left, width: rect.width });
     }
   }, [open]);
-
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as Node;
-
-      if (
-        !wrapperRef.current?.contains(target) &&
-        !dropdownRef.current?.contains(target)
-      ) {
+      if (!wrapperRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
         setOpen(false);
+        if (userEditingRef.current && searchRef.current === "") {
+          onChange("", { label: "", value: "" });
+        }
+        userEditingRef.current = false;
       }
     };
-
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
-  }, []);
+  }, [onChange]);
 
-  useEffect(() => {
-    // only sync when dropdown closed (user not typing)
-    if (!open && value) {
-      setSearch(value);
-    }
-  }, [value, open]);
+
 
   // Initialize search with value on mount
   useEffect(() => {
@@ -135,22 +122,18 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
   }, [value]);
 
   useEffect(() => {
-    if (open && inputRef.current) {
-      inputRef.current.focus();
-    }
+    if (open && inputRef.current) inputRef.current.focus();
   }, [options]);
-
-
 
   return (
     <>
       <div ref={wrapperRef} className="flex flex-col w-full">
-       {label && (
-  <label className="text-[10px] font-medium mb-1">
-    {label}
-    {required && <span className="text-danger"> *</span>}
-  </label>
-)}
+        {label && (
+          <label className="text-[10px] font-medium mb-1">
+            {label}
+            {required && <span className="text-danger"> *</span>}
+          </label>
+        )}
         <div className="relative w-full">
           <input
             ref={inputRef}
@@ -159,16 +142,16 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
             disabled={disabled}
             onChange={(e) => {
               const val = e.target.value;
+              userEditingRef.current = true; // ← CHANGED: mark user is editing
               setSearch(val);
-              setIsCustom(true); 
-               
+              setIsCustom(true);
               if (!open) setOpen(true);
             }}
             onBlur={() => {
-  if (allowCustomInput && search) {
-    onChange(search, { label: search, value: search }); 
-  }
-}}
+              if (allowCustomInput && search) {
+                onChange(search, { label: search, value: search });
+              }
+            }}
             onFocus={async () => {
               if (!open) {
                 setOpen(true);
@@ -176,11 +159,12 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
                 setOptions(data);
               }
             }}
-            className={`py-1 px-2 pr-6 border rounded text-[11px] text-main bg-card transition-all w-full ${error ? "border-danger" : "border-theme"
-              }`}
+            className={`py-1 px-2 pr-6 border rounded text-[11px] text-main bg-card transition-all w-full ${
+              error ? "border-danger" : "border-theme"
+            }`}
           />
 
-          {/*  Clear button */}
+          {/* Clear button — only show when user is actively typing */}
           {isCustom && search && (
             <button
               type="button"
@@ -188,9 +172,8 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
               onClick={() => {
                 setSearch("");
                 setIsCustom(false);
-
+                userEditingRef.current = false; // ← CHANGED: explicit clear, stop blocking sync
                 onChange("", { label: "", value: "" });
-
                 setOpen(true);
               }}
               className="absolute right-1 top-1/2 -translate-y-1/2 text-muted hover:text-danger text-xs"
@@ -200,16 +183,14 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
           )}
         </div>
 
-        {error && (
-          <span className="text-danger text-[10px] mt-1">{error}</span>
-        )}
+        {error && <span className="text-danger text-[10px] mt-1">{error}</span>}
       </div>
 
       {open &&
         createPortal(
           <div
             ref={dropdownRef}
-            onMouseDown={(e) => e.preventDefault()} // prevent blur
+            onMouseDown={(e) => e.preventDefault()}
             style={{
               position: "fixed",
               top: dropdownPos.top,
@@ -219,48 +200,39 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(({
             }}
             className="bg-white border rounded shadow-lg max-h-52 overflow-auto"
           >
-            <>
-              {/* Existing options */}
-              {options.map((opt) => (
+            {options.map((opt) => (
+              <div
+                key={opt.value || opt.label}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange(opt.value, opt);
+                  setSearch(opt.label);
+                  setIsCustom(false);
+                  userEditingRef.current = false; // ← CHANGED: selection done, allow future sync
+                  setOpen(false);
+                }}
+                className="px-3 py-2 cursor-pointer text-[13px] hover:bg-gray-100"
+              >
+                {opt.label}
+              </div>
+            ))}
+
+            {allowCustomInput &&
+              search &&
+              !options.some((opt) => opt.label.toLowerCase() === search.toLowerCase()) && (
                 <div
-                  key={opt.value || opt.label}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
-                    onChange(opt.value, opt);
-                    setSearch(opt.label);
-                    setIsCustom(false);
+                    onChange(search, { label: search, value: search });
+                    setIsCustom(true);
+                    userEditingRef.current = false; // ← CHANGED
                     setOpen(false);
                   }}
-                  className="px-3 py-2 cursor-pointer text-[13px] hover:taxg-gray-100"
+                  className="px-3 py-2 cursor-pointer text-[13px] text-primary hover:bg-primary/10 border-t"
                 >
-                  {opt.label}
+                  Add "{search}"
                 </div>
-              ))}
-
-              {/*  ADD CUSTOM OPTION */}
-              {allowCustomInput &&
-                search &&
-                !options.some(
-                  (opt) => opt.label.toLowerCase() === search.toLowerCase()
-                ) && (
-                  <div
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      const customOption = {
-                        label: search,
-                        value: search,
-                      };
-
-                      onChange(search, customOption);
-                      setIsCustom(true);
-                      setOpen(false);
-                    }}
-                    className="px-3 py-2 cursor-pointer text-[13px] text-primary hover:bg-primary/10 border-t"
-                  >
-                    Add "{search}"
-                  </div>
-                )}
-            </>
+              )}
           </div>,
           document.body
         )}

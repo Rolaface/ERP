@@ -21,7 +21,8 @@ export type ModalType =
   |"paymentEntry"
   |"currencyExchange"
   |"fixedAsset"
-  |"Rfq";
+  |"Rfq"
+  |"JournalEntries";
 
 export interface ModalContext {
   source?: string;
@@ -514,4 +515,14 @@ export const openRfqModal = (
   useModalStore
     .getState()
     .openModal("Rfq", initialData, isEdit, context, meta);    
+
+export const JournalEntriesModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("JournalEntries", initialData, isEdit, context, meta);  
 

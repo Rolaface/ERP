@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect , useRef } from "react";
 import { Trash2, Copy, User, Mail, Phone } from "lucide-react";
 import type {
   ItemRow,
@@ -105,8 +105,6 @@ export const DetailsTab = ({
   const symbol = getCurrencySymbol();
 
   const [page, setPage] = useState(0);
-
-  // Keep page in range when items shrink
   useEffect(() => {
     const maxPage = Math.max(0, Math.ceil(items.length / ITEMS_PER_PAGE) - 1);
     if (page > maxPage) setPage(maxPage);
@@ -117,7 +115,6 @@ export const DetailsTab = ({
     (page + 1) * ITEMS_PER_PAGE,
   );
 
-  // ── Bulk-change helpers ────────────────────────────────────────────────────
 
   const handleTopRequiredByChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -133,15 +130,11 @@ export const DetailsTab = ({
     onBulkItemChange?.("warehouse", e.target.value);
   };
 
-  // ── Bridge to ItemTable's action/ui interface ──────────────────────────────
-
   const tableActions: ItemTableActions = {
-    // ItemTable calls handleItemChange(absoluteIndex, event)
     handleItemChange: (idx, e) => onItemChange(e, idx),
     removeItem: onRemoveItem,
     addItem: onAddItem,
     duplicateItem: onDuplicateItem,
-    // updateItemDirectly not needed for PO rows
   };
 
   const tableUI: ItemTableUI = {
@@ -150,7 +143,6 @@ export const DetailsTab = ({
     itemCount: items.length,
   };
 
-  // ── PO row renderer ────────────────────────────────────────────────────────
 
   const renderPORow = (
     it: ItemRow,
@@ -511,7 +503,6 @@ export const DetailsTab = ({
 
       {/* ── Main body ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-[4fr_1fr] gap-4">
-        {/* Generic ItemTable with PO-specific columns */}
         <ItemTable
           title="Order Items"
           paginatedItems={paginatedItems}

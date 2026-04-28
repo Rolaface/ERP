@@ -211,14 +211,14 @@ export default function SupplierSelect({
                     ].join(" ")}
                     onClick={() => handleSelect(s)}
                   >
+                    {/* ── Only name + currency, no ID ── */}
                     <div className="flex justify-between items-center gap-2">
                       <span className="truncate">{s.name}</span>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {s.currency && (
-                          <span className="text-[10px] text-muted">{s.currency}</span>
-                        )}
-                        <span className="text-[10px] text-muted font-mono">{s.id}</span>
-                      </div>
+                      {s.currency && (
+                        <span className="text-[10px] text-muted shrink-0">
+                          {s.currency}
+                        </span>
+                      )}
                     </div>
                   </li>
                 ))

@@ -182,6 +182,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           onFormChange={handleFormChange}
           supplierId={form.supplierId}
           companyId={form.company}
+           isEditMode={!!poId}   
            removedBoxes={removedBoxes}
             handleAddressRemove={handleAddressRemove}   
           customShippingRule={customShippingRule}
