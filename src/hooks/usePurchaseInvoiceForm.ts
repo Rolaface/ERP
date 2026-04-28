@@ -25,7 +25,7 @@ import {
 import {
   createPurchaseInvoice,
   getPurchaseInvoiceById,
-  updatePurchaseInvoice,           // ← ADDED: was missing, caused edit to fail
+  updatePurchaseInvoice, // ← ADDED: was missing, caused edit to fail
 } from "../api/procurement/PurchaseInvoiceApi";
 import {
   mapUIToCreatePI,
@@ -63,19 +63,19 @@ type AddressKey = keyof PurchaseInvoiceFormData["addresses"];
 const addressStub = (id: string, type: string): ApiAddress | null =>
   id
     ? {
-      id,
-      title: id,
-      type,
-      addressType: type,
-      addressLine1: "",
-      addressLine2: "",
-      city: "",
-      state: "",
-      country: "",
-      pincode: "",
-      phone: "",
-      email: "",
-    }
+        id,
+        title: id,
+        type,
+        addressType: type,
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        state: "",
+        country: "",
+        pincode: "",
+        phone: "",
+        email: "",
+      }
     : null;
 
 // ─────────────────────────────────────────────
@@ -125,8 +125,6 @@ export const usePurchaseInvoiceForm = ({
 
     // Inline load for company boxes — same pattern as PO
     const loadCompanyAddresses = async () => {
-
-
       for (const boxKey of ["companyBilling", "companyShipping"] as const) {
         setLoading((prev) => ({ ...prev, [boxKey]: true }));
         try {
@@ -299,7 +297,8 @@ export const usePurchaseInvoiceForm = ({
         const supplierAddrId = mapped.addresses?.supplierAddress?.id || "";
         const dispatchAddrId = mapped.addresses?.dispatchAddress?.id || "";
         const shippingAddrId = mapped.addresses?.shippingAddress?.id || "";
-        const companyBillingAddrId = mapped.addresses?.companyBillingAddress?.id || "";
+        const companyBillingAddrId =
+          mapped.addresses?.companyBillingAddress?.id || "";
 
         // Set stubs first so UI shows something immediately
         setSelectedIds({
@@ -309,10 +308,18 @@ export const usePurchaseInvoiceForm = ({
           companyBilling: companyBillingAddrId,
         });
         setSelected({
-          supplierBilling: supplierAddrId ? addressStub(supplierAddrId, "Billing") : null,
-          supplierDispatch: dispatchAddrId ? addressStub(dispatchAddrId, "Dispatch") : null,
-          companyShipping: shippingAddrId ? addressStub(shippingAddrId, "Shipping") : null,
-          companyBilling: companyBillingAddrId ? addressStub(companyBillingAddrId, "Billing") : null,
+          supplierBilling: supplierAddrId
+            ? addressStub(supplierAddrId, "Billing")
+            : null,
+          supplierDispatch: dispatchAddrId
+            ? addressStub(dispatchAddrId, "Dispatch")
+            : null,
+          companyShipping: shippingAddrId
+            ? addressStub(shippingAddrId, "Shipping")
+            : null,
+          companyBilling: companyBillingAddrId
+            ? addressStub(companyBillingAddrId, "Billing")
+            : null,
         });
 
         // ── NOW fetch full address lists and match saved IDs to full objects ──
@@ -322,7 +329,9 @@ export const usePurchaseInvoiceForm = ({
         const [companyAddrs, supplierBillingAddrs, supplierDispatchAddrs] =
           await Promise.all([
             getAddressList({ company: true }),
-            supplierId ? getAddressList({ supplierId, addressType: "Billing" }) : Promise.resolve([]),
+            supplierId
+              ? getAddressList({ supplierId, addressType: "Billing" })
+              : Promise.resolve([]),
             supplierId ? getAddressList({ supplierId }) : Promise.resolve([]),
           ]);
 
@@ -335,15 +344,25 @@ export const usePurchaseInvoiceForm = ({
           supplierDispatch: supplierDispatchAddrs,
         }));
 
-        // Match saved IDs to full address objects so UI shows full details
-        const matchedCompanyBilling = companyAddrs.find((a) => a.id === companyBillingAddrId)
-          ?? companyAddrs[0] ?? null;
-        const matchedCompanyShipping = companyAddrs.find((a) => a.id === shippingAddrId)
-          ?? null;
-        const matchedSupplierBilling = supplierBillingAddrs.find((a) => a.id === supplierAddrId)
-          ?? supplierBillingAddrs[0] ?? null;
-        const matchedSupplierDispatch = supplierDispatchAddrs.find((a) => a.id === dispatchAddrId)
-          ?? supplierDispatchAddrs[0] ?? null;
+        const matchedCompanyBilling = companyBillingAddrId
+          ? (companyAddrs.find((a) => a.id === companyBillingAddrId) ??
+            companyAddrs[0] ??
+            null)
+          : (companyAddrs[0] ?? null);
+
+        const matchedCompanyShipping = shippingAddrId
+          ? (companyAddrs.find((a) => a.id === shippingAddrId) ?? null)
+          : null;
+
+        const matchedSupplierBilling = supplierAddrId
+          ? (supplierBillingAddrs.find((a) => a.id === supplierAddrId) ??
+            supplierBillingAddrs[0] ??
+            null)
+          : null;
+
+        const matchedSupplierDispatch = dispatchAddrId
+          ? (supplierDispatchAddrs.find((a) => a.id === dispatchAddrId) ?? null)
+          : null;
 
         setSelected({
           companyBilling: matchedCompanyBilling,
@@ -490,6 +509,32 @@ export const usePurchaseInvoiceForm = ({
 
     setForm((prev) => ({ ...prev, [name]: finalValue }));
   };
+  const handleAddressRemove = useCallback(
+  (boxKey: BoxType) => {
+    setSelected((prev) => ({ ...prev, [boxKey]: null }));
+    setSelectedIds((prev) => ({ ...prev, [boxKey]: "" }));
+
+    const formKeyMap: Record<BoxType, string> = {
+      companyBilling: "companyBillingAddress",
+      supplierBilling: "supplierAddress",
+      companyShipping: "shippingAddress",
+      supplierDispatch: "dispatchAddress",
+    };
+
+    handleFormChange({
+      target: {
+        name: `addresses.${formKeyMap[boxKey]}`,
+        value: {
+          id: "", addressTitle: "", addressType: "",
+          addressLine1: "", addressLine2: "",
+          city: "", state: "", country: "",
+          postalCode: "", phone: "", email: "",
+        },
+      },
+    } as any);
+  },
+  [handleFormChange],
+);
 
   const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
     setForm((prev) => ({
@@ -499,13 +544,13 @@ export const usePurchaseInvoiceForm = ({
     }));
   };
 
-
-
   const loadAddressesForSupplier = useCallback(
-    async (freshSupplierId: string, boxKey: "supplierBilling" | "supplierDispatch") => {
+    async (
+      freshSupplierId: string,
+      boxKey: "supplierBilling" | "supplierDispatch",
+      autoSelect = true,
+    ) => {
       if (!freshSupplierId) return;
-
-
 
       const apiParams: { supplierId: string; addressType?: string } = {
         supplierId: freshSupplierId,
@@ -521,32 +566,16 @@ export const usePurchaseInvoiceForm = ({
         const data = await getAddressList(apiParams);
         setAddresses((prev) => ({ ...prev, [boxKey]: data }));
 
-        if (data?.length > 0) {
+        if (autoSelect && data?.length > 0) {
           const first = data[0];
           setSelected((prev) => ({ ...prev, [boxKey]: first }));
           setSelectedIds((prev) => ({ ...prev, [boxKey]: first.id }));
-
-          const prefix =
-            boxKey === "supplierBilling" ? "supplierAddress" : "dispatchAddress";
-
-          const fullAddress = {
-            id: first.id,
-            addressTitle: first.title,
-            addressType: first.addressType,
-            addressLine1: first.addressLine1 ?? "",
-            addressLine2: first.addressLine2 ?? "",
-            city: first.city ?? "",
-            state: first.state ?? "",
-            country: first.country ?? "",
-            postalCode: first.pincode ?? "",
-            phone: first.phone ?? "",
-            email: first.email ?? "",
-          };
-
-
         }
       } catch (err) {
-        console.error(`[usePurchaseInvoiceForm] Failed to load "${boxKey}":`, err);
+        console.error(
+          `[usePurchaseInvoiceForm] Failed to load "${boxKey}":`,
+          err,
+        );
       } finally {
         setLoading((prev) => ({ ...prev, [boxKey]: false }));
       }
@@ -661,8 +690,6 @@ export const usePurchaseInvoiceForm = ({
 
       const data = res.data;
 
-      
-
       setCustomIncoterm("");
       setCustomShippingRule("");
 
@@ -672,7 +699,8 @@ export const usePurchaseInvoiceForm = ({
         let selectedTax =
           item.taxInfo?.find(
             (t: any) =>
-              t.taxCategory?.toLowerCase() === supplierTaxCategory?.toLowerCase(),
+              t.taxCategory?.toLowerCase() ===
+              supplierTaxCategory?.toLowerCase(),
           ) || item.taxInfo?.[0];
 
         return {
@@ -705,7 +733,7 @@ export const usePurchaseInvoiceForm = ({
         };
       });
 
-   const hasExistingItems = form.items.some((i) => i.itemCode?.trim());
+      const hasExistingItems = form.items.some((i) => i.itemCode?.trim());
       let finalItems = enrichedItems; // default: full replace with PO items
 
       if (hasExistingItems) {
@@ -716,16 +744,16 @@ export const usePurchaseInvoiceForm = ({
         if (action === "keep") {
           // IMPORT: append PO items, skip any already in the table by itemCode
           const existingCodes = new Set(
-            form.items.map((i) => i.itemCode?.trim()).filter(Boolean)
+            form.items.map((i) => i.itemCode?.trim()).filter(Boolean),
           );
           const newOnly = enrichedItems.filter(
-            (i: (typeof enrichedItems)[0]) => !existingCodes.has(i.itemCode?.trim())
+            (i: (typeof enrichedItems)[0]) =>
+              !existingCodes.has(i.itemCode?.trim()),
           );
           finalItems = [...form.items, ...newOnly];
         }
         // action === "replace" → finalItems stays as enrichedItems (full replace, default)
       }
-
 
       const supplierAddrId =
         data.supplierAddress ||
@@ -769,7 +797,6 @@ export const usePurchaseInvoiceForm = ({
         taxesChargesTemplate:
           str(data.taxesChargesTemplate) || prev.taxesChargesTemplate,
         destnCountryCd: str(data.destnCountryCd) || prev.destnCountryCd,
-
 
         terms: {
           buying:
@@ -822,9 +849,9 @@ export const usePurchaseInvoiceForm = ({
           : {}),
         ...(shippingAddrId
           ? {
-            companyShipping: addressStub(shippingAddrId, "Shipping"),
-            companyBilling: addressStub(shippingAddrId, "Billing"),
-          }
+              companyShipping: addressStub(shippingAddrId, "Shipping"),
+              companyBilling: addressStub(shippingAddrId, "Billing"),
+            }
           : {}),
         ...(dispatchAddrId
           ? { supplierDispatch: addressStub(dispatchAddrId, "Dispatch") }
@@ -836,38 +863,50 @@ export const usePurchaseInvoiceForm = ({
         const [companyAddrs, supplierBillingAddrs, supplierDispatchAddrs] =
           await Promise.all([
             getAddressList({ company: true }),
-            getAddressList({ supplierId: freshSupplierId, addressType: "Billing" }),
+            getAddressList({
+              supplierId: freshSupplierId,
+              addressType: "Billing",
+            }),
             getAddressList({ supplierId: freshSupplierId }),
           ]);
 
         setAddresses((prev) => ({
           ...prev,
-          companyBilling:  companyAddrs,
+          companyBilling: companyAddrs,
           companyShipping: companyAddrs,
           supplierBilling: supplierBillingAddrs,
           supplierDispatch: supplierDispatchAddrs,
         }));
 
-        const matchedCompanyBilling =
-          companyAddrs.find((a) => a.id === shippingAddrId) ?? companyAddrs[0] ?? null;
-        const matchedCompanyShipping =
-          companyAddrs.find((a) => a.id === shippingAddrId) ?? null;
-        const matchedSupplierBilling =
-          supplierBillingAddrs.find((a) => a.id === supplierAddrId) ??
-          supplierBillingAddrs[0] ?? null;
-        const matchedSupplierDispatch =
-          supplierDispatchAddrs.find((a) => a.id === dispatchAddrId) ??
-          supplierDispatchAddrs[0] ?? null;
+        const matchedCompanyBilling = shippingAddrId
+          ? (companyAddrs.find((a) => a.id === shippingAddrId) ??
+            companyAddrs[0] ??
+            null)
+          : (companyAddrs[0] ?? null);
+
+        const matchedCompanyShipping = shippingAddrId
+          ? (companyAddrs.find((a) => a.id === shippingAddrId) ?? null)
+          : null;
+
+        const matchedSupplierBilling = supplierAddrId
+          ? (supplierBillingAddrs.find((a) => a.id === supplierAddrId) ??
+            supplierBillingAddrs[0] ??
+            null)
+          : null;
+
+        const matchedSupplierDispatch = dispatchAddrId
+          ? (supplierDispatchAddrs.find((a) => a.id === dispatchAddrId) ?? null)
+          : null;
 
         setSelected({
-          companyBilling:  matchedCompanyBilling,
+          companyBilling: matchedCompanyBilling,
           companyShipping: matchedCompanyShipping,
           supplierBilling: matchedSupplierBilling,
           supplierDispatch: matchedSupplierDispatch,
         });
 
         setSelectedIds({
-          companyBilling:  matchedCompanyBilling?.id  ?? shippingAddrId,
+          companyBilling: matchedCompanyBilling?.id ?? shippingAddrId,
           companyShipping: matchedCompanyShipping?.id ?? shippingAddrId,
           supplierBilling: matchedSupplierBilling?.id ?? supplierAddrId,
           supplierDispatch: matchedSupplierDispatch?.id ?? dispatchAddrId,
@@ -897,9 +936,9 @@ export const usePurchaseInvoiceForm = ({
         i !== idx
           ? item
           : {
-            ...item,
-            [name]: isNum ? (value === "" ? "" : Number(value)) : value,
-          },
+              ...item,
+              [name]: isNum ? (value === "" ? "" : Number(value)) : value,
+            },
       );
       return { ...p, items };
     });
@@ -946,10 +985,10 @@ export const usePurchaseInvoiceForm = ({
           t.taxCategory?.toLowerCase() === supplierTaxCategory?.toLowerCase(),
       );
       if (!selectedTax && data.taxInfo?.length) selectedTax = data.taxInfo[0];
-        const taxTypes = (data.taxInfo || [])
-  .flatMap((tax: any) => tax.taxRates || [])
-  .map((r: any) => r.tax_type)
-  .filter((t: string) => t && t.trim() !== "");
+      const taxTypes = (data.taxInfo || [])
+        .flatMap((tax: any) => tax.taxRates || [])
+        .map((r: any) => r.tax_type)
+        .filter((t: string) => t && t.trim() !== "");
 
       setForm((prev) => {
         const items = [...prev.items];
@@ -1034,7 +1073,7 @@ export const usePurchaseInvoiceForm = ({
       sendPrint: false,
     }));
 
-  // ── Currency symbol 
+  // ── Currency symbol
   const getCurrencySymbol = () => {
     const map: Record<string, string> = {
       ZMW: "K",
@@ -1045,7 +1084,7 @@ export const usePurchaseInvoiceForm = ({
     return map[form.currency] ?? "";
   };
 
-  // Tab validation 
+  // Tab validation
   const validateTab = (tab: POTab): string | null => {
     if (tab === "details") {
       if (!form.supplier) return "Supplier is required";
@@ -1117,7 +1156,7 @@ export const usePurchaseInvoiceForm = ({
       const payload = mapUIToCreatePI(finalForm);
 
       const res = isEditMode
-        ? await updatePurchaseInvoice(pId!, payload)   // ← properly imported now
+        ? await updatePurchaseInvoice(pId!, payload) // ← properly imported now
         : await createPurchaseInvoice(payload);
 
       closeSwal();
@@ -1127,7 +1166,12 @@ export const usePurchaseInvoiceForm = ({
         return;
       }
 
-      showSuccess(res.message || (isEditMode ? "Purchase Invoice updated successfully" : "Purchase Invoice created successfully"));
+      showSuccess(
+        res.message ||
+          (isEditMode
+            ? "Purchase Invoice updated successfully"
+            : "Purchase Invoice created successfully"),
+      );
       useDataRefreshStore
         .getState()
         .triggerRefresh(REFRESH_KEYS.PURCHASE_INVOICE_LIST);
@@ -1224,6 +1268,7 @@ export const usePurchaseInvoiceForm = ({
     setAddresses,
     loading,
     setLoading,
+     handleAddressRemove,
     handleAddressSelect: (boxKey: BoxType, addr: ApiAddress) => {
       setSelected((prev) => ({ ...prev, [boxKey]: addr }));
       setSelectedIds((prev) => ({ ...prev, [boxKey]: addr.id }));
@@ -1252,10 +1297,10 @@ export const usePurchaseInvoiceForm = ({
           },
         },
       } as any);
+      
     },
   };
 };
-
 
 // ─────────────────────────────────────────────
 // Local helper (mirrors mapper's str)

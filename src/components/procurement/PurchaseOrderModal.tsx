@@ -76,6 +76,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     handleCopyBillingToShipping,
     handleCopySupplierToDispatch,
     handleAddressRemove,
+      removedBoxes,
   } = usePurchaseOrderForm({ isOpen, onSuccess: onSubmit, onClose, poId });
 
   const handleNext = useCallback(() => {
@@ -181,6 +182,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           onFormChange={handleFormChange}
           supplierId={form.supplierId}
           companyId={form.company}
+           removedBoxes={removedBoxes}
             handleAddressRemove={handleAddressRemove}   
           customShippingRule={customShippingRule}
           setCustomShippingRule={setCustomShippingRule}
