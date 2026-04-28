@@ -161,8 +161,8 @@ export const generatePurchaseOrderPDF = async (
   const LH = 4.5;
   const PAD = 3;
   const gap = 3;
-    const supplierL = parseAddressDisplay(po.supplierAddressDisplay);
-const dispatchL = parseAddressDisplay(po.dispatchAddressDisplay);
+  const supplierL = parseAddressDisplay(po.supplierAddressDisplay);
+
 const shippingL = parseAddressDisplay(po.shippingAddressDisplay);
 
 const addressBoxes = [
@@ -172,23 +172,12 @@ const addressBoxes = [
     boldTop: po?.supplierName ?? "-",
   },
   {
-    title: "Dispatch Address",
-    lines: dispatchL,
-    boldTop: po?.supplierName ?? "-",
-  },
-  {
     title: "Ship To",
     lines: shippingL,
-    boldTop: po?.shippingAddress ?? "-",
+    boldTop: company?.companyName ?? "-",
   },
 ].filter((box) => box.lines && box.lines.length > 0);
-  const colCount = addressBoxes.length || 1;
-const colW = (W - M * 2 - gap * (colCount - 1)) / colCount;
-
- 
-
-
-
+  const colCount = addressBoxes.length || 1;const colW = (W - M * 2 - gap * (colCount - 1)) / colCount;
   const calcBoxH = (lines: string[], hasBoldTop = false) => {
     let h = BOX_HDR + PAD * 2;
     if (hasBoldTop) h += LH + 1;

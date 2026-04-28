@@ -23,6 +23,9 @@ const QuotationModal = lazy(() => import("../sales/QuotationModal"));
 const PurchaseOrderModal = lazy(
   () => import("../procurement/PurchaseOrderModal"),
 );
+const JournalEntriesModal = lazy(
+  () => import("../JournalEntries/JournalEntriesModal"),
+);
 const PurchaseInvoiceModal = lazy(
   () => import("../procurement/PurchaseInvoiceModal"),
 );
@@ -100,6 +103,7 @@ const GlobalModalHandler: React.FC = () => {
         quotation: "quotation",
         purchaseOrder: "purchaseOrder",
         purchaseInvoice: "purchaseInvoice",
+        JournalEntries: "JournalEntries",
         customer: "customer",
         supplier: "supplier",
         item: "item",
@@ -239,7 +243,17 @@ const GlobalModalHandler: React.FC = () => {
             pId={getModalSeedValue(modal.initialData, "pId")}
           />,
         );
-
+        case "JournalEntries":
+        return wrappedModal(
+          <JournalEntriesModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+           
+          />,
+        );
       case "item":
         return wrappedModal(
           <ItemModal
