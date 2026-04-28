@@ -51,6 +51,7 @@ interface AddressTabProps {
   setCustomIncoterm: React.Dispatch<React.SetStateAction<string>>;
   supplierId?: string;
   companyId?: string;
+  isEditMode?: boolean;
   selected: Record<BoxType, ApiAddress | null>;
   setSelected: React.Dispatch<
     React.SetStateAction<Record<BoxType, ApiAddress | null>>
@@ -64,7 +65,7 @@ interface AddressTabProps {
   loading: Record<BoxType, boolean>;
   setLoading: React.Dispatch<React.SetStateAction<Record<BoxType, boolean>>>;
   handleAddressSelect: (boxKey: BoxType, addr: ApiAddress) => void;
-  handleAddressRemove: (boxKey: BoxType) => void; // ← NEW
+  handleAddressRemove: (boxKey: BoxType) => void; 
   handleCopyBillingToShipping: (checked: boolean) => void;
   handleCopySupplierToDispatch: (checked: boolean) => void;
 }
@@ -318,46 +319,79 @@ export const AddressTab: React.FC<AddressTabProps> = memo(({
   addresses,
   loading,
   handleAddressSelect,
-  handleAddressRemove, // ← NEW
+  handleAddressRemove, 
+   isEditMode,
 }) => {
-  const [incotermLabel, setIncotermLabel] = useState("");
-  const [shippingLabel, setShippingLabel] = useState("");
 
-  // SHOW API FIRST VALUE DEFAULT
-  useEffect(() => {
-    const loadDefaultIncoterm = async () => {
-      const list = await getIncoterms("");
-      if (!list || list.length === 0) return;
-      const first = list[0];
-      onFormChange({ target: { name: "incoterm", value: first.value } });
-      setIncotermLabel(first.label);
-    };
-    if (!incotermLabel) loadDefaultIncoterm();
-  }, [incotermLabel]);
+const [incotermLabel, setIncotermLabel] = useState("");
+const [shippingLabel, setShippingLabel] = useState("");
+const shippingDefaultLoadedRef = useRef(false);
+const incotermDefaultLoadedRef = useRef(false);
 
-  // incoterm edit
-  useEffect(() => {
-    if (form.incoterm && !incotermLabel) {
-      const loadLabel = async () => {
-        const list = await getIncoterms("");
-        const found = list.find((i) => i.value === form.incoterm);
-        if (found) setIncotermLabel(found.label);
-      };
-      loadLabel();
+// Incoterm default — create mode only
+useEffect(() => {
+  if (incotermDefaultLoadedRef.current) return;
+
+  const loadDefaultIncoterm = async () => {
+    const list = await getIncoterms("");
+    if (!list || list.length === 0) return;
+    incotermDefaultLoadedRef.current = true;
+
+    if (isEditMode) {
+      // Edit mode: only set the label for display, never overwrite form value
+      // Wait for form.incoterm to be populated by PO load
+      return;
     }
-  }, [form.incoterm]);
+    // Create mode: set first value as default
+    const first = list[0];
+    onFormChange({ target: { name: "incoterm", value: first.value } });
+    setIncotermLabel(first.label);
+  };
+  loadDefaultIncoterm();
+}, []); // runs once on mount
 
-  // shipping
-  useEffect(() => {
-    const loadDefaultShipping = async () => {
-      const list = await getShippingRules("");
-      if (!list || list.length === 0) return;
-      const first = list[0];
-      onFormChange({ target: { name: "shippingRule", value: first.value } });
-      setShippingLabel(first.label);
-    };
-    if (!shippingLabel) loadDefaultShipping();
-  }, [shippingLabel]);
+// Sync incoterm label when form.incoterm changes (handles edit mode PO load)
+useEffect(() => {
+  if (!form.incoterm) return;
+  const syncLabel = async () => {
+    const list = await getIncoterms("");
+    const found = list.find((i) => i.value === form.incoterm);
+    if (found) setIncotermLabel(found.label);
+  };
+  syncLabel();
+}, [form.incoterm]); // ← fires whenever PO data populates the field
+
+// Shipping default — create mode only
+useEffect(() => {
+  if (shippingDefaultLoadedRef.current) return;
+
+  const loadDefaultShipping = async () => {
+    const list = await getShippingRules("");
+    if (!list || list.length === 0) return;
+    shippingDefaultLoadedRef.current = true;
+
+    if (isEditMode) {
+      // Edit mode: don't overwrite, label will sync via form.shippingRule effect
+      return;
+    }
+    // Create mode: set first value as default
+    const first = list[0];
+    onFormChange({ target: { name: "shippingRule", value: first.value } });
+    setShippingLabel(first.label);
+  };
+  loadDefaultShipping();
+}, []); // runs once on mount
+
+// Sync shipping label when form.shippingRule changes (handles edit mode PO load)
+useEffect(() => {
+  if (!form.shippingRule) return;
+  const syncLabel = async () => {
+    const list = await getShippingRules("");
+    const found = list.find((i) => i.value === form.shippingRule);
+    if (found) setShippingLabel(found.label);
+  };
+  syncLabel();
+}, [form.shippingRule]); // ← fires when PO data sets the field
 
   const fetchShippingRules = async (q: string) => {
     const list = await getShippingRules(q);

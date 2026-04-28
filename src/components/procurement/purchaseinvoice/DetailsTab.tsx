@@ -32,6 +32,7 @@ interface DetailsTabProps {
   onDuplicateItem: (idx: number) => void;
   getCurrencySymbol: () => string;
   poLoading: boolean;
+  isEditMode?: boolean;
   poList: any[];
   onPOSelect: (po: any) => void;
   usePO: boolean;
@@ -111,6 +112,7 @@ export const DetailsTab = ({
   onPOSelect,
   usePO,
   onTogglePO,
+  isEditMode,
   onBulkItemChange,
 }: DetailsTabProps) => {
   const symbol = getCurrencySymbol();
@@ -136,29 +138,25 @@ export const DetailsTab = ({
     } as any);
   };
   useEffect(() => {
-    const setDefaultMode = async () => {
-      try {
-        const res = await getAllModeOfPayment(1, 10, "", 1);
-
-        const list = res?.data?.modeOfPayments || res?.data || [];
-
-        if (list.length && !form.paymentType) {
-          const first = list[0];
-
-          onFormChange({
-            target: {
-              name: "paymentType",
-              value: first.name || first.modeOfPayment,
-            },
-          } as any);
-        }
-      } catch (err) {
-        console.error("Default mode fetch failed", err);
+  if (isEditMode) return; // ← edit mode: don't set default, value comes from saved PI
+  const setDefaultMode = async () => {
+    try {
+      const res = await getAllModeOfPayment(1, 10, "", 1);
+      const list = res?.data?.modeOfPayments || res?.data || [];
+      if (list.length && !form.paymentType) {
+        const first = list[0];
+        onFormChange({
+          target: { name: "paymentType", value: first.name || first.modeOfPayment },
+        } as any);
       }
-    };
+    } catch (err) {
+      console.error("Default mode fetch failed", err);
+    }
+  };
+  setDefaultMode();
+}, [isEditMode]); 
 
-    setDefaultMode();
-  }, []);
+
   const handleTopWarehouseChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
