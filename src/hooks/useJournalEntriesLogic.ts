@@ -264,7 +264,10 @@ const calculateAmounts = (currentEntries: JournalEntryLine[], editedIndex: numbe
       const rate2 = parseFloat(newEntries[pairIndex].exchange_rate) || 1;
 
       const convertedAmount = (inputAmount * rate1) / rate2;
-      newEntries[pairIndex].amount = convertedAmount ? Number(convertedAmount.toFixed(2)).toString() : "";
+      // newEntries[pairIndex].amount = convertedAmount ? Number(convertedAmount.toFixed(2)).toString() : "";
+      newEntries[pairIndex].amount = convertedAmount 
+        ? parseFloat(convertedAmount.toFixed(6)).toString() 
+        : "";
     } else if (inputAmount > 0 && !newEntries[pairIndex].ccy) {
       newEntries[pairIndex].amount = inputAmount.toString();
     } else if (!inputAmount) {
