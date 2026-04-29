@@ -310,7 +310,13 @@ export const API = {
   },
 
   CreditNote:{
-    Create:`${ERP_BASE}/api/resource/Sales Invoice`,
+    Credit_note:`${ERP_BASE}/api/resource/Sales Invoice`,
+  },
+
+
+
+  DebitNote:{
+      Debit_note:`${ERP_BASE}/api/resource/Purchase Invoice`
   },
 
   /* =========================
