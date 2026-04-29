@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
+
 const api = createAxiosInstance(ERP_BASE);
 export const CreditNoteAPI = API.CreditNote;
 
@@ -56,8 +57,6 @@ export async function createCreditNote(
 export async function getAllCreditNotes(
   page: number = 1,
   page_size: number = 10,
-  sortBy: string = "",
-  sortOrder: "asc" | "desc" = "asc",
   search: string = "",
 ): Promise<any> {
   const limit_start = (page - 1) * page_size;
@@ -65,12 +64,11 @@ export async function getAllCreditNotes(
   const resp: AxiosResponse = await api.get(CreditNoteAPI.Credit_note, { 
     params: {
       filters: JSON.stringify([["is_return", "=", 1]]),
-      fields: JSON.stringify(["name", "customer_name", "return_against", "grand_total", "status", "posting_date"]),
+      fields: JSON.stringify(["name", "customer_name", "return_against", "grand_total", "status", "posting_date","currency"]),
       with_pagination: 1,
       limit_start,
       limit_page_length: page_size,
       ...(search && { search }),
-      ...(sortBy && { order_by: `${sortBy} ${sortOrder}` }),
     },
   });
 
@@ -88,8 +86,8 @@ export async function getAllCreditNotes(
   };
 }
 
+
 export async function deleteCreditNote(invoiceId: string): Promise<any> {
   const resp: AxiosResponse = await api.delete(`${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`);
   return resp.data;
 }
- 
