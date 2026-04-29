@@ -1,10 +1,3 @@
-/**
- * useCreditNoteForm.ts
- *
- * All business logic for Credit Note creation.
- * Pattern mirrors usePurchaseOrderForm.
- */
-
 import { useState, useCallback } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
@@ -23,7 +16,7 @@ export interface InvoiceOption {
 export interface CreditNoteItem {
   item_code: string;
   item_name: string;
-  qty: number;       // always negative for return
+  qty: number;      
   rate: number;
   batch_no: string;
   warehouse: string;
@@ -137,7 +130,7 @@ export function useCreditNoteForm(
     [],
   );
 
-  // Auto-set warehouse for a row only when currently empty (called by WarehouseSelect.onDefaultLoad)
+ 
   const handleWarehouseDefault = useCallback(
     (index: number, warehouse: string) => {
       setForm((prev) => {

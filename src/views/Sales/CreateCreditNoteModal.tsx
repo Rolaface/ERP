@@ -1,13 +1,3 @@
-/**
- * CreateCreditNoteModal.tsx
- *
- * Modal shell for Credit Note creation.
- * Mirrors PurchaseOrderModal structure:
- *   - useCreditNoteForm handles all logic
- *   - Tab components are pure presentational
- *   - MinimizableModal provides the chrome
- */
-
 import React, { useMemo } from "react";
 import { FileMinus } from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
@@ -86,10 +76,6 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
     [onClose, reset, saving],
   );
 
-  // ── Tab content (single tab — Details only) ──────────────────────────────
-  // Wrapped in useMemo to avoid re-mounting on unrelated re-renders,
-  // following the same pattern as PurchaseOrderModal.
-
   const tabContent = useMemo(
     () => (
       <CreditNoteDetailsTab
@@ -136,7 +122,6 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
         onSubmit={handleSubmit}
         className="h-full flex flex-col"
       >
-        {/* Tab bar — single tab, shown for future extensibility */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
             <button
