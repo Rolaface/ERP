@@ -10,12 +10,13 @@ export interface CreditNoteQueryParams {
 
 
 export interface CreditNote {
-  name: string;
-  customer_name: string;
-  grand_total: number;
+  noteNo: string;
+  customer: string;
+  amount: number;
   status: string;
-  posting_date: string;
-  return_against: string;
+  date: string;
+  invoiceNo: string;
+  currency: string;
 }
 
 

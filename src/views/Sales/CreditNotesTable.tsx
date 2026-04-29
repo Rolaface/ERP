@@ -8,29 +8,20 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { showLoading, closeSwal, showApiError, showSuccess } from "../../utils/alert";
 import InvoiceDetailsModal from "./InvoiceDetailsModal";
-import ActionButton, { ActionGroup } from "../../components/ui/Table/ActionButton";
+import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
+import { fireManagedSwal } from "../../utils/swalManager";
+import { CreditNote,CreditNoteListResponse,CreditNoteQueryParams } from "../../types/sales/Creditnotes";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type CreditNote = {
-  noteNo:    string;
-  invoiceNo: string;
-  customer:  string;
-  date:      string;
-  amount:    number;
-  currency:  string;
-  status:    "Draft" | "Approved" | "Refunded";
-};
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+
 
 const CreditNotesTable: React.FC = () => {
 
-  // ── Data ──────────────────────────────────────────────────────────────────
+
   const [data, setData]           = useState<CreditNote[]>([]);
   const [loading, setLoading]     = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -62,16 +53,16 @@ const CreditNotesTable: React.FC = () => {
       setLoading(true);
 
      
-      const resp = await getAllCreditNotes(page, pageSize, sortBy, sortOrder, searchTerm);
+      const resp = await getAllCreditNotes(page, pageSize,searchTerm);
 
-      const mappedData: CreditNote[] = resp.data.data.map((item: any) => ({
+    const mappedData: CreditNote[] = resp.data.data.map((item: any) => ({
   noteNo:    item.name,
   invoiceNo: item.return_against || "-", 
   customer:  item.customer_name,
   date:      item.posting_date,
   amount:    Math.abs(item.grand_total),
-  currency:  "INR",
   status:    item.status ?? "Draft",
+  currency:  item.currency,
 }));
 
       setData(mappedData);
@@ -102,13 +93,26 @@ const CreditNotesTable: React.FC = () => {
     setSortOrder(order);
     setPage(1);
   };
-  const handleDelete = async (noteNo: string) => {
+const handleDelete = async (noteNo: string) => {
+  const result = await fireManagedSwal({
+    icon: "warning",
+    title: "Are you sure?",
+    text: `Delete credit note ${noteNo}?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, delete",
+    reverseButtons: true,
+  });
+
+  if (!result.isConfirmed) return;
+
   try {
     showLoading("Deleting credit note...");
     await deleteCreditNote(noteNo);
     closeSwal();
+    setData((prev) => prev.filter((item) => item.noteNo !== noteNo)); // optimistic remove
     showSuccess("Credit note deleted successfully");
-    fetchCreditNotes();
   } catch (error) {
     closeSwal();
     showApiError(error);
@@ -148,16 +152,16 @@ const CreditNotesTable: React.FC = () => {
       let total   = 1;
 
       do {
-        const resp = await getAllCreditNotes(current, 100, sortBy, sortOrder, searchTerm);
+        const resp = await getAllCreditNotes(current, 100, searchTerm);
 
         const mappedData: CreditNote[] = resp.data.data.map((item: any) => ({
           noteNo:    item.name,
-          invoiceNo: "-", 
-          customer:  item.customer,
+          invoiceNo: item.return_against || "-", 
+          customer:  item.customer_name,
           date:      item.posting_date,
           amount:    Math.abs(item.grand_total),
-          currency:  "INR",
           status:    item.status ?? "Draft",
+          currency:  item.currency,
         }));
 
         allData = [...allData, ...mappedData];
@@ -191,8 +195,8 @@ const CreditNotesTable: React.FC = () => {
           Customer:         r.customer,
           Date:             r.date,
           Amount:           r.amount,
-          Currency:         r.currency,
           Status:           r.status,
+          Currency:         r.currency,
         }))
       );
 
@@ -239,29 +243,28 @@ const CreditNotesTable: React.FC = () => {
       render: (r) => <StatusBadge status={r.status} />,
     },
     {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (r) => (
-       <ActionGroup>
-  <ActionButton
-    type="view"
-    iconOnly
-    variant="secondary"
-    onClick={() => {
-      setDetailsId(r.noteNo);
-      setDetailsOpen(true);
-    }}
-  />
-  <ActionButton
-    type="delete"
-    iconOnly
-    variant="secondary"
-    onClick={() => handleDelete(r.noteNo)}
-  />
-</ActionGroup>
-      ),
-    },
+  key: "actions",
+  header: "Actions",
+  align: "center",
+  render: (r) => (
+    <div className="flex items-center justify-center gap-2">
+      <ActionButton
+        type="view"
+        iconOnly
+        onClick={() => {
+          setDetailsId(r.noteNo);
+          setDetailsOpen(true);
+        }}
+      />
+      <ActionMenu
+        onDelete={(e) => {
+          e?.stopPropagation();
+          handleDelete(r.noteNo);
+        }}
+      />
+    </div>
+  ),
+},
   ];
 
   // ── Render ────────────────────────────────────────────────────────────────
