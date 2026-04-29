@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus } from "lucide-react";
 
-/* ✅ GROUPED FAQs (progressive disclosure) */
 const faqGroups = [
   {
     title: "Getting Started",
@@ -26,11 +25,11 @@ const faqGroups = [
     items: [
       {
         q: "Can I track both customer and supplier payments?",
-        a: "Absolutely. You get full visibility into receivables and payables, with real-time tracking. Many users report 60–70% less time spent on reconciliation.",
+        a: "Absolutely. You get full visibility into receivables and payables, with real-time tracking.",
       },
       {
         q: "How is this different from traditional accounting tools?",
-        a: "Traditional tools focus only on accounting. This system connects payments, inventory, sales, and accounting — so you don’t have to switch tools or fix mismatches manually.",
+        a: "Traditional tools focus only on accounting. This system connects payments, inventory, sales, and accounting — eliminating mismatches.",
       },
     ],
   },
@@ -39,7 +38,7 @@ const faqGroups = [
     items: [
       {
         q: "Is my business data safe here?",
-        a: "Yes. Your data is encrypted, securely stored, and automatically backed up. The system is designed with enterprise-grade safeguards to ensure reliability and safety.",
+        a: "Yes. Your data is encrypted, securely stored, and automatically backed up with enterprise-grade safeguards.",
       },
     ],
   },
@@ -50,7 +49,6 @@ const FAQ: React.FC = () => {
   const [query, setQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  /* Flatten for search */
   const allFaqs = faqGroups.flatMap((group, gi) =>
     group.items.map((item, ii) => ({
       ...item,
@@ -65,47 +63,28 @@ const FAQ: React.FC = () => {
       item.a.toLowerCase().includes(query.toLowerCase())
   );
 
-  /* ✅ Smart open on search */
   useEffect(() => {
     if (query && filtered.length > 0) {
       setActive(filtered[0].key);
     }
   }, [query]);
 
-  /* Scroll auto-open (fallback) */
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!containerRef.current) return;
-
-      const rect = containerRef.current.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.6 && !active) {
-        setActive("0-0");
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [active]);
-
   return (
     <section className="section section-alt relative overflow-hidden">
 
       {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-primary/5 pointer-events-none" />
+      <div className="absolute inset-0 bg-grid-subtle opacity-10 pointer-events-none" />
 
       <div ref={containerRef} className="container-app max-w-3xl">
 
         {/* HEADER */}
         <div className="text-center stack-md animate-fade-in">
-          <h2 className="text-[32px] md:text-[38px] font-semibold text-main leading-snug tracking-tight">
-            Everything you need to{" "}
-            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
-              know before getting started
-            </span>
+          <h2 className="text-[32px] md:text-[38px] font-semibold text-main tracking-tight">
+            Questions before you start?
           </h2>
 
           <p className="text-body text-muted max-w-lg mx-auto">
-            Clear answers so you can make the right decision with confidence.
+            Everything you need to make a confident decision.
           </p>
         </div>
 
@@ -120,21 +99,20 @@ const FAQ: React.FC = () => {
           />
         </div>
 
-        {/* FAQ GROUPS */}
+        {/* FAQ */}
         <div className="mt-[calc(var(--density-gap)*5)] space-y-[calc(var(--density-gap)*3)]">
 
           {(query ? [{ title: "Results", items: filtered }] : faqGroups).map(
             (group: any, gi: number) => (
               <div key={gi}>
 
-                {/* Group Title */}
                 {!query && (
-                  <h3 className="text-[13px] font-semibold text-muted uppercase tracking-wider mb-3">
+                  <h3 className="text-[12px] font-semibold text-muted uppercase tracking-wider mb-4">
                     {group.title}
                   </h3>
                 )}
 
-                <div className="divide-y divide-[rgba(0,0,0,0.06)]">
+                <div className="space-y-3">
 
                   {group.items.map((item: any, ii: number) => {
                     const key = query ? item.key : `${gi}-${ii}`;
@@ -144,15 +122,14 @@ const FAQ: React.FC = () => {
                       <div
                         key={key}
                         className={`
-                          py-[calc(var(--density-gap)*2.4)] px-2 rounded-lg transition-all duration-300
-                          ${isOpen ? "bg-primary/5 border-l-2 border-primary" : ""}
+                          group rounded-xl border border-theme bg-card transition-all duration-300
+                          ${isOpen ? "shadow-soft-xl" : "hover:shadow-md"}
                         `}
                       >
-
                         {/* QUESTION */}
                         <button
                           onClick={() => setActive(isOpen ? null : key)}
-                          className="w-full flex justify-between text-left"
+                          className="w-full flex justify-between items-center px-5 py-4 text-left"
                         >
                           <h3 className="text-[15px] font-medium text-main">
                             {item.q}
@@ -160,7 +137,6 @@ const FAQ: React.FC = () => {
 
                           <motion.div
                             animate={{ rotate: isOpen ? 45 : 0 }}
-                            transition={{ duration: 0.25 }}
                             className="text-primary"
                           >
                             <Plus size={18} />
@@ -171,19 +147,14 @@ const FAQ: React.FC = () => {
                         <AnimatePresence initial={false}>
                           {isOpen && (
                             <motion.div
-                              initial={{ height: 0, opacity: 0, y: -6 }}
-                              animate={{ height: "auto", opacity: 1, y: 0 }}
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
-                              transition={{
-                                duration: 0.4,
-                                ease: [0.22, 1, 0.36, 1],
-                              }}
+                              transition={{ duration: 0.35 }}
                               className="overflow-hidden"
                             >
-                              <div className="mt-4 pt-4 border-t border-[rgba(0,0,0,0.06)]">
-                                <p className="text-[14px] text-muted leading-relaxed max-w-[92%]">
-                                  {item.a}
-                                </p>
+                              <div className="px-5 pb-5 text-[14px] text-muted leading-relaxed border-t border-theme/60 pt-4">
+                                {item.a}
                               </div>
                             </motion.div>
                           )}
@@ -196,16 +167,30 @@ const FAQ: React.FC = () => {
               </div>
             )
           )}
+
+          {/* Empty state */}
+          {query && filtered.length === 0 && (
+            <p className="text-center text-muted text-[14px]">
+              No results found. Try a different keyword.
+            </p>
+          )}
         </div>
 
-        {/* FINAL OBJECTION KILLER */}
+        {/* 🔥 CONVERSION BRIDGE */}
         <div className="text-center mt-[calc(var(--density-gap)*5)] animate-fade-in">
+
           <p className="text-[14px] text-muted">
-            Still unsure?{" "}
-            <span className="text-primary font-medium">
-              Try it risk-free — setup takes less than 2 minutes.
-            </span>
+            Still unsure?
           </p>
+
+          <p className="text-[16px] text-main font-medium mt-1">
+            Try it yourself — takes less than 2 minutes to set up.
+          </p>
+
+          <button className="mt-4 btn btn-premium px-6 py-3">
+            Start Free Trial →
+          </button>
+
         </div>
 
       </div>
@@ -227,7 +212,6 @@ const FAQ: React.FC = () => {
           }
         `}
       </style>
-
     </section>
   );
 };
