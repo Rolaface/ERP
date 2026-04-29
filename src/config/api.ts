@@ -299,17 +299,16 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoices`,
     getById: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoice_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.create_sales_invoice`,
-
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice_status`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.delete_sales_invoice`,
-   
     editInvoice: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
   },
 
   CreditNote:{
-    Create:`${ERP_BASE}/api/resource/Sales Invoice`,
-    GetAll: `${ERP_BASE}/api/resource/Sales Invoice`,
-    Delete: `${ERP_BASE}/api/resource/Sales Invoice`,
+    Credit_note:`${ERP_BASE}/api/resource/Sales Invoice`,
+  },
+  DebitNote:{
+      Debit_note:`${ERP_BASE}/api/resource/Purchase Invoice`
   },
 
   /* =========================

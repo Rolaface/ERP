@@ -11,6 +11,7 @@ export interface CreditNotePayload {
   customer: string;
   company: string;
   update_stock: 0 | 1;
+  update_outstanding_for_self: 0 | 1;
   items: {
     item_code: string;
     qty: number;          // negative number
@@ -20,12 +21,39 @@ export interface CreditNotePayload {
   }[];
 }
  
+ 
+export interface CreditNoteResponse {
+  status_code: number;
+  data: Record<string, any> | null;
+  message: string;
+  _server_messages?: string;
+}
+ 
 // ─── API call ─────────────────────────────────────────────────────────────────
  
-export async function createCreditNote(payload: CreditNotePayload): Promise<any> {
-  const resp: AxiosResponse = await api.post(CreditNoteAPI.Create, payload);
-  return resp.data;
+export async function createCreditNote(
+  payload: CreditNotePayload,
+): Promise<CreditNoteResponse> {
+  const resp: AxiosResponse = await api.post(CreditNoteAPI.Credit_note, payload);
+ 
+  const body = resp.data ?? {};
+ 
+  const doc: Record<string, any> | null = body.data ?? null;
+
+  const docName: string = doc?.name ?? "";
+  const message = docName
+    ? `Credit Note created: ${docName}`
+    : "Credit Note created successfully";
+ 
+  return {
+    status_code: resp.status,          
+    data: doc,
+    message,
+    _server_messages: body._server_messages ?? undefined,
+  };
 }
+
+
 export async function getAllCreditNotes(
   page: number = 1,
   page_size: number = 10,
@@ -33,7 +61,7 @@ export async function getAllCreditNotes(
 ): Promise<any> {
   const limit_start = (page - 1) * page_size;
 
-  const resp: AxiosResponse = await api.get(CreditNoteAPI.GetAll, { 
+  const resp: AxiosResponse = await api.get(CreditNoteAPI.Credit_note, { 
     params: {
       filters: JSON.stringify([["is_return", "=", 1]]),
       fields: JSON.stringify(["name", "customer_name", "return_against", "grand_total", "status", "posting_date","currency"]),
@@ -60,7 +88,6 @@ export async function getAllCreditNotes(
 
 
 export async function deleteCreditNote(invoiceId: string): Promise<any> {
-  const resp: AxiosResponse = await api.delete(`${CreditNoteAPI.Delete}/${encodeURIComponent(invoiceId)}`);
+  const resp: AxiosResponse = await api.delete(`${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`);
   return resp.data;
 }
-
