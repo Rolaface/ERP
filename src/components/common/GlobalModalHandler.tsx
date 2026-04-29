@@ -60,6 +60,7 @@ const AddAssetModal = lazy(
 );
 
 const RfqModal = lazy(() => import("../procurement/rfq/RfqModal"))
+const CreditNoteModal = lazy(() => import("../../views/Sales/CreateCreditNoteModal"))
 
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
@@ -406,7 +407,21 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={getRecordInitialData(modal.initialData) as any}
+            initialData={modal.initialData as string}
+            isEdit={modal.isEdit}
+          />,
+        );
+
+         case "CreditNote":
+        return wrappedModal(
+          <CreditNoteModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={modal.initialData as string}
+            isEdit={modal.isEdit}
           />,
         );
 
