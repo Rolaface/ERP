@@ -76,11 +76,9 @@ const FAQ: React.FC = () => {
 
         </div>
 
-        {/* 🔍 SEARCH BAR (UPGRADED) */}
-        <div className="mt-[calc(var(--density-gap)*2.5)] animate-fade-in">
-
+        {/* SEARCH */}
+        <div className="mt-[calc(var(--density-gap)*3)] animate-fade-in">
           <div className="relative group">
-            {/* Glow */}
             <div className="absolute inset-0 bg-primary/5 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 rounded-[var(--density-radius)]" />
 
             <input
@@ -88,94 +86,90 @@ const FAQ: React.FC = () => {
               placeholder="Search your question..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="relative w-full px-[calc(var(--density-gap)*1.6)] py-[calc(var(--density-gap)*1.3)] rounded-[calc(var(--density-radius)*1.2)] border border-theme bg-card text-[14px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+              className="relative w-full px-[calc(var(--density-gap)*1.8)] py-[calc(var(--density-gap)*1.5)] rounded-[calc(var(--density-radius)*1.2)] border border-theme bg-card text-[14px] outline-none transition-all duration-300 focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             />
           </div>
-
         </div>
 
         {/* FAQ LIST */}
-        <div className="mt-[calc(var(--density-gap)*3)] space-y-[calc(var(--density-gap)*1.2)]">
+        <div className="mt-[calc(var(--density-gap)*4)] divide-y divide-[rgba(0,0,0,0.06)]">
 
           {filteredFaqs.map((item, i) => {
             const isOpen = active === i;
 
             return (
-              <div
-                key={i}
-                className="group relative rounded-[calc(var(--density-radius)*1.5)] transition-all duration-300"
-              >
+              <div key={i} className="py-[calc(var(--density-gap)*1.8)]">
 
-                {/* Hover glow */}
-                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 blur-xl rounded-[calc(var(--density-radius)*1.5)] transition-all duration-300" />
-
-                {/* CARD */}
-                <div
-                  className={`relative bg-card border border-theme rounded-[calc(var(--density-radius)*1.5)] transition-all duration-300 
-                  ${isOpen ? "shadow-md border-primary/30" : "hover:shadow-sm hover:border-primary/20"}`}
+                {/* QUESTION */}
+                <button
+                  onClick={() => setActive(isOpen ? null : i)}
+                  className="w-full flex items-center justify-between text-left"
                 >
+                  <div className="flex items-center gap-2 pr-4 flex-wrap">
 
-                  {/* QUESTION */}
-                  <button
-                    onClick={() => setActive(isOpen ? null : i)}
-                    className="w-full flex items-center justify-between p-[calc(var(--density-gap)*1.6)] text-left"
+                    <h3 className="text-[15px] font-medium text-main">
+                      {item.q}
+                    </h3>
+
+                    {i < 2 && (
+                      <span className="text-[10px] px-2 py-[2px] rounded-full bg-primary/10 text-primary font-medium">
+                        Popular
+                      </span>
+                    )}
+
+                  </div>
+
+                  <motion.div
+                    animate={{ rotate: isOpen ? 45 : 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-primary flex-shrink-0"
                   >
-                    <div className="flex items-center gap-2 pr-4 flex-wrap">
+                    <Plus size={18} />
+                  </motion.div>
+                </button>
 
-                      <h3 className="text-[15px] font-medium text-main">
-                        {item.q}
-                      </h3>
-
-                      {i < 2 && (
-                        <span className="text-[10px] px-2 py-[2px] rounded-full bg-primary/10 text-primary font-medium">
-                          Popular
-                        </span>
-                      )}
-
-                    </div>
-
+                {/* ANSWER */}
+                <AnimatePresence initial={false}>
+                  {isOpen && (
                     <motion.div
-                      animate={{ rotate: isOpen ? 45 : 0 }}
-                      transition={{ duration: 0.25 }}
-                      className="text-primary flex-shrink-0"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{
+                        duration: 0.35,
+                        ease: [0.22, 1, 0.36, 1], // smoother cubic
+                      }}
+                      className="overflow-hidden"
                     >
-                      <Plus size={18} />
-                    </motion.div>
-                  </button>
 
-                  {/* ANSWER */}
-                  <AnimatePresence initial={false}>
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className="overflow-hidden"
-                      >
-                        <p className="px-[calc(var(--density-gap)*1.6)] pb-[calc(var(--density-gap)*1.6)] text-[14px] text-muted leading-relaxed max-w-[92%]">
+                      {/* subtle divider when open */}
+                      <div className="mt-4 border-t border-[rgba(0,0,0,0.06)] pt-4">
+
+                        <p className="text-[14px] text-muted leading-relaxed max-w-[92%]">
                           {item.a}
                         </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
-                </div>
+                      </div>
+
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
               </div>
             );
           })}
 
           {/* Empty state */}
           {filteredFaqs.length === 0 && (
-            <p className="text-center text-[13px] text-muted">
+            <p className="text-center text-[13px] text-muted py-6">
               No results found. Try a different keyword.
             </p>
           )}
 
         </div>
 
-        {/* BOTTOM CONVERSION */}
-        <div className="text-center mt-[calc(var(--density-gap)*4)] animate-fade-in">
+        {/* BOTTOM */}
+        <div className="text-center mt-[calc(var(--density-gap)*4.5)] animate-fade-in">
 
           <p className="text-[14px] text-muted">
             Still have questions?{" "}
