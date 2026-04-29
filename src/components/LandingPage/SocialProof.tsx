@@ -30,7 +30,6 @@ const SocialProof: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [startAnimation, setStartAnimation] = useState(false);
 
-  // 👇 Trigger animation on scroll (IntersectionObserver)
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -47,7 +46,6 @@ const SocialProof: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Counters (start only when visible)
   const rating = useCounter(48, startAnimation);
   const revenue = useCounter(100, startAnimation);
   const users = useCounter(500, startAnimation);
@@ -63,7 +61,7 @@ const SocialProof: React.FC = () => {
       <div className="container-app text-center stack-lg">
 
         {/* TOP TEXT */}
-        <div className="max-w-2xl mx-auto stack-sm">
+        <div className="max-w-2xl mx-auto stack-sm motion-fade-up">
           <p className="text-[11px] text-muted font-semibold tracking-[0.12em] uppercase">
             Trusted across India
           </p>
@@ -75,80 +73,84 @@ const SocialProof: React.FC = () => {
           </h2>
         </div>
 
-        {/* LOGO STRIP (SVG logos, grayscale → hover) */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-white/40 backdrop-blur-xl rounded-xl border border-white/30"></div>
+        {/* LOGO STRIP (auto-scroll for liveliness) */}
+        <div className="relative mt-6 overflow-hidden">
+          {/* Glass layer */}
+          <div className="absolute inset-0 bg-card/60 backdrop-blur-xl rounded-xl border border-theme"></div>
 
-          <div className="relative flex flex-wrap justify-center items-center gap-x-12 gap-y-6 py-6">
+          {/* Gradient fade edges */}
+          <div className="absolute left-0 top-0 h-full w-20 bg-gradient-to-r from-[var(--bg)] to-transparent z-10"></div>
+          <div className="absolute right-0 top-0 h-full w-20 bg-gradient-to-l from-[var(--bg)] to-transparent z-10"></div>
 
-            {["logo1.svg", "logo2.svg", "logo3.svg", "logo4.svg", "logo5.svg"].map((logo, i) => (
-              <img
-                key={i}
-                src={`/logos/${logo}`}
-                alt="brand"
-                className="h-6 opacity-50 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0 hover:scale-105"
-              />
-            ))}
-
+          {/* Scrolling logos */}
+          <div className="relative flex gap-12 py-6 animate-[scroll_25s_linear_infinite] whitespace-nowrap">
+            {[...Array(2)].map((_, loop) =>
+              ["logo1.svg", "logo2.svg", "logo3.svg", "logo4.svg", "logo5.svg"].map((logo, i) => (
+                <img
+                  key={`${loop}-${i}`}
+                  src={`/logos/${logo}`}
+                  alt="brand"
+                  className="h-6 opacity-50 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0 hover:scale-105"
+                />
+              ))
+            )}
           </div>
         </div>
 
         {/* METRICS */}
-        <div className="mt-12 flex flex-col md:flex-row items-center justify-center divide-y md:divide-y-0 md:divide-x divide-theme/60">
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
 
-          {/* Metric 1 */}
-          <div
-            className="flex-1 py-6 px-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
-            style={{ transitionDelay: "0ms" }}
-          >
-            <p className="text-[10px] tracking-[0.14em] uppercase text-muted mb-2">
-              Average rating
-            </p>
+          {/* Metric Card */}
+          {[
+            {
+              label: "Average rating",
+              value: (rating / 10).toFixed(1),
+              suffix: "",
+              sub: "based on Google Reviews",
+            },
+            {
+              label: "Transactions yearly",
+              value: revenue,
+              prefix: "₹",
+              suffix: "Cr+",
+              sub: "processed annually",
+            },
+            {
+              label: "Active businesses",
+              value: users,
+              suffix: "+",
+              sub: "using daily operations",
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="group relative p-6 rounded-xl border border-theme bg-card/40 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_40px_rgba(0,0,0,0.06)] motion-fade-up"
+              style={{ transitionDelay: `${i * 80}ms` }}
+            >
+              {/* subtle glow on hover */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300 rounded-xl"
+                style={{
+                  background: "var(--gradient-primary)",
+                  filter: "blur(40px)",
+                  opacity: 0.08,
+                }}
+              />
 
-            <p className="text-[42px] font-semibold text-main">
-              {(rating / 10).toFixed(1)}
-            </p>
+              <p className="text-[10px] tracking-[0.14em] uppercase text-muted mb-2 relative z-10">
+                {item.label}
+              </p>
 
-            <p className="text-[12px] text-muted mt-1">
-              based on Google Reviews
-            </p>
-          </div>
+              <p className="text-[40px] md:text-[44px] font-semibold text-main relative z-10">
+                {item.prefix || ""}
+                {item.value}
+                {item.suffix || ""}
+              </p>
 
-          {/* Metric 2 */}
-          <div
-            className="flex-1 py-6 px-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
-            style={{ transitionDelay: "60ms" }}
-          >
-            <p className="text-[10px] tracking-[0.14em] uppercase text-muted mb-2">
-              Transactions yearly
-            </p>
-
-            <p className="text-[42px] font-semibold text-main">
-              ₹{revenue}Cr+
-            </p>
-
-            <p className="text-[12px] text-muted mt-1">
-              processed annually
-            </p>
-          </div>
-
-          {/* Metric 3 */}
-          <div
-            className="flex-1 py-6 px-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
-            style={{ transitionDelay: "120ms" }}
-          >
-            <p className="text-[10px] tracking-[0.14em] uppercase text-muted mb-2">
-              Active businesses
-            </p>
-
-            <p className="text-[42px] font-semibold text-main">
-              {users}+
-            </p>
-
-            <p className="text-[12px] text-muted mt-1">
-              using daily operations
-            </p>
-          </div>
+              <p className="text-[12px] text-muted mt-1 relative z-10">
+                {item.sub}
+              </p>
+            </div>
+          ))}
 
         </div>
       </div>
