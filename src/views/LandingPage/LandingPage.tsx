@@ -10,13 +10,14 @@ import Testimonials from "../../components/LandingPage/Testimonials";
 import CTA from "../../components/LandingPage/CTA";
 import FAQ from "../../components/LandingPage/FAQ";
 import Footer from "../../components/LandingPage/Footer";
+import StickyCTA from "../../components/LandingPage/StickyCTA"
 
 
 
 const LandingPage: React.FC = () => {
   return (
     <div className="w-full min-h-screen bg-white">
-      
+
       {/* NAVBAR */}
       <Navbar />
 
@@ -25,7 +26,7 @@ const LandingPage: React.FC = () => {
 
       {/* SOCIAL PROOF */}
       <SocialProof />
-      
+
       {/* PROBLEM SECTION */}
       <ProblemSection />
 
@@ -44,10 +45,9 @@ const LandingPage: React.FC = () => {
 
       <Footer />
 
+      <StickyCTA />
 
 
-      {/* <Features /> */}
-      {/* <CTA /> */}
 
     </div>
   );
