@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
-import { createCreditNote } from "../api/CreditNoteapi";
+import { createCreditNote, updateCreditNote } from "../api/CreditNoteapi";
 import { showApiError, showSuccess } from "../utils/alert";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -46,12 +46,35 @@ const EMPTY_FORM: CreditNoteFormState = {
 export function useCreditNoteForm(
   onSuccess?: (data: any) => void,
   onClose?: () => void,
+  initialData?: any,
+  isEdit?: boolean,
 ) {
   const { companyName } = useCompanyStore();
 
   const [form, setForm] = useState<CreditNoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+
+  useEffect(() => {
+    if (!initialData) return;
+
+    setForm({
+      return_against: initialData.return_against || "",
+      customer: {
+        id: initialData.customer || "",
+        name: initialData.customer || "",
+      },
+      update_stock: !!initialData.update_stock,
+      items: (initialData.items || []).map((it: any) => ({
+        item_code: it.item_code,
+        item_name: it.item_name,
+        qty: Number(it.qty),
+        rate: Number(it.rate),
+        batch_no: it.batch_no || "",
+        warehouse: it.warehouse || "",
+      })),
+    });
+  }, [initialData]);
 
   // ── Invoice search ───────────────────────────────────────────────────────
 
@@ -169,7 +192,6 @@ export function useCreditNoteForm(
     return null;
   }, [form]);
 
-  // ── Submit ───────────────────────────────────────────────────────────────
 
   const handleSubmit = useCallback(
     async (e?: React.FormEvent) => {
@@ -200,14 +222,15 @@ export function useCreditNoteForm(
 
       setSaving(true);
       try {
-        const res = await createCreditNote(payload)
+        const res = isEdit && initialData?.name
+          ? await updateCreditNote(initialData.name, payload)
+          : await createCreditNote(payload);
 
         if (!res || ![200, 201].includes(res.status_code)) {
           showApiError(res?.message ?? "Credit note creation failed");
           return;
         }
 
-        // Log any ERPNext server-side warnings to the console (non-blocking)
         if (res._server_messages) {
           try {
             const msgs: any[] = JSON.parse(res._server_messages);
@@ -234,7 +257,7 @@ export function useCreditNoteForm(
         setSaving(false);
       }
     },
-    [saving, validate, form, companyName, onSuccess, onClose],
+    [saving, validate, form, companyName, onSuccess, onClose, isEdit, initialData],
   );
 
   // ── Derived ──────────────────────────────────────────────────────────────

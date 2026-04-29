@@ -3,62 +3,60 @@ import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import CreateCreditNoteModal from "./CreateCreditNoteModal";
-import { getAllCreditNotes,deleteCreditNote} from "../../api/CreditNoteapi";
+import { getAllCreditNotes, deleteCreditNote } from "../../api/CreditNoteapi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { showLoading, closeSwal, showApiError, showSuccess } from "../../utils/alert";
+import { showLoading, closeSwal, showSuccess, showApiError } from "../../utils/alert";
 import InvoiceDetailsModal from "./InvoiceDetailsModal";
-import ActionButton, {ActionMenu } from "../../components/ui/Table/ActionButton";
+import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { CreditNote} from "../../types/sales/Creditnotes";
-
+import { getCreditNoteById } from "../../api/CreditNoteapi";
+import { CreditNote } from "../../types/sales/Creditnotes";
 
 
 const CreditNotesTable: React.FC = () => {
-
-
-  const [data, setData]           = useState<CreditNote[]>([]);
-  const [loading, setLoading]     = useState(false);
+  const [data, setData] = useState<CreditNote[]>([]);
+  const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
 
   // ── Pagination (server) ───────────────────────────────────────────────────
-  const [page, setPage]           = useState(1);
-  const [pageSize, setPageSize]   = useState(10);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [editData, setEditData] = useState<any | null>(null);
 
   // ── Search (server) ───────────────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
 
   // ── Sort (server) ─────────────────────────────────────────────────────────
-  const [sortBy, setSortBy]       = useState("");
+  const [sortBy, setSortBy] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // ── Modals ────────────────────────────────────────────────────────────────
   const [createModals, setCreateModals] = useState<{ id: string }[]>([]);
-  const [detailsOpen, setDetailsOpen]         = useState(false);
-  const [detailsId, setDetailsId]             = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
-  
+  // ── Reset page when search changes ───────────────────────────────────────
   useEffect(() => { setPage(1); }, [searchTerm]);
 
- 
+  // ── Fetch credit notes ────────────────────────────────────────────────────
   const fetchCreditNotes = async () => {
     try {
       setLoading(true);
 
-     
-      const resp = await getAllCreditNotes(page, pageSize,searchTerm);
+      const resp = await getAllCreditNotes(page, pageSize, searchTerm);
 
-    const mappedData: CreditNote[] = resp.data.data.map((item: any) => ({
-  noteNo:    item.name,
-  invoiceNo: item.return_against || "-", 
-  customer:  item.customer_name,
-  date:      item.posting_date,
-  amount:    Math.abs(item.grand_total),
-  status:    item.status ?? "Draft",
-  currency:  item.currency,
-}));
+      const mappedData: CreditNote[] = resp.data.data.map((item: any) => ({
+        noteNo: item.name,
+        invoiceNo: item.return_against || "-",
+        customer: item.customer_name,
+        date: item.posting_date,
+        amount: Math.abs(item.grand_total),
+        status: item.status ?? "Draft",
+        currency: item.currency,
+      }));
 
       setData(mappedData);
       setTotalPages(resp.pagination.total_pages);
@@ -74,9 +72,8 @@ const CreditNotesTable: React.FC = () => {
 
   useEffect(() => {
     fetchCreditNotes();
-  }, [page, pageSize, sortBy, sortOrder, searchTerm]); // ← all server params included
+  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
-  // ── Sort handler ──────────────────────────────────────────────────────────
   const handleSortChange = ({
     sortBy: colKey,
     sortOrder: order,
@@ -88,33 +85,7 @@ const CreditNotesTable: React.FC = () => {
     setSortOrder(order);
     setPage(1);
   };
-const handleDelete = async (noteNo: string) => {
-  const result = await fireManagedSwal({
-    icon: "warning",
-    title: "Are you sure?",
-    text: `Delete credit note ${noteNo}?`,
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, delete",
-    reverseButtons: true,
-  });
 
-  if (!result.isConfirmed) return;
-
-  try {
-    showLoading("Deleting credit note...");
-    await deleteCreditNote(noteNo);
-    closeSwal();
-    setData((prev) => prev.filter((item) => item.noteNo !== noteNo)); // optimistic remove
-    showSuccess("Credit note deleted successfully");
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
-
-  // ── Receipt URL opener (kept — do not remove) ─────────────────────────────
   const handleOpenReceipt = (receiptUrl: string) => {
     const normalizedUrl = receiptUrl.startsWith("http://")
       ? receiptUrl.replace(/^http:\/\//i, "https://")
@@ -139,28 +110,27 @@ const handleDelete = async (noteNo: string) => {
     a.remove();
   };
 
- 
   const fetchAllCreditNotesForExport = async (): Promise<CreditNote[]> => {
     try {
       let allData: CreditNote[] = [];
       let current = 1;
-      let total   = 1;
+      let total = 1;
 
       do {
         const resp = await getAllCreditNotes(current, 100, searchTerm);
 
         const mappedData: CreditNote[] = resp.data.data.map((item: any) => ({
-          noteNo:    item.name,
-          invoiceNo: item.return_against || "-", 
-          customer:  item.customer_name,
-          date:      item.posting_date,
-          amount:    Math.abs(item.grand_total),
-          status:    item.status ?? "Draft",
-          currency:  item.currency,
+          noteNo: item.name,
+          invoiceNo: item.return_against || "-",
+          customer: item.customer_name,
+          date: item.posting_date,
+          amount: Math.abs(item.grand_total),
+          status: item.status ?? "Draft",
+          currency: item.currency,
         }));
 
         allData = [...allData, ...mappedData];
-        total   = resp.pagination.total_pages;
+        total = resp.pagination.total_pages;
         current++;
       } while (current <= total);
 
@@ -168,6 +138,52 @@ const handleDelete = async (noteNo: string) => {
     } catch (error) {
       showApiError(error);
       return [];
+    }
+  };
+
+  const handleDelete = async (noteNo: string) => {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete credit note ${noteNo}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      showLoading("Deleting credit note...");
+      await deleteCreditNote(noteNo);
+      closeSwal();
+      setData((prev) => prev.filter((item) => item.noteNo !== noteNo)); // optimistic remove
+      showSuccess("Credit note deleted successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
+
+  const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    try {
+      showLoading("Loading Credit Note...");
+      const res = await getCreditNoteById(note.noteNo);
+      console.log("RAW res:", res);
+      closeSwal();
+
+      const doc = res?.data;
+      if (!doc) {
+        showApiError("Credit Note data could not be loaded");
+        return;
+      }
+      setEditData(doc);
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
     }
   };
 
@@ -186,12 +202,12 @@ const handleDelete = async (noteNo: string) => {
       const worksheet = XLSX.utils.json_to_sheet(
         dataToExport.map((r) => ({
           "Credit Note No": r.noteNo,
-          "Receipt No":     r.invoiceNo,
-          Customer:         r.customer,
-          Date:             r.date,
-          Amount:           r.amount,
-          Status:           r.status,
-          Currency:         r.currency,
+          "Receipt No": r.invoiceNo,
+          Customer: r.customer,
+          Date: r.date,
+          Amount: r.amount,
+          Status: r.status,
+          Currency: r.currency,
         }))
       );
 
@@ -214,12 +230,10 @@ const handleDelete = async (noteNo: string) => {
     }
   };
 
-  // ── Columns ───────────────────────────────────────────────────────────────
-
   const columns: Column<CreditNote>[] = [
-    { key: "noteNo",    header: "Credit Invoice No", sortable: true },
+    { key: "noteNo", header: "Credit Invoice No", sortable: true },
     { key: "invoiceNo", header: "Receipt No" },
-    { key: "customer",  header: "Customer", sortable: true },
+    { key: "customer", header: "Customer", sortable: true },
     {
       key: "amount",
       header: "Amount",
@@ -231,47 +245,47 @@ const handleDelete = async (noteNo: string) => {
         </code>
       ),
     },
-    { key: "date",   header: "Date",   sortable: true },
+    { key: "date", header: "Date", sortable: true },
     {
       key: "status",
       header: "Status",
       render: (r) => <StatusBadge status={r.status} />,
     },
- {
-  key: "actions",
-  header: "Actions",
-  align: "center",
-  render: (r) => (
-    <div className="flex items-center justify-center gap-2">
-      <ActionButton
-        type="view"
-        iconOnly
-        onClick={() => {
-          setDetailsId(r.noteNo);
-          setDetailsOpen(true);
-        }}
-      />
-      <ActionButton
-        type="edit"
-        iconOnly
-        onClick={(e) => {
-          e?.stopPropagation();
-          handleEdit(r.noteNo);
-        }}
-        title="Edit Credit Note"
-      />
-      <ActionMenu
-        onDelete={(e) => {
-          e?.stopPropagation();
-          handleDelete(r.noteNo);
-        }}
-      />
-    </div>
-  ),
-},
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (r) => (
+        <ActionGroup>
+          <ActionButton
+            type="view"
+            iconOnly
+            onClick={() => {
+              setDetailsId(r.noteNo);
+              setDetailsOpen(true);
+            }}
+          />
+          <ActionButton
+            type="edit"
+            onClick={(e) => handleEdit(r, e)}
+            iconOnly
+            disabled={r.status !== "Draft"}
+            title={
+              r.status !== "Draft"
+                ? "Only Draft invoices can be edited"
+                : "Edit Credit Note"
+            }
+          />
+          <ActionMenu
+            onDelete={(e) => {
+              e?.stopPropagation();
+              handleDelete(r.noteNo);
+            }}
+          />
+        </ActionGroup>
+      ),
+    },
   ];
-
-  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="h-full min-h-0">
@@ -319,10 +333,24 @@ const handleDelete = async (noteNo: string) => {
           onSubmit={(payload) => {
             console.log("Credit Note Payload:", payload);
             setCreateModals((prev) => prev.filter((m) => m.id !== modal.id));
+            fetchCreditNotes();
           }}
           invoiceId={data.length > 0 ? data[0].invoiceNo : ""}
         />
       ))}
+
+      {editData && (
+        <CreateCreditNoteModal
+          isOpen={true}
+          isEdit={true}
+          initialData={editData}
+          onClose={() => setEditData(null)}
+          onSubmit={() => {
+            setEditData(null);
+            fetchCreditNotes();
+          }}
+        />
+      )}
     </div>
   );
 };

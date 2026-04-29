@@ -236,7 +236,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
   const ui = { page, setPage, itemCount };
 
   const actions = {
-    addItem: () => {},       
+    addItem: () => {},         
     duplicateItem: () => {},   
     removeItem: onRemoveItem,
     handleItemChange: (
@@ -312,7 +312,6 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
             type="number"
             name="qty"
             value={isPlaceholder ? "" : Math.abs(it.qty)}
-            min={1}
             disabled={isPlaceholder}
             className={inputCls}
             onChange={(e) => {
@@ -329,7 +328,6 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
             type="number"
             name="rate"
             value={isPlaceholder ? "" : it.rate}
-            min={0}
             disabled={isPlaceholder}
             className={inputCls}
             onChange={(e) => {

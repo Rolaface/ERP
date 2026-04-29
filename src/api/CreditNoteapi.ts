@@ -29,7 +29,7 @@ export interface CreditNoteResponse {
   _server_messages?: string;
 }
  
-// ─── API call ─────────────────────────────────────────────────────────────────
+
  
 export async function createCreditNote(
   payload: CreditNotePayload,
