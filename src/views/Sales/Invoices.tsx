@@ -668,53 +668,33 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Actions",
         align: "center",
         render: (inv) => (
-          <div className="flex items-center justify-center gap-2">
-            <ActionButton
-              type="view"
-              onClick={(e) => handleView(inv.invoiceNumber, e)}
-              iconOnly
-            />
-            <ActionButton
-              type="edit"
-              onClick={(e) => handleEdit(inv.invoiceNumber, e)}
-              iconOnly
-              disabled={inv.invoiceStatus !== "Draft"}
-              title={
-                inv.invoiceStatus !== "Draft"
-                  ? "Only Draft invoices can be edited"
-                  : "Edit Invoice"
-              }
-            />
-            <ActionMenu
-              showDownload
-              onDownload={(e) => handleDownload(inv, e)}
-              onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
-              customActions={[
-                ...(inv.invoiceStatus !== "Draft" &&
-                  inv.invoiceStatus !== "Cancelled" &&
-                  inv.outstandingAmount > 0
-                  ? [
-                    {
-                      label: "Receive Payment",
-                      onClick: () => handleReceivePayment(inv),
-                    },
-                  ]
-                  : []),
-                {
-                  label: "View PDF",
-                  onClick: () => handlePreviewPDF(inv),
-                },
-                ...(STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
-                  (status) => ({
-                    label: `Mark as ${status}`,
-                    danger: status === "Paid",
-                    onClick: () =>
-                      handleRowStatusChange(inv.invoiceNumber, status),
-                  }),
-                ),
-              ]}
-            />
-          </div>
+         <div className="flex items-center justify-center gap-2">
+  <ActionButton
+    type="view"
+    iconOnly
+    onClick={() => {
+      setDetailsId(r.noteNo);
+      setDetailsOpen(true);
+    }}
+  />
+
+  <ActionButton
+    type="edit"
+    iconOnly
+    onClick={(e) => {
+      e?.stopPropagation();
+      console.log("Edit clicked for:", r.noteNo);
+    }}
+    title="Edit Credit Note"
+  />
+
+  <ActionMenu
+    onDelete={(e) => {
+      e?.stopPropagation();
+      handleDelete(r.noteNo);
+    }}
+  />
+</div>
         ),
       },
     ],

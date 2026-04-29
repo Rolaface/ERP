@@ -29,7 +29,7 @@ export interface CreditNoteResponse {
   _server_messages?: string;
 }
  
-// ─── API call ─────────────────────────────────────────────────────────────────
+
  
 export async function createCreditNote(
   payload: CreditNotePayload,
@@ -86,8 +86,35 @@ export async function getAllCreditNotes(
   };
 }
 
+export async function updateCreditNote(
+  invoiceId: string,
+  payload: {
+    update_stock: number;
+    items: {
+      item_code: string;
+      qty: number;
+      rate: number;
+      batch_no?: string;
+      warehouse?: string;
+    }[];
+  }
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`,
+    payload,
+  );
+  return resp.data;
+}
+
 
 export async function deleteCreditNote(invoiceId: string): Promise<any> {
   const resp: AxiosResponse = await api.delete(`${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`);
+  return resp.data;
+}
+
+export async function getCreditNoteById(invoiceId: string): Promise<any> {
+  const resp: AxiosResponse = await api.get(
+    `${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`
+  );
   return resp.data;
 }

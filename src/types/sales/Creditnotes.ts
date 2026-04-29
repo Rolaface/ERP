@@ -25,3 +25,16 @@ export interface CreditNoteListResponse {
   data: CreditNote[];
   total_count?: number;
 }
+
+export interface CreditNoteUpdateItem {
+  item_code: string;
+  qty: number;
+  rate: number;
+  batch_no?: string;
+  warehouse?: string;
+}
+
+export interface CreditNoteUpdatePayload {
+  update_stock: number;
+  items: CreditNoteUpdateItem[];
+}

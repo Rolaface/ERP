@@ -13,9 +13,9 @@ export interface DebitNotePayload {
   update_stock: 0 | 1;
   items: {
     item_code: string;
-    qty: number;          // negative number
+    qty: number;          
     rate: number;
-    batch_no?: string;    // omitted if empty
+    batch_no?: string;    
     warehouse: string;
   }[];
 }
