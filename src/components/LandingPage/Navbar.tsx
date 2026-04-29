@@ -15,14 +15,13 @@ const Navbar: React.FC = () => {
 
   const ticking = useRef(false);
 
-  // rAF Scroll Handling (smooth + performant)
+  // Scroll handling
   useEffect(() => {
     const updateScroll = () => {
       const scrollY = window.scrollY;
 
       setIsScrolled(scrollY > 8);
 
-      // Progress bar
       const docHeight =
         document.documentElement.scrollHeight - window.innerHeight;
       const progress = (scrollY / docHeight) * 100;
@@ -44,7 +43,7 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Intersection Observer for Active Section
+  // Active section tracking
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -68,7 +67,6 @@ const Navbar: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Smooth scroll (soft snapping)
   const handleNavClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
     href: string
@@ -78,7 +76,7 @@ const Navbar: React.FC = () => {
     if (!target) return;
 
     const y =
-      target.getBoundingClientRect().top + window.scrollY - 70; // offset for navbar
+      target.getBoundingClientRect().top + window.scrollY - 70;
 
     window.scrollTo({
       top: y,
@@ -88,7 +86,7 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Progress Indicator */}
+      {/* Scroll Progress */}
       <div className="fixed top-0 left-0 w-full h-[2px] z-[60]">
         <div
           className="h-full bg-primary transition-[width] duration-150 ease-out"
@@ -97,43 +95,44 @@ const Navbar: React.FC = () => {
       </div>
 
       <nav
-        className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-          isScrolled
-            ? `
-              bg-card/70 backdrop-blur-2xl 
-              border-b border-theme/60 
-              shadow-[0_4px_20px_rgba(0,0,0,0.04)]
-            `
-            : `
-              bg-card/50 backdrop-blur-xl 
-              border-b border-transparent
-            `
-        }`}
+        className={`
+          sticky top-0 z-50 w-full
+          transition-all duration-[var(--motion-base)] ease-[var(--ease-smooth)]
+          ${isScrolled ? "surface-floating border-b border-theme shadow-sm" : "bg-surface-elevated"}
+        `}
       >
         <div
-          className={`container-app flex items-center justify-between transition-all duration-300 ${
-            isScrolled ? "h-14" : "h-16"
-          }`}
+          className={`
+            container-app flex items-center justify-between
+            transition-all duration-[var(--motion-base)]
+            ${isScrolled ? "h-14" : "h-16"}
+          `}
         >
-          {/* LEFT: LOGO */}
+          {/* LOGO */}
           <div className="flex items-center gap-3 cursor-pointer group">
-            <div className="w-10 h-10 rounded-[var(--density-radius)] bg-primary flex items-center justify-center text-white font-bold shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:shadow-md">
+            <div
+              className="
+                w-10 h-10 flex items-center justify-center
+                rounded-[var(--density-radius)]
+                bg-primary text-white font-bold
+                interactive-lift
+              "
+            >
               ERP
             </div>
 
             <div className="flex flex-col leading-tight">
-              <span className="text-lg font-semibold text-main tracking-tight transition-colors group-hover:text-primary">
+              <span className="text-lg font-semibold text-main tracking-tight group-hover:text-primary transition-colors">
                 YourERP
               </span>
-
               <span className="text-[10px] text-muted hidden md:block">
                 Trusted by 500+ businesses
               </span>
             </div>
           </div>
 
-          {/* CENTER: NAV LINKS */}
-          <div className="hidden md:flex items-center gap-5 text-sm font-medium text-muted">
+          {/* NAV LINKS */}
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium">
             {NAV_ITEMS.map((item) => {
               const isActive = activeSection === item.href;
 
@@ -142,26 +141,23 @@ const Navbar: React.FC = () => {
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
-                  className="relative group px-1 py-1"
+                  className="relative group px-1 py-1 link"
                 >
                   <span
-                    className={`transition-colors duration-150 ${
-                      isActive ? "text-main" : "group-hover:text-main"
-                    }`}
+                    className={`
+                      transition-colors
+                      ${isActive ? "text-main" : "text-muted group-hover:text-main"}
+                    `}
                   >
                     {item.name}
                   </span>
 
-                  {/* Underline */}
+                  {/* Active underline */}
                   <span
                     className={`
                       absolute left-0 -bottom-1 h-[2px] w-full bg-primary
-                      origin-left transition-transform duration-150 ease-out
-                      ${
-                        isActive
-                          ? "scale-x-100"
-                          : "scale-x-0 group-hover:scale-x-100"
-                      }
+                      origin-left transition-transform duration-[var(--motion-fast)]
+                      ${isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}
                     `}
                   />
                 </a>
@@ -169,36 +165,18 @@ const Navbar: React.FC = () => {
             })}
           </div>
 
-          {/* RIGHT: LOGIN + CTA */}
+          {/* ACTIONS */}
           <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="hidden md:block text-sm font-medium text-muted hover:text-main transition-colors duration-150"
+              className="hidden md:block text-sm font-medium text-muted hover:text-main transition-colors"
             >
               Login
             </Link>
 
             <Link to="/signup">
-              <button
-                className={`
-                  relative inline-flex items-center justify-center
-                  px-[var(--density-padding-lg)] py-[var(--density-padding-sm)]
-                  text-sm font-semibold text-white
-                  rounded-[var(--density-radius)]
-                  bg-primary
-
-                  shadow-[0_2px_6px_rgba(0,0,0,0.08)]
-                  transition-all duration-200
-
-                  hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]
-                  hover:scale-[1.02]
-
-                  active:scale-[0.98]
-                `}
-              >
-                <span className="absolute inset-0 rounded-[var(--density-radius)] bg-primary opacity-0 blur-xl transition-opacity duration-300 hover:opacity-20"></span>
-
-                <span className="relative z-10">Sign Up</span>
+              <button className="btn btn-primary btn-premium">
+                Sign Up
               </button>
             </Link>
           </div>
