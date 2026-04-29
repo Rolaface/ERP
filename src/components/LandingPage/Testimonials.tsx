@@ -60,7 +60,7 @@ const renderHighlightedText = (text: string, highlight?: string) => {
   );
 };
 
-// 🔊 tiny voice waveform
+// waveform
 const VoiceWave = () => (
   <div className="flex items-end gap-[2px] h-3">
     {[...Array(5)].map((_, i) => (
@@ -76,13 +76,19 @@ const VoiceWave = () => (
 const SmallCard = ({ t }: any) => (
   <div className="group relative flex-shrink-0 w-[280px] md:w-[320px]">
 
-    <div className="rounded-xl bg-card border border-theme p-5 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
+    <div className="rounded-xl bg-card border border-theme p-5 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-soft-xl">
 
-      {/* Stars */}
-      <div className="flex mb-3 text-primary opacity-80">
-        {[...Array(5)].map((_, i) => (
-          <Star key={i} size={12} fill="currentColor" />
-        ))}
+      {/* Top row */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex text-primary opacity-80">
+          {[...Array(5)].map((_, i) => (
+            <Star key={i} size={12} fill="currentColor" />
+          ))}
+        </div>
+
+        <span className="text-[10px] px-2 py-[2px] rounded-full bg-primary/10 text-primary font-medium">
+          {t.tag}
+        </span>
       </div>
 
       {/* Text */}
@@ -98,7 +104,6 @@ const SmallCard = ({ t }: any) => (
 
       {/* User */}
       <div className="flex items-center justify-between">
-
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--row-hover)] text-[11px] font-medium">
             {t.icon}
@@ -110,11 +115,9 @@ const SmallCard = ({ t }: any) => (
           </div>
         </div>
 
-        {/* Voice hint */}
         <div className="opacity-0 group-hover:opacity-100 transition">
           <VoiceWave />
         </div>
-
       </div>
     </div>
   </div>
@@ -127,7 +130,6 @@ const TestimonialsSection: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [pause, setPause] = useState(false);
 
-  // 🎯 Pause marquee when centered
   useEffect(() => {
     const handleScroll = () => {
       const el = sectionRef.current;
@@ -150,40 +152,49 @@ const TestimonialsSection: React.FC = () => {
       ref={sectionRef}
       className="section section-default relative overflow-hidden"
     >
-
       {/* Background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.08),transparent_60%)] pointer-events-none"></div>
+      <div className="absolute inset-0 bg-grid-subtle opacity-10 pointer-events-none"></div>
 
       <div className="container-app">
 
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
+          <p className="text-[11px] tracking-[0.14em] uppercase text-primary font-semibold">
+            Customer Stories
+          </p>
 
           <h2 className="text-[34px] md:text-[42px] font-semibold text-main leading-snug tracking-tight">
-            Loved by{" "}
-            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
-              growing businesses
-            </span>
+            Real businesses.{" "}
+            <span className="text-gradient">Real results.</span>
           </h2>
 
           <p className="text-body text-muted">
-            Proven across workflows — saving time, improving accuracy, and giving full visibility.
+            Trusted by teams handling thousands of transactions every month.
           </p>
-
         </div>
 
-        {/* 🔥 FEATURED */}
+        {/* FEATURED */}
         {featured && (
           <div className="mt-[calc(var(--density-gap)*4)] max-w-3xl mx-auto">
 
-            <div className="relative rounded-2xl bg-card border border-theme p-10 md:p-12 shadow-lg">
+            <div className="relative rounded-2xl bg-card border border-theme p-10 md:p-12 shadow-soft-xl">
 
+              {/* Tag */}
+              <div className="mb-4">
+                <span className="text-[11px] px-3 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                  {featured.tag}
+                </span>
+              </div>
+
+              {/* Stars */}
               <div className="flex mb-6 text-primary">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} size={18} fill="currentColor" />
                 ))}
               </div>
 
+              {/* Text */}
               <p className="text-[18px] md:text-[20px] text-main leading-relaxed mb-8">
                 {renderHighlightedText(featured.text, featured.highlight)}
               </p>
@@ -192,13 +203,10 @@ const TestimonialsSection: React.FC = () => {
               <div className="flex gap-3 mb-6 text-[11px] text-muted">
                 <span className="px-3 py-1 bg-surface-2 rounded">{featured.size}</span>
                 <span className="px-3 py-1 bg-surface-2 rounded">{featured.volume}</span>
-                <span className="px-3 py-1 bg-primary/10 text-primary rounded">
-                  {featured.tag}
-                </span>
               </div>
 
+              {/* User */}
               <div className="flex items-center justify-between">
-
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[var(--row-hover)] text-[14px] font-semibold">
                     {featured.icon}
@@ -215,14 +223,11 @@ const TestimonialsSection: React.FC = () => {
                 </div>
 
                 <VoiceWave />
-
               </div>
-
             </div>
 
           </div>
         )}
-
       </div>
 
       {/* CAROUSEL */}
@@ -238,12 +243,18 @@ const TestimonialsSection: React.FC = () => {
         </div>
       </div>
 
-      {/* TRUST LINE */}
+      {/* TRUST + CTA BRIDGE */}
       <div className="text-center mt-[calc(var(--density-gap)*5)] animate-fade-in">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-theme rounded-full shadow-sm">
+        <div className="inline-flex flex-col items-center gap-2 px-5 py-3 bg-card border border-theme rounded-full shadow-sm">
+
           <p className="text-[13px] text-muted">
             Join 500+ businesses already running smarter operations
           </p>
+
+          <span className="text-[12px] text-primary font-medium">
+            Takes less than 2 minutes to get started →
+          </span>
+
         </div>
       </div>
 
