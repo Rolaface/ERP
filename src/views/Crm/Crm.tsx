@@ -78,8 +78,8 @@ const CRM: React.FC = () => {
   return (
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
-        title="CRM"
-        description="Customers and CRM reporting with a shared workspace rhythm."
+        title="Customers"
+        description="Manage customers and track their payments in one place."
         icon={<FaUsers />}
       />
       <AppTabs tabs={crmTabs} activeTab={activeTab} onChange={handleTabChange} />

@@ -282,7 +282,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="quantity"
-              value={it.quantity}
+              placeholder="1"
+              value={it.quantity === 1 ? "" : it.quantity}
               onChange={(e) => onItemChange(e, i)}
               className="w-[75px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -331,7 +332,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="rate"
-              value={it.rate}
+              placeholder="0"
+             value={it.rate === 0 ? "" : it.rate}
               onChange={(e) => onItemChange(e, i)}
               className="w-[56px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -364,7 +366,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="discount"
-              value={it.discount ?? ""}
+              placeholder="0"
+              value={it.discount === 0 ? "" : it.discount}
               onChange={(e) => onItemChange(e, i)}
               className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -377,7 +380,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="vatRate"
-              value={it.vatRate}
+              placeholder="0"
+               value={it.vatRate === 0 ? "" : it.vatRate}
               onChange={(e) => onItemChange(e, i)}
               className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
               disabled

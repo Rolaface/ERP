@@ -102,7 +102,7 @@ const Procurement: React.FC = () => {
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title="Procurement"
-        description="Supplier operations, approvals, and purchasing analytics in one layout system."
+        description="Suppliers, RFQs, POs, purchase invoices, and payments in one workflow."
         icon={<FaShoppingBag />}
       />
       <AppTabs tabs={procurementTabs} activeTab={activeTab} onChange={handleTabChange} />

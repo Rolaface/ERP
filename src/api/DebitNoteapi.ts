@@ -28,29 +28,52 @@ export interface DebitNoteResponse {
   _server_messages?: string;
 }
  
+
+export function parseErpNextError(errorBody: any): string {
+  if (errorBody?.exception) {
+    const raw: string = errorBody.exception;
+    const lines = raw.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    if (lines.length > 0) return lines[lines.length - 1];
+  }
+
+
+  if (errorBody?.exc) {
+    try {
+      const parsed = JSON.parse(errorBody.exc);
+      const trace: string = Array.isArray(parsed) ? parsed[0] : parsed;
+      const lines = trace.split("\n").map((l: string) => l.trim()).filter(Boolean);
+      if (lines.length > 0) return lines[lines.length - 1];
+    } catch {
+    }
+  }
+
+  return "Operation failed. Please try again.";
+}
 // ─── API call ─────────────────────────────────────────────────────────────────
  
 export async function createDebitNote(
   payload: DebitNotePayload,
 ): Promise<DebitNoteResponse> {
-  const resp: AxiosResponse = await api.post(DebitNoteAPI.Debit_note, payload);
- 
-  const body = resp.data ?? {};
-
-  const doc: Record<string, any> | null = body.data ?? null;
- 
-  const docName: string = doc?.name ?? "";
-  const message = docName
-    ? `Debit Note created: ${docName}`
-    : "Debit Note created successfully";
- 
-  return {
-    status_code: resp.status,       
-    data: doc,
-    message,
-    _server_messages: body._server_messages ?? undefined,
-  };
+  try {
+    const resp: AxiosResponse = await api.post(DebitNoteAPI.Debit_note, payload);
+    const body = resp.data ?? {};
+    const doc: Record<string, any> | null = body.data ?? null;
+    const docName: string = doc?.name ?? "";
+    const message = docName
+      ? `Debit Note created: ${docName}`
+      : "Debit Note created successfully";
+    return {
+      status_code: resp.status,
+      data: doc,
+      message,
+      _server_messages: body._server_messages ?? undefined,
+    };
+  } catch (err: any) {
+    const body = err?.response?.data ?? {};
+    throw new Error(parseErpNextError(body));
+  }
 }
+
  
 export async function getAllDebitNotes(
   page: number = 1,
@@ -106,22 +129,52 @@ export async function getDebitNotebyId(invoiceId: string): Promise<any> {
 }
 
 
+
 export async function updateDebitNote(
   invoiceId: string,
   payload: DebitNotePayload,
 ): Promise<DebitNoteResponse> {
-  const resp: AxiosResponse = await api.put(
-    `${DebitNoteAPI.Debit_note}/${encodeURIComponent(invoiceId)}`,
-    payload
-  );
+  try {
+    const resp: AxiosResponse = await api.put(
+      `${DebitNoteAPI.Debit_note}/${encodeURIComponent(invoiceId)}`,
+      payload
+    );
+    const body = resp.data ?? {};
+    return {
+      status_code: resp.status,
+      data: body.data ?? null,
+      message: "Debit Note updated successfully",
+      _server_messages: body._server_messages,
+    };
+  } catch (err: any) {
+    const body = err?.response?.data ?? {};
+    throw new Error(parseErpNextError(body));
+  }
+}
 
-  const body = resp.data ?? {};
-  const doc = body.data ?? null;
 
-  return {
-    status_code: resp.status,
-    data: doc,
-    message: "Debit Note updated successfully",
-    _server_messages: body._server_messages,
-  };
+export async function submitDebitNote(noteNo: string): Promise<any> {
+  try {
+    const resp: AxiosResponse = await api.put(
+      `${DebitNoteAPI.Debit_note}/${encodeURIComponent(noteNo)}`,
+      { docstatus: 1 }
+    );
+    return resp.data;
+  } catch (err: any) {
+    const body = err?.response?.data ?? {};
+    throw new Error(parseErpNextError(body));
+  }
+}
+
+export async function cancelDebitNote(noteNo: string): Promise<any> {
+  try {
+    const resp: AxiosResponse = await api.put(
+      `${DebitNoteAPI.Debit_note}/${encodeURIComponent(noteNo)}`,
+      { docstatus: 2 }
+    );
+    return resp.data;
+  } catch (err: any) {
+    const body = err?.response?.data ?? {};
+    throw new Error(parseErpNextError(body));
+  }
 }

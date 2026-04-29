@@ -1,4 +1,4 @@
-import React, { useState, useEffect , useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Trash2, Copy, User, Mail, Phone } from "lucide-react";
 import type {
   ItemRow,
@@ -191,7 +191,7 @@ export const DetailsTab = ({
           </Tooltip>
         </td> */}
 
-  
+
         {/* Packing */}
         <td className="px-2 py-[2px]">
           <div className="flex items-center justify-center w-[70px]">
@@ -281,7 +281,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="quantity"
-              value={it.quantity}
+              placeholder="1"
+              value={it.quantity === 1 ? "" : it.quantity}
               onChange={(e) => onItemChange(e, i)}
               className="w-[80px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -309,7 +310,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="rate"
-              value={it.rate}
+              placeholder="0"
+              value={it.rate === 0 ? "" : it.rate}
               onChange={(e) => onItemChange(e, i)}
               className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -322,7 +324,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="vatRate"
-              value={it.vatRate}
+              value={it.vatRate === 0 ? "" : it.vatRate}
+              placeholder="0"
               onChange={(e) => onItemChange(e, i)}
               disabled
               className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
@@ -333,12 +336,12 @@ export const DetailsTab = ({
         {/* VAT Code */}
         <td className="px-2 py-1">
           <Tooltip
-    content={
-      it.taxTypes?.length
-        ? `Tax Types: ${it.taxTypes.join(", ")}`
-        : "No Tax Types"
-    }
-  >
+            content={
+              it.taxTypes?.length
+                ? `Tax Types: ${it.taxTypes.join(", ")}`
+                : "No Tax Types"
+            }
+          >
             <input
               name="vatCd"
               value={it.vatCd || ""}
@@ -498,7 +501,7 @@ export const DetailsTab = ({
             </Tooltip>
           </div>
         </div>
-     
+
       </div>
 
       {/* ── Main body ─────────────────────────────────────────────────────── */}

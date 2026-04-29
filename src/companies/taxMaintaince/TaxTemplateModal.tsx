@@ -181,7 +181,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isEditMode ? "Edit Tax Template" : "Add Tax Template"}
-      subtitle="Create simple tax template"
+      subtitle="Create tax template"
       icon={Tag}
       footer={footer}
       customWidth="46vw"
@@ -263,7 +263,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                           label=""
                           type="number"
                           name="tax_rate"
-                          value={row.tax_rate}
+                          value={row.tax_rate === 0 ? "" : row.tax_rate}
                           onChange={(e) => handleRowChange(actualIdx, e)}
                           error={errors[`tax_rate_${actualIdx}`]}
                           className="w-full no-spinner"

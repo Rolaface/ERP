@@ -1,7 +1,7 @@
-import { useState, useCallback , useEffect} from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useCompanyStore } from "../store/companyStore";
-import { getPurchaseInvoices,getPurchaseInvoiceById } from "../api/procurement/PurchaseInvoiceApi";
-import { createDebitNote , updateDebitNote} from "../api/DebitNoteapi";
+import { getPurchaseInvoices, getPurchaseInvoiceById } from "../api/procurement/PurchaseInvoiceApi";
+import { createDebitNote, updateDebitNote } from "../api/DebitNoteapi";
 import { showApiError, showSuccess } from "../utils/alert";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ const EMPTY_FORM: DebitNoteFormState = {
 export function useDebitNoteForm(
   onSuccess?: (data: any) => void,
   onClose?: () => void,
-    initialData?: any,
+  initialData?: any,
   isEdit?: boolean,
 ) {
   const { companyName } = useCompanyStore();
@@ -56,25 +56,25 @@ export function useDebitNoteForm(
   const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   useEffect(() => {
-  if (!initialData) return;
+    if (!initialData) return;
 
-  setForm({
-    return_against: initialData.return_against || "",
-    supplier: {
-      id: initialData.supplier || "",
-      name: initialData.supplier || "",
-    },
-    update_stock: !!initialData.update_stock,
-    items: (initialData.items || []).map((it: any) => ({
-      item_code: it.item_code,
-      item_name: it.item_name,
-      qty: Number(it.qty),
-      rate: Number(it.rate),
-      batch_no: it.batch_no || "",
-      warehouse: it.warehouse || "",
-    })),
-  });
-}, [initialData]);
+    setForm({
+      return_against: initialData.return_against || "",
+      supplier: {
+        id: initialData.supplier || "",
+        name: initialData.supplier || "",
+      },
+      update_stock: !!initialData.update_stock,
+      items: (initialData.items || []).map((it: any) => ({
+        item_code: it.item_code,
+        item_name: it.item_name,
+        qty: Number(it.qty),
+        rate: Number(it.rate),
+        batch_no: it.batch_no || "",
+        warehouse: it.warehouse || "",
+      })),
+    });
+  }, [initialData]);
   // ── Invoice search ───────────────────────────────────────────────────────
 
   const fetchInvoiceOptions = useCallback(
@@ -85,7 +85,7 @@ export function useDebitNoteForm(
           value: r.pId,
           label: r.pId,
           suppplierId: r.supplierId,
-          supplierName:r.supplierName,
+          supplierName: r.supplierName,
         }));
       } catch {
         return [];
@@ -210,7 +210,7 @@ export function useDebitNoteForm(
         supplier: form.supplier!.id,
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
-        
+
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),
@@ -223,8 +223,8 @@ export function useDebitNoteForm(
       setSaving(true);
       try {
         const res = isEdit && initialData?.name
-  ? await updateDebitNote(initialData.name, payload)
-  : await createDebitNote(payload);
+          ? await updateDebitNote(initialData.name, payload)
+          : await createDebitNote(payload);
 
 
         if (!res || ![200, 201].includes(res.status_code)) {
@@ -251,14 +251,14 @@ export function useDebitNoteForm(
         onSuccess?.(res.data);
         onClose?.();
       } catch (err: any) {
-        console.error("Credit note creation failed", err);
-        showApiError(err);
+        console.error("Debit note operation failed", err);
+        showApiError(err?.message ?? err);
       } finally {
         setSaving(false);
       }
     },
-    [saving, validate, form, companyName, onSuccess, onClose , isEdit,
- initialData],
+    [saving, validate, form, companyName, onSuccess, onClose, isEdit,
+      initialData],
   );
 
   // ── Derived ──────────────────────────────────────────────────────────────
