@@ -52,6 +52,14 @@ const SolutionSection: React.FC = () => {
       ref={sectionRef}
       className="section-lg section-default relative overflow-hidden"
     >
+      {/* ✅ Softer “relief” background vs ProblemSection tension */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(circle at 70% 20%, rgba(59,130,246,0.06), transparent 60%)",
+        }}
+      />
       <div className="absolute inset-0 bg-grid-subtle opacity-10 pointer-events-none" />
 
       <div className="container-wide relative z-10">
@@ -64,11 +72,15 @@ const SolutionSection: React.FC = () => {
             ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
           `}
         >
-          <h2 className="text-[36px] md:text-[44px] font-semibold text-main">
+          <p className="text-[11px] tracking-[0.14em] uppercase text-primary font-semibold">
+            The Fix
+          </p>
+
+          <h2 className="text-[36px] md:text-[44px] font-semibold text-main leading-tight">
             Finally, everything works together
           </h2>
 
-          <p className="text-[16px] text-muted">
+          <p className="text-[16px] text-muted leading-relaxed">
             Replace scattered tools with a single system designed for clarity,
             automation, and control.
           </p>
@@ -90,39 +102,39 @@ const SolutionSection: React.FC = () => {
                   transition-all duration-700
                   ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}
                 `}
+                style={{ transitionDelay: `${i * 120}ms` }}
               >
 
                 {/* TEXT */}
-                <div
-                  className={`${isAlt ? "lg:order-2" : ""} max-w-[520px]`}
-                  style={{ transitionDelay: "0ms" }}
-                >
-                  <span className="text-[11px] tracking-[0.14em] uppercase text-primary font-semibold">
+                <div className={`${isAlt ? "lg:order-2" : ""} max-w-[520px]`}>
+                  
+                  {/* Badge upgraded to system style */}
+                  <div className="badge w-fit mb-4">
                     {feature.badge}
-                  </span>
+                  </div>
 
-                  <h3 className="text-[30px] font-semibold text-main mt-3">
+                  <h3 className="text-[30px] font-semibold text-main leading-snug">
                     {feature.title}
                   </h3>
 
-                  <p className="text-[15px] text-muted mt-3">
+                  <p className="text-[15px] text-muted mt-3 leading-relaxed">
                     {feature.desc}
                   </p>
 
-                  {/* MICRO PROOF */}
-                  <p className="text-[13px] text-primary mt-3 font-medium">
-                    {feature.proof}
-                  </p>
+                  {/* ✅ Proof made more scannable */}
+                  <div className="mt-4 flex items-center gap-2 text-[13px] text-primary font-medium">
+                    <span>✔</span>
+                    <span>{feature.proof}</span>
+                  </div>
                 </div>
 
                 {/* IMAGE */}
                 <div
                   className={`relative group ${isAlt ? "lg:order-1" : ""}`}
-                  style={{ transitionDelay: "120ms" }}
                 >
 
-                  {/* BEFORE STATE (ghost) */}
-                  <div className="absolute -top-4 -left-4 w-full h-full rounded-3xl opacity-30 blur-sm pointer-events-none">
+                  {/* Ghost (before state) */}
+                  <div className="absolute -top-4 -left-4 w-full h-full rounded-3xl opacity-25 blur-sm pointer-events-none">
                     <img
                       src={feature.image}
                       alt=""
@@ -130,23 +142,23 @@ const SolutionSection: React.FC = () => {
                     />
                   </div>
 
-                  {/* Glow layer */}
+                  {/* Glow */}
                   <div
                     className={`
                       absolute inset-0 rounded-3xl blur-3xl transition-all duration-500
-                      ${isActive ? "opacity-30 scale-105" : "opacity-20"}
+                      ${isActive ? "opacity-30 scale-105" : "opacity-15"}
                     `}
                     style={{
                       background: "var(--gradient-primary)",
-                      transitionDelay: "200ms",
                     }}
                   />
 
+                  {/* Main card */}
                   <div
                     className={`
                       relative rounded-3xl overflow-hidden
                       transition-all duration-500
-                      ${isActive ? "scale-[1.02]" : ""}
+                      ${isActive ? "scale-[1.025]" : ""}
                     `}
                     style={{
                       transform: "perspective(1200px) rotateY(-3deg)",
@@ -155,7 +167,7 @@ const SolutionSection: React.FC = () => {
                     }}
                   >
 
-                    {/* Highlight overlay (interaction) */}
+                    {/* Hover light */}
                     <div
                       className={`
                         absolute inset-0 pointer-events-none
@@ -168,8 +180,8 @@ const SolutionSection: React.FC = () => {
                       }}
                     />
 
-                    {/* Vignette */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/10" />
+                    {/* Subtle clarity overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/5" />
 
                     <img
                       src={feature.image}
@@ -183,6 +195,23 @@ const SolutionSection: React.FC = () => {
             );
           })}
         </div>
+
+        {/* ✅ Closing reassurance (very important psychologically) */}
+        <div
+          className={`
+            text-center mt-24 transition-all duration-700 delay-500
+            ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
+          `}
+        >
+          <p className="text-[18px] text-muted max-w-xl mx-auto leading-relaxed">
+            No more guesswork. No more scattered tools.
+            <br />
+            <span className="text-main font-medium">
+              Just a clear, reliable system that works.
+            </span>
+          </p>
+        </div>
+
       </div>
     </section>
   );
