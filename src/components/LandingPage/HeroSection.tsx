@@ -12,7 +12,7 @@ const HeroSection: React.FC = () => {
     hover: false,
   });
 
-  // Motion loop (with slight right bias)
+  // Motion loop
   useEffect(() => {
     let raf: number;
 
@@ -23,10 +23,7 @@ const HeroSection: React.FC = () => {
       const { mouseX, mouseY, scrollY, hover } = state.current;
 
       const rotateX = hover ? -mouseY * 1.2 : -mouseY;
-
-      // 👉 slight right bias added (+1.5deg baseline)
       const rotateY = (hover ? mouseX * 1.2 : mouseX) + 1.5;
-
       const translateY = scrollY * -20;
       const scale = hover ? 1.06 : 1.045;
 
@@ -142,10 +139,10 @@ const HeroSection: React.FC = () => {
   return (
     <section className="section-lg section-default relative overflow-hidden">
 
-      {/* Background */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: "var(--gradient-hero)" }} />
-      <div className="absolute inset-0 bg-radial-glow opacity-70 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-grid-subtle opacity-30 pointer-events-none"></div>
+      {/* Background layers */}
+      <div className="absolute inset-0 bg-[var(--gradient-hero)] pointer-events-none" />
+      <div className="absolute inset-0 bg-radial-glow opacity-70 pointer-events-none" />
+      <div className="absolute inset-0 bg-grid-subtle opacity-30 pointer-events-none" />
 
       <div className="container-app">
         <div className="hero-layout items-center gap-8 lg:gap-4">
@@ -158,7 +155,7 @@ const HeroSection: React.FC = () => {
 
             <h1 className="max-w-[640px] text-[38px] md:text-[52px] lg:text-[64px] font-semibold leading-[1.05] tracking-tight text-main motion-fade-up motion-delay-1">
               <div>Run your entire business</div>
-              <div className="text-gradient font-semibold">
+              <div className="text-gradient">
                 from one powerful dashboard
               </div>
               <div className="text-muted text-[0.85em] font-medium">
@@ -171,28 +168,21 @@ const HeroSection: React.FC = () => {
               modern distributors and trading businesses.
             </p>
 
-            {/* CTA + microcopy */}
+            {/* CTA */}
             <div className="flex flex-col items-start gap-2 mt-4 motion-fade-up motion-delay-3">
               <div className="flex items-center gap-4 flex-wrap">
                 <button
                   ref={buttonRef}
-                  className="btn btn-premium relative overflow-hidden px-[calc(var(--density-padding-lg)+4px)] py-[calc(var(--density-padding-sm)+2px)]"
-                  style={{
-                    background: "var(--gradient-primary)",
-                    boxShadow: "var(--glow-primary)",
-                    color: "#fff",
-                    border: "none",
-                  }}
+                  className="btn btn-primary btn-premium"
                 >
-                  <span className="relative z-10">Start Free Trial →</span>
+                  Start Free Trial →
                 </button>
 
-                <button className="btn btn-ghost border border-theme backdrop-blur-md hover:bg-[var(--row-hover)]">
+                <button className="btn btn-outline backdrop-blur-md">
                   See Live Demo
                 </button>
               </div>
 
-              {/* 👉 Micro copy */}
               <span className="text-[13px] text-muted">
                 Takes less than 2 minutes to get started
               </span>
@@ -207,25 +197,23 @@ const HeroSection: React.FC = () => {
           {/* RIGHT */}
           <div className="relative flex justify-center lg:justify-end mt-12 lg:mt-0 overflow-visible">
 
-            {/* Radial integration */}
+            {/* Glow */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-[520px] h-[520px] rounded-full blur-3xl"
-                style={{ background: "var(--gradient-primary)", opacity: 0.12 }}
-              />
+              <div className="w-[520px] h-[520px] rounded-full blur-3xl bg-[var(--gradient-primary)] opacity-10" />
             </div>
 
-            {/* Base shadow */}
+            {/* Shadow */}
             <div className="absolute bottom-[-30px] w-[70%] h-[60px] bg-black/10 blur-2xl rounded-full"></div>
 
-            {/* Floating annotation */}
-            <div className="absolute top-6 left-6 px-3 py-1.5 text-[12px] rounded-full bg-card/70 backdrop-blur-md border border-theme shadow-sm text-main animate-float-delayed">
+            {/* Floating badge */}
+            <div className="absolute top-6 left-6 badge glass animate-float-delayed">
               Live cash flow tracking
             </div>
 
-            {/* IMAGE (delayed entry) */}
+            {/* IMAGE */}
             <div
               ref={imageRef}
-              className="relative w-full max-w-[680px] animate-float transition-transform duration-300 motion-fade-up motion-delay-[120ms]"
+              className="relative w-full max-w-[680px] motion-fade-up motion-delay-[120ms]"
               style={{ transformStyle: "preserve-3d" }}
             >
               <div
@@ -234,31 +222,20 @@ const HeroSection: React.FC = () => {
                 style={{ mixBlendMode: "soft-light" }}
               />
 
-              <div
-                className="absolute inset-0 blur-2xl rounded-[28px]"
-                style={{
-                  background: "var(--gradient-primary)",
-                  opacity: 0.08,
-                }}
-              />
-
-              <img
-                src="/dashboard.png"
-                alt="ERP Dashboard"
-                className="relative w-full rounded-[28px]"
-                style={{ boxShadow: "var(--shadow-soft-xl)" }}
-              />
+              <div className="image-interactive card-premium rounded-[28px] overflow-hidden">
+                <img
+                  src="/dashboard.png"
+                  alt="ERP Dashboard"
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 👉 Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 w-full h-32 pointer-events-none"
-        style={{
-          background: "linear-gradient(to bottom, transparent, var(--bg))",
-        }}
-      />
+      {/* Bottom fade */}
+      <div className="absolute bottom-0 left-0 w-full h-32 pointer-events-none bg-gradient-to-b from-transparent to-[var(--bg)]" />
     </section>
   );
 };
