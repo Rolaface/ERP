@@ -3,19 +3,14 @@ import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import CreateCreditNoteModal from "./CreateCreditNoteModal";
-import { getAllCreditNotes,deleteCreditNote } from "../../api/CreditNoteapi";
+import { getAllCreditNotes,deleteCreditNote} from "../../api/CreditNoteapi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { showLoading, closeSwal, showApiError, showSuccess } from "../../utils/alert";
 import InvoiceDetailsModal from "./InvoiceDetailsModal";
-import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
+import ActionButton, {ActionMenu } from "../../components/ui/Table/ActionButton";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { CreditNote,CreditNoteListResponse,CreditNoteQueryParams } from "../../types/sales/Creditnotes";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
+import { CreditNote} from "../../types/sales/Creditnotes";
 
 
 
@@ -242,7 +237,7 @@ const handleDelete = async (noteNo: string) => {
       header: "Status",
       render: (r) => <StatusBadge status={r.status} />,
     },
-    {
+ {
   key: "actions",
   header: "Actions",
   align: "center",
@@ -255,6 +250,15 @@ const handleDelete = async (noteNo: string) => {
           setDetailsId(r.noteNo);
           setDetailsOpen(true);
         }}
+      />
+      <ActionButton
+        type="edit"
+        iconOnly
+        onClick={(e) => {
+          e?.stopPropagation();
+          handleEdit(r.noteNo);
+        }}
+        title="Edit Credit Note"
       />
       <ActionMenu
         onDelete={(e) => {
