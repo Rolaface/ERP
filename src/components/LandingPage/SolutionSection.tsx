@@ -1,157 +1,188 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
-type Feature = {
-  label: string;
-  title: string;
-  desc: string;
-  points?: string[];
-  image: string;
-};
-
-const features: Feature[] = [
+const features = [
   {
-    label: "Payments",
-    title: "Always know who paid and who hasn’t",
-    desc: "Track every incoming and outgoing payment in one place — without switching tools.",
-    points: ["Cash, bank & card tracking", "Real-time payment status"],
-    image:
-      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1600&auto=format",
+    badge: "Automation",
+    title: "Track payments without manual follow-ups",
+    desc: "Automatically reconcile transactions and eliminate guesswork around receivables.",
+    proof: "Reduces follow-ups by 70%",
+    image: "/dashboard.png",
   },
   {
-    label: "Accounting",
-    title: "Accurate books without manual work",
-    desc: "Every transaction is recorded automatically, keeping your accounts always up to date.",
-    points: ["No manual entries", "Always audit-ready"],
-    image:
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format",
+    badge: "Visibility",
+    title: "Know exactly who owes you, in real-time",
+    desc: "Clear, real-time insights into receivables, payments, and outstanding balances.",
+    proof: "Used by 120+ distributors",
+    image: "/dashboard.png",
   },
   {
-    label: "Inventory",
-    title: "Know exactly what’s in stock",
-    desc: "Real-time inventory tracking helps you avoid stockouts and overstocking.",
-    points: ["Multi-location tracking", "Smart reorder alerts"],
-    image:
-      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1600&auto=format",
-  },
-  {
-    label: "Sales",
-    title: "Track every order from start to finish",
-    desc: "Manage your entire sales and purchase flow in one streamlined system.",
-    points: ["End-to-end visibility", "Live order tracking"],
-    image:
-      "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=1600&auto=format",
+    badge: "Accuracy",
+    title: "Eliminate costly manual errors",
+    desc: "Reduce mistakes with synced systems that update everything instantly.",
+    proof: "Cuts reconciliation errors significantly",
+    image: "/dashboard.png",
   },
 ];
 
 const SolutionSection: React.FC = () => {
+  const [visible, setVisible] = useState(false);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="section-lg section-alt relative overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="section-lg section-default relative overflow-hidden"
+    >
+      <div className="absolute inset-0 bg-grid-subtle opacity-10 pointer-events-none" />
 
-      {/* Background */}
-      <div className="absolute inset-0 bg-radial-glow opacity-60 pointer-events-none"></div>
-
-      <div className="container-wide">
+      <div className="container-wide relative z-10">
 
         {/* HEADER */}
-        <div className="text-center max-w-2xl mx-auto stack-md">
-
-          <h2 className="text-[34px] md:text-[40px] font-semibold leading-tight text-main tracking-tight">
-            One system to run your entire business — clearly and efficiently
+        <div
+          className={`
+            max-w-2xl mx-auto text-center stack-md
+            transition-all duration-700
+            ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
+          `}
+        >
+          <h2 className="text-[36px] md:text-[44px] font-semibold text-main">
+            Finally, everything works together
           </h2>
 
-          <p className="text-[15px] text-muted leading-relaxed">
-            No more juggling tools or fixing mistakes. Everything works together seamlessly in one place.
+          <p className="text-[16px] text-muted">
+            Replace scattered tools with a single system designed for clarity,
+            automation, and control.
           </p>
-
         </div>
 
-        {/* STORY BLOCKS */}
+        {/* FEATURES */}
         <div className="mt-20 space-y-24">
-
-          {features.map((feature, index) => {
-            const isReverse = index % 2 !== 0;
+          {features.map((feature, i) => {
+            const isAlt = i % 2 !== 0;
+            const isActive = activeIndex === i;
 
             return (
               <div
-                key={index}
-                className={`grid lg:grid-cols-2 gap-16 items-center`}
+                key={i}
+                onMouseEnter={() => setActiveIndex(i)}
+                onMouseLeave={() => setActiveIndex(null)}
+                className={`
+                  grid lg:grid-cols-2 gap-12 items-center
+                  transition-all duration-700
+                  ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}
+                `}
               >
 
-                {/* IMAGE SIDE */}
-                <div className={`${isReverse ? "lg:order-2" : ""}`}>
+                {/* TEXT */}
+                <div
+                  className={`${isAlt ? "lg:order-2" : ""} max-w-[520px]`}
+                  style={{ transitionDelay: "0ms" }}
+                >
+                  <span className="text-[11px] tracking-[0.14em] uppercase text-primary font-semibold">
+                    {feature.badge}
+                  </span>
 
-                  <div className="relative group">
-
-                    {/* Glow */}
-                    <div
-                      className="absolute inset-0 blur-3xl rounded-[32px] opacity-20"
-                      style={{ background: "var(--gradient-primary)" }}
-                    />
-
-                    {/* Main Image */}
-                    <div className="relative overflow-hidden rounded-[28px] border border-theme bg-surface-2 shadow-soft-xl">
-
-                      <img
-                        src={feature.image}
-                        alt={feature.title}
-                        className="w-full h-[300px] md:h-[360px] object-cover transition-transform duration-500 group-hover:scale-[1.06]"
-                      />
-
-                      {/* UI Highlight Overlay */}
-                      <div className="absolute top-6 left-6 w-24 h-16 border-2 border-white/80 rounded-lg backdrop-blur-sm bg-white/10"></div>
-
-                      {/* Arrow Indicator */}
-                      <div className="absolute bottom-6 right-6 text-white text-[12px] bg-black/40 px-3 py-1 rounded-full backdrop-blur">
-                        Live Data →
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-                {/* TEXT SIDE */}
-                <div className={`stack-md ${isReverse ? "lg:order-1" : ""}`}>
-
-                  <p className="text-[12px] font-semibold text-primary tracking-wide uppercase">
-                    {feature.label}
-                  </p>
-
-                  <h3 className="text-[26px] md:text-[30px] font-semibold text-main leading-snug">
+                  <h3 className="text-[30px] font-semibold text-main mt-3">
                     {feature.title}
                   </h3>
 
-                  <p className="text-[15px] text-muted leading-relaxed max-w-[520px]">
+                  <p className="text-[15px] text-muted mt-3">
                     {feature.desc}
                   </p>
 
-                  {feature.points && (
-                    <ul className="stack-sm pt-3">
+                  {/* MICRO PROOF */}
+                  <p className="text-[13px] text-primary mt-3 font-medium">
+                    {feature.proof}
+                  </p>
+                </div>
 
-                      {feature.points.map((point, i) => (
-                        <li
-                          key={i}
-                          className="text-[14px] text-main flex items-center gap-3"
-                        >
-                          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold">
-                            ✓
-                          </span>
-                          {point}
-                        </li>
-                      ))}
+                {/* IMAGE */}
+                <div
+                  className={`relative group ${isAlt ? "lg:order-1" : ""}`}
+                  style={{ transitionDelay: "120ms" }}
+                >
 
-                    </ul>
-                  )}
+                  {/* BEFORE STATE (ghost) */}
+                  <div className="absolute -top-4 -left-4 w-full h-full rounded-3xl opacity-30 blur-sm pointer-events-none">
+                    <img
+                      src={feature.image}
+                      alt=""
+                      className="w-full h-full object-cover rounded-3xl grayscale"
+                    />
+                  </div>
 
+                  {/* Glow layer */}
+                  <div
+                    className={`
+                      absolute inset-0 rounded-3xl blur-3xl transition-all duration-500
+                      ${isActive ? "opacity-30 scale-105" : "opacity-20"}
+                    `}
+                    style={{
+                      background: "var(--gradient-primary)",
+                      transitionDelay: "200ms",
+                    }}
+                  />
+
+                  <div
+                    className={`
+                      relative rounded-3xl overflow-hidden
+                      transition-all duration-500
+                      ${isActive ? "scale-[1.02]" : ""}
+                    `}
+                    style={{
+                      transform: "perspective(1200px) rotateY(-3deg)",
+                      boxShadow: "var(--shadow-soft-xl)",
+                      maxWidth: "640px",
+                    }}
+                  >
+
+                    {/* Highlight overlay (interaction) */}
+                    <div
+                      className={`
+                        absolute inset-0 pointer-events-none
+                        transition-opacity duration-300
+                        ${isActive ? "opacity-100" : "opacity-0"}
+                      `}
+                      style={{
+                        background:
+                          "radial-gradient(circle at 60% 40%, rgba(255,255,255,0.18), transparent 60%)",
+                      }}
+                    />
+
+                    {/* Vignette */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/10" />
+
+                    <img
+                      src={feature.image}
+                      alt={feature.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
 
               </div>
             );
           })}
-
         </div>
-
       </div>
     </section>
   );
