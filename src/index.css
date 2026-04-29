@@ -67,6 +67,12 @@
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-primary: var(--primary);
+
+  /* layering scale */
+  --z-base: 1;
+  --z-dropdown: 1000;
+  --z-modal: 2000;
+  --z-toast: 3000;
 }
 
 /* =========================================
@@ -812,6 +818,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    overflow: visible;
   }
 
   /* Form Header */
@@ -1072,6 +1079,49 @@
     font-size: var(--helper-size);
     margin-top: var(--form-gap-micro);
     color: var(--muted);
+  }
+
+  .dropdown {
+    position: fixed; /* 🔥 MUST match Floating UI */
+    z-index: var(--z-dropdown);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+
+    box-shadow: var(--shadow-lg);
+
+    z-index: 9999; /* 🔥 ABOVE EVERYTHING */
+
+    max-height: 260px;
+    overflow-y: auto;
+
+    padding: 6px;
+
+    /* Prevent layout interference */
+    isolation: isolate;
+  }
+
+  .dropdown-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .dropdown-item:hover {
+    background: var(--row-hover);
+  }
+
+  .dropdown-search {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+
+    border-radius: 8px;
+    border: 1px solid var(--border);
+
+    outline: none;
+    font-size: 13px;
   }
 }
 
@@ -1625,14 +1675,12 @@ input[type=number]::-webkit-inner-spin-button {
   --skeleton-base: #374151;
 }
 
-
-
 /* Hide scrollbar but keep scroll */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE + Edge */
-  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none; /* IE + Edge */
+  scrollbar-width: none; /* Firefox */
 }
