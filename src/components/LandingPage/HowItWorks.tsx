@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Building2, Receipt, BarChart3, ShieldCheck } from "lucide-react";
 
 const steps = [
@@ -6,7 +6,7 @@ const steps = [
     id: "01",
     icon: Building2,
     title: "Set up your business in minutes",
-    desc: "Add your company, team, and accounts to get started — no complex setup required.",
+    desc: "Add your company, team, and accounts — no complex setup required.",
   },
   {
     id: "02",
@@ -18,78 +18,125 @@ const steps = [
     id: "03",
     icon: BarChart3,
     title: "Track everything in real-time",
-    desc: "Your dashboard updates instantly, giving you complete visibility into operations.",
+    desc: "Your dashboard updates instantly with full visibility.",
   },
   {
     id: "04",
     icon: ShieldCheck,
     title: "Stay in control at all times",
-    desc: "Monitor cash flow, dues, and profits without chasing data across tools.",
+    desc: "Monitor cash flow, dues, and profits without chasing data.",
   },
 ];
 
 const HowItWorks: React.FC = () => {
-  return (
-    <section className="section section-default relative overflow-hidden">
+  const [visible, setVisible] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section
+      ref={sectionRef}
+      className="section section-default relative overflow-hidden"
+    >
+      {/* Softer transition background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 0%, rgba(59,130,246,0.05), transparent 60%)",
+        }}
+      />
+      <div className="absolute inset-0 bg-grid-subtle opacity-10 pointer-events-none"></div>
 
       <div className="container-app">
 
         {/* HEADER */}
-        <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
+        <div
+          className={`
+            text-center max-w-2xl mx-auto stack-md
+            transition-all duration-700
+            ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
+          `}
+        >
+          <p className="text-[11px] tracking-[0.14em] uppercase text-primary font-semibold">
+            How it works
+          </p>
+
           <h2 className="text-[34px] md:text-[40px] font-semibold leading-tight text-main tracking-tight">
             Get started in minutes —{" "}
-            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
+            <span className="text-gradient">
               not weeks
             </span>
           </h2>
 
           <p className="text-[15px] text-muted leading-relaxed">
-            Set up once, and your entire business runs smoothly from there.
+            A simple, guided flow designed so your team can start without training.
           </p>
         </div>
 
         {/* TIMELINE */}
         <div className="relative mt-[calc(var(--density-gap)*4)]">
 
-          {/* MAIN LINE */}
+          {/* Progress line */}
           <div className="hidden md:block absolute top-10 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--primary)]/40 to-transparent" />
 
           <div className="grid md:grid-cols-4 gap-[calc(var(--density-gap)*3)]">
-
             {steps.map((step, index) => {
               const Icon = step.icon;
 
               return (
                 <div
                   key={step.id}
-                  className="relative flex flex-col items-center text-center group animate-fade-up"
-                  style={{ animationDelay: `${index * 0.12}s` }}
+                  className={`
+                    relative flex flex-col items-center text-center group
+                    transition-all duration-700
+                    ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}
+                  `}
+                  style={{ transitionDelay: `${index * 120}ms` }}
                 >
-
                   {/* NODE */}
                   <div className="relative mb-6">
 
                     {/* Glow */}
-                    <div className="absolute inset-0 w-16 h-16 bg-primary/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition"></div>
+                    <div className="absolute inset-0 w-16 h-16 bg-primary/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition" />
 
                     {/* Circle */}
                     <div className="relative z-10 w-14 h-14 rounded-full bg-card border border-theme flex items-center justify-center shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:shadow-md">
                       <Icon size={20} className="text-primary" />
                     </div>
 
-                    {/* Step Number */}
+                    {/* Step number */}
                     <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-[2px] rounded-full bg-primary text-white text-[10px] font-semibold shadow">
                       {step.id}
                     </div>
+
+                    {/* Connector dot (visual flow hint) */}
+                    {index !== steps.length - 1 && (
+                      <div className="hidden md:block absolute top-1/2 left-full w-6 h-[2px] bg-primary/30 translate-y-[-50%]" />
+                    )}
                   </div>
 
                   {/* CONTENT */}
                   <div className="max-w-[220px] stack-sm">
 
-                    <h3 className="text-[15px] font-semibold text-main">
+                    <h3 className="text-[15px] font-semibold text-main leading-snug">
                       {step.title}
                     </h3>
 
@@ -98,7 +145,6 @@ const HowItWorks: React.FC = () => {
                     </p>
 
                   </div>
-
                 </div>
               );
             })}
@@ -106,8 +152,13 @@ const HowItWorks: React.FC = () => {
         </div>
 
         {/* TRUST LINE */}
-        <div className="mt-[calc(var(--density-gap)*4)] text-center animate-fade-in">
-
+        <div
+          className={`
+            mt-[calc(var(--density-gap)*4)] text-center
+            transition-all duration-700 delay-500
+            ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
+          `}
+        >
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-theme rounded-full shadow-sm hover:shadow-md transition">
 
             <ShieldCheck size={14} className="text-primary" />
@@ -117,41 +168,9 @@ const HowItWorks: React.FC = () => {
             </p>
 
           </div>
-
         </div>
 
       </div>
-
-      {/* ANIMATIONS */}
-      <style>
-        {`
-          .animate-fade-in {
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeIn 0.6s ease forwards;
-          }
-
-          .animate-fade-up {
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeUp 0.7s ease forwards;
-          }
-
-          @keyframes fadeIn {
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          @keyframes fadeUp {
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}
-      </style>
     </section>
   );
 };
