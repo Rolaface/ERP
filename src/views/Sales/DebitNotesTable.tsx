@@ -3,37 +3,32 @@ import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import CreateDebitNoteModal from "./createDebitNoteModal";
-import { getAllDebitNotes } from "../../api/salesApi";
+import { getAllDebitNotes } from "../../api/DebitNoteapi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { showLoading, closeSwal, showSuccess, showApiError } from "../../utils/alert";
 import InvoiceDetailsModal from "./InvoiceDetailsModal";
 import ActionButton, { ActionGroup } from "../../components/ui/Table/ActionButton";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 type DebitNote = {
   noteNo:    string;
-  invoiceNo: string;
-  customer:  string;
+  purchase_invoiceNo: string;
+  supplier:  string;
   date:      string;
   amount:    number;
-  status:    "Draft" | "Approved" | "Rejected";
-  currency:  string;
+  status:    string;
 };
 
 
 
 const mapItem = (item: any): DebitNote => ({
-  noteNo:    item.invoiceNumber,
-  invoiceNo: item.receiptNumber,
-  customer:  item.customerName,
-  date:      item.dateOfInvoice,
-  amount:    item.totalAmount,
-  currency:  item.currency || item.currencyCode || item.currCd || "",
-  status:    item.invoiceStatus ?? "Draft",
+  noteNo:    item.name,
+  purchase_invoiceNo: item.return_against,
+  supplier:  item.supplier,
+  date:      item.posting_date,
+  amount:    item.grand_total,
+  status:    item.status,
 });
 
 
@@ -70,7 +65,7 @@ const DebitNotesTable: React.FC = () => {
     try {
       setLoading(true);
 
-      const resp = await getAllDebitNotes(page, pageSize, sortBy, sortOrder, searchTerm);
+      const resp = await getAllDebitNotes(page, pageSize,searchTerm);
 
       setData(resp.data.map(mapItem));
       setTotalPages(resp.pagination.total_pages);
@@ -131,7 +126,7 @@ const DebitNotesTable: React.FC = () => {
       let total   = 1;
 
       do {
-        const resp = await getAllDebitNotes(current, 100, sortBy, sortOrder, searchTerm);
+        const resp = await getAllDebitNotes(current, 100,searchTerm);
 
         allData = [...allData, ...resp.data.map(mapItem)];
         total   = resp.pagination.total_pages;
@@ -160,11 +155,10 @@ const DebitNotesTable: React.FC = () => {
       const worksheet = XLSX.utils.json_to_sheet(
         dataToExport.map((r) => ({
           "Debit Note No": r.noteNo,
-          "Receipt No":    r.invoiceNo,
-          Customer:        r.customer,
+          "Receipt No":    r.purchase_invoiceNo,
+          Supplier:        r.supplier,
           Date:            r.date,
           Amount:          r.amount,
-          Currency:        r.currency,
           Status:          r.status,
         }))
       );
@@ -190,21 +184,20 @@ const DebitNotesTable: React.FC = () => {
 
 
   const columns: Column<DebitNote>[] = [
-    { key: "noteNo",    header: "Debit Invoice No", sortable: true },
-    { key: "invoiceNo", header: "Receipt No" },
-    { key: "customer",  header: "Customer", sortable: true },
+    { key: "noteNo",    header: "Debit Invoice No" },
+    { key: "purchase_invoiceNo", header: "Receipt No" },
+    { key: "supplier",  header: "Supplier" },
     {
       key: "amount",
       header: "Amount",
       align: "right",
-      sortable: true,
       render: (r) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
-          {r.amount.toLocaleString()} {r.currency}
+          {r.amount.toLocaleString()}
         </code>
       ),
     },
-    { key: "date",   header: "Date",   sortable: true },
+    { key: "date",   header: "Date" },
     {
       key: "status",
       header: "Status",
@@ -277,7 +270,7 @@ const DebitNotesTable: React.FC = () => {
             setCreateModals((prev) => prev.filter((m) => m.id !== modal.id));
             fetchDebitNotes();
           }}
-          invoiceId={data.length > 0 ? data[0].invoiceNo : ""}
+          invoiceId={data.length > 0 ? data[0].purchase_invoiceNo : ""}
         />
       ))}
     </div>

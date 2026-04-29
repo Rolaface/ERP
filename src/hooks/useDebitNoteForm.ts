@@ -1,69 +1,69 @@
 import { useState, useCallback } from "react";
 import { useCompanyStore } from "../store/companyStore";
-import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
-import { createCreditNote } from "../api/CreditNoteapi";
-import { showApiError , showSuccess } from "../utils/alert";
+import { getPurchaseInvoices,getPurchaseInvoiceById } from "../api/procurement/PurchaseInvoiceApi";
+import { createDebitNote } from "../api/DebitNoteapi";
+import { showApiError, showSuccess } from "../utils/alert";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface InvoiceOption {
+export interface PurchaseInvoiceOption {
   value: string;
   label: string;
-  customerId: string;
-  customerName: string;
+  supplierId: string;
+  supplierName: string;
 }
 
-export interface CreditNoteItem {
+export interface DebitNoteItem {
   item_code: string;
   item_name: string;
-  qty: number;      
+  qty: number;
   rate: number;
   batch_no: string;
   warehouse: string;
 }
 
-export interface CustomerMeta {
+export interface SupplierMeta {
   id: string;
   name: string;
 }
 
-export interface CreditNoteFormState {
+export interface DebitNoteFormState {
   return_against: string;
-  customer: CustomerMeta | null;
+  supplier: SupplierMeta | null;
   update_stock: boolean;
-  items: CreditNoteItem[];
+  items: DebitNoteItem[];
 }
 
-const EMPTY_FORM: CreditNoteFormState = {
+const EMPTY_FORM: DebitNoteFormState = {
   return_against: "",
-  customer: null,
+  supplier: null,
   update_stock: true,
   items: [],
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useCreditNoteForm(
+export function useDebitNoteForm(
   onSuccess?: (data: any) => void,
   onClose?: () => void,
 ) {
   const { companyName } = useCompanyStore();
 
-  const [form, setForm] = useState<CreditNoteFormState>(EMPTY_FORM);
+  const [form, setForm] = useState<DebitNoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   // ── Invoice search ───────────────────────────────────────────────────────
 
   const fetchInvoiceOptions = useCallback(
-    async (query: string): Promise<InvoiceOption[]> => {
+    async (query: string): Promise<PurchaseInvoiceOption[]> => {
       try {
-        const res = await getAllSalesInvoices(1, 50, "", "asc", query);
-        return (res?.data ?? []).map((inv: any) => ({
-          value: inv.id,
-          label: inv.id,
-          customerId: inv.customerId,
-          customerName: inv.customerName,
+        const res = await getPurchaseInvoices(1, 50);
+        return (res?.data ?? []).map((pi: any) => ({
+          value: pi.pId,
+          label: pi.pId,
+          suppplierId: pi.supplierId,
+          supplierName: pi.supplierName,
         }));
       } catch {
         return [];
@@ -74,24 +74,22 @@ export function useCreditNoteForm(
 
   // ── Invoice select → fetch full details & populate form ─────────────────
 
-  const handleInvoiceSelect = useCallback(async (opt: InvoiceOption) => {
-    // Immediately reflect selection + customer from list payload
+  const handleInvoiceSelect = useCallback(async (opt: PurchaseInvoiceOption) => {
     setForm((prev) => ({
       ...prev,
       return_against: opt.value,
-      customer: { id: opt.customerId, name: opt.customerName },
+      supplier: { id: opt.supplierId, name: opt.supplierName },
       items: [],
     }));
 
     setInvoiceLoading(true);
     try {
-      const res = await getSalesInvoiceById(opt.value);
-      // API wraps inside message.data OR data directly — handle both
+      const res = await getPurchaseInvoiceById(opt.value);
       const data = res?.data ?? res?.message?.data;
       if (!data) return;
 
-      const mappedItems: CreditNoteItem[] = (data.items ?? []).map(
-        (it: any): CreditNoteItem => ({
+      const mappedItems: DebitNoteItem[] = (data.items ?? []).map(
+        (it: any): DebitNoteItem => ({
           item_code: it.itemCode ?? "",
           item_name: it.itemName ?? it.itemCode ?? "",
           qty: -(Math.abs(Number(it.quantity) || 1)),
@@ -103,9 +101,9 @@ export function useCreditNoteForm(
 
       setForm((prev) => ({
         ...prev,
-        customer: {
-          id: data.customerId ?? opt.customerId,
-          name: data.customerName ?? opt.customerName,
+        supplier: {
+          id: data.supplierId ?? opt.supplierId,
+          name: data.supplierName ?? opt.supplierName,
         },
         items: mappedItems,
       }));
@@ -120,7 +118,7 @@ export function useCreditNoteForm(
   // ── Item mutations ───────────────────────────────────────────────────────
 
   const handleItemChange = useCallback(
-    (index: number, field: keyof CreditNoteItem, value: string | number) => {
+    (index: number, field: keyof DebitNoteItem, value: string | number) => {
       setForm((prev) => {
         const items = [...prev.items];
         items[index] = { ...items[index], [field]: value };
@@ -130,7 +128,6 @@ export function useCreditNoteForm(
     [],
   );
 
- 
   const handleWarehouseDefault = useCallback(
     (index: number, warehouse: string) => {
       setForm((prev) => {
@@ -162,8 +159,8 @@ export function useCreditNoteForm(
 
   const validate = useCallback((): string | null => {
     if (!form.return_against) return "Please select an invoice";
-    if (!form.customer?.id)
-      return "Customer could not be resolved from the selected invoice";
+    if (!form.supplier?.id)
+      return "Supplier could not be resolved from the selected invoice";
     if (form.items.length === 0) return "At least one item is required";
     for (const it of form.items) {
       if (!it.warehouse)
@@ -188,9 +185,10 @@ export function useCreditNoteForm(
       const payload = {
         is_return: 1 as const,
         return_against: form.return_against,
-        customer: form.customer!.id,
+        supplier: form.supplier!.id,
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
+        
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),
@@ -202,15 +200,31 @@ export function useCreditNoteForm(
 
       setSaving(true);
       try {
-        const res = await createCreditNote(payload);
+        const res = await createDebitNote(payload);
+
 
         if (!res || ![200, 201].includes(res.status_code)) {
-          showApiError(res);
+          showApiError(res?.message ?? "Credit note creation failed");
           return;
         }
+        if (res._server_messages) {
+          try {
+            const msgs: any[] = JSON.parse(res._server_messages);
+            msgs.forEach((raw) => {
+              try {
+                const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+                console.warn("[DebitNote server message]", parsed?.message ?? parsed);
+              } catch {
+                console.warn("[DebitNote server message]", raw);
+              }
+            });
+          } catch {
+            console.warn("[DebitNote server messages]", res._server_messages);
+          }
+        }
 
-        showSuccess(res.message ?? "Credit note created successfully");
-        onSuccess?.(res);
+        showSuccess(res.message);
+        onSuccess?.(res.data);
         onClose?.();
       } catch (err: any) {
         console.error("Credit note creation failed", err);

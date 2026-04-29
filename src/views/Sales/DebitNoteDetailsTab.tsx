@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, Search, Trash2, User } from "lucide-react";
 import type {
-  CreditNoteFormState,
-  CreditNoteItem,
-  InvoiceOption,
-} from "../../hooks/useCreditNoteForm";
+  DebitNoteFormState,
+  DebitNoteItem,
+  PurchaseInvoiceOption,
+} from "../../hooks/useDebitNoteForm";
 import WarehouseSelect from "../../components/selects/WarehouseSelect";
 import ItemTable from "../../components/common/ItemTable";
 
@@ -12,8 +12,8 @@ import ItemTable from "../../components/common/ItemTable";
 
 interface InvoiceSearchSelectProps {
   value: string;
-  fetchOptions: (q: string) => Promise<InvoiceOption[]>;
-  onChange: (opt: InvoiceOption) => void;
+  fetchOptions: (q: string) => Promise<PurchaseInvoiceOption[]>;
+  onChange: (opt: PurchaseInvoiceOption) => void;
   detailsLoading: boolean;
 }
 
@@ -24,7 +24,7 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
   detailsLoading,
 }) => {
   const [query, setQuery] = useState("");
-  const [options, setOptions] = useState<InvoiceOption[]>([]);
+  const [options, setOptions] = useState<PurchaseInvoiceOption[]>([]);
   const [open, setOpen] = useState(false);
   const [fetching, setFetching] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -70,7 +70,7 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
     if (!options.length) doFetch("");
   };
 
-  const handleSelect = (opt: InvoiceOption) => {
+  const handleSelect = (opt: PurchaseInvoiceOption) => {
     setQuery(opt.label);
     setOpen(false);
     onChange(opt);
@@ -120,7 +120,7 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
                 }`}
               >
                 <span className="font-medium">{opt.label}</span>
-                <span className="ml-2 text-muted">{opt.customerName}</span>
+                <span className="ml-2 text-muted">{opt.supplierName}</span>
               </div>
             ))
           )}
@@ -139,15 +139,15 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
-export interface CreditNoteDetailsTabProps {
-  form: CreditNoteFormState;
+export interface DebitNoteDetailsTabProps {
+  form: DebitNoteFormState;
   invoiceLoading: boolean;
   grandTotal: number;
-  fetchInvoiceOptions: (q: string) => Promise<InvoiceOption[]>;
-  onInvoiceSelect: (opt: InvoiceOption) => Promise<void>;
+  fetchInvoiceOptions: (q: string) => Promise<PurchaseInvoiceOption[]>;
+  onInvoiceSelect: (opt: PurchaseInvoiceOption) => Promise<void>;
   onItemChange: (
     index: number,
-    field: keyof CreditNoteItem,
+    field: keyof DebitNoteItem,
     value: string | number,
   ) => void;
   onWarehouseDefault: (index: number, warehouse: string) => void;
@@ -155,9 +155,9 @@ export interface CreditNoteDetailsTabProps {
   onToggleUpdateStock: () => void;
 }
 
-// ─── Credit Note column headers ───────────────────────────────────────────────
 
-const CreditNoteHeaders: React.FC = () => (
+
+const DebitNoteHeaders: React.FC = () => (
   <tr className="border-b border-theme">
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">
       #
@@ -185,7 +185,7 @@ const CreditNoteHeaders: React.FC = () => (
 );
 
 
-const EMPTY_ITEM: CreditNoteItem = {
+const EMPTY_ITEM: DebitNoteItem = {
   item_code: "",
   item_name: "",
   qty: 0,
@@ -200,7 +200,7 @@ const PLACEHOLDER_COUNT = 1;
 
 const ITEMS_PER_PAGE = 10;
 
-export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
+export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
   form,
   invoiceLoading,
   grandTotal,
@@ -218,10 +218,11 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
     setPage(0);
   }, [form.return_against]);
 
+
   const noInvoice = !form.return_against;
   const showPlaceholders = noInvoice || invoiceLoading;
 
-  const displayItems: CreditNoteItem[] = showPlaceholders
+  const displayItems: DebitNoteItem[] = showPlaceholders
     ? Array.from({ length: PLACEHOLDER_COUNT }, () => ({ ...EMPTY_ITEM }))
     : form.items;
 
@@ -236,7 +237,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
   const ui = { page, setPage, itemCount };
 
   const actions = {
-    addItem: () => {},       
+    addItem: () => {},         
     duplicateItem: () => {},   
     removeItem: onRemoveItem,
     handleItemChange: (
@@ -246,7 +247,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
       >,
     ) => {
       const { name, value } = e.target;
-      onItemChange(index, name as keyof CreditNoteItem, value);
+      onItemChange(index, name as keyof DebitNoteItem, value);
     },
     updateItemDirectly: undefined,
   };
@@ -256,7 +257,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
   // ── renderRow ──────────────────────────────────────────────────────────────
 
   const renderRow = (
-    it: CreditNoteItem,
+    it: DebitNoteItem,
     absoluteIndex: number,
     helpers: {
       handleCopyRow: (i: number) => void;
@@ -464,7 +465,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
           actions={actions}
           symbol=""
           ITEMS_PER_PAGE={ITEMS_PER_PAGE}
-          columnHeaders={<CreditNoteHeaders />}
+          columnHeaders={<DebitNoteHeaders />}
           renderRow={renderRow}
         />
 
@@ -474,18 +475,18 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
           {/* Customer card */}
           <div className="bg-card rounded-lg p-3 shadow-sm">
             <h3 className="text-[12px] font-semibold text-main mb-2">
-              Customer
+              Supplier
             </h3>
-            {form.customer ? (
+            {form.supplier ? (
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2">
                   <User size={12} className="text-muted shrink-0" />
                   <span className="text-[11px] text-main font-medium">
-                    {form.customer.name}
+                    {form.supplier.name}
                   </span>
                 </div>
                 <span className="text-[10px] font-mono bg-app px-1.5 py-0.5 rounded text-muted w-fit">
-                  {form.customer.id}
+                  {form.supplier.id}
                 </span>
               </div>
             ) : (
