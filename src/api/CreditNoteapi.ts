@@ -30,6 +30,24 @@ export interface CreditNoteResponse {
 }
  
 
+
+export function parseErpNextError(errorBody: any): string {
+  if (errorBody?.exception) {
+    const raw: string = errorBody.exception;
+    const lines = raw.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    if (lines.length > 0) return lines[lines.length - 1];
+  }
+  if (errorBody?.exc) {
+    try {
+      const parsed = JSON.parse(errorBody.exc);
+      const trace: string = Array.isArray(parsed) ? parsed[0] : parsed;
+      const lines = trace.split("\n").map((l: string) => l.trim()).filter(Boolean);
+      if (lines.length > 0) return lines[lines.length - 1];
+    } catch {}
+  }
+  return "Operation failed. Please try again.";
+}
+
  
 export async function createCreditNote(
   payload: CreditNotePayload,
@@ -88,24 +106,65 @@ export async function getAllCreditNotes(
 
 export async function updateCreditNote(
   invoiceId: string,
-  payload: {
-    update_stock: number;
-    items: {
-      item_code: string;
-      qty: number;
-      rate: number;
-      batch_no?: string;
-      warehouse?: string;
-    }[];
+  payload: CreditNotePayload,
+): Promise<CreditNoteResponse> {
+  try {
+    const resp: AxiosResponse = await api.put(
+      `${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`,
+      payload,
+    );
+    const body = resp.data ?? {};
+    return {
+      status_code: resp.status,          
+      data: body.data ?? null,
+      message: "Credit Note updated successfully",
+      _server_messages: body._server_messages ?? undefined,
+    };
+  } catch (err: any) {
+    const body = err?.response?.data ?? {};
+    throw new Error(parseErpNextError(body));  
   }
-): Promise<any> {
-  const resp: AxiosResponse = await api.put(
-    `${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`,
-    payload,
-  );
-  return resp.data;
 }
 
+
+export async function submitCreditNote(noteNo: string): Promise<CreditNoteResponse> {
+  try {
+    const resp: AxiosResponse = await api.put(
+      `${CreditNoteAPI.Credit_note}/${encodeURIComponent(noteNo)}`,
+      { docstatus: 1 },
+    );
+    const body = resp.data ?? {};
+    return {
+      status_code: resp.status,
+      data: body.data ?? null,
+      message: `Credit Note ${noteNo} submitted successfully`,
+      _server_messages: body._server_messages ?? undefined,
+    };
+  } catch (err: any) {
+    const body = err?.response?.data ?? {};
+    throw new Error(parseErpNextError(body));
+  }
+}
+
+
+export async function cancelCreditNote(noteNo: string): Promise<CreditNoteResponse> {
+  try {
+    const resp: AxiosResponse = await api.put(
+      `${CreditNoteAPI.Credit_note}/${encodeURIComponent(noteNo)}`,
+      { docstatus: 2 },
+    );
+    const body = resp.data ?? {};
+    return {
+      status_code: resp.status,
+      data: body.data ?? null,
+      message: `Credit Note ${noteNo} cancelled successfully`,
+      _server_messages: body._server_messages ?? undefined,
+    };
+  } catch (err: any) {
+    const body = err?.response?.data ?? {};
+    throw new Error(parseErpNextError(body));
+  }
+}
 
 export async function deleteCreditNote(invoiceId: string): Promise<any> {
   const resp: AxiosResponse = await api.delete(`${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`);

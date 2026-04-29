@@ -220,42 +220,57 @@ export function useCreditNoteForm(
         })),
       };
 
-      setSaving(true);
-      try {
-        const res = isEdit && initialData?.name
-          ? await updateCreditNote(initialData.name, payload)
-          : await createCreditNote(payload);
+    setSaving(true);
+    try {
+      const res = isEdit && initialData?.name
+        ? await updateCreditNote(initialData.name, {
+            is_return: 1,
+            return_against: form.return_against,
+            customer: form.customer!.id,
+            company: companyName,
+            update_stock: form.update_stock ? 1 : 0,
+            update_outstanding_for_self: 1,
+            items: form.items.map((it) => ({
+              item_code: it.item_code,
+              qty: Number(it.qty),
+              rate: Number(it.rate),
+              ...(it.batch_no ? { batch_no: it.batch_no } : {}),
+              warehouse: it.warehouse,
+            })),
+          })
+        : await createCreditNote(payload);
 
-        if (!res || ![200, 201].includes(res.status_code)) {
-          showApiError(res?.message ?? "Credit note creation failed");
-          return;
-        }
-
-        if (res._server_messages) {
-          try {
-            const msgs: any[] = JSON.parse(res._server_messages);
-            msgs.forEach((raw) => {
-              try {
-                const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-                console.warn("[CreditNote server message]", parsed?.message ?? parsed);
-              } catch {
-                console.warn("[CreditNote server message]", raw);
-              }
-            });
-          } catch {
-            console.warn("[CreditNote server messages]", res._server_messages);
-          }
-        }
-
-        showSuccess(res.message);
-        onSuccess?.(res.data);
-        onClose?.();
-      } catch (err: any) {
-        console.error("Credit note creation failed", err);
-        showApiError(err);
-      } finally {
-        setSaving(false);
+      if (!res || ![200, 201].includes(res.status_code)) {
+        const action = isEdit ? "update" : "creation";
+        showApiError(res?.message ?? `Credit note ${action} failed`);
+        return;
       }
+
+      if (res._server_messages) {
+        try {
+          const msgs: any[] = JSON.parse(res._server_messages);
+          msgs.forEach((raw) => {
+            try {
+              const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+              console.warn("[CreditNote server message]", parsed?.message ?? parsed);
+            } catch {
+              console.warn("[CreditNote server message]", raw);
+            }
+          });
+        } catch {
+          console.warn("[CreditNote server messages]", res._server_messages);
+        }
+      }
+
+      showSuccess(res.message);
+      onSuccess?.(res.data);
+      onClose?.();
+    } catch (err: any) {
+      console.error("Credit note save failed", err);
+      showApiError(err);
+    } finally {
+      setSaving(false);
+    }
     },
     [saving, validate, form, companyName, onSuccess, onClose, isEdit, initialData],
   );

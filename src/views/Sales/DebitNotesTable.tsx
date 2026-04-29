@@ -305,17 +305,27 @@ const DebitNotesTable: React.FC = () => {
           />
           <ActionMenu
             customActions={[
+
               ...(r.status === "Draft"
                 ? [{
                   label: "Submit",
-                  icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>,
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ),
                   onClick: () => handleSubmit(r.noteNo),
                 }]
                 : []),
-              ...(r.status === "Submitted"
+              ...(!["Draft", "Cancelled"].includes(r.status)
                 ? [{
                   label: "Cancel",
-                  icon: <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  ),
                   onClick: () => handleCancel(r.noteNo),
                   danger: true,
                 }]

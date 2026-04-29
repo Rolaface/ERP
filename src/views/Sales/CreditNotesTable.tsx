@@ -10,7 +10,7 @@ import { showLoading, closeSwal, showSuccess, showApiError } from "../../utils/a
 import InvoiceDetailsModal from "./InvoiceDetailsModal";
 import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { getCreditNoteById } from "../../api/CreditNoteapi";
+import { getCreditNoteById, submitCreditNote, cancelCreditNote } from "../../api/CreditNoteapi";
 import { CreditNote } from "../../types/sales/Creditnotes";
 
 
@@ -85,6 +85,57 @@ const CreditNotesTable: React.FC = () => {
     setSortOrder(order);
     setPage(1);
   };
+
+  const handleSubmit = async (noteNo: string) => {
+    const result = await fireManagedSwal({
+      icon: "question",
+      title: "Submit Credit Note?",
+      text: `Submit ${noteNo}? This action cannot be undone.`,
+      showCancelButton: true,
+      confirmButtonColor: "#22c55e",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, submit",
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      showLoading("Submitting credit note...");
+      await submitCreditNote(noteNo);
+      closeSwal();
+      showSuccess(`Credit note ${noteNo} submitted successfully`);
+      fetchCreditNotes();
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
+
+  const handleCancel = async (noteNo: string) => {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Cancel Credit Note?",
+      text: `Cancel ${noteNo}? This cannot be undone.`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, cancel",
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      showLoading("Cancelling credit note...");
+      await cancelCreditNote(noteNo);
+      closeSwal();
+      showSuccess(`Credit note ${noteNo} cancelled successfully`);
+      fetchCreditNotes();
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
+
 
   const handleOpenReceipt = (receiptUrl: string) => {
     const normalizedUrl = receiptUrl.startsWith("http://")
@@ -277,6 +328,32 @@ const CreditNotesTable: React.FC = () => {
             }
           />
           <ActionMenu
+            customActions={[
+              ...(r.status === "Draft"
+                ? [{
+                  label: "Submit",
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ),
+                  onClick: () => handleSubmit(r.noteNo),
+                }]
+                : []),
+              ...(!["Draft", "Cancelled"].includes(r.status)
+                ? [{
+                  label: "Cancel",
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  ),
+                  onClick: () => handleCancel(r.noteNo),
+                  danger: true,
+                }]
+                : []),
+            ]}
             onDelete={(e) => {
               e?.stopPropagation();
               handleDelete(r.noteNo);
@@ -284,6 +361,7 @@ const CreditNotesTable: React.FC = () => {
           />
         </ActionGroup>
       ),
+
     },
   ];
 
