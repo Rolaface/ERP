@@ -3,7 +3,7 @@ import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import CreateCreditNoteModal from "./CreateCreditNoteModal";
-import { getAllCreditNotes } from "../../api/salesApi";
+import { getAllCreditNotes,deleteCreditNote } from "../../api/CreditNoteapi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { showLoading, closeSwal, showApiError, showSuccess } from "../../utils/alert";
@@ -53,26 +53,26 @@ const CreditNotesTable: React.FC = () => {
   const [detailsOpen, setDetailsOpen]         = useState(false);
   const [detailsId, setDetailsId]             = useState<string | null>(null);
 
-  // ── Reset page when search changes ───────────────────────────────────────
+  
   useEffect(() => { setPage(1); }, [searchTerm]);
 
-  // ── Fetch credit notes ────────────────────────────────────────────────────
+ 
   const fetchCreditNotes = async () => {
     try {
       setLoading(true);
 
-      // NOTE: update getAllCreditNotes in salesApi.ts to accept sortBy, sortOrder, search
+     
       const resp = await getAllCreditNotes(page, pageSize, sortBy, sortOrder, searchTerm);
 
-      const mappedData: CreditNote[] = resp.data.map((item: any) => ({
-        noteNo:    item.invoiceNumber,
-        invoiceNo: item.receiptNumber,
-        customer:  item.customerName,
-        date:      item.dateOfInvoice,
-        amount:    Math.abs(item.totalAmount),
-        currency:  item.currency,
-        status:    item.invoiceStatus ?? "",
-      }));
+      const mappedData: CreditNote[] = resp.data.data.map((item: any) => ({
+  noteNo:    item.name,
+  invoiceNo: item.return_against || "-", 
+  customer:  item.customer_name,
+  date:      item.posting_date,
+  amount:    Math.abs(item.grand_total),
+  currency:  "INR",
+  status:    item.status ?? "Draft",
+}));
 
       setData(mappedData);
       setTotalPages(resp.pagination.total_pages);
@@ -102,6 +102,18 @@ const CreditNotesTable: React.FC = () => {
     setSortOrder(order);
     setPage(1);
   };
+  const handleDelete = async (noteNo: string) => {
+  try {
+    showLoading("Deleting credit note...");
+    await deleteCreditNote(noteNo);
+    closeSwal();
+    showSuccess("Credit note deleted successfully");
+    fetchCreditNotes();
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
 
   // ── Receipt URL opener (kept — do not remove) ─────────────────────────────
   const handleOpenReceipt = (receiptUrl: string) => {
@@ -128,7 +140,7 @@ const CreditNotesTable: React.FC = () => {
     a.remove();
   };
 
-  // ── Export all pages ──────────────────────────────────────────────────────
+ 
   const fetchAllCreditNotesForExport = async (): Promise<CreditNote[]> => {
     try {
       let allData: CreditNote[] = [];
@@ -138,14 +150,14 @@ const CreditNotesTable: React.FC = () => {
       do {
         const resp = await getAllCreditNotes(current, 100, sortBy, sortOrder, searchTerm);
 
-        const mappedData: CreditNote[] = resp.data.map((item: any) => ({
-          noteNo:    item.invoiceNumber,
-          invoiceNo: item.receiptNumber,
-          customer:  item.customerName,
-          date:      item.dateOfInvoice,
-          amount:    Math.abs(item.totalAmount),
-          currency:  item.currency,
-          status:    item.invoiceStatus ?? "",
+        const mappedData: CreditNote[] = resp.data.data.map((item: any) => ({
+          noteNo:    item.name,
+          invoiceNo: "-", 
+          customer:  item.customer,
+          date:      item.posting_date,
+          amount:    Math.abs(item.grand_total),
+          currency:  "INR",
+          status:    item.status ?? "Draft",
         }));
 
         allData = [...allData, ...mappedData];
@@ -231,17 +243,23 @@ const CreditNotesTable: React.FC = () => {
       header: "Actions",
       align: "center",
       render: (r) => (
-        <ActionGroup>
-          <ActionButton
-            type="view"
-            iconOnly
-            variant="secondary"
-            onClick={() => {
-              setDetailsId(r.noteNo);
-              setDetailsOpen(true);
-            }}
-          />
-        </ActionGroup>
+       <ActionGroup>
+  <ActionButton
+    type="view"
+    iconOnly
+    variant="secondary"
+    onClick={() => {
+      setDetailsId(r.noteNo);
+      setDetailsOpen(true);
+    }}
+  />
+  <ActionButton
+    type="delete"
+    iconOnly
+    variant="secondary"
+    onClick={() => handleDelete(r.noteNo)}
+  />
+</ActionGroup>
       ),
     },
   ];
