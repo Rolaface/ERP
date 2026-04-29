@@ -308,7 +308,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   // ── Modal handlers
   const handleAddClick = () => {
     console.log("OPEN PURCHASE MODAL");
-    openPOEdit(0); // This will create a new PO (poId is undefined)
+    openPOEdit(0); 
   };
 
   const handleEdit = (order: PurchaseOrder, e?: React.MouseEvent) => {
