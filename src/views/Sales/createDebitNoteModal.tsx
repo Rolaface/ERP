@@ -18,6 +18,7 @@ interface CreateDebitNoteModalProps {
   initialData?: any;
   isEdit?: boolean;
   modalId?: string;
+  invoiceId?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -27,8 +28,10 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
   onClose,
   onSubmit,
   modalId,
+  initialData,
+  isEdit = false,
 }) => {
-  const resolvedModalId = modalId ?? `credit-note-create-${Date.now()}`;
+  const resolvedModalId = modalId ?? `debit-note-create-${Date.now()}`;
 
   const {
     form,
@@ -43,7 +46,7 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
     toggleUpdateStock,
     reset,
     handleSubmit,
-  } = useDebitNoteForm(onSubmit, onClose);
+  } = useDebitNoteForm(onSubmit, onClose, initialData, isEdit);
 
   // ── Footer ───────────────────────────────────────────────────────────────
 
@@ -67,12 +70,16 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
             form={FORM_ID}
             disabled={saving}
           >
-            {saving ? "Saving…" : "Create Debit Note"}
+            {saving
+              ? "Saving..."
+              : isEdit
+                ? "Update Debit Note"
+                : "Create Debit Note"}
           </Button>
         </div>
       </>
     ),
-    [onClose, reset, saving],
+    [onClose, reset, saving, isEdit]
   );
 
   const tabContent = useMemo(
@@ -109,7 +116,7 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={onClose}
-      title="Create Debit Note"
+      title={isEdit ? "Edit Debit Note" : "Create Debit Note"}
       subtitle="Purchase Invoice Adjustment"
       icon={FileMinus}
       footer={footer}

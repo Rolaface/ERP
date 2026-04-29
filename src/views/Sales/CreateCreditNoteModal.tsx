@@ -15,10 +15,10 @@ interface CreateCreditNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (data: any) => void;
-  /** Kept for GlobalModalHandler compatibility — not used in create flow */
   initialData?: any;
   isEdit?: boolean;
   modalId?: string;
+  invoiceId?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────

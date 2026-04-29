@@ -71,14 +71,14 @@ export async function getAllDebitNotes(
   });
 
 const raw = resp.data;
-const items = Array.isArray(raw?.data) ? raw.data        // { data: [...] }
-            : Array.isArray(raw)        ? raw             // [...] directly
-            : [];                                         // fallback
+const items = Array.isArray(raw?.data) ? raw.data        
+            : Array.isArray(raw)        ? raw            
+            : [];                                     
 
 const total = raw?.total_count ?? raw?.data?.length ?? items.length;
 
 return {
-  data: items,   // ← now it's actually an array ✅
+  data: items,   
   pagination: {
     total,
     total_pages: Math.ceil(total / page_size) || 1,
@@ -86,4 +86,42 @@ return {
     page_size,
   },
 };
+}
+
+export async function deleteDebitNote(invoiceId: string): Promise<any> {
+  const resp: AxiosResponse = await api.delete(`${DebitNoteAPI.Debit_note}/${encodeURIComponent(invoiceId)}`);
+  return resp.data;
+}
+
+
+export async function getDebitNotebyId(invoiceId: string): Promise<any> {
+  const resp: AxiosResponse = await api.get(
+    `${DebitNoteAPI.Debit_note}/${encodeURIComponent(invoiceId)}`
+  );
+  const body = resp.data ?? {};
+  return {
+    data: body.data ?? body,         
+    _server_messages: body._server_messages,
+  };
+}
+
+
+export async function updateDebitNote(
+  invoiceId: string,
+  payload: DebitNotePayload,
+): Promise<DebitNoteResponse> {
+  const resp: AxiosResponse = await api.put(
+    `${DebitNoteAPI.Debit_note}/${encodeURIComponent(invoiceId)}`,
+    payload
+  );
+
+  const body = resp.data ?? {};
+  const doc = body.data ?? null;
+
+  return {
+    status_code: resp.status,
+    data: doc,
+    message: "Debit Note updated successfully",
+    _server_messages: body._server_messages,
+  };
 }

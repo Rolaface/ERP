@@ -313,7 +313,6 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
             type="number"
             name="qty"
             value={isPlaceholder ? "" : Math.abs(it.qty)}
-            min={1}
             disabled={isPlaceholder}
             className={inputCls}
             onChange={(e) => {
@@ -330,7 +329,6 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
             type="number"
             name="rate"
             value={isPlaceholder ? "" : it.rate}
-            min={0}
             disabled={isPlaceholder}
             className={inputCls}
             onChange={(e) => {

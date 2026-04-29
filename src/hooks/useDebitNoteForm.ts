@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback , useEffect} from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getPurchaseInvoices,getPurchaseInvoiceById } from "../api/procurement/PurchaseInvoiceApi";
-import { createDebitNote } from "../api/DebitNoteapi";
+import { createDebitNote , updateDebitNote} from "../api/DebitNoteapi";
 import { showApiError, showSuccess } from "../utils/alert";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -46,6 +46,8 @@ const EMPTY_FORM: DebitNoteFormState = {
 export function useDebitNoteForm(
   onSuccess?: (data: any) => void,
   onClose?: () => void,
+    initialData?: any,
+  isEdit?: boolean,
 ) {
   const { companyName } = useCompanyStore();
 
@@ -53,17 +55,37 @@ export function useDebitNoteForm(
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
 
+  useEffect(() => {
+  if (!initialData) return;
+
+  setForm({
+    return_against: initialData.return_against || "",
+    supplier: {
+      id: initialData.supplier || "",
+      name: initialData.supplier || "",
+    },
+    update_stock: !!initialData.update_stock,
+    items: (initialData.items || []).map((it: any) => ({
+      item_code: it.item_code,
+      item_name: it.item_name,
+      qty: Number(it.qty),
+      rate: Number(it.rate),
+      batch_no: it.batch_no || "",
+      warehouse: it.warehouse || "",
+    })),
+  });
+}, [initialData]);
   // ── Invoice search ───────────────────────────────────────────────────────
 
   const fetchInvoiceOptions = useCallback(
     async (query: string): Promise<PurchaseInvoiceOption[]> => {
       try {
         const res = await getPurchaseInvoices(1, 50);
-        return (res?.data ?? []).map((pi: any) => ({
-          value: pi.pId,
-          label: pi.pId,
-          suppplierId: pi.supplierId,
-          supplierName: pi.supplierName,
+        return (res?.data ?? []).map((r: any) => ({
+          value: r.pId,
+          label: r.pId,
+          suppplierId: r.supplierId,
+          supplierName:r.supplierName,
         }));
       } catch {
         return [];
@@ -200,7 +222,9 @@ export function useDebitNoteForm(
 
       setSaving(true);
       try {
-        const res = await createDebitNote(payload);
+        const res = isEdit && initialData?.name
+  ? await updateDebitNote(initialData.name, payload)
+  : await createDebitNote(payload);
 
 
         if (!res || ![200, 201].includes(res.status_code)) {
@@ -233,7 +257,8 @@ export function useDebitNoteForm(
         setSaving(false);
       }
     },
-    [saving, validate, form, companyName, onSuccess, onClose],
+    [saving, validate, form, companyName, onSuccess, onClose , isEdit,
+ initialData],
   );
 
   // ── Derived ──────────────────────────────────────────────────────────────
