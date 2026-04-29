@@ -85,28 +85,34 @@ const ProblemSection: React.FC = () => {
         {/* GRID */}
         <div className="grid lg:grid-cols-2 gap-14 items-center mt-16">
 
-          {/* LEFT PANEL */}
+          {/* LEFT PANEL (now more “alive”) */}
           <div
             className={`
               relative transition-all duration-700 delay-100
               ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}
             `}
           >
-            {/* Glow */}
+            {/* Pulsing danger aura */}
             <div
-              className="absolute inset-0 blur-3xl rounded-3xl opacity-30"
-              style={{ background: "var(--danger)" }}
+              className="absolute inset-0 blur-3xl rounded-3xl animate-[pulse_4s_ease-in-out_infinite]"
+              style={{ background: "var(--danger)", opacity: 0.18 }}
             />
 
-            <div className="relative bg-surface-2 border border-theme rounded-2xl p-7 shadow-soft-xl backdrop-blur-md">
+            <div className="relative bg-surface-2 border border-theme rounded-2xl p-7 shadow-soft-xl backdrop-blur-md overflow-hidden">
+
+              {/* subtle flicker overlay */}
+              <div className="absolute inset-0 opacity-[0.03] pointer-events-none animate-[pulse_3s_ease-in-out_infinite]"
+                style={{
+                  background:
+                    "linear-gradient(120deg, transparent, rgba(255,255,255,0.4), transparent)",
+                }}
+              />
 
               <p className="text-[11px] text-muted mb-5 tracking-[0.15em] uppercase">
                 System Errors
               </p>
 
               <div className="space-y-4">
-
-                {/* Flicker effect */}
                 <div className="flex items-center justify-between text-[14px] animate-[pulse_2.5s_ease-in-out_infinite]">
                   <span className="text-main">Invoice #2345</span>
                   <span className="text-danger font-medium">Mismatch</span>
@@ -138,16 +144,13 @@ const ProblemSection: React.FC = () => {
           {/* RIGHT SIDE */}
           <div className="flex flex-col gap-3">
 
-            {/* Micro-copy */}
             <p className="text-[13px] text-muted mb-2">
               It usually starts small…
             </p>
 
             {problems.map((item, i) => {
               const isActive = activeIndex === i;
-
-              // escalation intensity
-              const intensity = 0.08 + i * 0.03;
+              const intensity = 0.08 + i * 0.035;
 
               return (
                 <div
@@ -157,32 +160,32 @@ const ProblemSection: React.FC = () => {
                   className={`
                     group relative rounded-xl p-5 border border-theme
                     transition-all duration-300 cursor-pointer
-                    ${isActive ? "shadow-soft-xl scale-[1.02]" : ""}
+                    ${isActive ? "shadow-soft-xl scale-[1.03] z-10" : ""}
                     ${
                       activeIndex !== null && !isActive
-                        ? "opacity-30 blur-[2px] scale-[0.98]"
+                        ? "opacity-25 blur-[2px] scale-[0.97]"
                         : ""
                     }
                     ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}
                   `}
                   style={{
                     background: "var(--surface-1)",
-                    transitionDelay: `${i * 60 + 180}ms`,
+                    transitionDelay: `${i * 70 + 180}ms`,
                   }}
                 >
-                  {/* Escalating glow */}
+                  {/* Spotlight instead of flat glow */}
                   <div
-                    className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition duration-200"
                     style={{
-                      background: `radial-gradient(circle at 10% 20%, rgba(220,38,38,${intensity}), transparent 60%)`,
+                      background: `radial-gradient(circle at 20% 30%, rgba(220,38,38,${intensity}), transparent 65%)`,
                     }}
                   />
 
                   <div className="relative flex items-start gap-4">
                     <div
-                      className="mt-1 w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold"
+                      className="mt-1 w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 group-hover:scale-110"
                       style={{
-                        background: `rgba(220,38,38,${0.12 + i * 0.04})`,
+                        background: `rgba(220,38,38,${0.12 + i * 0.05})`,
                         color: "var(--danger)",
                       }}
                     >
@@ -205,7 +208,7 @@ const ProblemSection: React.FC = () => {
           </div>
         </div>
 
-        {/* FOOTER */}
+        {/* FOOTER (stronger emotional close) */}
         <div
           className={`
             text-center mt-20 transition-all duration-700 delay-500
@@ -216,11 +219,10 @@ const ProblemSection: React.FC = () => {
             Manual errors. Lost revenue. Delayed decisions.
             <br />
             <span className="text-main font-medium">
-              Your business deserves better systems.
+              This isn’t inefficiency — it’s hidden damage.
             </span>
           </p>
 
-          {/* Cost implication */}
           <p className="text-[13px] text-danger mt-4">
             Most businesses lose 8–12% revenue due to disconnected systems
           </p>
