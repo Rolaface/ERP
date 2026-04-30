@@ -15,10 +15,10 @@ interface CreateCreditNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (data: any) => void;
-  /** Kept for GlobalModalHandler compatibility — not used in create flow */
   initialData?: any;
   isEdit?: boolean;
   modalId?: string;
+  invoiceId?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -28,6 +28,8 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
   onClose,
   onSubmit,
   modalId,
+  initialData,
+  isEdit = false,
 }) => {
   const resolvedModalId = modalId ?? `credit-note-create-${Date.now()}`;
 
@@ -44,7 +46,7 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
     toggleUpdateStock,
     reset,
     handleSubmit,
-  } = useCreditNoteForm(onSubmit, onClose);
+  } = useCreditNoteForm(onSubmit, onClose, initialData, isEdit);
 
   // ── Footer ───────────────────────────────────────────────────────────────
 
@@ -68,12 +70,16 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
             form={FORM_ID}
             disabled={saving}
           >
-            {saving ? "Saving…" : "Create Credit Note"}
+            {saving
+              ? "Saving..."
+              : isEdit
+                ? "Update Credit Note"
+                : "Create Credit Note"}
           </Button>
         </div>
       </>
     ),
-    [onClose, reset, saving],
+    [onClose, reset, saving, isEdit]
   );
 
   const tabContent = useMemo(
@@ -110,8 +116,8 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={onClose}
-      title="Create Credit Note"
-      subtitle="Sales Return / Invoice Adjustment"
+      title={isEdit ? "Edit Credit Note" : "Create Credit Note"}
+      subtitle="Create and manage credit notes"
       icon={FileMinus}
       footer={footer}
       maxWidth="6xl"

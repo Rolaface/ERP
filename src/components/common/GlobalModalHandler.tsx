@@ -61,6 +61,7 @@ const AddAssetModal = lazy(
 const AddAssetMovementModal= lazy(()=>import("../../components/FixedAsset/Addassetmovementmodal "))
 const RfqModal = lazy(() => import("../procurement/rfq/RfqModal"))
 const CreditNoteModal = lazy(() => import("../../views/Sales/CreateCreditNoteModal"))
+const DebitNoteModal = lazy(()=> import("../../views/Sales/createDebitNoteModal"))
 
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
@@ -427,6 +428,19 @@ const GlobalModalHandler: React.FC = () => {
          case "CreditNote":
         return wrappedModal(
           <CreditNoteModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={modal.initialData as string}
+            isEdit={modal.isEdit}
+          />,
+        );
+
+         case "DebitNote":
+        return wrappedModal(
+          <DebitNoteModal
             key={modal.id}
             modalId={modal.id}
             isOpen={true}

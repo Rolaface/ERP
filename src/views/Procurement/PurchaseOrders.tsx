@@ -308,7 +308,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   // ── Modal handlers
   const handleAddClick = () => {
     console.log("OPEN PURCHASE MODAL");
-    openPOEdit(0); // This will create a new PO (poId is undefined)
+    openPOEdit(0); 
   };
 
   const handleEdit = (order: PurchaseOrder, e?: React.MouseEvent) => {
@@ -485,33 +485,12 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     {
       key: "id",
       header: "PO ID",
-      align: "center",
-      render: (o) => {
-        const id = o.id || "";
-        const shortId = id ? `--${id.slice(-4)}` : "—";
-
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
-
-        return (
-          <div className="flex items-center justify-center gap-1 group">
-            <span className="font-mono text-sm">
-              {shortId}
-            </span>
-
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full PO ID"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
-      tooltip: (o) => o.id || "—",
+      align: "left",
+     render: (o) => (
+        <span className="block">
+          {o.id || "—"}
+        </span>
+      ),
     },
     {
       key: "supplier",
@@ -538,7 +517,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       header: "Amount",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <code className="block whitespace-nowrap">
           {o.currency} {Number(o.amount || 0).toFixed(2)}
         </code>
       ),

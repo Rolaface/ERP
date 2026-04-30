@@ -246,39 +246,20 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "supplierID",
       header: "ID",
-      align: "center",
- render: (supplier) => {
-  const id = supplier.supplierId || "";
-  const shortId = id ? `--${id.slice(-4)}` : "-";
-
-  return (
-    <div className="flex items-center justify-center gap-1 group">
-      <span className="font-mono text-sm">
-        {shortId}
-      </span>
-
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        }}
-        className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-500"
-        title="Copy full ID"
-      >
-        <Copy size={14} />
-      </button>
-    </div>
-  );
-},
+      align: "left",
+      render: (supplier) => (
+        <span className="block text-sm">
+          {supplier.supplierId || "-"}
+        </span>
+      ),
       tooltip: (supplier) => supplier.supplierId || "-",
     },
     {
       key: "supplierName",
       header: "Name",
       align: "center",
-      maxWidth: "250px",
       render: (supplier) => (
-        <span className="block truncate text-sm">
+        <span className="block text-sm">
           {supplier.supplierName || "-"}
         </span>
       ),
@@ -292,7 +273,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Tax Category",
       align: "center",
       render: (supplier) => (
-        <span className="block truncate text-sm">{supplier.taxCategory || "-"}</span>
+        <span className="block text-sm">{supplier.taxCategory || "-"}</span>
       ),
       tooltip: (supplier) => supplier.taxCategory || "-",
     },
@@ -301,7 +282,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Phone",
       align: "center",
       render: (supplier) => (
-        <span className="block truncate text-sm">{supplier.phoneNo || "-"}</span>
+        <span className="block text-sm">{supplier.phoneNo || "-"}</span>
       ),
       tooltip: (supplier) => supplier.phoneNo || "-",
     },
@@ -311,7 +292,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       align: "center",
       render: (supplier) =>
         supplier.tpin ? (
-          <code className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+          <code className="inline-flex max-w-full rounded bg-row-hover px-2 py-0.5 text-xs text-main">
             {supplier.tpin}
           </code>
         ) : (
@@ -324,7 +305,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Currency",
       align: "center",
       render: (supplier) => (
-        <span className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+        <span className="inline-flex max-w-full  rounded bg-row-hover px-2 py-0.5 text-xs text-main">
           {supplier.currency || "-"}
         </span>
       ),

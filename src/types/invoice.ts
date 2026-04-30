@@ -48,7 +48,7 @@ shippingAddress: string;
   accountHead: string;
   description?: string;
   rate: number;
-  taxAmount: number;
+  amount: number;
 }[];
   salesTaxTemplate:string;
   addresses?: {

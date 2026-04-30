@@ -66,64 +66,6 @@ export async function deleteSalesInvoiceById(id: string): Promise<any> {
   return resp.data;
 }
 
-export async function createCreditNoteFromInvoice(payload: {
-  originalSalesInvoiceNumber: string;
-  CreditNoteReasonCode: string;
-  invcAdjustReason?: string;
-  transactionProgress: string;
-  items: {
-    itemCode: string;
-    quantity: number;
-    price: number;
-  }[];
-}): Promise<any> {
-  const resp: AxiosResponse = await api.post(
-    InvoiceAPI.createCreditNote,
-    payload,
-  );
-  return resp.data;
-}
-
-export async function createDebitNoteFromInvoice(payload: {
-  originalSalesInvoiceNumber: string;
-  DebitNoteReasonCode: string;
-  invcAdjustReason: string;
-  transactionProgress: string;
-  items: {
-    itemCode: string;
-    quantity: number;
-    price: number;
-  }[];
-}): Promise<any> {
-  const resp = await api.post(InvoiceAPI.createDebitNote, payload);
-  return resp.data;
-}
-
-export async function getAllDebitNotes(
-  page: number = 1,
-  page_size: number = 10,
-  sortBy: string = "",
-  sortOrder: "asc" | "desc" = "asc",
-  search: string = "",
-): Promise<any> {
-  const resp: AxiosResponse = await api.get(InvoiceAPI.getDebitNotes, {
-    params: { page, page_size, sortBy, sortOrder, search },
-  });
-  return resp.data;
-}
-export async function getAllCreditNotes(
-  page: number = 1,
-  page_size: number = 10,
-  sortBy: string = "",
-  sortOrder: "asc" | "desc" = "asc",
-  search: string = "",
-): Promise<any> {
-  const resp: AxiosResponse = await api.get(InvoiceAPI.getCreditNotes, {
-    params: { page, page_size, sortBy, sortOrder, search },
-  });
-  return resp.data;
-}
-
 
 export async function editSalesInvoice(
   invoiceNumber: string,

@@ -31,8 +31,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-  // export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -301,18 +301,16 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoices`,
     getById: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoice_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.create_sales_invoice`,
-
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice_status`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.delete_sales_invoice`,
-    createCreditNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_credit_note_from_sales_invoice`,
-    createDebitNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_debit_note_from_invoice`,
-    getCreditNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_credit_notes`,
-    getDebitNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_debit_notes`,
     editInvoice: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
   },
 
   CreditNote:{
-    Create:`${ERP_BASE}/api/resource/Sales Invoice`,
+    Credit_note:`${ERP_BASE}/api/resource/Sales Invoice`,
+  },
+  DebitNote:{
+      Debit_note:`${ERP_BASE}/api/resource/Purchase Invoice`
   },
 
   /* =========================

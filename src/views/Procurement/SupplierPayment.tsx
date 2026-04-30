@@ -109,16 +109,19 @@ const Payments: React.FC = () => {
       key: "id",
       header: "Id",
       align: "left",
+      render: (p) => <div className="py-1.5">{p.id || "—"}</div>
     },
     {
       key: "paymentDate",
       header: "Payment Date",
       align: "left",
+      render: (p) => <div className="py-1.5">{p.paymentDate || "—"}</div>
     },
     {
       key: "supplierName",
       header: "Supplier Name",
       align: "left",
+      render: (p) => <div className="py-1.5">{p.supplierName || "—"}</div>
     },
     {
       key: "modeOfPayment",

@@ -138,22 +138,25 @@ const handleAddPayment = () => {
       key: "id",
       header: "Id",
       align: "left",
+      render: (p) => <div className="py-1.5">{p.id || "—"}</div>
     },
     {
       key: "paymentDate",
       header: "Payment Date",
       align: "left",
+      render: (p) => <div className="py-1.5">{p.paymentDate || "—"}</div>
     },
     {
       key: "customerName",
       header: "Customer Name",
       align: "left",
+      render: (p) => <div className="py-1.5">{p.customerName || "—"}</div>
     },
     {
       key: "modeOfPayment",
       header: "Mode of Payment",
       align: "left",
-      render: (p) => p.modeOfPayment || "—",
+      render: (p) => <div className="py-1.5">{p.modeOfPayment || "—"}</div>
     },
     {
       key: "amount",
@@ -169,7 +172,7 @@ const handleAddPayment = () => {
       key: "status",
       header: "Status",
       align: "center",
-      render: (p: PaymentSummary) => <StatusBadge status={p.status} />,
+      render: (p: PaymentSummary) =>  <div className="py-1.5"><StatusBadge status={p.status} /></div>
     },
   ];
 

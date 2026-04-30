@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
-import { createCreditNote } from "../api/CreditNoteapi";
-import { showApiError , showSuccess } from "../utils/alert";
+import { createCreditNote, updateCreditNote } from "../api/CreditNoteapi";
+import { showApiError, showSuccess } from "../utils/alert";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -16,7 +16,7 @@ export interface InvoiceOption {
 export interface CreditNoteItem {
   item_code: string;
   item_name: string;
-  qty: number;      
+  qty: number;
   rate: number;
   batch_no: string;
   warehouse: string;
@@ -46,12 +46,35 @@ const EMPTY_FORM: CreditNoteFormState = {
 export function useCreditNoteForm(
   onSuccess?: (data: any) => void,
   onClose?: () => void,
+  initialData?: any,
+  isEdit?: boolean,
 ) {
   const { companyName } = useCompanyStore();
 
   const [form, setForm] = useState<CreditNoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+
+  useEffect(() => {
+    if (!initialData) return;
+
+    setForm({
+      return_against: initialData.return_against || "",
+      customer: {
+        id: initialData.customer || "",
+        name: initialData.customer || "",
+      },
+      update_stock: !!initialData.update_stock,
+      items: (initialData.items || []).map((it: any) => ({
+        item_code: it.item_code,
+        item_name: it.item_name,
+        qty: Number(it.qty),
+        rate: Number(it.rate),
+        batch_no: it.batch_no || "",
+        warehouse: it.warehouse || "",
+      })),
+    });
+  }, [initialData]);
 
   // ── Invoice search ───────────────────────────────────────────────────────
 
@@ -75,7 +98,6 @@ export function useCreditNoteForm(
   // ── Invoice select → fetch full details & populate form ─────────────────
 
   const handleInvoiceSelect = useCallback(async (opt: InvoiceOption) => {
-    // Immediately reflect selection + customer from list payload
     setForm((prev) => ({
       ...prev,
       return_against: opt.value,
@@ -86,7 +108,6 @@ export function useCreditNoteForm(
     setInvoiceLoading(true);
     try {
       const res = await getSalesInvoiceById(opt.value);
-      // API wraps inside message.data OR data directly — handle both
       const data = res?.data ?? res?.message?.data;
       if (!data) return;
 
@@ -130,7 +151,6 @@ export function useCreditNoteForm(
     [],
   );
 
- 
   const handleWarehouseDefault = useCallback(
     (index: number, warehouse: string) => {
       setForm((prev) => {
@@ -172,7 +192,6 @@ export function useCreditNoteForm(
     return null;
   }, [form]);
 
-  // ── Submit ───────────────────────────────────────────────────────────────
 
   const handleSubmit = useCallback(
     async (e?: React.FormEvent) => {
@@ -191,6 +210,7 @@ export function useCreditNoteForm(
         customer: form.customer!.id,
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
+        update_outstanding_for_self: 1 as const,
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),
@@ -200,26 +220,59 @@ export function useCreditNoteForm(
         })),
       };
 
-      setSaving(true);
-      try {
-        const res = await createCreditNote(payload);
+    setSaving(true);
+    try {
+      const res = isEdit && initialData?.name
+        ? await updateCreditNote(initialData.name, {
+            is_return: 1,
+            return_against: form.return_against,
+            customer: form.customer!.id,
+            company: companyName,
+            update_stock: form.update_stock ? 1 : 0,
+            update_outstanding_for_self: 1,
+            items: form.items.map((it) => ({
+              item_code: it.item_code,
+              qty: Number(it.qty),
+              rate: Number(it.rate),
+              ...(it.batch_no ? { batch_no: it.batch_no } : {}),
+              warehouse: it.warehouse,
+            })),
+          })
+        : await createCreditNote(payload);
 
-        if (!res || ![200, 201].includes(res.status_code)) {
-          showApiError(res);
-          return;
-        }
-
-        showSuccess(res.message ?? "Credit note created successfully");
-        onSuccess?.(res);
-        onClose?.();
-      } catch (err: any) {
-        console.error("Credit note creation failed", err);
-        showApiError(err);
-      } finally {
-        setSaving(false);
+      if (!res || ![200, 201].includes(res.status_code)) {
+        const action = isEdit ? "update" : "creation";
+        showApiError(res?.message ?? `Credit note ${action} failed`);
+        return;
       }
+
+      if (res._server_messages) {
+        try {
+          const msgs: any[] = JSON.parse(res._server_messages);
+          msgs.forEach((raw) => {
+            try {
+              const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+              console.warn("[CreditNote server message]", parsed?.message ?? parsed);
+            } catch {
+              console.warn("[CreditNote server message]", raw);
+            }
+          });
+        } catch {
+          console.warn("[CreditNote server messages]", res._server_messages);
+        }
+      }
+
+      showSuccess(res.message);
+      onSuccess?.(res.data);
+      onClose?.();
+    } catch (err: any) {
+      console.error("Credit note save failed", err);
+      showApiError(err);
+    } finally {
+      setSaving(false);
+    }
     },
-    [saving, validate, form, companyName, onSuccess, onClose],
+    [saving, validate, form, companyName, onSuccess, onClose, isEdit, initialData],
   );
 
   // ── Derived ──────────────────────────────────────────────────────────────

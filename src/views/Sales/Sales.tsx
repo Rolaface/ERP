@@ -123,7 +123,7 @@ const SalesModule: React.FC = () => {
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title="Sales"
-        description="Quotes, invoices and sales analytics in one workflow."
+        description="End-to-end sales management"
         icon={<FaMoneyBillWave />}
       />
       <AppTabs tabs={salesTabs} activeTab={activeTab} onChange={handleTabChange} />

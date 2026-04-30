@@ -476,32 +476,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     {
       key: "pId",
       header: "PI ID",
-      align: "center",
-      render: (o) => {
-        const id = o.pId || "";
-        const shortId = id ? `--${id.slice(-4)}` : "—";
-
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
-
-        return (
-          <div className="flex items-center justify-center gap-1 group">
-            <span className="font-mono text-sm">
-              {shortId}
-            </span>
-
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full PI ID"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
+      align: "left",
+       render: (o) => (
+        <span className="block">
+          {o.pId || "—"}
+        </span>
+      ),
       tooltip: (o) => o.pId || "—",
     },
     {
@@ -532,7 +512,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Amount",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <code className="block whitespace-nowrap">
           {Number(o.amount || 0).toFixed(2)}
         </code>
       ),
@@ -543,7 +523,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Grand Total",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <code className="block whitespace-nowrap">
           {Number(o.grandTotalWithTax || 0).toFixed(2)}
         </code>
       ),
@@ -554,7 +534,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Outstanding",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <code className="block whitespace-nowrap">
           {Number(o.outstanding_amount || 0).toFixed(2)}
         </code>
       ),
