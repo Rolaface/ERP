@@ -137,6 +137,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
     actions.removeItem(absoluteIndex);
   };
 
+  
+
   // ── built-in invoice row ──────────────────────────────────────────────────
   const renderInvoiceRow = (it: any, i: number) => {
     const discountAmount =

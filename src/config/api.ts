@@ -1,3 +1,4 @@
+import { create } from "zustand";
 import { ENV } from "./env";
 
 const getApiBaseUrl = (): string => {
@@ -30,8 +31,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
-  export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+  // export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -117,6 +118,7 @@ export const API = {
     getLedgerAccount: `${ERP_BASE}/api/method/custom_api.api.payment.get_ledger_account`,
     getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
     createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
+    getAccountsResource: `${ERP_BASE}/api/resource/Account`,
   },
 
   accounting: {
@@ -401,6 +403,22 @@ export const API = {
     getTown: `${CODES_BASE}/towns/`,
   },
 
+  AssetsTypes: { 
+    getall: `${ERP_BASE}/api/resource/Asset Category`,
+    create: `${ERP_BASE}/api/method/custom_api.api.fixed_assets.api.create_asset_category`,
+    update: `${ERP_BASE}/api/method/custom_api.api.fixed_assets.api.update_asset_category`,
+    delete: `${ERP_BASE}/api/method/frappe.client.delete`,
+  },
+  Assets: {
+    getall: `${ERP_BASE}/api/resource/Asset`,
+    create: `${ERP_BASE}/api/resource/Asset`,
+    update: `${ERP_BASE}/api/resource/Asset`,
+    delete: `${ERP_BASE}/api/method/frappe.client.delete`,
+    // Assit movement
+    Movement: `${ERP_BASE}/api/resource/Asset Movement`,
+    
+  },
+
   /* =========================
    * ANALYTICS
    * ========================= */
@@ -452,5 +470,10 @@ export const API = {
    * ========================= */
   frappeUtilsAPI: {
     getCompanyCurrentFiscalYear: `${ERP_BASE}/api/method/custom_api.utils.frappe_utils.get_current_fiscal_year`,
+    locationSearch: `${ERP_BASE}/api/method/custom_api.api.search.get_locations`,
+    createlocation: `${ERP_BASE}/api/resource/Location`,
+    getitemcodeforFaixedAsset: `${ERP_BASE}/api/method/custom_api.api.search.get_items`,
+    getemployeeforAssetMovement: `${ERP_BASE}/api/method/custom_api.api.search.get_employees`,
+  
   },
 } as const;

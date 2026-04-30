@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
+import { getAssetCategories as fetchAssetCategoriesAPI } from "../../api/faapi";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -27,9 +28,39 @@ interface AssetCategory {
   accounts: any[];
 }
 
-const getAssetCategories = async (_page: number, _pageSize: number, _filters: any) => {
-  // replace with real API call
-  return { data: [], pagination: { total_pages: 1, total: 0 } };
+const getAssetCategories = async (
+  page: number,
+  pageSize: number,
+  filters: any
+) => {
+  const data = await fetchAssetCategoriesAPI({
+    fields: [
+      "name",
+      "asset_category_name",
+     
+      "non_depreciable_category",
+    ],
+    page,
+    page_size: pageSize,
+    search: filters?.search,
+  });
+
+  return {
+    data: data.map((item: any) => ({
+      id: item.name,
+      assetCategoryName: item.asset_category_name,
+      enableCapitalWorkInProgress:
+        item.enable_capital_work_in_progress === 1,
+      nonDepreciableCategory:
+        item.non_depreciable_category === 1,
+      financeBooks: [],
+      accounts: [],
+    })),
+    pagination: {
+      total_pages: 1, 
+      total: data.length,
+    },
+  };
 };
 
 const getAssetCategoryById = async (_id: string) => {
@@ -150,33 +181,34 @@ const AssetCategoryTable: React.FC = () => {
   // ── Columns ─────────────────────────────────────────────────
   const columns: Column<AssetCategory>[] = [
     {
-      key: "id",
-      header: "ID",
-      align: "center",
-      render: (o) => {
-        const id = o.id || "";
-        const shortId = id ? `****${id.slice(-4)}` : "—";
+  key: "id",
+  header: "Name",
+  align: "center",
+  render: (o) => {
+    const id = o.id || "";
 
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
+    const handleCopy = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(id);
+    };
 
-        return (
-          <div className="flex items-center justify-center gap-1 group">
-            <span className="font-mono text-sm">{shortId}</span>
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full ID"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
-      tooltip: (o) => o.id || "—",
-    },
+    return (
+      <div className="flex items-center justify-center gap-1 group">
+        <span className="font-mono text-sm truncate max-w-[120px]">
+          {id || "—"}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
+          title="Copy full ID"
+        >
+          <Copy size={14} />
+        </button>
+      </div>
+    );
+  },
+  tooltip: (o) => o.id || "—",
+},
     {
       key: "assetCategoryName",
       header: "Category Name",

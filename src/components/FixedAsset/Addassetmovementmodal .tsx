@@ -1,27 +1,31 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft, Trash2 } from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import ModalFooter from "../common/ModalFooter";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
+import DatePickerInput from "../calendar/DatePickerInput";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
-import { showApiError, showSuccess } from "../../utils/alert";
+import { getAssetOptions, getAssetById } from "../../api/assetapi";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
+import { getLocationOptions } from "../../api/location";
+import { getEmployeeOptions } from "../../api/assetMovementapi";
+import { resolveEmployeeName } from "../../api/resolversapifun";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../store/dataRefreshStore";
+import { showSuccess } from "../../utils/alert";
+import { useAssetMovement } from "../../hooks/Useassetmovement";
 import type {
   AddAssetMovementModalProps,
-  AssetMovementForm,
   AssetMovementRow,
 } from "../../types/Assetmovement.types";
-import {
-  DEFAULT_ASSET_MOVEMENT_FORM,
-  DEFAULT_ASSET_MOVEMENT_ROW,
-  PURPOSE_OPTIONS,
-} from "../../types/Assetmovement.types";
+import { PURPOSE_OPTIONS } from "../../types/Assetmovement.types";
 
 /* ─────────────────────────────────────────────
    TABS
 ───────────────────────────────────────────── */
 type MovementTab = "details" | "reference";
-
 const MOVEMENT_TABS: MovementTab[] = ["details", "reference"];
 const MOVEMENT_TAB_LABELS: Record<MovementTab, string> = {
   details: "Movement Details",
@@ -43,16 +47,44 @@ const EditableCell: React.FC<{
     onChange={(e) => onChange(e.target.value)}
     placeholder={placeholder}
     readOnly={readOnly}
-    className="w-full bg-transparent border-none outline-none text-[12px] py-0.5 px-1 rounded transition-colors"
-    style={{
-      color: "var(--text)",
-      minWidth: 0,
-    }}
-    onFocus={(e) =>
-      (e.currentTarget.style.background = "var(--row-hover)")
-    }
+    className="w-full bg-transparent border-none outline-none text-[11px] py-0.5 px-1 rounded transition-colors placeholder:text-muted"
+    style={{ color: "var(--text)", minWidth: 0 }}
+    onFocus={(e) => (e.currentTarget.style.background = "var(--row-hover)")}
     onBlur={(e) => (e.currentTarget.style.background = "transparent")}
   />
+);
+
+/* ─────────────────────────────────────────────
+   FIELD WRAPPER
+───────────────────────────────────────────── */
+const FieldBox: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = "",
+}) => (
+  <div
+    className={`rounded-lg border transition-colors ${className}`}
+    style={{
+      borderColor: "var(--border)",
+      background: "var(--card)",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+    }}
+  >
+    {children}
+  </div>
+);
+
+/* ─────────────────────────────────────────────
+   SECTION LABEL
+───────────────────────────────────────────── */
+const SectionLabel: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
+  <p
+    className="text-[10px] font-bold uppercase tracking-widest pb-2 mb-3 border-b"
+    style={{ color: "var(--muted)", borderColor: "var(--border)" }}
+  >
+    {children}
+  </p>
 );
 
 /* ─────────────────────────────────────────────
@@ -66,7 +98,6 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
   mode = "create",
   modalId,
 }) => {
-  /* ── stable modal id ── */
   const resolvedModalId = useRef(
     modalId ??
       (mode === "edit"
@@ -75,85 +106,23 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
   ).current;
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
-
-  const [form, setForm] = useState<AssetMovementForm>({
-    ...DEFAULT_ASSET_MOVEMENT_FORM,
-    ...initialData,
-    assets:
-      initialData?.assets?.length
-        ? initialData.assets
-        : [{ ...DEFAULT_ASSET_MOVEMENT_ROW, id: Date.now().toString() }],
-    transactionDate: initialData?.transactionDate ?? nowString(),
-  });
-
   const [activeTab, setActiveTab] = useState<MovementTab>("details");
-  const [submitting, setSubmitting] = useState(false);
+  const [employeeName, setEmployeeName] = useState<string>("");
 
-  /* ── reset on open ── */
-  useEffect(() => {
-    if (isOpen) {
-      setActiveTab("details");
-      setForm({
-        ...DEFAULT_ASSET_MOVEMENT_FORM,
-        ...initialData,
-        assets:
-          initialData?.assets?.length
-            ? initialData.assets
-            : [{ ...DEFAULT_ASSET_MOVEMENT_ROW, id: Date.now().toString() }],
-        transactionDate: initialData?.transactionDate ?? nowString(),
-      });
-    }
-  }, [isOpen]);
-
-  /* ── field change ── */
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    markDirty();
-  };
-
-  /* ── asset row helpers ── */
-  const addRow = () => {
-    setForm((prev) => ({
-      ...prev,
-      assets: [
-        ...prev.assets,
-        { ...DEFAULT_ASSET_MOVEMENT_ROW, id: Date.now().toString() },
-      ],
-    }));
-    markDirty();
-  };
-
-  const updateRow = (
-    id: string,
-    key: keyof AssetMovementRow,
-    value: string,
-  ) => {
-    setForm((prev) => ({
-      ...prev,
-      assets: prev.assets.map((r) =>
-        r.id === id ? { ...r, [key]: value } : r,
-      ),
-    }));
-    markDirty();
-  };
-
-  const removeRow = (id: string) => {
-    setForm((prev) => ({
-      ...prev,
-      assets: prev.assets.filter((r) => r.id !== id),
-    }));
-    markDirty();
-  };
-
-  /* ── submit ── */
-  const handleSubmitForm = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      if (onSubmit) await onSubmit(form);
+  const {
+    form,
+    submitting,
+    resetForm,
+    handleChange,
+    handleFieldChange,
+    addRow,
+    updateRow,
+    removeRow,
+    submitForm,
+  } = useAssetMovement({
+    initialData,
+    onSuccess: async (record) => {
+      await onSubmit?.(record as any);
       showSuccess(
         mode === "edit"
           ? "Asset movement updated successfully"
@@ -163,12 +132,45 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
       onClose();
       useDataRefreshStore
         .getState()
-        .triggerRefresh(REFRESH_KEYS.FIXED_ASSET_LIST);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setSubmitting(false);
+        .triggerRefresh(REFRESH_KEYS.ASSET_MOVEMENT_LIST);
+    },
+  });
+
+  const ITEMS_PER_PAGE = 5;
+  const [page, setPage] = useState(0);
+
+  /* Reset on open */
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab("details");
+      resetForm();
+      setPage(0);
     }
+  }, [isOpen]);
+
+  const handleFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    handleChange(e);
+    markDirty();
+  };
+
+  const handleDateChange = (name: string, value: string) => {
+    handleFieldChange(name, value);
+    markDirty();
+  };
+
+  const handleRowUpdate = (
+    id: string,
+    key: keyof AssetMovementRow,
+    value: string,
+  ) => {
+    updateRow(id, key, value);
+    markDirty();
+  };
+
+  const handleSubmitForm = async () => {
+    return submitForm();
   };
 
   const handleNext = () => {
@@ -178,15 +180,19 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
 
   const handleReset = () => {
     resetDirty();
-    setForm({
-      ...DEFAULT_ASSET_MOVEMENT_FORM,
-      ...initialData,
-      assets: [{ ...DEFAULT_ASSET_MOVEMENT_ROW, id: Date.now().toString() }],
-      transactionDate: nowString(),
-    });
+    resetForm();
+    setPage(0);
   };
 
-  /* ── footer ── */
+  /* ── Pagination ── */
+  const totalRows = form.assets.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / ITEMS_PER_PAGE));
+  const safePage = Math.min(page, totalPages - 1);
+  const paginatedAssets = form.assets.slice(
+    safePage * ITEMS_PER_PAGE,
+    (safePage + 1) * ITEMS_PER_PAGE,
+  );
+
   const footerContent = (
     <ModalFooter
       onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
@@ -214,25 +220,26 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
       maxWidth="5xl"
       height="80vh"
     >
-      <form
-        id="assetMovementForm"
-        className="h-full flex flex-col"
-        autoComplete="off"
-        onChange={markDirty}
-      >
-        {/* ── Tabs ──────────────────────────────────────────────────────── */}
-        <div className="bg-app border-b border-theme px-6 shrink-0">
-          <div className="flex gap-8">
+      <div className="h-full flex flex-col" onChange={markDirty}>
+        {/* ── Tabs ── */}
+        <div
+          className="shrink-0 px-6 border-b"
+          style={{ background: "var(--bg-app)", borderColor: "var(--border)" }}
+        >
+          <div className="flex gap-0">
             {MOVEMENT_TABS.map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${
-                  activeTab === tab
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+                className="relative py-3 px-1 mr-6 bg-transparent border-none text-xs font-medium cursor-pointer transition-all"
+                style={{
+                  color: activeTab === tab ? "var(--primary)" : "var(--muted)",
+                  borderBottom:
+                    activeTab === tab
+                      ? "2px solid var(--primary)"
+                      : "2px solid transparent",
+                }}
               >
                 {MOVEMENT_TAB_LABELS[tab]}
               </button>
@@ -240,165 +247,297 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
           </div>
         </div>
 
-        {/* ── Tab Content ───────────────────────────────────────────────── */}
-        <div className="overflow-y-auto px-5 py-5 flex flex-col gap-6">
-
-          {/* ════════════════ TAB: details ════════════════ */}
+        {/* ── Tab Content ── */}
+        <div className="overflow-y-auto flex-1 px-6 py-6">
+          {/* ════ TAB: details ════ */}
           {activeTab === "details" && (
-            <>
-              {/* Row 1: Company + Transaction Date */}
-              <div className="grid grid-cols-[1fr_1fr] gap-4">
-                <ModalInput
-                  label="Company *"
-                  name="company"
-                  value={form.company}
-                  onChange={handleChange}
-                  placeholder="Select company"
-                  className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                />
+            <div className="flex flex-col gap-5">
+              {/* Row 1: Transaction Date + Purpose + Reference Number + Reference Date */}
+              <div className="grid grid-cols-4 gap-4">
+                {/* Transaction Date */}
                 <div className="flex flex-col gap-1">
-                  <ModalInput
-                    label="Transaction Date *"
-                    name="transactionDate"
-                    value={form.transactionDate}
-                    onChange={handleChange}
-                    readOnly
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card cursor-default"
-                  />
-                  <span className="text-[10px]" style={{ color: "var(--muted)", marginLeft: 4 }}>
-                    Asia/Kolkata
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wide"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    Transaction Date{" "}
+                    <span style={{ color: "var(--danger)" }}>*</span>
                   </span>
+                  <FieldBox>
+                    <div className="px-1.5 py-1.5">
+                      <DatePickerInput
+                        name="transactionDate"
+                        value={form.transactionDate}
+                        onChange={handleDateChange}
+                        required
+                      />
+                    </div>
+                  </FieldBox>
+                </div>
+
+                {/* Purpose */}
+                <div className="flex flex-col gap-1">
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wide"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    Purpose <span style={{ color: "var(--danger)" }}>*</span>
+                  </span>
+                  <FieldBox>
+                    <div className="px-1.5 py-1.5">
+                      <ModalSelect
+                        label=""
+                        name="purpose"
+                        value={form.purpose}
+                        onChange={handleFormChange}
+                        options={PURPOSE_OPTIONS}
+                        className="w-full border-none outline-none text-[11px] bg-transparent"
+                        style={{ color: "var(--text)" }}
+                      />
+                    </div>
+                  </FieldBox>
+                </div>
+
+                {/* Reference Number */}
+                <div className="flex flex-col gap-1">
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wide"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    Reference Number
+                  </span>
+                  <FieldBox>
+                    <div className="px-1.5 py-1.5">
+                      <ModalInput
+                        label=""
+                        name="referenceNumber"
+                        value={form.referenceNumber}
+                        onChange={handleFormChange}
+                        placeholder="Optional"
+                      />
+                    </div>
+                  </FieldBox>
+                </div>
+
+                {/* Reference Date */}
+                <div className="flex flex-col gap-1">
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wide"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    Reference Date
+                  </span>
+                  <FieldBox>
+                    <div className="px-1.5 py-1.5">
+                      <DatePickerInput
+                        name="referenceDate"
+                        value={form.referenceDate}
+                        onChange={handleDateChange}
+                      />
+                    </div>
+                  </FieldBox>
                 </div>
               </div>
 
-              {/* Row 2: Purpose */}
-              <div className="grid grid-cols-[1fr_1fr] gap-4">
-                <ModalSelect
-                  label="Purpose *"
-                  name="purpose"
-                  value={form.purpose}
-                  onChange={handleChange}
-                  options={PURPOSE_OPTIONS}
-                  className="w-full border border-theme rounded text-[11px] text-main bg-card"
-                />
-              </div>
-
-              {/* Assets inline table */}
+              {/* Assets table */}
               <div>
-                <p className="text-[11px] font-semibold text-muted uppercase tracking-widest mb-3 border-b border-theme pb-1">
-                  Assets
-                </p>
+                <SectionLabel>Assets</SectionLabel>
 
                 <div
                   className="rounded-xl border overflow-hidden"
-                  style={{ borderColor: "var(--border)" }}
+                  style={{
+                    borderColor: "var(--border)",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
+                  }}
                 >
                   <div className="overflow-x-auto">
-                    <table className="w-full text-[12px] border-collapse min-w-[700px]">
-                      {/* head */}
+                    <table
+                      className="w-full text-[11px] border-collapse"
+                      style={{ minWidth: 720 }}
+                    >
                       <thead>
-                        <tr className="table-head">
-                          <th className="w-10 px-3 py-2.5 text-center font-semibold text-xs">
-                            No.
-                          </th>
-                          <th className="px-3 py-2.5 text-left font-semibold text-xs">
-                            Asset *
-                          </th>
-                          <th className="px-3 py-2.5 text-left font-semibold text-xs">
-                            Source Location
-                          </th>
-                          <th className="px-3 py-2.5 text-left font-semibold text-xs">
-                            From Employee
-                          </th>
-                          <th className="px-3 py-2.5 text-left font-semibold text-xs">
-                            Target Location
-                          </th>
-                          <th className="px-3 py-2.5 text-left font-semibold text-xs">
-                            To Employee
-                          </th>
-                          <th className="w-10 px-3 py-2.5" />
+                        <tr
+                          style={{
+                            background: "var(--table-head-bg, var(--primary))",
+                            color: "var(--table-head-text, #fff)",
+                          }}
+                        >
+                          {[
+                            { label: "No.", w: "w-10 text-center" },
+                            { label: "Asset *", w: "" },
+                            { label: "Source Location", w: "" },
+                            { label: "From Employee", w: "" },
+                            { label: "Target Location", w: "" },
+                            { label: "To Employee", w: "" },
+                            { label: "", w: "w-10" },
+                          ].map(({ label, w }, i) => (
+                            <th
+                              key={i}
+                              className={`px-3 py-2.5 text-left text-[10px] font-semibold tracking-wide ${w}`}
+                            >
+                              {label}
+                            </th>
+                          ))}
                         </tr>
                       </thead>
 
-                      {/* body */}
                       <tbody>
-                        {form.assets.map((row, idx) => (
+                        {paginatedAssets.map((row, idx) => (
                           <tr
                             key={row.id}
-                            className="row-hover border-t transition-colors"
+                            className="border-t transition-colors row-hover"
                             style={{ borderColor: "var(--border)" }}
                           >
-                            {/* No. */}
+                            {/* Row number — accounts for current page offset */}
                             <td
-                              className="px-3 py-2 text-center font-medium"
+                              className="px-3 py-2 text-center text-[11px] font-medium w-10"
                               style={{ color: "var(--muted)" }}
                             >
-                              {idx + 1}
+                              {safePage * ITEMS_PER_PAGE + idx + 1}
                             </td>
 
                             {/* Asset */}
                             <td className="px-2 py-1.5">
-                              <EditableCell
+                              <SearchSelect2
+                                label=""
                                 value={row.asset}
-                                onChange={(v) => updateRow(row.id, "asset", v)}
-                                placeholder="Search asset…"
+                                onChange={async (value) => {
+                                  handleRowUpdate(row.id, "asset", value);
+                                  try {
+                                    const asset = await getAssetById(value);
+                                    handleRowUpdate(
+                                      row.id,
+                                      "sourceLocation",
+                                      asset.location || "",
+                                    );
+                                    handleRowUpdate(
+                                      row.id,
+                                      "fromEmployee",
+                                      asset.custodian || "",
+                                    );
+                                    if (asset.custodian) {
+                                      const name = await resolveEmployeeName(
+                                        asset.custodian,
+                                      );
+                                      handleRowUpdate(
+                                        row.id,
+                                        "fromEmployeeLabel",
+                                        name,
+                                      );
+                                    }
+                                  } catch (err) {
+                                    console.error("GET ASSET ERROR", err);
+                                  }
+                                }}
+                                fetchOptions={getAssetOptions}
+                                placeholder="Search asset..."
                               />
                             </td>
 
                             {/* Source Location */}
                             <td className="px-2 py-1.5">
-                              <EditableCell
+                              <SearchSelect2
+                                label=""
                                 value={row.sourceLocation}
-                                onChange={(v) =>
-                                  updateRow(row.id, "sourceLocation", v)
+                                onChange={(value) =>
+                                  handleRowUpdate(
+                                    row.id,
+                                    "sourceLocation",
+                                    value,
+                                  )
                                 }
-                                placeholder="Source location"
+                                onInputChange={(input) =>
+                                  handleRowUpdate(
+                                    row.id,
+                                    "sourceLocation",
+                                    input || "",
+                                  )
+                                }
+                                fetchOptions={getLocationOptions}
+                                placeholder="Search source location..."
+                                allowCustomInput={true}
                               />
                             </td>
 
                             {/* From Employee */}
                             <td className="px-2 py-1.5">
-                              <EditableCell
-                                value={row.fromEmployee}
-                                onChange={(v) =>
-                                  updateRow(row.id, "fromEmployee", v)
-                                }
-                                placeholder="From employee"
+                              <SearchSelect2
+                                label=""
+                                value={row.fromEmployeeLabel || ""}
+                                onChange={(value, option) => {
+                                  handleRowUpdate(
+                                    row.id,
+                                    "fromEmployee",
+                                    value,
+                                  );
+                                  handleRowUpdate(
+                                    row.id,
+                                    "fromEmployeeLabel",
+                                    option.label,
+                                  );
+                                }}
+                                fetchOptions={getEmployeeOptions}
+                                placeholder="Search employee..."
                               />
                             </td>
 
                             {/* Target Location */}
                             <td className="px-2 py-1.5">
-                              <EditableCell
+                              <SearchSelect2
+                                label=""
                                 value={row.targetLocation}
-                                onChange={(v) =>
-                                  updateRow(row.id, "targetLocation", v)
+                                onChange={(value) =>
+                                  handleRowUpdate(
+                                    row.id,
+                                    "targetLocation",
+                                    value,
+                                  )
                                 }
-                                placeholder="Target location"
+                                fetchOptions={getLocationOptions}
+                                placeholder="Search target location..."
+                                allowCustomInput={true}
                               />
                             </td>
 
                             {/* To Employee */}
                             <td className="px-2 py-1.5">
-                              <EditableCell
-                                value={row.toEmployee}
-                                onChange={(v) =>
-                                  updateRow(row.id, "toEmployee", v)
-                                }
-                                placeholder="To employee"
+                              <SearchSelect2
+                                label=""
+                                value={row.toEmployeeLabel || ""}
+                                onChange={(value, option) => {
+                                  handleRowUpdate(row.id, "toEmployee", value);
+                                  handleRowUpdate(
+                                    row.id,
+                                    "toEmployeeLabel",
+                                    option.label,
+                                  );
+                                }}
+                                fetchOptions={getEmployeeOptions}
+                                placeholder="Search employee..."
                               />
                             </td>
 
-                            {/* Delete row */}
-                            <td className="px-3 py-1.5 text-center">
+                            {/* Remove */}
+                            <td className="px-3 py-1.5 text-center w-10">
                               <button
                                 type="button"
-                                onClick={() => removeRow(row.id)}
-                                className="w-6 h-6 flex items-center justify-center rounded hover:bg-red-50 text-danger transition-colors mx-auto text-base font-bold leading-none"
+                                onClick={() => {
+                                  removeRow(row.id);
+                                  // If removing the last item on this page, go back one page
+                                  const newTotal = form.assets.length - 1;
+                                  const newTotalPages = Math.max(
+                                    1,
+                                    Math.ceil(newTotal / ITEMS_PER_PAGE),
+                                  );
+                                  if (safePage >= newTotalPages) {
+                                    setPage(newTotalPages - 1);
+                                  }
+                                }}
                                 title="Remove row"
+                                className="w-6 h-6 flex items-center justify-center rounded-md mx-auto transition-colors hover:bg-red-50"
                                 style={{ color: "var(--danger)" }}
                               >
-                                ×
+                                <Trash2 size={13} />
                               </button>
                             </td>
                           </tr>
@@ -407,72 +546,107 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
                     </table>
                   </div>
 
-                  {/* Add row footer */}
+                  {/* Table footer: Add row + row count + pagination */}
                   <div
-                    className="px-4 py-2.5 border-t"
+                    className="px-4 py-2.5 border-t flex items-center justify-between gap-3"
                     style={{
                       borderColor: "var(--border)",
                       background: "var(--bg)",
                     }}
                   >
-                    <button
-                      type="button"
-                      onClick={addRow}
-                      className="btn btn-outline text-xs font-semibold px-4 py-1.5 rounded-lg"
-                    >
-                      + Add row
-                    </button>
+                    {/* Left: Add row + count */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          addRow();
+                          markDirty();
+                          // Jump to the last page where the new row will appear
+                          const newTotal = form.assets.length + 1;
+                          const newLastPage = Math.max(
+                            0,
+                            Math.ceil(newTotal / ITEMS_PER_PAGE) - 1,
+                          );
+                          setPage(newLastPage);
+                        }}
+                        className="btn btn-outline text-[11px] font-semibold px-4 py-1.5 rounded-lg"
+                      >
+                        + Add row
+                      </button>
+                      <span
+                        className="text-[10px]"
+                        style={{ color: "var(--muted)" }}
+                      >
+                        {form.assets.length} row
+                        {form.assets.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+
+                    {/* Right: Pagination (only when needed) */}
+                    {totalRows > ITEMS_PER_PAGE && (
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="text-[10px]"
+                          style={{ color: "var(--muted)" }}
+                        >
+                          Showing{" "}
+                          {safePage * ITEMS_PER_PAGE + 1}–
+                          {Math.min(
+                            (safePage + 1) * ITEMS_PER_PAGE,
+                            totalRows,
+                          )}{" "}
+                          of {totalRows}
+                        </span>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            disabled={safePage === 0}
+                            onClick={() => setPage((p) => Math.max(0, p - 1))}
+                            className="px-2.5 py-1 rounded border text-[10px] font-medium transition-colors disabled:opacity-40"
+                            style={{
+                              borderColor: "var(--border)",
+                              background: "var(--card)",
+                              color: "var(--text)",
+                            }}
+                          >
+                            Previous
+                          </button>
+                          <button
+                            type="button"
+                            disabled={safePage >= totalPages - 1}
+                            onClick={() =>
+                              setPage((p) => Math.min(totalPages - 1, p + 1))
+                            }
+                            className="px-2.5 py-1 rounded border text-[10px] font-medium transition-colors disabled:opacity-40"
+                            style={{
+                              borderColor: "var(--border)",
+                              background: "var(--card)",
+                              color: "var(--text)",
+                            }}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            </>
-          )}
 
-          {/* ════════════════ TAB: reference ════════════════ */}
-          {activeTab === "reference" && (
-            <div className="flex flex-col gap-6">
-              <div>
-                <p className="text-[11px] font-semibold text-muted uppercase tracking-widest mb-3 border-b border-theme pb-1">
-                  Reference Details
-                </p>
-                <div className="grid grid-cols-[1fr_1fr] gap-4">
-                  <ModalInput
-                    label="Reference Number"
-                    name="referenceNumber"
-                    value={form.referenceNumber}
-                    onChange={handleChange}
-                    placeholder="e.g. REF-0001"
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                  <ModalInput
-                    label="Reference Date"
-                    name="referenceDate"
-                    value={form.referenceDate}
-                    onChange={handleChange}
-                    type="date"
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                </div>
+              
               </div>
             </div>
           )}
+
+          {/* ════ TAB: reference ════ */}
+          {activeTab === "reference" && (
+            <div className="flex flex-col gap-5">
+              {/* Reference tab content goes here */}
+            </div>
+          )}
         </div>
-      </form>
+      </div>
     </MinimizableModal>
   );
 };
 
 export default AddAssetMovementModal;
-
-/* ── util ── */
-function nowString() {
-  return new Date().toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-}

@@ -58,7 +58,7 @@ const CurrencyConversionModal = lazy(
 const AddAssetModal = lazy(
   () => import("../../components/FixedAsset/AddAssetModal"),
 );
-
+const AddAssetMovementModal= lazy(()=>import("../../components/FixedAsset/Addassetmovementmodal "))
 const RfqModal = lazy(() => import("../procurement/rfq/RfqModal"))
 const CreditNoteModal = lazy(() => import("../../views/Sales/CreateCreditNoteModal"))
 
@@ -390,6 +390,18 @@ const GlobalModalHandler: React.FC = () => {
       case "fixedAsset":
         return wrappedModal(
           <AddAssetModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={getRecordInitialData(modal.initialData) as any}
+            mode={modal.isEdit ? "edit" : "create"}
+          />,
+        );
+        case "assetMovement":
+        return wrappedModal(
+          <AddAssetMovementModal
             key={modal.id}
             modalId={modal.id}
             isOpen={true}
