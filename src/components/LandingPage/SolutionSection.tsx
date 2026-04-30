@@ -50,17 +50,19 @@ const SolutionSection: React.FC = () => {
   return (
     <section
       ref={sectionRef}
-      className="section-lg section-default relative overflow-hidden"
+      className="section-lg relative overflow-hidden"
+      style={{
+        background: "var(--surface-1)",
+      }}
     >
-      {/* ✅ Softer “relief” background vs ProblemSection tension */}
+      {/* Softer relief glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle at 70% 20%, rgba(59,130,246,0.06), transparent 60%)",
+            "radial-gradient(circle at 70% 20%, rgba(59,130,246,0.05), transparent 60%)",
         }}
       />
-      <div className="absolute inset-0 bg-grid-subtle opacity-10 pointer-events-none" />
 
       <div className="container-wide relative z-10">
 
@@ -87,7 +89,7 @@ const SolutionSection: React.FC = () => {
         </div>
 
         {/* FEATURES */}
-        <div className="mt-20 space-y-24">
+        <div className="mt-24 space-y-28">
           {features.map((feature, i) => {
             const isAlt = i % 2 !== 0;
             const isActive = activeIndex === i;
@@ -98,7 +100,7 @@ const SolutionSection: React.FC = () => {
                 onMouseEnter={() => setActiveIndex(i)}
                 onMouseLeave={() => setActiveIndex(null)}
                 className={`
-                  grid lg:grid-cols-2 gap-12 items-center
+                  grid lg:grid-cols-2 gap-14 items-center
                   transition-all duration-700
                   ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}
                 `}
@@ -108,7 +110,6 @@ const SolutionSection: React.FC = () => {
                 {/* TEXT */}
                 <div className={`${isAlt ? "lg:order-2" : ""} max-w-[520px]`}>
                   
-                  {/* Badge upgraded to system style */}
                   <div className="badge w-fit mb-4">
                     {feature.badge}
                   </div>
@@ -121,7 +122,6 @@ const SolutionSection: React.FC = () => {
                     {feature.desc}
                   </p>
 
-                  {/* ✅ Proof made more scannable */}
                   <div className="mt-4 flex items-center gap-2 text-[13px] text-primary font-medium">
                     <span>✔</span>
                     <span>{feature.proof}</span>
@@ -129,12 +129,10 @@ const SolutionSection: React.FC = () => {
                 </div>
 
                 {/* IMAGE */}
-                <div
-                  className={`relative group ${isAlt ? "lg:order-1" : ""}`}
-                >
+                <div className={`relative ${isAlt ? "lg:order-1" : ""}`}>
 
-                  {/* Ghost (before state) */}
-                  <div className="absolute -top-4 -left-4 w-full h-full rounded-3xl opacity-25 blur-sm pointer-events-none">
+                  {/* Reduced ghost (less noise) */}
+                  <div className="absolute -top-3 -left-3 w-full h-full rounded-3xl opacity-15 blur-sm pointer-events-none">
                     <img
                       src={feature.image}
                       alt=""
@@ -142,32 +140,32 @@ const SolutionSection: React.FC = () => {
                     />
                   </div>
 
-                  {/* Glow */}
+                  {/* Minimal glow */}
                   <div
                     className={`
                       absolute inset-0 rounded-3xl blur-3xl transition-all duration-500
-                      ${isActive ? "opacity-30 scale-105" : "opacity-15"}
+                      ${isActive ? "opacity-20 scale-105" : "opacity-10"}
                     `}
                     style={{
                       background: "var(--gradient-primary)",
                     }}
                   />
 
-                  {/* Main card */}
+                  {/* Main elevated card */}
                   <div
                     className={`
                       relative rounded-3xl overflow-hidden
                       transition-all duration-500
-                      ${isActive ? "scale-[1.025]" : ""}
+                      ${isActive ? "scale-[1.02]" : ""}
                     `}
                     style={{
-                      transform: "perspective(1200px) rotateY(-3deg)",
-                      boxShadow: "var(--shadow-soft-xl)",
+                      transform: "perspective(1200px) rotateY(-2deg)",
+                      boxShadow: "var(--shadow-lg)", // ✅ stronger elevation
                       maxWidth: "640px",
                     }}
                   >
 
-                    {/* Hover light */}
+                    {/* Subtle hover light */}
                     <div
                       className={`
                         absolute inset-0 pointer-events-none
@@ -176,11 +174,11 @@ const SolutionSection: React.FC = () => {
                       `}
                       style={{
                         background:
-                          "radial-gradient(circle at 60% 40%, rgba(255,255,255,0.18), transparent 60%)",
+                          "radial-gradient(circle at 60% 40%, rgba(255,255,255,0.12), transparent 60%)",
                       }}
                     />
 
-                    {/* Subtle clarity overlay */}
+                    {/* Very subtle overlay */}
                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/5" />
 
                     <img
@@ -196,10 +194,10 @@ const SolutionSection: React.FC = () => {
           })}
         </div>
 
-        {/* ✅ Closing reassurance (very important psychologically) */}
+        {/* CLOSING */}
         <div
           className={`
-            text-center mt-24 transition-all duration-700 delay-500
+            text-center mt-28 transition-all duration-700 delay-500
             ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
           `}
         >
