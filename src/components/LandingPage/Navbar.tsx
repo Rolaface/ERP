@@ -97,8 +97,9 @@ const Navbar: React.FC = () => {
       <nav
         className={`
           sticky top-0 z-50 w-full
+          floating-dock border-b border-theme
           transition-all duration-[var(--motion-base)] ease-[var(--ease-smooth)]
-          ${isScrolled ? "surface-floating border-b border-theme shadow-sm" : "bg-surface-elevated"}
+          ${isScrolled ? "shadow-sm" : ""}
         `}
       >
         <div
