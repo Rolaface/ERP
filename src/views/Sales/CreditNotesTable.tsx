@@ -54,7 +54,7 @@ const CreditNotesTable: React.FC = () => {
         customer: item.customer_name,
         date: item.posting_date,
         amount: Math.abs(item.grand_total),
-        status: item.status ?? "Draft",
+        status: item.status ?? "-",
         currency: item.currency,
       }));
 
@@ -282,21 +282,41 @@ const CreditNotesTable: React.FC = () => {
   };
 
   const columns: Column<CreditNote>[] = [
-    { key: "noteNo", header: "Credit Invoice No", sortable: true },
-    { key: "invoiceNo", header: "Receipt No" },
-    { key: "customer", header: "Customer", sortable: true },
+    { key: "noteNo", header: "Credit Invoice No",
+       render: (o) => (
+        <span className="block">
+          {o.noteNo || "—"}
+        </span>
+      ),
+     },
+    { key: "invoiceNo", header: "Receipt No", render: (o) => (
+        <span className="block">
+          {o.invoiceNo || "—"}
+        </span>
+      ), },
+    { key: "customer", header: "Customer",
+        align: "center",
+       render: (o) => (
+        <span className="block">
+          {o.customer || "—"}
+        </span>
+      ),
+    },
     {
       key: "amount",
       header: "Amount",
       align: "right",
-      sortable: true,
       render: (r) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
           {r.amount.toLocaleString()} {r.currency}
         </code>
       ),
     },
-    { key: "date", header: "Date", sortable: true },
+    { key: "date", header: "Date",  render: (o) => (
+        <span className="block">
+          {o.date || "—"}
+        </span>
+      ), },
     {
       key: "status",
       header: "Status",

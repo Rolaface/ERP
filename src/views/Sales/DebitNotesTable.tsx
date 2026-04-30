@@ -12,23 +12,16 @@ import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table
 import { deleteDebitNote, submitDebitNote, cancelDebitNote } from "../../api/DebitNoteapi";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { getDebitNotebyId } from "../../api/DebitNoteapi";
-
-type DebitNote = {
-  noteNo: string;
-  purchase_invoiceNo: string;
-  supplier: string;
-  date: string;
-  amount: number;
-  status: string;
-};
+import { DebitNote } from "../../types/sales/Debitnotes";
 
 const mapItem = (item: any): DebitNote => ({
   noteNo: item.name,
   purchase_invoiceNo: item.return_against,
-  supplier: item.supplier,
+  supplier: item.supplier_name,
   date: item.posting_date,
   amount: item.grand_total,
   status: item.status,
+  currency: item.currency,
 });
 
 const DebitNotesTable: React.FC = () => {
@@ -239,6 +232,7 @@ const DebitNotesTable: React.FC = () => {
           Date: r.date,
           Amount: r.amount,
           Status: r.status,
+          currency: r.currency,
         }))
       );
       const workbook = XLSX.utils.book_new();
@@ -259,20 +253,43 @@ const DebitNotesTable: React.FC = () => {
   };
 
   const columns: Column<DebitNote>[] = [
-    { key: "noteNo", header: "Debit Invoice No" },
-    { key: "purchase_invoiceNo", header: "Receipt No" },
-    { key: "supplier", header: "Supplier" },
+    { key: "noteNo", header: "Debit Invoice No",
+       render: (o) => (
+        <span className="block">
+          {o.noteNo || "—"}
+        </span>
+      ),
+     },
+    { key: "purchase_invoiceNo", header: "Receipt No",
+       render: (o) => (
+        <span className="block">
+          {o.purchase_invoiceNo || "—"}
+        </span>
+      ),
+     },
+    { key: "supplier", header: "Supplier" ,
+       render: (o) => (
+        <span className="block">
+          {o.supplier || "—"}
+        </span>
+      ),
+    },
     {
       key: "amount",
       header: "Amount",
       align: "right",
       render: (r) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
-          {r.amount.toLocaleString()}
+          {r.amount.toLocaleString()}  {r.currency}
         </code>
       ),
     },
-    { key: "date", header: "Date" },
+    { key: "date", header: "Date" ,  render: (o) => (
+        <span className="block">
+          {o.date || "—"}
+        </span>
+      ),   
+    },
     {
       key: "status",
       header: "Status",

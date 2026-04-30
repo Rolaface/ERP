@@ -156,31 +156,7 @@ const Items: React.FC = () => {
     {
       key: "itemCode",
       header: "Item Code",
-      render: (row) => {
-        const id = row.itemCode || "";
-        const shortId = id ? `--${id.slice(-4)}` : "-";
-
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
-
-        return (
-          <div className="flex items-center gap-1 group">
-            <span className="font-mono text-xs font-medium text-main">
-              {shortId}
-            </span>
-
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full Item Code"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
+       render: (row) => <span className=" font-medium text-main">{row.itemCode}</span>,
     },
     { key: "itemName", header: "Item Name", render: (row) => row.itemName },
     { key: "description", header: "Description", render: (row) => row.description },

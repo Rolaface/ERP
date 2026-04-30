@@ -1,6 +1,6 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
-
+import { DebitNoteResponse } from "../types/sales/Debitnotes";
 import { API, ERP_BASE } from "../config/api";
 const api = createAxiosInstance(ERP_BASE);
 export const DebitNoteAPI = API.DebitNote;
@@ -20,13 +20,6 @@ export interface DebitNotePayload {
   }[];
 }
  
- 
-export interface DebitNoteResponse {
-  status_code: number;
-  data: Record<string, any> | null;
-  message: string;
-  _server_messages?: string;
-}
  
 
 export function parseErpNextError(errorBody: any): string {
@@ -76,16 +69,16 @@ export async function createDebitNote(
 
  
 export async function getAllDebitNotes(
-  page: number = 1,
-  page_size: number = 10,
+  page = 1,
+  pageSize = 10,
   search: string = "",
 ): Promise<any> {
-  const limit_start = (page - 1) * page_size;
+  const start = (page - 1) * pageSize;
 
   const resp: AxiosResponse = await api.get(DebitNoteAPI.Debit_note, { 
     params: {
       filters: JSON.stringify([["is_return", "=", 1]]),
-      fields: JSON.stringify(["name","supplier","grand_total","status","posting_date","return_against"]),
+      fields: JSON.stringify(["name","supplier_name","currency","grand_total","status","posting_date","return_against"]),
       with_pagination: 1,
       limit_start,
       limit_page_length: page_size,
