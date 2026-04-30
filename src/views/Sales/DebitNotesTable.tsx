@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-import CreateDebitNoteModal from "./createDebitNoteModal";
+import { openDebitNoteModal } from "../../store/modalStore";
 import { getAllDebitNotes } from "../../api/DebitNoteapi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -209,7 +209,7 @@ const DebitNotesTable: React.FC = () => {
         showApiError("Debit Note data could not be loaded");
         return;
       }
-      setEditData(doc);
+      openDebitNoteModal(doc,true);
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -386,7 +386,7 @@ const DebitNotesTable: React.FC = () => {
         onSearch={(q) => { setSearchTerm(q); setPage(1); }}
         enableAdd
         addLabel="Add Debit Note"
-        onAdd={() => setCreateModals((prev) => [...prev, { id: `debit-note-create-${Date.now()}` }])}
+        onAdd={() => openDebitNoteModal()}
         emptyMessage="No debit notes found"
         enableColumnSelector
         enableExport
@@ -410,32 +410,6 @@ const DebitNotesTable: React.FC = () => {
         onOpenReceiptPdf={handleOpenReceipt}
       />
 
-      {createModals.map((modal) => (
-        <CreateDebitNoteModal
-          key={modal.id}
-          isOpen={true}
-          onClose={() => setCreateModals((prev) => prev.filter((m) => m.id !== modal.id))}
-          onSubmit={(payload) => {
-            console.log("Debit Note Payload:", payload);
-            setCreateModals((prev) => prev.filter((m) => m.id !== modal.id));
-            fetchDebitNotes();
-          }}
-          invoiceId={data.length > 0 ? data[0].purchase_invoiceNo : ""}
-        />
-      ))}
-
-      {editData && (
-        <CreateDebitNoteModal
-          isOpen={true}
-          isEdit={true}
-          initialData={editData}
-          onClose={() => setEditData(null)}
-          onSubmit={() => {
-            setEditData(null);
-            fetchDebitNotes();
-          }}
-        />
-      )}
     </div>
   );
 };
