@@ -294,7 +294,7 @@ const handleDeleteAsset = async (id: string, e: React.MouseEvent) => {
       header: "Actions",
 render: (row) => (
   <ActionGroup>
-    {/* 👁 VIEW */}
+   
     <ActionButton
       type="view"
       onClick={() => handleView(row)}

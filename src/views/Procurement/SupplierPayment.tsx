@@ -134,9 +134,11 @@ const Payments: React.FC = () => {
       header: "Amount",
       align: "right",
       render: (p: PaymentSummary) => (
+        <div className="py-1.5">
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
            {p.amount}
         </code>
+        </div>
       ),
     },
     {
@@ -144,7 +146,9 @@ const Payments: React.FC = () => {
       header: "Status",
       align: "center",
       render: (p: PaymentSummary) => (
-        <StatusBadge status={p.status} />
+        <div className="py-1.5">
+          <StatusBadge status={p.status} />
+        </div>
       ),
     },
   ];

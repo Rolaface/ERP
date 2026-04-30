@@ -249,6 +249,7 @@ const ItemsCategory: React.FC = () => {
       header: "Group Name",
       align: "left",
       render: (row) => (
+        <div className="py-1.5">
         <span
           className={
             row.is_group ? "font-semibold text-main" : "font-normal text-main"
@@ -256,13 +257,18 @@ const ItemsCategory: React.FC = () => {
         >
           {row.item_group_name}
         </span>
+        </div>
+
       ),
     },
     {
       key: "name",
       header: "ID",
       align: "left",
-      render: (row) => <span className="text-xs text-muted">{row.name}</span>,
+      render: (row) => 
+      <div className="py-1.5">
+        <span className="text-xs text-muted">{row.name}</span>
+      </div>,
     },
     {
       key: "item_count",
@@ -271,9 +277,11 @@ const ItemsCategory: React.FC = () => {
       render: (row) => {
         if (row.item_count === 0) return <span className="text-muted text-xs">—</span>;
         return (
+            <div className="py-1.5">
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
             {row.item_count}
           </code>
+          </div>
         );
       },
     },

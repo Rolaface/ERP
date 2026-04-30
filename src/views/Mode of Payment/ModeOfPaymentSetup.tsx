@@ -86,9 +86,13 @@ const ModeOfPaymentSetup: React.FC = () => {
       header: "Status",
       render: (row: any) =>
         row.enabled ? (
+          <div className="py-1.5">
           <span className="text-green-600 font-semibold">Enabled</span>
+          </div>
         ) : (
-          <span className="text-red-500 font-semibold">Disabled</span>
+          <div className="py-1.5">
+            <span className="text-red-500 font-semibold">Disabled</span>
+          </div>
         ),
     },
     {

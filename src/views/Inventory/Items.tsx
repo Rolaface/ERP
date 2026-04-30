@@ -356,17 +356,17 @@ const Items: React.FC = () => {
     if (!activeSummary) return;
     await handleDeleteClick(activeSummary, {} as React.MouseEvent);
   };
-
-  /* ── Table columns ── */
   const columns: Column<ItemSummary>[] = [
     {
       key: "id",
       header: "Item Code",
       align: "left",
       render: (i) => (
+        <div className="py-1.5">
         <span className="block">
           {i.id}
         </span>
+        </div>
       ),
       tooltip: (i) => i.id,
     },
@@ -374,7 +374,13 @@ const Items: React.FC = () => {
       key: "brand",
       header: "Brand",
       align: "center",
-      render: (i) => <span className=" block">{i.brand || "-"}</span>,
+      render: (i) => (
+        <div className="py-1.5">
+          <span className="block">
+            {i.brand || "-"}
+          </span>
+        </div>
+      ),
       tooltip: (i) => i.brand || "-",
     },
     {
@@ -382,9 +388,11 @@ const Items: React.FC = () => {
       header: "Name",
       align: "center",
       render: (i) => (
-        <span className="block font-medium">
-          {i.itemName}
-        </span>
+        <div className="py-1.5">
+          <span className="block font-medium">
+            {i.itemName}
+          </span>
+        </div>
       ),
       tooltip: (i) => i.itemName,
     },
@@ -392,7 +400,13 @@ const Items: React.FC = () => {
       key: "itemGroup",
       header: "Category",
       align: "center",
-      render: (i) => <span className=" block">{i.itemGroup}</span>,
+      render: (i) => (
+        <div className="py-1.5">
+          <span className="block">
+            {i.itemGroup}
+          </span>
+        </div>
+      ),
       tooltip: (i) => i.itemGroup,
     },
     {
@@ -400,9 +414,11 @@ const Items: React.FC = () => {
       header: "Min",
       align: "center",
       render: (i) => (
-        <span className="block">
-          {i.minStockLevel ?? "-"}
-        </span>
+        <div className="py-1.5">
+          <span className="block">
+            {i.minStockLevel ?? "-"}
+          </span>
+        </div>
       ),
       tooltip: (i) => i.minStockLevel ?? "-",
     },
@@ -411,9 +427,11 @@ const Items: React.FC = () => {
       header: "Max",
       align: "center",
       render: (i) => (
-        <span className="block">
-          {i.maxStockLevel ?? "-"}
-        </span>
+        <div className="py-1.5">
+          <span className="block">
+            {i.maxStockLevel ?? "-"}
+          </span>
+        </div>
       ),
       tooltip: (i) => i.maxStockLevel ?? "-",
     },
@@ -422,7 +440,11 @@ const Items: React.FC = () => {
       header: "Supplier",
       align: "center",
       render: (i) => (
-        <span className=" block">{i.preferredVendorName || "-"}</span>
+        <div className="py-1.5">
+          <span className="block">
+            {i.preferredVendorName || "-"}
+          </span>
+        </div>
       ),
       tooltip: (i) => i.preferredVendorName || "-",
     },
@@ -431,9 +453,11 @@ const Items: React.FC = () => {
       header: "Price",
       align: "center",
       render: (i) => (
-        <span className="block">
-          {i.sellingPrice}
-        </span>
+        <div className="py-1.5">
+          <span className="block">
+            {i.sellingPrice}
+          </span>
+        </div>
       ),
       tooltip: (i) => i.sellingPrice,
     },
