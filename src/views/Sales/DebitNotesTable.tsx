@@ -52,6 +52,7 @@ const DebitNotesTable: React.FC = () => {
       setData(resp.data.map(mapItem));
       setTotalPages(resp.pagination.total_pages);
       setTotalItems(resp.pagination.total);
+      
     } catch (error: any) {
       console.error("Failed to load debit notes", error);
       showApiError(error);
@@ -255,23 +256,29 @@ const DebitNotesTable: React.FC = () => {
   const columns: Column<DebitNote>[] = [
     { key: "noteNo", header: "Debit Invoice No",
        render: (o) => (
+        <div className="py-1.5">
         <span className="block">
           {o.noteNo || "—"}
         </span>
+        </div>
       ),
      },
     { key: "purchase_invoiceNo", header: "Receipt No",
        render: (o) => (
+        <div className="py-1.5">
         <span className="block">
           {o.purchase_invoiceNo || "—"}
         </span>
+        </div>
       ),
      },
     { key: "supplier", header: "Supplier" ,
        render: (o) => (
+        <div className="py-1.5">
         <span className="block">
           {o.supplier || "—"}
         </span>
+        </div>
       ),
     },
     {
@@ -293,7 +300,11 @@ const DebitNotesTable: React.FC = () => {
     {
       key: "status",
       header: "Status",
-      render: (r) => <StatusBadge status={r.status} />,
+       render: (r) => (
+        <div className="py-1">
+          <StatusBadge status={r.status} />
+        </div>
+      ),
     },
     {
       key: "actions",
