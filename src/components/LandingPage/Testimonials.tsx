@@ -29,70 +29,33 @@ const testimonials = [
   },
 ];
 
-const Card = ({ t, featured = false }: any) => (
-  <div
-    className={`
-      group relative flex-shrink-0
-      ${featured ? "w-[360px] md:w-[420px]" : "w-[300px] md:w-[340px]"}
-      rounded-[calc(var(--density-radius)*1.5)] p-[1px]
-      transition-all duration-300
-      ${featured ? "scale-[1.02]" : "hover:scale-[1.02]"}
-    `}
-  >
+const SmallCard = ({ t }: any) => (
+  <div className="group relative flex-shrink-0 w-[280px] md:w-[320px]">
 
-    {/* Gradient Border */}
-    <div className="absolute inset-0 rounded-[inherit] bg-gradient-to-br from-primary/40 via-transparent to-primary/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-[1px]" />
+    <div className="rounded-xl bg-card border border-theme p-5 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg">
 
-    {/* Card */}
-    <div
-      className={`
-        relative h-full rounded-[inherit]
-        bg-card border border-theme
-        ${featured ? "p-6" : "p-[calc(var(--density-gap)*2)]"}
-        flex flex-col
-        transition-all duration-300
-        shadow-sm
-        ${featured ? "shadow-xl" : "group-hover:shadow-xl group-hover:-translate-y-1"}
-      `}
-    >
-
-      {/* ⭐ Stars */}
-      <div className="flex mb-4 text-primary">
+      {/* Stars */}
+      <div className="flex mb-3 text-primary">
         {[...Array(5)].map((_, i) => (
-          <Star key={i} size={14} fill="currentColor" />
+          <Star key={i} size={13} fill="currentColor" />
         ))}
       </div>
 
-      {/* 💬 Text */}
-      <p
-        className={`
-          ${featured ? "text-[15px]" : "text-[14px]"}
-          text-main leading-relaxed mb-6
-        `}
-      >
+      {/* Text */}
+      <p className="text-[13px] text-main leading-relaxed mb-4">
         “{t.text}”
       </p>
 
-      {/* 👤 User */}
-      <div className="flex items-center gap-3 mt-auto">
+      {/* User */}
+      <div className="flex items-center gap-3">
 
-        {/* Avatar */}
-        <div className="relative w-10 h-10 rounded-full flex items-center justify-center bg-[var(--row-hover)] text-[12px] font-semibold text-main">
-
-          {/* Glow */}
-          <div className="absolute inset-0 bg-primary/20 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
-
-          <span className="relative z-10">{t.icon}</span>
+        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--row-hover)] text-[11px] font-semibold">
+          {t.icon}
         </div>
 
-        {/* Info */}
         <div>
-          <p className="text-[13px] font-semibold text-main">
-            {t.name}
-          </p>
-          <p className="text-[12px] text-muted">
-            {t.role}
-          </p>
+          <p className="text-[12px] font-medium text-main">{t.name}</p>
+          <p className="text-[11px] text-muted">{t.role}</p>
         </div>
 
       </div>
@@ -107,7 +70,7 @@ const TestimonialsSection: React.FC = () => {
   return (
     <section className="section section-default relative overflow-hidden">
 
-      {/* 🌟 Ambient Glow */}
+      {/* Background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.08),transparent_60%)] pointer-events-none"></div>
 
       <div className="container-app">
@@ -128,33 +91,63 @@ const TestimonialsSection: React.FC = () => {
 
         </div>
 
-        {/* ⭐ FEATURED TESTIMONIAL */}
+        {/* 🔥 FEATURED (EDITORIAL STYLE) */}
         {featured && (
-          <div className="flex justify-center mt-[calc(var(--density-gap)*4)]">
-            <Card t={featured} featured />
+          <div className="mt-[calc(var(--density-gap)*4)] max-w-3xl mx-auto">
+
+            <div className="relative rounded-2xl bg-card border border-theme p-8 md:p-10 shadow-lg">
+
+              {/* Quote Mark */}
+              <div className="absolute -top-4 left-6 text-[60px] text-primary/10 font-serif select-none">
+                “
+              </div>
+
+              {/* Stars */}
+              <div className="flex mb-4 text-primary">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={16} fill="currentColor" />
+                ))}
+              </div>
+
+              {/* Text */}
+              <p className="text-[16px] md:text-[18px] text-main leading-relaxed mb-6 relative z-10">
+                {featured.text}
+              </p>
+
+              {/* User */}
+              <div className="flex items-center gap-4">
+
+                <div className="w-11 h-11 rounded-full flex items-center justify-center bg-[var(--row-hover)] text-[13px] font-semibold">
+                  {featured.icon}
+                </div>
+
+                <div>
+                  <p className="text-[14px] font-semibold text-main">
+                    {featured.name}
+                  </p>
+                  <p className="text-[13px] text-muted">
+                    {featured.role}
+                  </p>
+                </div>
+
+              </div>
+
+            </div>
+
           </div>
         )}
 
       </div>
 
       {/* EDGE FADE */}
-      <div className="pointer-events-none absolute left-0 top-0 h-full w-24 bg-gradient-to-r from-[var(--bg)] to-transparent z-10" />
-      <div className="pointer-events-none absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-[var(--bg)] to-transparent z-10" />
+      <div className="pointer-events-none absolute left-0 top-0 h-full w-20 bg-gradient-to-r from-[var(--bg)] to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 h-full w-20 bg-gradient-to-l from-[var(--bg)] to-transparent z-10" />
 
-      {/* ROW 1 */}
+      {/* 🎯 SINGLE CLEAN CAROUSEL */}
       <div className="overflow-hidden mt-[calc(var(--density-gap)*4)]">
-        <div className="flex gap-[var(--density-gap)] w-max animate-marquee-fast hover:[animation-play-state:paused]">
+        <div className="flex gap-[var(--density-gap)] w-max animate-marquee hover:[animation-play-state:paused]">
           {[...normal, ...normal].map((t, i) => (
-            <Card key={i} t={t} />
-          ))}
-        </div>
-      </div>
-
-      {/* ROW 2 */}
-      <div className="overflow-hidden mt-[var(--density-gap)]">
-        <div className="flex gap-[var(--density-gap)] w-max animate-marquee-slow hover:[animation-play-state:paused]">
-          {[...normal.reverse(), ...normal].map((t, i) => (
-            <Card key={i} t={t} />
+            <SmallCard key={i} t={t} />
           ))}
         </div>
       </div>
@@ -188,22 +181,13 @@ const TestimonialsSection: React.FC = () => {
             }
           }
 
-          @keyframes marquee-fast {
+          @keyframes marquee {
             0% { transform: translateX(0%); }
             100% { transform: translateX(-50%); }
           }
 
-          @keyframes marquee-slow {
-            0% { transform: translateX(-50%); }
-            100% { transform: translateX(0%); }
-          }
-
-          .animate-marquee-fast {
-            animation: marquee-fast 22s linear infinite;
-          }
-
-          .animate-marquee-slow {
-            animation: marquee-slow 30s linear infinite;
+          .animate-marquee {
+            animation: marquee 26s linear infinite;
           }
         `}
       </style>

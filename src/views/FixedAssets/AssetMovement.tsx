@@ -1,18 +1,30 @@
-import React, { useState, useMemo } from "react";
-import { FaTrash } from "react-icons/fa";
+import React, { useState, useMemo,useEffect } from "react";
+
 import Table from "../../components/ui/Table/Table";
 import { DateRangeFilter } from "../../components/ui/modal/DateRangeFilter";
 import type { Column } from "../../components/ui/Table/type";
-import AddAssetMovementModal from "../../components/FixedAsset/Addassetmovementmodal "; 
+
 import type { AssetMovementRecord, AssetMovementForm } from "../../types/Assetmovement.types";
 import { STATUS_CLASS_MAP } from "../../types/Assetmovement.types";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
+import { openAssetMovementModal } from "../../store/modalStore";
+import {
+  getAssetMovements,
+  createAssetMovement,
+  deleteAssetMovement,
+} from "../../api/assetMovementapi";
+import ActionButton, {
+  ActionGroup,
+  ActionMenu,
+} from "../../components/ui/Table/ActionButton";
 
 /* ─────────────────────────────────────────────
    ASSET MOVEMENT LIST PAGE
 ───────────────────────────────────────────── */
 const AssetMovement: React.FC = () => {
   /* ── state ── */
-  const [records, setRecords] = useState<AssetMovementRecord[]>([]);
+const [records, setRecords] = useState<AssetMovementRecord[]>([]);
+const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   const [page, setPage] = useState(1);
@@ -22,22 +34,16 @@ const AssetMovement: React.FC = () => {
   const [sortBy, setSortBy] = useState<keyof AssetMovementRecord | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  /* ── add record (from modal submit) ── */
-  const handleAddRecord = async (form: AssetMovementForm) => {
-    const newRecord: AssetMovementRecord = {
-      ...form,
-      id: Date.now().toString(),
-      status: "Draft",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setRecords((prev) => [newRecord, ...prev]);
-  };
 
   /* ── delete ── */
-  const handleDelete = (id: string) => {
-    setRecords((prev) => prev.filter((r) => r.id !== id));
-  };
+const handleDelete = async (id: string) => {
+  try {
+    await deleteAssetMovement(id);
+    fetchMovements();
+  } catch (err) {
+    console.error("DELETE ERROR", err);
+  }
+};
 
   /* ── filter ── */
   const filteredData = useMemo(() => {
@@ -90,6 +96,48 @@ const AssetMovement: React.FC = () => {
     setPage(1);
   };
 
+
+  const fetchMovements = async () => {
+  try {
+    setLoading(true);
+
+    const data = await getAssetMovements({
+      fields: [
+        "name",
+        "company",
+        "purpose",
+        "transaction_date",
+        "docstatus",
+      ],
+    });
+
+    const mapped = data.map((item: any) => ({
+      id: item.name,
+      company: item.company,
+      purpose: item.purpose,
+      transactionDate: item.transaction_date,
+      status:
+        item.docstatus === 0
+          ? "Draft"
+          : item.docstatus === 1
+          ? "Submitted"
+          : "Cancelled",
+    }));
+
+    setRecords(mapped);
+  } catch (err) {
+    console.error("FETCH MOVEMENT ERROR", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const refreshKey = useDataRefreshStore(
+  (state) => state.refreshFlags[REFRESH_KEYS.ASSET_MOVEMENT_LIST]
+);
+useEffect(() => {
+  fetchMovements();
+}, [refreshKey]);
   /* ── columns ── */
   const columns: Column<AssetMovementRecord>[] = [
     {
@@ -144,14 +192,24 @@ const AssetMovement: React.FC = () => {
       key: "actions" as keyof AssetMovementRecord,
       header: "Actions",
       render: (row) => (
-        <button
-          onClick={() => handleDelete(row.id)}
-          className="text-red-500 hover:text-red-700 transition-colors"
-          title="Delete"
-        >
-          <FaTrash size={13} />
-        </button>
-      ),
+  <ActionGroup>
+    <ActionButton
+      type="view"
+      onClick={() => console.log("view", row.id)}
+      iconOnly
+    />
+
+    <ActionButton
+      type="edit"
+      onClick={() => console.log("edit", row.id)}
+      iconOnly
+    />
+
+    <ActionMenu
+      onDelete={() => handleDelete(row.id)}
+    />
+  </ActionGroup>
+)
     },
   ];
 
@@ -165,8 +223,8 @@ const AssetMovement: React.FC = () => {
         data={paginatedData}
         rowKey={(row) => row.id}
         tableId="asset-movement"
-        loading={false}
-        isFetching={false}
+        loading={loading}
+isFetching={loading}
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => {
@@ -175,7 +233,8 @@ const AssetMovement: React.FC = () => {
         }}
         enableAdd
         addLabel="New Movement"
-        onAdd={() => setShowModal(true)}
+       onAdd={() => openAssetMovementModal({ mode: "create" })}
+       
         enableColumnSelector
         enableExport
         currentPage={page}
@@ -203,11 +262,7 @@ const AssetMovement: React.FC = () => {
         }
       />
 
-      <AddAssetMovementModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onSubmit={handleAddRecord}
-      />
+    
     </div>
   );
 };

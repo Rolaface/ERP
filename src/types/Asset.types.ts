@@ -8,7 +8,29 @@ export type AssetOwnerType = "Company" | "Employee";
 
 export type AssetType = "Physical" | "Digital" | "Other";
 
+export type DepreciationMethod =
+  | "Straight Line Method"
+  | "Double Declining Balance"
+  | "Written Down Value"
+  | "Manual"
+  | "";
 
+export type DepreciationFrequency =
+  | "Monthly"
+  | "Quarterly"
+  | "Half-Yearly"
+  | "Yearly"
+  | "";
+
+export interface FinanceBook {
+  financeBook: string;
+  depreciationMethod: DepreciationMethod;
+  totalNumberOfDepreciations: number;
+  frequencyOfDepreciation: DepreciationFrequency;
+  depreciationStartDate: string;
+  expectedValueAfterUsefulLife: number;
+  rateOfDepreciation: number;
+}
 
 export interface AssetForm {
   // Details
@@ -21,10 +43,11 @@ export interface AssetForm {
   calculateDepreciation: boolean;
 
   // Purchase Details
-  purchaseReceipt: string;
-  netPurchaseAmount: number;  
-    purchaseInvoice: string;
-  assetQuantity: number;         
+  purchaseDate: string;          // Existing Asset / Composite Asset
+  purchaseReceipt: string;       // Composite Component
+  netPurchaseAmount: number;
+  purchaseInvoice: string;       // Composite Component
+  assetQuantity: number;
   availableForUseDate: string;
 
   // More Info
@@ -39,13 +62,23 @@ export interface AssetForm {
   insuranceStartDate: string;
   insurer: string;
   insuranceEndDate: string;
-  insuredValue: number;          
-  comprehensiveInsurance: boolean; 
+  insuredValue: number;
+  comprehensiveInsurance: boolean;
 
   // Additional Info
   status: AssetStatus | string;
   custodian: string;
+  custodianLabel?: string;
   department: string;
+
+  // Depreciation
+  depreciationMethod: DepreciationMethod;
+  frequencyOfDepreciation: DepreciationFrequency;
+  totalNumberOfDepreciations: number;
+  depreciationStartDate: string;
+  expectedValueAfterUsefulLife: number;
+  rateOfDepreciation: number;
+  financeBooks: FinanceBook[];
 }
 
 /* ────────────────────────────────────────────── */
@@ -65,14 +98,24 @@ export interface AddAssetModalProps {
 /* TABS */
 /* ────────────────────────────────────────────── */
 
-export type AssetTab = "details" | "moreInfo";
+export type AssetTab = "details" | "depreciation" | "moreInfo";
 
-export const ASSET_TABS: AssetTab[] = ["details", "moreInfo"];
+export const ALL_ASSET_TABS: AssetTab[] = ["details", "depreciation", "moreInfo"];
 
 export const ASSET_TAB_LABELS: Record<AssetTab, string> = {
   details: "Details",
+  depreciation: "Depreciation",
   moreInfo: "More Info",
 };
+
+/** Returns the active tab list based on whether depreciation is enabled */
+export function getAssetTabs(calculateDepreciation: boolean): AssetTab[] {
+  if (calculateDepreciation) return ["details", "depreciation", "moreInfo"];
+  return ["details", "moreInfo"];
+}
+
+// Keep ASSET_TABS for backward compat
+export const ASSET_TABS: AssetTab[] = ["details", "moreInfo"];
 
 /* ────────────────────────────────────────────── */
 /* DEFAULT FORM */
@@ -89,6 +132,7 @@ export const DEFAULT_ASSET_FORM: AssetForm = {
   calculateDepreciation: false,
 
   // Purchase Details
+  purchaseDate: "",
   purchaseReceipt: "",
   netPurchaseAmount: 0,
   purchaseInvoice: "",
@@ -100,7 +144,7 @@ export const DEFAULT_ASSET_FORM: AssetForm = {
 
   // Ownership
   assetOwner: "Company",
-  assetOwnerCompany: "Rolaface Private Limited",
+  assetOwnerCompany: "",
 
   // Insurance
   policyNumber: "",
@@ -113,5 +157,15 @@ export const DEFAULT_ASSET_FORM: AssetForm = {
   // Additional Info
   status: "Draft",
   custodian: "",
+  custodianLabel: "",
   department: "",
+
+  // Depreciation
+  depreciationMethod: "Straight Line Method",
+  frequencyOfDepreciation: "Yearly",
+  totalNumberOfDepreciations: 0,
+  depreciationStartDate: "",
+  expectedValueAfterUsefulLife: 0,
+  rateOfDepreciation: 0,
+  financeBooks: [],
 };

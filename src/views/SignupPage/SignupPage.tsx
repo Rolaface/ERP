@@ -44,11 +44,15 @@ export default function SignupPage() {
   });
 
   // ---------------- UPDATE ----------------
-  const update = (key: string, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
-  };
+  const update = (key: string, value: any) => {
+    console.log("UPDATE CALLED:", key, value);
 
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      console.log("NEW STATE:", next);
+      return next;
+    });
+  };
   // ---------------- DERIVED ----------------
 
   useEffect(() => {
@@ -58,16 +62,7 @@ export default function SignupPage() {
     }));
   }, [form.company]);
 
-  useEffect(() => {
-    if (!form.country && detected.country) {
-      setForm((prev) => ({
-        ...prev,
-        country: detected.country,
-        currency: detected.currency,
-        timezone: detected.timezone,
-      }));
-    }
-  }, [detected]);
+
 
   // ✅ Step 2: Removed FY date effect completely
 

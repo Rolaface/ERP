@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import FormFieldPro from "../form/FormFieldV2";
 import ButtonPro from "../form/ButtonPro";
+import FloatingDropdown from "./FloatingDropdown";
 import { ChevronDown } from "lucide-react";
 
 export default function Step2Workspace({
@@ -10,29 +11,20 @@ export default function Step2Workspace({
   next,
   back,
   countryList,
-  countriesLoading,
-  countriesError,
   timezones,
   currencyOptions,
 }: any) {
-  const [isOpen, setIsOpen] = useState(false);
+
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
-  const [highlightIndex, setHighlightIndex] = useState(0);
-
-  const [fyOpen, setFyOpen] = useState(false);
-  const [tzOpen, setTzOpen] = useState(false);
-  const [currencyOpen, setCurrencyOpen] = useState(false);
-
   const [tzSearch, setTzSearch] = useState("");
   const [currencySearch, setCurrencySearch] = useState("");
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const tzRef = useRef<HTMLDivElement>(null);
-  const currencyRef = useRef<HTMLDivElement>(null);
-  const fyRef = useRef<HTMLDivElement>(null);
-
-  const [manualTZ, setManualTZ] = useState(false);
-  const [manualCurrency, setManualCurrency] = useState(false);
+  const countryRef = useRef<any>(null);
+  const tzRef = useRef<any>(null);
+  const currencyRef = useRef<any>(null);
+  const fyRef = useRef<any>(null);
 
   const countries = countryList.map((c: any) =>
     typeof c === "string"
@@ -40,182 +32,44 @@ export default function Step2Workspace({
       : c
   );
 
-  const getFlag = (code: string) =>
-    code
-      .toUpperCase()
-      .replace(/./g, (char) =>
-        String.fromCodePoint(127397 + char.charCodeAt(0))
-      );
-
   const filteredCountries = countries.filter((c: any) =>
     c.name.toLowerCase().includes(search.toLowerCase())
   );
-
-  const getAutoData = (countryCode: string) => {
-    try {
-      let currency = "";
-      try {
-        currency =
-          new Intl.NumberFormat("en", {
-            style: "currency",
-            currency: "USD",
-          })
-            .resolvedOptions()
-            .currency || "USD";
-      } catch {}
-
-      let timezone = "";
-      try {
-        const allTZ = (Intl as any).supportedValuesOf
-          ? (Intl as any).supportedValuesOf("timeZone")
-          : [];
-
-        timezone =
-          allTZ.find((tz: string) =>
-            tz.toUpperCase().includes(countryCode)
-          ) || Intl.DateTimeFormat().resolvedOptions().timeZone;
-      } catch {}
-
-      return { timezone, currency };
-    } catch {
-      return null;
-    }
-  };
-
-  const detectUserLocale = () => {
-    try {
-      const locale = new Intl.Locale(navigator.language);
-      return locale.region || "US";
-    } catch {
-      return "US";
-    }
-  };
-
-  const handleFYMonthChange = (month: string) => {
-    update("fyStartMonth", Number(month));
-  };
-
-  const currencySymbols: any = {
-    INR: "₹",
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-    JPY: "¥",
-    CNY: "¥",
-    AUD: "$",
-    CAD: "$",
-    CHF: "CHF",
-    SGD: "$",
-    AED: "د.إ",
-  };
-
-  const fullCurrencyList = [
-    "USD","EUR","GBP","INR","JPY","CNY","AUD","CAD","CHF","SGD",
-    "AED","NZD","ZAR","SEK","NOK","DKK","HKD","KRW","THB",
-    "MYR","IDR","PHP","BRL","MXN",
-  ];
-
-  const months = [
-    { label: "January", value: "01" },
-    { label: "February", value: "02" },
-    { label: "March", value: "03" },
-    { label: "April", value: "04" },
-    { label: "May", value: "05" },
-    { label: "June", value: "06" },
-    { label: "July", value: "07" },
-    { label: "August", value: "08" },
-    { label: "September", value: "09" },
-    { label: "October", value: "10" },
-    { label: "November", value: "11" },
-    { label: "December", value: "12" },
-  ];
-
-  const currencies =
-    currencyOptions && currencyOptions.length > 1
-      ? currencyOptions
-      : fullCurrencyList;
 
   const filteredTimezones = timezones.filter((t: string) =>
     t.toLowerCase().includes(tzSearch.toLowerCase())
   );
 
+  const fullCurrencyList = [
+    "USD", "EUR", "GBP", "INR", "JPY", "CNY", "AUD", "CAD", "CHF", "SGD",
+    "AED", "NZD", "ZAR", "SEK", "NOK", "DKK", "HKD", "KRW", "THB",
+    "MYR", "IDR", "PHP", "BRL", "MXN",
+  ];
+
+  const currencies =
+    currencyOptions?.length > 1 ? currencyOptions : fullCurrencyList;
+
   const filteredCurrencies = currencies.filter((c: string) =>
     c.toLowerCase().includes(currencySearch.toLowerCase())
   );
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
-        setIsOpen(false);
-      if (tzRef.current && !tzRef.current.contains(e.target as Node))
-        setTzOpen(false);
-      if (currencyRef.current && !currencyRef.current.contains(e.target as Node))
-        setCurrencyOpen(false);
-      if (fyRef.current && !fyRef.current.contains(e.target as Node))
-        setFyOpen(false);
-    };
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (form.country) return;
-
-    const userCountryCode = detectUserLocale();
-
-    const matchedCountry = countries.find(
-      (c: any) => c.code === userCountryCode
-    );
-
-    if (matchedCountry) {
-      update("country", matchedCountry.name);
-
-      const auto = getAutoData(userCountryCode);
-      if (auto) {
-        if (!manualTZ && auto.timezone) update("timezone", auto.timezone);
-        if (!manualCurrency && auto.currency) update("currency", auto.currency);
-      }
-    }
-  }, []);
-
-  const handleCountrySelect = (country: any) => {
-    update("country", country.name);
-    setIsOpen(false);
-    setSearch("");
-
-    const auto = getAutoData(country.code);
-    if (auto) {
-      if (!manualTZ && auto.timezone) update("timezone", auto.timezone);
-      if (!manualCurrency && auto.currency) update("currency", auto.currency);
-    }
+  const getMonthLabel = (month: number) => {
+    return new Intl.DateTimeFormat(undefined, {
+      month: "long",
+    }).format(new Date(2024, month - 1));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!isOpen) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightIndex((prev) =>
-        prev < filteredCountries.length - 1 ? prev + 1 : prev
-      );
-    }
-
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightIndex((prev) => (prev > 0 ? prev - 1 : 0));
-    }
-
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const selected = filteredCountries[highlightIndex];
-      if (selected) handleCountrySelect(selected);
-    }
+  const toggle = (name: string) => {
+    setOpenDropdown(prev => (prev === name ? null : name));
   };
+
+  const close = () => setOpenDropdown(null);
 
   const isValid =
-    form.company.trim() &&
-    form.abbr.trim() &&
+    form.company &&
+    form.abbr &&
     form.country &&
     form.timezone &&
     form.currency &&
@@ -226,126 +80,119 @@ export default function Step2Workspace({
   return (
     <div className="form-section">
 
+      {/* ROW 1 */}
       <div className="form-row">
         <FormFieldPro
           label="Company Name"
           value={form.company}
-          error={errors.company}
-          placeholder="Acme Corporation"
           onChange={(e: any) => update("company", e.target.value)}
         />
-
         <FormFieldPro
           label="Abbreviation"
           value={form.abbr}
-          error={errors.abbr}
-          placeholder="ACME"
           onChange={(e: any) =>
             update("abbr", e.target.value.toUpperCase())
           }
         />
       </div>
 
-      {/* Country + Timezone */}
+      {/* ROW 2 */}
       <div className="form-row">
 
         {/* COUNTRY */}
-        <div className="relative" ref={dropdownRef}>
+        <div
+          ref={countryRef}
+          className="w-full cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggle("country");
+          }}
+        >
           <FormFieldPro
             label="Country"
-            value={isOpen ? search : form.country}
-            placeholder={
-              countriesLoading ? "Loading..." : "Search country..."
-            }
-            disabled={countriesLoading}
-            onChange={(e: any) => {
-              setSearch(e.target.value);
-              setIsOpen(true);
-              setHighlightIndex(0);
-            }}
-            onKeyDown={handleKeyDown}
-            error={countriesError}
-            helperText={countriesError || ""}
-            rightElement={
-              <ChevronDown
-                className="icon-muted cursor-pointer"
-                onClick={() => {
-                  setIsOpen(true);
-                  setSearch("");
-                }}
-              />
-            }
+            value={form.country}
+            readOnly
+            placeholder="Select country"
+            rightElement={<ChevronDown className="icon-muted" />}
           />
-
-          {isOpen && (
-            <div className="dropdown">
-              {countriesError && (
-                <div className="dropdown-item text-danger">
-                  {countriesError}
-                </div>
-              )}
-
-              {!countriesError &&
-                filteredCountries.map((c: any, i: number) => (
-                  <div
-                    key={c.name}
-                    onClick={() => handleCountrySelect(c)}
-                    className={`dropdown-item ${
-                      i === highlightIndex ? "bg-row-hover" : ""
-                    }`}
-                  >
-                    <span>{getFlag(c.code)}</span>
-                    <span>{c.name}</span>
-                  </div>
-                ))}
-            </div>
-          )}
         </div>
 
+        <FloatingDropdown
+          open={openDropdown === "country"}
+          onClose={close}
+          referenceRef={countryRef}
+        >
+          <input
+            autoFocus
+            className="dropdown-search"
+            placeholder="Search country..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+          {filteredCountries.map((c: any) => (
+            <div
+              key={c.name}
+              onClick={(e) => {
+                e.stopPropagation();
+                update("country", c.name);
+                close();
+              }}
+              className="dropdown-item"
+            >
+              {c.name}
+            </div>
+          ))}
+        </FloatingDropdown>
+
         {/* TIMEZONE */}
-        <div className="relative" ref={tzRef}>
+        <div
+          ref={tzRef}
+          className="w-full cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggle("timezone");
+          }}
+        >
           <FormFieldPro
             label="Timezone"
             value={form.timezone}
-            onChange={(e: any) => {
-              setManualTZ(true);
-              update("timezone", e.target.value);
-            }}
-            rightElement={
-              <ChevronDown
-                className="icon-muted cursor-pointer"
-                onClick={() => setTzOpen((p) => !p)}
-              />
-            }
+            readOnly
+            rightElement={<ChevronDown className="icon-muted" />}
+          />
+        </div>
+
+        <FloatingDropdown
+          open={openDropdown === "timezone"}
+          onClose={close}
+          referenceRef={tzRef}
+        >
+          <input
+            autoFocus
+            className="dropdown-search"
+            placeholder="Search timezone..."
+            value={tzSearch}
+            onChange={(e) => setTzSearch(e.target.value)}
           />
 
-          {tzOpen && (
-            <div className="dropdown">
-              <input
-                className="dropdown-search"
-                placeholder="Search timezone..."
-                onChange={(e) => setTzSearch(e.target.value)}
-              />
-              {filteredTimezones.map((t: string) => (
-                <div
-                  key={t}
-                  onClick={() => {
-                    setManualTZ(true);
-                    update("timezone", t);
-                    setTzOpen(false);
-                  }}
-                  className="dropdown-item"
-                >
-                  {t}
-                </div>
-              ))}
+          {filteredTimezones.map((t: string) => (
+            <div
+              key={t}
+              onClick={(e) => {
+                e.stopPropagation();
+                update("timezone", t);
+                close();
+              }}
+              className="dropdown-item"
+            >
+              {t}
             </div>
-          )}
-        </div>
+          ))}
+        </FloatingDropdown>
 
       </div>
 
-      {/* Currency */}
+      {/* ROW 3 */}
       <div className="form-row">
 
         <FormFieldPro
@@ -356,87 +203,99 @@ export default function Step2Workspace({
           }
         />
 
-        <div className="relative" ref={currencyRef}>
+        {/* CURRENCY */}
+        <div
+          ref={currencyRef}
+          className="w-full cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggle("currency");
+          }}
+        >
           <FormFieldPro
             label="Currency"
             value={form.currency}
-            onChange={(e: any) => {
-              setManualCurrency(true);
-              update("currency", e.target.value);
-            }}
-            rightElement={
-              <ChevronDown
-                className="icon-muted cursor-pointer"
-                onClick={() => setCurrencyOpen((p) => !p)}
-              />
-            }
+            readOnly
+            rightElement={<ChevronDown className="icon-muted" />}
+          />
+        </div>
+
+        <FloatingDropdown
+          open={openDropdown === "currency"}
+          onClose={close}
+          referenceRef={currencyRef}
+        >
+          <input
+            autoFocus
+            className="dropdown-search"
+            placeholder="Search currency..."
+            value={currencySearch}
+            onChange={(e) => setCurrencySearch(e.target.value)}
           />
 
-          {currencyOpen && (
-            <div className="dropdown">
-              <input
-                className="dropdown-search"
-                placeholder="Search currency..."
-                onChange={(e) => setCurrencySearch(e.target.value)}
-              />
-              {filteredCurrencies.map((c: string) => (
-                <div
-                  key={c}
-                  onClick={() => {
-                    setManualCurrency(true);
-                    update("currency", c);
-                    setCurrencyOpen(false);
-                  }}
-                  className="dropdown-item flex justify-between"
-                >
-                  <span>{c}</span>
-                  <span className="text-muted">
-                    {currencySymbols[c] || c}
-                  </span>
-                </div>
-              ))}
+          {filteredCurrencies.map((c: string) => (
+            <div
+              key={c}
+              onClick={(e) => {
+                e.stopPropagation();
+                update("currency", c);
+                close();
+              }}
+              className="dropdown-item"
+            >
+              {c}
             </div>
-          )}
-        </div>
+          ))}
+        </FloatingDropdown>
 
       </div>
 
-      {/* Financial Year */}
+      {/* ROW 4 */}
       <div className="form-row">
-        <div className="relative" ref={fyRef}>
+
+        <div
+          ref={fyRef}
+          className="w-full cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggle("fy");
+          }}
+        >
           <FormFieldPro
             label="Financial Year Start From"
             value={
-              months.find(m => Number(m.value) === form.fyStartMonth)?.label || ""
+              form.fyStartMonth
+                ? getMonthLabel(form.fyStartMonth)
+                : ""
             }
-            rightElement={
-              <ChevronDown
-                className="icon-muted cursor-pointer"
-                onClick={() => setFyOpen((p) => !p)}
-              />
-            }
+            readOnly
+            rightElement={<ChevronDown className="icon-muted" />}
           />
-
-          {fyOpen && (
-            <div className="dropdown">
-              {months.map((m) => (
-                <div
-                  key={m.value}
-                  onClick={() => {
-                    handleFYMonthChange(m.value);
-                    setFyOpen(false);
-                  }}
-                  className="dropdown-item"
-                >
-                  {m.label}
-                </div>
-              ))}
-            </div>
-          )}
         </div>
+
+        <FloatingDropdown
+          open={openDropdown === "fy"}
+          onClose={close}
+          referenceRef={fyRef}
+        >
+          {months.map((m) => (
+            <div
+              key={m}
+              onClick={(e) => {
+                e.stopPropagation();
+                update("fyStartMonth", m);
+                close();
+              }}
+              className="dropdown-item"
+            >
+              {getMonthLabel(m)}
+            </div>
+          ))}
+        </FloatingDropdown>
+
       </div>
 
-      {/* Footer */}
+      {/* FOOTER */}
       <div className="form-footer">
         <ButtonPro variant="ghost" onClick={back}>
           Back
