@@ -565,9 +565,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "left",
         sortable: true,
         render: (inv) => (
+          <div className="py-1.5">
           <span className="block">
             {inv.invoiceNumber}
           </span>
+          </div>
         ),
         tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
       },
@@ -576,7 +578,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Tax Type",
         align: "center",
         render: (inv) => (
+             <div className="py-1.5">
           <span className="block">{inv.invoiceType}</span>
+          </div>
         ),
         tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
       },
@@ -586,7 +590,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "left",
         sortable: true,
         render: (inv) => (
+             <div className="py-1.5">
           <span className="block font-medium">{inv.customerName}</span>
+          </div>
         ),
         tooltip: (inv) => `Customer: ${inv.customerName}`,
       },
@@ -595,9 +601,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Date",
         align: "center",
         render: (inv) => (
+             <div className="py-1.5">
           <span className="block">
             {inv.dateOfInvoice.toLocaleDateString()}
           </span>
+          </div>
         ),
       },
       {
@@ -606,9 +614,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
+             <div className="py-1.5">
           <span className="block">
             {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
           </span>
+          </div>
         ),
       },
       {
@@ -617,9 +627,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
+             <div className="py-1.5">
           <span className="block whitespace-nowrap">
             {inv.total.toLocaleString()} {inv.currency}
           </span>
+          </div>
         ),
         tooltip: (inv) =>
           `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
@@ -630,18 +642,20 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
+             <div className="py-1.5">
           <span className="block whitespace-nowrap">
             {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
           </span>
+          </div>
         ),
         tooltip: (inv) =>
-          `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency}`,
+          `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency} `,
       },
       {
         key: "invoiceStatus",
         header: "Status",
         align: "center",
-        render: (inv) => <StatusBadge status={inv.invoiceStatus} />,
+        render: (inv) =>  <div className="py-1.5"><StatusBadge status={inv.invoiceStatus} /></div>,
       },
       {
         key: "actions",

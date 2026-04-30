@@ -285,9 +285,11 @@ const CreditNotesTable: React.FC = () => {
     {
       key: "noteNo", header: "Credit Invoice No",
       render: (o) => (
+        <div className="py-1.5">
         <span className="block">
           {o.noteNo || "—"}
         </span>
+        </div>
       ),
     },
     {
@@ -315,16 +317,20 @@ const CreditNotesTable: React.FC = () => {
       header: "Amount",
       align: "right",
       render: (r) => (
+        <div className="py-1.5">
         <code className="block whitespace-nowrap">
           {r.amount.toLocaleString()} {r.currency}
         </code>
+        </div>
       ),
     },
     {
       key: "date", header: "Date", render: (o) => (
+        <div className="py-1.5">
         <span className="block">
           {o.date || "—"}
         </span>
+        </div>
       ),
     },
     {

@@ -286,22 +286,26 @@ const DebitNotesTable: React.FC = () => {
       header: "Amount",
       align: "right",
       render: (r) => (
+      <div className="py-1.5">
         <code className="block whitespace-nowrap">
           {r.amount.toLocaleString()}  {r.currency}
         </code>
+        </div>
       ),
     },
     { key: "date", header: "Date" ,  render: (o) => (
+      <div className="py-1.5">
         <span className="block">
           {o.date || "—"}
         </span>
+        </div>
       ),   
     },
     {
       key: "status",
       header: "Status",
        render: (r) => (
-        <div className="py-1">
+        <div className="py-1.5">
           <StatusBadge status={r.status} />
         </div>
       ),
