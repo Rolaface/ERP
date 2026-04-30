@@ -315,7 +315,7 @@ const CreditNotesTable: React.FC = () => {
       header: "Amount",
       align: "right",
       render: (r) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
+        <code className="block whitespace-nowrap">
           {r.amount.toLocaleString()} {r.currency}
         </code>
       ),
