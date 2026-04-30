@@ -462,7 +462,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   };
 
-  // ── PDF preview modal close (kept — do not remove)
+
   const handleClosePdf = () => {
     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
     setPdfUrl(null);
@@ -502,7 +502,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         return;
       }
 
-      // ✅ WHY THIS KOLAVERI DI?
+
       const updatedStatus = res.message.data?.status;
 
       setInvoices((prev) =>
@@ -562,38 +562,18 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       {
         key: "invoiceNumber",
         header: "Invoice No",
-        align: "center",
+        align: "left",
         sortable: true,
-        render: (inv) => {
-          const id = inv.invoiceNumber || "";
-          const shortId = id ? `--${id.slice(-4)}` : "-";
-
-          const handleCopy = (e: React.MouseEvent) => {
-            e.stopPropagation();
-            navigator.clipboard.writeText(id);
-          };
-
-          return (
-            <div className="flex items-center justify-center gap-1 group">
-              <span className="font-mono text-sm">
-                {shortId}
-              </span>
-
-              <button
-                onClick={handleCopy}
-                className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-                title="Copy full Invoice ID"
-              >
-                <Copy size={14} />
-              </button>
-            </div>
-          );
-        },
-        tooltip: (inv) => inv.invoiceNumber,
+        render: (inv) => (
+          <span className="font-mono text-sm tabular-nums whitespace-nowrap">
+            {inv.invoiceNumber}
+          </span>
+        ),
+        tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
       },
       {
         key: "invoiceType",
-        header: "Type",
+        header: "Tax Type",
         align: "center",
         render: (inv) => (
           <span className="whitespace-nowrap">{inv.invoiceType}</span>
@@ -668,33 +648,53 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Actions",
         align: "center",
         render: (inv) => (
-         <div className="flex items-center justify-center gap-2">
-  <ActionButton
-    type="view"
-    iconOnly
-    onClick={() => {
-      setDetailsId(r.noteNo);
-      setDetailsOpen(true);
-    }}
-  />
-
-  <ActionButton
-    type="edit"
-    iconOnly
-    onClick={(e) => {
-      e?.stopPropagation();
-      console.log("Edit clicked for:", r.noteNo);
-    }}
-    title="Edit Credit Note"
-  />
-
-  <ActionMenu
-    onDelete={(e) => {
-      e?.stopPropagation();
-      handleDelete(r.noteNo);
-    }}
-  />
-</div>
+          <div className="flex items-center justify-center gap-2">
+            <ActionButton
+              type="view"
+              onClick={(e) => handleView(inv.invoiceNumber, e)}
+              iconOnly
+            />
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(inv.invoiceNumber, e)}
+              iconOnly
+              disabled={inv.invoiceStatus !== "Draft"}
+              title={
+                inv.invoiceStatus !== "Draft"
+                  ? "Only Draft invoices can be edited"
+                  : "Edit Invoice"
+              }
+            />
+            <ActionMenu
+              showDownload
+              onDownload={(e) => handleDownload(inv, e)}
+              onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
+              customActions={[
+                ...(inv.invoiceStatus !== "Draft" &&
+                  inv.invoiceStatus !== "Cancelled" &&
+                  inv.outstandingAmount > 0
+                  ? [
+                    {
+                      label: "Receive Payment",
+                      onClick: () => handleReceivePayment(inv),
+                    },
+                  ]
+                  : []),
+                {
+                  label: "View PDF",
+                  onClick: () => handlePreviewPDF(inv),
+                },
+                ...(STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
+                  (status) => ({
+                    label: `Mark as ${status}`,
+                    danger: status === "Paid",
+                    onClick: () =>
+                      handleRowStatusChange(inv.invoiceNumber, status),
+                  }),
+                ),
+              ]}
+            />
+          </div>
         ),
       },
     ],

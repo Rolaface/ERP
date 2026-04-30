@@ -195,7 +195,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       setSelectedCustomer(fullCustomer);
       setViewMode("detail");
     } catch (error) {
-     
+
       showApiError(error);
     } finally {
       setCustLoading(false);
@@ -212,38 +212,15 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "id",
       header: "Customer ID",
       align: "left",
-      render: (customer) => {
-        const id = customer.id || "";
-        const shortId = id ? `--${id.slice(-4)}` : "-";
-
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
-
-        return (
-          <div className="flex items-center justify-start gap-1 group">
-            <span className="font-mono text-sm">
-              {shortId}
-            </span>
-
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full Customer ID"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
+      render: (customer) => (
+        <span className="font-medium whitespace-nowrap">{customer.id}</span>
+      ),
       tooltip: (customer) => customer.id,
     },
     {
       key: "name",
       header: "Name",
       align: "left",
-      width: "280px",
       render: (customer) => (
         <span className="cursor-pointer font-medium block">
           {customer.name}
@@ -267,7 +244,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "TPIN",
       align: "left",
       render: (customer) => (
-       <span className="font-mono text-sm tabular-nums whitespace-nowrap block text-left">
+        <span className="font-mono text-sm tabular-nums whitespace-nowrap block text-left">
           {customer.tpin}
         </span>
       ),

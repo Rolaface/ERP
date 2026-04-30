@@ -362,39 +362,19 @@ const Items: React.FC = () => {
     {
       key: "id",
       header: "Item Code",
-      align: "center",
-      render: (i) => {
-        const id = i.id || "";
-        const shortId = id ? `--${id.slice(-4)}` : "-";
-
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
-
-        return (
-          <div className="flex items-center justify-center gap-1 group">
-            <span className="font-mono text-sm">
-              {shortId}
-            </span>
-
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full Item Code"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
+      align: "left",
+      render: (i) => (
+        <span className="font-mono text-sm tabular-nums whitespace-nowrap">
+          {i.id}
+        </span>
+      ),
       tooltip: (i) => i.id,
     },
     {
       key: "brand",
       header: "Brand",
       align: "center",
-      render: (i) => <span className="truncate block">{i.brand || "-"}</span>,
+      render: (i) => <span className=" block">{i.brand || "-"}</span>,
       tooltip: (i) => i.brand || "-",
     },
     {
@@ -412,7 +392,7 @@ const Items: React.FC = () => {
       key: "itemGroup",
       header: "Category",
       align: "center",
-      render: (i) => <span className="truncate block">{i.itemGroup}</span>,
+      render: (i) => <span className=" block">{i.itemGroup}</span>,
       tooltip: (i) => i.itemGroup,
     },
     {
@@ -442,7 +422,7 @@ const Items: React.FC = () => {
       header: "Supplier",
       align: "center",
       render: (i) => (
-        <span className="truncate block">{i.preferredVendorName || "-"}</span>
+        <span className=" block">{i.preferredVendorName || "-"}</span>
       ),
       tooltip: (i) => i.preferredVendorName || "-",
     },
