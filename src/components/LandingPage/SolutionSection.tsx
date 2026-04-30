@@ -45,16 +45,15 @@ const features: Feature[] = [
 
 const SolutionSection: React.FC = () => {
   return (
-    <section className="section relative overflow-hidden bg-gradient-to-b from-white to-[var(--row-hover)]">
+    <section className="section-lg section-alt relative overflow-hidden">
 
-      {/* Soft Relief Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.08),transparent_60%)] pointer-events-none"></div>
+      {/* Background */}
+      <div className="absolute inset-0 bg-radial-glow opacity-60 pointer-events-none"></div>
 
-      <div className="container-app">
+      <div className="container-wide">
 
         {/* HEADER */}
-        <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
-
+        <div className="text-center max-w-2xl mx-auto stack-md">
 
           <h2 className="text-[34px] md:text-[40px] font-semibold leading-tight text-main tracking-tight">
             One system to run your entire business — clearly and efficiently
@@ -66,8 +65,8 @@ const SolutionSection: React.FC = () => {
 
         </div>
 
-        {/* FEATURES */}
-        <div className="mt-[calc(var(--density-gap)*4)] space-y-[calc(var(--density-gap)*4)]">
+        {/* STORY BLOCKS */}
+        <div className="mt-20 space-y-24">
 
           {features.map((feature, index) => {
             const isReverse = index % 2 !== 0;
@@ -75,57 +74,69 @@ const SolutionSection: React.FC = () => {
             return (
               <div
                 key={index}
-                className={`grid md:grid-cols-2 items-center gap-[calc(var(--density-gap)*3)] animate-fade-up`}
-                style={{ animationDelay: `${index * 0.12}s` }}
+                className={`grid lg:grid-cols-2 gap-16 items-center`}
               >
 
-                {/* IMAGE */}
-                <div className={`${isReverse ? "md:order-2" : ""}`}>
+                {/* IMAGE SIDE */}
+                <div className={`${isReverse ? "lg:order-2" : ""}`}>
+
                   <div className="relative group">
 
-                    {/* Soft Glow */}
-                    <div className="absolute inset-0 bg-primary/10 blur-3xl rounded-[calc(var(--density-radius)*2)] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    {/* Glow */}
+                    <div
+                      className="absolute inset-0 blur-3xl rounded-[32px] opacity-20"
+                      style={{ background: "var(--gradient-primary)" }}
+                    />
 
-                    <div className="relative bg-card border border-theme rounded-[calc(var(--density-radius)*2)] overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
+                    {/* Main Image */}
+                    <div className="relative overflow-hidden rounded-[28px] border border-theme bg-surface-2 shadow-soft-xl">
 
                       <img
                         src={feature.image}
                         alt={feature.title}
-                        className="w-full h-[260px] md:h-[320px] object-cover transition-transform duration-500 group-hover:scale-[1.05]"
+                        className="w-full h-[300px] md:h-[360px] object-cover transition-transform duration-500 group-hover:scale-[1.06]"
                       />
 
+                      {/* UI Highlight Overlay */}
+                      <div className="absolute top-6 left-6 w-24 h-16 border-2 border-white/80 rounded-lg backdrop-blur-sm bg-white/10"></div>
+
+                      {/* Arrow Indicator */}
+                      <div className="absolute bottom-6 right-6 text-white text-[12px] bg-black/40 px-3 py-1 rounded-full backdrop-blur">
+                        Live Data →
+                      </div>
+
                     </div>
+
                   </div>
+
                 </div>
 
-                {/* TEXT */}
-                <div className={`stack-md ${isReverse ? "md:order-1" : ""}`}>
+                {/* TEXT SIDE */}
+                <div className={`stack-md ${isReverse ? "lg:order-1" : ""}`}>
 
                   <p className="text-[12px] font-semibold text-primary tracking-wide uppercase">
                     {feature.label}
                   </p>
 
-                  <h3 className="text-[24px] md:text-[28px] font-semibold text-main leading-snug">
+                  <h3 className="text-[26px] md:text-[30px] font-semibold text-main leading-snug">
                     {feature.title}
                   </h3>
 
-                  <p className="text-[14px] text-muted leading-relaxed max-w-[500px]">
+                  <p className="text-[15px] text-muted leading-relaxed max-w-[520px]">
                     {feature.desc}
                   </p>
 
                   {feature.points && (
-                    <ul className="stack-sm pt-2">
+                    <ul className="stack-sm pt-3">
 
                       {feature.points.map((point, i) => (
                         <li
                           key={i}
-                          className="text-[13px] text-main flex items-center gap-3 transition-all duration-300 hover:translate-x-1"
+                          className="text-[14px] text-main flex items-center gap-3"
                         >
-                          {/* ✔ Premium Check */}
-                          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500/10 text-green-600 text-xs font-bold">
+                          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold">
                             ✓
                           </span>
-
                           {point}
                         </li>
                       ))}
@@ -142,37 +153,6 @@ const SolutionSection: React.FC = () => {
         </div>
 
       </div>
-
-      {/* ANIMATIONS (kept yours, slightly refined) */}
-      <style>
-        {`
-          .animate-fade-in {
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeIn 0.6s ease forwards;
-          }
-
-          .animate-fade-up {
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeUp 0.7s ease forwards;
-          }
-
-          @keyframes fadeIn {
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          @keyframes fadeUp {
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}
-      </style>
     </section>
   );
 };

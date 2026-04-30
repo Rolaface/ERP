@@ -32,14 +32,13 @@ const HowItWorks: React.FC = () => {
   return (
     <section className="section section-default relative overflow-hidden">
 
-      {/* Soft background */}
+      {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
 
       <div className="container-app">
 
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
-
           <h2 className="text-[34px] md:text-[40px] font-semibold leading-tight text-main tracking-tight">
             Get started in minutes —{" "}
             <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
@@ -50,49 +49,47 @@ const HowItWorks: React.FC = () => {
           <p className="text-[15px] text-muted leading-relaxed">
             Set up once, and your entire business runs smoothly from there.
           </p>
-
         </div>
 
-        {/* STEPS */}
-        <div className="relative mt-[calc(var(--density-gap)*4)] grid md:grid-cols-4 gap-[calc(var(--density-gap)*3)]">
+        {/* TIMELINE */}
+        <div className="relative mt-[calc(var(--density-gap)*4)]">
 
-          {/* PREMIUM CONNECTOR LINE */}
-          <div className="hidden md:block absolute top-12 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--primary)]/30 to-transparent" />
+          {/* MAIN LINE */}
+          <div className="hidden md:block absolute top-10 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--primary)]/40 to-transparent" />
 
-          {steps.map((step, index) => {
-            const Icon = step.icon;
+          <div className="grid md:grid-cols-4 gap-[calc(var(--density-gap)*3)]">
 
-            return (
-              <div
-                key={step.id}
-                className="relative group animate-fade-up"
-                style={{ animationDelay: `${index * 0.12}s` }}
-              >
+            {steps.map((step, index) => {
+              const Icon = step.icon;
 
-                {/* STEP CARD */}
-                <div className="relative h-full rounded-2xl border border-theme bg-card p-[calc(var(--density-gap)*2)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)]">
+              return (
+                <div
+                  key={step.id}
+                  className="relative flex flex-col items-center text-center group animate-fade-up"
+                  style={{ animationDelay: `${index * 0.12}s` }}
+                >
 
-                  {/* ICON NODE */}
-                  <div className="relative mb-5 flex items-center justify-center md:justify-start">
+                  {/* NODE */}
+                  <div className="relative mb-6">
 
                     {/* Glow */}
-                    <div className="absolute w-14 h-14 bg-primary/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition"></div>
+                    <div className="absolute inset-0 w-16 h-16 bg-primary/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition"></div>
 
-                    <div className="relative w-12 h-12 rounded-full bg-card border border-theme flex items-center justify-center transition-all duration-300 group-hover:scale-105 group-hover:shadow-md">
+                    {/* Circle */}
+                    <div className="relative z-10 w-14 h-14 rounded-full bg-card border border-theme flex items-center justify-center shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:shadow-md">
                       <Icon size={20} className="text-primary" />
                     </div>
 
-                    {/* NUMBER BADGE */}
-                    <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-white text-[10px] font-semibold flex items-center justify-center shadow-sm">
+                    {/* Step Number */}
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-[2px] rounded-full bg-primary text-white text-[10px] font-semibold shadow">
                       {step.id}
                     </div>
-
                   </div>
 
                   {/* CONTENT */}
-                  <div className="stack-sm text-center md:text-left">
+                  <div className="max-w-[220px] stack-sm">
 
-                    <h3 className="text-[16px] font-semibold text-main">
+                    <h3 className="text-[15px] font-semibold text-main">
                       {step.title}
                     </h3>
 
@@ -102,15 +99,10 @@ const HowItWorks: React.FC = () => {
 
                   </div>
 
-                  {/* HOVER PROGRESS LINE */}
-                  <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-primary transition-all duration-300 group-hover:w-full"></div>
-
                 </div>
-
-              </div>
-            );
-          })}
-
+              );
+            })}
+          </div>
         </div>
 
         {/* TRUST LINE */}
@@ -130,7 +122,7 @@ const HowItWorks: React.FC = () => {
 
       </div>
 
-      {/* ANIMATIONS (kept + consistent) */}
+      {/* ANIMATIONS */}
       <style>
         {`
           .animate-fade-in {

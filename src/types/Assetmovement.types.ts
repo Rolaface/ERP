@@ -7,11 +7,13 @@ export interface AssetMovementRow {
   asset: string;
   sourceLocation: string;
   fromEmployee: string;
+  fromEmployeeLabel?: string;
+toEmployeeLabel?: string;
   targetLocation: string;
   toEmployee: string;
 }
 
-export type AssetMovementPurpose = "Transfer" | "Issue" | "Receipt" | "";
+export type AssetMovementPurpose = "Transfer" | "Issue" | "Receipt" | "Transfer and Issue" | "";
 
 export interface AssetMovementForm {
   company: string;
@@ -37,7 +39,7 @@ export type AssetMovementStatus =
 export interface AddAssetMovementModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (form: AssetMovementForm) => Promise<void> | void;
+  onSubmit?: (form: AssetMovementForm) => Promise<boolean> | boolean | void;
   initialData?: Partial<AssetMovementForm>;
   mode?: "create" | "edit";
   modalId?: string;
@@ -69,6 +71,8 @@ export const PURPOSE_OPTIONS: { value: AssetMovementPurpose; label: string }[] =
     { value: "Transfer", label: "Transfer" },
     { value: "Issue", label: "Issue" },
     { value: "Receipt", label: "Receipt" },
+    { value: "Transfer and Issue", label: "Transfer and Issue" },
+  
   ];
 
 /* ── Status badge colour map ── */

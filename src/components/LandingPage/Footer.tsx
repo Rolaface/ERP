@@ -6,57 +6,62 @@ const Footer: React.FC = () => {
   return (
     <footer className="relative bg-app text-muted overflow-hidden">
 
-      {/* === BACKGROUND SYSTEM (TOKENIZED) === */}
+      {/* === BACKGROUND SYSTEM === */}
       <div className="absolute inset-0 pointer-events-none">
 
-        {/* Radial glow (token) */}
         <div className="absolute inset-0 bg-radial-glow opacity-60 blur-3xl" />
-
-        {/* Grid overlay */}
         <div className="absolute inset-0 opacity-[0.04] bg-grid-subtle" />
 
       </div>
 
       <div className="relative z-10 container-app px-6">
 
-        {/* ================= CTA BLOCK ================= */}
+        {/* ================= MINI CTA (UPGRADED) ================= */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="pt-28 pb-20 text-center border-b border-theme"
+          className="pt-28 pb-24 text-center border-b border-theme"
         >
           <div className="relative max-w-3xl mx-auto">
 
-            {/* Glow using token */}
-            <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-3xl opacity-60" />
+            {/* Glow */}
+            <div className="absolute inset-0 bg-primary/10 blur-3xl rounded-3xl opacity-70" />
 
-            <div className="relative">
+            <div className="relative stack-md">
 
-              <h2 className="text-3xl md:text-4xl font-semibold text-main leading-tight tracking-tight">
-                Bring clarity to your{" "}
+              <h2 className="text-[34px] md:text-[42px] font-semibold text-main leading-tight tracking-tight">
+                Stop managing your business in{" "}
+                <span className="text-red-500">fragments</span>.
+                <br />
                 <span className="text-gradient">
-                  business operations
+                  Start running it with clarity.
                 </span>
               </h2>
 
-              <p className="mt-5 text-muted max-w-xl mx-auto text-[15px] leading-relaxed">
-                Join 500+ businesses simplifying operations, reducing errors, and scaling faster.
+              <p className="text-muted max-w-xl mx-auto text-[15px] leading-relaxed">
+                Replace scattered tools, manual work, and constant confusion with one system that actually makes your business feel under control.
               </p>
 
               {/* CTA */}
-              <button className="mt-8 btn btn-primary group relative inline-flex items-center gap-3 px-8 py-4 rounded-full overflow-hidden">
+              <div className="flex flex-col items-center gap-3 mt-4">
 
-                <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <button className="btn btn-primary group relative inline-flex items-center gap-3 px-8 py-4 rounded-full overflow-hidden">
 
-                Book Free Demo
+                  {/* Hover glow */}
+                  <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition" />
-              </button>
+                  Start Free Trial
 
-              <p className="mt-3 text-[12px] text-muted">
-                No credit card required • Setup in minutes
-              </p>
+                  <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition" />
+                </button>
+
+                {/* Trust line */}
+                <p className="text-[12px] text-muted">
+                  No credit card required • Setup in minutes
+                </p>
+
+              </div>
 
             </div>
           </div>
@@ -79,7 +84,12 @@ const Footer: React.FC = () => {
             </h2>
 
             <p className="mt-4 text-muted text-sm leading-relaxed max-w-[240px]">
-              Built for modern businesses that want clarity, control, and growth.
+              Built for businesses that are tired of chaos and want real control over their operations, finances, and growth.
+            </p>
+
+            {/* Tone reinforcement */}
+            <p className="mt-3 text-[12px] text-muted">
+              Simple. Reliable. Built to scale with you.
             </p>
 
             {/* Badges */}
@@ -153,7 +163,7 @@ const Footer: React.FC = () => {
           <div className="flex items-center gap-6 flex-wrap justify-center">
 
             <span className="hidden md:block text-muted">
-              Secure. Reliable. Built for scale.
+              Built for clarity. Designed for growth.
             </span>
 
             <div className="flex items-center gap-2">

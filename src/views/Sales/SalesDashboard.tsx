@@ -44,7 +44,8 @@ const SalesDashboard: React.FC = () => {
     monthlySalesGraph: { labels: string[]; data: number[] };
   } | null>(null);
 
-  const chartsLoading = summaryLoading || !summaryData;
+  // const chartsLoading = summaryLoading || !summaryData;
+  const chartsLoading = summaryLoading || (!summaryData && !summaryError);
 
   const currencyZMW = useMemo(
     () =>

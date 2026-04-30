@@ -20,7 +20,7 @@ const DEFAULT_TAB = "dashboard";
 const allTabs = [
   { id: "dashboard", label: "Dashboard", icon: <FaChartPie /> },
   { id: "category", label: "Asset Category", icon: <FaTags /> },
-  { id: "assets", label: "Fixed Assets", icon: <FaList /> },
+  { id: "assets", label: " Assets", icon: <FaList /> },
   { id: "assetmovements", label: "Asset Movements", icon: <FaList /> },
 ];
 
