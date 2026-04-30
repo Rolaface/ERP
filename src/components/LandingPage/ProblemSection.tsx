@@ -49,7 +49,11 @@ const ProblemSection: React.FC = () => {
   return (
     <section
       ref={sectionRef}
-      className="section-lg section-default relative overflow-hidden"
+      className="section-lg relative overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(to bottom, var(--surface-1), var(--surface-2))",
+      }}
     >
       {/* GLOBAL TENSION GLOW */}
       <div
@@ -85,14 +89,13 @@ const ProblemSection: React.FC = () => {
         {/* GRID */}
         <div className="grid lg:grid-cols-2 gap-14 items-center mt-16">
 
-          {/* LEFT PANEL (now more “alive”) */}
+          {/* LEFT PANEL */}
           <div
             className={`
               relative transition-all duration-700 delay-100
               ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}
             `}
           >
-            {/* Pulsing danger aura */}
             <div
               className="absolute inset-0 blur-3xl rounded-3xl animate-[pulse_4s_ease-in-out_infinite]"
               style={{ background: "var(--danger)", opacity: 0.18 }}
@@ -100,8 +103,8 @@ const ProblemSection: React.FC = () => {
 
             <div className="relative bg-surface-2 border border-theme rounded-2xl p-7 shadow-soft-xl backdrop-blur-md overflow-hidden">
 
-              {/* subtle flicker overlay */}
-              <div className="absolute inset-0 opacity-[0.03] pointer-events-none animate-[pulse_3s_ease-in-out_infinite]"
+              <div
+                className="absolute inset-0 opacity-[0.03] pointer-events-none animate-[pulse_3s_ease-in-out_infinite]"
                 style={{
                   background:
                     "linear-gradient(120deg, transparent, rgba(255,255,255,0.4), transparent)",
@@ -158,7 +161,8 @@ const ProblemSection: React.FC = () => {
                   onMouseEnter={() => setActiveIndex(i)}
                   onMouseLeave={() => setActiveIndex(null)}
                   className={`
-                    group relative rounded-xl p-5 border border-theme
+                    group relative rounded-xl p-5
+                    border border-theme
                     transition-all duration-300 cursor-pointer
                     ${isActive ? "shadow-soft-xl scale-[1.03] z-10" : ""}
                     ${
@@ -169,11 +173,11 @@ const ProblemSection: React.FC = () => {
                     ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}
                   `}
                   style={{
-                    background: "var(--surface-1)",
+                    background: "var(--surface-2)",
                     transitionDelay: `${i * 70 + 180}ms`,
                   }}
                 >
-                  {/* Spotlight instead of flat glow */}
+                  {/* Danger spotlight */}
                   <div
                     className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition duration-200"
                     style={{
@@ -185,7 +189,7 @@ const ProblemSection: React.FC = () => {
                     <div
                       className="mt-1 w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 group-hover:scale-110"
                       style={{
-                        background: `rgba(220,38,38,${0.12 + i * 0.05})`,
+                        background: "rgba(220,38,38,0.12)",
                         color: "var(--danger)",
                       }}
                     >
@@ -208,7 +212,7 @@ const ProblemSection: React.FC = () => {
           </div>
         </div>
 
-        {/* FOOTER (stronger emotional close) */}
+        {/* FOOTER */}
         <div
           className={`
             text-center mt-20 transition-all duration-700 delay-500
