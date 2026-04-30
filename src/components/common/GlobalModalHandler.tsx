@@ -458,7 +458,9 @@ const GlobalModalHandler: React.FC = () => {
 
   return (
     <>
-      {modals.map((modal) => renderModal(modal))}
+      {modals.map((modal) => (
+        <React.Fragment key={modal.id}>{renderModal(modal)}</React.Fragment>
+      ))}
       <MinimizedDrawer />
     </>
   );
