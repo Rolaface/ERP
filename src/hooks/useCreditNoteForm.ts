@@ -3,6 +3,8 @@ import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
 import { createCreditNote, updateCreditNote } from "../api/CreditNoteapi";
 import { showApiError, showSuccess } from "../utils/alert";
+import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
+import { useUnsavedChanges } from "./useUnsavedChanges";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,6 +56,7 @@ export function useCreditNoteForm(
   const [form, setForm] = useState<CreditNoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+
 
   useEffect(() => {
     if (!initialData) return;
@@ -265,6 +268,9 @@ export function useCreditNoteForm(
       showSuccess(res.message);
       onSuccess?.(res.data);
       onClose?.();
+      useDataRefreshStore
+              .getState()
+              .triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
     } catch (err: any) {
       console.error("Credit note save failed", err);
       showApiError(err);
