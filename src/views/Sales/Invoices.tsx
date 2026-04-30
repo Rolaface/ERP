@@ -565,7 +565,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "left",
         sortable: true,
         render: (inv) => (
-          <span className="font-mono text-sm tabular-nums whitespace-nowrap">
+          <span className="block">
             {inv.invoiceNumber}
           </span>
         ),
@@ -576,7 +576,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Tax Type",
         align: "center",
         render: (inv) => (
-          <span className="whitespace-nowrap">{inv.invoiceType}</span>
+          <span className="block">{inv.invoiceType}</span>
         ),
         tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
       },
@@ -595,7 +595,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Date",
         align: "center",
         render: (inv) => (
-          <span className="text-sm whitespace-nowrap">
+          <span className="block">
             {inv.dateOfInvoice.toLocaleDateString()}
           </span>
         ),
@@ -606,7 +606,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <span className="text-sm whitespace-nowrap">
+          <span className="block">
             {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
           </span>
         ),
@@ -617,7 +617,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <span className="tabular-nums font-medium whitespace-nowrap">
+          <span className="block whitespace-nowrap">
             {inv.total.toLocaleString()} {inv.currency}
           </span>
         ),
@@ -630,7 +630,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <span className="tabular-nums font-medium whitespace-nowrap">
+          <span className="block whitespace-nowrap">
             {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
           </span>
         ),

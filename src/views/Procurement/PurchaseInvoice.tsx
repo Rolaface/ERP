@@ -512,7 +512,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Amount",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <code className="block whitespace-nowrap">
           {Number(o.amount || 0).toFixed(2)}
         </code>
       ),
@@ -523,7 +523,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Grand Total",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <code className="block whitespace-nowrap">
           {Number(o.grandTotalWithTax || 0).toFixed(2)}
         </code>
       ),
@@ -534,7 +534,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Outstanding",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <code className="block whitespace-nowrap">
           {Number(o.outstanding_amount || 0).toFixed(2)}
         </code>
       ),

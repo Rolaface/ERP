@@ -517,7 +517,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       header: "Amount",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <code className="block whitespace-nowrap">
           {o.currency} {Number(o.amount || 0).toFixed(2)}
         </code>
       ),
