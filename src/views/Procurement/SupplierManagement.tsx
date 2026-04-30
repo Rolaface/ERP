@@ -248,9 +248,12 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "ID",
       align: "left",
       render: (supplier) => (
+         <div className="py-1.5">
         <span className="block text-sm">
           {supplier.supplierId || "-"}
         </span>
+        </div>
+        
       ),
       tooltip: (supplier) => supplier.supplierId || "-",
     },
@@ -259,9 +262,11 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Name",
       align: "center",
       render: (supplier) => (
+        <div className="py-1.5">
         <span className="block text-sm">
           {supplier.supplierName || "-"}
         </span>
+        </div>
       ),
       tooltip: (supplier) => {
         const name = supplier.supplierName || "";
@@ -273,7 +278,9 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Tax Category",
       align: "center",
       render: (supplier) => (
-        <span className="block text-sm">{supplier.taxCategory || "-"}</span>
+        <div className="py-1.5">
+          <span className="block text-sm">{supplier.taxCategory || "-"}</span>
+        </div>
       ),
       tooltip: (supplier) => supplier.taxCategory || "-",
     },
@@ -282,7 +289,9 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Phone",
       align: "center",
       render: (supplier) => (
-        <span className="block text-sm">{supplier.phoneNo || "-"}</span>
+        <div className="py-1.5">
+          <span className="block text-sm">{supplier.phoneNo || "-"}</span>
+        </div>
       ),
       tooltip: (supplier) => supplier.phoneNo || "-",
     },
@@ -296,7 +305,9 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
             {supplier.tpin}
           </code>
         ) : (
-          <span className="text-muted">-</span>
+          <div className="py-1.5">
+            <span className="text-muted">-</span>
+          </div>
         ),
       tooltip: (supplier) => supplier.tpin || "-",
     },
@@ -305,9 +316,11 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Currency",
       align: "center",
       render: (supplier) => (
-        <span className="inline-flex max-w-full  rounded bg-row-hover px-2 py-0.5 text-xs text-main">
-          {supplier.currency || "-"}
-        </span>
+        <div className="py-1.5">
+          <span className="inline-flex max-w-full  rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+            {supplier.currency || "-"}
+          </span>
+        </div>
       ),
       tooltip: (supplier) => supplier.currency || "-",
     },
@@ -315,7 +328,11 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       key: "status",
       header: "Status",
       align: "center",
-      render: (supplier) => <StatusBadge status={supplier.status || "active"} />,
+      render: (supplier) => (
+        <div className="py-1.5">
+          <StatusBadge status={supplier.status || "active"} />
+        </div>
+      ),
     },
     {
       key: "actions",

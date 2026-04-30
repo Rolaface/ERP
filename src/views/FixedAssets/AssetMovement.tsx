@@ -145,9 +145,11 @@ useEffect(() => {
       header: "Movement ID",
       sortable: true,
       render: (row) => (
+        <div className="py-1.5">
         <span className="font-mono text-xs" style={{ color: "var(--primary)" }}>
           #{row.id.slice(-6)}
         </span>
+        </div>
       ),
     },
     {
@@ -160,9 +162,11 @@ useEffect(() => {
       header: "Purpose",
       sortable: true,
       render: (row) => (
+          <div className="py-1.5">
         <span className="badge">
           {row.purpose || "—"}
         </span>
+        </div>
       ),
     },
     {
@@ -170,9 +174,11 @@ useEffect(() => {
       header: "Transaction Date",
       sortable: true,
       render: (row) => (
+        <div className="py-1.5">
         <span style={{ color: "var(--muted)", fontSize: 12 }}>
           {row.transactionDate}
         </span>
+        </div>
       ),
     },
     {
@@ -180,12 +186,14 @@ useEffect(() => {
       header: "Status",
       sortable: true,
       render: (row) => (
+        <div className="py-1.5">
         <span
           className={`badge ${STATUS_CLASS_MAP[row.status]}`}
           style={{ padding: "2px 10px", borderRadius: 999, fontSize: 11 }}
         >
           {row.status}
         </span>
+        </div>
       ),
     },
     {

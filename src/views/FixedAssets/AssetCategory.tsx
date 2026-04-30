@@ -213,7 +213,10 @@ const AssetCategoryTable: React.FC = () => {
       key: "assetCategoryName",
       header: "Category Name",
       align: "center",
-      render: (o) => <span className="block">{o.assetCategoryName || "—"}</span>,
+      render: (o) => 
+      <div className="py-1.5">
+      <span className="block">{o.assetCategoryName || "—"}</span>
+      </div>,
       tooltip: (o) => o.assetCategoryName || "—",
     },
     {
@@ -221,7 +224,9 @@ const AssetCategoryTable: React.FC = () => {
       header: "Capital WIP",
       align: "center",
       render: (o) => (
+          <div className="py-1.5">
         <StatusBadge status={o.enableCapitalWorkInProgress ? "Enabled" : "Disabled"} />
+        </div>
       ),
     },
     {
@@ -229,7 +234,9 @@ const AssetCategoryTable: React.FC = () => {
       header: "Non-Depreciable",
       align: "center",
       render: (o) => (
-        <StatusBadge status={o.nonDepreciableCategory ? "Yes" : "No"} />
+        <div className="py-1.5">
+          <StatusBadge status={o.nonDepreciableCategory ? "Yes" : "No"} />
+        </div>
       ),
     },
     {

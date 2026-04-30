@@ -163,9 +163,11 @@ const handleAddPayment = () => {
       header: "Amount",
       align: "right",
       render: (p: PaymentSummary) => (
+        <div className="py-1.5">
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {p.amount.toLocaleString()}
         </code>
+        </div>
       ),
     },
     {

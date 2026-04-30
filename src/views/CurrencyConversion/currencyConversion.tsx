@@ -77,6 +77,7 @@ const CurrencyConversion: React.FC = () => {
       key: "date",
       header: "Date",
       render: (row) => (
+        <div className="py-1.5">
         <span className="text-xs text-muted">
           {new Date(row.date).toLocaleDateString("en-GB", {
             day: "2-digit",
@@ -84,6 +85,7 @@ const CurrencyConversion: React.FC = () => {
             year: "numeric",
           })}
         </span>
+        </div>
       ),
     },
     {
@@ -101,16 +103,18 @@ const CurrencyConversion: React.FC = () => {
       key: "exchangeRate",
       header: "Exchange Rate",
       render: (row) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold">
-          {row.exchangeRate.toLocaleString()}
-        </code>
+        <div className="py-1.5">
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold">
+            {row.exchangeRate.toLocaleString()}
+          </code>
+        </div>
       ),
     },
     {
       key: "isBuying",
       header: "Purpose",
       render: (row) => (
-        <div className="flex gap-1">
+        <div className="py-1.5">
           {row.isBuying && (
             <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-700 font-medium">
               Buy
@@ -129,15 +133,19 @@ const CurrencyConversion: React.FC = () => {
       header: "Created At",
       render: (row) =>
         row.createdAt ? (
-          <span className="text-xs text-muted">
-            {new Date(row.createdAt).toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
-          </span>
+          <div className="py-1.5">
+            <span className="text-xs text-muted">
+              {new Date(row.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
+          </div>
         ) : (
-          "—"
+          <div className="py-1.5">
+            "—"
+          </div>
         ),
     },
     {
