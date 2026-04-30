@@ -89,6 +89,8 @@ export const REFRESH_KEYS = {
   BANK_ACCOUNT_LIST: "bank_account_list",
     FIXED_ASSET_LIST: "fixed_asset_list",
     ASSET_MOVEMENT_LIST: "asset_movement_list",
+    CREDIT_NOTE_LIST: "credit_note_list",
+    DEBIT_NOTE_LIST: "debit_note_list",
 
   
 } as const;
