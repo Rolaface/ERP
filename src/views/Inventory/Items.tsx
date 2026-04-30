@@ -364,7 +364,7 @@ const Items: React.FC = () => {
       header: "Item Code",
       align: "left",
       render: (i) => (
-        <span className="font-mono text-sm tabular-nums whitespace-nowrap">
+        <span className="block">
           {i.id}
         </span>
       ),
@@ -400,7 +400,7 @@ const Items: React.FC = () => {
       header: "Min",
       align: "center",
       render: (i) => (
-        <span className="tabular-nums whitespace-nowrap">
+        <span className="block">
           {i.minStockLevel ?? "-"}
         </span>
       ),
@@ -411,7 +411,7 @@ const Items: React.FC = () => {
       header: "Max",
       align: "center",
       render: (i) => (
-        <span className="tabular-nums whitespace-nowrap">
+        <span className="block">
           {i.maxStockLevel ?? "-"}
         </span>
       ),
@@ -431,7 +431,7 @@ const Items: React.FC = () => {
       header: "Price",
       align: "center",
       render: (i) => (
-        <span className="tabular-nums font-medium whitespace-nowrap">
+        <span className="block">
           {i.sellingPrice}
         </span>
       ),
