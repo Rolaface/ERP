@@ -31,7 +31,7 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
   initialData,
   isEdit = false,
 }) => {
-  const resolvedModalId = modalId ?? `credit-note-create-${Date.now()}`;
+const resolvedModalId = modalId!;
 
   const {
     form,
