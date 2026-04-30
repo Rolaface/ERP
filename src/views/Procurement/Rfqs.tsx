@@ -87,6 +87,19 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
       toast.success("Delete API ready");
     }
   };
+  const formatDate = (date: string | Date) => {
+  if (!date) return "";
+
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  // Date object — use local methods
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
 
 
   // ================= TABLE COLUMNS =================
@@ -99,12 +112,12 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
     {
       key: "transaction_date",
       header: "Request Date",
-      render: (r) => <div className="py-1.5">{r.transaction_date}</div>,
+      render: (r) => <div className="py-1.5">{r.transaction_date ? formatDate(r.transaction_date) : "—"}</div>,
     },
     {
       key: "schedule_date",
       header: "Quote Deadline",
-      render: (r) => <div className="py-1.5">{r.schedule_date || "-"}</div>,
+      render: (r) => <div className="py-1.5">{r.schedule_date ? formatDate(r.schedule_date) : "—"}</div>,
     },
     {
       key: "status",

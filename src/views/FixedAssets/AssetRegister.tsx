@@ -262,7 +262,7 @@ const handleDeleteAsset = async (id: string, e: React.MouseEvent) => {
 }); 
   }
 };
-  // ─── COLUMNS ───
+
   const columns: Column<Asset>[] = [
     {
       key: "name",

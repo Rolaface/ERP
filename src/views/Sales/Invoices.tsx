@@ -469,7 +469,19 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setSelectedInvoice(null);
     setPdfOpen(false);
   };
+const formatDate = (date: string | Date) => {
+  if (!date) return "";
 
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  // Date object — use local methods
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
   const handleRowStatusChange = async (
     invoiceNumber: string,
     status: InvoiceStatus,
@@ -603,7 +615,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         render: (inv) => (
              <div className="py-1.5">
           <span className="block">
-            {inv.dateOfInvoice.toLocaleDateString()}
+            {formatDate(inv.dateOfInvoice)}
           </span>
           </div>
         ),
@@ -616,7 +628,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         render: (inv) => (
              <div className="py-1.5">
           <span className="block">
-            {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
+            {inv.dueDate ? formatDate(inv.dueDate) : "—"}
           </span>
           </div>
         ),
