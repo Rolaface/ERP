@@ -79,7 +79,7 @@ const CRM: React.FC = () => {
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title="Customers"
-        description="Manage customers and track their payments in one place."
+        description="End-to-end customer management—from onboarding to payments."
         icon={<FaUsers />}
       />
       <AppTabs tabs={crmTabs} activeTab={activeTab} onChange={handleTabChange} />
