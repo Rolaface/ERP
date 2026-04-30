@@ -487,9 +487,11 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       header: "PO ID",
       align: "left",
      render: (o) => (
+      <div className="py-1.5">
         <span className="block">
           {o.id || "—"}
         </span>
+      </div>
       ),
     },
     {
@@ -497,9 +499,11 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       header: "Supplier",
       align: "center",
       render: (o) => (
-        <span className="block">
-          {o.supplier || "—"}
-        </span>
+        <div className="py-1.5">
+          <span className="block">
+            {o.supplier || "—"}
+          </span>
+        </div>
       ),
       tooltip: (o) => o.supplier || "—",
     },
@@ -508,7 +512,11 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       header: "Date",
       align: "center",
       render: (o) => (
-        <span>{o.date || "—"}</span>
+        <div className="py-1.5">
+          <span className="block">
+            {o.date || "—"}
+          </span>
+        </div>
       ),
       tooltip: (o) => o.date || "—",
     },
@@ -517,23 +525,33 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       header: "Amount",
       align: "center",
       render: (o) => (
-        <code className="block whitespace-nowrap">
-          {o.currency} {Number(o.amount || 0).toFixed(2)}
-        </code>
+        <div className="py-1.5">
+          <code className="inline-flex max-w-full rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+            {o.currency} {Number(o.amount || 0).toFixed(2)}
+          </code>
+        </div>
       ),
     },
     {
       key: "status",
       header: "Status",
       align: "center",
-      render: (o) => <StatusBadge status={o.status} />,
+      render: (o) => (
+        <div className="py-1.5">
+          <StatusBadge status={o.status} />
+        </div>
+      ),
     },
     {
       key: "deliveryDate",
       header: "Required By",
       align: "center",
       render: (o) => (
-        <span>{o.deliveryDate || "—"}</span>
+        <div className="py-1.5">
+          <span className="block">
+            {o.deliveryDate || "—"}
+          </span>
+        </div>
       ),
     },
     {

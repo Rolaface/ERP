@@ -94,23 +94,23 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
     {
       key: "name",
       header: "RFQ ID",
-      render: (r) => <div className="py-1">{r.name}</div>,
+      render: (r) => <div className="py-1.5">{r.name}</div>,
     },
     {
       key: "transaction_date",
       header: "Request Date",
-      render: (r) => <div className="py-1">{r.transaction_date}</div>,
+      render: (r) => <div className="py-1.5">{r.transaction_date}</div>,
     },
     {
       key: "schedule_date",
       header: "Quote Deadline",
-      render: (r) => <div className="py-1">{r.schedule_date || "-"}</div>,
+      render: (r) => <div className="py-1.5">{r.schedule_date || "-"}</div>,
     },
     {
       key: "status",
       header: "Status",
       render: (r) => (
-        <div className="py-1">
+        <div className="py-1.5">
           <StatusBadge status={r.status} />
         </div>
       ),

@@ -130,42 +130,55 @@ const BankDetails: React.FC = () => {
       key: "bankName",
       header: "Bank",
       render: (row) => (
+        <div className="py-1.5">
         <span className="font-semibold">{row.bankName || "—"}</span>
+        </div>
       ),
     },
     {
       key: "accountNo",
       header: "Account No",
       render: (row) => (
+          <div className="py-1.5">
         <span
           title={row.accountNo ? String(row.accountNo) : ""}
           className="cursor-pointer"
         >
           {mask(row.accountNo)}
         </span>
+        </div>
       ),
     },
     {
       key: "accountHolderName",
       header: "Account Holder",
-      render: (row) => <span>{row.accountHolderName || "—"}</span>,
+      render: (row) => (
+        <div className="py-1.5">
+          <span>{row.accountHolderName || "—"}</span>
+        </div>
+      ),
     },
     {
       key: "sortCode",
       header: "IFSC / Sort Code",
       render: (row) => (
+          <div className="py-1.5">
         <span
           title={row.sortCode ? String(row.sortCode) : ""}
           className="cursor-pointer"
         >
           {mask(row.sortCode)}
         </span>
+        </div>
       ),
     },
     {
       key: "currency",
       header: "Currency",
-      render: (row) => <span>{row.currency || "—"}</span>,
+      render: (row) =>
+        <div className="py-1.5">
+          <span>{row.currency || "—"}</span>
+        </div>,
     },
 
     {
@@ -173,7 +186,9 @@ const BankDetails: React.FC = () => {
       header: "Default",
       render: (row) =>
         row.isDefault ? (
+            <div className="py-1.5">
           <span className="text-green-600 font-semibold">Yes</span>
+          </div>
         ) : (
           "—"
         ),
@@ -183,9 +198,13 @@ const BankDetails: React.FC = () => {
       header: "Status",
       render: (row) =>
         row.isDisabled ? (
-          <span className="text-red-500 font-semibold">Disabled</span>
+          <div className="py-1.5">
+            <span className="text-red-500 font-semibold">Disabled</span>
+          </div>
         ) : (
-          <span className="text-green-600">Active</span>
+          <div className="py-1.5">
+            <span className="text-green-600">Active</span>
+          </div>
         ),
     },
     {

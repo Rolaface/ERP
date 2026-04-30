@@ -471,16 +471,18 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     }
   };
 
-  // ── Columns ─────────────────────────────────
+  
   const columns: Column<Purchaseinvoice>[] = [
     {
       key: "pId",
       header: "PI ID",
       align: "left",
        render: (o) => (
+        <div className="py-1.5">
         <span className="block">
           {o.pId || "—"}
         </span>
+        </div>
       ),
       tooltip: (o) => o.pId || "—",
     },
@@ -489,9 +491,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Supplier",
       align: "center",
       render: (o) => (
-        <span className="block">
-          {o.supplier || "—"}
-        </span>
+        <div className="py-1.5">
+          <span className="block">
+            {o.supplier || "—"}
+          </span>
+        </div>
       ),
       tooltip: (o) => o.supplier || "—",
     },
@@ -499,12 +503,26 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       key: "podate",
       header: "PI Date",
       align: "center",
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.podate || "—"}
+          </span>
+        </div>
+      ),
       tooltip: (o) => o.podate || "—",
     },
     {
       key: "deliveryDate",
       header: "Delivery Date",
       align: "center",
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.deliveryDate || "—"}
+          </span>
+        </div>
+      ),
       tooltip: (o) => o.deliveryDate || "—",
     },
     {
@@ -512,9 +530,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Amount",
       align: "center",
       render: (o) => (
+        <div className="py-1.5">
         <code className="block whitespace-nowrap">
           {Number(o.amount || 0).toFixed(2)}
         </code>
+        </div>
       ),
       tooltip: (o) => o.amount || "—",
     },
@@ -523,9 +543,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Grand Total",
       align: "center",
       render: (o) => (
-        <code className="block whitespace-nowrap">
-          {Number(o.grandTotalWithTax || 0).toFixed(2)}
-        </code>
+        <div className="py-1.5">
+          <code className="block whitespace-nowrap">
+            {Number(o.grandTotalWithTax || 0).toFixed(2)}
+          </code>
+        </div>
       ),
       tooltip: (o) => o.grandTotalWithTax || "—",
     },
@@ -534,9 +556,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Outstanding",
       align: "center",
       render: (o) => (
-        <code className="block whitespace-nowrap">
-          {Number(o.outstanding_amount || 0).toFixed(2)}
-        </code>
+        <div className="py-1.5">
+          <code className="block whitespace-nowrap">
+            {Number(o.outstanding_amount || 0).toFixed(2)}
+          </code>
+        </div>
       ),
       tooltip: (o) => o.outstanding_amount || "—",
     },
@@ -544,7 +568,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       key: "status",
       header: "Status",
       align: "left",
-      render: (o) => <StatusBadge status={o.status} />,
+      render: (o) => (
+        <div className="py-1.5">
+          <StatusBadge status={o.status} />
+        </div>
+      ),
     },
     {
       key: "actions",
