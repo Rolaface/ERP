@@ -113,11 +113,10 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
               <div
                 key={opt.value}
                 onClick={() => handleSelect(opt)}
-                className={`px-3 py-2 text-[11px] cursor-pointer hover:bg-primary/10 transition-colors ${
-                  opt.value === value
-                    ? "bg-primary/10 font-medium text-primary"
-                    : "text-main"
-                }`}
+                className={`px-3 py-2 text-[11px] cursor-pointer hover:bg-primary/10 transition-colors ${opt.value === value
+                  ? "bg-primary/10 font-medium text-primary"
+                  : "text-main"
+                  }`}
               >
                 <span className="font-medium">{opt.label}</span>
                 <span className="ml-2 text-muted">{opt.customerName}</span>
@@ -194,7 +193,7 @@ const EMPTY_ITEM: CreditNoteItem = {
   warehouse: "",
 };
 
-const PLACEHOLDER_COUNT = 1; 
+const PLACEHOLDER_COUNT = 1;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -236,8 +235,8 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
   const ui = { page, setPage, itemCount };
 
   const actions = {
-    addItem: () => {},         
-    duplicateItem: () => {},   
+    addItem: () => { },
+    duplicateItem: () => { },
     removeItem: onRemoveItem,
     handleItemChange: (
       index: number,
@@ -268,14 +267,13 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
     const amount = Math.abs(it.qty) * it.rate;
 
     const inputCls = `w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main
-      focus:outline-none focus:ring-1 focus:ring-primary no-spinner
-      ${isPulsing ? "animate-pulse opacity-60" : ""}
-      ${isPlaceholder ? "cursor-default" : ""}`;
+  focus:outline-none focus:ring-1 focus:ring-primary no-spinner
+  ${isPulsing ? "animate-pulse opacity-60" : ""}`;
 
     return (
       <tr
         key={`row-${absoluteIndex}`}
-        className={`border-b border-theme ${!isPlaceholder ? "hover:bg-primary/5" : ""} transition-colors`}
+        className="border-b border-theme hover:bg-primary/5 transition-colors"
       >
         {/* # */}
         <td className="px-2 py-1 text-center text-[10px] text-muted">
@@ -311,11 +309,10 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
           <input
             type="number"
             name="qty"
-            value={isPlaceholder ? "" : Math.abs(it.qty)}
+            value={it.qty === 0 ? "" : Math.abs(it.qty)}
             disabled={isPlaceholder}
             className={inputCls}
             onChange={(e) => {
-              if (isPlaceholder) return;
               const val = Number(e.target.value);
               onItemChange(absoluteIndex, "qty", val > 0 ? -val : val);
             }}
@@ -327,13 +324,10 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
           <input
             type="number"
             name="rate"
-            value={isPlaceholder ? "" : it.rate}
+            value={it.rate === 0 ? "" : it.rate}
             disabled={isPlaceholder}
             className={inputCls}
-            onChange={(e) => {
-              if (isPlaceholder) return;
-              onItemChange(absoluteIndex, "rate", Number(e.target.value));
-            }}
+            onChange={(e) => onItemChange(absoluteIndex, "rate", Number(e.target.value))}
           />
         </td>
 
@@ -342,59 +336,22 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
           <input
             type="text"
             name="batch_no"
-            value={isPlaceholder ? "" : it.batch_no}
-            placeholder="Auto / N/A"
+            value={it.batch_no || ""}
+            placeholder="Auto"
             disabled={isPlaceholder}
             className={inputCls}
-            onChange={(e) => {
-              if (isPlaceholder) return;
-              onItemChange(absoluteIndex, "batch_no", e.target.value);
-            }}
+            onChange={(e) => onItemChange(absoluteIndex, "batch_no", e.target.value)}
           />
         </td>
 
         {/* Warehouse */}
         <td className="px-1 py-1">
-          {isPlaceholder ? (
-            // Mimic WarehouseSelect appearance
-            <div
-              className={`flex items-center justify-between w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-muted
-                ${isPulsing ? "animate-pulse opacity-60" : ""}`}
-            >
-              <span className="text-muted/30 text-[11px] select-none">
-                &nbsp;
-              </span>
-              <svg
-                className="w-3 h-3 text-muted/30 shrink-0"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-          ) : (
-            <WarehouseSelect
-              compact
-              value={it.warehouse || ""}
-              onChange={(
-                e: React.ChangeEvent<HTMLSelectElement> | string,
-              ) => {
-                const val =
-                  typeof e === "string"
-                    ? e
-                    : (e as React.ChangeEvent<HTMLSelectElement>).target
-                        ?.value ?? e;
-                onItemChange(absoluteIndex, "warehouse", val as string);
-              }}
-              onDefaultLoad={(firstWarehouse: string) => {
-                onWarehouseDefault(absoluteIndex, firstWarehouse);
-              }}
-            />
-          )}
+          <WarehouseSelect
+            compact
+            disabled={isPlaceholder}
+            value={it.warehouse || ""}
+            onChange={(e) => onItemChange(absoluteIndex, "warehouse", e.target.value)}
+          />
         </td>
 
         {/* Amount */}
