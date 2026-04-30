@@ -123,7 +123,7 @@ const Navbar: React.FC = () => {
 
             <div className="flex flex-col leading-tight">
               <span className="text-lg font-semibold text-main tracking-tight group-hover:text-primary transition-colors">
-                YourERP
+                RolafaceERP
               </span>
               <span className="text-[10px] text-muted hidden md:block">
                 Trusted by 500+ businesses

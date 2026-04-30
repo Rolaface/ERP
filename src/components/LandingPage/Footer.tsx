@@ -87,7 +87,7 @@ const Footer: React.FC = () => {
           <div className="col-span-2 md:col-span-1">
 
             <h2 className="text-2xl font-semibold tracking-tight text-gradient">
-              Archivist ERP
+              RolafaceERP
             </h2>
 
             <p className="mt-4 text-muted/80 text-sm leading-relaxed max-w-[240px]">
