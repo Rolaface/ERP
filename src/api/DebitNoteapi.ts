@@ -89,15 +89,17 @@ export async function getAllDebitNotes(
 const raw = resp.data;
 const items = Array.isArray(raw?.data) ? raw.data        
             : Array.isArray(raw)        ? raw            
-            : [];                                     
+            : [];
 
-const total = raw?.total_count ?? raw?.data?.length ?? items.length;
+
+const pagination = raw?.pagination ?? {};
+const total = pagination.total ?? items.length;
 
 return {
   data: items,   
   pagination: {
     total,
-    total_pages: Math.ceil(total / page_size) || 1,
+    total_pages: (pagination.total_pages ?? Math.ceil(total / page_size)) || 1,
     page,
     page_size,
   },

@@ -48,7 +48,7 @@ const CreditNotesTable: React.FC = () => {
 
       const resp = await getAllCreditNotes(page, pageSize, searchTerm);
 
-      const mappedData: CreditNote[] = resp.data.data.map((item: any) => ({
+      const mappedData: CreditNote[] = resp.data.map((item: any) => ({
         noteNo: item.name,
         invoiceNo: item.return_against || "-",
         customer: item.customer_name,
@@ -170,7 +170,7 @@ const CreditNotesTable: React.FC = () => {
       do {
         const resp = await getAllCreditNotes(current, 100, searchTerm);
 
-        const mappedData: CreditNote[] = resp.data.data.map((item: any) => ({
+        const mappedData: CreditNote[] = resp.data.map((item: any) => ({
           noteNo: item.name,
           invoiceNo: item.return_against || "-",
           customer: item.customer_name,
@@ -282,24 +282,32 @@ const CreditNotesTable: React.FC = () => {
   };
 
   const columns: Column<CreditNote>[] = [
-    { key: "noteNo", header: "Credit Invoice No",
-       render: (o) => (
+    {
+      key: "noteNo", header: "Credit Invoice No",
+      render: (o) => (
         <span className="block">
           {o.noteNo || "—"}
         </span>
       ),
-     },
-    { key: "invoiceNo", header: "Receipt No", render: (o) => (
-        <span className="block">
-          {o.invoiceNo || "—"}
-        </span>
-      ), },
-    { key: "customer", header: "Customer",
-        align: "center",
-       render: (o) => (
-        <span className="block">
-          {o.customer || "—"}
-        </span>
+    },
+    {
+      key: "invoiceNo", header: "Receipt No", render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.invoiceNo || "—"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "customer", header: "Customer",
+      align: "center",
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.customer || "—"}
+          </span>
+        </div>
       ),
     },
     {
@@ -312,15 +320,21 @@ const CreditNotesTable: React.FC = () => {
         </code>
       ),
     },
-    { key: "date", header: "Date",  render: (o) => (
+    {
+      key: "date", header: "Date", render: (o) => (
         <span className="block">
           {o.date || "—"}
         </span>
-      ), },
+      ),
+    },
     {
       key: "status",
       header: "Status",
-      render: (r) => <StatusBadge status={r.status} />,
+      render: (r) => (
+        <div className="py-1.5">
+          <StatusBadge status={r.status} />
+        </div>
+      ),
     },
     {
       key: "actions",

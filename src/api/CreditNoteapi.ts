@@ -82,7 +82,7 @@ export async function getAllCreditNotes(
   const resp: AxiosResponse = await api.get(CreditNoteAPI.Credit_note, { 
     params: {
       filters: JSON.stringify([["is_return", "=", 1]]),
-      fields: JSON.stringify(["name", "customer_name", "return_against", "grand_total", "status", "posting_date","currency"]),
+      fields: JSON.stringify(["name", "customer_name", "return_against", "grand_total", "status", "posting_date", "currency"]),
       with_pagination: 1,
       limit_start,
       limit_page_length: page_size,
@@ -91,13 +91,18 @@ export async function getAllCreditNotes(
   });
 
   const raw = resp.data;
-  const total = raw.total_count ?? 0;
+  const items = Array.isArray(raw?.data) ? raw.data
+              : Array.isArray(raw)        ? raw
+              : [];
+
+  const pagination = raw?.pagination ?? {};
+  const total = pagination.total ?? items.length;
 
   return {
-    data: raw,
+    data: items,   
     pagination: {
       total,
-      total_pages: Math.ceil(total / page_size),
+      total_pages: (pagination.total_pages ?? Math.ceil(total / page_size)) || 1,
       page,
       page_size,
     },
