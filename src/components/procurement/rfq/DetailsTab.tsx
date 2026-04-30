@@ -336,7 +336,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                       <td className="px-2 py-1">
                         <input
                           type="number"
-                          value={it.quantity}
+                            value={it.quantity === 1 ? "" : it.quantity}
                           min={1}
                           onChange={(e) =>
                             onItemChange(i, "quantity", Number(e.target.value))

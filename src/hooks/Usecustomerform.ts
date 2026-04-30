@@ -53,7 +53,7 @@ export interface CustomerFormState {
   type: "" | "Company" | "Individual";
   tpin: string;
   currency: string;
-  onboardingBalance: number;
+  onboardingBalance?: number;
   displayName: string;
   customerGroup: string;
   accountNumber: string;
@@ -147,7 +147,7 @@ export const emptyForm: CustomerFormState = {
   type: "",
   tpin: "",
   currency: "",
-  onboardingBalance: 0,
+  onboardingBalance: undefined,
   displayName: "",
   customerGroup: "",
   accountNumber: "",
