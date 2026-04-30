@@ -87,7 +87,7 @@ const Inventory: React.FC = () => {
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title="Inventory"
-        description="Inventory operations and stock visibility within the shared ERP shell."
+        description="Track, manage, and optimize inventory in one unified workflow."
         icon={<FaBoxes />}
       />
       <AppTabs

@@ -138,7 +138,7 @@ const AccountingModule: React.FC = () => {
     <AppPage>
       <AppPageHeader
         title="Accounting"
-        description="Core ledgers, reports, and finance operations in the shared ERP layout."
+        description="Handle ledgers, reporting, and finance operations in one workflow"
         icon={<FaBriefcase />}
       />
       <AppTabs tabs={allTabs} activeTab={activeTab} onChange={handleTabChange} />
