@@ -70,10 +70,10 @@ export async function createDebitNote(
  
 export async function getAllDebitNotes(
   page = 1,
-  pageSize = 10,
+  page_size = 10,
   search: string = "",
 ): Promise<any> {
-  const start = (page - 1) * pageSize;
+  const limit_start = (page - 1) * page_size;
 
   const resp: AxiosResponse = await api.get(DebitNoteAPI.Debit_note, { 
     params: {
