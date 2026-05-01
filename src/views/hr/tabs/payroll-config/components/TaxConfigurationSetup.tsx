@@ -6,13 +6,13 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
-import { SalaryStructureModal } from "../../../../../components/Hr/hrsetupmodals/Salarystructuremodal";
+import { TaxConfigModal } from "../../../../../components/Hr/hrsetupmodals/TaxConfigModal";
 import {
-  deleteSalaryStructure,
-  type SalaryStructure,
+  deleteTaxConfig,
+  type TaxConfig,
 } from "../../../../../api/payrollConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
-import { useSalaryStructures } from "../hooks/useSalaryStructures";
+import { useTaxConfigs } from "../hooks/useTaxConfigs";
 
 export function TaxConfigurationSetup() {
   const {
@@ -26,20 +26,18 @@ export function TaxConfigurationSetup() {
     setPageSize,
     totalPages,
     totalItems,
-    earningComponents,
-    deductionComponents,
     fetchAll,
     fetchDetail,
-  } = useSalaryStructures();
+  } = useTaxConfigs();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<SalaryStructure | null>(null);
-  const MODAL_ID = "salary-structure-modal";
+  const [editTarget, setEditTarget] = useState<TaxConfig | null>(null);
+  const MODAL_ID = "tax-config-modal";
 
   const handleEdit = useCallback(
-    async (row: SalaryStructure) => {
-      const detail = await fetchDetail(row.name!);
+    async (row: TaxConfig) => {
+      const detail = await fetchDetail(row.name);
       if (!detail) return;
       setEditTarget(detail);
       setModalOpen(true);
@@ -48,13 +46,13 @@ export function TaxConfigurationSetup() {
   );
 
   const handleDelete = useCallback(
-    async (row: SalaryStructure) => {
+    async (row: TaxConfig) => {
       if (!row.name) return;
       if (!confirm(`Delete "${row.name}"?`)) return;
       try {
         setActionLoadingId(row.name);
-        await deleteSalaryStructure(row.name);
-        showSuccess("Structure deleted");
+        await deleteTaxConfig(row.name);
+        showSuccess("Tax configuration deleted");
         fetchAll();
       } catch (err: any) {
         showApiError(err?.message ?? "Failed to delete");
@@ -65,62 +63,53 @@ export function TaxConfigurationSetup() {
     [fetchAll],
   );
 
-  const columns: Column<SalaryStructure>[] = useMemo(
+  const columns: Column<TaxConfig>[] = useMemo(
     () => [
       {
         key: "name",
-        header: "Structure Name",
+        header: "Name",
         render: (row) => (
           <span className="font-medium text-main">{row.name || "—"}</span>
         ),
-        tooltip: (row) => row.name ?? "",
+        tooltip: (row) => row.name,
       },
       {
-        key: "is_active",
-        header: "Status",
-        render: (row) => (
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              row.is_active === "Yes"
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-gray-100 text-gray-500"
-            }`}
-          >
-            {row.is_active === "Yes" ? "Active" : "Inactive"}
+        key: "effective_from",
+        header: "Tax Type",
+        render: () => (
+          <span className="inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+            Income Tax Slab
           </span>
         ),
       },
       {
-        key: "docstatus",
-        header: "Doc Status",
+        key: "standard_tax_exemption_amount",
+        header: "Value",
+        render: (row) => (
+          <span className="text-sm text-main">
+            {row.standard_tax_exemption_amount != null
+              ? row.standard_tax_exemption_amount
+              : "—"}
+          </span>
+        ),
+      },
+      {
+        key: "disabled",
+        header: "Status",
         render: (row) => {
-          const labels: Record<number, string> = {
-            0: "Draft",
-            1: "Submitted",
-            2: "Cancelled",
-          };
-          const colors: Record<number, string> = {
-            0: "text-amber-600",
-            1: "text-blue-600",
-            2: "text-red-500",
-          };
-          const status = row.docstatus ?? 0;
+          const isActive = !row.disabled;
           return (
-            <span className={`text-xs font-semibold ${colors[status]}`}>
-              {labels[status] ?? "—"}
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                isActive
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {isActive ? "Active" : "Inactive"}
             </span>
           );
         },
-      },
-      {
-        key: "description",
-        header: "Description",
-        render: (row) => (
-          <span className="text-sm text-sub line-clamp-1">
-            {row.description || "—"}
-          </span>
-        ),
-        tooltip: (row) => row.description ?? "",
       },
       {
         key: "actions",
@@ -164,7 +153,7 @@ export function TaxConfigurationSetup() {
           setPage(1);
         }}
         enableAdd
-        addLabel="Add Structure"
+        addLabel="Add Tax"
         onAdd={() => {
           setEditTarget(null);
           setModalOpen(true);
@@ -180,16 +169,14 @@ export function TaxConfigurationSetup() {
           setPage(1);
         }}
         enableColumnSelector
-        tableId="salary-structures"
+        tableId="tax-configurations"
       />
 
-      <SalaryStructureModal
+      <TaxConfigModal
         modalId={MODAL_ID}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         initialData={editTarget}
-        earningComponents={earningComponents}
-        deductionComponents={deductionComponents}
         onSuccess={fetchAll}
       />
     </>

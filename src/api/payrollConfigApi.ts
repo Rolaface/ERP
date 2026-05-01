@@ -45,6 +45,30 @@ export interface SalaryStructure {
   description?: string;
 }
 
+export interface TaxSlabRow {
+  from_amount: number;
+  to_amount: number;
+  percent_deduction: number;
+}
+
+export interface TaxChargeRow {
+  description: string;
+  percent: number;
+  min_taxable_income: number;
+  max_taxable_income: number;
+}
+
+export interface TaxConfig {
+  name: string;
+  effective_from: string;
+  standard_tax_exemption_amount: number;
+  allow_tax_exemption: 0 | 1;
+  tax_relief_limit: number;
+  disabled?: 0 | 1;
+  slabs: TaxSlabRow[];
+  other_taxes_and_charges: TaxChargeRow[];
+}
+
 // Frappe resource list response shape
 interface FrappeListResponse<T> {
   data: T[];
@@ -284,6 +308,98 @@ export async function deleteSalaryStructure(name: string): Promise<void> {
       error?.response?.data?.message ||
         error?.message ||
         "Failed to delete salary structure",
+    );
+  }
+}
+
+// INCOME TAX SLAB
+
+export async function getAllTaxConfigs(): Promise<TaxConfig[]> {
+  try {
+    const fields = JSON.stringify([
+      "name",
+      "effective_from",
+      "standard_tax_exemption_amount",
+      "allow_tax_exemption",
+      "tax_relief_limit",
+      "disabled",
+    ]);
+
+    const url = `${Payroll.incomeTaxSlab.getAll}?fields=${encodeURIComponent(fields)}&limit_page_length=200`;
+    const resp: AxiosResponse<FrappeListResponse<TaxConfig>> =
+      await api.get(url);
+
+    return resp.data?.data ?? [];
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to fetch tax configurations",
+    );
+  }
+}
+
+export async function getTaxConfig(name: string): Promise<TaxConfig> {
+  try {
+    const url = `${Payroll.incomeTaxSlab.getById}/${encodeURIComponent(name)}`;
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
+      await api.get(url);
+
+    return resp.data?.data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to fetch tax configuration",
+    );
+  }
+}
+
+export async function createTaxConfig(
+  payload: TaxConfig,
+): Promise<TaxConfig> {
+  try {
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
+      await api.post(Payroll.incomeTaxSlab.create, payload);
+
+    return resp.data?.data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to create tax configuration",
+    );
+  }
+}
+
+export async function updateTaxConfig(
+  name: string,
+  payload: Partial<Omit<TaxConfig, "name">>,
+): Promise<TaxConfig> {
+  try {
+    const url = `${Payroll.incomeTaxSlab.update}/${encodeURIComponent(name)}`;
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
+      await api.put(url, payload);
+
+    return resp.data?.data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to update tax configuration",
+    );
+  }
+}
+
+export async function deleteTaxConfig(name: string): Promise<void> {
+  try {
+    const url = `${Payroll.incomeTaxSlab.delete}/${encodeURIComponent(name)}`;
+    await api.delete(url);
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to delete tax configuration",
     );
   }
 }
