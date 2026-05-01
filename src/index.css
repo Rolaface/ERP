@@ -184,56 +184,7 @@
   --input-transition: all 0.2s ease;
 }
 
-/* =========================================
-   MOTION TOKENS
-   (Add BELOW Form Tokens)
-========================================= */
-:root {
-  /* Duration */
-  --motion-fast: 120ms;
-  --motion-base: 200ms;
-  --motion-slow: 320ms;
 
-  /* Easing */
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-
-  /* Scale */
-  --scale-hover: 1.02;
-  --scale-active: 0.98;
-
-  /* Elevation */
-  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
-
-  /* Premium Shadows */
-  --shadow-soft-xl: 0 20px 60px rgba(0, 0, 0, 0.12);
-  --shadow-glow: 0 10px 40px rgba(255, 122, 26, 0.25);
-  --shadow-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.3);
-
-  --z-sidebar: 100;
-  --z-app-chrome: 120;
-  --z-modal-backdrop-base: 1000;
-  --z-modal-step: 20;
-  --z-modal-panel-offset: 10;
-  --z-modal-taskbar: 1800;
-  --z-swal: 4000;
-  --app-sidebar-width: 16rem;
-  --app-sidebar-width-collapsed: 4rem;
-  --app-right-panel-width: 320px;
-  --app-right-panel-width-collapsed: 60px;
-  --app-topbar-height: 4.5rem;
-  --app-content-max-width: 1400px;
-  --app-radius-lg: 1rem;
-  --app-radius-xl: 1rem;
-  --app-shadow-soft: 0 18px 48px rgba(15, 23, 42, 0.12);
-  --app-shadow-float: 0 18px 45px rgba(15, 23, 42, 0.16);
-  --app-surface-padding: 1.5rem;
-  --app-table-height: 23rem;
-  --app-table-offset: 18rem;
-}
 
 /* =========================================
    THEMES
@@ -662,7 +613,7 @@
   --danger: #dc2626;
 
   /* gradients */
-  --gradient-primary: linear-gradient(135deg, #ff4500 0%, #b93800 100%);
+  --gradient-primary-raw: linear-gradient(135deg, #ff4500 0%, #b93800 100%);
 
   --font-heading: "Sora", "Inter", sans-serif;
   --font-body: "Inter", sans-serif;
@@ -691,7 +642,7 @@
   --danger: #dc2626;
 
   /* gradients */
-  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  --gradient-primary-raw: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
 
   --font-heading: "Plus Jakarta Sans", "Inter", sans-serif;
   --font-body: "Inter", sans-serif;
@@ -1856,18 +1807,6 @@ h4 {
   }
 }
 
-/* Scale */
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 /* SHIMMER ANIMATION */
 @keyframes shimmer {
   0% {
@@ -2072,15 +2011,6 @@ input[type=number]::-webkit-inner-spin-button {
 }
 .react-datepicker-wrapper {
   width: 100%;
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
 }
 
 @keyframes scroll {
