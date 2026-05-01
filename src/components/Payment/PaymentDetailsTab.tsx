@@ -673,7 +673,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         </div>
       )}
 
-      {(form?.partyName || (form?.currencyFrom && form?.currencyTo)) && (
+      {/* {(form?.partyName || (form?.currencyFrom && form?.currencyTo)) && (
         <div className="rounded-lg border border-[var(--border)] bg-[var(--row-hover)] px-4 py-2">
           <p className="text-[11px] text-muted">
             {form?.partyName ? `Party: ${form.partyName}` : "Party: -"} |{" "}
@@ -682,7 +682,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
               : "Currency: -"}
           </p>
         </div>
-      )}
+      )} */}
 
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
