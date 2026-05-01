@@ -163,7 +163,7 @@ const ItemsCategoryModal: React.FC<{
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
       title={isEditMode ? "Edit Item Group" : "Add Item Group"}
-      subtitle="Manage Item Group Hierarchy"
+      subtitle="Create a new item group "
       icon={Layers}
       customWidth="35vw"
       height="auto"

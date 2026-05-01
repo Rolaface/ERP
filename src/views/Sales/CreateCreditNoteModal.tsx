@@ -1,10 +1,9 @@
-import React, { useMemo } from "react";
-import { FileMinus } from "lucide-react";
+import React, { useMemo, useRef } from "react";
+import { FileText } from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { CreditNoteDetailsTab } from "./CreditNoteDetailsTab";
 import { useCreditNoteForm } from "../../hooks/useCreditNoteForm";
-
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -19,7 +18,6 @@ interface CreateCreditNoteModalProps {
   initialData?: any;
   isEdit?: boolean;
   modalId?: string;
-  invoiceId?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -32,7 +30,13 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
   initialData,
   isEdit = false,
 }) => {
-const resolvedModalId = modalId!;
+  // Stable modal ID — computed once per mount, same strategy as Asset modal
+  const resolvedModalId = useRef(
+    modalId ??
+      (isEdit && initialData?.name
+        ? `credit-note-edit-${initialData.name}-${Date.now()}`
+        : `credit-note-create-${Date.now()}`),
+  ).current;
 
   const {
     form,
@@ -47,14 +51,18 @@ const resolvedModalId = modalId!;
     toggleUpdateStock,
     reset,
     handleSubmit,
+    handleCloseWithConfirm, // ← from useUnsavedChanges inside the hook
   } = useCreditNoteForm(onSubmit, onClose, initialData, isEdit);
+
+  // ── Close handler — asks for confirmation when dirty ────────────────────
+  const handleClose = () => handleCloseWithConfirm(onClose, resolvedModalId);
 
   // ── Footer ───────────────────────────────────────────────────────────────
 
   const footer = useMemo(
     () => (
       <>
-        <Button variant="secondary" type="button" onClick={onClose}>
+        <Button variant="secondary" type="button" onClick={handleClose}>
           Cancel
         </Button>
         <div className="flex gap-2">
@@ -80,8 +88,11 @@ const resolvedModalId = modalId!;
         </div>
       </>
     ),
-    [onClose, reset, saving, isEdit]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [saving, isEdit],
   );
+
+  // ── Tab content ──────────────────────────────────────────────────────────
 
   const tabContent = useMemo(
     () => (
@@ -116,10 +127,10 @@ const resolvedModalId = modalId!;
     <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose} // ← guarded close
       title={isEdit ? "Edit Credit Note" : "Create Credit Note"}
       subtitle="Create and manage credit notes"
-      icon={FileMinus}
+      icon={FileText}
       footer={footer}
       maxWidth="6xl"
       height="82vh"
@@ -129,6 +140,7 @@ const resolvedModalId = modalId!;
         onSubmit={handleSubmit}
         className="h-full flex flex-col"
       >
+        {/* ── Tab bar ── */}
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
             <button
@@ -140,7 +152,7 @@ const resolvedModalId = modalId!;
           </div>
         </div>
 
-        {/* Tab content */}
+        {/* ── Tab content ── */}
         <section className="flex-1 overflow-y-auto">
           {tabContent}
         </section>

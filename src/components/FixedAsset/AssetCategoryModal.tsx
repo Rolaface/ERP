@@ -601,7 +601,7 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
       subtitle="Create and manage asset categories"
       icon={Tag}
       customWidth="60vw"
-      height="93vh"
+      height="80vh"
       footer={footer}
     >
       <section className="overflow-y-auto h-full">{body}</section>

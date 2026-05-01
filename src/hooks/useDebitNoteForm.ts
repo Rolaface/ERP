@@ -3,6 +3,7 @@ import { useCompanyStore } from "../store/companyStore";
 import { getPurchaseInvoices, getPurchaseInvoiceById } from "../api/procurement/PurchaseInvoiceApi";
 import { createDebitNote, updateDebitNote } from "../api/DebitNoteapi";
 import { showApiError, showSuccess } from "../utils/alert";
+import { useUnsavedChanges } from "./useUnsavedChanges";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,9 @@ export function useDebitNoteForm(
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
 
+  // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+
   useEffect(() => {
     if (!initialData) return;
 
@@ -74,7 +78,9 @@ export function useDebitNoteForm(
         warehouse: it.warehouse || "",
       })),
     });
+    // initialData hydration is not a user edit — do NOT markDirty here
   }, [initialData]);
+
   // ── Invoice search ───────────────────────────────────────────────────────
 
   const fetchInvoiceOptions = useCallback(
@@ -84,7 +90,7 @@ export function useDebitNoteForm(
         return (res?.data ?? []).map((r: any) => ({
           value: r.pId,
           label: r.pId,
-          suppplierId: r.supplierId,
+          supplierId: r.supplierId,
           supplierName: r.supplierName,
         }));
       } catch {
@@ -103,6 +109,7 @@ export function useDebitNoteForm(
       supplier: { id: opt.supplierId, name: opt.supplierName },
       items: [],
     }));
+    markDirty(); // user explicitly chose an invoice — mark dirty
 
     setInvoiceLoading(true);
     try {
@@ -135,7 +142,7 @@ export function useDebitNoteForm(
     } finally {
       setInvoiceLoading(false);
     }
-  }, []);
+  }, [markDirty]);
 
   // ── Item mutations ───────────────────────────────────────────────────────
 
@@ -146,8 +153,9 @@ export function useDebitNoteForm(
         items[index] = { ...items[index], [field]: value };
         return { ...prev, items };
       });
+      markDirty();
     },
-    [],
+    [markDirty],
   );
 
   const handleWarehouseDefault = useCallback(
@@ -158,6 +166,7 @@ export function useDebitNoteForm(
         items[index] = { ...items[index], warehouse };
         return { ...prev, items };
       });
+      // auto-default is not a user edit — no markDirty
     },
     [],
   );
@@ -167,15 +176,20 @@ export function useDebitNoteForm(
       ...prev,
       items: prev.items.filter((_, i) => i !== index),
     }));
-  }, []);
+    markDirty();
+  }, [markDirty]);
 
   const toggleUpdateStock = useCallback(() => {
     setForm((prev) => ({ ...prev, update_stock: !prev.update_stock }));
-  }, []);
+    markDirty();
+  }, [markDirty]);
 
   // ── Reset ────────────────────────────────────────────────────────────────
 
-  const reset = useCallback(() => setForm(EMPTY_FORM), []);
+  const reset = useCallback(() => {
+    setForm(EMPTY_FORM);
+    resetDirty();
+  }, [resetDirty]);
 
   // ── Validation ───────────────────────────────────────────────────────────
 
@@ -210,7 +224,6 @@ export function useDebitNoteForm(
         supplier: form.supplier!.id,
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
-
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),
@@ -226,11 +239,11 @@ export function useDebitNoteForm(
           ? await updateDebitNote(initialData.name, payload)
           : await createDebitNote(payload);
 
-
         if (!res || ![200, 201].includes(res.status_code)) {
-          showApiError(res?.message ?? "Credit note creation failed");
+          showApiError(res?.message ?? "Debit note creation failed");
           return;
         }
+
         if (res._server_messages) {
           try {
             const msgs: any[] = JSON.parse(res._server_messages);
@@ -248,6 +261,7 @@ export function useDebitNoteForm(
         }
 
         showSuccess(res.message);
+        resetDirty(); // clear dirty flag on successful save
         onSuccess?.(res.data);
         onClose?.();
       } catch (err: any) {
@@ -257,8 +271,7 @@ export function useDebitNoteForm(
         setSaving(false);
       }
     },
-    [saving, validate, form, companyName, onSuccess, onClose, isEdit,
-      initialData],
+    [saving, validate, form, companyName, onSuccess, onClose, isEdit, initialData, resetDirty],
   );
 
   // ── Derived ──────────────────────────────────────────────────────────────
@@ -282,5 +295,9 @@ export function useDebitNoteForm(
     reset,
     handleSubmit,
     validate,
+    // expose guard helpers so the modal can wire up close protection
+    markDirty,
+    resetDirty,
+    handleCloseWithConfirm,
   };
 }
