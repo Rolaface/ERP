@@ -12,7 +12,7 @@ import type { ItemInitialData } from "../inventory/ItemModal";
 import type { TaxCategoryFormData as TaxTemplateFormData } from "../../types/tax/taxTemplate";
 import type { SalesTaxTemplateFormData } from "../../types/tax/salesTemplate";
 import type { BankAccount } from "../../types/BankAccount/bank";
-
+import type { UserRoleFormData } from "../../hooks/useUserRole";
 const CustomerModal = lazy(() => import("../crm/CustomerModal"));
 const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
 const InvoiceModal = lazy(() => import("../sales/InvoiceModal"));
@@ -58,10 +58,12 @@ const CurrencyConversionModal = lazy(
 const AddAssetModal = lazy(
   () => import("../../components/FixedAsset/AddAssetModal"),
 );
-const AddAssetMovementModal= lazy(()=>import("../../components/FixedAsset/Addassetmovementmodal "))
+const AddAssetMovementModal = lazy(() => import("../../components/FixedAsset/Addassetmovementmodal "))
 const RfqModal = lazy(() => import("../procurement/rfq/RfqModal"))
 const CreditNoteModal = lazy(() => import("../../views/Sales/CreateCreditNoteModal"))
-const DebitNoteModal = lazy(()=> import("../../views/Sales/createDebitNoteModal"))
+const DebitNoteModal = lazy(() => import("../../views/Sales/createDebitNoteModal"))
+const AssignUserRoleModal = lazy(() => import("../../components/User/AssignUserRoleModal"))
+const BankModal = lazy(() => import("../../components/BankModal"))
 
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
@@ -245,7 +247,7 @@ const GlobalModalHandler: React.FC = () => {
             pId={getModalSeedValue(modal.initialData, "pId")}
           />,
         );
-        case "JournalEntries":
+      case "JournalEntries":
         return wrappedModal(
           <JournalEntriesModal
             key={modal.id}
@@ -253,7 +255,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-           
+
           />,
         );
       case "item":
@@ -400,7 +402,7 @@ const GlobalModalHandler: React.FC = () => {
             mode={modal.isEdit ? "edit" : "create"}
           />,
         );
-        case "assetMovement":
+      case "assetMovement":
         return wrappedModal(
           <AddAssetMovementModal
             key={modal.id}
@@ -425,7 +427,7 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-         case "CreditNote":
+      case "CreditNote":
         return wrappedModal(
           <CreditNoteModal
             key={modal.id}
@@ -438,7 +440,7 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-         case "DebitNote":
+      case "DebitNote":
         return wrappedModal(
           <DebitNoteModal
             key={modal.id}
@@ -451,6 +453,35 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
+      case "UserRole":
+        return wrappedModal(
+          <AssignUserRoleModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={
+              modal.isEdit && isRecord(modal.initialData)
+                ? (modal.initialData as unknown as UserRoleFormData)
+                : null
+            }
+            isEdit={modal.isEdit}
+          />,
+        );
+
+      case "Bank":
+        return wrappedModal(
+          <BankModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={getInitialData<{ bank_name: string; swift_number: string; name?: string }>(modal.initialData)}  // ✅
+            isEditMode={modal.isEdit}
+          />,
+        );
       default:
         return null;
     }

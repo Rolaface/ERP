@@ -313,6 +313,9 @@ export const API = {
       Debit_note:`${ERP_BASE}/api/resource/Purchase Invoice`
   },
 
+ Bank:{
+      Bank:`${ERP_BASE}/api/resource/Bank`
+  },
   /* =========================
    * STOCK
    * ========================= */

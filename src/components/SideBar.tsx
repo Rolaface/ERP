@@ -45,6 +45,7 @@ const settingsItems = [
   { to: "/companySetup",          label: "Company Setup",       icon: <FaBuilding /> },
   { to: "/userManagement",        label: "User Management",     icon: <FaUsers /> },
   { to: "/bank-account-setup",    label: "Bank Account",        icon: <FaUniversity /> },
+  { to: "/bank" , label:"Bank", icon: <FaUniversity/>},
   { to: "/mode-of-payment-setup", label: "Mode of Payment",     icon: <FaMoneyBill /> },
   { to: "/payment-entry",         label: "Payment Entry",       icon: <FaReceipt /> },
   { to: "/currency-conversion",   label: "Currency Exchange",   icon: <FaExchangeAlt /> },
