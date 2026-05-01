@@ -496,6 +496,37 @@ export const API = {
       delete: `${ERP_BASE}/api/resource/Income Tax Slab`,
     },
   },
+
+  employeeConfig: {
+    department: {
+      getAll: `${ERP_BASE}/api/resource/Department`,
+      getById: `${ERP_BASE}/api/resource/Department`,
+      create: `${ERP_BASE}/api/resource/Department`,
+      update: `${ERP_BASE}/api/resource/Department`,
+      delete: `${ERP_BASE}/api/resource/Department`,
+    },
+    designation: {
+      getAll: `${ERP_BASE}/api/resource/Designation`,
+      getById: `${ERP_BASE}/api/resource/Designation`,
+      create: `${ERP_BASE}/api/resource/Designation`,
+      update: `${ERP_BASE}/api/resource/Designation`,
+      delete: `${ERP_BASE}/api/resource/Designation`,
+    },
+    grade: {
+      getAll: `${ERP_BASE}/api/resource/Employee Grade`,
+      getById: `${ERP_BASE}/api/resource/Employee Grade`,
+      create: `${ERP_BASE}/api/resource/Employee Grade`,
+      update: `${ERP_BASE}/api/resource/Employee Grade`,
+      delete: `${ERP_BASE}/api/resource/Employee Grade`,
+    },
+    employeeType: {
+      getAll: `${ERP_BASE}/api/resource/Employee Type`,
+      getById: `${ERP_BASE}/api/resource/Employee Type`,
+      create: `${ERP_BASE}/api/resource/Employee Type`,
+      update: `${ERP_BASE}/api/resource/Employee Type`,
+      delete: `${ERP_BASE}/api/resource/Employee Type`,
+    },
+  },
  
 
   /* =========================

@@ -6,7 +6,7 @@ import {
 } from "../../components/ui/app-shell";
 
 import GeneralSettingsTab from "./tabs/GeneralSettingsTab";
-import SalaryStructureTab from "./tabs/SalaryStructureTab";
+import EmployeeConfigTab from "./tabs/EmployeeConfig";
 import PayrollConfigTab from "./tabs/payrollconfigtab";
 import WorkScheduleTab from "./tabs/WorkScheduleTab";
 import SalarySlipSetup from "./tabs/Salaryslipsetup";
@@ -25,7 +25,7 @@ export default function HRSetup() {
   const renderTab = () => {
     switch (activeTab) {
       case "general": return <GeneralSettingsTab />;
-      case "employee": return <SalaryStructureTab />;
+      case "employee": return <EmployeeConfigTab />;
       case "payroll": return <PayrollConfigTab />;
       case "leave": return <WorkScheduleTab />;
       case "slip": return <SalarySlipSetup />;

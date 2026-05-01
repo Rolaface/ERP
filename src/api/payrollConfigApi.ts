@@ -403,3 +403,25 @@ export async function deleteTaxConfig(name: string): Promise<void> {
     );
   }
 }
+
+export async function searchSalaryStructures(q?: string) {
+  const filters: any[] = [
+    ["docstatus", "=", 1],
+    ["is_active", "=", "Yes"],
+  ];
+
+  if (q) {
+    filters.push(["name", "like", `%${q}%`]);
+  }
+
+  const params = new URLSearchParams();
+  params.append("filters", JSON.stringify(filters));
+  params.append("fields", JSON.stringify(["name"]));
+  params.append("limit_page_length", "20");
+
+  const resp = await api.get(
+    `${Payroll.salaryStructure.getAll}?${params.toString()}`
+  );
+
+  return resp?.data?.data ?? [];
+}

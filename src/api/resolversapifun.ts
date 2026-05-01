@@ -63,3 +63,4 @@ export async function searchSalaryComponents(
 
   return resp?.data?.data ?? [];
 }
+
