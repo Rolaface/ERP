@@ -14,11 +14,10 @@ import {
 } from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
 
-const mask = (val?: string | number | null) => {
-  const str = val ? String(val) : "";
-  if (!str) return "—";
-  if (str.length <= 4) return "•".repeat(str.length);
-  return "•".repeat(str.length - 4) + str.slice(-4);
+const mask = (val?: string) => {
+  if (!val) return "—";
+  if (val.length <= 4) return "*".repeat(val.length);
+  return "*".repeat(val.length - 4) + val.slice(-4);
 };
 
 const BankDetails: React.FC = () => {
@@ -305,13 +304,14 @@ const BankDetails: React.FC = () => {
         addLabel="Add Bank Account"
         onAdd={() => {
           openBankAccountModal(
-            null, // no initial data
-            false, // create mode
+            { accountFor: "Company" },
+            false,
             {
               onSuccess: () => fetchAccounts(),
             },
           );
         }}
+
       />
 
       {!loading && filteredData.length === 0 && (

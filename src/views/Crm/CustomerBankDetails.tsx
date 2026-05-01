@@ -9,12 +9,12 @@ import type { Column } from "../../components/ui/Table/type";
 import { getAllBankAccounts, updateBankAccountStatus } from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
 
-const mask = (val?: string | number | null) => {
-    const str = val ? String(val) : "";
-    if (!str) return "—";
-    if (str.length <= 4) return "•".repeat(str.length);
-    return "•".repeat(str.length - 4) + str.slice(-4);
+const mask = (val?: string) => {
+  if (!val) return "—";
+  if (val.length <= 4) return "*".repeat(val.length);
+  return "*".repeat(val.length - 4) + val.slice(-4);
 };
+
 
 interface Props {
     customerName?: string;
