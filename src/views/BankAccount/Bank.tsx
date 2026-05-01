@@ -101,26 +101,25 @@ const BankPage: React.FC = () => {
     {
       key: "actions",
       header: "Actions",
+      align: "center",
       render: (row) => (
-        <div className="flex justify-end">
-          <ActionGroup>
-            <ActionButton
-              type="edit"
-              onClick={(e) => handleEdit(row, e as React.MouseEvent)}
-              iconOnly
-              title="Edit Bank"
-            />
-            <ActionMenu
-              onDelete={(e) => handleDelete(row.name, e as React.MouseEvent)}
-            />
-          </ActionGroup>
-        </div>
+        <ActionGroup>
+          <ActionButton
+            type="edit"
+            onClick={(e) => handleEdit(row, e as React.MouseEvent)}
+            iconOnly
+            title="Edit Bank"
+          />
+          <ActionMenu
+            onDelete={(e) => handleDelete(row.name, e as React.MouseEvent)}
+          />
+        </ActionGroup>
       ),
     },
   ];
 
   return (
-    <div className="h-full min-h-0">
+    <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
           <FaUniversity className="text-primary" />
