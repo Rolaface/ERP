@@ -43,3 +43,23 @@ export async function resolveEmployeeMap(ids: string[]) {
 
   return result;
 }
+
+export async function searchSalaryComponents(
+  type: "Earning" | "Deduction",
+  q?: string
+) {
+  const filters: any[] = [["type", "=", type]];
+
+  if (q) {
+    filters.push(["name", "like", `%${q}%`]);
+  }
+
+  const params = new URLSearchParams();
+  params.append("filters", JSON.stringify(filters));
+
+  const resp = await api.get(
+    `/api/resource/Salary Component?${params.toString()}`
+  );
+
+  return resp?.data?.data ?? [];
+}

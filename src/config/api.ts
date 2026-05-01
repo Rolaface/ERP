@@ -467,6 +467,30 @@ export const API = {
   },
 
   /* =========================
+   * PAYROLL CONFIGURATION
+   * ========================= */
+  payroll: {
+    // Salary Component
+    salaryComponent: {
+      getAll:   `${ERP_BASE}/api/resource/Salary Component`,
+      getById:  `${ERP_BASE}/api/resource/Salary Component`,   
+      create:   `${ERP_BASE}/api/resource/Salary Component`,
+      update:   `${ERP_BASE}/api/resource/Salary Component`,  
+      delete:   `${ERP_BASE}/api/resource/Salary Component`,   
+    },
+ 
+    // Salary Structure
+    salaryStructure: {
+      getAll:   `${ERP_BASE}/api/resource/Salary Structure`,
+      getById:  `${ERP_BASE}/api/resource/Salary Structure`,  
+      create:   `${ERP_BASE}/api/resource/Salary Structure`,
+      update:   `${ERP_BASE}/api/resource/Salary Structure`,   
+      delete:   `${ERP_BASE}/api/resource/Salary Structure`,  
+    },
+  },
+ 
+
+  /* =========================
    * UTILS
    * ========================= */
   frappeUtilsAPI: {
