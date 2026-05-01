@@ -1,10 +1,6 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import Table from "../../components/ui/Table/Table";
-import ActionButton, {
-    ActionGroup,
-    ActionMenu,
-} from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { getAllBankAccounts, updateBankAccountStatus } from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
@@ -181,35 +177,6 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
                 ) : (
                     <span className="text-green-600">Active</span>
                 ),
-        },
-        {
-            key: "actions",
-            header: "Actions",
-            align: "center",
-            render: (row) => (
-                <ActionGroup>
-                    <ActionButton
-                        type="edit"
-                        onClick={() => onEdit?.(row)}
-                        iconOnly
-                    />
-
-                    <ActionMenu
-                        customActions={[
-                            {
-                                label: "Set Default",
-                                onClick: () => handleSetDefault(row),
-                                disabled: actionLoadingId === String(row.id),
-                            },
-                            {
-                                label: row.isDisabled ? "Enable" : "Disable",
-                                onClick: () => handleToggleDisable(row),
-                                disabled: actionLoadingId === String(row.id),
-                            },
-                        ]}
-                    />
-                </ActionGroup>
-            ),
         },
     ];
 

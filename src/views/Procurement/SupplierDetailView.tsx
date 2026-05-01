@@ -185,33 +185,37 @@ const SupplierDetailView: React.FC<Props> = ({
   const renderActionButton = () => {
     switch (activeTab) {
       case "purchase-orders":
-        return (
-          <button onClick={() => openPOCreate()}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> New PO
-          </button>
-        );
+        // return (
+        //   <button onClick={() => openPOCreate()}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> New PO
+        //   </button>
+        // );
+        return null;
       case "bills":
-        return (
-          <button onClick={() => openPICreate()}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> New Invoice
-          </button>
-        );
+        // return (
+        //   <button onClick={() => openPICreate()}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> New Invoice
+        //   </button>
+        // );
+        return null;
       case "bank-accounts":
-        return (
-          <button onClick={() => { setEditingRow(null); setShowBankModal(true); }}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> Add Bank
-          </button>
-        );
+        // return (
+        //   <button onClick={() => { setEditingRow(null); setShowBankModal(true); }}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> Add Bank
+        //   </button>
+        // );
+        return null;
       case "payments":
-        return (
-          <button onClick={() => setShowPaymentModal(true)}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> Make Payment
-          </button>
-        );
+        // return (
+        //   <button onClick={() => setShowPaymentModal(true)}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> Make Payment
+        //   </button>
+        // );
+        return null;
       default:
         return null;
     }
@@ -329,12 +333,12 @@ const SupplierDetailView: React.FC<Props> = ({
               Added {fmtDate(createdAt)}
             </span>
           )}
-          <button
+          {/* <button
             onClick={() => onEdit(supplier)}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold border border-theme rounded-lg text-main hover:bg-row-hover transition-all"
           >
             Edit
-          </button>
+          </button> */}
           {renderActionButton()}
         </div>
       </header>
@@ -582,7 +586,7 @@ const SupplierDetailView: React.FC<Props> = ({
 
             {/* ════ BANK ACCOUNTS ═══════════════════════════════════════ */}
             {activeTab === "bank-accounts" && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <SupplierBankDetails
                   supplierName={supplierId}
                   onAdd={(refresh) => { bankAccountsRefresh.current = refresh; }}
@@ -593,21 +597,21 @@ const SupplierDetailView: React.FC<Props> = ({
 
             {/* ════ PURCHASE ORDERS ════════════════════════════════════ */}
             {activeTab === "purchase-orders" && supplierName && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <SupplierPurchaseOrders supplierName={supplierId} />
               </div>
             )}
 
             {/* ════ BILLS ══════════════════════════════════════════════ */}
             {activeTab === "bills" && supplierName && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <SupplierPurchaseInvoices supplierName={supplierId} />
               </div>
             )}
 
             {/* ════ PAYMENTS ═══════════════════════════════════════════ */}
             {activeTab === "payments" && supplierName && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <SupplierDetailViewPayments supplierName={supplierName} />
               </div>
             )}
