@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import ActionButton, {
@@ -11,6 +11,7 @@ import { getAllBanks, deleteBank } from "../../api/BankApi";
 import type { Bank } from "../../api/BankApi";
 import { showApiError, showConfirm, showSuccess } from "../../utils/alert";
 import { FaUniversity } from "react-icons/fa";
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const BankPage: React.FC = () => {
@@ -19,8 +20,6 @@ const BankPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
-  const [sortBy, setSortBy] = useState<keyof Bank | null>(null);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const refreshKey = useDataRefreshStore(
     (state) => state.refreshFlags[REFRESH_KEYS.Bank],
@@ -32,7 +31,7 @@ const BankPage: React.FC = () => {
     try {
       const resp = await getAllBanks(page, pageSize);
       setBanks(resp.data ?? []);
-      setTotalItems(resp.pagination?.total_count ?? 0);
+      setTotalItems(resp.pagination?.total ?? 0);
     } catch (err) {
       showApiError(err);
       setBanks([]);
@@ -45,18 +44,6 @@ const BankPage: React.FC = () => {
   useEffect(() => {
     fetchBanks();
   }, [fetchBanks, refreshKey]);
-
-  // ── Client-side sort ───────────────────────────────────────────────────────
-  const sortedData = useMemo(() => {
-    if (!sortBy) return banks;
-    return [...banks].sort((a, b) => {
-      const valA = String(a[sortBy] ?? "");
-      const valB = String(b[sortBy] ?? "");
-      return sortOrder === "asc"
-        ? valA.localeCompare(valB)
-        : valB.localeCompare(valA);
-    });
-  }, [banks, sortBy, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
@@ -115,36 +102,34 @@ const BankPage: React.FC = () => {
       key: "actions",
       header: "Actions",
       render: (row) => (
-        <ActionGroup>
-          <ActionButton type="view" onClick={() => handleView(row)} iconOnly />
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(row, e as React.MouseEvent)}
-            iconOnly
-            title="Edit Bank"
-          />
-          <ActionMenu
-            onDelete={(e) => handleDelete(row.name, e as React.MouseEvent)}
-            customActions={[
-              { label: "View Details", onClick: () => handleView(row) },
-            ]}
-          />
-        </ActionGroup>
+        <div className="flex justify-end">
+          <ActionGroup>
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(row, e as React.MouseEvent)}
+              iconOnly
+              title="Edit Bank"
+            />
+            <ActionMenu
+              onDelete={(e) => handleDelete(row.name, e as React.MouseEvent)}
+            />
+          </ActionGroup>
+        </div>
       ),
     },
   ];
 
   return (
     <div className="h-full min-h-0">
-       <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
-                <FaUniversity className="text-primary" />
-                Bank Accounts
-              </h1>
-            </div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
+          <FaUniversity className="text-primary" />
+          Bank Accounts
+        </h1>
+      </div>
       <Table
         columns={columns}
-        data={sortedData}
+        data={banks}
         rowKey={(row) => row.name}
         tableId="banks"
         loading={loading}

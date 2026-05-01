@@ -50,7 +50,6 @@ const salesTabs = [
   },
   { id: "invoices", label: "Invoices", icon: <FaFileInvoiceDollar /> },
   { id: "creditNotes", label: "Credit Notes", icon: <FaFileInvoiceDollar /> },
-  { id: "debitNotes", label: "Debit Notes", icon: <FaFileInvoiceDollar /> },
   { id: "reports", label: "Reports", icon: <FaChartBar /> },
   { id: "salesAnalytics", label: "Sales Analytics", icon: <FaChartBar /> },
 ];
@@ -108,8 +107,6 @@ const SalesModule: React.FC = () => {
         return <POS />;
       case "creditNotes":
         return <CreditNotesTable />;
-      case "debitNotes":
-        return <DebitNotesTable />;
       case "reports":
         return <ReportTable />;
       case "salesAnalytics":

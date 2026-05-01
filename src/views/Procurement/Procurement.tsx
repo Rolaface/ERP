@@ -10,6 +10,7 @@ import {
   FaTruckLoading,
   FaLandmark,
   FaCreditCard,
+  FaFileInvoiceDollar
 } from "react-icons/fa";
 import {
   AppPage,
@@ -17,7 +18,8 @@ import {
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
-import AppSkeleton from "../../components/ui/AppSkeleton";
+import DebitNotesTable from "../Sales/DebitNotesTable";
+
 
 const RFQsTable = lazy(() => import("./Rfqs"));
 const PurchaseOrdersTable = lazy(() => import("./PurchaseOrders"));
@@ -51,6 +53,7 @@ const procurementTabs = [
   { id: "orders", label: "Purchase Orders", icon: <FaClipboardList /> },
   { id: "approvals", label: "Approvals", icon: <FaCheckCircle /> },
   { id: "purchase", label: "Purchase Invoice", icon: <FaTruckLoading /> },
+    { id: "debitNotes", label: "Debit Notes", icon: <FaFileInvoiceDollar /> },
   { id: "purchaseAnalytics", label: "Purchase Analytics", icon: <FaTruckLoading /> },
 ];
 
@@ -94,6 +97,7 @@ const Procurement: React.FC = () => {
     purchase: <PurchaseInvoiceTable onAdd={handleAdd} />,
     payments: <Payments />,
     purchaseAnalytics: <PurchaseAnalytics />,
+    debitNotes: <DebitNotesTable/>
   }), [handleAdd]);
 
   const currentTabComponent = tabComponents[activeTab as keyof typeof tabComponents] || <Dashboard />;

@@ -46,7 +46,7 @@ const validate = (form: BankFormData): BankFormErrors => {
     errors.swift_number = "SWIFT number is required.";
   } else if (!/^[A-Z0-9]{8,11}$/.test(form.swift_number.trim().toUpperCase())) {
     errors.swift_number =
-      "SWIFT/BIC must be 8–11 alphanumeric characters (e.g. HDFCINBB).";
+      "SWIFT must be 8–11 alphanumeric characters (e.g. HDFCINBB).";
   }
 
   return errors;
@@ -214,7 +214,7 @@ const BankModal: React.FC<BankModalProps> = ({
         {/* SWIFT Number */}
         <div>
           <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1.5">
-            SWIFT / BIC Number <span className="text-[var(--danger)]">*</span>
+            SWIFT  Number <span className="text-[var(--danger)]">*</span>
           </label>
           <input
             type="text"

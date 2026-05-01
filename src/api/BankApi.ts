@@ -1,8 +1,10 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
-import { ERP_BASE } from "../config/api";
+import { API, ERP_BASE } from "../config/api";
 
 const api = createAxiosInstance(ERP_BASE);
+
+const BANK_URL = API.Bank.Bank;
 
 export interface BankPayload {
   bank_name: string;
@@ -10,66 +12,60 @@ export interface BankPayload {
 }
 
 export interface Bank {
-  name: string;       // Frappe docname — used as the ID for edit/delete
+  name: string;
   bank_name: string;
   swift_number: string;
 }
 
 export interface BankPagination {
-  total_count: number;
-  start: number;
-  page_length: number;
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
 }
+ 
 
 export interface BankListResponse {
   data: Bank[];
   pagination?: BankPagination;
 }
-
-const BANK_BASE = `${ERP_BASE}/api/resource/Bank`;
-
-// ─── GET ALL ──────────────────────────────────────────────────────────────────
+ 
 export async function getAllBanks(
   page = 1,
   pageSize = 10,
 ): Promise<BankListResponse> {
   const start = (page - 1) * pageSize;
-
+ 
   const resp: AxiosResponse = await api.get(
-    `${BANK_BASE}?fields=["name","bank_name","swift_number"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}`,
+    `${BANK_URL}?fields=["name","bank_name","swift_number"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}`,
   );
-
+ 
   return {
     data: resp.data?.data ?? [],
     pagination: resp.data?.pagination,
   };
 }
 
-// ─── GET BY ID ────────────────────────────────────────────────────────────────
-// Response shape: { data: { name, bank_name, swift_number, ... } }
 export async function getBankById(name: string): Promise<Bank> {
-  const resp: AxiosResponse = await api.get(`${BANK_BASE}/${name}`);
+  const resp: AxiosResponse = await api.get(`${BANK_URL}/${name}`);
   return resp.data.data;
 }
 
-// ─── CREATE ───────────────────────────────────────────────────────────────────
-// Response shape: { data: { name, bank_name, swift_number, ... } }
 export async function createBank(payload: BankPayload): Promise<Bank> {
-  const resp: AxiosResponse = await api.post(BANK_BASE, payload);
+  const resp: AxiosResponse = await api.post(BANK_URL, payload);
   return resp.data.data;
 }
 
-// ─── UPDATE ───────────────────────────────────────────────────────────────────
-// Response shape: { data: { name, bank_name, swift_number, ... } }
 export async function updateBank(
   name: string,
   payload: BankPayload,
 ): Promise<Bank> {
-  const resp: AxiosResponse = await api.put(`${BANK_BASE}/${name}`, payload);
+  const resp: AxiosResponse = await api.put(`${BANK_URL}/${name}`, payload);
   return resp.data.data;
 }
 
-// ─── DELETE ───────────────────────────────────────────────────────────────────
 export async function deleteBank(name: string): Promise<void> {
-  await api.delete(`${BANK_BASE}/${name}`);
+  await api.delete(`${BANK_URL}/${name}`);
 }
