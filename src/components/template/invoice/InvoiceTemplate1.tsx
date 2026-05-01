@@ -147,7 +147,7 @@ const payL: string[] = ([
      invoice?.paymentInformation?.swiftCode
     ? `SWIFT: ${invoice.paymentInformation.swiftCode}`
     : null,
-  `Payment Terms: ${invoice?.terms?.selling.payment.notes ?? "-"}`,
+  `Payment Terms: ${invoice?.terms?.selling?.payment?.notes ?? "-"}`,
 ] as (string | null)[]).filter(Boolean) as string[];
 
   const calcBH = (lines: string[], hasBold = false) => {
@@ -239,7 +239,7 @@ const payL: string[] = ([
         ? (item.batchNo as string).slice(0, 16) + ".." : (item.batchNo || "-");
 
       const taxName = item.taxInfo?.[0]?.taxTitle ?? "-";
-      const taxRate = item.taxInfo?.[0]?.totalTaxRate ?? "0";
+      const taxRate = item.taxInfo?.[0]?.totalTaxRate ?? "-";
 
       return [
         idx + 1,
@@ -494,7 +494,7 @@ const taxTotal = Number(invoice.total_tax ?? 0);
     if (selling.cancellation) tLines.push(`Cancellation: ${selling.cancellation}`);
     if (selling.warranty)     tLines.push(`Warranty: ${selling.warranty}`);
     if (selling.liability)    tLines.push(`Liability: ${selling.liability}`);
-    if (selling.payment) {
+    if (selling?.payment) {
       const p = selling.payment;
       if (p.dueDates)    tLines.push(`Payment Due: ${p.dueDates}`);
       if (p.lateCharges) tLines.push(`Late Charges: ${p.lateCharges}`);
