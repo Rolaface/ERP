@@ -31,7 +31,7 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
   initialData,
   isEdit = false,
 }) => {
-  const resolvedModalId = modalId ?? `debit-note-create-${Date.now()}`;
+  const resolvedModalId = modalId ;
 
   const {
     form,

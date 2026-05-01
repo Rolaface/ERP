@@ -269,12 +269,12 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   />
                 </Tooltip>
 
-                <Tooltip content={String(form.onboardingBalance || "0.00")}>
+                <Tooltip content={form.onboardingBalance ? String(form.onboardingBalance) : ""}>
                   <ModalInput
                     label="Onboard Balance"
                     name="onboardingBalance"
                     type="number"
-                    value={form.onboardingBalance}
+                    value={form.onboardingBalance ?? ""}
                     onChange={handleChange}
                     placeholder="0.00"
                     className="no-spinner"

@@ -276,9 +276,9 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
         </div>
       </div>
 
-      <Divider />
 
-  
+
+
       {/* <div className="mb-5">
         <SectionHeading>Finance Book Detail</SectionHeading>
 
@@ -442,7 +442,7 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
         </div>
       </div> */}
 
-      <Divider />
+
 
       {/* ── Accounts ──────────────────────────────────────────────────────── */}
       <div>
@@ -450,15 +450,15 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
 
         <div className="rounded border border-theme mb-2 overflow-x-auto">
           <table className="w-full text-xs border-collapse table-fixed">
-         <colgroup>
-  <col style={{ width: "28px" }} />
-  <col style={{ width: "32px" }} />
-  <col style={{ width: "150px" }} />
-  <col style={{ width: "150px" }} />
-  <col style={{ width: "150px" }} />
-  <col style={{ width: "150px" }} />
-  <col style={{ width: "32px" }} />
-</colgroup>
+            <colgroup>
+              <col style={{ width: "28px" }} />
+              <col style={{ width: "32px" }} />
+              <col style={{ width: "150px" }} />
+              <col style={{ width: "150px" }} />
+              <col style={{ width: "150px" }} />
+              <col style={{ width: "150px" }} />
+              <col style={{ width: "32px" }} />
+            </colgroup>
             <thead>
               <tr className="bg-subtle">
                 <th className="p-2 border-b border-theme">

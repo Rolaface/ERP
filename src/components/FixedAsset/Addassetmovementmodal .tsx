@@ -54,24 +54,7 @@ const EditableCell: React.FC<{
   />
 );
 
-/* ─────────────────────────────────────────────
-   FIELD WRAPPER
-───────────────────────────────────────────── */
-const FieldBox: React.FC<{ children: React.ReactNode; className?: string }> = ({
-  children,
-  className = "",
-}) => (
-  <div
-    className={`rounded-lg border transition-colors ${className}`}
-    style={{
-      borderColor: "var(--border)",
-      background: "var(--card)",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-    }}
-  >
-    {children}
-  </div>
-);
+
 
 /* ─────────────────────────────────────────────
    SECTION LABEL
@@ -100,9 +83,9 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
 }) => {
   const resolvedModalId = useRef(
     modalId ??
-      (mode === "edit"
-        ? `asset-movement-edit-${Date.now()}`
-        : `asset-movement-create-${Date.now()}`),
+    (mode === "edit"
+      ? `asset-movement-edit-${Date.now()}`
+      : `asset-movement-create-${Date.now()}`),
   ).current;
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
@@ -218,7 +201,7 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
       icon={ArrowRightLeft}
       footer={footerContent}
       maxWidth="5xl"
-      height="80vh"
+      height="87vh"
     >
       <div className="h-full flex flex-col" onChange={markDirty}>
         {/* ── Tabs ── */}
@@ -263,16 +246,16 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
                     Transaction Date{" "}
                     <span style={{ color: "var(--danger)" }}>*</span>
                   </span>
-                  <FieldBox>
-                    <div className="px-1.5 py-1.5">
-                      <DatePickerInput
-                        name="transactionDate"
-                        value={form.transactionDate}
-                        onChange={handleDateChange}
-                        required
-                      />
-                    </div>
-                  </FieldBox>
+
+                  <div className="px-1.5 py-1.5">
+                    <DatePickerInput
+                      name="transactionDate"
+                      value={form.transactionDate}
+                      onChange={handleDateChange}
+                      required
+                    />
+                  </div>
+
                 </div>
 
                 {/* Purpose */}
@@ -283,19 +266,19 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
                   >
                     Purpose <span style={{ color: "var(--danger)" }}>*</span>
                   </span>
-                  <FieldBox>
-                    <div className="px-1.5 py-1.5">
-                      <ModalSelect
-                        label=""
-                        name="purpose"
-                        value={form.purpose}
-                        onChange={handleFormChange}
-                        options={PURPOSE_OPTIONS}
-                        className="w-full border-none outline-none text-[11px] bg-transparent"
-                        style={{ color: "var(--text)" }}
-                      />
-                    </div>
-                  </FieldBox>
+
+                  <div className="px-1.5 py-1.5">
+                    <ModalSelect
+                      label=""
+                      name="purpose"
+                      value={form.purpose}
+                      onChange={handleFormChange}
+                      options={PURPOSE_OPTIONS}
+                      className="w-full  text-[11px] "
+                      style={{ color: "var(--text)" }}
+                    />
+                  </div>
+
                 </div>
 
                 {/* Reference Number */}
@@ -306,17 +289,17 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
                   >
                     Reference Number
                   </span>
-                  <FieldBox>
-                    <div className="px-1.5 py-1.5">
-                      <ModalInput
-                        label=""
-                        name="referenceNumber"
-                        value={form.referenceNumber}
-                        onChange={handleFormChange}
-                        placeholder="Optional"
-                      />
-                    </div>
-                  </FieldBox>
+
+                  <div className="px-1.5 py-1.5">
+                    <ModalInput
+                      label=""
+                      name="referenceNumber"
+                      value={form.referenceNumber}
+                      onChange={handleFormChange}
+                      placeholder="Optional"
+                    />
+                  </div>
+
                 </div>
 
                 {/* Reference Date */}
@@ -327,15 +310,15 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
                   >
                     Reference Date
                   </span>
-                  <FieldBox>
-                    <div className="px-1.5 py-1.5">
-                      <DatePickerInput
-                        name="referenceDate"
-                        value={form.referenceDate}
-                        onChange={handleDateChange}
-                      />
-                    </div>
-                  </FieldBox>
+
+                  <div className="px-1.5 py-1.5">
+                    <DatePickerInput
+                      name="referenceDate"
+                      value={form.referenceDate}
+                      onChange={handleDateChange}
+                    />
+                  </div>
+
                 </div>
               </div>
 
@@ -632,7 +615,7 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
                   </div>
                 </div>
 
-              
+
               </div>
             </div>
           )}

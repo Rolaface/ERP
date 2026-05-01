@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-import CreateCreditNoteModal from "./CreateCreditNoteModal";
+import {openCreditNoteModal} from "../../store/modalStore";
 import { getAllCreditNotes, deleteCreditNote } from "../../api/CreditNoteapi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -24,7 +24,7 @@ const CreditNotesTable: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [editData, setEditData] = useState<any | null>(null);
+
 
   // ── Search (server) ───────────────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,7 +34,7 @@ const CreditNotesTable: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // ── Modals ────────────────────────────────────────────────────────────────
-  const [createModals, setCreateModals] = useState<{ id: string }[]>([]);
+ 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
@@ -218,25 +218,27 @@ const CreditNotesTable: React.FC = () => {
     }
   };
 
-  const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    try {
-      showLoading("Loading Credit Note...");
-      const res = await getCreditNoteById(note.noteNo);
-      console.log("RAW res:", res);
-      closeSwal();
+const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
+  e?.stopPropagation();
 
-      const doc = res?.data;
-      if (!doc) {
-        showApiError("Credit Note data could not be loaded");
-        return;
-      }
-      setEditData(doc);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
+  try {
+    showLoading("Loading Credit Note...");
+    const res = await getCreditNoteById(note.noteNo);
+    closeSwal();
+
+    const doc = res?.data;
+
+    if (!doc) {
+      showApiError("Credit Note data could not be loaded");
+      return;
     }
-  };
+
+    openCreditNoteModal(doc, true); 
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   const handleExportExcel = async () => {
     try {
@@ -418,7 +420,8 @@ const CreditNotesTable: React.FC = () => {
         onSearch={(q) => { setSearchTerm(q); setPage(1); }}
         enableAdd
         addLabel="Add Credit Note"
-        onAdd={() => setCreateModals((prev) => [...prev, { id: `credit-note-create-${Date.now()}` }])}
+        onAdd={() => openCreditNoteModal()}
+       
         emptyMessage="No credit notes found"
         enableColumnSelector
         enableExport
@@ -435,40 +438,11 @@ const CreditNotesTable: React.FC = () => {
         onSortChange={handleSortChange}
       />
 
-      <InvoiceDetailsModal
-        open={detailsOpen}
-        invoiceId={detailsId}
-        onClose={() => { setDetailsOpen(false); setDetailsId(null); }}
-        onOpenReceiptPdf={handleOpenReceipt}
-      />
+      
 
-      {createModals.map((modal) => (
-        <CreateCreditNoteModal
-          key={modal.id}
-          modalId={modal.id}
-          isOpen={true}
-          onClose={() => setCreateModals((prev) => prev.filter((m) => m.id !== modal.id))}
-          onSubmit={(payload) => {
-            console.log("Credit Note Payload:", payload);
-            setCreateModals((prev) => prev.filter((m) => m.id !== modal.id));
-            fetchCreditNotes();
-          }}
-          invoiceId={data.length > 0 ? data[0].invoiceNo : ""}
-        />
-      ))}
+     
 
-      {editData && (
-        <CreateCreditNoteModal
-          isOpen={true}
-          isEdit={true}
-          initialData={editData}
-          onClose={() => setEditData(null)}
-          onSubmit={() => {
-            setEditData(null);
-            fetchCreditNotes();
-          }}
-        />
-      )}
+     
     </div>
   );
 };

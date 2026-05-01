@@ -892,20 +892,20 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
                     ]}
                     className="w-full border border-theme rounded text-[11px] text-main bg-card"
                   />
-                 <SearchSelect2
-  label="Custodian"
-  value={form.custodianLabel || ""}
-  fetchOptions={getEmployeeOptions}
-  onChange={(value, option) => {
-    setForm((prev) => ({
-      ...prev,
-      custodian: value,         
-      custodianLabel: option.label, 
-    }));
-    markDirty();
-  }}
-  placeholder="Search employee..."
-/>
+                  <SearchSelect2
+                    label="Custodian"
+                    value={form.custodianLabel || ""}
+                    fetchOptions={getEmployeeOptions}
+                    onChange={(value, option) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        custodian: value,
+                        custodianLabel: option.label,
+                      }));
+                      markDirty();
+                    }}
+                    placeholder="Search employee..."
+                  />
                   <ModalInput
                     label="Department"
                     name="department"
