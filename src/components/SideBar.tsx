@@ -84,19 +84,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const setCompanyInfo = useCompanyStore((s) => s.setCompanyInfo);
   const location = useLocation();
   const [company, setCompany] = useState<{ name: string; logo?: string } | null>(null);
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
 
-  /* derive user initials */
-  const username = localStorage.getItem("username") || "Admin User";
-  const userInitials = username
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+const username = user?.fullName || user?.username || "User";
+const userInitials = username
+  .split(" ")
+  .map((n: string) => n[0])
+  .join("")
+  .toUpperCase()
+  .slice(0, 2);
 
-  /* company initials fallback */
+  
   const companyInitials = company?.name
     ? company.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "CO";
@@ -317,7 +316,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             >
               <span className="truncate text-sm font-bold text-main">{username}</span>
               <span className="text-[10px] font-black uppercase tracking-tight text-muted">
-                Administrator
+                  {user?.username || "User"}
               </span>
             </div>
 
