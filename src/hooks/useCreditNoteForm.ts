@@ -57,6 +57,8 @@ export function useCreditNoteForm(
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
 
+  // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   useEffect(() => {
     if (!initialData) return;
@@ -77,6 +79,7 @@ export function useCreditNoteForm(
         warehouse: it.warehouse || "",
       })),
     });
+    // initialData population is not a user edit, so we do NOT markDirty here
   }, [initialData]);
 
   // ── Invoice search ───────────────────────────────────────────────────────
@@ -107,6 +110,7 @@ export function useCreditNoteForm(
       customer: { id: opt.customerId, name: opt.customerName },
       items: [],
     }));
+    markDirty(); // user explicitly chose an invoice — mark dirty
 
     setInvoiceLoading(true);
     try {
@@ -139,7 +143,7 @@ export function useCreditNoteForm(
     } finally {
       setInvoiceLoading(false);
     }
-  }, []);
+  }, [markDirty]);
 
   // ── Item mutations ───────────────────────────────────────────────────────
 
@@ -150,8 +154,9 @@ export function useCreditNoteForm(
         items[index] = { ...items[index], [field]: value };
         return { ...prev, items };
       });
+      markDirty();
     },
-    [],
+    [markDirty],
   );
 
   const handleWarehouseDefault = useCallback(
@@ -162,6 +167,7 @@ export function useCreditNoteForm(
         items[index] = { ...items[index], warehouse };
         return { ...prev, items };
       });
+      // warehouse auto-default is not a user edit — no markDirty
     },
     [],
   );
@@ -171,15 +177,20 @@ export function useCreditNoteForm(
       ...prev,
       items: prev.items.filter((_, i) => i !== index),
     }));
-  }, []);
+    markDirty();
+  }, [markDirty]);
 
   const toggleUpdateStock = useCallback(() => {
     setForm((prev) => ({ ...prev, update_stock: !prev.update_stock }));
-  }, []);
+    markDirty();
+  }, [markDirty]);
 
   // ── Reset ────────────────────────────────────────────────────────────────
 
-  const reset = useCallback(() => setForm(EMPTY_FORM), []);
+  const reset = useCallback(() => {
+    setForm(EMPTY_FORM);
+    resetDirty();
+  }, [resetDirty]);
 
   // ── Validation ───────────────────────────────────────────────────────────
 
@@ -195,6 +206,7 @@ export function useCreditNoteForm(
     return null;
   }, [form]);
 
+  // ── Submit ───────────────────────────────────────────────────────────────
 
   const handleSubmit = useCallback(
     async (e?: React.FormEvent) => {
@@ -223,62 +235,63 @@ export function useCreditNoteForm(
         })),
       };
 
-    setSaving(true);
-    try {
-      const res = isEdit && initialData?.name
-        ? await updateCreditNote(initialData.name, {
-            is_return: 1,
-            return_against: form.return_against,
-            customer: form.customer!.id,
-            company: companyName,
-            update_stock: form.update_stock ? 1 : 0,
-            update_outstanding_for_self: 1,
-            items: form.items.map((it) => ({
-              item_code: it.item_code,
-              qty: Number(it.qty),
-              rate: Number(it.rate),
-              ...(it.batch_no ? { batch_no: it.batch_no } : {}),
-              warehouse: it.warehouse,
-            })),
-          })
-        : await createCreditNote(payload);
+      setSaving(true);
+      try {
+        const res = isEdit && initialData?.name
+          ? await updateCreditNote(initialData.name, {
+              is_return: 1,
+              return_against: form.return_against,
+              customer: form.customer!.id,
+              company: companyName,
+              update_stock: form.update_stock ? 1 : 0,
+              update_outstanding_for_self: 1,
+              items: form.items.map((it) => ({
+                item_code: it.item_code,
+                qty: Number(it.qty),
+                rate: Number(it.rate),
+                ...(it.batch_no ? { batch_no: it.batch_no } : {}),
+                warehouse: it.warehouse,
+              })),
+            })
+          : await createCreditNote(payload);
 
-      if (!res || ![200, 201].includes(res.status_code)) {
-        const action = isEdit ? "update" : "creation";
-        showApiError(res?.message ?? `Credit note ${action} failed`);
-        return;
-      }
-
-      if (res._server_messages) {
-        try {
-          const msgs: any[] = JSON.parse(res._server_messages);
-          msgs.forEach((raw) => {
-            try {
-              const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-              console.warn("[CreditNote server message]", parsed?.message ?? parsed);
-            } catch {
-              console.warn("[CreditNote server message]", raw);
-            }
-          });
-        } catch {
-          console.warn("[CreditNote server messages]", res._server_messages);
+        if (!res || ![200, 201].includes(res.status_code)) {
+          const action = isEdit ? "update" : "creation";
+          showApiError(res?.message ?? `Credit note ${action} failed`);
+          return;
         }
-      }
 
-      showSuccess(res.message);
-      onSuccess?.(res.data);
-      onClose?.();
-      useDataRefreshStore
-              .getState()
-              .triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
-    } catch (err: any) {
-      console.error("Credit note save failed", err);
-      showApiError(err);
-    } finally {
-      setSaving(false);
-    }
+        if (res._server_messages) {
+          try {
+            const msgs: any[] = JSON.parse(res._server_messages);
+            msgs.forEach((raw) => {
+              try {
+                const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+                console.warn("[CreditNote server message]", parsed?.message ?? parsed);
+              } catch {
+                console.warn("[CreditNote server message]", raw);
+              }
+            });
+          } catch {
+            console.warn("[CreditNote server messages]", res._server_messages);
+          }
+        }
+
+        showSuccess(res.message);
+        resetDirty(); // clear dirty flag on successful save
+        onSuccess?.(res.data);
+        onClose?.();
+        useDataRefreshStore
+          .getState()
+          .triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
+      } catch (err: any) {
+        console.error("Credit note save failed", err);
+        showApiError(err);
+      } finally {
+        setSaving(false);
+      }
     },
-    [saving, validate, form, companyName, onSuccess, onClose, isEdit, initialData],
+    [saving, validate, form, companyName, onSuccess, onClose, isEdit, initialData, resetDirty],
   );
 
   // ── Derived ──────────────────────────────────────────────────────────────
@@ -302,5 +315,9 @@ export function useCreditNoteForm(
     reset,
     handleSubmit,
     validate,
+    // expose guard helpers so the modal can wire up close protection
+    markDirty,
+    resetDirty,
+    handleCloseWithConfirm,
   };
 }
