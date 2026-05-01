@@ -478,7 +478,7 @@ export const API = {
       update:   `${ERP_BASE}/api/resource/Salary Component`,  
       delete:   `${ERP_BASE}/api/resource/Salary Component`,   
     },
- 
+
     // Salary Structure
     salaryStructure: {
       getAll:   `${ERP_BASE}/api/resource/Salary Structure`,
@@ -496,6 +496,13 @@ export const API = {
       delete: `${ERP_BASE}/api/resource/Income Tax Slab`,
     },
   },
+    leaveType: {
+      getAll:   `${ERP_BASE}/api/resource/Leave Type`,
+      getById:  `${ERP_BASE}/api/resource/Leave Type`,
+      create:   `${ERP_BASE}/api/resource/Leave Type`,
+      update:   `${ERP_BASE}/api/resource/Leave Type`,
+      delete:   `${ERP_BASE}/api/resource/Leave Type`,
+    },
  
 
   /* =========================
