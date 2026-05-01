@@ -117,7 +117,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   
-  const navigate = useNavigate();
+ 
 
   // --- Pagination States ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -243,6 +243,18 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       </div>
     );
   }
+const formatDate = (date?: string | Date) => {
+  if (!date) return "";
+
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
 
   const jeColumns: Column<JournalEntry>[] = [
     {
@@ -261,7 +273,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       header: "Posting Date",
       align: "left",
       render: (row: JournalEntry) => (
-        <span className="text-xs text-muted">{row.posting_date || "—"}</span>
+        <span className="text-xs text-muted">{formatDate(row.posting_date) || "—"}</span>
       ),
     },
     {

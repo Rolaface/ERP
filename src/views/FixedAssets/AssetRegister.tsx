@@ -233,7 +233,6 @@ const handleView = (row: Asset) => {
   openFixedAssetModal(
     { assetName: row.id },
     true,
-  // optional if you support view mode
   );
 };
 
@@ -262,6 +261,19 @@ const handleDeleteAsset = async (id: string, e: React.MouseEvent) => {
 }); 
   }
 };
+const formatDate = (date: string | Date) => {
+  if (!date) return "";
+
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  // Date object — use local methods
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
 
   const columns: Column<Asset>[] = [
     {
@@ -282,6 +294,7 @@ const handleDeleteAsset = async (id: string, e: React.MouseEvent) => {
       key: "purchaseDate",
       header: "Purchase Date",
       sortable: true,
+      render: (row) => formatDate(row.purchaseDate),
     },
     {
       key: "value",
