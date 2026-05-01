@@ -487,6 +487,14 @@ export const API = {
       update:   `${ERP_BASE}/api/resource/Salary Structure`,   
       delete:   `${ERP_BASE}/api/resource/Salary Structure`,  
     },
+
+    incomeTaxSlab: {
+      getAll: `${ERP_BASE}/api/resource/Income Tax Slab`,
+      getById: `${ERP_BASE}/api/resource/Income Tax Slab`,
+      create: `${ERP_BASE}/api/resource/Income Tax Slab`,
+      update: `${ERP_BASE}/api/resource/Income Tax Slab`,
+      delete: `${ERP_BASE}/api/resource/Income Tax Slab`,
+    },
   },
  
 

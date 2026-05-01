@@ -304,21 +304,21 @@ export const SalaryStructureModal: React.FC<Props> = ({
                       {globalIdx + 1}
                     </span>
                     <SearchSelect2
-  label=""
-  value={row.salary_component}
-  placeholder="Search component..."
-  fetchOptions={(q) =>
-    searchSalaryComponents(row.type, q).then((data) =>
-      data.map((c) => ({
-        label: c.name,
-        value: c.name,
-      }))
-    )
-  }
-  onChange={(value) =>
-    updateRow(globalIdx, "salary_component", value)
-  }
-/>
+                      label=""
+                      value={row.salary_component}
+                      placeholder="Search component..."
+                      fetchOptions={(q) =>
+                        searchSalaryComponents(row.type, q).then((data) =>
+                          data.map((c: { name: string }) => ({
+                            label: c.name,
+                            value: c.name,
+                          })),
+                        )
+                      }
+                      onChange={(value) =>
+                        updateRow(globalIdx, "salary_component", value)
+                      }
+                    />
                     <ModalSelect
                       label=""
                       value={row.type}
