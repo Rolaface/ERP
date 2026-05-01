@@ -68,18 +68,18 @@ export const DepartmentModal: React.FC<Props> = ({
       setForm(
         initialData
           ? {
-              parent_department:
-                initialData.parent_department ?? "All Departments",
-              department_name:
-                initialData.department_name ?? initialData.name ?? "",
-             
-              is_group: initialData.is_group ?? 0,
-              leave_block_list: initialData.leave_block_list ?? "",
-              leave_approvers: initialData.leave_approvers ?? [],
-              expense_approvers: initialData.expense_approvers ?? [],
-              shift_request_approver:
-                initialData.shift_request_approver ?? [],
-            }
+            parent_department:
+              initialData.parent_department ?? "All Departments",
+            department_name:
+              initialData.department_name ?? initialData.name ?? "",
+
+            is_group: initialData.is_group ?? 0,
+            leave_block_list: initialData.leave_block_list ?? "",
+            leave_approvers: initialData.leave_approvers ?? [],
+            expense_approvers: initialData.expense_approvers ?? [],
+            shift_request_approver:
+              initialData.shift_request_approver ?? [],
+          }
           : { ...EMPTY },
       );
       setLeaveApprovers(approversToText(initialData?.leave_approvers));
@@ -99,7 +99,7 @@ export const DepartmentModal: React.FC<Props> = ({
       showValidationError("Department name is required");
       return;
     }
-    
+
 
     try {
       setSaving(true);
@@ -160,8 +160,8 @@ export const DepartmentModal: React.FC<Props> = ({
       height="auto"
       footer={footer}
     >
-      <div className="space-y-4 pb-1">
-        <div className="grid grid-cols-1 gap-4">
+      <div className="bg-app">
+        <div className="flex items-end gap-3 flex-nowrap overflow-x-auto">
           <ModalInput
             label="Department Name"
             value={form.department_name}
@@ -169,33 +169,34 @@ export const DepartmentModal: React.FC<Props> = ({
             onChange={(e) => set("department_name", e.target.value)}
             required
           />
-        </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <ModalInput
-            label="Parent Department"
-            value={form.parent_department ?? ""}
-            onChange={(e) => set("parent_department", e.target.value)}
-          />
-          <ModalInput
-            label="Leave Block List"
-            value={form.leave_block_list ?? ""}
-            onChange={(e) => set("leave_block_list", e.target.value)}
-          />
-        </div>
 
-        <div className="flex">
-          <div className="rounded-lg border border-[var(--border)] bg-app px-3 py-2">
-          <YesNoCheckbox
-            name="is_group"
-            label="Is Group"
-            value={form.is_group ? "Y" : "N"}
-            onChange={(_, value) => set("is_group", value === "Y" ? 1 : 0)}
-          />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <ModalInput
+              label="Parent Department"
+              value={form.parent_department ?? ""}
+              onChange={(e) => set("parent_department", e.target.value)}
+            />
+            <ModalInput
+              label="Leave Block List"
+              value={form.leave_block_list ?? ""}
+              onChange={(e) => set("leave_block_list", e.target.value)}
+            />
+          </div>
+
+
+          <div className="">
+            <YesNoCheckbox
+              name="is_group"
+              label="Is Group"
+              value={form.is_group ? "Y" : "N"}
+              onChange={(_, value) => set("is_group", value === "Y" ? 1 : 0)}
+            />
+
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mt-7">
           <ModalInput
             label="Leave Approvers"
             value={leaveApprovers}

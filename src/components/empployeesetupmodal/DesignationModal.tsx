@@ -43,10 +43,10 @@ export const DesignationModal: React.FC<Props> = ({
       setForm(
         initialData
           ? {
-              designation_name:
-                initialData.designation_name ?? initialData.name ?? "",
-              description: initialData.description ?? "",
-            }
+            designation_name:
+              initialData.designation_name ?? initialData.name ?? "",
+            description: initialData.description ?? "",
+          }
           : { ...EMPTY },
       );
     }
@@ -96,7 +96,7 @@ export const DesignationModal: React.FC<Props> = ({
 
   return (
     <MinimizableModal modalId={modalId} isOpen={isOpen} onClose={onClose} title={isEdit ? "Edit Designation" : "New Designation"} subtitle="Configure employee role classification" icon={Briefcase} maxWidth="xl" height="auto" footer={footer}>
-      <div className="space-y-5 pb-2">
+      <div className="flex items-end gap-3 flex-nowrap overflow-x-auto">
         <ModalInput label="Designation Name" value={form.designation_name} disabled={isEdit} onChange={(e) => set("designation_name", e.target.value)} required />
         <ModalInput label="Description" value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} />
       </div>
