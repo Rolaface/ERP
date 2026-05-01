@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import { openBankAccountModal } from "../../store/modalStore";
-
+import { Copy } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -14,11 +14,10 @@ import {
 } from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
 
-const mask = (val?: string | number | null) => {
-  const str = val ? String(val) : "";
-  if (!str) return "—";
-  if (str.length <= 4) return "•".repeat(str.length);
-  return "•".repeat(str.length - 4) + str.slice(-4);
+const mask = (val?: string) => {
+  if (!val) return "—";
+  if (val.length <= 4) return "*".repeat(val.length);
+  return "*".repeat(val.length - 4) + val.slice(-4);
 };
 
 const BankDetails: React.FC = () => {
@@ -136,89 +135,118 @@ const BankDetails: React.FC = () => {
     {
       key: "dateAdded",
       header: "Date Added",
-      render: (row) =>
-        row.dateAdded ? formatDate(row.dateAdded) : "—",
+      tooltip: (row) => row.dateAdded ? formatDate(row.dateAdded) : "—",
+      render: (row) => (
+        <div className="py-1.5">
+          <span className="block">{row.dateAdded ? formatDate(row.dateAdded) : "—"}</span>
+        </div>
+      ),
+    },
+    {
+      key: "accountFor",
+      header: "Acc For",
+      tooltip: (row) =>
+        Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—",
+      render: (row) => (
+        <div className="py-1.5">
+          <span className="block">
+            {Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—"}
+          </span>
+        </div>
+      ),
     },
     {
       key: "bankName",
       header: "Bank",
+      tooltip: (row) => row.bankName || "—",
       render: (row) => (
         <div className="py-1.5">
-        <span className="font-semibold">{row.bankName || "—"}</span>
+          <span className="block font-semibold">{row.bankName}</span>
         </div>
       ),
     },
     {
       key: "accountNo",
-      header: "Account No",
+      header: "Acc No",
+      tooltip: (row) => row.accountNo || "—",
       render: (row) => (
-          <div className="py-1.5">
-        <span
-          title={row.accountNo ? String(row.accountNo) : ""}
-          className="cursor-pointer"
-        >
-          {mask(row.accountNo)}
-        </span>
+        <div className="py-1.5">
+          <span className="inline-flex items-center gap-1.5">
+            <code className="tracking-widest text-xs">{mask(row.accountNo)}</code>
+            {row.accountNo && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(row.accountNo!);
+                }}
+                className="text-gray-400 hover:text-blue-600 transition-colors cursor-pointer"
+                title="Copy account number"
+              >
+                <Copy size={13} />
+              </button>
+            )}
+          </span>
         </div>
       ),
     },
     {
       key: "accountHolderName",
-      header: "Account Holder",
+      header: "Acc Holder",
+      tooltip: (row) => String(row.accountHolderName || "—"),
       render: (row) => (
         <div className="py-1.5">
-          <span>{row.accountHolderName || "—"}</span>
+          <span className="block">{row.accountHolderName || "—"}</span>
         </div>
       ),
     },
     {
       key: "sortCode",
-      header: "IFSC / Sort Code",
+      header: "IFSC/Sort",
+      tooltip: (row) => row.sortCode || "—",
       render: (row) => (
-          <div className="py-1.5">
-        <span
-          title={row.sortCode ? String(row.sortCode) : ""}
-          className="cursor-pointer"
-        >
-          {mask(row.sortCode)}
-        </span>
+        <div className="py-1.5">
+          <span className="block">{(row.sortCode)}</span>
         </div>
       ),
     },
     {
       key: "currency",
       header: "Currency",
-      render: (row) =>
+      tooltip: (row) => row.currency || "—",
+      render: (row) => (
         <div className="py-1.5">
-          <span>{row.currency || "—"}</span>
-        </div>,
+          <span className="block font-semibold">{row.currency}</span>
+        </div>
+      ),
     },
-
     {
       key: "isDefault",
       header: "Default",
-      render: (row) =>
-        row.isDefault ? (
-            <div className="py-1.5">
-          <span className="text-green-600 font-semibold">Yes</span>
-          </div>
-        ) : (
-          "—"
-        ),
+      tooltip: (row) => (row.isDefault ? "Default account" : "Not default"),
+      render: (row) => (
+        <div className="py-1.5">
+          {row.isDefault ? (
+            <span className="text-green-600 font-semibold">Yes</span>
+          ) : (
+            <span className="block">—</span>
+          )}
+        </div>
+      ),
     },
     {
       key: "isDisabled",
       header: "Status",
-      render: (row) =>
-        row.isDisabled ? (
-          <div className="py-1.5">
+      tooltip: (row) => (row.isDisabled ? "Disabled" : "Active"),
+      render: (row) => (
+        <div className="py-1.5">
+          {row.isDisabled ? (
             <span className="text-red-500 font-semibold">Disabled</span>
-          </div>
-        ) : (
-          <div className="py-1.5">
+          ) : (
             <span className="text-green-600">Active</span>
-          </div>
-        ),
+          )}
+        </div>
+      ),
     },
     {
       key: "actions",
@@ -228,18 +256,9 @@ const BankDetails: React.FC = () => {
         <ActionGroup>
           <ActionButton
             type="edit"
-            onClick={() => {
-              openBankAccountModal(
-                row, // initial data
-                true, // edit mode
-                {
-                  onSuccess: () => fetchAccounts(),
-                },
-              );
-            }}
+            onClick={() => console.log("EDIT:", row)}
             iconOnly
           />
-
           <ActionMenu
             customActions={[
               {
@@ -260,7 +279,7 @@ const BankDetails: React.FC = () => {
   ];
 
   return (
-    <div className="p-8">
+    <div className="p-2">
       <Table
         columns={columns}
         data={filteredData}
@@ -285,13 +304,14 @@ const BankDetails: React.FC = () => {
         addLabel="Add Bank Account"
         onAdd={() => {
           openBankAccountModal(
-            null, // no initial data
-            false, // create mode
+            { accountFor: "Company" },
+            false,
             {
               onSuccess: () => fetchAccounts(),
             },
           );
         }}
+
       />
 
       {!loading && filteredData.length === 0 && (

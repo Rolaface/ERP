@@ -188,7 +188,7 @@ export async function updateBankAccountStatus(
       payload
     );
 
-    const res = resp?.data?.message;
+    const res = resp?.data;
 
     if (res?.status_code !== 200) {
       throw new Error(res?.message || "Failed to update bank status");
