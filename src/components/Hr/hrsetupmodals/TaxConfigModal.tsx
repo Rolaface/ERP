@@ -72,28 +72,28 @@ export const TaxConfigModal: React.FC<Props> = ({
       setForm(
         initialData
           ? {
-              name: initialData.name ?? "",
-              effective_from: initialData.effective_from ?? "",
-              standard_tax_exemption_amount:
-                initialData.standard_tax_exemption_amount ?? 0,
-              allow_tax_exemption: initialData.allow_tax_exemption ?? 0,
-              tax_relief_limit: initialData.tax_relief_limit ?? 0,
-              disabled: initialData.disabled ?? 0,
-              slabs: initialData.slabs?.length
-                ? [...initialData.slabs]
-                : DEFAULT_SLABS,
-              other_taxes_and_charges:
-                initialData.other_taxes_and_charges?.length
-                  ? [...initialData.other_taxes_and_charges]
-                  : DEFAULT_CHARGES,
-            }
+            name: initialData.name ?? "",
+            effective_from: initialData.effective_from ?? "",
+            standard_tax_exemption_amount:
+              initialData.standard_tax_exemption_amount ?? 0,
+            allow_tax_exemption: initialData.allow_tax_exemption ?? 0,
+            tax_relief_limit: initialData.tax_relief_limit ?? 0,
+            disabled: initialData.disabled ?? 0,
+            slabs: initialData.slabs?.length
+              ? [...initialData.slabs]
+              : DEFAULT_SLABS,
+            other_taxes_and_charges:
+              initialData.other_taxes_and_charges?.length
+                ? [...initialData.other_taxes_and_charges]
+                : DEFAULT_CHARGES,
+          }
           : {
-              ...EMPTY,
-              slabs: DEFAULT_SLABS.map((row) => ({ ...row })),
-              other_taxes_and_charges: DEFAULT_CHARGES.map((row) => ({
-                ...row,
-              })),
-            },
+            ...EMPTY,
+            slabs: DEFAULT_SLABS.map((row) => ({ ...row })),
+            other_taxes_and_charges: DEFAULT_CHARGES.map((row) => ({
+              ...row,
+            })),
+          },
       );
     }
   }, [isOpen, initialData]);
@@ -217,57 +217,53 @@ export const TaxConfigModal: React.FC<Props> = ({
       footer={footer}
     >
       <div className="bg-app">
-        <div className="grid grid-cols-6 gap-1">
-          <div className="w-[50px]">
+        <div className="flex items-end gap-3 flex-nowrap overflow-x-auto">
+          <div className="w-[150px]">
             <ModalInput
               label="Name"
               value={form.name}
               disabled={isEdit}
               onChange={(e) => set("name", e.target.value)}
-              placeholder="India New Regime 2026"
               required
             />
           </div>
-          
-        </div>
 
-         <div className="w-[50px]">
-          <ModalInput
-            label="Effective From"
-            type="date"
-            name="effective_from"
-            value={form.effective_from}
-            onChange={(e) => set("effective_from", e.target.value)}
-            required
-          />
+          <div className="w-[140px]">
+            <ModalInput
+              label="Effective From"
+              type="date"
+              name="effective_from"
+              value={form.effective_from}
+              onChange={(e) => set("effective_from", e.target.value)}
+              required
+            />
           </div>
 
-           <div className="w-[50px]">
-          <ModalInput
-            label="Exemption Amount"
-            type="number"
-            value={form.standard_tax_exemption_amount}
-            onChange={(e) =>
-              set(
-                "standard_tax_exemption_amount",
-                Number(e.target.value) || 0,
-              )
-            }
-          />
+          <div className="w-[120px] ">
+            <ModalInput
+              label="Exemption Amount"
+              type="number"
+              value={form.standard_tax_exemption_amount}
+              className="no-spinner"
+              onChange={(e) =>
+                set("standard_tax_exemption_amount", Number(e.target.value) || 0)
+              }
+            />
           </div>
 
-           <div className="w-[50px]">
-          <ModalInput
-            label="Tax Relief Limit"
-            type="number"
-            value={form.tax_relief_limit}
-            onChange={(e) =>
-              set("tax_relief_limit", Number(e.target.value) || 0)
-            }
-          />
+          <div className="w-[120px]">
+            <ModalInput
+              label="Tax Relief Limit"
+              type="number"
+              value={form.tax_relief_limit}
+              className="no-spinner"
+              onChange={(e) =>
+                set("tax_relief_limit", Number(e.target.value) || 0)
+              }
+            />
           </div>
-          
-          <div className="flex items-end">
+
+          <div className="w-[80px] ">
             <YesNoCheckbox
               name="active"
               label="Active"
@@ -275,20 +271,20 @@ export const TaxConfigModal: React.FC<Props> = ({
               onChange={(_, value) => set("disabled", value === "Y" ? 0 : 1)}
             />
           </div>
-        
 
-        <div className="">
-          <YesNoCheckbox
-            name="allow_tax_exemption"
-            label="Allow Tax Exemption"
-            value={form.allow_tax_exemption ? "Y" : "N"}
-            onChange={(_, value) =>
-              set("allow_tax_exemption", value === "Y" ? 1 : 0)
-            }
-          />
+          <div className="w-[100px]">
+            <YesNoCheckbox
+              name="allow_tax_exemption"
+              label="Allow Tax Exemption"
+              value={form.allow_tax_exemption ? "Y" : "N"}
+              onChange={(_, value) =>
+                set("allow_tax_exemption", value === "Y" ? 1 : 0)
+              }
+            />
+          </div>
         </div>
 
-        <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+        <div className="rounded-xl border border-[var(--border)] overflow-hidden mt-6">
           <div className="flex items-center justify-between border-b border-[var(--border)] bg-app px-4 py-2.5">
             <span className="text-xs font-semibold text-main">Slabs</span>
             <button
@@ -366,6 +362,6 @@ export const TaxConfigModal: React.FC<Props> = ({
           </div>
         </div>
       </div>
-    </MinimizableModal>
+    </MinimizableModal >
   );
 };
