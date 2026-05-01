@@ -18,5 +18,6 @@ export const ROUTES = {
    PaymentEntry : "/payment-entry",
     CurrencyConversion : "/currency-conversion",
     CustomerGroup : "/customer-group",
-    taxMaintenance : "/Tax-Maintenance"
+    taxMaintenance : "/Tax-Maintenance",
+    Bank : "/bank"
 };

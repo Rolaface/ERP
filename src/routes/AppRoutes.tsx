@@ -33,6 +33,7 @@ const CustomerGroup = lazy(
 const TaxMaintenance = lazy(
   () => import("../views/TaxMaintaince/taxmaintaince")
 )
+const Bank = lazy(() => import("../views/BankAccount/Bank"))
 import { Toaster } from "react-hot-toast";
 import ResetPassword from "../ResetPassword";
 
@@ -81,6 +82,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/customer-group" element={<CustomerGroup />} />
             <Route path="/ledger" element={<GLView />} />
             <Route path="/Tax-Maintenance" element={<TaxMaintenance />} />
+            <Route path="/bank" element={<Bank />} />
 
             {/* Catch-all for unknown routes - redirect to dashboard */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

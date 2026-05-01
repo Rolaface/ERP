@@ -112,6 +112,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "dateAdded",
       header: "Date Added",
+       align: "center",
       tooltip: (row) => row.dateAdded ? formatDate(row.dateAdded) : "—",
       render: (row) => (
         <div className="py-1.5">
@@ -122,6 +123,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "accountFor",
       header: "Acc For",
+       align: "center",
       tooltip: (row) =>
         Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—",
       render: (row) => (
@@ -135,6 +137,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "bankName",
       header: "Bank",
+      align: "center",
       tooltip: (row) => row.bankName || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -145,6 +148,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "accountNo",
       header: "Acc No",
+       align: "center",
       tooltip: (row) => row.accountNo || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -170,6 +174,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "accountHolderName",
       header: "Acc Holder",
+       align: "center",
       tooltip: (row) => String(row.accountHolderName || "—"),
       render: (row) => (
         <div className="py-1.5">
@@ -180,6 +185,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "sortCode",
       header: "IFSC/Sort",
+       align: "center",
       tooltip: (row) => row.sortCode || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -190,6 +196,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "currency",
       header: "Currency",
+       align: "center",
       tooltip: (row) => row.currency || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -200,6 +207,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "isDefault",
       header: "Default",
+       align: "center",
       tooltip: (row) => (row.isDefault ? "Default account" : "Not default"),
       render: (row) => (
         <div className="py-1.5">
@@ -214,6 +222,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "isDisabled",
       header: "Status",
+     align: "right",
       tooltip: (row) => (row.isDisabled ? "Disabled" : "Active"),
       render: (row) => (
         <div className="py-1.5">

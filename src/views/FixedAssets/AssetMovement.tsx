@@ -138,6 +138,19 @@ const refreshKey = useDataRefreshStore(
 useEffect(() => {
   fetchMovements();
 }, [refreshKey]);
+const formatDate = (date: string | Date) => {
+  if (!date) return "";
+
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const datePart = date.split("T")[0].split(" ")[0]; // handles both "T" and space separator
+    const [year, month, day] = datePart.split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
   /* ── columns ── */
   const columns: Column<AssetMovementRecord>[] = [
     {
@@ -176,7 +189,7 @@ useEffect(() => {
       render: (row) => (
         <div className="py-1.5">
         <span style={{ color: "var(--muted)", fontSize: 12 }}>
-          {row.transactionDate}
+          {formatDate(row.transactionDate)}
         </span>
         </div>
       ),

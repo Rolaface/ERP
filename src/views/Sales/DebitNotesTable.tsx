@@ -252,7 +252,19 @@ const DebitNotesTable: React.FC = () => {
       showApiError(error);
     }
   };
+ const formatDate = (date: string | Date) => {
+  if (!date) return "";
 
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  // Date object — use local methods
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
   const columns: Column<DebitNote>[] = [
     { key: "noteNo", header: "Debit Invoice No",
        render: (o) => (
@@ -296,7 +308,7 @@ const DebitNotesTable: React.FC = () => {
     { key: "date", header: "Date" ,  render: (o) => (
       <div className="py-1.5">
         <span className="block">
-          {o.date || "—"}
+          {formatDate(o.date) || "—"}
         </span>
         </div>
       ),   

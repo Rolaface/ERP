@@ -245,7 +245,7 @@ const AccountsPayable = () => {
                 dueDisplay = row.due_date;
               } else {
                 daysLeft = -(row.age || 0);
-                dueDisplay = `Reported: ${row.report_date}`;
+                dueDisplay = `${row.report_date}`;
               }
 
               status = "Pending";
@@ -551,7 +551,20 @@ const AccountsPayable = () => {
     scheduleData.week3,
     scheduleData.week4Plus,
   ];
+  
+const formatDate = (date: string | Date) => {
+  if (!date) return "";
 
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  // Date object — use local methods
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
   const columns: Column<Payable>[] = [
     {
       key: "id",
@@ -637,7 +650,7 @@ const AccountsPayable = () => {
       key: "due",
       header: "Due/Posted Date",
       sortable: true,
-      render: (row) => (row.isSummary ? null : <span>{row.due}</span>),
+      render: (row) => (row.isSummary ? null : <span>{formatDate(row.due)}</span>),
     },
     {
       key: "days",
