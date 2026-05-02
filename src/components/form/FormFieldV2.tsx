@@ -1,5 +1,10 @@
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+
+type ChecklistItem = {
+  label: string;
+  valid: boolean;
+};
 
 type Props = {
   label?: string;
@@ -19,6 +24,9 @@ type Props = {
   /* UX */
   helperText?: string;
   rightElement?: React.ReactNode;
+
+  /* NEW: CHECKLIST MODE */
+  checklist?: ChecklistItem[];
 
   /* SYSTEM */
   variant?: "outline" | "filled" | "ghost";
@@ -44,14 +52,24 @@ export default function FormFieldPro({
 
   helperText,
   rightElement,
+  checklist,
 
   variant = "outline",
   floatingLabel = false,
 
   readOnly,
-
-  inputRef, // ✅ FIX: destructured here
+  inputRef,
 }: Props) {
+  /* ---------------- STATE ---------------- */
+  const isError = !!error;
+  const isSuccess = !!success && !isError;
+
+  const stateClass = isError
+    ? "field-error"
+    : isSuccess
+    ? "field-success"
+    : "field-default";
+
   /* ---------------- CLASS BUILDER ---------------- */
   const getInputClasses = () => {
     let classes = "input-base";
@@ -59,24 +77,15 @@ export default function FormFieldPro({
     if (variant === "filled") classes += " input-filled";
     if (variant === "ghost") classes += " input-ghost";
 
-    if (error) classes += " error";
-    else if (success) classes += " success";
+    classes += ` ${stateClass}`;
 
     return classes;
   };
 
-  /* ---------------- RIGHT ICON ---------------- */
-  const renderRightIcon = () => {
+  /* ---------------- RIGHT ELEMENT ---------------- */
+  const renderRight = () => {
     if (loading) {
       return <Loader2 className="animate-spin" size={16} />;
-    }
-
-    if (error) {
-      return <span style={{ color: "var(--danger)" }}>!</span>;
-    }
-
-    if (success) {
-      return <CheckCircle2 size={16} style={{ color: "var(--success)" }} />;
     }
 
     return rightElement;
@@ -84,7 +93,7 @@ export default function FormFieldPro({
 
   return (
     <div className="form-field">
-      {/* TOP LABEL */}
+      {/* LABEL */}
       {label && !floatingLabel && (
         <label className="form-label">{label}</label>
       )}
@@ -98,9 +107,10 @@ export default function FormFieldPro({
           type={type}
           placeholder={floatingLabel ? " " : placeholder}
           disabled={disabled}
-          readOnly={readOnly} // ✅ FIX
+          readOnly={readOnly}
           className={getInputClasses()}
           whileFocus={{ scale: 1.01 }}
+          transition={{ duration: 0.2 }}
         />
 
         {/* FLOATING LABEL */}
@@ -108,8 +118,8 @@ export default function FormFieldPro({
           <label className="floating-label">{label}</label>
         )}
 
-        {/* RIGHT ICON */}
-        {(loading || success || error || rightElement) && (
+        {/* RIGHT ELEMENT */}
+        {(loading || rightElement) && (
           <div
             style={{
               position: "absolute",
@@ -120,16 +130,33 @@ export default function FormFieldPro({
               alignItems: "center",
             }}
           >
-            {renderRightIcon()}
+            {renderRight()}
           </div>
         )}
       </div>
 
+      {/* CHECKLIST MODE */}
+      {checklist && checklist.length > 0 && (
+        <div className="form-checklist">
+          {checklist.map((item, i) => (
+            <div
+              key={i}
+              className={`checklist-item ${
+                item.valid ? "valid" : "invalid"
+              }`}
+            >
+              {item.label}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* HELPER / ERROR */}
-      {(helperText || error) && (
+      {(helperText || error) && !checklist && (
         <div
-          className={`form-helper ${error ? "error" : success ? "success" : ""
-            }`}
+          className={`form-helper ${
+            isError ? "error" : isSuccess ? "success" : ""
+          }`}
         >
           {typeof error === "string" ? error : helperText}
         </div>

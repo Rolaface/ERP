@@ -56,6 +56,11 @@ export default function Step1Account({ form, update, next }: any) {
     return () => clearTimeout(timeout);
   }, [form.email]);
 
+
+  const isEmailValid =
+    isEmailFormatValid &&
+    emailStatus !== "checking";
+
   const password = form.password || "";
   const confirmPassword = form.confirmPassword || "";
 
@@ -65,22 +70,20 @@ export default function Step1Account({ form, update, next }: any) {
     uppercase: /[A-Z]/.test(password),
   };
 
-  const passedRules = Object.values(rules).filter(Boolean).length;
-
-  const getStrength = () => {
-    if (passedRules === 0) return "";
-    if (passedRules === 1) return "Weak";
-    if (passedRules === 2) return "Medium";
-    return "Strong";
-  };
-
-  const strength = getStrength();
+  const isPasswordStrong =
+    rules.length &&
+    rules.number &&
+    rules.uppercase &&
+    /[a-z]/.test(password) &&
+    /[^A-Za-z0-9]/.test(password);
 
   const getPasswordIssues = () => {
     const issues = [];
-    if (!rules.length) issues.push("at least 8 characters");
-    if (!rules.number) issues.push("a number");
-    if (!rules.uppercase) issues.push("an uppercase letter");
+    if (!rules.length) issues.push("8+ characters");
+    if (!/[a-z]/.test(password)) issues.push("lowercase letter");
+    if (!rules.uppercase) issues.push("uppercase letter");
+    if (!rules.number) issues.push("number");
+    if (!/[^A-Za-z0-9]/.test(password)) issues.push("special character");
     return issues;
   };
 
@@ -91,8 +94,8 @@ export default function Step1Account({ form, update, next }: any) {
 
   const isFormValid =
     isNameValid &&
-    isEmailFormatValid &&
-    passedRules >= 2 &&
+    isEmailValid &&
+    isPasswordStrong &&
     isConfirmPasswordValid;
 
   const isCheckingEmail = emailStatus === "checking";
@@ -140,16 +143,20 @@ export default function Step1Account({ form, update, next }: any) {
           setTouched((t) => ({ ...t, email: true }));
         }}
         placeholder="you@company.com"
-        success={touched.email && isEmailFormatValid}
+
+        success={touched.email && isEmailValid}
+
         loading={emailStatus === "checking"}
+
         error={
           touched.email && !isEmailFormatValid
             ? "Enter a valid email address"
             : ""
         }
+
         helperText={
           touched.email && emailStatus === "personal"
-            ? "Use your work email for better collaboration"
+            ? "Using a personal email may limit team features"
             : ""
         }
       />
@@ -165,33 +172,10 @@ export default function Step1Account({ form, update, next }: any) {
           setTouched((t) => ({ ...t, password: true }));
         }}
         placeholder="Create password"
-        success={
-          touched.password &&
-          password.length > 0 &&
-          rules.length &&
-          rules.number &&
-          rules.uppercase &&
-          /[a-z]/.test(password) &&
-          /[^A-Za-z0-9]/.test(password)
-        }
+        success={touched.password && isPasswordStrong}
         error={
-          touched.password && password.length > 0 &&
-            !(
-              rules.length &&
-              rules.number &&
-              rules.uppercase &&
-              /[a-z]/.test(password) &&
-              /[^A-Za-z0-9]/.test(password)
-            )
-            ? `Missing: ${[
-              !rules.length ? "8+ characters" : null,
-              !/[a-z]/.test(password) ? "lowercase letter" : null,
-              !rules.uppercase ? "uppercase letter" : null,
-              !rules.number ? "number" : null,
-              !/[^A-Za-z0-9]/.test(password) ? "special character" : null,
-            ]
-              .filter(Boolean)
-              .join(", ")}`
+          touched.password && password.length > 0 && !isPasswordStrong
+            ? `Missing: ${passwordIssues.join(", ")}`
             : ""
         }
         helperText={
