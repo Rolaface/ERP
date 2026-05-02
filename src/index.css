@@ -281,6 +281,14 @@
   --input-bg-filled: #f1f5f9;
   --input-bg-error: #fef2f2;
 
+  --glow-primary:
+    0 0 0 1px rgba(192, 132, 61, 0.35), 0 12px 40px rgba(192, 132, 61, 0.25);
+
+  --shadow-md: 0 6px 20px rgba(192, 132, 61, 0.15);
+  --shadow-lg: 0 14px 50px rgba(192, 132, 61, 0.2);
+
+  --surface-3: color-mix(in srgb, var(--card) 94%, #c0843d 6%);
+
   --gradient-primary-raw: linear-gradient(135deg, #c0843d, #e0a75e);
   --gradient-subtle-raw: linear-gradient(
     135deg,
@@ -327,6 +335,14 @@
   --input-focus-ring: rgba(96, 165, 250, 0.2);
   --input-bg-filled: #111827;
   --input-bg-error: rgba(220, 38, 38, 0.1);
+
+  --glow-primary:
+    0 0 0 1px rgba(96, 165, 250, 0.2), 0 10px 30px rgba(0, 0, 0, 0.6);
+
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.8);
+
+  --surface-3: color-mix(in srgb, var(--card) 92%, black 8%);
 
   --gradient-primary-raw: linear-gradient(135deg, #60a5fa, #3b82f6);
   --gradient-subtle-raw: linear-gradient(
@@ -375,6 +391,14 @@
   --input-bg-filled: #f1f5f9;
   --input-bg-error: #fef2f2;
 
+  --glow-primary:
+    0 0 0 1px rgba(59, 130, 246, 0.25), 0 6px 18px rgba(59, 130, 246, 0.15);
+
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.08);
+
+  --surface-3: color-mix(in srgb, var(--card) 97%, #3b82f6 3%);
+
   --gradient-primary-raw: linear-gradient(135deg, #3b82f6, #1d4ed8);
   --gradient-subtle-raw: linear-gradient(
     135deg,
@@ -421,6 +445,14 @@
   --input-focus-ring: rgba(6, 182, 212, 0.15);
   --input-bg-filled: #f1f5f9;
   --input-bg-error: #fef2f2;
+
+  --glow-primary:
+    0 0 0 1px rgba(6, 182, 212, 0.25), 0 10px 30px rgba(6, 182, 212, 0.2);
+
+  --shadow-md: 0 6px 18px rgba(6, 182, 212, 0.12);
+  --shadow-lg: 0 14px 40px rgba(6, 182, 212, 0.15);
+
+  --surface-3: color-mix(in srgb, var(--card) 96%, #06b6d4 4%);
 
   --gradient-primary-raw: linear-gradient(135deg, #06b6d4, #22d3ee);
   --gradient-subtle-raw: linear-gradient(
@@ -469,6 +501,14 @@
   --input-bg-filled: #f1f5f9;
   --input-bg-error: #fef2f2;
 
+  --glow-primary:
+    0 0 0 1px rgba(13, 148, 136, 0.25), 0 10px 30px rgba(13, 148, 136, 0.2);
+
+  --shadow-md: 0 6px 18px rgba(13, 148, 136, 0.12);
+  --shadow-lg: 0 14px 40px rgba(13, 148, 136, 0.15);
+
+  --surface-3: color-mix(in srgb, var(--card) 96%, #0d9488 4%);
+
   --gradient-primary-raw: linear-gradient(135deg, #0d9488, #2dd4bf);
   --gradient-subtle-raw: linear-gradient(
     135deg,
@@ -516,6 +556,14 @@
   --input-bg-filled: #f1f5f9;
   --input-bg-error: #fef2f2;
 
+  --glow-primary:
+    0 0 0 1px rgba(139, 92, 246, 0.3), 0 12px 40px rgba(139, 92, 246, 0.25);
+
+  --shadow-md: 0 8px 24px rgba(139, 92, 246, 0.15);
+  --shadow-lg: 0 18px 50px rgba(139, 92, 246, 0.2);
+
+  --surface-3: color-mix(in srgb, var(--card) 95%, #8b5cf6 5%);
+
   --gradient-primary-raw: linear-gradient(135deg, #6366f1, #8b5cf6);
   --gradient-subtle-raw: linear-gradient(
     135deg,
@@ -562,6 +610,14 @@
   --input-focus-ring: rgba(212, 175, 55, 0.2);
   --input-bg-filled: #15181d;
   --input-bg-error: rgba(220, 38, 38, 0.15);
+
+  --glow-primary:
+    0 0 0 1px rgba(212, 175, 55, 0.4), 0 16px 60px rgba(212, 175, 55, 0.3);
+
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.9);
+
+  --surface-3: color-mix(in srgb, var(--card) 90%, black 10%);
 
   --gradient-primary-raw: linear-gradient(135deg, #d4af37, #f5d76e);
   --gradient-subtle-raw: linear-gradient(
@@ -611,6 +667,14 @@
   --input-bg-filled: #f1f3f5;
   --input-bg-error: #fef2f2;
 
+  --glow-primary:
+    0 0 0 1px rgba(32, 67, 133, 0.2), 0 6px 20px rgba(32, 67, 133, 0.12);
+
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.06);
+
+  --surface-3: color-mix(in srgb, var(--card) 98%, #204385 2%);
+
   --gradient-primary-raw: linear-gradient(135deg, #204385, #3b5b9e);
   --gradient-subtle-raw: linear-gradient(
     135deg,
@@ -657,6 +721,14 @@
   --input-focus-ring: rgba(79, 70, 229, 0.15);
   --input-bg-filled: #f1f5f9;
   --input-bg-error: #fef2f2;
+
+  --glow-primary:
+    0 0 0 1px rgba(79, 70, 229, 0.25), 0 12px 30px rgba(79, 70, 229, 0.2);
+
+  --shadow-md: 0 6px 16px rgba(79, 70, 229, 0.12);
+  --shadow-lg: 0 14px 40px rgba(79, 70, 229, 0.18);
+
+  --surface-3: color-mix(in srgb, var(--card) 96%, #4f46e5 4%);
 
   --gradient-primary-raw: linear-gradient(135deg, #4f46e5, #6366f1);
   --gradient-subtle-raw: linear-gradient(
@@ -705,6 +777,14 @@
   --input-bg-filled: #f8fafc;
   --input-bg-error: #fef2f2;
 
+  --glow-primary:
+    0 0 0 1px rgba(255, 69, 0, 0.3), 0 14px 40px rgba(255, 69, 0, 0.25);
+
+  --shadow-md: 0 8px 24px rgba(255, 69, 0, 0.18);
+  --shadow-lg: 0 18px 50px rgba(255, 69, 0, 0.25);
+
+  --surface-3: color-mix(in srgb, var(--card) 95%, #ff4500 5%);
+
   --gradient-primary-raw: linear-gradient(135deg, #ff4500, #b93800);
   --gradient-subtle-raw: linear-gradient(
     135deg,
@@ -751,6 +831,14 @@
   --input-focus-ring: rgba(59, 130, 246, 0.15);
   --input-bg-filled: #f1f5f9;
   --input-bg-error: #fef2f2;
+
+  --glow-primary:
+    0 0 0 1px rgba(59, 130, 246, 0.2), 0 8px 24px rgba(59, 130, 246, 0.15);
+
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+  --surface-3: color-mix(in srgb, var(--card) 97%, #3b82f6 3%);
 
   --gradient-primary-raw: linear-gradient(135deg, #3b82f6, #1d4ed8);
   --gradient-subtle-raw: linear-gradient(
