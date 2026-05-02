@@ -1,4 +1,5 @@
 import type { AxiosResponse } from "axios";
+import { buildListParams } from "../api/utils/queryBuilder";
 
 import { API, ERP_BASE } from "../config/api";
 import { createAxiosInstance } from "./axiosInstance";
@@ -104,15 +105,21 @@ export async function getAllDepartments(
   search: string
 ): Promise<DepartmentResponse> {
   try {
-    const fields = JSON.stringify([
-      "name",
-      "department_name",
-      "parent_department",
-      "is_group",
-      "leave_block_list",
-    ]);
+    const query = buildListParams({
+      fields: [
+        "name",
+        "department_name",
+        "parent_department",
+        "is_group",
+        "leave_block_list",
+      ],
+      start,
+      pageSize,
+      search,
+      searchFields: ["name"],
+    });
 
-    const url = `${EmployeeConfig.department.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+    const url = `${EmployeeConfig.department.getAll}?${query}`;
 
     const resp = await api.get(url);
 
@@ -178,8 +185,15 @@ export async function getAllDesignations(
   search: string
 ): Promise<DesignationResponse> {
   try {
-    const fields = JSON.stringify(["name", "designation_name", "description"]);
-    const url = `${EmployeeConfig.designation.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+    const query = buildListParams({
+      fields: ["name", "designation_name", "description"],
+      start,
+      pageSize,
+      search,
+      searchFields: ["name"],
+    });
+
+    const url = `${EmployeeConfig.designation.getAll}?${query}`;
     const resp: AxiosResponse<DesignationResponse> = await api.get(url);
     return resp.data;
   } catch (error: any) {
@@ -239,8 +253,15 @@ export async function getAllEmployeeGrades(
   search: string
 ): Promise<EmployeeGradeResponse> {
   try {
-    const fields = JSON.stringify(["name", "default_salary_structure"]);
-    const url = `${EmployeeConfig.grade.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+    const query = buildListParams({
+      fields: ["name", "default_salary_structure"],
+      start,
+      pageSize,
+      search,
+      searchFields: ["name"],
+    });
+
+    const url = `${EmployeeConfig.grade.getAll}?${query}`;
     const resp: AxiosResponse<EmployeeGradeResponse> = await api.get(url);
     return resp.data;
   } catch (error: any) {
@@ -300,8 +321,15 @@ export async function getAllEmployeeTypes(
   search: string
 ): Promise<EmployeeTypeResponse> {
   try {
-    const fields = JSON.stringify(["name", "employee_type_name"]);
-    const url = `${EmployeeConfig.employeeType.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+    const query = buildListParams({
+      fields: ["name", "employee_type_name"],
+      start,
+      pageSize,
+      search,
+      searchFields: ["name"],
+    });
+
+    const url = `${EmployeeConfig.employeeType.getAll}?${query}`;
     const resp: AxiosResponse<EmployeeTypeResponse> = await api.get(url);
     return resp.data;
   } catch (error: any) {

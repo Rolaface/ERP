@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
+import { buildListParams } from "../api/utils/queryBuilder";
 
 const api = createAxiosInstance(ERP_BASE);
 const Payroll = API.payroll;
@@ -117,7 +118,26 @@ export async function getAllSalaryComponents(
       "description",
     ]);
 
-    const url = `${Payroll.salaryComponent.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+    const query = buildListParams({
+      fields: [
+        "name",
+        "salary_component",
+        "salary_component_abbr",
+        "type",
+        "formula",
+        "amount",
+        "amount_based_on_formula",
+        "depends_on_payment_days",
+        "is_tax_applicable",
+        "description",
+      ],
+      start,
+      pageSize,
+      search,
+      searchFields: ["salary_component", "salary_component_abbr"],
+    });
+
+    const url = `${Payroll.salaryComponent.getAll}?${query}`;
 
     const resp = await api.get(url);
 
@@ -227,9 +247,16 @@ export async function getAllSalaryStructures(
   search: string,
 ): Promise<PaginatedResponse<SalaryStructure>> {
   try {
-    const fields = JSON.stringify(["name", "is_active", "docstatus"]);
+    const query = buildListParams({
+      fields: ["name", "is_active", "docstatus"],
+      start,
+      pageSize,
+      search,
+      searchFields: ["name"],
+    });
 
-    const url = `${Payroll.salaryStructure.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+    const url = `${Payroll.salaryStructure.getAll}?${query}`;
+
     const resp: AxiosResponse<PaginatedResponse<SalaryStructure>> =
       await api.get(url);
 
@@ -242,7 +269,6 @@ export async function getAllSalaryStructures(
     );
   }
 }
-
 /**
  * GET /api/resource/Salary Structure/{name}
  * Returns full detail including earnings + deductions child tables.
@@ -329,21 +355,21 @@ export async function deleteSalaryStructure(name: string): Promise<void> {
 // INCOME TAX SLAB
 
 export async function getAllTaxConfigs(
-  start: number,
-  pageSize: number,
-  search: string,
+
 ): Promise<PaginatedResponse<TaxConfig>> {
   try {
-    const fields = JSON.stringify([
+   const query = buildListParams({
+        fields: [ 
       "name",
       "effective_from",
       "standard_tax_exemption_amount",
       "allow_tax_exemption",
       "tax_relief_limit",
       "disabled",
-    ]);
+      ],
+    });
 
-    const url = `${Payroll.incomeTaxSlab.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+    const url = `${Payroll.incomeTaxSlab.getAll}?${query}`;
     const resp: AxiosResponse<PaginatedResponse<TaxConfig>> =
       await api.get(url);
 
@@ -446,17 +472,12 @@ export async function searchSalaryStructures(q?: string) {
   return resp?.data?.data ?? [];
 }
 
-
 //for dropdown in salary structure setup form
 export async function getSalaryComponentOptions(
-  search?: string
+  search?: string,
 ): Promise<SalaryComponent[]> {
   try {
-    const fields = JSON.stringify([
-      "name",
-      "salary_component",
-      "type"
-    ]);
+    const fields = JSON.stringify(["name", "salary_component", "type"]);
 
     const params = new URLSearchParams();
 
@@ -471,12 +492,11 @@ export async function getSalaryComponentOptions(
     const resp = await api.get(url);
 
     return resp.data?.data ?? [];
-
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch salary component options"
+        error?.message ||
+        "Failed to fetch salary component options",
     );
   }
 }
