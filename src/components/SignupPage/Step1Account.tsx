@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import FormFieldPro from "../form/FormFieldV2";
-import ButtonPro from "../form/ButtonPro";
+import FormFieldPro from "../Form/FormFieldV2";
+import ButtonPro from "../Form/ButtonPro";
 import { Eye, EyeOff } from "lucide-react";
 
 const PERSONAL_DOMAINS = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"];
@@ -12,6 +12,7 @@ export default function Step1Account({ form, update, next }: any) {
     name: false,
     email: false,
     password: false,
+    confirmPassword: false,
   });
 
   const [emailStatus, setEmailStatus] = useState<
@@ -21,6 +22,7 @@ export default function Step1Account({ form, update, next }: any) {
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     nameRef.current?.focus();
@@ -55,6 +57,7 @@ export default function Step1Account({ form, update, next }: any) {
   }, [form.email]);
 
   const password = form.password || "";
+  const confirmPassword = form.confirmPassword || "";
 
   const rules = {
     length: password.length >= 8,
@@ -73,10 +76,24 @@ export default function Step1Account({ form, update, next }: any) {
 
   const strength = getStrength();
 
+  const getPasswordIssues = () => {
+    const issues = [];
+    if (!rules.length) issues.push("at least 8 characters");
+    if (!rules.number) issues.push("a number");
+    if (!rules.uppercase) issues.push("an uppercase letter");
+    return issues;
+  };
+
+  const passwordIssues = getPasswordIssues();
+
+  const isConfirmPasswordValid =
+    confirmPassword.length > 0 && confirmPassword === password;
+
   const isFormValid =
     isNameValid &&
     isEmailFormatValid &&
-    passedRules >= 2;
+    passedRules >= 2 &&
+    isConfirmPasswordValid;
 
   const isCheckingEmail = emailStatus === "checking";
 
@@ -142,21 +159,44 @@ export default function Step1Account({ form, update, next }: any) {
         type={showPassword ? "text" : "password"}
         value={form.password}
         inputRef={passwordRef}
-        onKeyDown={(e: any) => handleKeyDown(e)}
+        onKeyDown={(e: any) => handleKeyDown(e, confirmPasswordRef)}
         onChange={(e: any) => {
           update("password", e.target.value);
           setTouched((t) => ({ ...t, password: true }));
         }}
         placeholder="Create password"
-        success={touched.password && passedRules >= 2}
+        success={
+          touched.password &&
+          password.length > 0 &&
+          rules.length &&
+          rules.number &&
+          rules.uppercase &&
+          /[a-z]/.test(password) &&
+          /[^A-Za-z0-9]/.test(password)
+        }
         error={
-          touched.password && passedRules < 2
-            ? "Password is too weak"
+          touched.password && password.length > 0 &&
+            !(
+              rules.length &&
+              rules.number &&
+              rules.uppercase &&
+              /[a-z]/.test(password) &&
+              /[^A-Za-z0-9]/.test(password)
+            )
+            ? `Missing: ${[
+              !rules.length ? "8+ characters" : null,
+              !/[a-z]/.test(password) ? "lowercase letter" : null,
+              !rules.uppercase ? "uppercase letter" : null,
+              !rules.number ? "number" : null,
+              !/[^A-Za-z0-9]/.test(password) ? "special character" : null,
+            ]
+              .filter(Boolean)
+              .join(", ")}`
             : ""
         }
         helperText={
-          touched.password && strength
-            ? `Strength: ${strength}`
+          touched.password && password.length > 0
+            ? `Use 8–16+ characters with uppercase, lowercase, number & symbol`
             : ""
         }
         rightElement={
@@ -167,6 +207,25 @@ export default function Step1Account({ form, update, next }: any) {
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
+        }
+      />
+
+      <FormFieldPro
+        label="Confirm Password"
+        type={showPassword ? "text" : "password"}
+        value={form.confirmPassword}
+        inputRef={confirmPasswordRef}
+        onKeyDown={(e: any) => handleKeyDown(e)}
+        onChange={(e: any) => {
+          update("confirmPassword", e.target.value);
+          setTouched((t) => ({ ...t, confirmPassword: true }));
+        }}
+        placeholder="Re-enter password"
+        success={touched.confirmPassword && isConfirmPasswordValid}
+        error={
+          touched.confirmPassword && !isConfirmPasswordValid
+            ? "Passwords do not match"
+            : ""
         }
       />
 
