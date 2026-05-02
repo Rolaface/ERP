@@ -1,14 +1,14 @@
-// ─── useLeaveTypes.ts ────────────────────────────────────────────────────────
+// ─── useLeavePolicies.ts ─────────────────────────────────────────────────────
 import { useCallback, useEffect, useState } from "react";
 
 import {
-  getAllLeaveTypes,
-  type LeaveType,
+  getAllLeavePolicies,
+  type LeavePolicy,
 } from "../../../../../api/leaveConfigApi";
 import { showApiError } from "../../../../../utils/alert";
 
-export function useLeaveTypes() {
-  const [rows, setRows] = useState<LeaveType[]>([]);
+export function useLeavePolicies() {
+  const [rows, setRows] = useState<LeavePolicy[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -19,11 +19,12 @@ export function useLeaveTypes() {
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getAllLeaveTypes(); 
+      const data = await getAllLeavePolicies(); 
       
       const filtered = search
         ? data.filter((r) =>
-            r.leave_type_name?.toLowerCase().includes(search.toLowerCase()),
+            r.title?.toLowerCase().includes(search.toLowerCase()) || 
+            r.name?.toLowerCase().includes(search.toLowerCase())
           )
         : data;
         
@@ -31,7 +32,7 @@ export function useLeaveTypes() {
       setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
       setRows(filtered.slice((page - 1) * pageSize, page * pageSize));
     } catch (err: any) {
-      showApiError(err?.message ?? "Failed to load leave types");
+      showApiError(err?.message ?? "Failed to load leave policies");
     } finally {
       setLoading(false);
     }

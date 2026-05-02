@@ -146,7 +146,8 @@ export const LeaveTypeModal: React.FC<Props> = ({
             label="Max Leaves Allowed"
             type="number"
             value={form.max_leaves_allowed}
-            onChange={(e) => set("max_leaves_allowed", parseFloat(e.target.value) || 0)}
+            // onChange={(e) => set("max_leaves_allowed", parseFloat(e.target.value) || 0)}
+           onChange={(e) => set("max_leaves_allowed", e.target.valueAsNumber)}
           />
         </div>
 
@@ -157,7 +158,10 @@ export const LeaveTypeModal: React.FC<Props> = ({
             type="number"
             step="0.1"
             value={form.fraction_of_daily_salary_per_leave}
-            onChange={(e) => set("fraction_of_daily_salary_per_leave", parseFloat(e.target.value) || 0)}
+            // onChange={(e) => set("fraction_of_daily_salary_per_leave", parseFloat(e.target.value) || 0)}
+           onChange={(e) =>
+              set("fraction_of_daily_salary_per_leave", e.target.valueAsNumber)
+            }
           />
         </div>
 
