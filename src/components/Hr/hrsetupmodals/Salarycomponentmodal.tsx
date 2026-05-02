@@ -21,15 +21,18 @@ import {
   showApiError,
   showSuccess,
   showValidationError,
-  showLoading,
-  closeSwal
 } from "../../../utils/alert";
+
+const PAYOUT_METHODS = [
+  { label: "Accrue and payout at end of payroll period", value: "Accrue and payout at end of payroll period" },
+  { label: "Accrue per cycle, pay only on claim", value: "Accrue per cycle, pay only on claim" },
+  { label: "Allow claim for full benefit amount", value: "Allow claim for full benefit amount" },
+];
 
 interface Props {
   modalId: string;
   isOpen: boolean;
   onClose: () => void;
-  /** Pass null/undefined to create; pass existing record to edit */
   initialData?: SalaryComponent | null;
   onSuccess?: () => void;
 }
@@ -45,6 +48,13 @@ const EMPTY: Omit<SalaryComponent, "name"> = {
   amount: 0,
   description: "",
   accounts: [],
+  // flexible benefit fields
+  is_flexible_benefit: 0,
+  pay_against_benefit_claim: 0,
+  max_benefit_amount: 0,
+  only_tax_impact: 0,
+  create_separate_payment_entry_against_benefit_claim: 0,
+  payout_method: "",
 };
 
 export const SalaryComponentModal: React.FC<Props> = ({
@@ -59,7 +69,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const [saving, setSaving] = useState(false);
   const { fetchAccounts } = useAccountSearch();
 
-  // Sync when modal opens / initialData changes
   useEffect(() => {
     if (isOpen) {
       setForm(
@@ -75,6 +84,13 @@ export const SalaryComponentModal: React.FC<Props> = ({
               amount: initialData.amount ?? 0,
               description: initialData.description ?? "",
               accounts: initialData.accounts ? [...initialData.accounts] : [],
+              is_flexible_benefit: (initialData as any).is_flexible_benefit ?? 0,
+              pay_against_benefit_claim: (initialData as any).pay_against_benefit_claim ?? 0,
+              max_benefit_amount: (initialData as any).max_benefit_amount ?? 0,
+              only_tax_impact: (initialData as any).only_tax_impact ?? 0,
+              create_separate_payment_entry_against_benefit_claim:
+                (initialData as any).create_separate_payment_entry_against_benefit_claim ?? 0,
+              payout_method: (initialData as any).payout_method ?? "",
             }
           : { ...EMPTY, accounts: [] },
       );
@@ -87,7 +103,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
     [],
   );
 
-  // ── accounts child table helpers ──────────────────────────────────────────
   const addAccount = () =>
     setForm((prev) => ({
       ...prev,
@@ -107,7 +122,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
       accounts: (prev.accounts ?? []).filter((_, i) => i !== idx),
     }));
 
-  // ── submit ─────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!form.salary_component.trim()) {
       showValidationError("Component name is required");
@@ -121,13 +135,18 @@ export const SalaryComponentModal: React.FC<Props> = ({
       showValidationError("Formula is required when amount is formula-based");
       return;
     }
+    if ((form as any).is_flexible_benefit && !(form as any).payout_method) {
+      showValidationError("Payout method is required for flexible benefits");
+      return;
+    }
 
     try {
       setSaving(true);
       const payload = {
-        ...form,
-        accounts: form.accounts?.filter((a) => a.account.trim()) ?? [],
-      };
+  ...form,
+  accounts: form.accounts?.filter((a) => a.account.trim()) ?? [],
+  ...(isFlexible && { accrual_component: 1 }),
+};
 
       if (isEdit && initialData?.name) {
         await updateSalaryComponent(initialData.name, payload);
@@ -144,6 +163,11 @@ export const SalaryComponentModal: React.FC<Props> = ({
       setSaving(false);
     }
   };
+
+  const isFlexible = Boolean((form as any).is_flexible_benefit);
+  const payoutMethod = (form as any).payout_method ?? "";
+  const showPayoutUnclaimed =
+    payoutMethod === "Accrue per cycle, pay only on claim";
 
   const footer = (
     <div className="flex w-full items-center justify-end gap-3">
@@ -180,49 +204,38 @@ export const SalaryComponentModal: React.FC<Props> = ({
       footer={footer}
     >
       <div className="space-y-5 pb-2">
-        {/* ── Row 1: Name + Abbr ─────────────────────────────────────────── */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2">
-            <ModalInput
-              label="Component Name"
-              value={form.salary_component}
-              onChange={(e) => set("salary_component", e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <ModalInput
-              label="Abbreviation"
-              className="w-full uppercase"
-              placeholder="BS"
-              maxLength={5}
-              value={form.salary_component_abbr}
-              onChange={(e) =>
-                set("salary_component_abbr", e.target.value.toUpperCase())
-              }
-              required
-            />
-          </div>
+
+        {/* ── Row 1: Abbreviation + Component Name + Type — all in one line ── */}
+        <div className="grid grid-cols-[7rem_1fr_9rem] gap-4 items-end">
+          <ModalInput
+            label="Abbreviation"
+            className="uppercase"
+            placeholder="BS"
+            maxLength={5}
+            value={form.salary_component_abbr}
+            onChange={(e) =>
+              set("salary_component_abbr", e.target.value.toUpperCase())
+            }
+            required
+          />
+          <ModalInput
+            label="Component Name"
+            value={form.salary_component}
+            onChange={(e) => set("salary_component", e.target.value)}
+            required
+          />
+          <ModalSelect
+            label="Type"
+            value={form.type}
+            onChange={(e) => set("type", e.target.value as SalaryComponentType)}
+            options={[
+              { label: "Earning", value: "Earning" },
+              { label: "Deduction", value: "Deduction" },
+            ]}
+          />
         </div>
 
-        {/* ── Row 2: Type ───────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <ModalSelect
-              label="Type"
-              value={form.type}
-              onChange={(e) =>
-                set("type", e.target.value as SalaryComponentType)
-              }
-              options={[
-                { label: "Earning", value: "Earning" },
-                { label: "Deduction", value: "Deduction" },
-              ]}
-            />
-          </div>
-        </div>
-
-        {/* ── Row 3: Formula toggle ─────────────────────────────────────── */}
+        {/* ── Amount Configuration ──────────────────────────────────────── */}
         <div className="rounded-xl border border-[var(--border)] bg-app p-4 space-y-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-sub">
             Amount Configuration
@@ -270,13 +283,119 @@ export const SalaryComponentModal: React.FC<Props> = ({
               </p>
             </div>
           ) : (
-            <div>
-              <ModalInput
-                label="Fixed Amount"
-                type="number"
-                value={form.amount ?? 0}
-                onChange={(e) => set("amount", parseFloat(e.target.value) || 0)}
-              />
+            <ModalInput
+              label="Fixed Amount"
+              type="number"
+              value={form.amount ?? 0}
+              onChange={(e) => set("amount", parseFloat(e.target.value) || 0)}
+            />
+          )}
+        </div>
+
+        {/* ── Flexible Benefits ─────────────────────────────────────────── */}
+        <div className="rounded-xl border border-[var(--border)] bg-app p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wider text-sub">
+              Flexible Benefits
+            </p>
+            {/* Is Flexible Benefit toggle */}
+            <YesNoCheckbox
+              name="is_flexible_benefit"
+              label="Is Flexible Benefit"
+              value={isFlexible ? "Y" : "N"}
+              onChange={(name, value) => {
+                set("is_flexible_benefit" as any, value === "Y" ? 1 : 0);
+                if (value === "N") {
+                  // reset all flexible fields when unchecked
+                  setForm((prev) => ({
+                    ...prev,
+                    is_flexible_benefit: 0,
+                    pay_against_benefit_claim: 0,
+                    max_benefit_amount: 0,
+                    only_tax_impact: 0,
+                    create_separate_payment_entry_against_benefit_claim: 0,
+                    payout_method: "",
+                  }));
+                }
+              }}
+            />
+          </div>
+
+          {isFlexible && (
+            <div className="space-y-4">
+              {/* Payout Method + Max Benefit Amount side by side */}
+              <div className="grid grid-cols-2 gap-4">
+                <ModalSelect
+                  label="Payout Method *"
+                  value={payoutMethod}
+                  onChange={(e) => set("payout_method" as any, e.target.value)}
+                  options={[
+                    { label: "Select method…", value: "" },
+                    ...PAYOUT_METHODS,
+                  ]}
+                />
+                <ModalInput
+                  label="Max Benefit Amount (Yearly)"
+                  type="number"
+                  value={(form as any).max_benefit_amount ?? 0}
+                  onChange={(e) =>
+                    set(
+                      "max_benefit_amount" as any,
+                      parseFloat(e.target.value) || 0,
+                    )
+                  }
+                  placeholder="0"
+                />
+              </div>
+
+              {/* helper text */}
+              <p className="text-xs text-sub -mt-2">
+                If greater than zero, this sets the maximum benefit amount
+                assignable to any employee.
+              </p>
+
+              {/* Conditional: Payout Unclaimed Amount — only for "Accrue per cycle" */}
+              {showPayoutUnclaimed && (
+                <YesNoCheckbox
+                  name="pay_against_benefit_claim"
+                  label="Payout Unclaimed Amount in Final Payroll Cycle"
+                  value={(form as any).pay_against_benefit_claim ? "Y" : "N"}
+                  onChange={(name, value) =>
+                    set(
+                      "pay_against_benefit_claim" as any,
+                      value === "Y" ? 1 : 0,
+                    )
+                  }
+                />
+              )}
+
+              {/* Extra toggles */}
+              <div className="flex flex-wrap gap-6">
+                <YesNoCheckbox
+                  name="only_tax_impact"
+                  label="Only Tax Impact"
+                  value={(form as any).only_tax_impact ? "Y" : "N"}
+                  onChange={(name, value) =>
+                    set("only_tax_impact" as any, value === "Y" ? 1 : 0)
+                  }
+                />
+                <YesNoCheckbox
+                  name="create_separate_payment_entry_against_benefit_claim"
+                  label="Create Separate Payment Entry Against Benefit Claim"
+                  value={
+                    (form as any)
+                      .create_separate_payment_entry_against_benefit_claim
+                      ? "Y"
+                      : "N"
+                  }
+                  onChange={(name, value) =>
+                    set(
+                      "create_separate_payment_entry_against_benefit_claim" as any,
+                      value === "Y" ? 1 : 0,
+                    )
+                  }
+                />
+              </div>
             </div>
           )}
         </div>

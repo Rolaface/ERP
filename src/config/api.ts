@@ -306,15 +306,15 @@ export const API = {
     editInvoice: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
   },
 
-  CreditNote:{
-    Credit_note:`${ERP_BASE}/api/resource/Sales Invoice`,
+  CreditNote: {
+    Credit_note: `${ERP_BASE}/api/resource/Sales Invoice`,
   },
-  DebitNote:{
-      Debit_note:`${ERP_BASE}/api/resource/Purchase Invoice`
+  DebitNote: {
+    Debit_note: `${ERP_BASE}/api/resource/Purchase Invoice`,
   },
 
- Bank:{
-      Bank:`${ERP_BASE}/api/resource/Bank`
+  Bank: {
+    Bank: `${ERP_BASE}/api/resource/Bank`,
   },
   /* =========================
    * STOCK
@@ -377,14 +377,12 @@ export const API = {
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
   },
 
-
-  rfq:{
+  rfq: {
     create: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.create_rfq`,
     GetAll: `${ERP_BASE}/api/resource/Request for Quotation`,
-    update: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.update_rfq`
+    update: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.update_rfq`,
   },
 
-  
   /* =========================
    * SUPPLIER
    * ========================= */
@@ -404,7 +402,7 @@ export const API = {
     getTown: `${CODES_BASE}/towns/`,
   },
 
-  AssetsTypes: { 
+  AssetsTypes: {
     getall: `${ERP_BASE}/api/resource/Asset Category`,
     create: `${ERP_BASE}/api/method/custom_api.api.fixed_assets.api.create_asset_category`,
     update: `${ERP_BASE}/api/method/custom_api.api.fixed_assets.api.update_asset_category`,
@@ -417,7 +415,6 @@ export const API = {
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
     // Assit movement
     Movement: `${ERP_BASE}/api/resource/Asset Movement`,
-    
   },
 
   /* =========================
@@ -472,20 +469,20 @@ export const API = {
   payroll: {
     // Salary Component
     salaryComponent: {
-      getAll:   `${ERP_BASE}/api/resource/Salary Component`,
-      getById:  `${ERP_BASE}/api/resource/Salary Component`,   
-      create:   `${ERP_BASE}/api/resource/Salary Component`,
-      update:   `${ERP_BASE}/api/resource/Salary Component`,  
-      delete:   `${ERP_BASE}/api/resource/Salary Component`,   
+      getAll:`${ERP_BASE}/api/resource/Salary Component`,
+      getById:`${ERP_BASE}/api/resource/Salary Component`,
+      create:`${ERP_BASE}/api/resource/Salary Component`,
+      update:`${ERP_BASE}/api/resource/Salary Component`,
+      delete:`${ERP_BASE}/api/resource/Salary Component`,
     },
- 
+
     // Salary Structure
     salaryStructure: {
-      getAll:   `${ERP_BASE}/api/resource/Salary Structure`,
-      getById:  `${ERP_BASE}/api/resource/Salary Structure`,  
-      create:   `${ERP_BASE}/api/resource/Salary Structure`,
-      update:   `${ERP_BASE}/api/resource/Salary Structure`,   
-      delete:   `${ERP_BASE}/api/resource/Salary Structure`,  
+      getAll: `${ERP_BASE}/api/resource/Salary Structure`,
+      getById: `${ERP_BASE}/api/resource/Salary Structure`,
+      create: `${ERP_BASE}/api/resource/Salary Structure`,
+      update: `${ERP_BASE}/api/resource/Salary Structure`,
+      delete: `${ERP_BASE}/api/resource/Salary Structure`,
     },
 
     incomeTaxSlab: {
@@ -520,14 +517,13 @@ export const API = {
       delete: `${ERP_BASE}/api/resource/Employee Grade`,
     },
     employeeType: {
-      getAll: `${ERP_BASE}/api/resource/Employee Type`,
-      getById: `${ERP_BASE}/api/resource/Employee Type`,
-      create: `${ERP_BASE}/api/resource/Employee Type`,
-      update: `${ERP_BASE}/api/resource/Employee Type`,
-      delete: `${ERP_BASE}/api/resource/Employee Type`,
+      getAll: `${ERP_BASE}/api/resource/Employment Type`,
+      getById: `${ERP_BASE}/api/resource/Employment Type`,
+      create: `${ERP_BASE}/api/resource/Employment Type`,
+      update: `${ERP_BASE}/api/resource/Employment Type`,
+      delete: `${ERP_BASE}/api/resource/Employment Type`,
     },
   },
- 
 
   /* =========================
    * UTILS
@@ -538,6 +534,5 @@ export const API = {
     createlocation: `${ERP_BASE}/api/resource/Location`,
     getitemcodeforFaixedAsset: `${ERP_BASE}/api/method/custom_api.api.search.get_items`,
     getemployeeforAssetMovement: `${ERP_BASE}/api/method/custom_api.api.search.get_employees`,
-  
   },
 } as const;

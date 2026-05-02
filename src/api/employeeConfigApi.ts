@@ -43,31 +43,86 @@ export interface EmployeeGrade {
 
 export interface EmployeeType {
   name?: string;
-  employee_type: string;
+  employee_type_name: string;
 }
 
 function getErrorMessage(error: any, fallback: string) {
   return error?.response?.data?.message || error?.message || fallback;
 }
 
-export async function getAllDepartments(): Promise<Department[]> {
+type DepartmentResponse = {
+  data: Department[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+};
+
+type DesignationResponse = {
+  data: Designation[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+};
+
+type EmployeeGradeResponse = {
+  data: EmployeeGrade[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+};
+
+type EmployeeTypeResponse = {
+  data: EmployeeType[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+};
+
+export async function getAllDepartments(
+  start: number,
+  pageSize: number,
+  search: string
+): Promise<DepartmentResponse> {
   try {
     const fields = JSON.stringify([
       "name",
       "department_name",
       "parent_department",
-      
       "is_group",
       "leave_block_list",
     ]);
-    const url = `${EmployeeConfig.department.getAll}?fields=${encodeURIComponent(fields)}&limit_page_length=200`;
-    const resp: AxiosResponse<FrappeListResponse<Department>> =
-      await api.get(url);
-    return resp.data?.data ?? [];
+
+    const url = `${EmployeeConfig.department.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+
+    const resp = await api.get(url);
+
+    return resp.data;
+
   } catch (error: any) {
     throw new Error(getErrorMessage(error, "Failed to fetch departments"));
   }
 }
+  
 
 export async function getDepartment(name: string): Promise<Department> {
   try {
@@ -98,8 +153,10 @@ export async function updateDepartment(
 ): Promise<Department> {
   try {
     const url = `${EmployeeConfig.department.update}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<Department>> =
-      await api.put(url, payload);
+    const resp: AxiosResponse<FrappeDetailResponse<Department>> = await api.put(
+      url,
+      payload,
+    );
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(getErrorMessage(error, "Failed to update department"));
@@ -115,13 +172,16 @@ export async function deleteDepartment(name: string): Promise<void> {
   }
 }
 
-export async function getAllDesignations(): Promise<Designation[]> {
+export async function getAllDesignations(
+  start: number,
+  pageSize: number,
+  search: string
+): Promise<DesignationResponse> {
   try {
     const fields = JSON.stringify(["name", "designation_name", "description"]);
-    const url = `${EmployeeConfig.designation.getAll}?fields=${encodeURIComponent(fields)}&limit_page_length=200`;
-    const resp: AxiosResponse<FrappeListResponse<Designation>> =
-      await api.get(url);
-    return resp.data?.data ?? [];
+    const url = `${EmployeeConfig.designation.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+    const resp: AxiosResponse<DesignationResponse> = await api.get(url);
+    return resp.data;
   } catch (error: any) {
     throw new Error(getErrorMessage(error, "Failed to fetch designations"));
   }
@@ -173,13 +233,16 @@ export async function deleteDesignation(name: string): Promise<void> {
   }
 }
 
-export async function getAllEmployeeGrades(): Promise<EmployeeGrade[]> {
+export async function getAllEmployeeGrades(
+  start: number,
+  pageSize: number,
+  search: string
+): Promise<EmployeeGradeResponse> {
   try {
     const fields = JSON.stringify(["name", "default_salary_structure"]);
-    const url = `${EmployeeConfig.grade.getAll}?fields=${encodeURIComponent(fields)}&limit_page_length=200`;
-    const resp: AxiosResponse<FrappeListResponse<EmployeeGrade>> =
-      await api.get(url);
-    return resp.data?.data ?? [];
+    const url = `${EmployeeConfig.grade.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+    const resp: AxiosResponse<EmployeeGradeResponse> = await api.get(url);
+    return resp.data;
   } catch (error: any) {
     throw new Error(getErrorMessage(error, "Failed to fetch grades"));
   }
@@ -231,13 +294,16 @@ export async function deleteEmployeeGrade(name: string): Promise<void> {
   }
 }
 
-export async function getAllEmployeeTypes(): Promise<EmployeeType[]> {
+export async function getAllEmployeeTypes(
+  start: number,
+  pageSize: number,
+  search: string
+): Promise<EmployeeTypeResponse> {
   try {
-    const fields = JSON.stringify(["name", "employee_type"]);
-    const url = `${EmployeeConfig.employeeType.getAll}?fields=${encodeURIComponent(fields)}&limit_page_length=200`;
-    const resp: AxiosResponse<FrappeListResponse<EmployeeType>> =
-      await api.get(url);
-    return resp.data?.data ?? [];
+    const fields = JSON.stringify(["name", "employee_type_name"]);
+    const url = `${EmployeeConfig.employeeType.getAll}?fields=${encodeURIComponent(fields)}&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&search=${encodeURIComponent(search)}`;
+    const resp: AxiosResponse<EmployeeTypeResponse> = await api.get(url);
+    return resp.data;
   } catch (error: any) {
     throw new Error(getErrorMessage(error, "Failed to fetch employee types"));
   }

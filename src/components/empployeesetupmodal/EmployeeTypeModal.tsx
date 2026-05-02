@@ -23,7 +23,7 @@ interface Props {
 }
 
 const EMPTY: Omit<EmployeeType, "name"> = {
-  employee_type: "",
+  employee_type_name: "",
 };
 
 export const EmployeeTypeModal: React.FC<Props> = ({
@@ -41,7 +41,7 @@ export const EmployeeTypeModal: React.FC<Props> = ({
     if (isOpen) {
       setForm(
         initialData
-          ? { employee_type: initialData.employee_type ?? initialData.name ?? "" }
+          ? { employee_type_name: initialData.employee_type_name ?? initialData.name ?? "" }
           : { ...EMPTY },
       );
     }
@@ -54,7 +54,7 @@ export const EmployeeTypeModal: React.FC<Props> = ({
   );
 
   const handleSave = async () => {
-    if (!form.employee_type.trim()) {
+    if (!form.employee_type_name.trim()) {
       showValidationError("Employee type is required");
       return;
     }
@@ -92,7 +92,7 @@ export const EmployeeTypeModal: React.FC<Props> = ({
   return (
     <MinimizableModal modalId={modalId} isOpen={isOpen} onClose={onClose} title={isEdit ? "Edit Employee Type" : "New Employee Type"} subtitle="Configure employment categories" icon={UserRoundCog} maxWidth="xl" height="auto" footer={footer}>
       <div className="space-y-5 pb-2">
-        <ModalInput label="Employee Type" value={form.employee_type} disabled={isEdit} onChange={(e) => set("employee_type", e.target.value)} required />
+        <ModalInput label="Employee Type" value={form.employee_type_name} disabled={isEdit} onChange={(e) => set("employee_type_name", e.target.value)} required />
       </div>
     </MinimizableModal>
   );

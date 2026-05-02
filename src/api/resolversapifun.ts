@@ -16,7 +16,6 @@ export async function resolveEmployeeName(id: string): Promise<string> {
     );
 
     const list = resp?.data?.data ?? [];
-
     const found = list.find((emp: any) => emp.value === id);
 
     return found?.label || id;
@@ -32,7 +31,6 @@ export async function resolveEmployeeName(id: string): Promise<string> {
 
 export async function resolveEmployeeMap(ids: string[]) {
   const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
-
   const result: Record<string, string> = {};
 
   await Promise.all(
@@ -44,11 +42,24 @@ export async function resolveEmployeeMap(ids: string[]) {
   return result;
 }
 
+/* ─────────────────────────────
+   SALARY COMPONENT SEARCH
+   - Earning   → type = Earning
+   - Deduction → type = Deduction
+   - Flexible  → type = Earning + is_flexible_benefit = 1
+───────────────────────────── */
+
 export async function searchSalaryComponents(
-  type: "Earning" | "Deduction",
+  type: "Earning" | "Deduction" | "Flexible",
   q?: string
 ) {
-  const filters: any[] = [["type", "=", type]];
+  const filters: any[] =
+    type === "Flexible"
+      ? [
+          ["type", "=", "Earning"],
+          ["is_flexible_benefit", "=", 1],
+        ]
+      : [["type", "=", type]];
 
   if (q) {
     filters.push(["name", "like", `%${q}%`]);
@@ -63,4 +74,3 @@ export async function searchSalaryComponents(
 
   return resp?.data?.data ?? [];
 }
-
