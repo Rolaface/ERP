@@ -77,13 +77,15 @@ export function buildInvoicePayload(
       vatRate: String(item.vatRate ?? 0),
       vatCode: item.vatCode ?? "",
     }));
-  const mappedTaxes = (formData.taxes || []).map((t: any) => ({
-    chargeType: t.chargeType,
-    accountHead: t.accountHead,
-    description: t.description || "",
-    rate: Number(t.rate) || 0,
-    amount: Number(t.amount) || 0,
-  }));
+ const mappedTaxes = (formData.taxes || []).map((t: any) => ({
+  chargeType: t.chargeType,
+  accountHead: t.accountHead,
+  description: t.description || "",
+  ...(t.chargeType === "Actual"
+    ? { amount: Number(t.amount) || 0 }
+    : { rate: t.rate ?? 0 }
+  ),
+}));
   return {
     customerId: formData.customerId,
     currency: formData.currencyCode,
@@ -114,6 +116,7 @@ export function buildInvoicePayload(
     // Pass through address objects for reference
     addresses: formData.addresses,
     taxes: mappedTaxes,
+    salesTaxTemplate: formData.salesTaxTemplate ?? "",
   };
 }
 
@@ -132,6 +135,7 @@ export const useInvoiceForm = (
     invoiceCharges: [],
     addresses: {},
     taxes: [],
+    salesTaxTemplate: "",
   });
 
   // Set today's date on open
@@ -538,7 +542,7 @@ export const useInvoiceForm = (
         return sum + net;
       }, 0);
 
-      // convert template taxes → API format
+     
       const mappedTaxes = taxes.map((t: any) => {
         const rate = Number(t.rate) || 0;
 
@@ -546,13 +550,16 @@ export const useInvoiceForm = (
           t.charge_type === "Actual"
             ? Number(t.tax_amount) || 0
             : (subTotal * rate) / 100;
+            const isActual = t.charge_type === "Actual"; 
 
         return {
-          chargeType: t.charge_type,
-          accountHead: t.account_head,
-          description: t.description || "",
-          rate,
-          amount,
+         chargeType: t.charge_type,
+  accountHead: t.account_head,
+  description: t.description || "",
+  ...(isActual
+    ? { amount: Number(t.tax_amount) || 0 }
+    : { rate: Number(t.rate) || 0 }
+  ),
         };
       });
 
@@ -812,6 +819,7 @@ export const useInvoiceForm = (
         setFormData({
           ...DEFAULT_INVOICE_FORM,
           invoiceCharges: [],
+          salesTaxTemplate: "",
           dateOfInvoice: today,
           dueDate,
           exchangeRt: "1",
