@@ -1,50 +1,161 @@
-// ─── AddEmployeeModal.tsx ────────────────────────────────────────────────────
-// Orchestration only — form state, tab nav, save.
-// All field logic lives in tab components.
-// ─────────────────────────────────────────────────────────────────────────────
 import React, { useState, useEffect } from "react";
-import { X, Upload, User, CheckCircle2, ChevronRight, ChevronLeft } from "lucide-react";
+import {
+  FaUser,
+  FaAddressBook,
+  FaBriefcase,
+  FaCalendarCheck,
+  FaMoneyBillWave,
+  FaCalendarAlt,
+  FaFolder,
+  FaArrowLeft,
+  FaArrowRight,
+  FaCheck,
+} from "react-icons/fa";
+import type { SalaryResult } from "./salaryengine";
+import { uploadEmployeePhoto } from "../../../api/employeeapi";
 
 import IdentityVerificationModal from "./IdentityVerificationModal";
-import PersonalInfoTab           from "./PersonalInfoTab";
-import ContactInfoTab            from "./ContactInfoTabs";
-import EmploymentTab             from "./EmploymentTab";
-import CompensationTab           from "./CompensationTab";
-import { LeaveSetupTab }         from "./LeaveSetupTab";
-import { WorkScheduleTab }       from "./WorkScheduletab";
-import DocumentsTab              from "./DocumentsTab";
+import PersonalInfoTab from "./PersonalInfoTab";
+import ContactInfoTab from "./ContactInfoTabs";
+import EmploymentTab from "./EmploymentTab";
+import CompensationTab from "./CompensationTab";
+import { LeaveSetupTab } from "./LeaveSetupTab";
+import WorkScheduleTab from "./WorkScheduletab";
+import DocumentsTab from "./DocumentsTab";
+import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
 import { MinimizableModal } from "../../common/MinimizableModal";
 
-import { getLevelsFromHrSettings }    from "../../../views/hr/tabs/salarystructure";
-import { EMPLOYEE_ROLE_CONFIG }       from "../../../api/config/employeeRoleConfig";
-import { filterEmployeesByRole }      from "../../../api/config/employeeRoleFilter";
-import { getAllEmployees, createEmployee, updateEmployeeById } from "../../../api/employeeapi";
-import { useCompanySelection }        from "../../../hooks/useCompanySelection";
-import { getEmployeeFeatures }        from "../../../config/employeeFeatures";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../../utils/alert";
+import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
+import { EMPLOYEE_ROLE_CONFIG } from "../../../api/config/employeeRoleConfig";
+import { filterEmployeesByRole } from "../../../api/config/employeeRoleFilter";
+import {
+  getAllEmployees,
+  createEmployee,
+  updateEmployeeById,
+} from "../../../api/employeeapi";
+import { useCompanySelection } from "../../../hooks/useCompanySelection";
+import { getEmployeeFeatures } from "../../../config/employeeFeatures";
+import { showApiError, showSuccess } from "../../../utils/alert";
 
 import {
   TAB_ORDER,
   type TabName,
   DEFAULT_FORM,
   mapEditDataToForm,
-  buildPayload,
-  validateTab,
 } from "./Employeeformconfig";
 
-// ─── Tab progress pill ────────────────────────────────────────────────────────
-const TAB_ICONS: Record<TabName, string> = {
-  "Personal":     "👤",
-  "Contact":      "",
-  "Employment":   "💼",
-  "Leave Setup":  "🏖️",
-  "Compensation": "💰",
-  "Work Schedule":"🗓️",
-  "Documents":    "📄",
-};
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type DocumentUpload = { uploaded: boolean; fileName?: string; fileUrl?: string };
+export function buildEmployeePayload(formData: any) {
+  // Address
+  const fullAddress = [
+    formData.street,
+    formData.city,
+    formData.province,
+    formData.postalCode,
+    formData.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+ 
+  // Salary mode normalisation
+  const mapSalaryMode = (method: string) => {
+    const m = (method ?? "").toLowerCase();
+    if (m.includes("bank"))   return "Bank";
+    if (m.includes("mobile")) return "Mobile";
+    if (m.includes("cash"))   return "Cash";
+    return method || null;
+  };
+ 
+  // Pull the pre-computed salary result that CompensationTab wrote to formData
+  const salaryResult: SalaryResult | undefined = formData._salaryResult;
+ 
+  return {
+    // ── Personal ────────────────────────────────────────────
+    first_name:     formData.firstName  || "",
+    middle_name:    formData.middleName || "",
+    last_name:      formData.lastName   || "",
+    employee_name:  `${formData.firstName || ""} ${formData.lastName || ""}`.trim(),
+    employee_type:  formData.employeeType || "",
+    salutation:     formData.salutation  || null,
+    gender:         formData.gender      || "",
+    date_of_birth:  formData.dateOfBirth || null,
+    marital_status: formData.maritalStatus || "",
+    blood_group:    formData.bloodGroup  || null,
+    bio:            formData.bio         || null,
+ 
+    // ── Contact ─────────────────────────────────────────────
+    personal_email:              formData.email                   || "",
+    company_email:               formData.CompanyEmail            || "",
+    prefered_email:              formData.preferredEmail          || null,
+    prefered_contact_email:      formData.preferredContactEmail   || "",
+    cell_number:                 formData.phoneNumber             || "",
+    emergency_phone_number:      formData.emergencyContactPhone   || "",
+    person_to_be_contacted:      formData.emergencyContactName    || null,
+    relation:                    formData.emergencyContactRelation || null,
+    current_address:             fullAddress,
+    permanent_address:           fullAddress,
+    permanent_accommodation_type: formData.accommodationType      || "",
+ 
+    // ── Employment ──────────────────────────────────────────
+    designation:          formData.designation      || "",
+    department:           formData.department       || "",
+    reports_to:           formData.reportingManager || "",
+    employment_type:      formData.employment_type   || null,
+    grade:                formData.grade            || "",
+    branch:               formData.workLocation     || "",
+    date_of_joining:      formData.dateOfJoining    || null,
+    contract_end_date:    formData.contractEndDate  || null,
+    notice_number_of_days: Number(formData.probationPeriod) || 0,
+    leave_approver:        formData.leaveApprover        || null,
+    expense_approver:      formData.expenseApprover      || null,
+    shift_request_approver: formData.shiftRequestApprover || null,
+ 
+    // ── Leave ───────────────────────────────────────────────
+    leave_policy: formData.leavePolicy || "",
+ 
+    // ── Compensation (base-driven) ───────────────────────────
+    salary_structure: formData.salaryStructure || null,
+    base_salary:      Number(formData.basicSalary) || 0,   
+    gross:            salaryResult?.gross            ?? 0,
+    ctc: salaryResult?.gross ?? 0, 
+   
+    
+ 
+  
+    salary_mode:     mapSalaryMode(formData.paymentMethod || ""),
+    salary_currency: formData.currency || null,
+ 
+    // ── Bank ────────────────────────────────────────────────
+    bank_name:    formData.bankName      || null,
+    bank_ac_no:   formData.accountNumber || null,
+    account_type: formData.accountType   || null,
+    branch_code:  formData.branchCode    || null,
+ 
+    // ── Health / Passport ────────────────────────────────────
+    health_insurance_provider: formData.healthInsuranceProvider || null,
+    health_insurance_no:       formData.healthInsuranceNo       || null,
+    health_details:            formData.healthDetails           || null,
+    passport_number:           formData.passportNumber          || null,
+    place_of_issue:            formData.placeOfIssue            || null,
+    date_of_issue:             formData.dateOfIssue             || null,
+    valid_upto:                formData.validUpto               || null,
+ 
+    // ── System ──────────────────────────────────────────────
+    create_user_permission:    1,
+    create_user_automatically: 1,
+  };
+}
+
+
+// ── Tab icons ────────────────────────────────────────────────────────────────
+
+
+
+type DocumentUpload = {
+  uploaded: boolean;
+  fileName?: string;
+  fileUrl?: string;
+};
 
 type Props = {
   isOpen: boolean;
@@ -54,39 +165,49 @@ type Props = {
   mode?: "add" | "edit";
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-const AddEmployeeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, editData, mode = "add" }) => {
-  const { companyCode }   = useCompanySelection();
-  const features          = getEmployeeFeatures(companyCode);
-  const departments       = features.departments;
-  const levelsFromSettings = getLevelsFromHrSettings();
+// ── Component ────────────────────────────────────────────────────────────────
 
-  // ── Step: verification vs form ──────────────────────────────────────────
+const AddEmployeeModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  editData,
+  mode = "add",
+}) => {
+  const { companyCode } = useCompanySelection();
+  const features = getEmployeeFeatures(companyCode);
+  const departments = features.departments;
+  const levelsFromSettings = getLevelsFromHrSettings();
+  const [employeeFile, setEmployeeFile] = useState<File | null>(null);
+
+  // ── Step ────────────────────────────────────────────────────────────────
   const [step, setStep] = useState<"verification" | "form">(
-    features.requireIdentityVerification ? "verification" : "form"
+    features.requireIdentityVerification ? "verification" : "form",
   );
 
   // ── Form state ──────────────────────────────────────────────────────────
-  const [formData, setFormData]       = useState<Record<string, any>>(DEFAULT_FORM);
-  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>({});
+  const [formData, setFormData] = useState<Record<string, any>>(DEFAULT_FORM);
+  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>(
+    {},
+  );
   const [isPreFilled, setIsPreFilled] = useState(false);
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
-  const activeTab  = TAB_ORDER[currentTabIndex] as TabName;
-  const isLastTab  = currentTabIndex === TAB_ORDER.length - 1;
+
+  const activeTab = TAB_ORDER[currentTabIndex] as TabName;
+  const isLastTab = currentTabIndex === TAB_ORDER.length - 1;
 
   // ── People dropdowns ────────────────────────────────────────────────────
   const [reportingManagers, setReportingManagers] = useState<any[]>([]);
-  const [hrManagers, setHrManagers]               = useState<any[]>([]);
+  const [hrManagers, setHrManagers] = useState<any[]>([]);
 
   // ── Documents ───────────────────────────────────────────────────────────
-  const [documents, setDocuments]       = useState<Record<string, DocumentUpload>>({
+  const [documents, setDocuments] = useState<Record<string, DocumentUpload>>({
     "NRC Copy": { uploaded: false },
     "Offer Letter": { uploaded: false },
     "Employment Contract": { uploaded: false },
     "NAPSA Certificate": { uploaded: false },
   });
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
-
   const [saving, setSaving] = useState(false);
 
   // ── Reset on open ───────────────────────────────────────────────────────
@@ -103,12 +224,14 @@ const AddEmployeeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, editDat
       setIsPreFilled(false);
     }
     setCurrentTabIndex(0);
-  }, [isOpen, editData]);
+  }, [isOpen, editData, features.requireIdentityVerification]);
 
   // ── Body scroll lock ────────────────────────────────────────────────────
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   // ── Load managers ───────────────────────────────────────────────────────
@@ -118,9 +241,15 @@ const AddEmployeeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, editDat
       try {
         const res = await getAllEmployees(1, 200, "Active");
         const emps = res?.data?.employees ?? [];
-        setReportingManagers(filterEmployeesByRole(emps, EMPLOYEE_ROLE_CONFIG.reportingManager));
-        setHrManagers(filterEmployeesByRole(emps, EMPLOYEE_ROLE_CONFIG.hrManager));
-      } catch { /* silent — dropdowns just stay empty */ }
+        setReportingManagers(
+          filterEmployeesByRole(emps, EMPLOYEE_ROLE_CONFIG.reportingManager),
+        );
+        setHrManagers(
+          filterEmployeesByRole(emps, EMPLOYEE_ROLE_CONFIG.hrManager),
+        );
+      } catch {
+        
+      }
     })();
   }, [isOpen]);
 
@@ -128,38 +257,49 @@ const AddEmployeeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, editDat
   const handleInputChange = (field: string, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-  const handleNext = () => {
-    const err = validateTab(activeTab, formData);
-    if (err) { showApiError(err); return; }
-    setCurrentTabIndex((p) => p + 1);
-  };
-
+  const handleNext = () => setCurrentTabIndex((p) => p + 1);
   const handlePrevious = () => setCurrentTabIndex((p) => p - 1);
 
-  const handleSave = async () => {
-    const err = validateTab(activeTab, formData);
-    if (err) { showApiError(err); return; }
-    try {
-      setSaving(true);
-      showLoading(editData ? "Updating Employee…" : "Creating Employee…");
-      const payload = buildPayload(formData, !!editData);
-      if (editData?.id) {
-        await updateEmployeeById({ id: String(editData.id), ...payload });
-      } else {
-        await createEmployee(payload);
-      }
-      closeSwal();
-      showSuccess(editData ? "Employee updated successfully" : "Employee created successfully");
-      onSuccess?.();
-      onClose();
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    } finally {
-      setSaving(false);
-    }
-  };
+const handleSave = async () => {
+  try {
+    setSaving(true);
 
+    const payload = buildEmployeePayload(formData);
+
+    let employeeId: string | null = null;
+
+    if (editData?.id) {
+      await updateEmployeeById({ id: String(editData.id), ...payload });
+      employeeId = String(editData.id);
+    } else {
+     
+     const res = await createEmployee(payload);
+
+employeeId = res?.message?.data?.employee || null;
+    }
+   
+
+
+   
+    if (employeeFile && employeeId) {
+      await uploadEmployeePhoto(employeeId, employeeFile);
+    }
+
+    showSuccess(
+      editData
+        ? "Employee updated successfully"
+        : "Employee created successfully",
+    );
+
+    onSuccess?.();
+    onClose();
+
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setSaving(false);
+  }
+};
   const removeDocument = (key: string) =>
     setDocuments((prev) => ({ ...prev, [key]: { uploaded: false } }));
 
@@ -173,193 +313,183 @@ const AddEmployeeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, editDat
       gender: data.personalInfo?.gender || "",
       dateOfBirth: data.personalInfo?.dateOfBirth || "",
     }));
-    setVerifiedFields({ nrcId: true, firstName: true, lastName: true, gender: true, dateOfBirth: true });
+    setVerifiedFields({
+      nrcId: true,
+      firstName: true,
+      lastName: true,
+      gender: true,
+      dateOfBirth: true,
+    });
     setIsPreFilled(true);
     setStep("form");
   };
 
-  // ── Guard ───────────────────────────────────────────────────────────────
+  // ── Guards ──────────────────────────────────────────────────────────────
   if (!isOpen) return null;
 
   if (step === "verification" && features.requireIdentityVerification) {
     return (
       <IdentityVerificationModal
+        isOpen={isOpen}
         onVerified={handleVerified}
-        onManualEntry={() => { setIsPreFilled(false); setVerifiedFields({}); setStep("form"); }}
+        onManualEntry={() => {
+          setIsPreFilled(false);
+          setVerifiedFields({});
+          setStep("form");
+        }}
         onClose={onClose}
       />
     );
   }
 
-  const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(" ");
-
-
-    return (
-  <MinimizableModal
-    modalId="add-employee"
-    isOpen={isOpen}
-    onClose={onClose}
-    title={fullName || (editData ? "Edit Employee" : "New Employee")}
-    subtitle={formData.department || ""}
-    maxWidth="5xl"
-    height="90vh"
-    footer={
-      <div className="flex justify-between w-full items-center">
-        <button
-          onClick={onClose}
-          className="px-4 py-2 text-xs text-muted hover:text-main hover:bg-app rounded-lg"
-        >
-          Cancel
-        </button>
-
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-muted">
-            {currentTabIndex + 1} / {TAB_ORDER.length}
-          </span>
-
-          {currentTabIndex > 0 && (
-            <button
-              onClick={handlePrevious}
-              className="px-3 py-2 text-xs border border-theme rounded-lg"
-            >
-              Previous
-            </button>
-          )}
-
-          {!isLastTab ? (
-            <button
-              onClick={handleNext}
-              className="px-5 py-2 text-xs bg-primary text-white rounded-lg"
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-5 py-2 text-xs bg-primary text-white rounded-lg"
-            >
-              {saving ? "Saving…" : "Save"}
-            </button>
-          )}
-        </div>
-      </div>
-    }
-  >
-
-      
-
-        {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
-        <div className="flex border-b border-theme bg-card px-2 overflow-x-auto flex-shrink-0">
-          {TAB_ORDER.map((tab, i) => {
-            const done    = i < currentTabIndex;
-            const active  = i === currentTabIndex;
-            return (
-              <button
-                key={tab}
-                onClick={() => setCurrentTabIndex(i)}
-                className={`relative flex items-center gap-1.5 px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition flex-shrink-0 border-b-2 ${
-                  active
-                    ? "text-primary border-primary"
-                    : done
-                    ? "text-emerald-600 border-transparent"
-                    : "text-muted border-transparent hover:text-main"
-                }`}
-              >
-                <span>{TAB_ICONS[tab as TabName]}</span>
-                {tab}
-                {done && <span className="text-emerald-500 text-[9px]">✓</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* ── Tab Content ─────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto bg-app p-5">
-          {activeTab === "Personal" && (
-            <PersonalInfoTab
-              formData={formData}
-              handleInputChange={handleInputChange}
-              verifiedFields={verifiedFields}
-            />
-          )}
-          {activeTab === "Contact" && (
-            <ContactInfoTab formData={formData} handleInputChange={handleInputChange} />
-          )}
-          {activeTab === "Employment" && (
-            <EmploymentTab
-              formData={formData}
-              handleInputChange={handleInputChange}
-              departments={departments}
-              Level={levelsFromSettings}
-              managers={reportingManagers}
-              hrManagers={hrManagers}
-            />
-          )}
-          {activeTab === "Leave Setup" && (
-            <LeaveSetupTab formData={formData} handleInputChange={handleInputChange} />
-          )}
-          {activeTab === "Compensation" && (
-            <CompensationTab formData={formData} handleInputChange={handleInputChange} />
-          )}
-          {activeTab === "Work Schedule" && (
-            <WorkScheduleTab formData={formData} handleInputChange={handleInputChange} />
-          )}
-          {activeTab === "Documents" && (
-            <DocumentsTab
-              documents={documents}
-              setUploadingDoc={setUploadingDoc}
-              removeDocument={removeDocument}
-            />
-          )}
-        </div>
-
-        {/* ── Footer ──────────────────────────────────────────────────────── */}
-        <div className="flex justify-between items-center px-5 py-3 border-t border-theme bg-card flex-shrink-0">
+  // ── Render ──────────────────────────────────────────────────────────────
+  return (
+    <MinimizableModal
+      modalId="add-employee"
+      isOpen={isOpen}
+      onClose={onClose}
+      title={editData ? "Edit Employee" : "New Employee"}
+      subtitle="Employee Management"
+      customWidth="77vw"
+      height="90vh"
+      footer={
+        <div className="flex justify-between w-full items-center px-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs text-muted hover:text-main hover:bg-app rounded-lg transition"
+            className="px-3 py-1.5 text-xs text-muted hover:text-main hover:bg-app rounded-lg transition"
           >
             Cancel
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Step indicator */}
-            <span className="text-[10px] text-muted mr-2">
+            <span className="text-[10px] text-muted">
               {currentTabIndex + 1} / {TAB_ORDER.length}
             </span>
 
             {currentTabIndex > 0 && (
               <button
                 onClick={handlePrevious}
-                className="flex items-center gap-1 px-3 py-2 text-xs border border-theme rounded-lg hover:bg-app transition text-main"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-theme rounded-lg hover:bg-app transition text-main"
               >
-                <ChevronLeft className="w-3.5 h-3.5" /> Previous
+                <FaArrowLeft className="w-3 h-3" /> Previous
               </button>
             )}
 
             {!isLastTab ? (
               <button
                 onClick={handleNext}
-                className="flex items-center gap-1 px-5 py-2 text-xs bg-primary text-white rounded-lg hover:opacity-90 transition"
+                className="flex items-center gap-1 px-4 py-1.5 text-xs bg-primary text-white rounded-lg hover:opacity-90 transition"
               >
-                Next <ChevronRight className="w-3.5 h-3.5" />
+                Next <FaArrowRight className="w-3 h-3" />
               </button>
             ) : (
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-5 py-2 text-xs bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition font-semibold"
+                className="flex items-center gap-1 px-4 py-1.5 text-xs bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition font-semibold"
               >
-                {saving ? "Saving…" : editData ? "Update Employee" : "Save Employee"}
+                {saving ? (
+                  "Saving…"
+                ) : (
+                  <>
+                    <FaCheck className="w-3 h-3" />{" "}
+                    {editData ? "Update" : "Save"}
+                  </>
+                )}
               </button>
             )}
           </div>
         </div>
-          </MinimizableModal>
+      }
+    >
+      {/* Split layout */}
+      <div className="flex h-full overflow-hidden">
+        {/* LEFT: Tab bar + content */}
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+          {/* Tab bar */}
+          <div className="flex border-b border-theme bg-card px-1.5 overflow-x-auto flex-shrink-0">
+            {TAB_ORDER.map((tab, i) => {
+              const active = i === currentTabIndex;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setCurrentTabIndex(i)}
+                  className={`relative flex items-center gap-1 px-2.5 py-2 text-[10px] font-medium whitespace-nowrap transition flex-shrink-0 border-b-2 ${
+                    active
+                      ? "text-primary border-primary"
+                      : "text-muted border-transparent hover:text-main"
+                  }`}
+                >
+                  <span>{tab}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Tab content */}
+          <div className="flex-1 overflow-y-auto bg-app p-3">
+            {activeTab === "Personal" && (
+              <PersonalInfoTab
+                formData={formData}
+                handleInputChange={handleInputChange}
+                verifiedFields={verifiedFields}
+              />
+            )}
+            {activeTab === "Address & Contact" && (
+              <ContactInfoTab
+                formData={formData}
+                handleInputChange={handleInputChange}
+              />
+            )}
+            {activeTab === "Employment" && (
+              <EmploymentTab
+                formData={formData}
+                handleInputChange={handleInputChange}
+                departments={departments}
+                Level={levelsFromSettings}
+                managers={reportingManagers}
+                hrManagers={hrManagers}
+              />
+            )}
+            {activeTab === "Leave Setup" && (
+              <LeaveSetupTab
+                formData={formData}
+                handleInputChange={handleInputChange}
+              />
+            )}
+            {activeTab === "Compensation" && (
+              <CompensationTab
+                formData={formData}
+                handleInputChange={handleInputChange}
+              />
+            )}
+            {activeTab === "Work Schedule" && (
+              <WorkScheduleTab
+                formData={formData}
+                handleInputChange={handleInputChange}
+              />
+            )}
+            {activeTab === "Documents" && (
+              <DocumentsTab
+                documents={documents}
+                setUploadingDoc={setUploadingDoc}
+                removeDocument={removeDocument}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Summary panel */}
+        <div className="w-[260px] flex-shrink-0 border-l border-theme bg-app">
+          <div className="h-full">
+           <EmployeeSummaryPanel
+  formData={formData}
+  onFileSelect={setEmployeeFile}
+/>
+          </div>
+        </div>
       </div>
-    
-    </div>
+    </MinimizableModal>
   );
 };
 

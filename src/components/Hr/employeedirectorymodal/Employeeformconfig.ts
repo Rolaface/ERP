@@ -1,14 +1,7 @@
-// ─── employeeFormConfig.ts ────────────────────────────────────────────────────
-// Single source of truth for:
-//   - Default form state
-//   - Tab definitions
-//   - Payload builder
-//   - Edit data mapper
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const TAB_ORDER = [
   "Personal",
-  "Contact",
+  "Address & Contact",
   "Employment",
   "Leave Setup",
   "Compensation",
@@ -22,7 +15,7 @@ export type TabName = (typeof TAB_ORDER)[number];
 export const DEFAULT_FORM: Record<string, any> = {
   // Personal
   firstName: "",
-  otherNames: "",
+  middleName: "",
   lastName: "",
   dateOfBirth: "",
   gender: "",
@@ -64,23 +57,27 @@ export const DEFAULT_FORM: Record<string, any> = {
   probationPeriod: "",
   shift: "Day",
 
-  // Compensation
-  basicSalary: "",
-  housingAllowance: "",
-  mealAllowance: "",
-  transportAllowance: "",
-  otherAllowances: "",
-  grossSalary: "",
-  currency: "ZMW",
-  paymentFrequency: "Monthly",
-  paymentMethod: "Bank Transfer",
-  accountName: "",
-  accountNumber: "",
-  bankName: "",
-  branchCode: "",
-  accountType: "Savings",
-  ceilingAmount: "",
-  ceilingYear: String(new Date().getFullYear()),
+   // Compensation
+   basicSalary: "",
+   housingAllowance: "",
+   housingAllowanceType: "amount",
+   mealAllowance: "",
+   mealAllowanceType: "amount",
+   transportAllowance: "",
+   transportAllowanceType: "amount",
+   otherAllowances: "",
+   otherAllowancesType: "",
+   grossSalary: "",
+   currency: "",
+   paymentFrequency: "",
+   paymentMethod: " ",
+   accountName: "",
+   accountNumber: "",
+   bankName: "",
+   branchCode: "",
+   accountType: "Savings",
+   ceilingAmount: "",
+   ceilingYear: String(new Date().getFullYear()),
 
   // Leave
   leavePolicy: "",
@@ -101,7 +98,7 @@ export const DEFAULT_FORM: Record<string, any> = {
 export function mapEditDataToForm(editData: any): Record<string, any> {
   return {
     firstName: editData.personalInfo?.FirstName || "",
-    otherNames: editData.personalInfo?.OtherNames || "",
+    middleName: editData.personalInfo?.MiddleName || "",
     lastName: editData.personalInfo?.LastName || "",
     dateOfBirth: editData.personalInfo?.Dob || "",
     gender: editData.personalInfo?.Gender || "",
@@ -177,7 +174,7 @@ export function buildPayload(formData: Record<string, any>, isEdit: boolean) {
     // Personal
     FirstName: formData.firstName,
     LastName: formData.lastName,
-    OtherNames: formData.otherNames,
+    OtherNames: formData.middleName,
     Dob: formData.dateOfBirth,
     Gender: formData.gender,
     MaritalStatus: formData.maritalStatus,
@@ -266,7 +263,7 @@ export function validateTab(tab: TabName, formData: Record<string, any>): string
       if (!formData.dateOfBirth) return "Date of birth is required";
       if (!formData.gender) return "Gender is required";
       return null;
-    case "Contact":
+    case "Address & Contact":
       if (!formData.email || !formData.phoneNumber) return "Email and phone number are required";
       return null;
     case "Employment":

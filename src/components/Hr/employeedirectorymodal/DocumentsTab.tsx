@@ -1,6 +1,12 @@
-// ─── DocumentsTab.tsx ────────────────────────────────────────────────────────
 import React, { useState } from "react";
-import { Upload, Trash2, FileText, Plus, Eye, CheckCircle2 } from "lucide-react";
+import {
+  FaUpload,
+  FaTrash,
+  FaFile,
+  FaPlus,
+  FaEye,
+  FaCheckCircle,
+} from "react-icons/fa";
 import DocumentUploadModal from "../employeedirectorymodal/DocumentModal";
 
 type DocumentEntry = {
@@ -20,61 +26,73 @@ export default function DocumentsTab({ documents, setUploadingDoc, removeDocumen
 
   const uploadedCount = Object.values(documents).filter((d) => d.uploaded).length;
   const totalCount    = Object.keys(documents).length;
+  const progress      = totalCount > 0 ? (uploadedCount / totalCount) * 100 : 0;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="max-w-4xl mx-auto space-y-3">
 
       {/* Header */}
-      <div className="bg-card rounded-lg border border-theme p-5">
-        <div className="flex justify-between items-center mb-1">
-          <h4 className="text-xs font-semibold text-main uppercase tracking-wide">Employee Documents</h4>
+      <div className="bg-card rounded-lg border border-theme p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider">
+              Employee Documents
+            </h4>
+            <p className="text-[10px] text-muted mt-0.5">
+              {uploadedCount} of {totalCount} required documents uploaded
+            </p>
+          </div>
           <button
             onClick={() => { setActiveUpload("CUSTOM"); setUploadingDoc("CUSTOM"); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:opacity-90 transition"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-primary text-white text-[10px] rounded-lg hover:opacity-90 transition"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <FaPlus className="w-2.5 h-2.5" />
             Add Document
           </button>
         </div>
-        <p className="text-xs text-muted">
-          {uploadedCount} of {totalCount} required documents uploaded
-        </p>
-        {/* progress bar */}
-        <div className="mt-3 h-1.5 bg-app rounded-full overflow-hidden">
+
+        {/* Progress bar */}
+        <div className="h-1 bg-app rounded-full overflow-hidden">
           <div
-            className="h-full bg-primary rounded-full transition-all"
-            style={{ width: `${(uploadedCount / totalCount) * 100}%` }}
+            className="h-full bg-primary rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
-      {/* Document List */}
-      <div className="grid grid-cols-1 gap-3">
+      {/* Document grid */}
+      <div className="grid grid-cols-2 gap-2">
         {Object.entries(documents).map(([key, doc]) => (
           <div
             key={key}
-            className="bg-card border border-theme rounded-lg px-4 py-3 flex items-center justify-between"
+            className={`bg-card border rounded-lg px-3 py-2.5 flex items-center justify-between transition ${
+              doc.uploaded ? "border-emerald-200" : "border-theme"
+            }`}
           >
-            <div className="flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                doc.uploaded ? "bg-emerald-50 border border-emerald-200" : "bg-app border border-theme"
-              }`}>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div
+                className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
+                  doc.uploaded
+                    ? "bg-emerald-50 border border-emerald-200"
+                    : "bg-app border border-theme"
+                }`}
+              >
                 {doc.uploaded
-                  ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  : <FileText className="w-4 h-4 text-muted" />
+                  ? <FaCheckCircle className="w-4 h-4 text-emerald-600" />
+                  : <FaFile className="w-4 h-4 text-muted" />
                 }
               </div>
-              <div>
-                <p className="text-xs font-medium text-main">{key}</p>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-main truncate">{key}</p>
                 {doc.uploaded ? (
-                  <p className="text-[10px] text-emerald-600 mt-0.5">{doc.fileName}</p>
+                  <p className="text-[10px] text-emerald-600 truncate">{doc.fileName}</p>
                 ) : (
-                  <p className="text-[10px] text-muted mt-0.5">Not uploaded</p>
+                  <p className="text-[10px] text-muted">Not uploaded</p>
                 )}
               </div>
             </div>
 
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-shrink-0 ml-2">
               {doc.uploaded ? (
                 <>
                   {doc.fileUrl && (
@@ -82,24 +100,26 @@ export default function DocumentsTab({ documents, setUploadingDoc, removeDocumen
                       href={doc.fileUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 text-muted hover:text-primary rounded-lg hover:bg-app transition"
+                      className="p-1.5 text-muted hover:text-primary rounded hover:bg-app transition"
+                      title="View"
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <FaEye className="w-3 h-3" />
                     </a>
                   )}
                   <button
                     onClick={() => removeDocument(key)}
-                    className="p-2 text-muted hover:text-danger rounded-lg hover:bg-app transition"
+                    className="p-1.5 text-muted hover:text-danger rounded hover:bg-app transition"
+                    title="Remove"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <FaTrash className="w-3 h-3" />
                   </button>
                 </>
               ) : (
                 <button
                   onClick={() => { setActiveUpload(key); setUploadingDoc(key); }}
-                  className="flex items-center gap-1 px-3 py-1.5 text-[10px] border border-theme rounded-lg text-main hover:bg-app hover:border-primary hover:text-primary transition"
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] border border-theme rounded text-main hover:border-primary hover:text-primary hover:bg-primary/5 transition"
                 >
-                  <Upload className="w-3 h-3" />
+                  <FaUpload className="w-2.5 h-2.5" />
                   Upload
                 </button>
               )}
@@ -108,12 +128,12 @@ export default function DocumentsTab({ documents, setUploadingDoc, removeDocumen
         ))}
       </div>
 
-      {/* Upload modal */}
+      {/* Upload Modal */}
       {activeUpload && (
         <DocumentUploadModal
+          isOpen={activeUpload !== null}
           onClose={() => { setActiveUpload(null); setUploadingDoc(null); }}
-          onUpload={async ({ description, file }) => {
-            // parent would handle actual upload; here we just mark as done
+          onUpload={async () => {
             setUploadingDoc(null);
             setActiveUpload(null);
           }}

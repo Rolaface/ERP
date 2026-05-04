@@ -1,9 +1,7 @@
 import React from "react";
 import { useCompanySelection } from "../../../hooks/useCompanySelection";
 import { getEmployeeFeatures } from "../../../config/employeeFeatures";
-
-
-
+import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 
 type PersonalInfoTabProps = {
   formData: any;
@@ -11,227 +9,150 @@ type PersonalInfoTabProps = {
   verifiedFields: Record<string, boolean>;
 };
 
+const GENDER_OPTIONS = [
+  { label: "Male",   value: "Male" },
+  { label: "Female", value: "Female" },
+  { label: "Other",  value: "Other" },
+];
+
+const MARITAL_STATUS_OPTIONS = [
+  { label: "Single",   value: "Single" },
+  { label: "Married",  value: "Married" },
+  { label: "Divorced", value: "Divorced" },
+  { label: "Widowed",  value: "Widowed" },
+];
+
 const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
   formData,
   handleInputChange,
   verifiedFields,
 }) => {
-  const [dobError, setDobError] = React.useState<string | null>(null);
   const { companyCode } = useCompanySelection();
   const features = getEmployeeFeatures(companyCode);
 
-  const verifiedInputStyle =
-    "bg-app text-main cursor-not-allowed border-theme";
+  const isVerified = (field: string) => verifiedFields[field] === true;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      {/* ✅ CONDITIONAL RENDERING - Only show for companies with statutory fields */}
+    <div className="max-w-4xl mx-auto space-y-3">
+
+      {/* Identity & Statutory */}
       {features.showStatutoryFields && (
-        <div className="bg-card p-5 rounded-lg border border-theme space-y-4">
-          <h4 className="text-xs font-semibold text-main uppercase tracking-wide mb-3">
+        <div className="bg-card p-3 rounded-lg border border-theme">
+          <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
             Identity & Statutory Information
           </h4>
-          <div className="grid grid-cols-2 gap-4">
-            {/* NRC Field */}
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="block text-xs text-main mb-1 font-medium">
-                NRC Number {features.statutoryFieldsRequired && <span className="text-danger">*</span>}
-              </label>
-              <input
-                type="text"
+              <ModalInput
+                label="NRC Number"
+                name="nrcId"
                 value={formData.nrcId}
-                disabled={verifiedFields.nrcId}
+                disabled={isVerified("nrcId")}
                 onChange={(e) => handleInputChange("nrcId", e.target.value)}
-                className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none
-                  ${verifiedFields.nrcId
-                    ? verifiedInputStyle
-                    : "border border-theme bg-card text-main focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  }`}
+                required={features.statutoryFieldsRequired}
+                placeholder="123456/78/1"
               />
-              {verifiedFields.nrcId && (
-                <p className="text-[10px] text-success mt-1 font-medium">
-                  ✓ Verified from NAPSA
-                </p>
+              {isVerified("nrcId") && (
+                <p className="text-[10px] text-emerald-600 mt-0.5 font-medium">✓ Verified from NAPSA</p>
               )}
             </div>
 
-            {/* SSN Field */}
-            <div>
-              <label className="block text-xs text-main mb-1 font-medium">
-                SSN {features.statutoryFieldsRequired && <span className="text-danger">*</span>}
-              </label>
-              <input
-                type="text"
-                value={formData.socialSecurityNapsa}
-                disabled={verifiedFields.socialSecurityNapsa}
-                onChange={(e) =>
-                  handleInputChange("socialSecurityNapsa", e.target.value)
-                }
-                className={`w-full px-3 py-2 text-sm rounded-lg border
-                  ${verifiedFields.socialSecurityNapsa
-                    ? verifiedInputStyle
-                    : "border border-theme bg-card text-main focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  }`}
-              />
-            </div>
+            <ModalInput
+              label="Social Security (NAPSA)"
+              name="socialSecurityNapsa"
+              value={formData.socialSecurityNapsa}
+              disabled={isVerified("socialSecurityNapsa")}
+              onChange={(e) => handleInputChange("socialSecurityNapsa", e.target.value)}
+              required={features.statutoryFieldsRequired}
+            />
 
-            {/* NHIMA Field */}
-            <div>
-              <label className="block text-xs text-main mb-1 font-medium">
-                NHIMA Number
-              </label>
-              <input
-                type="text"
-                value={formData.nhimaHealthInsurance}
-                onChange={(e) =>
-                  handleInputChange("nhimaHealthInsurance", e.target.value)
-                }
-                placeholder="e.g., 91897177171"
-               className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
-            </div>
+            <ModalInput
+              label="NHIMA Number"
+              name="nhimaHealthInsurance"
+              value={formData.nhimaHealthInsurance}
+              onChange={(e) => handleInputChange("nhimaHealthInsurance", e.target.value)}
+              placeholder="91897177171"
+            />
 
-            {/* TPIN Field */}
-            <div>
-              <label className="block text-xs text-main mb-1 font-medium">
-                TPIN
-              </label>
-              <input
-                type="text"
-                value={formData.tpinId}
-                onChange={(e) => handleInputChange("tpinId", e.target.value)}
-                placeholder="e.g., 10000000000"
-                className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
-            </div>
+            <ModalInput
+              label="TPIN"
+              name="tpinId"
+              value={formData.tpinId}
+              onChange={(e) => handleInputChange("tpinId", e.target.value)}
+              placeholder="10000000000"
+            />
           </div>
         </div>
       )}
 
       {/* Personal Information */}
-      <div className="bg-card p-5 rounded-lg border border-theme space-y-4">
-        <h4 className="text-xs font-semibold text-main uppercase tracking-wide mb-3">
+      <div className="bg-card p-3 rounded-lg border border-theme">
+        <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Personal Information
         </h4>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              First Name <span className="text-danger">*</span>
-            </label>
-            <input
-              value={formData.firstName}
-              disabled={verifiedFields.firstName}
-              onChange={(e) => handleInputChange("firstName", e.target.value)}
-              className={`w-full px-3 py-2 text-sm rounded-lg border
-    ${
-      verifiedFields.firstName
-        ? verifiedInputStyle
-        : "border border-theme bg-card text-main focus:ring-2 focus:ring-primary/20 focus:border-primary"
-    }`}
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Other Names
-            </label>
-            <input
-              type="text"
-              value={formData.otherNames}
-              onChange={(e) => handleInputChange("otherNames", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Last Name <span className="text-danger">*</span>
-            </label>
-            <input
-              value={formData.lastName}
-              disabled={verifiedFields.lastName}
-              onChange={(e) => handleInputChange("lastName", e.target.value)}
-              className={`w-full px-3 py-2 text-sm rounded-lg border
-    ${
-      verifiedFields.lastName
-        ? verifiedInputStyle
-        : "border border-theme bg-card text-main focus:ring-2 focus:ring-primary/20 focus:border-primary"
-    }`}
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Date of Birth <span className="text-danger">*</span>
-            </label>
-            <input
-              type="date"
-              value={formData.dateOfBirth}
-              onChange={(e) => {
-                const selectedDate = e.target.value;
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+        <div className="grid grid-cols-3 gap-2.5">
+          <ModalInput
+            label="First Name"
+            name="firstName"
+            value={formData.firstName}
+            disabled={isVerified("firstName")}
+            onChange={(e) => handleInputChange("firstName", e.target.value)}
+            required
+          />
 
-                const dob = new Date(selectedDate);
+          <ModalInput
+            label="Middle Name"
+            name="middleName"
+            value={formData.middleName}
+            onChange={(e) => handleInputChange("middleName", e.target.value)}
+          />
 
-                if (dob >= today) {
-                  setDobError("Date of birth cannot be today or a future date");
-                } else {
-                  setDobError(null);
-                  handleInputChange("dateOfBirth", selectedDate);
-                }
-              }}
-              className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none
-    ${
-      dobError
-        ? "border-danger focus:ring-2 focus:ring-danger/30"
-        : "border border-theme bg-card text-main focus:ring-2 focus:ring-primary/20 focus:border-primary"
-    }`}
-            />
-            {dobError && (
-              <p className="text-[10px] text-danger mt-1 font-medium">
-                {dobError}
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Gender <span className="text-danger">*</span>
-            </label>
-            <select
-              value={formData.gender}
-              disabled={verifiedFields.gender}
-              onChange={(e) => handleInputChange("gender", e.target.value)}
-              className={`w-full px-3 py-2 text-sm rounded-lg border
-    ${
-      verifiedFields.gender
-        ? verifiedInputStyle
-        : "border border-theme bg-card text-main focus:ring-2 focus:ring-primary/20 focus:border-primary"
-    }`}
-            >
-              <option value="">Select</option>
-              <option>Male</option>
-              <option>Female</option>
-              <option>Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Marital Status
-            </label>
-            <select
-              value={formData.maritalStatus}
-              onChange={(e) =>
-                handleInputChange("maritalStatus", e.target.value)
-              }
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            >
-              <option value="">Select</option>
-              <option>Single</option>
-              <option>Married</option>
-              <option>Divorced</option>
-              <option>Widowed</option>
-            </select>
-          </div>
+          <ModalInput
+            label="Last Name"
+            name="lastName"
+            value={formData.lastName}
+            disabled={isVerified("lastName")}
+            onChange={(e) => handleInputChange("lastName", e.target.value)}
+            required
+          />
+
+          <ModalInput
+            label="Date of Birth"
+            name="dateOfBirth"
+            type="date"
+            value={formData.dateOfBirth}
+            onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+            required
+          />
+
+          <ModalSelect
+            label="Gender"
+            name="gender"
+            value={formData.gender}
+            disabled={isVerified("gender")}
+            onChange={(e) => handleInputChange("gender", e.target.value)}
+            options={GENDER_OPTIONS}
+            required
+          />
+
+          <ModalSelect
+            label="Marital Status"
+            name="maritalStatus"
+            value={formData.maritalStatus}
+            onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
+            options={MARITAL_STATUS_OPTIONS}
+          />
+
+          <ModalInput
+            label="Nationality"
+            name="nationality"
+            value={formData.nationality}
+            onChange={(e) => handleInputChange("nationality", e.target.value)}
+            placeholder="e.g., Zambian"
+          />
         </div>
       </div>
+
     </div>
   );
 };

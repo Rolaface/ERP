@@ -170,12 +170,13 @@ export const API = {
    * EMPLOYEE / HRMS
    * ========================= */
   employee: {
-    getAll: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.get_all_employees`,
-    getById: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.get_employee`,
-    create: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.create_employee`,
-    update: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.update_employee`,
-    delete: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.delete_employee`,
-    updateDocuments: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.manage_employee_documents`,
+    getAll: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employees`,
+    getById: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employee_by_id`,
+    Dp: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.upload_employee_image`,
+    create: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.create_employee`,
+    update: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee`,
+    delete: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.delete_employee`,
+    updateDocuments: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.manage_employee_documents`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
   },
@@ -549,5 +550,11 @@ export const API = {
     createlocation: `${ERP_BASE}/api/resource/Location`,
     getitemcodeforFaixedAsset: `${ERP_BASE}/api/method/custom_api.api.search.get_items`,
     getemployeeforAssetMovement: `${ERP_BASE}/api/method/custom_api.api.search.get_employees`,
+    getdepartment: `${ERP_BASE}/api/method/custom_hrms.api.search.get_departments`,
+    getgrade: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employee_grades`,
+    getdesignation: `${ERP_BASE}/api/method/custom_hrms.api.search.get_designations`,
+    getemployeetype: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employment_types`,
+    getsalarystructure: `${ERP_BASE}/api/method/custom_hrms.api.search.get_salary_structures`,
+    getleavepolicy: `${ERP_BASE}/api/method/custom_hrms.api.search.get_leave_policies`,
   },
 } as const;
