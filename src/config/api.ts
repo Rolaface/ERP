@@ -1,5 +1,6 @@
-import { create } from "zustand";
+
 import { ENV } from "./env";
+
 
 const getApiBaseUrl = (): string => {
   if (typeof window === "undefined") {
@@ -31,8 +32,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
-export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -104,6 +105,21 @@ export const API = {
     updateCompanyFiles: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.upload_company_documents`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
+
+  RoleManagement: {
+    createUserRoles: `${ERP_BASE}/api/method/auth_api.role_management.api.role.create`,
+    getUserRoles:`${ERP_BASE}/api/method/auth_api.role_management.api.role.get`,
+    getUserRolesbyId:`${ERP_BASE}/api/method/auth_api.role_management.api.role.get_by_id`,
+    updateUserRoles: `${ERP_BASE}/api/method/auth_api.role_management.api.role.update`,
+    updateUserRolesStatus: `${ERP_BASE}/api/method/auth_api.role_management.api.role.update_status`,
+    createUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.signup`,
+    Language: `${ERP_BASE}/api/method/frappe.desk.search.search_link`,
+    getUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get`,
+    getUserbyId: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_user_by_id`,
+    updateUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.update`,
+    deleteUser:  `${ERP_BASE}/api/method/frappe.client.delete`,
+  },
+  
   Account: {
     createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
     getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
@@ -417,7 +433,6 @@ export const API = {
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
     // Assit movement
     Movement: `${ERP_BASE}/api/resource/Asset Movement`,
-    
   },
 
   /* =========================

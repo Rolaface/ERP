@@ -1,291 +1,203 @@
-import React, { useState } from "react";
-import {
-  FaPlus,
-  FaSearch,
-  FaEdit,
-  FaTrash,
-  FaInfoCircle,
-} from "react-icons/fa";
-import CreateUserModal from "../../components/User/CreateUserModal";
+import React, { useState, useCallback, useEffect } from "react";
+import Table from "../../components/ui/Table/Table";
+import type { Column } from "../../components/ui/Table/type";
+import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
+import { openUserModal } from "../../store/modalStore";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
+import { showConfirm, showSuccess, showApiError } from "../../utils/alert";
+import { getUsers, updateUser, deleteUser } from "../../api/RoleManagement/CreateUserApi";
+import type { UserRow } from "../../api/RoleManagement/CreateUserApi";
+import { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
 
-interface Role {
-  id: number;
-  roleName: string;
-  description: string;
-  status: "Active" | "Inactive";
-}
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
-interface UserFormData {
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  gender: string;
-  phone: string;
-  dob: string;
-  email: string;
-  username: string;
-  language: string;
-  timezone: string;
-  role: string;
-  status: "Active" | "Inactive";
-}
+const CreateUserPage: React.FC = () => {
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-interface User extends UserFormData {
-  id: number;
-}
-
-interface UserCreationProps {
-  users: User[];
-  roles: Role[];
-  onSubmit: (data: UserFormData, isEdit: boolean, userId?: number) => void;
-  onDelete: (id: number) => void;
-}
-
-const UserCreation: React.FC<UserCreationProps> = ({
-  users,
-  roles,
-  onSubmit,
-  onDelete,
-}) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-
-  const filteredUsers = users.filter((user) =>
-    Object.values(user).some((val) =>
-      String(val).toLowerCase().includes(searchTerm.toLowerCase()),
-    ),
+  const refreshKey = useDataRefreshStore(
+    (state) => state.refreshFlags[REFRESH_KEYS.CREATE_USER_LIST]
   );
 
-  const handleAdd = () => {
-    setEditingUser(null);
-    setShowModal(true);
-  };
 
-  const handleEdit = (user: User) => {
-    setEditingUser(user);
-    setShowModal(true);
-  };
-
-  const handleModalSubmit = (data: UserFormData) => {
-    if (editingUser) {
-      onSubmit(data, true, editingUser.id);
-    } else {
-      onSubmit(data, false);
+  const fetchUsers = async (search?: string, currentPage?: number, currentPageSize?: number) => {
+    setLoading(true);
+    try {
+      const response = await getUsers(search, currentPage, currentPageSize);
+      if (response.status !== "success") throw new Error(response.message ?? "Failed to fetch users");
+      setUsers(response.data);
+      setTotalItems(response.pagination.total);
+      setTotalPages(response.pagination.total_pages);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setLoading(false);
     }
-    setShowModal(false);
-    setEditingUser(null);
   };
 
-  return (
-    <div className="p-6 bg-app min-h-screen">
-      {/* Search and Add Bar */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="relative w-96">
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-theme rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition bg-card text-main"
-          />
-        </div>
-        <button
-          onClick={handleAdd}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-white font-medium shadow-sm bg-primary hover:bg-primary-600 transition"
+  // Initial load
+  useEffect(() => {
+    fetchUsers(searchQuery, page, pageSize);
+  }, [page, pageSize]);
+
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.CREATE_USER_LIST, () => {
+      fetchUsers(searchQuery, page, pageSize);
+    });
+    return () => unsubscribe();
+  }, [subscribeToRefresh]);
+
+
+  const handleAdd = () => {
+    openUserModal(null, false, {
+      onSuccess: () => fetchUsers(searchQuery, page, pageSize),
+    });
+  };
+
+  const handleEdit = (row: UserRow, e: React.MouseEvent) => {
+    e.stopPropagation();
+    openUserModal(
+      row,
+      true,
+      {
+        onSuccess: () => fetchUsers(searchQuery, page, pageSize),
+        onSubmit: async (data: unknown) => {
+          await updateUser(row.id, data as CreateUserFormData);
+        },
+      }
+    );
+  };
+
+  const handleView = (row: UserRow) => {
+    openUserModal(row, false, {
+      onSuccess: () => fetchUsers(searchQuery, page, pageSize),
+    });
+  };
+
+  const handleDelete = async (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const confirmed = await showConfirm("This action cannot be undone.", {
+      title: "Delete User?",
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+    });
+    if (!confirmed) return;
+    try {
+      await deleteUser(userId);
+      showSuccess("User deleted successfully");
+      fetchUsers(searchQuery, page, pageSize);
+    } catch (err) {
+      showApiError(err);
+    }
+  };
+
+
+
+  // ── Columns ────────────────────────────────────────────────────────────────
+  const columns: Column<UserRow>[] = [
+    {
+      key: "username",
+      header: "Username",
+      render: (row) => (
+        <span className="font-semibold text-main text-sm">{row.username}</span>
+      ),
+    },
+    {
+      key: "email",
+      header: "Email",
+      render: (row) => (
+        <span className="text-sm text-muted">{row.email}</span>
+      ),
+    },
+    {
+      key: "name",
+      header: "Name",
+      render: (row) => (
+        <span className="text-sm text-main">{row.name || "—"}</span>
+      ),
+    },
+    {
+      key: "enabled",
+      header: "Status",
+      render: (row) => (
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${row.enabled
+            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+            : "bg-red-50 text-red-600 border-red-200"
+            }`}
         >
-          <FaPlus /> Add User
-        </button>
-      </div>
+          {row.enabled ? "Active" : "Inactive"}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (row) => (
+        <ActionGroup>
+          <ActionButton
+            type="edit"
+            onClick={(e) => handleEdit(row, e as React.MouseEvent)}
+            iconOnly
+            title="Edit User"
+          />
+          <ActionMenu
+            onDelete={(e) => handleDelete(row.id, e as React.MouseEvent)}
+            customActions={[
+              // { label: "View Details", onClick: () => handleView(row) },
+            ]}
+          />
+        </ActionGroup>
+      ),
+    },
+  ];
 
-      {/* User Table - Updated Theme */}
-      <div className="bg-card rounded-lg shadow-sm border border-theme overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="table-head">
-              <tr>
-                <th className="table-head px-6 py-3 text-left text-xs font-semibold text-table-head-text uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="table-head px-6 py-3 text-left text-xs font-semibold text-table-head-text uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="table-head px-6 py-3 text-left text-xs font-semibold text-table-head-text uppercase tracking-wider">
-                  Username
-                </th>
-                <th className="table-head px-6 py-3 text-left text-xs font-semibold text-table-head-text uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="table-head px-6 py-3 text-left text-xs font-semibold text-table-head-text uppercase tracking-wider">
-                  Language
-                </th>
-                <th className="table-head px-6 py-3 text-left text-xs font-semibold text-table-head-text uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="table-head px-6 py-3 text-left text-xs font-semibold text-table-head-text uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="table-head px-6 py-3 text-left text-xs font-semibold text-table-head-text uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-theme">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:row-hover transition-colors">
-                  <td className="px-6 py-4 font-medium text-main text-sm">
-                    {user.firstName} {user.middleName} {user.lastName}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-muted">{user.email}</td>
-                  <td className="px-6 py-4 text-sm text-muted">
-                    {user.username}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-muted">{user.phone}</td>
-                  <td className="px-6 py-4 text-sm text-muted">
-                    {user.language}
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span
-                      className="px-2 py-1 rounded-full text-xs font-medium"
-                      style={{
-                        background: "var(--row-hover)",
-                        color: "var(--primary)",
-                      }}
-                    >
-                      {user.role || "No Role"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        user.status === "Active"
-                          ? "badge-success"
-                          : "btn-danger"
-                      }`}
-                    >
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-3">
-                      <button
-                        onClick={() => handleEdit(user)}
-                        className="text-primary hover:text-primary-700 transition"
-                        title="Edit"
-                      >
-                        <FaEdit size={16} />
-                      </button>
-                      <button
-                        onClick={() => onDelete(user.id)}
-                        className="text-danger hover:text-danger-700 transition"
-                        title="Delete"
-                      >
-                        <FaTrash size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filteredUsers.length === 0 && (
-          <div className="text-center py-12">
-            <FaInfoCircle className="w-12 h-12 text-muted mx-auto mb-3" />
-            <p className="text-muted">No users found</p>
-          </div>
-        )}
-      </div>
-
-      {/* User Modal */}
-      {/* User Modal */}
-      {showModal && (
-        <CreateUserModal
-          isOpen={showModal}
-          onClose={() => {
-            setShowModal(false);
-            setEditingUser(null);
-          }}
-          onSubmit={handleModalSubmit}
-          initialData={editingUser ?? undefined}
-          availableRoles={roles}
-        />
-      )}
+  // ── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <div className="h-full min-h-0">
+      <Table
+        columns={columns}
+        data={users}
+        rowKey={(row) => row.id}
+        tableId="create-user-management"
+        loading={loading}
+        isFetching={false}
+        showToolbar
+        searchValue={searchQuery}
+        onSearch={(q) => {
+          setSearchQuery(q);
+          setPage(1);
+          fetchUsers(q, 1, pageSize);
+        }}
+        enableAdd
+        addLabel="Add User"
+        onAdd={handleAdd}
+        enableColumnSelector
+        enableExport
+        currentPage={page}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        pageSizeOptions={[10, 25, 50, 100]}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+          fetchUsers(searchQuery, 1, size);
+        }}
+        onPageChange={(p) => {
+          setPage(p);
+          fetchUsers(searchQuery, p, pageSize);
+        }}
+      />
     </div>
   );
 };
 
-// Demo with sample data
-export default function App() {
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      firstName: "John",
-      middleName: "A",
-      lastName: "Doe",
-      gender: "Male",
-      phone: "+1234567890",
-      dob: "1990-01-01",
-      email: "john.doe@example.com",
-      username: "johndoe",
-      language: "English",
-      timezone: "UTC",
-      role: "Admin",
-      status: "Active",
-    },
-    {
-      id: 2,
-      firstName: "Jane",
-      middleName: "B",
-      lastName: "Smith",
-      gender: "Female",
-      phone: "+0987654321",
-      dob: "1992-05-15",
-      email: "jane.smith@example.com",
-      username: "janesmith",
-      language: "English",
-      timezone: "EST",
-      role: "User",
-      status: "Active",
-    },
-  ]);
-
-  const roles: Role[] = [
-    {
-      id: 1,
-      roleName: "Admin",
-      description: "Administrator",
-      status: "Active",
-    },
-    { id: 2, roleName: "User", description: "Regular User", status: "Active" },
-  ];
-
-  const handleSubmit = (
-    data: UserFormData,
-    isEdit: boolean,
-    userId?: number,
-  ) => {
-    if (isEdit && userId) {
-      setUsers(
-        users.map((u) => (u.id === userId ? { ...data, id: userId } : u)),
-      );
-    } else {
-      setUsers([...users, { ...data, id: Date.now() }]);
-    }
-  };
-
-  const handleDelete = (id: number) => {
-    setUsers(users.filter((u) => u.id !== id));
-  };
-
-  return (
-    <UserCreation
-      users={users}
-      roles={roles}
-      onSubmit={handleSubmit}
-      onDelete={handleDelete}
-    />
-  );
-}
+export default CreateUserPage;

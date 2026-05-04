@@ -27,13 +27,15 @@ export type ModalType =
   |"CreditNote"
   |"DebitNote"
   |"UserRole"
-  |"Bank";
+  |"Bank"
+  |"User";
 
 export interface ModalContext {
   source?: string;
   fieldId?: string;
   callback?: ModalCallback;
   onSuccess?: ModalCallback;
+  onSubmit?: (data: unknown) => Promise<void> | void;
 }
 
 export interface ModalMeta {
@@ -602,4 +604,14 @@ export const openBankModal = (
     .getState()
     .openModal("Bank", initialData, isEdit, context, meta);    
 
+
+export const openUserModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("User", initialData, isEdit, context, meta);    
 
