@@ -89,18 +89,38 @@ export const useUserRoleLogic = ({
   );
 
  
-  const buildPayload = (): UserRoleFormData => ({
-    role: form.role.trim(),
-    permission: form.permission
-      .map((p) => {
-        const { module, ...flags } = p;
-        const activeFlags = Object.fromEntries(
-          Object.entries(flags).filter(([_, v]) => v === 1)
-        ) as Omit<PermissionEntry, "module">;
-        return { module, ...activeFlags };
-      })
-      .filter((p) => Object.keys(p).length > 1), 
+
+const buildPayload = (): UserRoleFormData => {
+  const subModuleParent: Record<string, string> = {};
+  Object.entries(MODULE_STRUCTURE).forEach(([parent, subs]) => {
+    subs.forEach((sub) => {
+      subModuleParent[sub] = parent;
+    });
   });
+
+
+  const allSubModules = Object.values(MODULE_STRUCTURE).flat();
+
+  const permission = allSubModules.map((sub) => {
+    const existing = form.permission.find((p) => p.module === sub);
+    return {
+      module: sub,
+      root_module: subModuleParent[sub], 
+      read: existing?.read ?? 0,
+      write: existing?.write ?? 0,
+      create: existing?.create ?? 0,
+      delete: existing?.delete ?? 0,
+      import: existing?.import ?? 0,
+      export: existing?.export ?? 0,
+      report: existing?.report ?? 0,
+    };
+  });
+
+  return {
+    role: form.role.trim(),
+    permission,
+  };
+};
 
   const setPermissionActions = useCallback(
     (module: string, entry: Omit<PermissionEntry, "module">) => {

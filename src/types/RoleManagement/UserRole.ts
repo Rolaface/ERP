@@ -1,5 +1,6 @@
 export interface PermissionEntry {
   module: string;
+  root_module?: string;
   read: 0 | 1;
   write: 0 | 1;
   create: 0 | 1;
@@ -12,8 +13,8 @@ export interface PermissionEntry {
 export interface UserRoleFormData {
   role: string;
   permission: PermissionEntry[];
-   disabled?: 0 | 1;
-   roleId?: string;
+  disabled?: 0 | 1;
+  roleId?: string;
 }
 
 
