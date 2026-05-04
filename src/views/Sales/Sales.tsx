@@ -5,7 +5,7 @@ import {
   FileSignature,
   FileClock,
   Receipt,
-  ArrowDownLeft,
+  FileMinus,
   BarChart3,
   TrendingUp,
   ShoppingCart
@@ -66,7 +66,7 @@ const salesTabs = [
   {
     id: "creditNotes",
     label: "Credit Notes",
-    icon: <ArrowDownLeft size={16} strokeWidth={1.75} />,
+    icon: <FileMinus size={16} strokeWidth={1.75} />,
   },
   {
     id: "reports",

@@ -37,7 +37,7 @@ const allTabs = [
   { id: "trial",    label: "Trial Balance",  icon: <FaChartBar /> },
   { id: "ar",       label: "Receivables",    icon: <FaFileInvoiceDollar /> },
   { id: "ap",       label: "Payables",       icon: <FaMoneyCheckAlt /> },
-  { id: "bank",     label: "Banking",        icon: <FaUniversity /> },
+  // { id: "bank",     label: "Banking",        icon: <FaUniversity /> },
   { id: "pl",       label: "Profit & Loss",  icon: <FaCalendar /> },
   { id: "balance",  label: "Balance Sheet",  icon: <FaDollarSign /> },
   { id: "cashflow", label: "Cash Flow",      icon: <FaBriefcase /> },

@@ -1,5 +1,5 @@
 import React from "react";
-import { Building2, DollarSign, FileText, MapPin, User } from "lucide-react";
+import { Building2, DollarSign, FileText, MapPin, Users,User } from "lucide-react";
 import Tooltip from "../Tooltip";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
 import TermsAndCondition from "../TermsAndCondition";
@@ -96,13 +96,13 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={handleCloseWithWarning}
-      title={isEditMode ? "Edit Customer" : "Add New Customer"}
+      title={isEditMode ? "Edit Customer" : "Create Customer"}
       subtitle={
         isEditMode
           ? "Update customer information"
           : "Fill in the details to create a new customer"
       }
-      icon={isEditMode ? Building2 : User}
+      icon={isEditMode ? Building2 : Users}
       footer={footer}
       maxWidth="6xl"
       height="81vh"
