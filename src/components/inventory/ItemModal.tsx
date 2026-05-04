@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ToolCase } from "lucide-react";
+import { Package} from "lucide-react";
 import { getAllTemplates, getEnabledTemplates } from "../../api/TaxTemplateApi";
 import { useItemForm } from "../../hooks/Useitemform";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
@@ -411,9 +411,9 @@ const footer = (
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={handleCloseRequest}
-      title={isEditMode ? "Edit Item" : "Add Item"}
+      title={isEditMode ? "Edit Item" : "Create Item"}
       subtitle="Create and manage item details"
-      icon={ToolCase}
+      icon={Package}
       footer={footer}
       customWidth="min(92vw, 1280px)"
       height="64vh"

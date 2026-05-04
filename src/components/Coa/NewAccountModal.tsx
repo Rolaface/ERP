@@ -54,7 +54,7 @@ const NewAccountModal: React.FC<NewAccountModalProps> = ({
           loading={loading}
           onClick={handleSubmit}
         >
-          Create New
+          Create New Account
         </Button>
       </div>
     </>
@@ -64,7 +64,7 @@ const NewAccountModal: React.FC<NewAccountModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={parentAccount ? "Add Child Account" : "New Account"}
+      title={parentAccount ? "Add Child Account" : "Create Account"}
       subtitle={
         parentAccount
           ? `Creating under: ${parentAccount.account_name}`

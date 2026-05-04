@@ -179,7 +179,7 @@ handleClose();
       onClose={() =>
         handleCloseWithConfirm(handleClose, resolvedModalId)
       }
-      title={isEditMode ? "Edit Warehouse" : "New Warehouse"}
+      title={isEditMode ? "Edit Warehouse" : "Create Warehouse"}
       subtitle="Manage your inventory locations"
       icon={Warehouse}
       customWidth="35vw"

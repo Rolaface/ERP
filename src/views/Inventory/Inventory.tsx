@@ -1,18 +1,21 @@
-import React, { Suspense, lazy, useMemo, useEffect, useCallback } from "react";
+import React, {lazy, useMemo, useEffect, useCallback } from "react";
 import { useOutletContext, useNavigate, useLocation } from "react-router-dom";
 import {
-  FaBoxOpen,
-  FaBoxes,
-  FaTachometerAlt,
-  FaWarehouse,
-} from "react-icons/fa";
+  LayoutDashboard,
+  Package,
+  Boxes,
+  Percent,
+  Warehouse,
+  Layers,
+  Upload,
+} from "lucide-react";
 import {
   AppPage,
   AppPageBody,
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
-import AppSkeleton from "../../components/ui/AppSkeleton";
+
 
 const Items = lazy(() => import("./Items"));
 const Movements = lazy(() => import("./Movements"));
@@ -29,16 +32,48 @@ interface OutletContextType {
   openWarehouseEdit: (id: string, data?: any) => void;
 }
 
-const inventoryTabs = [
-  { id: "dashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
-  { id: "taxTemplates", label: "Tax Templates", icon: <FaBoxOpen /> },
-  { id: "items", label: "Items", icon: <FaBoxOpen /> },
-  { id: "itemsCategory", label: "Items Category", icon: <FaBoxOpen /> },
-  { id: "warehouse", label: "WareHouse", icon: <FaWarehouse /> },
-  { id: "stock", label: "Stock", icon: <FaBoxOpen /> },
-  { id: "import", label: "Import", icon: <FaBoxOpen /> },
-];
+const iconProps = {
+  size: 16,
+  strokeWidth: 1.75,
+};
 
+const inventoryTabs = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard {...iconProps} />,
+  },
+  {
+    id: "taxTemplates",
+    label: "Tax Templates",
+    icon: <Percent  {...iconProps} />, 
+  },
+  {
+    id: "items",
+    label: "Items",
+    icon: <Package {...iconProps} />, 
+  },
+  {
+    id: "itemsCategory",
+    label: "Item Group",
+    icon: <Layers {...iconProps} />,
+  },
+  {
+    id: "warehouse",
+    label: "Warehouse",
+    icon: <Warehouse {...iconProps} />,
+  },
+  {
+    id: "stock",
+    label: "Stock",
+    icon: <Boxes {...iconProps} />, 
+  },
+  {
+    id: "import",
+    label: "Import",
+    icon: <Upload {...iconProps} />, 
+  },
+];
 const DEFAULT_TAB = "dashboard";
 
 const Inventory: React.FC = () => {
@@ -88,7 +123,7 @@ const Inventory: React.FC = () => {
       <AppPageHeader
         title="Inventory"
         description="Track, manage, and optimize inventory in one unified workflow."
-        icon={<FaBoxes />}
+          icon={<Boxes size={20} strokeWidth={1.75} />}
       />
       <AppTabs
         tabs={inventoryTabs}
