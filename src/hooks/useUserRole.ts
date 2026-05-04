@@ -1,173 +1,45 @@
 import { useState, useCallback } from "react";
-
-// ─── Constants ───────────────────────────────────────────────────────────────
+import type { PermissionEntry, UserRoleFormData, UserRole } from "../types/RoleManagement/UserRole";
+import { EMPTY_FORM } from "../types/RoleManagement/UserRole";
+import { showApiError } from "../utils/alert"; 
 
 export const MODULE_STRUCTURE: Record<string, string[]> = {
-  Sales: [
-    "Quotations",
-    "Proforma Invoice",
-    "Invoices",
-    "Credit Notes",
-    "Debit Notes",
-    "Reports",
-    "Sales Analytics",
-  ],
-  Customer: ["Customer Management", "Payments", "Reports"],
-  Procurement: [
-    "Supplier Management",
-    "Payments",
-    "RFQs",
-    "Purchase Orders",
-    "Purchase Invoice",
-    "Approvals",
-    "Purchase Analytics",
-  ],
-  Inventory: [
-    "Tax Templates",
-    "Items",
-    "Items Category",
-    "Warehouse",
-    "Stock",
-    "Import",
-  ],
-  Accounting: [
-    "General Ledger",
-    "Trial Balance",
-    "Receivables",
-    "Payables",
-    "Banking",
-    "Profit & Loss",
-    "Balance Sheet",
-    "Cash Flow",
-    "Journal Entries",
-  ],
-  Assets: ["Asset Category", "Assets", "Asset Movements"],
-  "Human Resource": [
-    "Employee Management",
-    "Leave Management",
-    "Time & Attendance",
-    "Performance & Growth",
-    "Payroll",
-    "Compliance Management",
-  ],
-  Settings: [
-    "Company Setup",
-    "User Management",
-    "Bank Account",
-    "Mode of Payment",
-    "Payment Entry",
-    "Currency Exchange",
-    "Customer Group",
-    "Tax Maintenance",
-    "General Settings",
-  ],
+  Sales: ["Sales Invoice"],
+  CustomerManagement: ["Customer", "Payment Entry"],
+  Procurement: ["Supplier", "Payment Entry", "Request For Quotation", "Purchase Order", "Purchase Invoice"],
+  Inventory: ["Item Tax Template", "Item", "Item Group", "Warehouse", "Stock Entry"],
+  Accounting: ["GL Entry", "Journal Entry"],
+  Assets: ["Asset Category", "Asset", "Asset Movement"],
+  HumanResource: ["Employee", "Payroll Entry"],
+  Settings: ["Company", "User","Bank", "Bank Account", "Mode of Payment", "Payment Entry", "Currency Exchange", "Customer Group", "Item Tax Template"],
 };
 
 export const ALL_MODULES = Object.keys(MODULE_STRUCTURE);
 
-export const ACTIONS = [
-  "Create",
-  "Delete",
-  "Write",
-  "Read",
-  "Report",
-  "Import",
-  "Export",
-] as const;
-
-export type ActionType = (typeof ACTIONS)[number];
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-/**
- * Represents one permission entry.
- * subModule = null means the entire module is granted at module level.
- * subModule = string means a specific submodule is granted.
- */
-export interface PermissionEntry {
-  module: string;
-  subModule: string | null;
-  actions: ActionType[];
-}
-
-export interface UserRoleFormData {
-  roleName: string;
-  description: string;
-  permissions: PermissionEntry[];
-  status: "Active" | "Inactive";
-}
-
-export interface UserRole {
-  id: number;
-  roleName: string;
-  description: string;
-  permissions: PermissionEntry[];
-  status: "Active" | "Inactive";
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Given all permissions, get what's selected for a specific module+submodule combo.
- * Returns actions array or empty array.
- */
 export const getPermissionActions = (
   permissions: PermissionEntry[],
-  module: string,
-  subModule: string | null
-): ActionType[] => {
-  const entry = permissions.find(
-    (p) => p.module === module && p.subModule === subModule
-  );
-  return entry?.actions ?? [];
+  module: string
+): PermissionEntry | undefined => {
+  return permissions.find((p) => p.module === module);
 };
 
-/**
- * Check if a module has module-level permission (subModule === null)
- */
 export const hasModuleLevelPermission = (
   permissions: PermissionEntry[],
   module: string
 ): boolean => {
-  return permissions.some((p) => p.module === module && p.subModule === null);
+  const entry = permissions.find((p) => p.module === module);
+  if (!entry) return false;
+  const { module: _, ...flags } = entry;
+  return Object.values(flags).some((v) => v === 1);
 };
 
-/**
- * Check if a specific submodule has permission
- */
-export const hasSubModulePermission = (
-  permissions: PermissionEntry[],
-  module: string,
-  subModule: string
-): boolean => {
-  return permissions.some(
-    (p) => p.module === module && p.subModule === subModule
-  );
-};
-
-/**
- * Get all modules that have at least one permission (module-level or submodule-level)
- */
 export const getActiveModules = (permissions: PermissionEntry[]): string[] => {
   return [...new Set(permissions.map((p) => p.module))];
 };
 
-/**
- * Count total permission entries
- */
 export const countPermissions = (permissions: PermissionEntry[]): number => {
   return permissions.length;
 };
-
-/**
- * Build the default empty form data
- */
-export const buildDefaultForm = (): UserRoleFormData => ({
-  roleName: "",
-  description: "",
-  permissions: [],
-  status: "Active",
-});
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -182,19 +54,16 @@ export const useUserRoleLogic = ({
   onClose,
   initialData,
 }: UseUserRoleLogicOptions) => {
-  const [form, setForm] = useState<UserRoleFormData>(
-    initialData ?? buildDefaultForm()
-  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [form, setForm] = useState<UserRole>(initialData ?? EMPTY_FORM);
 
   // ── Validation ───────────────────────────────────────────────────────────
 
   const validate = useCallback((): boolean => {
     const e: Record<string, string> = {};
-    if (!form.roleName.trim()) e.roleName = "Role name is required";
-    if (form.permissions.length === 0)
-      e.permissions = "At least one permission is required";
+    if (!form.role.trim()) e.role = "Role name is required";
+    if (form.permission.length === 0) e.permission = "At least one permission is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   }, [form]);
@@ -208,127 +77,131 @@ export const useUserRoleLogic = ({
     });
   }, []);
 
-  // ── Form field helpers ───────────────────────────────────────────────────
+  // ── Form helpers ─────────────────────────────────────────────────────────
 
   const handleFieldChange = useCallback(
     (field: keyof UserRoleFormData, value: unknown) => {
       setForm((prev) => ({ ...prev, [field]: value }));
       clearError(field);
+      clearError("submit"); 
     },
     [clearError]
   );
 
-  // ── Permission helpers ───────────────────────────────────────────────────
+ 
 
-  /**
-   * Set actions for a module+submodule entry.
-   * If actions is empty, removes the entry.
-   */
+const buildPayload = (): UserRoleFormData => {
+  const subModuleParent: Record<string, string> = {};
+  Object.entries(MODULE_STRUCTURE).forEach(([parent, subs]) => {
+    subs.forEach((sub) => {
+      subModuleParent[sub] = parent;
+    });
+  });
+
+
+  const allSubModules = Object.values(MODULE_STRUCTURE).flat();
+
+  const permission = allSubModules.map((sub) => {
+    const existing = form.permission.find((p) => p.module === sub);
+    return {
+      module: sub,
+      root_module: subModuleParent[sub], 
+      read: existing?.read ?? 0,
+      write: existing?.write ?? 0,
+      create: existing?.create ?? 0,
+      delete: existing?.delete ?? 0,
+      import: existing?.import ?? 0,
+      export: existing?.export ?? 0,
+      report: existing?.report ?? 0,
+    };
+  });
+
+  return {
+    role: form.role.trim(),
+    permission,
+  };
+};
+
   const setPermissionActions = useCallback(
-    (module: string, subModule: string | null, actions: ActionType[]) => {
+    (module: string, entry: Omit<PermissionEntry, "module">) => {
       setForm((prev) => {
-        const filtered = prev.permissions.filter(
-          (p) => !(p.module === module && p.subModule === subModule)
-        );
-        if (actions.length === 0) {
-          return { ...prev, permissions: filtered };
-        }
-        return {
-          ...prev,
-          permissions: [...filtered, { module, subModule, actions }],
-        };
+        const filtered = prev.permission.filter((p) => p.module !== module);
+        const hasAnyFlag = Object.values(entry).some((v) => v === 1);
+        if (!hasAnyFlag) return { ...prev, permission: filtered };
+        return { ...prev, permission: [...filtered, { module, ...entry }] };
       });
-      clearError("permissions");
+      clearError("permission");
     },
     [clearError]
   );
 
-  /**
-   * Toggle a single action for a module+submodule entry.
-   */
   const toggleAction = useCallback(
-    (module: string, subModule: string | null, action: ActionType) => {
+    (module: string, action: keyof Omit<PermissionEntry, "module">) => {
       setForm((prev) => {
-        const existing = prev.permissions.find(
-          (p) => p.module === module && p.subModule === subModule
-        );
-        const currentActions = existing?.actions ?? [];
-        const newActions = currentActions.includes(action)
-          ? currentActions.filter((a) => a !== action)
-          : [...currentActions, action];
-
-        const filtered = prev.permissions.filter(
-          (p) => !(p.module === module && p.subModule === subModule)
-        );
-
-        if (newActions.length === 0) {
-          return { ...prev, permissions: filtered };
+        const existing = prev.permission.find((p) => p.module === module);
+        if (existing) {
+          return {
+            ...prev,
+            permission: prev.permission.map((p) =>
+              p.module === module
+                ? { ...p, [action]: p[action] === 1 ? 0 : 1 }
+                : p
+            ),
+          };
         }
-
-        return {
-          ...prev,
-          permissions: [...filtered, { module, subModule, actions: newActions }],
+        const newEntry: PermissionEntry = {
+          module,
+          read: 0, write: 0, create: 0,
+          delete: 0, import: 0, export: 0, report: 0,
+          [action]: 1,
         };
+        return { ...prev, permission: [...prev.permission, newEntry] };
       });
-      clearError("permissions");
+      clearError("permission");
     },
     [clearError]
   );
 
-  /**
-   * Toggle module-level permission (subModule = null).
-   * When enabling module-level, removes all submodule entries for that module.
-   * When disabling module-level, removes the module-level entry.
-   */
   const toggleModuleLevel = useCallback(
-    (module: string, actions: ActionType[]) => {
+    (module: string, on: boolean) => {
       setForm((prev) => {
-        // Remove module-level entry
-        const filtered = prev.permissions.filter(
-          (p) => !(p.module === module && p.subModule === null)
-        );
-        if (actions.length === 0) {
-          return { ...prev, permissions: filtered };
-        }
+        const filtered = prev.permission.filter((p) => p.module !== module);
+        if (!on) return { ...prev, permission: filtered };
         return {
           ...prev,
-          permissions: [...filtered, { module, subModule: null, actions }],
+          permission: [
+            ...filtered,
+            { module, read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1 },
+          ],
         };
       });
-      clearError("permissions");
+      clearError("permission");
     },
     [clearError]
   );
 
-  /**
-   * Remove all permissions for a module (both module-level and all submodules)
-   */
   const clearModulePermissions = useCallback((module: string) => {
     setForm((prev) => ({
       ...prev,
-      permissions: prev.permissions.filter((p) => p.module !== module),
+      permission: prev.permission.filter((p) => p.module !== module),
     }));
   }, []);
 
-  /**
-   * Select all submodules of a module with given actions
-   */
   const selectAllSubModules = useCallback(
-    (module: string, actions: ActionType[]) => {
+    (module: string, on: boolean) => {
       const subModules = MODULE_STRUCTURE[module] ?? [];
       setForm((prev) => {
-        const filtered = prev.permissions.filter((p) => p.module !== module);
-        if (actions.length === 0) {
-          return { ...prev, permissions: filtered };
-        }
+        const filtered = prev.permission.filter(
+          (p) => p.module !== module && !subModules.includes(p.module)
+        );
+        if (!on) return { ...prev, permission: filtered };
         const newEntries: PermissionEntry[] = subModules.map((sub) => ({
-          module,
-          subModule: sub,
-          actions,
+          module: sub,
+          read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1,
         }));
-        return { ...prev, permissions: [...filtered, ...newEntries] };
+        return { ...prev, permission: [...filtered, ...newEntries] };
       });
-      clearError("permissions");
+      clearError("permission");
     },
     [clearError]
   );
@@ -339,14 +212,17 @@ export const useUserRoleLogic = ({
     if (!validate()) return;
     setIsSubmitting(true);
     try {
-      await onSubmit(form);
+      const payload = buildPayload();
+      await onSubmit(payload);
+    } catch (error) {
+      showApiError(error);
     } finally {
       setIsSubmitting(false);
     }
   }, [form, onSubmit, validate]);
 
   const handleReset = useCallback(() => {
-    setForm(initialData ?? buildDefaultForm());
+    setForm(initialData ?? EMPTY_FORM);
     setErrors({});
   }, [initialData]);
 
@@ -358,21 +234,17 @@ export const useUserRoleLogic = ({
     handleFieldChange,
     handleSubmit,
     handleReset,
-    // permission helpers
     setPermissionActions,
     toggleAction,
     toggleModuleLevel,
     clearModulePermissions,
     selectAllSubModules,
     clearError,
-    // read helpers
-    getPermissionActions: (module: string, subModule: string | null) =>
-      getPermissionActions(form.permissions, module, subModule),
+    getPermissionActions: (module: string) =>
+      getPermissionActions(form.permission, module),
     hasModuleLevelPermission: (module: string) =>
-      hasModuleLevelPermission(form.permissions, module),
-    hasSubModulePermission: (module: string, subModule: string) =>
-      hasSubModulePermission(form.permissions, module, subModule),
-    getActiveModules: () => getActiveModules(form.permissions),
-    countPermissions: () => countPermissions(form.permissions),
+      hasModuleLevelPermission(form.permission, module),
+    getActiveModules: () => getActiveModules(form.permission),
+    countPermissions: () => countPermissions(form.permission),
   };
 };

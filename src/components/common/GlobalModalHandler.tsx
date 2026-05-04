@@ -12,7 +12,12 @@ import type { ItemInitialData } from "../inventory/ItemModal";
 import type { TaxCategoryFormData as TaxTemplateFormData } from "../../types/tax/taxTemplate";
 import type { SalesTaxTemplateFormData } from "../../types/tax/salesTemplate";
 import type { BankAccount } from "../../types/BankAccount/bank";
-import type { UserRoleFormData } from "../../hooks/useUserRole";
+import type { UserRoleFormData } from "../../types/RoleManagement/UserRole";
+import { createUserRoles } from "../../api/RoleManagement/UserRoleApi";
+import { showSuccess } from "../../utils/alert";
+import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
+import { createUser } from "../../api/RoleManagement/CreateUserApi";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
 const CustomerModal = lazy(() => import("../crm/CustomerModal"));
 const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
 const InvoiceModal = lazy(() => import("../sales/InvoiceModal"));
@@ -64,6 +69,8 @@ const CreditNoteModal = lazy(() => import("../../views/Sales/CreateCreditNoteMod
 const DebitNoteModal = lazy(() => import("../../views/Sales/createDebitNoteModal"))
 const AssignUserRoleModal = lazy(() => import("../../components/User/AssignUserRoleModal"))
 const BankModal = lazy(() => import("../../components/BankModal"))
+const CreateUserModal = lazy(() => import("../../components/User/CreateUserModal"))
+
 
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
@@ -460,7 +467,22 @@ const GlobalModalHandler: React.FC = () => {
             modalId={modal.id}
             isOpen={true}
             onClose={handleClose}
-            onSubmit={handleSubmit}
+            onSubmit={async (data: UserRoleFormData) => {
+              if (modal.isEdit && context?.onSubmit) {
+                await context.onSubmit(data);
+                showSuccess("Role updated successfully");
+              } else {
+                const response = await createUserRoles(data);
+                if (response.message.status !== "success") {
+                  throw new Error("Operation failed");
+                }
+                showSuccess("Role created successfully");
+              }
+              if (context?.onSuccess) {
+                await context.onSuccess(undefined);
+              }
+              handleClose();
+            }}
             initialData={
               modal.isEdit && isRecord(modal.initialData)
                 ? (modal.initialData as unknown as UserRoleFormData)
@@ -482,8 +504,39 @@ const GlobalModalHandler: React.FC = () => {
             isEditMode={modal.isEdit}
           />,
         );
-      default:
-        return null;
+
+      case "User":
+        return wrappedModal(
+          <CreateUserModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData<CreateUserFormData>(modal.initialData)}
+            isEditMode={modal.isEdit}
+            onSubmit={
+              modal.isEdit && context?.onSubmit
+                ? async (data: CreateUserFormData) => {
+                  await context.onSubmit!(data);
+                  showSuccess("User updated successfully");
+                  useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
+                  if (context?.onSuccess) await context.onSuccess(undefined);
+                  handleClose();
+                }
+                : async (data: CreateUserFormData) => {
+                  const response = await createUser(data);
+                  if (response.message.status === "success") {
+                    showSuccess("User created successfully");
+                    useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
+                    if (context?.onSuccess) await context.onSuccess(response.message.data);
+                    handleClose();
+                  } else {
+                    throw new Error("User creation failed");
+                  }
+                }
+            }
+          />,
+        );
     }
   };
 
