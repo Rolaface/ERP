@@ -6,11 +6,13 @@ import { MinimizableModal } from "../../common/MinimizableModal";
 import { 
   createLeavePolicyAssignment, 
   updateLeavePolicyAssignment, 
+  getAllLeavePolicies,
   type LeavePolicyAssignment 
 } from "../../../api/leaveConfigApi";
 import { ModalInput, YesNoCheckbox } from "../../../components/ui/modal/modalComponent";
 import { showApiError, showSuccess, showValidationError } from "../../../utils/alert";
-
+import PolicySelect from "../../selects/LeavePolicySelect";
+import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 interface Props {
   modalId: string;
   isOpen: boolean;
@@ -38,7 +40,7 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<LeavePolicyAssignment>(EMPTY);
   const [saving, setSaving] = useState(false);
-
+  
   useEffect(() => {
     if (isOpen) {
       setForm(
@@ -99,7 +101,7 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
       onSuccess?.();
       onClose();
     } catch (err: any) {
-      showApiError(err?.message ?? "Failed to save assignment");
+      showApiError(parseFrappeError(err) || "Failed to save assignment");
     } finally {
       setSaving(false);
     }
@@ -149,14 +151,23 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
             required
             disabled={isEdit} // Core link generally cannot be changed
           />
-          <ModalInput
+          {/* <ModalInput
             label="Leave Policy"
             value={form.leave_policy}
             onChange={(e) => set("leave_policy", e.target.value)}
             placeholder="e.g. HR-LPOL-2026-00001"
             required
             disabled={isEdit}
-          />
+          /> */}
+            
+                 <PolicySelect
+  label="Leave Policy"
+  value={form.leave_policy}
+  onChange={(policy) => set("leave_policy", policy.name)}
+  disabled={isEdit}
+  required
+  className="w-full"
+/>
         </div>
 
         <div className="space-y-4 rounded-xl border border-[var(--border)] bg-app p-4">

@@ -6,13 +6,14 @@ import { MinimizableModal } from "../../common/MinimizableModal";
 import { 
   createLeavePolicy, 
   updateLeavePolicy,
-  getAllLeaveTypes, // <-- Imported to fetch leave types
+  getAllLeaveTypes, 
   type LeavePolicy, 
   type LeavePolicyDetail 
 } from "../../../api/leaveConfigApi";
 import { ModalInput, YesNoCheckbox } from "../../../components/ui/modal/modalComponent";
 import { showApiError, showSuccess, showValidationError } from "../../../utils/alert";
 import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
+import LeaveTypeSelect from "../../selects/LeaveTypeSelect";
 
 interface Props {
   modalId: string;
@@ -193,26 +194,14 @@ export const LeavePolicyModal: React.FC<Props> = ({
               <div key={index} className="flex items-start gap-3 rounded-lg bg-gray-50 p-3">
                 <div className="grid flex-1 grid-cols-2 gap-4">
                   
-                  {/* Dropdown for Leave Type */}
-                  <div className="flex flex-col gap-1.5 flex-1">
-                    <label className="text-sm font-medium text-main">
-                      Leave Type <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={detail.leave_type}
-                      onChange={(e) => updateDetailRow(index, "leave_type", e.target.value)}
-                      disabled={initialData?.docstatus === 1}
-                      className="w-full rounded-lg border border-[var(--border)] bg-app px-3 py-2 text-sm text-main outline-none transition focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
-                      required
-                    >
-                      <option value="" disabled>Select Leave Type</option>
-                      {availableLeaveTypes.map((type) => (
-                        <option key={type.name} value={type.name}>
-                          {type.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <LeaveTypeSelect
+  label="Leave Type"
+  value={detail.leave_type}
+  onChange={(type) => updateDetailRow(index, "leave_type", type.name)}
+  disabled={initialData?.docstatus === 1}
+  required
+  className="flex-1"
+/>
 
                   <ModalInput
                     label="Annual Allocation"
