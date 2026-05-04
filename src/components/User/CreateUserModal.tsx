@@ -1,4 +1,4 @@
-import React, { useRef, useState ,useEffect} from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { UserPlus, X } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
@@ -154,18 +154,19 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
   } = useCreateUser({ onSubmit, onClose, initialData: initialData ?? null });
 
   useEffect(() => {
-    if (!isOpen || !isEditMode || !initialData?.email) return;
+    if (!isOpen || !isEditMode || !initialData?.id) return;
 
     setIsFetchingUser(true);
-    getUserById(initialData.email)
+    getUserById(initialData.id)
       .then((res) => {
         const d = res.message.data;
         const mapped: CreateUserFormData = {
+          id: d.id,
           email: d.email,
           username: d.username,
           language: d.language,
           firstName: d.firstName,
-          middleName:d.middleName,
+          middleName: d.middleName,
           lastName: d.lastName,
           gender: d.gender,
           phone: d.phone,
@@ -174,16 +175,16 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
           mobile_no: d.mobile_no ?? "",
           roleIds: d.roles,
         };
-        d.roles.forEach((r) => addRole(r, r));
-        handleReset(); 
+        handleReset();                         
         Object.entries(mapped).forEach(([k, v]) =>
           handleFieldChange(k as keyof CreateUserFormData, v as never)
-        );
+        ); 
+        d.roles.forEach((r) => addRole(r, r)); 
         setLanguageLabel(d.language);
       })
       .catch(() => {/* silently fail, form stays empty */ })
       .finally(() => setIsFetchingUser(false));
-  }, [isOpen, isEditMode, initialData?.email]);
+  }, [isOpen, isEditMode, initialData?.id]);
 
 
   const dirty = <K extends keyof CreateUserFormData>(

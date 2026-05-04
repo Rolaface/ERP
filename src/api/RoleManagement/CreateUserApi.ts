@@ -110,6 +110,7 @@ export interface GetUserByIdResponse {
     message: {
         status: "success" | "error";
         data: {
+             id: string;  
             firstName: string;
             lastName: string;
             fullName: string;
