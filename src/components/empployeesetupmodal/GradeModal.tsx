@@ -46,10 +46,10 @@ export const GradeModal: React.FC<Props> = ({
       setForm(
         initialData
           ? {
-              name: initialData.name ?? "",
-              default_salary_structure:
-                initialData.default_salary_structure ?? "",
-            }
+            name: initialData.name ?? "",
+            default_salary_structure:
+              initialData.default_salary_structure ?? "",
+          }
           : { ...EMPTY },
       );
     }
@@ -61,14 +61,14 @@ export const GradeModal: React.FC<Props> = ({
     [],
   );
 
-const fetchSalaryStructureOptions = async (q: string) => {
-  const res = await searchSalaryStructures(q);
+  const fetchSalaryStructureOptions = async (q: string) => {
+    const res = await searchSalaryStructures(q);
 
-  return res.map((item: any) => ({
-    label: item.name,
-    value: item.name,
-  }));
-};
+    return res.map((item: any) => ({
+      label: item.name,
+      value: item.name,
+    }));
+  };
   const handleSave = async () => {
     if (!form.name.trim()) {
       showValidationError("Grade name is required");
@@ -127,7 +127,7 @@ const fetchSalaryStructureOptions = async (q: string) => {
       height="auto"
       footer={footer}
     >
-      <div className="space-y-5 pb-2">
+      <div className="flex items-end gap-3 flex-nowrap overflow-x-auto">
         <ModalInput
           label="Grade Name"
           value={form.name}
@@ -135,13 +135,17 @@ const fetchSalaryStructureOptions = async (q: string) => {
           onChange={(e) => set("name", e.target.value)}
           required
         />
+        
+
+        <div className="[30px]">
         <SearchSelect2
-  label="Default Salary Structure"
-  value={form.default_salary_structure}
-  fetchOptions={fetchSalaryStructureOptions}
-  onChange={(val) => set("default_salary_structure", val)}
-  placeholder="Search salary structure..."
-/>
+          label="Default Salary Structure"
+          value={form.default_salary_structure}
+          fetchOptions={fetchSalaryStructureOptions}
+          onChange={(val) => set("default_salary_structure", val)}
+          placeholder="Search salary structure..."
+        />
+        </div>
       </div>
     </MinimizableModal>
   );
