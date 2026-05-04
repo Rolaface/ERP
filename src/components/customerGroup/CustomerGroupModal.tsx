@@ -1,5 +1,5 @@
 import React from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2 ,Users } from "lucide-react";
 import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
@@ -64,9 +64,10 @@ const CustomerGroupModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Customer Group"
+      title="Create Customer Group"
       subtitle="Manage customer groups"
       footer={footer}
+      icon={Users}
       customWidth="50vw"
       height="82vh"
     >

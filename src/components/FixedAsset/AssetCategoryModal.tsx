@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Tag, Settings, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Layers, Settings, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput } from "../ui/modal/modalComponent";
@@ -597,9 +597,9 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={categoryId ? "Edit Asset Category" : "New Asset Category"}
+      title={categoryId ? "Edit Asset Category" : "Create Asset Category"}
       subtitle="Create and manage asset categories"
-      icon={Tag}
+      icon={Layers}
       customWidth="60vw"
       height="80vh"
       footer={footer}
