@@ -1,6 +1,7 @@
 import React from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
+import { Repeat } from "lucide-react";
 import { FaExchangeAlt } from "react-icons/fa";
 import ActionButton, {
   ActionGroup,
@@ -18,8 +19,11 @@ import {
   closeSwal,
   showConfirm,
 } from "../../utils/alert";
-
-// Component
+import {
+  AppPage,
+  AppPageHeader,
+  AppPageBody,
+} from "../../components/ui/app-shell";
 
 const CurrencyConversion: React.FC = () => {
   const {
@@ -35,49 +39,38 @@ const CurrencyConversion: React.FC = () => {
     deleteConversion,
   } = useCurrencyConversion();
 
-  // ── Handlers ─────────────────────────────────
   const handleAdd = () =>
     openCurrencyExchangeModal(null, false, {
       onSuccess: async (payload: any) => {
         await addConversion(payload);
       },
     });
+
   const handleEdit = (row: CurrencyConversionPayload) =>
     openCurrencyExchangeModal(row, true, {
       onSuccess: async (payload: any) => {
         await updateConversion(payload);
       },
     });
+
   const handleSearch = (q: string) => {
     setSearch(q);
-    setPagination((prev) => ({
-      ...prev,
-      page: 1,
-    }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const handlePageChange = (page: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      page,
-    }));
+    setPagination((prev) => ({ ...prev, page }));
   };
 
   const handlePageSizeChange = (size: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      page: 1,
-      pageSize: size,
-    }));
+    setPagination((prev) => ({ ...prev, page: 1, pageSize: size }));
   };
-  // ── Columns ───────────────────────────────────
 
   const columns: Column<CurrencyConversionPayload>[] = [
     {
       key: "date",
       header: "Date",
       render: (row) => (
-        <div className="py-1.5">
         <span className="text-xs text-muted">
           {new Date(row.date).toLocaleDateString("en-GB", {
             day: "2-digit",
@@ -85,7 +78,6 @@ const CurrencyConversion: React.FC = () => {
             year: "numeric",
           })}
         </span>
-        </div>
       ),
     },
     {
@@ -103,18 +95,16 @@ const CurrencyConversion: React.FC = () => {
       key: "exchangeRate",
       header: "Exchange Rate",
       render: (row) => (
-        <div className="py-1.5">
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold">
-            {row.exchangeRate.toLocaleString()}
-          </code>
-        </div>
+        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold">
+          {row.exchangeRate.toLocaleString()}
+        </code>
       ),
     },
     {
       key: "isBuying",
       header: "Purpose",
       render: (row) => (
-        <div className="py-1.5">
+        <div className="flex gap-1">
           {row.isBuying && (
             <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-700 font-medium">
               Buy
@@ -133,20 +123,14 @@ const CurrencyConversion: React.FC = () => {
       header: "Created At",
       render: (row) =>
         row.createdAt ? (
-          <div className="py-1.5">
-            <span className="text-xs text-muted">
-              {new Date(row.createdAt).toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </span>
-          </div>
-        ) : (
-          <div className="py-1.5">
-            "—"
-          </div>
-        ),
+          <span className="text-xs text-muted">
+            {new Date(row.createdAt).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </span>
+        ) : "—",
     },
     {
       key: "actions",
@@ -154,30 +138,21 @@ const CurrencyConversion: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
-          {/* ── Edit button — inline, outside menu ── */}
           <ActionButton type="edit" onClick={() => handleEdit(row)} iconOnly />
-
-          {/* ── Delete inside menu ── */}
           <ActionMenu
             customActions={[
               {
                 label: "Delete",
                 onClick: async () => {
                   if (actionLoading) return;
-                  const confirmed = await showConfirm(
-                    "Do you want to delete this record?",
-                  );
+                  const confirmed = await showConfirm("Do you want to delete this record?");
                   if (!confirmed) return;
                   try {
                     showLoading("Deleting...");
                     const res = await deleteConversion(row.id);
                     closeSwal();
                     const backend = res?.message;
-                    if (
-                      !backend ||
-                      backend.status === "error" ||
-                      backend.status_code >= 400
-                    ) {
+                    if (!backend || backend.status === "error" || backend.status_code >= 400) {
                       showApiError(res);
                       return;
                     }
@@ -195,42 +170,36 @@ const CurrencyConversion: React.FC = () => {
     },
   ];
 
-  // ─────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────
-
   return (
-    <div className="p-6">
-      {/* HEADER */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
-          <FaExchangeAlt className="text-primary" />
-          Currency Exchange
-        </h1>
-      </div>
-
-      {/* TABLE */}
-      <Table
-        columns={columns}
-        data={data}
-        loading={loading}
-        enableColumnSelector
-        tableId="currency-exchange"
-        rowKey={(r) => r.id}
-        showToolbar
-        enableAdd
-        addLabel="Add Currency Exchange"
-        onAdd={handleAdd}
-        searchValue={search}
-        onSearch={handleSearch}
-        currentPage={pagination.page}
-        totalPages={pagination.totalPages}
-        pageSize={pagination.pageSize}
-        totalItems={pagination.totalItems}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
+    <AppPage>
+      <AppPageHeader
+        title="Currency Exchange"
+        description="Manage currency exchange rates and conversions."
+        icon={<Repeat />}
       />
-    </div>
+      <AppPageBody>
+        <Table
+          columns={columns}
+          data={data}
+          loading={loading}
+          enableColumnSelector
+          tableId="currency-exchange"
+          rowKey={(r) => r.id}
+          showToolbar
+          enableAdd
+          addLabel="Add Currency Exchange"
+          onAdd={handleAdd}
+          searchValue={search}
+          onSearch={handleSearch}
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          pageSize={pagination.pageSize}
+          totalItems={pagination.totalItems}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      </AppPageBody>
+    </AppPage>
   );
 };
 

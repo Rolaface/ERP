@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  FaBuilding,
-  FaIdCard,
-  FaMoneyCheckAlt,
-  FaExchangeAlt,
-  FaEnvelope,
-  FaUniversity,
-  FaRegFile,
-  FaFileUpload,
-} from "react-icons/fa";
+  Building2,
+  IdCard,
+  Landmark,
+  Wallet,
+  Repeat,
+  Layers,
+  FileText,
+  UploadCloud
+} from "lucide-react";
 import {
   AppPage,
   AppPageBody,
@@ -41,14 +41,47 @@ const COMPANY_ID = import.meta.env.VITE_COMPANY_ID as string;
 const BASE = "/companySetup";
 const DEFAULT_TAB = "basic";
 
+const iconProps = {
+  size: 16,
+  strokeWidth: 1.75,
+};
+
 const navTabs = [
-  { id: "basic",        label: "Basic Details",    icon: <FaIdCard /> },
-  { id: "bank",         label: "Bank Details",     icon: <FaUniversity /> },
-  { id: "accounting",   label: "Accounting Details", icon: <FaMoneyCheckAlt /> },
-  { id: "buyingSelling",label: "Buying & Selling", icon: <FaExchangeAlt /> },
-  { id: "subscribed",   label: "Subscription",     icon: <FaEnvelope /> },
-  { id: "Templates",    label: "Templates",        icon: <FaRegFile /> },
-  { id: "logo",         label: "Logo & Signature", icon: <FaFileUpload /> },
+  {
+    id: "basic",
+    label: "Basic Details",
+    icon: <IdCard {...iconProps} />, 
+  },
+  {
+    id: "bank",
+    label: "Bank Details",
+    icon: <Landmark {...iconProps} />, 
+  },
+  {
+    id: "accounting",
+    label: "Accounting Details",
+    icon: <Wallet {...iconProps} />, 
+  },
+  {
+    id: "buyingSelling",
+    label: "Buying & Selling",
+    icon: <Repeat {...iconProps} />, 
+  },
+  {
+    id: "subscribed",
+    label: "Subscription",
+    icon: <Layers {...iconProps} />, 
+  },
+  {
+    id: "Templates",
+    label: "Templates",
+    icon: <FileText {...iconProps} />,
+  },
+  {
+    id: "logo",
+    label: "Logo & Signature",
+    icon: <UploadCloud {...iconProps} />, 
+  },
 ];
 
 const CompanySetup: React.FC = () => {
@@ -219,7 +252,7 @@ const CompanySetup: React.FC = () => {
     <AppPage viewportLocked={isBasicTab}>
       <AppPageHeader
         title="Company Setup"
-        icon={<FaBuilding />}
+        icon={<Building2  />}
       />
       <AppTabs
         tabs={navTabs}
