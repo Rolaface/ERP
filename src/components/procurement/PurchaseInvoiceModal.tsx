@@ -265,7 +265,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={pId ? "Edit Purchase Invoice" : "New Purchase Invoice"}
+      title={pId ? "Edit Purchase Invoice" : "Create Purchase Invoice"}
       subtitle="Create and manage purchase invoice"
       icon={Receipt}
       customWidth="99vw"
@@ -278,7 +278,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         onChange={() => markDirty()}
         className="h-full flex flex-col"
       >
-        {/* ── Tabs — freely navigable, NO validation on click ── */}
+ 
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
             {tabs.map(({ key, icon: Icon, label }) => (

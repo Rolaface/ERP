@@ -308,7 +308,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   // ── Modal handlers
   const handleAddClick = () => {
     console.log("OPEN PURCHASE MODAL");
-    openPOEdit(0); 
+    openPOEdit(0);
   };
 
   const handleEdit = (order: PurchaseOrder, e?: React.MouseEvent) => {
@@ -480,18 +480,18 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     }
   };
   const formatDate = (date: string | Date) => {
-  if (!date) return "";
+    if (!date) return "";
 
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-  }
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
 
-  // Date object — use local methods
-  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-};
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
 
   const columns: Column<PurchaseOrder>[] = [
@@ -499,12 +499,12 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       key: "id",
       header: "PO ID",
       align: "left",
-     render: (o) => (
-      <div className="py-1.5">
-        <span className="block">
-          {o.id || "—"}
-        </span>
-      </div>
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.id || "—"}
+          </span>
+        </div>
       ),
     },
     {
@@ -725,8 +725,6 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
           }}
         />
       )}
-
-
     </div>
   );
 };

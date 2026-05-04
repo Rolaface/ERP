@@ -116,9 +116,9 @@ const RfqModal: React.FC<RfqModalProps> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEdit ? `Edit RFQ` : "New Request For Quotation"}
+      title={isEdit ? `Edit RFQ` : "Create Request For Quotation"}
       subtitle={isEdit ? `${initialData}` : "Create and send RFQ to suppliers"}
-      icon={Building2}
+      icon={FileText}
       customWidth="73vw"
       height="81vh"
       footer={footer}
