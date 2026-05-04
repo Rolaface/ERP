@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText } from "lucide-react";
+import { FileText, Receipt } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import {
   showApiError,
@@ -206,7 +206,7 @@ const handleModeFetchOptions = async (q: string) => {
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={mode === "edit" ? "Edit Invoice" : "Create Invoice"}
       subtitle="Create and manage invoice details"
-      icon={FileText}
+      icon={Receipt}
       footer={footerContent}
       customWidth="125vw"
       height="81vh"

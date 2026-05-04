@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from "react";
-import { FileText } from "lucide-react";
+import { ArrowDownLeft} from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { CreditNoteDetailsTab } from "./CreditNoteDetailsTab";
@@ -130,7 +130,7 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
       onClose={handleClose} // ← guarded close
       title={isEdit ? "Edit Credit Note" : "Create Credit Note"}
       subtitle="Create and manage credit notes"
-      icon={FileText}
+      icon={ArrowDownLeft}
       footer={footer}
       maxWidth="6xl"
       height="82vh"

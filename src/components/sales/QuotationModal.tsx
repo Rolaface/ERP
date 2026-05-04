@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, FileText } from "lucide-react";
+import { Plus, Trash2, FileSignature} from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import { useQuotationForm } from "../../hooks/useQuotationForm";
 import { ModalSelect, ModalInput } from "../ui/modal/modalComponent";
@@ -40,7 +40,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     ? `quotation-edit-${initialData.id}-${Date.now()}`
     : `quotation-create-${Date.now()}`);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
- 
+
 
   const {
     formData,
@@ -68,49 +68,49 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
 
   const symbol = currencySymbols[formData.currencyCode] || "";
 
-const handleSave = async (e?: React.FormEvent) => {
-  e?.preventDefault();
+  const handleSave = async (e?: React.FormEvent) => {
+    e?.preventDefault();
 
-  if (!actions.validateDetails()) {
-    ui.setActiveTab("details");
-    return false;
-  }
-
-  const didSubmit = await actions.handleSubmit({
-    preventDefault: () => {},
-  } as React.FormEvent);
-
-  if (didSubmit) {
-    resetDirty();
-    onClose();
-  }
-
-  return didSubmit;
-};
-
-const handleFormSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  if (ui.activeTab === "details") {
-    const isValid = actions.validateDetails();
-
-    if (!isValid) {
-      return; 
+    if (!actions.validateDetails()) {
+      ui.setActiveTab("details");
+      return false;
     }
 
-    handleNext();
-    return;
-  }
+    const didSubmit = await actions.handleSubmit({
+      preventDefault: () => { },
+    } as React.FormEvent);
 
-  if (ui.activeTab === "address") {
-    handleNext();
-    return;
-  }
+    if (didSubmit) {
+      resetDirty();
+      onClose();
+    }
 
-  if (ui.activeTab === "terms") {
-    await handleSave(e);
-  }
-};
+    return didSubmit;
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (ui.activeTab === "details") {
+      const isValid = actions.validateDetails();
+
+      if (!isValid) {
+        return;
+      }
+
+      handleNext();
+      return;
+    }
+
+    if (ui.activeTab === "address") {
+      handleNext();
+      return;
+    }
+
+    if (ui.activeTab === "terms") {
+      await handleSave(e);
+    }
+  };
 
 
   const footerContent = (
@@ -132,7 +132,7 @@ const handleFormSubmit = async (e: React.FormEvent) => {
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title="Create Quotation"
       subtitle="Create and manage quotation details"
-      icon={FileText}
+      icon={FileSignature}
       footer={footerContent}
       customWidth="82vw"
       height="82vh"
@@ -173,56 +173,56 @@ const handleFormSubmit = async (e: React.FormEvent) => {
             <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
               <div className="">
                 <div
-  className={`
+                  className={`
     grid
     ${ui.isExport
-      ? "grid-cols-[minmax(220px,1.5fr)_repeat(6,minmax(100px,1fr))]"
-      : "grid-cols-[220px_130px_130px_120px_120px_120px]"
-    }
+                      ? "grid-cols-[minmax(220px,1.5fr)_repeat(6,minmax(100px,1fr))]"
+                      : "grid-cols-[220px_130px_130px_120px_120px_120px]"
+                    }
     gap-x-2
     items-start
   `}
->
+                >
                   {/* Customer */}
 
-                <div className="w-[220px]">
-  <CustomerSelect
-    value={customerNameDisplay}
-    onChange={actions.handleCustomerSelect}
-    className="w-full"
-    required
-  />
-</div>
+                  <div className="w-[220px]">
+                    <CustomerSelect
+                      value={customerNameDisplay}
+                      onChange={actions.handleCustomerSelect}
+                      className="w-full"
+                      required
+                    />
+                  </div>
 
 
                   {/* Date of Quotation */}
                   <div>
                     <DatePickerInput
-  label="Date of Quotation"
-  name="dateOfInvoice"
-  value={formData.dateOfInvoice}
-  required
-  onChange={(name, value) =>
-    actions.handleInputChange({
-      target: { name, value },
-    } as any)
-  }
-/>
+                      label="Date of Quotation"
+                      name="dateOfInvoice"
+                      value={formData.dateOfInvoice}
+                      required
+                      onChange={(name, value) =>
+                        actions.handleInputChange({
+                          target: { name, value },
+                        } as any)
+                      }
+                    />
                   </div>
 
                   {/* Valid Until */}
                   <div>
-                   <DatePickerInput
-  label="Valid Until"
-  name="dueDate"
-  value={formData.dueDate}
-  required
-  onChange={(name, value) =>
-    actions.handleInputChange({
-      target: { name, value },
-    } as any)
-  }
-/>
+                    <DatePickerInput
+                      label="Valid Until"
+                      name="dueDate"
+                      value={formData.dueDate}
+                      required
+                      onChange={(name, value) =>
+                        actions.handleInputChange({
+                          target: { name, value },
+                        } as any)
+                      }
+                    />
                   </div>
 
                   {/* Currency */}
@@ -240,15 +240,15 @@ const handleFormSubmit = async (e: React.FormEvent) => {
 
                   {/* Status */}
                   <div>
-                   <ModalSelect
-  label="Status"
-  name="invoiceStatus"
-  value={formData.invoiceStatus}
-  options={[...quotationStatusOptions]}
-  onChange={actions.handleInputChange}
-  disabled={mode === "edit"}
-  className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-/>
+                    <ModalSelect
+                      label="Status"
+                      name="invoiceStatus"
+                      value={formData.invoiceStatus}
+                      options={[...quotationStatusOptions]}
+                      onChange={actions.handleInputChange}
+                      disabled={mode === "edit"}
+                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                    />
                   </div>
 
                   <div className="max-w-[140px]">
@@ -437,7 +437,7 @@ const handleFormSubmit = async (e: React.FormEvent) => {
                                 <input
                                   type="number"
                                   name="discount"
-                                 value={it.discount ?? ""}
+                                  value={it.discount ?? ""}
                                   onChange={(e) =>
                                     actions.handleItemChange(i, e)
                                   }

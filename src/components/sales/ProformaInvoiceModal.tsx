@@ -5,7 +5,7 @@ import {
   showSuccess,
   showValidationError,
 } from "../../utils/alert";
-import { User, Mail, Phone, Plus, Trash2 } from "lucide-react";
+import { User, Mail, Phone, Plus, Trash2,FileClock } from "lucide-react";
 import ModalFooter from "../common/ModalFooter";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import PaymentInfoBlock from "./PaymentInfoBlock";
@@ -180,6 +180,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
+      icon={FileClock}
       onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
       title={
         mode === "edit" ? "Edit Proforma Invoice" : "Create Proforma Invoice"
