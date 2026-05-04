@@ -1,26 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  FaTachometerAlt ,
-  FaMoneyBillWave,
-  FaMoneyBill,
-  FaUsers,
-  FaShoppingBag,
-  FaBoxes,
-  FaBriefcase,
-  FaUserTie,
-  FaBuilding,
-  FaCog,
-  FaBars,
-  FaChevronDown,
-  FaChevronUp,
-  FaExchangeAlt,
-  FaReceipt,
-  FaUsersCog,
-  FaSignOutAlt,
-  FaUniversity,
-  FaPercentage
-} from "react-icons/fa";
+  LayoutDashboard,
+  ShoppingCart,
+  Users,
+  ShoppingBag,
+  Boxes,
+  Wallet,
+  Building2,
+  UserCog,
+  Settings,
+  Menu,
+  ChevronDown,
+  ChevronUp,
+  Repeat,
+  Receipt,
+  Users2,
+  LogOut,
+  Landmark,
+  Percent
+} from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
 import { useAuth } from "../context/AuthContext";
@@ -30,28 +29,33 @@ import { MODAL_LAYER } from "../store/modalStore";
 
 /* ── Menu config ── */
 
+const iconProps = {
+  size: 18,
+  strokeWidth: 1.75,
+};
+
 const menuItems = [
-  { name: "Dashboard",      to: "/dashboard",   icon: <FaTachometerAlt  /> },
-  { name: "Sales",          to: "/sales",       icon: <FaMoneyBillWave /> },
-  { name: "Customer",       to: "/crm",         icon: <FaUsers /> },
-  { name: "Procurement",    to: "/procurement", icon: <FaShoppingBag /> },
-  { name: "Inventory",      to: "/inventory",   icon: <FaBoxes /> },
-  { name: "Accounting",     to: "/accounting",  icon: <FaBriefcase /> },
-  {name:  "Assets",     to:"/fasset", icon:<FaBuilding />},
-  { name: "Human Resource", to: "/hr",          icon: <FaUserTie /> },
+  { name: "Dashboard",   to: "/dashboard",   icon: <LayoutDashboard {...iconProps} /> },
+  { name: "Sales",       to: "/sales",       icon: <ShoppingCart {...iconProps} /> },
+  { name: "Customer",    to: "/crm",         icon: <Users {...iconProps} /> },
+  { name: "Procurement", to: "/procurement", icon: <ShoppingBag {...iconProps} /> },
+  { name: "Inventory",   to: "/inventory",   icon: <Boxes {...iconProps} /> },
+  { name: "Accounting",  to: "/accounting",  icon: <Wallet {...iconProps} /> },
+  { name: "Assets",      to: "/fasset",      icon: <Building2 {...iconProps} /> },
+  { name: "Human Resource", to: "/hr",       icon: <UserCog {...iconProps} /> },
 ];
 
 const settingsItems = [
-  { to: "/companySetup",          label: "Company Setup",       icon: <FaBuilding /> },
-  { to: "/userManagement",        label: "User Management",     icon: <FaUsers /> },
-  { to: "/bank-account-setup",    label: "Bank Account",        icon: <FaUniversity /> },
-  { to: "/bank" , label:"Bank", icon: <FaUniversity/>},
-  { to: "/mode-of-payment-setup", label: "Mode of Payment",     icon: <FaMoneyBill /> },
-  { to: "/payment-entry",         label: "Payment Entry",       icon: <FaReceipt /> },
-  { to: "/currency-conversion",   label: "Currency Exchange",   icon: <FaExchangeAlt /> },
-  { to: "/customer-group",        label: "Customer Group",      icon: <FaUsersCog /> },
-  { to: "/Tax-Maintenance",       label:"Tax Maintenance",      icon:<FaPercentage />},
-  { to: "/settings",              label: "General Settings",    icon: <FaCog /> },
+  { to: "/companySetup",        label: "Company Setup",     icon: <Building2 {...iconProps} /> },
+  { to: "/userManagement",      label: "User Management",   icon: <Users2 {...iconProps} /> },
+  { to: "/bank-account-setup",  label: "Bank Account",      icon: <Landmark {...iconProps} /> },
+  { to: "/bank",                label: "Bank",              icon: <Landmark {...iconProps} /> },
+  { to: "/mode-of-payment-setup", label: "Mode of Payment", icon: <Wallet {...iconProps} /> },
+  { to: "/payment-entry",       label: "Payment Entry",     icon: <Receipt {...iconProps} /> },
+  { to: "/currency-conversion", label: "Currency Exchange", icon: <Repeat {...iconProps} /> },
+  { to: "/customer-group",      label: "Customer Group",    icon: <Users {...iconProps} /> },
+  { to: "/Tax-Maintenance",     label: "Tax Maintenance",   icon: <Percent {...iconProps} /> },
+  { to: "/settings",            label: "General Settings",  icon: <Settings {...iconProps} /> },
 ];
 
 /* ── Tooltip ── */
@@ -167,7 +171,7 @@ const userInitials = username
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-row-hover hover:text-primary transition"
             title={open ? "Collapse sidebar" : "Expand sidebar"}
           >
-            <FaBars className="text-base" />
+            <Menu size={18} />
           </button>
         </div>
 
@@ -253,7 +257,7 @@ const userInitials = username
               `}
             >
               <span className={`flex h-10 shrink-0 items-center justify-center text-[17px] transition-all duration-300 ${open ? "w-10" : "w-full"}`}>
-                <FaCog />
+                <Settings size={18} />
               </span>
 
               <span
@@ -267,7 +271,7 @@ const userInitials = username
 
               {open && (
                 <span className="mr-2 shrink-0 opacity-50 text-xs">
-                  {settingsOpen ? <FaChevronUp /> : <FaChevronDown />}
+                 {settingsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </span>
               )}
 
@@ -331,7 +335,7 @@ const userInitials = username
               `}
               title="Logout"
             >
-              <FaSignOutAlt className="text-sm" />
+              <LogOut size={16} />
             </button>
           </div>
         </div>
