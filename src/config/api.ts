@@ -524,6 +524,21 @@ export const API = {
       delete: `${ERP_BASE}/api/resource/Employment Type`,
     },
   },
+    leaveType: {
+      getAll:   `${ERP_BASE}/api/resource/Leave Type`,
+      getById:  `${ERP_BASE}/api/resource/Leave Type`,
+      create:   `${ERP_BASE}/api/resource/Leave Type`,
+      update:   `${ERP_BASE}/api/resource/Leave Type`,
+      delete:   `${ERP_BASE}/api/resource/Leave Type`,
+    },
+    leaveApplication: {
+      getAll: `${ERP_BASE}/api/resource/Leave Application`,
+      getById: `${ERP_BASE}/api/resource/Leave Application`,
+      create: `${ERP_BASE}/api/resource/Leave Application`,
+      update: `${ERP_BASE}/api/resource/Leave Application`,
+      delete: `${ERP_BASE}/api/resource/Leave Application`,
+    },
+
 
   /* =========================
    * UTILS

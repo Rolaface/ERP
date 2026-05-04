@@ -188,7 +188,10 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
               name={props.name}
               value={props.value as string ?? ""}
               disabled={props.disabled}
-              onChange={(e) => props.onChange?.(e)}
+              // onChange={(e) => props.onChange?.(e)}
+              onChange={(e) => {
+    if (e.target.value) props.onChange?.(e); 
+  }}
               className="absolute right-0 top-0 opacity-0 w-7 h-full cursor-pointer"
               tabIndex={-1}
             />
