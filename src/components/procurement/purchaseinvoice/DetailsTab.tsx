@@ -292,7 +292,7 @@ export const DetailsTab = ({
 
         {/* MFG DATE */}
         <td className="px-1 py-1">
-          <div style={{ width: "98px" }}>
+          <div style={{ width: "101px" }}>
             <DatePickerInput
               name="mfgDate"
               value={it.mfgDate || ""}
@@ -310,7 +310,7 @@ export const DetailsTab = ({
 
         {/* EXPIRY DATE */}
         <td className="px-1 py-1">
-          <div style={{ width: "98px" }}>
+          <div style={{ width: "101px" }}>
             <DatePickerInput
               name="expDate"
               value={it.expDate || ""}
