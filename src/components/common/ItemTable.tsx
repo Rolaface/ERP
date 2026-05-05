@@ -137,7 +137,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
     actions.removeItem(absoluteIndex);
   };
 
-  
+
 
   // ── built-in invoice row ──────────────────────────────────────────────────
   const renderInvoiceRow = (it: any, i: number) => {
@@ -185,14 +185,15 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
                 // warehouse
                 warehouse: item.warehouse,
+                isServiceItem: item.isServiceItem,
 
 
                 vatRate: item.vatRate,
                 vatCode: item.vatCode,
                 taxTypes: (item.taxInfo || [])
-  .flatMap((tax: any) => tax.taxRates || [])
-  .map((r: any) => r.tax_type)
-  .filter((t: string) => t && t.trim() !== ""),
+                  .flatMap((tax: any) => tax.taxRates || [])
+                  .map((r: any) => r.tax_type)
+                  .filter((t: string) => t && t.trim() !== ""),
               });
             }}
             onClear={() =>
@@ -294,8 +295,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
             <input
               type="number"
               name="quantity"
-               value={it.quantity === 0 ? "" : it.quantity}
-               placeholder="0"
+              value={it.quantity === 0 ? "" : it.quantity}
+              placeholder="0"
               className="w-[75px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
               onChange={(e) => {
                 const qty = Number(e.target.value);
@@ -303,7 +304,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                 const usedQty = formData.items
                   .filter((x, xIdx) => x.batchNo === it.batchNo && xIdx !== i)
                   .reduce((sum, x) => sum + Number(x.quantity || 0), 0);
-                if (qty > available - usedQty) {
+                if (!it.isServiceItem && qty > available - usedQty) {
                   showValidationError(
                     `Only ${available - usedQty} items remaining in batch ${it.batchNo}`,
                   );
@@ -368,8 +369,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
             <input
               type="number"
               name="price"
-               value={it.price === 0 ? "" : it.price}
-               placeholder="0"
+              value={it.price === 0 ? "" : it.price}
+              placeholder="0"
               className="w-[50px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
               onChange={(e) => actions.handleItemChange(i, e)}
             />
@@ -381,8 +382,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
           <input
             type="number"
             name="discount"
-             value={it.discount === 0 ? "" : it.discount}
-             placeholder="0"
+            value={it.discount === 0 ? "" : it.discount}
+            placeholder="0"
             className="w-[38px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             onChange={(e) => actions.handleItemChange(i, e)}
           />
@@ -403,12 +404,12 @@ const ItemTable: React.FC<ItemTableProps> = ({
         {/* VAT Code */}
         <td className="px-2 py-1">
           <Tooltip
-  content={
-    it.taxTypes?.length
-      ? `Tax Types: ${it.taxTypes.join(", ")}`
-      : "No Tax Types"
-  }
->
+            content={
+              it.taxTypes?.length
+                ? `Tax Types: ${it.taxTypes.join(", ")}`
+                : "No Tax Types"
+            }
+          >
             <input
               type="text"
               name="vatCode"

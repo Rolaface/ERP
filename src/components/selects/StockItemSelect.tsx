@@ -44,6 +44,7 @@ export default function StockItemSelect({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+
   const load = async () => {
     try {
       setLoading(true);
@@ -61,6 +62,7 @@ export default function StockItemSelect({
           packingSize: item.packingSize,
           packingUnit: item.packingUnit,
           taxInfo: item.taxInfo || [],
+          isServiceItem: item.is_service_item ,
         };
 
         if (item.batches?.length) {
@@ -122,6 +124,7 @@ export default function StockItemSelect({
       vatRate: totalTaxRate,
       vatCode: selectedTax.taxName || "",
       taxInfo: row.taxInfo,
+      isServiceItem: row.isServiceItem,
     });
   };
 
@@ -170,9 +173,8 @@ export default function StockItemSelect({
           setOpen(true);
           setTimeout(() => inputRef.current?.focus(), 0);
         }}
-        className={`flex items-center gap-2 px-2 py-1 border border-theme rounded bg-card text-main text-[11px] cursor-pointer ${
-          disabled ? "opacity-50" : "hover:border-primary"
-        }`}
+        className={`flex items-center gap-2 px-2 py-1 border border-theme rounded bg-card text-main text-[11px] cursor-pointer ${disabled ? "opacity-50" : "hover:border-primary"
+          }`}
       >
         <Package className="w-3 h-3 text-muted" />
         <span className="flex-1 truncate">
@@ -238,38 +240,45 @@ export default function StockItemSelect({
 
             {/* LIST */}
             <div className="max-h-60 overflow-y-auto">
-              {filtered.map((row, i) => (
-                <div
-                  key={i}
-                  onClick={() => {
-                    if ((row.qty ?? 0) <= 0) return;
-                    handleSelect(row);
-                  }}
-                  className={`grid grid-cols-6 gap-3 px-3 py-2 text-[11px] border-b border-theme last:border-none ${
-                    (row.qty ?? 0) <= 0
-                      ? "opacity-40 cursor-not-allowed"
-                      : "cursor-pointer row-hover"
-                  }`}
-                >
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-[12px] font-medium text-main truncate">
-                      {row.itemName}
-                    </span>
-                    <span className="text-[10px] text-muted truncate">
-                      {row.itemCode}
-                    </span>
-                  </div>
-                  <div>{row.batchNo || "-"}</div>
-                  <div>{fmt(row.mfgDate)}</div>
-                  <div>{fmt(row.expiryDate)}</div>
-                  <div className="truncate">{row.warehouse || "-"}</div>
+              {filtered.map((row) => {
+                const qty = Number(row.qty ?? 0);
+                const isDisabled = qty <= 0 && !row.isServiceItem;
+
+                return (
                   <div
-                    className={`text-right font-medium ${(row.qty ?? 0) <= 0 ? "text-danger" : "text-success"}`}
+                    key={`${row.itemCode}-${row.batchNo || "no-batch"}`}
+                    onClick={() => {
+                      if (isDisabled || loading) return;
+                      handleSelect(row);
+                    }}
+                    className={`grid grid-cols-6 gap-3 px-3 py-2 text-[11px] border-b border-theme last:border-none ${isDisabled
+                        ? "opacity-40 cursor-not-allowed"
+                        : "cursor-pointer row-hover"
+                      }`}
                   >
-                    {row.qty ?? 0}
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[12px] font-medium text-main truncate">
+                        {row.itemName}
+                      </span>
+                      <span className="text-[10px] text-muted truncate">
+                        {row.itemCode}
+                      </span>
+                    </div>
+
+                    <div>{row.batchNo || "-"}</div>
+                    <div>{fmt(row.mfgDate)}</div>
+                    <div>{fmt(row.expiryDate)}</div>
+                    <div className="truncate">{row.warehouse || "-"}</div>
+
+                    <div
+                      className={`text-right font-medium ${isDisabled ? "text-danger" : "text-success"
+                        }`}
+                    >
+                      {qty}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {filtered.length === 0 && (
                 <div className="p-3 text-center text-muted text-[11px]">
