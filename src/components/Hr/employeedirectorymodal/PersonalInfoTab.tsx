@@ -124,6 +124,13 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
             required
           />
+<ModalInput
+  label="Blood Group"
+  name="blood_group"
+  value={formData.blood_group || ""}
+  onChange={(e) => handleInputChange("blood_group", e.target.value)}
+
+/>
 
           <ModalSelect
             label="Gender"
@@ -148,10 +155,60 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             name="nationality"
             value={formData.nationality}
             onChange={(e) => handleInputChange("nationality", e.target.value)}
-            placeholder="e.g., Zambian"
+            placeholder=" India"
           />
         </div>
+        
       </div>
+      {/* Statutory Information */}
+<div className="bg-card p-3 rounded-lg border border-theme">
+  <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
+Statutory Information
+  </h4>
+
+  <div className="grid grid-cols-4 gap-2.5">
+    <ModalInput
+      label="National Identification Number"
+      name="nationalidentificationnumber"
+      value={formData.nationalidentificationnumber || ""}
+      onChange={(e) =>
+        handleInputChange("nationalidentificationnumber", e.target.value)
+      }
+    
+    />
+    <ModalInput
+      label="Tax Identification Number"
+      name="taxidentificationnumber"
+      value={formData.taxidentificationnumber || ""}
+      onChange={(e) =>
+        handleInputChange("taxidentificationnumber", e.target.value)
+      }
+      
+    />
+    <ModalInput
+      label="Universal Account Number"
+      name="universalaccountnumber"
+      value={formData.universalaccountnumber || ""}
+      onChange={(e) =>
+        handleInputChange("universalaccountnumber", e.target.value)
+      }
+     
+    />
+
+    <ModalInput
+      label="Heatlth Insurance Number"
+      name="healthInsuranceNo"
+      value={formData.healthInsuranceNo || ""}
+      onChange={(e) =>
+        handleInputChange("healthInsuranceNo", e.target.value)
+      }
+      placeholder="e.g. HL-234234234"
+    />
+
+    
+
+  </div>
+</div>
 
     </div>
   );

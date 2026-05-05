@@ -2,6 +2,7 @@
 import { ENV } from "./env";
 
 
+
 const getApiBaseUrl = (): string => {
   if (typeof window === "undefined") {
     return ENV.apiBaseUrl;
@@ -32,8 +33,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -192,10 +193,19 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.create_employee`,
     update: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee`,
     delete: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.delete_employee`,
-    updateDocuments: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.manage_employee_documents`,
+  
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
   },
+  
+    employeeDocumnet: {
+uploadDocument: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee_document`,
+getDocuments: `${ERP_BASE}/api/method/get_employee_documents`,
+getDocumentById:`${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employees`,
+updateDocument:`${ERP_BASE}/api/method/update_employee_document`,
+deleteDocument:`${ERP_BASE}/api/method/delete_employee_document`},
+  
+
 
   /* =========================
    * ITEM

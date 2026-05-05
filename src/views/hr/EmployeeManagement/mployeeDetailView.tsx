@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import {
   showApiError,
   showSuccess,
@@ -24,7 +24,7 @@ import {
   ArrowLeft,
   Clock,
 } from "lucide-react";
-import { updateEmployeeDocuments } from "../../../api/employeeapi";
+import { uploadEmployeeDocument,getEmployeeDocuments } from "../../../api/employeedocument";
 import { ERP_BASE } from "../../../config/api";
 
 type Props = {
@@ -260,6 +260,7 @@ const EmployeeDetailView: React.FC<Props> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>("personal");
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [documents, setDocuments] = useState([]);
 
   // ── Derived display values from flat API ──────────────────────────────────
 
@@ -278,14 +279,11 @@ const EmployeeDetailView: React.FC<Props> = ({
   }) => {
     try {
       showLoading("Uploading Document…");
-      const formData = new FormData();
-      formData.append("employeeId", emp.employee);
-      formData.append("name[0]", description);
-      formData.append("description[0]", description);
-      formData.append("file[0]", file);
-      formData.append("isUpdate", "1");
-      formData.append("isDelete", "0");
-      await updateEmployeeDocuments(formData);
+      await uploadEmployeeDocument(
+  emp.employee,
+  description,
+  file
+);
       await onDocumentUploaded();
       closeSwal();
       showSuccess("Document uploaded successfully");
@@ -295,6 +293,13 @@ const EmployeeDetailView: React.FC<Props> = ({
     }
   };
 
+useEffect(() => {
+  if (!emp.employee) return;
+
+  getEmployeeDocuments(emp.employee).then((res) => {
+    setDocuments(res.data || []);
+  });
+}, [emp.employee]);
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -581,9 +586,9 @@ const EmployeeDetailView: React.FC<Props> = ({
                     </button>
                   </div>
 
-                  {emp.documents && emp.documents.length > 0 ? (
+                  {documents && documents.length > 0 ? (
                     <div className="space-y-2">
-                      {emp.documents.map((doc: any) => (
+                      {documents.map((doc: any) => (
                         <div
                           key={doc.id}
                           className="flex items-center justify-between p-3 border border-theme rounded-lg hover:bg-app transition"

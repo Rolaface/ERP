@@ -11,7 +11,7 @@ import type { Column } from "../../../../../components/ui/Table/type";
 import { LeavePolicyModal } from "../../../../../components/Hr/hrsetupmodals/LeavePolicyModal";
 import {
   deleteLeavePolicy,
-  updateLeavePolicy, // <-- Make sure to import this
+  updateLeavePolicy, 
   type LeavePolicy,
 } from "../../../../../api/leaveConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";

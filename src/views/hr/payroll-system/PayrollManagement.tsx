@@ -1,5 +1,5 @@
 // PayrollManagement.tsx — Root orchestrator for the Payroll module
-// Component-wise, clean separation. No inline logic in JSX.
+// Integrated with Create Payroll Entry API payload
 
 import React, { useState, useMemo, useEffect } from "react";
 import {
@@ -28,6 +28,98 @@ import { PayrollValidationModal }  from "../../../components/Hr/payrollmodal/pay
 // ── Views ─────────────────────────────────────────────────────────────────────
 import { PayrollReports }     from "./ReportsApprovals";
 import { EmployeeDetailPage } from "./Employeedetailpage";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API PAYLOAD TYPE — matches the Create Payroll Entry endpoint contract
+// ─────────────────────────────────────────────────────────────────────────────
+interface CreatePayrollEntryPayload {
+  payroll_frequency: string;
+  posting_date: string;
+  start_date: string;
+  end_date: string;
+  exchange_rate: number;
+  payroll_payable_account: string;
+  payment_account: string;
+  bank_account: string;
+  employees: Array<{
+    employee: string;
+    is_salary_withheld: 0 | 1;
+  }>;
+  // optional fields (commented out in spec but supported)
+  cost_center?: string;
+  project?: string;
+  currency?: string;
+  deduct_tax_for_unsubmitted_tax_exemption_proof?: 0 | 1;
+  salary_slip_based_on_timesheet?: 0 | 1;
+  validate_attendance?: 0 | 1;
+  validate_holidays?: 0 | 1;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUILD PAYLOAD — maps PayrollEntry form state → API contract
+// ─────────────────────────────────────────────────────────────────────────────
+const buildCreatePayrollPayload = (
+  formData: PayrollEntry,
+  empIds: string[],
+): CreatePayrollEntryPayload => ({
+  payroll_frequency:    formData.payrollFrequency || "Monthly",
+  posting_date:         formData.postingDate,
+  start_date:           formData.startDate,
+  end_date:             formData.endDate,
+  exchange_rate:        formData.exchangeRate ?? 93,
+  payroll_payable_account: formData.payrollPayableAccount,
+  payment_account:      formData.paymentAccount,
+  bank_account:         formData.bankAccount ?? "",
+  employees:            empIds.map(id => ({
+    employee:           id,
+    is_salary_withheld: 0,
+  })),
+  // optional fields — only include when set
+  ...(formData.costCenter  ? { cost_center: formData.costCenter }   : {}),
+  ...(formData.project     ? { project: formData.project }          : {}),
+  ...(formData.currency    ? { currency: formData.currency }        : {}),
+  deduct_tax_for_unsubmitted_tax_exemption_proof:
+    formData.deductTaxForProof ? 1 : 0,
+  salary_slip_based_on_timesheet:
+    formData.salarySlipTimesheet ? 1 : 0,
+  validate_attendance: 0,
+  validate_holidays:   0,
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API CALL — POST /api/resource/Payroll Entry
+// Replace BASE_URL and endpoint with your actual API path
+// ─────────────────────────────────────────────────────────────────────────────
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL ?? "";
+
+const createPayrollEntry = async (
+  payload: CreatePayrollEntryPayload,
+): Promise<{ name: string; [key: string]: any }> => {
+  const response = await fetch(`${API_BASE_URL}/api/resource/Payroll Entry`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      // Add your auth header here, e.g.:
+      // "Authorization": `token ${apiKey}:${apiSecret}`,
+    },
+    credentials: "include", // for session-based auth (Frappe/ERPNext)
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(
+      err?.exc_type
+        ? `${err.exc_type}: ${err.message}`
+        : `HTTP ${response.status}: ${response.statusText}`,
+    );
+  }
+
+  const data = await response.json();
+  // Frappe/ERPNext wraps response in { data: { ... } }
+  return data?.data ?? data;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TOAST NOTIFICATION (inline, lightweight)
@@ -99,7 +191,6 @@ const TopBar: React.FC<{
   return (
     <header className="h-12 shrink-0 bg-card border-b border-theme px-5 flex items-center justify-between z-30 shadow-sm">
       <div className="flex items-center gap-4">
-        {/* Brand */}
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-primary text-white flex items-center justify-center">
             <Layers className="w-3.5 h-3.5" />
@@ -107,8 +198,6 @@ const TopBar: React.FC<{
           <span className="text-sm font-extrabold text-main">Payroll</span>
         </div>
         <span className="text-muted opacity-30 select-none">|</span>
-
-        {/* Nav */}
         <nav className="flex items-center gap-0.5">
           {navItems.map(item => (
             <button
@@ -125,7 +214,6 @@ const TopBar: React.FC<{
           ))}
         </nav>
       </div>
-
       <div className="flex items-center gap-2">
         <Btn variant="outline" size="sm" icon={<Zap className="w-3.5 h-3.5" />} onClick={onQuickCreate}>
           Quick Create
@@ -139,31 +227,70 @@ const TopBar: React.FC<{
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NEW PAYROLL ENTRY — 3-step wizard
+// NEW PAYROLL ENTRY — 3-step wizard with API submission
 // ─────────────────────────────────────────────────────────────────────────────
 const NewPayrollEntry: React.FC<{
   employees: Employee[];
   onBack: () => void;
-  onCreatePayroll: (empIds: string[]) => void;
+  onCreatePayroll: (empIds: string[], apiDocName?: string) => void;
 }> = ({ employees, onBack, onCreatePayroll }) => {
-  const [step, setStep]   = useState(0);
-  const [saved, setSaved] = useState(false);
+  const [step, setStep]         = useState(0);
+  const [saved, setSaved]       = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError]   = useState<string | null>(null);
+
   const [formData, setFormData] = useState<PayrollEntry>({
-    payrollName: "", postingDate: new Date().toISOString().slice(0, 10),
-    currency: "INR", company: "Izyane InovSolutions Pvt. Ltd.",
-    payrollPayableAccount: "Payroll Payable - I",
-    status: "Draft", salarySlipTimesheet: false, deductTaxForProof: false,
-    payrollFrequency: "Monthly", startDate: "", endDate: "",
-    paymentAccount: "", costCenter: "", project: "", letterHead: "",
-    selectedEmployees: [],
+    payrollName:             "",
+    postingDate:             new Date().toISOString().slice(0, 10),
+    currency:                "INR",
+    exchangeRate:            93,
+    company:                 "Izyane InovSolutions Pvt. Ltd.",
+    payrollPayableAccount:   "Payroll Payable - RPL",
+    status:                  "Draft",
+    salarySlipTimesheet:     false,
+    deductTaxForProof:       false,
+    payrollFrequency:        "Monthly",
+    startDate:               "",
+    endDate:                 "",
+    paymentAccount:          "HDFC Bank - RPL",
+    bankAccount:             "HDFC Current Account - HDFC Bank",
+    costCenter:              "",
+    project:                 "",
+    letterHead:              "",
+    selectedEmployees:       [],
   });
 
   const handleFormChange = (field: string, value: any) => {
     setFormData(p => ({ ...p, [field]: value }));
     setSaved(false);
+    setSubmitError(null);
   };
 
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+  // ── Submit to API ──────────────────────────────────────────────────────────
+  const handleSubmitToAPI = async (empIds: string[]) => {
+    if (!empIds.length) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const payload = buildCreatePayrollPayload(formData, empIds);
+
+      // Debug: log the exact payload being sent
+      console.log("[Payroll] POST /api/resource/Payroll Entry →", JSON.stringify(payload, null, 2));
+
+      const result = await createPayrollEntry(payload);
+
+      console.log("[Payroll] Created successfully →", result);
+      onCreatePayroll(empIds, result?.name);
+    } catch (err: any) {
+      console.error("[Payroll] API error:", err);
+      setSubmitError(err?.message ?? "Failed to create payroll entry. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const tabs = [
     { label: "Overview",   icon: <FileText  className="w-3.5 h-3.5" /> },
@@ -233,10 +360,17 @@ const NewPayrollEntry: React.FC<{
             {step === 2 && <AccountingTab data={formData} onChange={handleFormChange} employees={employees} />}
           </div>
 
+          {/* Error banner */}
+          {submitError && (
+            <div className="shrink-0 mx-6 mb-3 px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-xs text-danger font-semibold">
+              ⚠ {submitError}
+            </div>
+          )}
+
           {/* Footer navigation */}
           <div className="shrink-0 border-t border-theme px-6 py-3 bg-app flex items-center justify-between">
             <Btn variant="outline" size="sm" icon={<ChevronLeft className="w-3.5 h-3.5" />}
-              onClick={() => setStep(p => Math.max(0, p - 1))} disabled={step === 0}>
+              onClick={() => setStep(p => Math.max(0, p - 1))} disabled={step === 0 || isSubmitting}>
               Previous
             </Btn>
 
@@ -250,14 +384,28 @@ const NewPayrollEntry: React.FC<{
             </div>
 
             {step === tabs.length - 1
-              ? <Btn variant="success" size="sm" icon={<CheckCircle className="w-3.5 h-3.5" />}
-                  onClick={() => onCreatePayroll(formData.selectedEmployees)}
-                  disabled={!formData.selectedEmployees.length}>
-                  Create Payroll ({formData.selectedEmployees.length})
+              ? (
+                <Btn
+                  variant="success"
+                  size="sm"
+                  icon={isSubmitting
+                    ? <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    : <CheckCircle className="w-3.5 h-3.5" />
+                  }
+                  onClick={() => handleSubmitToAPI(formData.selectedEmployees)}
+                  disabled={!formData.selectedEmployees.length || isSubmitting}
+                >
+                  {isSubmitting
+                    ? "Creating…"
+                    : `Create Payroll (${formData.selectedEmployees.length})`
+                  }
                 </Btn>
-              : <Btn size="sm" onClick={() => setStep(p => Math.min(tabs.length - 1, p + 1))}>
+              )
+              : (
+                <Btn size="sm" onClick={() => setStep(p => Math.min(tabs.length - 1, p + 1))}>
                   Next <ChevronRight className="w-3.5 h-3.5" />
                 </Btn>
+              )
             }
           </div>
         </div>
@@ -337,7 +485,11 @@ export default function PayrollManagement() {
     setSelectedEmployees(selectedEmployees.length === all.length ? [] : all);
   };
 
-  const handleCreatePayroll = (empIds: string[]) => {
+  /**
+   * Called after API success from NewPayrollEntry wizard.
+   * apiDocName = the Payroll Entry doc name returned by the server (e.g. "Payroll Entry - RPL-00001")
+   */
+  const handleCreatePayroll = (empIds: string[], apiDocName?: string) => {
     if (!empIds.length) return;
     const newRecs = empIds
       .map(id => { const e = demoEmployees.find(x => x.id === id); return e ? generatePayrollRecord(e, "Pending") : null; })
@@ -345,16 +497,11 @@ export default function PayrollManagement() {
     setPayrollRecords(p => [...p, ...newRecs]);
     setSelectedEmployees([]);
     setShowCreateModal(false);
-    showToast(`Payroll created for ${newRecs.length} employee${newRecs.length > 1 ? "s" : ""}`);
+
+    const docLabel = apiDocName ? ` · ${apiDocName}` : "";
+    showToast(`Payroll created for ${newRecs.length} employee${newRecs.length > 1 ? "s" : ""}${docLabel}`);
   };
 
-  /**
-   * "Run Payroll" button flow:
-   *  1. Run validation engine against all pending records
-   *  2. Show PayrollValidationModal with results
-   *  3. If canProceed → user clicks "Confirm & Process"
-   *  4. Update status Pending → Processing → Paid
-   */
   const handleRunPayroll = () => {
     if (!pendingRecords.length) return;
     const result = runPayrollValidation(pendingRecords);
@@ -370,12 +517,9 @@ export default function PayrollManagement() {
   const handleConfirmPayroll = () => {
     setIsProcessing(true);
     const ids = pendingRecords.map(r => r.id);
-
-    // Step 1: set Processing
     setPayrollRecords(p => p.map(r => ids.includes(r.id) ? { ...r, status: "Processing" as const } : r));
 
     setTimeout(() => {
-      // Step 2: set Paid
       setPayrollRecords(p => p.map(r =>
         ids.includes(r.id)
           ? { ...r, status: "Paid" as const, paymentDate: new Date().toLocaleDateString("en-IN") }
@@ -407,7 +551,7 @@ export default function PayrollManagement() {
     <NewPayrollEntry
       employees={demoEmployees}
       onBack={() => setView("dashboard")}
-      onCreatePayroll={(ids) => { handleCreatePayroll(ids); setView("dashboard"); }}
+      onCreatePayroll={(ids, docName) => { handleCreatePayroll(ids, docName); setView("dashboard"); }}
     />
   );
 
@@ -433,11 +577,8 @@ export default function PayrollManagement() {
   return (
     <div className="h-screen flex flex-col bg-app overflow-hidden">
       <Toast toast={toast} />
-
-      {/* 1. Top bar */}
       <TopBar {...topBarProps} />
 
-      {/* 2. KPI cards */}
       <div className="shrink-0 px-5 pt-4 pb-3">
         <KPICards
           totalRecords={payrollRecords.length}
@@ -447,7 +588,6 @@ export default function PayrollManagement() {
         />
       </div>
 
-      {/* 3. Filter bar */}
       <div className="shrink-0 px-5 pb-3">
         <FilterBar
           searchQuery={searchQuery}   onSearchChange={setSearchQuery}
@@ -460,11 +600,8 @@ export default function PayrollManagement() {
         />
       </div>
 
-      {/* 4. Main table card — fills remaining space, scrolls internally */}
       <div className="flex-1 min-h-0 px-5 pb-4 flex flex-col">
         <div className="flex-1 min-h-0 bg-card border border-theme rounded-2xl overflow-hidden shadow-sm flex flex-col">
-
-          {/* Tab switcher */}
           <div className="shrink-0 flex items-center border-b border-theme px-4">
             {(["summary", "tax"] as const).map(t => (
               <button
@@ -481,7 +618,6 @@ export default function PayrollManagement() {
             ))}
           </div>
 
-          {/* Scrollable content */}
           <div className="flex-1 min-h-0 overflow-y-auto">
             {tableTab === "summary" && (
               <PayrollTable
@@ -503,8 +639,6 @@ export default function PayrollManagement() {
       </div>
 
       {/* ── MODALS ── */}
-
-      {/* Quick create */}
       <QuickCreateModal
         show={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -515,7 +649,6 @@ export default function PayrollManagement() {
         onCreate={() => handleCreatePayroll(selectedEmployees)}
       />
 
-      {/* Edit salary */}
       <EditModal
         record={editingRecord}
         onClose={() => setEditingRecord(null)}
@@ -523,7 +656,6 @@ export default function PayrollManagement() {
         onChange={(field, val) => setEditingRecord(p => p ? { ...p, [field]: val } : null)}
       />
 
-      {/* PRE-PAYROLL VALIDATION — the ERP validation screen */}
       <PayrollValidationModal
         show={showValidation}
         result={validationResult}
@@ -533,7 +665,6 @@ export default function PayrollManagement() {
         onRevalidate={handleRevalidate}
       />
 
-      {/* Payslip viewer */}
       <PayslipModal
         record={selectedRecord}
         onClose={() => setSelectedRecord(null)}
