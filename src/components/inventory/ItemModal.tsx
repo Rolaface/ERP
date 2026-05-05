@@ -382,8 +382,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   if (!isOpen) return null;
 
-  const shouldShowInventory =
-    !isServiceItem && form.trackInventory;
+ const shouldShowInventory = !isServiceItem && Boolean(form.trackInventory);
 
   const tabs: ItemModalTab[] = shouldShowInventory
     ? ["details", "taxDetails", "inventoryDetails"]
@@ -466,7 +465,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
             >
               Tax Details
             </button>
-            {!isServiceItem && form.trackInventory && (
+           {!isServiceItem && Boolean(form.trackInventory) && (
               <button
                 type="button"
                 onClick={() => handleTabChange("inventoryDetails")}

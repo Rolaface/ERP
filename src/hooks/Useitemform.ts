@@ -274,9 +274,9 @@ const mapApiToForm = (item: any) => {
     reorderLevel: item.inventoryInfo?.reorderLevel || "",
     maxStockLevel: item.inventoryInfo?.maxStockLevel || "",
     minStockLevel: item.inventoryInfo?.minStockLevel || "",
-    trackInventory: item.is_stock_item ?? true,
-    allowSales: item.is_sales_item ?? true,
-    allowPurchase: item.is_purchase_item ?? true,
+    trackInventory: Boolean(item.is_stock_item ?? true),
+    allowSales: Boolean(item.is_sales_item ?? true),
+    allowPurchase: Boolean(item.is_purchase_item ?? true),
     // BATCH
     has_batch_no: item.batchInfo?.has_batch_no || false,
     has_expiry_date: item.batchInfo?.has_expiry_date || false,
