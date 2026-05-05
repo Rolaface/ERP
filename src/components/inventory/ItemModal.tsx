@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Package} from "lucide-react";
+import { Package } from "lucide-react";
 import { getAllTemplates, getEnabledTemplates } from "../../api/TaxTemplateApi";
 import { useItemForm } from "../../hooks/Useitemform";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
@@ -30,7 +30,7 @@ export interface ItemInitialData extends Partial<ItemFormData> {
   taxInfo?: Partial<ItemTaxInfo> | Array<Partial<ItemTaxInfo>>;
 }
 
-interface ItemModalProps extends StandardModalProps<unknown, ItemInitialData> {}
+interface ItemModalProps extends StandardModalProps<unknown, ItemInitialData> { }
 
 interface TaxTemplateOption {
   label: string;
@@ -136,7 +136,13 @@ const ItemModal: React.FC<ItemModalProps> = ({
     setTaxPage(0);
   }, [initialData?.taxInfo, initialData?.taxes, isEditMode, isOpen]);
 
- 
+  useEffect(() => {
+    if (!form.trackInventory && activeTab === "inventoryDetails") {
+      setActiveTab("taxDetails");
+    }
+  }, [form.trackInventory, activeTab, setActiveTab]);
+
+
   const fetchTaxTemplateOptions = useCallback(
     async (search: string): Promise<TaxTemplateOption[]> => {
       try {
@@ -193,7 +199,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   const handleTabChange = useCallback(
     (tab: ItemModalTab) => {
-      if (tab === "inventoryDetails" && isServiceItem) return;
+      if (tab === "inventoryDetails" && (!form.trackInventory || isServiceItem)) return;
       setActiveTab(tab);
     },
     [isServiceItem, setActiveTab],
@@ -374,11 +380,14 @@ const ItemModal: React.FC<ItemModalProps> = ({
     handleNext(taxRows);
   }, [handleNext, showValidationError, taxRows]);
 
-if (!isOpen) return null;
+  if (!isOpen) return null;
 
-  const tabs: ItemModalTab[] = isServiceItem
-    ? ["details", "taxDetails"]
-    : ["details", "taxDetails", "inventoryDetails"];
+  const shouldShowInventory =
+    !isServiceItem && form.trackInventory;
+
+  const tabs: ItemModalTab[] = shouldShowInventory
+    ? ["details", "taxDetails", "inventoryDetails"]
+    : ["details", "taxDetails"];
   const currentTabIndex = tabs.indexOf(activeTab);
 
   const handleFormSubmit = async () => {
@@ -386,25 +395,25 @@ if (!isOpen) return null;
     return result !== false;
   };
 
-const footer = (
-  <>
-    
-    <ModalFooter
-      onCancel={handleCloseRequest}
-      onReset={handleReset}
-      onSubmit={handleFormSubmit}
-      onNext={
-        activeTab === "inventoryDetails" ||
-        (activeTab === "taxDetails" && isServiceItem)
-          ? undefined
-          : handleNextClick
-      }
-      currentTab={currentTabIndex}
-      totalTabs={tabs.length}
-      isSubmitting={loading}
-    />
-  </>
-);
+  const footer = (
+    <>
+
+      <ModalFooter
+        onCancel={handleCloseRequest}
+        onReset={handleReset}
+        onSubmit={handleFormSubmit}
+        onNext={
+          activeTab === "inventoryDetails" ||
+            (activeTab === "taxDetails" && isServiceItem)
+            ? undefined
+            : handleNextClick
+        }
+        currentTab={currentTabIndex}
+        totalTabs={tabs.length}
+        isSubmitting={loading}
+      />
+    </>
+  );
 
   return (
     <MinimizableModal
@@ -417,9 +426,9 @@ const footer = (
       footer={footer}
       customWidth="min(92vw, 1280px)"
       height="64vh"
-       summaryBar={<ItemSummaryBar form={form} taxRows={taxRows} />} 
+      summaryBar={<ItemSummaryBar form={form} taxRows={taxRows} />}
     >
-   
+
       <form
         id={itemFormId}
         onChange={markDirty}
@@ -457,20 +466,20 @@ const footer = (
             >
               Tax Details
             </button>
-            <button
-              type="button"
-              disabled={isServiceItem}
-              onClick={() => handleTabChange("inventoryDetails")}
-              className={[
-                "border-b-2 bg-transparent px-1 py-2.5 text-sm font-semibold tracking-wide transition-all",
-                activeTab === "inventoryDetails"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted hover:text-main",
-                isServiceItem ? "cursor-not-allowed opacity-40" : "",
-              ].join(" ")}
-            >
-              Inventory Details
-            </button>
+            {!isServiceItem && form.trackInventory && (
+              <button
+                type="button"
+                onClick={() => handleTabChange("inventoryDetails")}
+                className={[
+                  "border-b-2 bg-transparent px-1 py-2.5 text-sm font-semibold tracking-wide transition-all",
+                  activeTab === "inventoryDetails"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted hover:text-main",
+                ].join(" ")}
+              >
+                Inventory Details
+              </button>
+            )}
           </div>
         </div>
 
