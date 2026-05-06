@@ -136,11 +136,17 @@ const Login = () => {
       {/* ================= RIGHT: ACCESS LAYER ================= */}
       <div className="w-full lg:w-[42%] flex items-center justify-center bg-gradient-to-b from-white to-[#F8FAFC] px-6">
 
+        {/* Subtle background glow */}
+        <div className="absolute inset-0 pointer-events-none 
+  bg-[radial-gradient(circle_at_50%_40%,rgba(59,130,246,0.08),transparent_60%)]" />
         {/* Card with entrance animation */}
-        <div className="w-full max-w-md bg-white rounded-2xl p-10 border border-[#E5E7EB] 
-        shadow-[0_10px_30px_rgba(0,0,0,0.08)] 
-        lg:-ml-24 lg:-mt-16 
-        animate-[fadeInUp_0.9s_ease-out]">
+        <div className="relative w-full max-w-md 
+bg-white/80 backdrop-blur-xl 
+rounded-3xl p-10 
+border border-white/40
+shadow-[0_10px_25px_rgba(0,0,0,0.06),0_20px_50px_rgba(0,0,0,0.08)]
+lg:-ml-24 lg:-mt-16 
+animate-[fadeInUp_0.9s_ease-out]">
 
           {/* Header */}
           <div className="mb-6">
