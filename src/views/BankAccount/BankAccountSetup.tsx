@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import { openBankAccountModal } from "../../store/modalStore";
-import { FaUniversity } from "react-icons/fa";
-import {Copy} from "lucide-react"
+import { Landmark } from "lucide-react";
+import { Copy } from "lucide-react"
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -10,7 +10,11 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { getAllBankAccounts, updateBankAccountStatus } from "../../api/BankAccountApi";
-
+import {
+  AppPage,
+  AppPageHeader,
+  AppPageBody,
+} from "../../components/ui/app-shell";
 import { showApiError, showSuccess } from "../../utils/alert";
 
 const mask = (val?: string) => {
@@ -112,7 +116,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "dateAdded",
       header: "Date Added",
-       align: "center",
+      align: "center",
       tooltip: (row) => row.dateAdded ? formatDate(row.dateAdded) : "—",
       render: (row) => (
         <div className="py-1.5">
@@ -123,7 +127,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "accountFor",
       header: "Acc For",
-       align: "center",
+      align: "center",
       tooltip: (row) =>
         Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—",
       render: (row) => (
@@ -148,7 +152,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "accountNo",
       header: "Acc No",
-       align: "center",
+      align: "center",
       tooltip: (row) => row.accountNo || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -174,7 +178,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "accountHolderName",
       header: "Acc Holder",
-       align: "center",
+      align: "center",
       tooltip: (row) => String(row.accountHolderName || "—"),
       render: (row) => (
         <div className="py-1.5">
@@ -185,7 +189,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "sortCode",
       header: "IFSC/Sort",
-       align: "center",
+      align: "center",
       tooltip: (row) => row.sortCode || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -196,7 +200,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "currency",
       header: "Currency",
-       align: "center",
+      align: "center",
       tooltip: (row) => row.currency || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -207,7 +211,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "isDefault",
       header: "Default",
-       align: "center",
+      align: "center",
       tooltip: (row) => (row.isDefault ? "Default account" : "Not default"),
       render: (row) => (
         <div className="py-1.5">
@@ -222,7 +226,7 @@ const BankAccountSetup: React.FC = () => {
     {
       key: "isDisabled",
       header: "Status",
-     align: "right",
+      align: "right",
       tooltip: (row) => (row.isDisabled ? "Disabled" : "Active"),
       render: (row) => (
         <div className="py-1.5">
@@ -265,43 +269,43 @@ const BankAccountSetup: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
-      {/* HEADER */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
-          <FaUniversity className="text-primary" />
-          Bank Accounts
-        </h1>
-      </div>
-
-      {/* TABLE */}
-      <Table
-        columns={columns}
-        data={bankAccounts}
-        loading={loading}
-        rowKey={(row) => String(row.id)}
-        showToolbar
-        searchValue={search}
-        onSearch={setSearch}
-        enableAdd
-        currentPage={page}
-        totalPages={totalPages}
-        enableColumnSelector
-        tableId="bank-accounts"
-        pageSize={pageSize}
-        totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
-        onPageChange={setPage}
-        addLabel="Add Bank Account"
-        onAdd={() => openBankAccountModal(null, false, {
-          onSuccess: () => fetchAccounts(),
-        })}
+    <AppPage>
+      <AppPageHeader
+        title="Bank Accounts"
+        description="Manage bank accounts"
+        icon={<Landmark />}
       />
 
+      {/* TABLE */}
+      <AppPageBody>
+        <Table
+          columns={columns}
+          data={bankAccounts}
+          loading={loading}
+          rowKey={(row) => String(row.id)}
+          showToolbar
+          searchValue={search}
+          onSearch={setSearch}
+          enableAdd
+          currentPage={page}
+          totalPages={totalPages}
+          enableColumnSelector
+          tableId="bank-accounts"
+          pageSize={pageSize}
+          totalItems={totalItems}
+          pageSizeOptions={[10, 25, 50, 100]}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          onPageChange={setPage}
+          addLabel="Add Bank Account"
+          onAdd={() => openBankAccountModal(null, false, {
+            onSuccess: () => fetchAccounts(),
+          })}
+        />
+      </AppPageBody>
 
 
-    </div>
+
+    </AppPage>
   );
 };
 

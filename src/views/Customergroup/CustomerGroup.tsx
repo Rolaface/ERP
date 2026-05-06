@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
 import CustomerGroupModal from "../../components/customerGroup/CustomerGroupModal";
-import { FaUsersCog } from "react-icons/fa";
+import { Users}  from "lucide-react"
 import type { Column } from "../../components/ui/Table/type";
 import { getCustomerGroupTree } from "../../api/customerApi";
 import { Folder, FolderOpen, Plus } from "lucide-react";
@@ -91,7 +91,7 @@ const CustomerGroup: React.FC = () => {
       <AppPageHeader
         title="Customer Groups"
         description="Manage customer group hierarchy and structure."
-        icon={<FaUsersCog />}
+        icon={<Users />}
       />
       <AppPageBody>
         <ExpandableTreeTable

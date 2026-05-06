@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { FaPercentage } from "react-icons/fa";
 import TaxTemplate from "../Inventory/TaxTemplate";
 import TaxCategory from "../Inventory/TaxCategory";
 import SalesTaxTemplate from "./Salestaxtemplate";
-import { FaFileInvoiceDollar } from "react-icons/fa";
-import { FaTags } from "react-icons/fa";
+import {
+  ReceiptText,
+  FileSpreadsheet,
+  Tags,
+  Calculator,
+} from "lucide-react";
 
 import {
   AppPage,
@@ -23,7 +26,7 @@ const Inventory: React.FC = () => {
       <AppPageHeader
         title="Tax Maintenance"
         description="Manage tax templates and categories"
-        icon={<FaPercentage />}
+        icon={<Calculator  />}
       />
 
       <AppTabs
@@ -31,16 +34,16 @@ const Inventory: React.FC = () => {
           {
             id: "taxTemplate",
             label: "Tax Templates",
-            icon: <FaFileInvoiceDollar />,
+             icon: <ReceiptText size={16} strokeWidth={1.75} />,
           },
 
           {
             id: "salesTaxTemplate",
             label: "Sales Tax Template",
-            icon: <FaFileInvoiceDollar />,
+            icon: <FileSpreadsheet size={16} strokeWidth={1.75} />,
           },
 
-          { id: "taxCategory", label: "Tax Category", icon: <FaTags /> },
+          { id: "taxCategory", label: "Tax Category", icon: <Tags size={16} strokeWidth={1.75} /> },
         ]}
         activeTab={activeTab}
         onChange={(tabId) => setActiveTab(tabId)}

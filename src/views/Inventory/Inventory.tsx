@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   Package,
   Boxes,
-  Percent,
+  ReceiptText,
   Warehouse,
   Layers,
   Upload,
@@ -46,7 +46,7 @@ const inventoryTabs = [
   {
     id: "taxTemplates",
     label: "Tax Templates",
-    icon: <Percent  {...iconProps} />, 
+    icon: <ReceiptText  {...iconProps} />, 
   },
   {
     id: "items",
