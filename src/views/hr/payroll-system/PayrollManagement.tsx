@@ -285,17 +285,7 @@ export default function PayrollManagement() {
         onViewDetails={(r) => setDetailRecord(r)}
       />
 
-      {/* ── New Payroll Entry Modal ──────────────────────────────────────── */}
-      {/*
-        MinimizableModal provides:
-          - Backdrop + animated panel
-          - Primary-coloured header with title/subtitle + minimize/close
-          - <section> with overflow-y-auto flex-1 (px-4 py-3) for children
-          - Optional footer slot
-
-        NewPayrollEntry fills that <section> by using -mx-4 -my-3 h-full flex-col
-        so its own tab bar, content area, and footer sit flush inside the modal.
-      */}
+    
       <MinimizableModal
         modalId="new-payroll-modal"
         isOpen={showPayrollModal}

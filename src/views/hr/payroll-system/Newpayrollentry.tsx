@@ -1,12 +1,5 @@
-// NewPayrollEntry.tsx — 3-step payroll creation wizard.
-// Designed to live INSIDE MinimizableModal (which already provides the shell).
-// Pattern mirrors AddEmployeeModal: tab bar + scrollable content + footer nav.
-
 import React, { useEffect, useState } from "react";
 import {
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle,
   FileText,
   Users,
   Settings,
@@ -36,40 +29,61 @@ interface Props {
 }
 
 const TABS: { label: string; icon: React.ReactNode }[] = [
-  { label: "Overview",   icon: <FileText  className="w-3.5 h-3.5" /> },
-  { label: "Employees",  icon: <Users     className="w-3.5 h-3.5" /> },
-  { label: "Accounting", icon: <Settings  className="w-3.5 h-3.5" /> },
+  { label: "Overview", icon: <FileText className="w-3.5 h-3.5" /> },
+  { label: "Employees", icon: <Users className="w-3.5 h-3.5" /> },
+  { label: "Accounting", icon: <Settings className="w-3.5 h-3.5" /> },
 ];
 
 const EMPTY_FORM: PayrollEntry = {
-  payrollName:             "",
-  postingDate:             new Date().toISOString().slice(0, 10),
-  currency:                DEFAULT_CURRENCY,
-  exchangeRate:            DEFAULT_EXCHANGE_RATE,
-  company:                 DEFAULT_COMPANY,
-  payrollPayableAccount:   DEFAULT_PAYROLL_PAYABLE_ACCOUNT,
-  status:                  "Draft",
-  salarySlipTimesheet:     false,
-  deductTaxForProof:       false,
-  payrollFrequency:        "Monthly",
-  startDate:               "",
-  endDate:                 "",
-  paymentAccount:          DEFAULT_PAYMENT_ACCOUNT,
-  bankAccount:             DEFAULT_BANK_ACCOUNT,
-  costCenter:              "",
-  project:                 "",
-  letterHead:              "",
-  selectedEmployees:       [],
+  payrollName: "",
+  postingDate: new Date().toISOString().slice(0, 10),
+  currency: DEFAULT_CURRENCY,
+  exchangeRate: DEFAULT_EXCHANGE_RATE,
+  company: DEFAULT_COMPANY,
+  payrollPayableAccount: DEFAULT_PAYROLL_PAYABLE_ACCOUNT,
+  status: "Draft",
+  salarySlipTimesheet: false,
+  deductTaxForProof: false,
+  payrollFrequency: "Monthly",
+  startDate: "",
+  endDate: "",
+  paymentAccount: DEFAULT_PAYMENT_ACCOUNT,
+  bankAccount: DEFAULT_BANK_ACCOUNT,
+  costCenter: "",
+  project: "",
+  letterHead: "",
+  selectedEmployees: [],
 };
 
 export const NewPayrollEntry: React.FC<Props> = ({ onBack, onSuccess }) => {
-  const [step,        setStep]        = useState(0);
-  const [submitting,  setSubmitting]  = useState(false);
+  const [step, setStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [formData,    setFormData]    = useState<PayrollEntry>(EMPTY_FORM);
-  const [employees,   setEmployees]   = useState<any[]>([]);
+  const [formData, setFormData] = useState<PayrollEntry>(EMPTY_FORM);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   const isLastStep = step === TABS.length - 1;
+
+  const handleNext = () => {
+    setStep((p) => Math.min(TABS.length - 1, p + 1));
+  };
+
+  const handlePrevious = () => {
+    setStep((p) => Math.max(0, p - 1));
+  };
+
+  const handleReset = () => {
+    if (submitting) return;
+
+    setFormData(EMPTY_FORM);
+    setSubmitError(null);
+    setStep(0);
+  };
+
+  const handleClose = () => {
+    if (submitting) return;
+    onBack();
+  };
 
   const update = (field: string, value: unknown) => {
     setFormData((p) => ({ ...p, [field]: value }));
@@ -77,6 +91,7 @@ export const NewPayrollEntry: React.FC<Props> = ({ onBack, onSuccess }) => {
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
     if (!formData.selectedEmployees.length) return;
     setSubmitting(true);
     setSubmitError(null);
@@ -95,17 +110,17 @@ export const NewPayrollEntry: React.FC<Props> = ({ onBack, onSuccess }) => {
     (async () => {
       try {
         const resp = await getAllEmployees();
-        const raw  = resp?.message?.data || resp?.data || [];
+        const raw = resp?.message?.data || resp?.data || [];
         setEmployees(
           raw.map((emp: any) => ({
-            id:          emp.name,
-            name:        emp.employee_name,
-            department:  emp.department   || "-",
-            designation: emp.designation  || "-",
+            id: emp.name,
+            name: emp.employee_name,
+            department: emp.department || "-",
+            designation: emp.designation || "-",
             basicSalary: Number(emp.basic_salary || 0),
-            hra:         Number(emp.hra          || 0),
-            allowances:  Number(emp.allowances   || 0),
-            isActive:    emp.status === "Active",
+            hra: Number(emp.hra || 0),
+            allowances: Number(emp.allowances || 0),
+            isActive: emp.status === "Active",
           })),
         );
       } catch (err) {
@@ -114,49 +129,53 @@ export const NewPayrollEntry: React.FC<Props> = ({ onBack, onSuccess }) => {
     })();
   }, []);
 
-  
+
+  const footer = (
+    <ModalFooter
+      onCancel={handleClose}
+      onReset={handleReset}
+      onPrevious={step > 0 ? handlePrevious : undefined}
+      onNext={!isLastStep ? handleNext : undefined}
+      onSubmit={isLastStep ? handleSubmit : undefined}
+      currentTab={step}
+      totalTabs={TABS.length}
+      isSubmitting={submitting}
+      submitLabel={`Create Payroll (${formData.selectedEmployees.length})`}
+      submitDisabled={!formData.selectedEmployees.length}
+    />
+  );
+
   return (
     <div className="flex flex-col h-full -mx-4 -my-3 overflow-hidden">
 
-      {/* ── Step tab bar (matches AddEmployeeModal's tab bar style) ── */}
-      <div className="flex border-b border-theme bg-card px-1.5 overflow-x-auto flex-shrink-0">
-        {TABS.map((t, i) => {
-          const isDone   = i < step;
-          const isActive = i === step;
-          return (
-            <button
-              key={i}
-              onClick={() => setStep(i)}
-              className={`relative flex items-center gap-1.5 px-4 py-2.5 text-[10px] font-semibold whitespace-nowrap transition flex-shrink-0 border-b-2 ${
-                isActive
-                  ? "text-primary border-primary"
-                  : isDone
-                    ? "text-success border-transparent hover:border-theme"
-                    : "text-muted border-transparent hover:text-main"
-              }`}
-            >
-              {isDone ? (
-                <CheckCircle className="w-3.5 h-3.5 text-success shrink-0" />
-              ) : (
-                <span
-                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-extrabold shrink-0 ${
-                    isActive
-                      ? "bg-primary text-white"
-                      : "bg-app border border-theme text-muted"
+
+      {/* Tabs */}
+      <div className="bg-app border-b border-theme px-8 shrink-0">
+        <div className="flex gap-8 overflow-x-auto">
+          {TABS.map((t, i) => {
+            const isActive = i === step;
+
+            return (
+              <button
+                key={t.label}
+                type="button"
+                onClick={() => setStep(i)}
+                className={`py-2.5 bg-transparent border-none text-xs font-medium whitespace-nowrap cursor-pointer transition-all flex items-center gap-2
+            ${isActive
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
                   }`}
-                >
-                  {i + 1}
-                </span>
-              )}
-              {t.label}
-            </button>
-          );
-        })}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Scrollable tab content ── */}
       <div className="flex-1 min-h-0 overflow-y-auto bg-app p-5">
-        {step === 0 && <OverviewTab   data={formData} onChange={update} />}
+        {step === 0 && <OverviewTab data={formData} onChange={update} />}
         {step === 1 && (
           <EmployeesTab
             data={formData}
@@ -180,35 +199,9 @@ export const NewPayrollEntry: React.FC<Props> = ({ onBack, onSuccess }) => {
         </div>
       )}
 
-    <div className="shrink-0 border-t border-theme bg-app px-5 py-3">
-  <ModalFooter
-    onCancel={onBack}
-    onNext={
-      !isLastStep
-        ? () =>
-            setStep((p) =>
-              Math.min(
-                TABS.length - 1,
-                p + 1,
-              ),
-            )
-        : undefined
-    }
-    onSubmit={
-      isLastStep
-        ? handleSubmit
-        : undefined
-    }
-    currentTab={step}
-    totalTabs={TABS.length}
-    isSubmitting={submitting}
-    nextLabel="Next"
-    submitLabel={`Create Payroll (${formData.selectedEmployees.length})`}
-    submitDisabled={
-      !formData.selectedEmployees.length
-    }
-  />
-</div>
+      <div className="shrink-0 border-t border-theme bg-app px-5 py-3">
+        {footer}
+      </div>
     </div>
   );
 };
