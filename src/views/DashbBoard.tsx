@@ -13,16 +13,19 @@ import {
   PurchaseChartResponse
 } from '../api/dashboardApi';
 
-const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
+const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
 
-  // --- Filter State ---
-  const [filterMode, setFilterMode] = useState<'year' | 'custom'>('year');
-  const [year, setYear] = useState(new Date().getFullYear().toString());
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
-  
-  // --- Data State ---
+const Dashboard = () => {
+  // 1. Independent Loading States
+  const [loadingSummary, setLoadingSummary] = useState(true);
+  const [loadingSales, setLoadingSales] = useState(true);
+  const [loadingPurchase, setLoadingPurchase] = useState(true);
+
+  // 2. Independent Filter States for Charts
+  const [salesYear, setSalesYear] = useState(availableYears[0]);
+  const [purchaseYear, setPurchaseYear] = useState(availableYears[0]);
+
+  // 3. Data States
   const [summaryData, setSummaryData] = useState<DashboardSummaryResponse['data'] | null>(null);
   const [notesData, setNotesData] = useState<DashboardNotesResponse['data'] | null>(null);
   const [salesData, setSalesData] = useState<SalesChartResponse['data'] | null>(null);
@@ -31,45 +34,63 @@ const Dashboard = () => {
   const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-IN', {
     style: 'currency', currency: 'INR', maximumFractionDigits: 2, notation: "compact"
   }), []);
-const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
-  // --- Fetch Data ---
+
+  // --- Fetch Summary & Notes (Runs once on mount) ---
   useEffect(() => {
     let mounted = true;
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchGlobal = async () => {
+      setLoadingSummary(true);
       try {
-        // Build correct parameters based on the selected filter mode
-        let queryParams: any = {};
-        if (filterMode === 'year') {
-          queryParams.year = year;
-        } else {
-          if (fromDate) queryParams.from_date = fromDate;
-          if (toDate) queryParams.to_date = toDate;
-        }
-
-        const [summary, notes, sales, purchase] = await Promise.all([
-          getDashboardSummary(),
-          getDashboardNotes(),
-          getSalesChart(queryParams),
-          getPurchaseChart(queryParams)
-        ]);
-
+        const [summary, notes] = await Promise.all([getDashboardSummary(), getDashboardNotes()]);
         if (mounted) {
           setSummaryData(summary?.data || null);
           setNotesData(notes?.data || null);
-          setSalesData(sales?.data || null);
-          setPurchaseData(purchase?.data || null);
         }
-      } catch (error) {
-        console.error("Dashboard Fetch Error:", error);
+      } catch (e) {
+        console.error("Error fetching summary:", e);
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setLoadingSummary(false);
       }
     };
-
-    fetchData();
+    fetchGlobal();
     return () => { mounted = false; };
-  }, [filterMode, year, fromDate, toDate]);
+  }, []);
+
+  // --- Fetch Sales Chart independently ---
+  useEffect(() => {
+    let mounted = true;
+    const fetchSales = async () => {
+      setLoadingSales(true);
+      try {
+        const sales = await getSalesChart({ year: salesYear });
+        if (mounted) setSalesData(sales?.data || null);
+      } catch (e) {
+        console.error("Error fetching sales chart:", e);
+      } finally {
+        if (mounted) setLoadingSales(false);
+      }
+    };
+    fetchSales();
+    return () => { mounted = false; };
+  }, [salesYear]);
+
+  // --- Fetch Purchase Chart independently ---
+  useEffect(() => {
+    let mounted = true;
+    const fetchPurchase = async () => {
+      setLoadingPurchase(true);
+      try {
+        const purchase = await getPurchaseChart({ year: purchaseYear });
+        if (mounted) setPurchaseData(purchase?.data || null);
+      } catch (e) {
+        console.error("Error fetching purchase chart:", e);
+      } finally {
+        if (mounted) setLoadingPurchase(false);
+      }
+    };
+    fetchPurchase();
+    return () => { mounted = false; };
+  }, [purchaseYear]);
 
   return (
     <div className="flex h-screen w-full flex-col bg-gray-50 p-4 overflow-hidden">
@@ -82,12 +103,11 @@ const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYe
 
       <div className="flex flex-1 gap-4 min-h-0">
         
-        {/* LEFT AREA */}
         <div className="flex flex-1 flex-col gap-4 min-w-0">
           
-          {/* Top 4 Info Boxes */}
           <div className="grid grid-cols-4 gap-4 shrink-0 h-[100px]">
-            <InfoBox title="Sales" loading={loading}>
+            <InfoBox title="Sales" loading={loadingSummary}
+            icon={<Users size={16} className="text-blue-500" />}>
               <div className="text-lg font-bold text-blue-600">{currencyFormatter.format(summaryData?.sales?.totalSales || 0)}</div>
               <div className="text-xs text-gray-500 flex justify-between mt-1">
                 <span>Count: {summaryData?.sales?.salesCount || 0}</span>
@@ -95,7 +115,8 @@ const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYe
               </div>
             </InfoBox>
 
-            <InfoBox title="Purchase" loading={loading}>
+            <InfoBox title="Purchase" loading={loadingSummary}
+            icon={<DollarSign size={16} className="text-green-500" />}>
               <div className="text-lg font-bold text-amber-600">{currencyFormatter.format(summaryData?.purchase?.totalPurchase || 0)}</div>
               <div className="text-xs text-gray-500 flex justify-between mt-1">
                 <span>Count: {summaryData?.purchase?.purchaseCount || 0}</span>
@@ -103,7 +124,8 @@ const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYe
               </div>
             </InfoBox>
 
-            <InfoBox title="Customer" loading={loading}>
+            <InfoBox title="Customer" loading={loadingSummary}
+            icon={<Users size={16} className="text-blue-500" />}>
               <div className="text-lg font-bold text-emerald-600">{summaryData?.customer?.totalCustomers || 0}</div>
               <div className="text-xs text-gray-500 flex justify-between mt-1">
                 <span>Active: {summaryData?.customer?.activeCustomers || 0}</span>
@@ -111,7 +133,8 @@ const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYe
               </div>
             </InfoBox>
 
-            <InfoBox title="Supplier" loading={loading}>
+            <InfoBox title="Supplier" loading={loadingSummary}
+            icon={<FileText size={16} className="text-amber-500" />}>
               <div className="text-lg font-bold text-purple-600">{summaryData?.supplier?.totalSuppliers || 0}</div>
               <div className="text-xs text-gray-500 flex justify-between mt-1">
                 <span>Active: {summaryData?.supplier?.activeSuppliers || 0}</span>
@@ -120,89 +143,49 @@ const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYe
             </InfoBox>
           </div>
 
-          {/* Chart Filters Bar */}
-          <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between shrink-0">
-            <span className="text-sm font-bold text-gray-700">Chart Filters</span>
-            <div className="flex gap-6">
-              
-              {/* Year Toggle */}
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="filter"
-                  className="accent-blue-600"
-                  checked={filterMode === 'year'} 
-                  onChange={() => setFilterMode('year')} 
-                />
-                <span className={filterMode === 'year' ? 'text-gray-900 font-medium' : 'text-gray-500'}>Year</span>
-                <select 
-  value={year}
-  disabled={filterMode !== 'year'}
-  onChange={(e) => setYear(e.target.value)}
-  className="ml-1 border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
->
-  {availableYears.map(y => (
-    <option key={y} value={y}>{y}</option>
-  ))}
-</select>
-              </label>
-
-              {/* Custom Range Toggle */}
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="filter"
-                  className="accent-blue-600"
-                  checked={filterMode === 'custom'} 
-                  onChange={() => setFilterMode('custom')} 
-                />
-                <span className={filterMode === 'custom' ? 'text-gray-900 font-medium' : 'text-gray-500'}>Date Range</span>
-                <div className={`flex items-center gap-2 ml-1 ${filterMode !== 'custom' ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <input 
-                    type="date" 
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    className="border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 text-xs"
-                  />
-                  <span className="text-gray-400">to</span>
-                  <input 
-                    type="date" 
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    className="border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 text-xs"
-                  />
-                </div>
-              </label>
-
-            </div>
-          </div>
-
           {/* 4 Charts (2x2 Grid) */}
           <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 min-h-0">
-            
             <LineChart 
               title="SALES CHART" 
-              loading={loading} 
+              loading={loadingSales} 
               trendData={salesData?.trend} 
               metrics={[
                 { key: 'receivable', name: 'Receivable', color: '#3b82f6' },
                 { key: 'received', name: 'Received', color: '#10b981' }
               ]} 
+              filterNode={
+                <select 
+                  value={salesYear} 
+                  onChange={e => setSalesYear(e.target.value)}
+                  className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              }
             />
             
             <LineChart 
               title="PURCHASE CHART" 
-              loading={loading} 
+              loading={loadingPurchase} 
               trendData={purchaseData?.trend} 
               metrics={[
                 { key: 'payable', name: 'Payable', color: '#f59e0b' },
                 { key: 'paid', name: 'Paid', color: '#ef4444' }
               ]} 
+              filterNode={
+                <select 
+                  value={purchaseYear} 
+                  onChange={e => setPurchaseYear(e.target.value)}
+                  className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              }
             />
             
             {/* Empty Placeholders */}
-            <LineChart title="EXPENSE CHART" loading={loading} trendData={{}} metrics={[]} />
-            <LineChart title="INVENTORY CHART" loading={loading} trendData={{}} metrics={[]} />
+            <LineChart title="EXPENSE CHART" loading={loadingSummary} trendData={{}} metrics={[]} />
+            <LineChart title="INVENTORY CHART" loading={loadingSummary} trendData={{}} metrics={[]} />
             
           </div>
         </div>
@@ -210,7 +193,7 @@ const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYe
         {/* RIGHT AREA (Vertical Notes) */}
         <div className="w-[300px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col p-5 overflow-y-auto">
           <h2 className="text-sm font-bold tracking-wider text-gray-800 border-b pb-2 mb-4 uppercase">Notes</h2>
-          {loading ? (
+          {loadingSummary ? (
             <div className="animate-pulse space-y-4">
               {[1, 2, 3, 4].map(i => <div key={i} className="h-16 bg-gray-100 rounded-lg w-full"></div>)}
             </div>
@@ -252,9 +235,13 @@ const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYe
 };
 
 // --- Sub-Components ---
-const InfoBox = ({ title, loading, children }: { title: string, loading: boolean, children: React.ReactNode }) => (
+const InfoBox = ({ title, icon, loading, children }: { title: string, icon?: React.ReactNode, loading: boolean, children: React.ReactNode }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center">
-    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{title}</h3>
+    {/* <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{title}</h3> */}
+    <div className="flex items-center gap-2 mb-1">
+      {icon && <span className="text-gray-400">{icon}</span>}
+      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{title}</h3>
+    </div>
     {loading ? <div className="animate-pulse h-8 bg-gray-100 rounded w-full mt-1"></div> : children}
   </div>
 );

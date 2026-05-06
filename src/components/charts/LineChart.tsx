@@ -12,46 +12,120 @@ interface LineChartProps {
   loading: boolean;
   trendData?: Record<string, any>;
   metrics: ChartMetric[];
+  filterNode?: React.ReactNode; 
 }
 
-const LineChart: React.FC<LineChartProps> = ({ title, loading, trendData = {}, metrics }) => {
+const LineChart: React.FC<LineChartProps> = ({ title, loading, trendData = {}, metrics, filterNode }) => {
   const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-IN', {
     style: 'currency', currency: 'INR', maximumFractionDigits: 2, notation: "compact"
   }), []);
 
   const option = useMemo(() => {
-    // Extract months (YYYY-MM) and sort them chronologically
+    // 1. Convert your object `trendData` into a tabular dataset 
+    // Format: [['Month', 'MetricName', 'Value'], ['Jan', 'Payable', 100], ...]
+    const rawData: any[][] = [['Month', 'MetricName', 'Value']];
     const months = Object.keys(trendData).sort();
+    
+    months.forEach(month => {
+      metrics.forEach(metric => {
+        rawData.push([month, metric.name, trendData[month][metric.key] || 0]);
+      });
+    });
 
-    const series = metrics.map(metric => ({
-      name: metric.name,
-      type: 'line',
-      smooth: true,
-      itemStyle: { color: metric.color },
-      // Map the specific metric key (e.g., 'receivable', 'paid') for each month
-      data: months.map(m => trendData[m][metric.key] || 0)
-    }));
+    // 2. Setup the dataset filters and series automatically (like the Apache example)
+    const datasetWithFilters: any[] = [];
+    const seriesList: any[] = [];
 
+    metrics.forEach(metric => {
+      const datasetId = 'dataset_' + metric.key;
+      
+      // Filter dataset by Metric Name
+      datasetWithFilters.push({
+        id: datasetId,
+        fromDatasetId: 'dataset_raw',
+        transform: {
+          type: 'filter',
+          config: { dimension: 'MetricName', '=': metric.name }
+        }
+      });
+
+      // Push line series for each filtered dataset
+      seriesList.push({
+        type: 'line',
+        datasetId: datasetId,
+        name: metric.name,
+        showSymbol: false,
+        smooth: true,
+        itemStyle: { color: metric.color },
+        endLabel: {
+          show: true,
+          color: metric.color,
+          fontWeight: 'bold',
+          // Format label as: "Payable: ₹1.5K"
+          formatter: function (params: any) {
+            return params.value[1] + ': ' + currencyFormatter.format(params.value[2]);
+          }
+        },
+        labelLayout: {
+          moveOverlap: 'shiftY'
+        },
+        emphasis: {
+          focus: 'series'
+        },
+        encode: {
+          x: 'Month',
+          y: 'Value',
+          label: ['MetricName', 'Value'],
+          itemName: 'Month',
+          tooltip: ['Value']
+        }
+      });
+    });
+
+    // 3. Construct the final option
     return {
-      tooltip: { trigger: 'axis' },
-      legend: { data: metrics.map(m => m.name), top: 0 },
-      grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+      animationDuration: 3000,
+      dataset: [
+        {
+          id: 'dataset_raw',
+          source: rawData
+        },
+        ...datasetWithFilters
+      ],
+      tooltip: { 
+        trigger: 'axis',
+        order: 'valueDesc',
+        // Format the tooltip values using your currency formatter
+        valueFormatter: (value: number) => currencyFormatter.format(value)
+      },
+      grid: { 
+        left: '3%', 
+        right: '15%', // Keep right padding high so endLabels fit
+        bottom: '3%', 
+        top: '15%', 
+        containLabel: true 
+      },
       xAxis: { 
         type: 'category', 
-        boundaryGap: false, 
-        data: months // Displays months on the X-axis
+        boundaryGap: false
       },
       yAxis: { 
         type: 'value', 
-        axisLabel: { formatter: (val: number) => currencyFormatter.format(val) } 
+        axisLabel: { formatter: (val: number) => currencyFormatter.format(val) }, 
+        axisLine: { show: true }, 
+        axisTick: { show: true }
       },
-      series
+      series: seriesList
     };
   }, [trendData, metrics, currencyFormatter]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col min-h-0 h-full">
-      <h3 className="text-xs font-bold text-gray-800 tracking-wider mb-2 uppercase">{title}</h3>
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="text-xs font-bold text-gray-800 tracking-wider uppercase">{title}</h3>
+        {filterNode && <div>{filterNode}</div>}
+      </div>
+      
       <div className="flex-1 min-h-0 relative">
         {loading ? (
           <div className="absolute inset-0 bg-gray-50 animate-pulse rounded flex items-center justify-center text-sm text-gray-400">
