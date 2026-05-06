@@ -105,7 +105,6 @@ const buildPayload = (): UserRoleFormData => {
     const existing = form.permission.find((p) => p.module === sub);
     return {
       module: sub,
-      root_module: subModuleParent[sub], 
       read: existing?.read ?? 0,
       write: existing?.write ?? 0,
       create: existing?.create ?? 0,
