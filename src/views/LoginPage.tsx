@@ -71,31 +71,50 @@ const Login = () => {
           </p>
 
           {/* Features */}
-          <div className="space-y-5">
+          <div className="space-y-6 mt-2">
 
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-[#1E293B] border border-[#334155] flex items-center justify-center">
-                <ShieldCheck className="text-white" size={18} />
+            {/* Primary Feature */}
+            <div className="flex items-start gap-4">
+              <div className="relative">
+                {/* Glow */}
+                <div className="absolute inset-0 rounded-xl bg-blue-500/20 blur-md" />
+
+                <div className="relative w-11 h-11 rounded-xl bg-[#1E293B] border border-[#334155] flex items-center justify-center">
+                  <ShieldCheck className="text-white" size={20} />
+                </div>
               </div>
-              <span className="text-white font-medium">
+
+              <span className="text-white font-medium leading-snug">
                 End-to-end encrypted infrastructure
               </span>
             </div>
 
-            <div className="flex items-center gap-4 opacity-80">
-              <div className="w-10 h-10 rounded-lg bg-[#0F172A] border border-[#1E293B] flex items-center justify-center">
-                <ShieldCheck className="text-[#94A3B8]" size={18} />
+            {/* Secondary Feature */}
+            <div className="flex items-start gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-xl bg-blue-500/10 blur-md" />
+
+                <div className="relative w-11 h-11 rounded-xl bg-[#0F172A] border border-[#1E293B] flex items-center justify-center">
+                  <ShieldCheck className="text-[#CBD5E1]" size={20} />
+                </div>
               </div>
-              <span className="text-[#94A3B8]">
+
+              <span className="text-[#CBD5E1] leading-snug">
                 Role-based access with audit trails
               </span>
             </div>
 
-            <div className="flex items-center gap-4 opacity-80">
-              <div className="w-10 h-10 rounded-lg bg-[#0F172A] border border-[#1E293B] flex items-center justify-center">
-                <ShieldCheck className="text-[#94A3B8]" size={18} />
+            {/* Secondary Feature */}
+            <div className="flex items-start gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-xl bg-blue-500/10 blur-md" />
+
+                <div className="relative w-11 h-11 rounded-xl bg-[#0F172A] border border-[#1E293B] flex items-center justify-center">
+                  <ShieldCheck className="text-[#CBD5E1]" size={20} />
+                </div>
               </div>
-              <span className="text-[#94A3B8]">
+
+              <span className="text-[#CBD5E1] leading-snug">
                 99.99% uptime across global systems
               </span>
             </div>
