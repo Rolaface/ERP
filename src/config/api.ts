@@ -32,8 +32,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -48,6 +48,10 @@ export const API = {
    * ========================= */
   dashboard: {
     summary: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.summary`,
+    dashboardSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.dashboard_summary`,
+    salesChart: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.sales_chart`,
+    purchaseChart: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.purchase_chart`,
+    notes: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.notes`,
   },
 
   /* =========================
