@@ -533,9 +533,6 @@ export function useCustomerForm({
     const pc = form.contacts.find((c) => c.isPrimary);
     if (!form.type) newErrors.type = "Type is required";
     if (!form.name?.trim()) newErrors.name = "Customer name is required";
-    if (!form.tpin?.trim()) newErrors.tpin = "TPIN is required";
-    if (!form.customerTaxCategory)
-      newErrors.customerTaxCategory = "Tax category is required";
     if (!form.currency) newErrors.currency = "Currency is required";
     if (!pc?.firstName?.trim())
       newErrors.contactFirstName = "First name is required";
@@ -570,9 +567,7 @@ export function useCustomerForm({
       if (!form.type) missing.push("Customer Type");
       if (!form.name) missing.push("Customer Name");
       if (!pc?.firstName) missing.push("Contact First Name");
-      if (!form.tpin) missing.push("TPIN");
       if (!pc?.mobileCode || !pc?.mobileNumber) missing.push("Mobile Number");
-      if (!form.customerTaxCategory) missing.push("Tax Category");
       if (!form.currency) missing.push("Currency");
       if (!pc?.email) missing.push("Email");
       return missing.length > 0

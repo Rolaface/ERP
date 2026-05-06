@@ -77,8 +77,6 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                   value={form.tpin}
                   onChange={onChange}
                   placeholder="Enter TPIN"
-                  error={errors.tpin}
-                  required
                 />
               </Tooltip>
             </div>
@@ -95,8 +93,6 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                   label="Tax Category"
                   value={form.taxCategory}
                   onChange={handleTaxCategoryChange}
-                  error={errors.taxCategory}
-                  required
                 />
               </Tooltip>
             </div>
