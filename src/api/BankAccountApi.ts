@@ -7,6 +7,12 @@ import type { BankAccount } from "../types/BankAccount/bank";
 const api = createAxiosInstance(ERP_BASE);
 export const Account = API.Account;
 
+export async function getModeOfPaymentByName(name: string): Promise<any | null> {
+  const url = `${Account.GetModeOfPayment}?name=${encodeURIComponent(name)}`;
+  const resp: AxiosResponse = await api.get(url);
+  return resp.data ?? null;
+}
+
 export async function createNewBankAccount(payload: any) {
   const resp: AxiosResponse = await api.post(
     Account.createnewBankaccount,
@@ -14,6 +20,33 @@ export async function createNewBankAccount(payload: any) {
   );
 
   return resp.data;
+}
+export async function updateModeOfPayment(payload: {
+  name: string;
+  type: string;
+  enabled: 0 | 1;
+  default_account?: string;
+}) {
+  try {
+    const resp: AxiosResponse = await api.put(
+      Account.UpdateModeOfPayment,
+      payload
+    );
+
+    const data = resp?.data;
+
+    if (data?.status_code !== 200) {
+      throw new Error(data?.message || "Failed to update mode of payment");
+    }
+
+    return data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error.message ||
+      "Something went wrong"
+    );
+  }
 }
 
 export async function getBankAccounts(

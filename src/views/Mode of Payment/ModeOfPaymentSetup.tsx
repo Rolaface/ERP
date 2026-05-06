@@ -4,9 +4,10 @@ import AddModeOfPaymentModal from "./AddModeOfPaymentModal";
 import { FaMoneyBill } from "react-icons/fa";
 import {
   getAllModeOfPayment,
+  getModeOfPaymentByName,
   updateModeOfPaymentStatus,
 } from "../../api/BankAccountApi";
-import { showApiError, showSuccess } from "../../utils/alert";
+import { closeSwal, showApiError, showLoading, showSuccess } from "../../utils/alert";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -44,7 +45,12 @@ const ModeOfPaymentSetup: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
+const handleEdit = (name: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  openModeOfPaymentModal({ name }, true, {  
+    onSuccess: () => fetchData(),
+  });
+};
   const handleToggle = async (row: any) => {
     const previous = row.enabled;
 
@@ -65,8 +71,6 @@ const ModeOfPaymentSetup: React.FC = () => {
       setActionLoadingId(null);
     }
   };
-
-  /* ───────── COLUMNS ───────── */
   const columns: Column<any>[] = [
     {
       key: "name",
@@ -95,24 +99,31 @@ const ModeOfPaymentSetup: React.FC = () => {
           </div>
         ),
     },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (row: any) => (
-        <ActionGroup>
-          <ActionMenu
-            customActions={[
-              {
-                label: row.enabled ? "Disable" : "Enable",
-                onClick: () => handleToggle(row),
-                disabled: actionLoadingId === String(row.id),
-              },
-            ]}
-          />
-        </ActionGroup>
-      ),
-    },
+   {
+  key: "actions",
+  header: "Actions",
+  align: "center",
+  render: (row: any) => (
+    <div className="flex items-center justify-center gap-2">
+      
+<ActionButton
+  type="edit"
+  onClick={(e) => handleEdit(row.id, e)}  
+  iconOnly
+  title="Edit Mode of Payment"
+/>
+      <ActionMenu
+        customActions={[
+          {
+            label: row.enabled ? "Disable" : "Enable",
+            onClick: () => handleToggle(row),
+            disabled: actionLoadingId === String(row.id),
+          },
+        ]}
+      />
+    </div>
+  ),
+},
   ];
 
   return (
