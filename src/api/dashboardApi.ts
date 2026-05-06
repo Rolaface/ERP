@@ -177,3 +177,33 @@ export async function getPurchaseChart(params?: ChartQueryParams): Promise<Purch
   });
   return resp.data;
 }
+
+// ==========================================
+// 6. Inventory Chart
+// ==========================================
+
+export interface InventoryChartQueryParams extends ChartQueryParams {
+  mode?: 'value' | 'quantity'; // Required for the backend to sort by the correct metric
+}
+
+export type InventoryChartResponse = {
+  status_code: number;
+  status: string;
+  message: string;
+  data: Array<{
+    itemName: string;
+    itemCode?: string;
+    buyQty: number;
+    buyValue: number;
+    sellQty: number;
+    sellValue: number;
+  }>;
+};
+
+export async function getInventoryChart(params?: InventoryChartQueryParams): Promise<InventoryChartResponse> {
+  // Assuming 'inventoryChart' is added to your API.dashboard object in config
+  const resp: AxiosResponse<InventoryChartResponse> = await api.get(DashboardAPI.inventoryChart, { 
+    params 
+  });
+  return resp.data;
+}

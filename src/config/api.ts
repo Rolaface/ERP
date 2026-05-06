@@ -51,6 +51,7 @@ export const API = {
     dashboardSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.dashboard_summary`,
     salesChart: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.sales_chart`,
     purchaseChart: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.purchase_chart`,
+    inventoryChart: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.inventory_chart`,
     notes: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.notes`,
   },
 

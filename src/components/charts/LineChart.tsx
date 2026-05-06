@@ -21,8 +21,7 @@ const LineChart: React.FC<LineChartProps> = ({ title, loading, trendData = {}, m
   }), []);
 
   const option = useMemo(() => {
-    // 1. Convert your object `trendData` into a tabular dataset 
-    // Format: [['Month', 'MetricName', 'Value'], ['Jan', 'Payable', 100], ...]
+
     const rawData: any[][] = [['Month', 'MetricName', 'Value']];
     const months = Object.keys(trendData).sort();
     

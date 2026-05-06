@@ -10,8 +10,10 @@ import {
   DashboardSummaryResponse,
   DashboardNotesResponse,
   SalesChartResponse,
-  PurchaseChartResponse
+  PurchaseChartResponse,
+  getInventoryChart
 } from '../api/dashboardApi';
+import BarChart from '../components/charts/BarChart';
 
 const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
 
@@ -20,7 +22,10 @@ const Dashboard = () => {
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingSales, setLoadingSales] = useState(true);
   const [loadingPurchase, setLoadingPurchase] = useState(true);
-
+const [loadingInventory, setLoadingInventory] = useState(true);
+  const [inventoryYear, setInventoryYear] = useState(availableYears[0]);
+  const [inventoryMode, setInventoryMode] = useState<'value' | 'quantity'>('value');
+  const [inventoryData, setInventoryData] = useState<any[]>([]);
   // 2. Independent Filter States for Charts
   const [salesYear, setSalesYear] = useState(availableYears[0]);
   const [purchaseYear, setPurchaseYear] = useState(availableYears[0]);
@@ -55,6 +60,60 @@ const Dashboard = () => {
     fetchGlobal();
     return () => { mounted = false; };
   }, []);
+
+ // --- Fetch Inventory Chart independently ---
+  useEffect(() => {
+    let mounted = true;
+    const fetchInventory = async () => {
+      setLoadingInventory(true);
+      try {
+        const inv = await getInventoryChart({ year: inventoryYear, mode: inventoryMode });
+        
+        if (mounted) {
+          const rawData = inv?.data as any;
+
+          // 1. If backend already returns an array, use it directly
+          if (Array.isArray(rawData)) {
+            setInventoryData(rawData);
+          } 
+          else if (rawData && typeof rawData === 'object') {
+            const itemMap = new Map();
+
+            const parseItem = (itemData: any, type: 'buy' | 'sell', metric: 'qty' | 'val') => {
+              if (!itemData || !itemData.itemName || itemData.itemName === 'N/A') return;
+              
+              const name = itemData.itemName;
+              if (!itemMap.has(name)) {
+                itemMap.set(name, { itemName: name, buyQty: 0, buyValue: 0, sellQty: 0, sellValue: 0 });
+              }
+              
+              const entry = itemMap.get(name);
+              if (type === 'buy' && metric === 'qty') entry.buyQty = itemData.quantity || 0;
+              if (type === 'buy' && metric === 'val') entry.buyValue = itemData.value || 0;
+              if (type === 'sell' && metric === 'qty') entry.sellQty = itemData.quantity || 0;
+              if (type === 'sell' && metric === 'val') entry.sellValue = itemData.value || 0;
+            };
+
+            parseItem(rawData.buying?.topItemByQuantity, 'buy', 'qty');
+            parseItem(rawData.buying?.topItemByValue, 'buy', 'val');
+            parseItem(rawData.selling?.topItemByQuantity, 'sell', 'qty');
+            parseItem(rawData.selling?.topItemByValue, 'sell', 'val');
+
+            setInventoryData(Array.from(itemMap.values()));
+          } else {
+            setInventoryData([]);
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching inventory chart:", e);
+      } finally {
+        if (mounted) setLoadingInventory(false);
+      }
+    };
+    
+    fetchInventory();
+    return () => { mounted = false; };
+  }, [inventoryYear, inventoryMode]);
 
   // --- Fetch Sales Chart independently ---
   useEffect(() => {
@@ -185,7 +244,32 @@ const Dashboard = () => {
             
             {/* Empty Placeholders */}
             <LineChart title="EXPENSE CHART" loading={loadingSummary} trendData={{}} metrics={[]} />
-            <LineChart title="INVENTORY CHART" loading={loadingSummary} trendData={{}} metrics={[]} />
+            {/* <LineChart title="INVENTORY CHART" loading={loadingSummary} trendData={{}} metrics={[]} /> */}
+            <BarChart 
+  title="INVENTORY CHART" 
+  loading={loadingInventory} 
+  data={inventoryData} 
+  mode={inventoryMode}
+  filterNode={
+    <div className="flex gap-2">
+      <select 
+        value={inventoryMode} 
+        onChange={e => setInventoryMode(e.target.value as 'value' | 'quantity')}
+        className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+      >
+        <option value="value">By Value</option>
+        <option value="quantity">By Qty</option>
+      </select>
+      <select 
+        value={inventoryYear} 
+        onChange={e => setInventoryYear(e.target.value)}
+        className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+      >
+        {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+    </div>
+  }
+/>
             
           </div>
         </div>
