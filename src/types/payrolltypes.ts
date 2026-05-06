@@ -138,6 +138,9 @@ export interface PayrollEntry {
   deductTaxForProof: boolean;
   payrollFrequency: string;
   startDate: string;
+  exchangeRate:number;
+  bankAccount:string;
+
   endDate: string;
   paymentAccount: string;
   costCenter: string;

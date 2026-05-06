@@ -1,7 +1,4 @@
-
 import { ENV } from "./env";
-
-
 
 const getApiBaseUrl = (): string => {
   if (typeof window === "undefined") {
@@ -33,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
-export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -109,8 +106,8 @@ export const API = {
 
   RoleManagement: {
     createUserRoles: `${ERP_BASE}/api/method/auth_api.role_management.api.role.create`,
-    getUserRoles:`${ERP_BASE}/api/method/auth_api.role_management.api.role.get`,
-    getUserRolesbyId:`${ERP_BASE}/api/method/auth_api.role_management.api.role.get_by_id`,
+    getUserRoles: `${ERP_BASE}/api/method/auth_api.role_management.api.role.get`,
+    getUserRolesbyId: `${ERP_BASE}/api/method/auth_api.role_management.api.role.get_by_id`,
     updateUserRoles: `${ERP_BASE}/api/method/auth_api.role_management.api.role.update`,
     updateUserRolesStatus: `${ERP_BASE}/api/method/auth_api.role_management.api.role.update_status`,
     createUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.signup`,
@@ -118,9 +115,9 @@ export const API = {
     getUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get`,
     getUserbyId: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_user_by_id`,
     updateUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.update`,
-    deleteUser:  `${ERP_BASE}/api/method/frappe.client.delete`,
+    deleteUser: `${ERP_BASE}/api/method/frappe.client.delete`,
   },
-  
+
   Account: {
     createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
     getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
@@ -193,19 +190,18 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.create_employee`,
     update: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee`,
     delete: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.delete_employee`,
-  
+
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
   },
-  
-    employeeDocumnet: {
-uploadDocument: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee_document`,
-getDocuments: `${ERP_BASE}/api/method/get_employee_documents`,
-getDocumentById:`${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employees`,
-updateDocument:`${ERP_BASE}/api/method/update_employee_document`,
-deleteDocument:`${ERP_BASE}/api/method/delete_employee_document`},
-  
 
+  employeeDocumnet: {
+    uploadDocument: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.upload_employee_document`,
+    getDocuments: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employee_documents`,
+    getDocumentById: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employees`,
+    updateDocument: `${ERP_BASE}/api/method/update_employee_document`,
+    deleteDocument: `${ERP_BASE}/api/method/delete_employee_document`,
+  },
 
   /* =========================
    * ITEM
@@ -496,11 +492,11 @@ deleteDocument:`${ERP_BASE}/api/method/delete_employee_document`},
   payroll: {
     // Salary Component
     salaryComponent: {
-      getAll:`${ERP_BASE}/api/resource/Salary Component`,
-      getById:`${ERP_BASE}/api/resource/Salary Component`,
-      create:`${ERP_BASE}/api/resource/Salary Component`,
-      update:`${ERP_BASE}/api/resource/Salary Component`,
-      delete:`${ERP_BASE}/api/resource/Salary Component`,
+      getAll: `${ERP_BASE}/api/resource/Salary Component`,
+      getById: `${ERP_BASE}/api/resource/Salary Component`,
+      create: `${ERP_BASE}/api/resource/Salary Component`,
+      update: `${ERP_BASE}/api/resource/Salary Component`,
+      delete: `${ERP_BASE}/api/resource/Salary Component`,
     },
 
     // Salary Structure
@@ -518,6 +514,10 @@ deleteDocument:`${ERP_BASE}/api/method/delete_employee_document`},
       create: `${ERP_BASE}/api/resource/Income Tax Slab`,
       update: `${ERP_BASE}/api/resource/Income Tax Slab`,
       delete: `${ERP_BASE}/api/resource/Income Tax Slab`,
+    },
+
+    payrollentry: {
+      createpayrollentry: `${ERP_BASE}/api/resource/Payroll Entry`,
     },
   },
 
@@ -551,21 +551,20 @@ deleteDocument:`${ERP_BASE}/api/method/delete_employee_document`},
       delete: `${ERP_BASE}/api/resource/Employment Type`,
     },
   },
-    leaveType: {
-      getAll:   `${ERP_BASE}/api/resource/Leave Type`,
-      getById:  `${ERP_BASE}/api/resource/Leave Type`,
-      create:   `${ERP_BASE}/api/resource/Leave Type`,
-      update:   `${ERP_BASE}/api/resource/Leave Type`,
-      delete:   `${ERP_BASE}/api/resource/Leave Type`,
-    },
-    leaveApplication: {
-      getAll: `${ERP_BASE}/api/resource/Leave Application`,
-      getById: `${ERP_BASE}/api/resource/Leave Application`,
-      create: `${ERP_BASE}/api/resource/Leave Application`,
-      update: `${ERP_BASE}/api/resource/Leave Application`,
-      delete: `${ERP_BASE}/api/resource/Leave Application`,
-    },
-
+  leaveType: {
+    getAll: `${ERP_BASE}/api/resource/Leave Type`,
+    getById: `${ERP_BASE}/api/resource/Leave Type`,
+    create: `${ERP_BASE}/api/resource/Leave Type`,
+    update: `${ERP_BASE}/api/resource/Leave Type`,
+    delete: `${ERP_BASE}/api/resource/Leave Type`,
+  },
+  leaveApplication: {
+    getAll: `${ERP_BASE}/api/resource/Leave Application`,
+    getById: `${ERP_BASE}/api/resource/Leave Application`,
+    create: `${ERP_BASE}/api/resource/Leave Application`,
+    update: `${ERP_BASE}/api/resource/Leave Application`,
+    delete: `${ERP_BASE}/api/resource/Leave Application`,
+  },
 
   /* =========================
    * UTILS

@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   showApiError,
   showSuccess,
@@ -24,7 +24,10 @@ import {
   ArrowLeft,
   Clock,
 } from "lucide-react";
-import { uploadEmployeeDocument,getEmployeeDocuments } from "../../../api/employeedocument";
+import {
+  uploadEmployeeDocument,
+  getEmployeeDocuments,
+} from "../../../api/employeedocument";
 import { ERP_BASE } from "../../../config/api";
 
 type Props = {
@@ -83,9 +86,7 @@ const Field = ({
     <p className="text-[10px] uppercase tracking-wider text-muted font-semibold mb-0.5">
       {label}
     </p>
-    <p
-      className={`text-xs font-medium text-main ${mono ? "font-mono" : ""}`}
-    >
+    <p className={`text-xs font-medium text-main ${mono ? "font-mono" : ""}`}>
       {value || <span className="text-muted italic font-normal">—</span>}
     </p>
   </div>
@@ -232,9 +233,12 @@ const DocumentUploadModal: React.FC<{
 // ── Status helpers ────────────────────────────────────────────────────────────
 
 const statusClasses: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
-  inactive: "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700",
-  suspended: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
+  active:
+    "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
+  inactive:
+    "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700",
+  suspended:
+    "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
   left: "bg-red-100 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
 };
 
@@ -248,9 +252,21 @@ type TabId = "personal" | "employment" | "compensation" | "documents";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "personal", label: "Personal", icon: <User className="w-3.5 h-3.5" /> },
-  { id: "employment", label: "Employment", icon: <Briefcase className="w-3.5 h-3.5" /> },
-  { id: "compensation", label: "Compensation", icon: <DollarSign className="w-3.5 h-3.5" /> },
-  { id: "documents", label: "Documents", icon: <FileText className="w-3.5 h-3.5" /> },
+  {
+    id: "employment",
+    label: "Employment",
+    icon: <Briefcase className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "compensation",
+    label: "Compensation",
+    icon: <DollarSign className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "documents",
+    label: "Documents",
+    icon: <FileText className="w-3.5 h-3.5" />,
+  },
 ];
 
 const EmployeeDetailView: React.FC<Props> = ({
@@ -279,13 +295,13 @@ const EmployeeDetailView: React.FC<Props> = ({
   }) => {
     try {
       showLoading("Uploading Document…");
-      await uploadEmployeeDocument(
-  emp.employee,
-  description,
-  file
-);
+      await uploadEmployeeDocument(emp.employee, description, file);
       await onDocumentUploaded();
+
+      await fetchDocuments();
+
       closeSwal();
+
       showSuccess("Document uploaded successfully");
     } catch (error) {
       closeSwal();
@@ -293,13 +309,22 @@ const EmployeeDetailView: React.FC<Props> = ({
     }
   };
 
-useEffect(() => {
-  if (!emp.employee) return;
+  const fetchDocuments = async () => {
+    if (!emp.employee) return;
 
-  getEmployeeDocuments(emp.employee).then((res) => {
-    setDocuments(res.data || []);
-  });
-}, [emp.employee]);
+    try {
+      const res = await getEmployeeDocuments(emp.employee);
+
+      setDocuments(res?.message?.data || []);
+    } catch (error) {
+      console.error(error);
+      setDocuments([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [emp.employee]);
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -332,15 +357,18 @@ useEffect(() => {
       {/* ── Body ── */}
       <div className="max-w-[1400px] mx-auto px-6 py-5">
         <div className="grid grid-cols-12 gap-5">
-
           {/* ── LEFT SIDEBAR ── */}
           <div className="col-span-12 lg:col-span-3">
             <div className="bg-card rounded-xl border border-theme shadow-sm sticky top-4 overflow-hidden">
-
               {/* Avatar header */}
               <div className="bg-primary px-4 py-6 text-center relative">
-                <div className="absolute inset-0 opacity-10"
-                  style={{ backgroundImage: "radial-gradient(circle at 30% 20%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }}
+                <div
+                  className="absolute inset-0 opacity-10"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(circle at 30% 20%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)",
+                    backgroundSize: "24px 24px",
+                  }}
                 />
                 {emp.image ? (
                   <img
@@ -419,7 +447,6 @@ useEffect(() => {
 
           {/* ── RIGHT CONTENT ── */}
           <div className="col-span-12 lg:col-span-9 flex flex-col">
-
             {/* Tabs */}
             <div className="bg-card border border-theme border-b-0 rounded-t-xl px-4 pt-3 flex gap-0.5">
               {TABS.map((tab) => (
@@ -443,48 +470,115 @@ useEffect(() => {
               className="bg-card border border-theme rounded-b-xl rounded-tr-xl shadow-sm flex-1 overflow-y-auto p-5"
               style={{ maxHeight: "calc(100vh - 210px)" }}
             >
-
               {/* ── PERSONAL ── */}
               {activeTab === "personal" && (
                 <div className="space-y-5">
-                  <Section title="Personal Info" icon={<User className="w-3.5 h-3.5" />}>
+                  <Section
+                    title="Personal Info"
+                    icon={<User className="w-3.5 h-3.5" />}
+                  >
                     <div className="grid grid-cols-3 gap-x-5 gap-y-4">
-                      <Field label="Full Name" value={fullName} className="col-span-2" />
+                      <Field
+                        label="Full Name"
+                        value={fullName}
+                        className="col-span-2"
+                      />
                       <Field label="Gender" value={fmt(emp.gender)} />
-                      <Field label="Date of Birth" value={fmtDate(emp.date_of_birth)} />
-                      <Field label="Marital Status" value={fmt(emp.marital_status)} />
+                      <Field
+                        label="Date of Birth"
+                        value={fmtDate(emp.date_of_birth)}
+                      />
+                      <Field
+                        label="Marital Status"
+                        value={fmt(emp.marital_status)}
+                      />
                       <Field label="Blood Group" value={fmt(emp.blood_group)} />
                       <Field label="Salutation" value={fmt(emp.salutation)} />
                     </div>
                   </Section>
 
-                  <Section title="Contact" icon={<Mail className="w-3.5 h-3.5" />}>
+                  <Section
+                    title="Contact"
+                    icon={<Mail className="w-3.5 h-3.5" />}
+                  >
                     <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-                      <Field label="Personal Email" value={fmt(emp.personal_email)} />
-                      <Field label="Company Email" value={fmt(emp.company_email)} />
+                      <Field
+                        label="Personal Email"
+                        value={fmt(emp.personal_email)}
+                      />
+                      <Field
+                        label="Company Email"
+                        value={fmt(emp.company_email)}
+                      />
                       <Field label="Cell Number" value={fmt(emp.cell_number)} />
-                      <Field label="Preferred Email" value={fmt(emp.prefered_email) || fmt(emp.prefered_contact_email)} />
-                      <Field label="Current Address" value={fmt(emp.current_address)} className="col-span-2" />
-                      <Field label="Permanent Address" value={fmt(emp.permanent_address)} className="col-span-2" />
+                      <Field
+                        label="Preferred Email"
+                        value={
+                          fmt(emp.prefered_email) ||
+                          fmt(emp.prefered_contact_email)
+                        }
+                      />
+                      <Field
+                        label="Current Address"
+                        value={fmt(emp.current_address)}
+                        className="col-span-2"
+                      />
+                      <Field
+                        label="Permanent Address"
+                        value={fmt(emp.permanent_address)}
+                        className="col-span-2"
+                      />
                     </div>
                   </Section>
 
-                  <Section title="Emergency Contact" icon={<Shield className="w-3.5 h-3.5" />}>
+                  <Section
+                    title="Emergency Contact"
+                    icon={<Shield className="w-3.5 h-3.5" />}
+                  >
                     <div className="grid grid-cols-3 gap-x-5 gap-y-4">
-                      <Field label="Contact Name" value={fmt(emp.person_to_be_contacted)} />
+                      <Field
+                        label="Contact Name"
+                        value={fmt(emp.person_to_be_contacted)}
+                      />
                       <Field label="Relationship" value={fmt(emp.relation)} />
-                      <Field label="Phone" value={fmt(emp.emergency_phone_number)} />
+                      <Field
+                        label="Phone"
+                        value={fmt(emp.emergency_phone_number)}
+                      />
                     </div>
                   </Section>
 
-                  <Section title="Identity & Compliance" icon={<CreditCard className="w-3.5 h-3.5" />}>
+                  <Section
+                    title="Identity & Compliance"
+                    icon={<CreditCard className="w-3.5 h-3.5" />}
+                  >
                     <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-                      <Field label="Passport Number" value={fmt(emp.passport_number)} mono />
-                      <Field label="Place of Issue" value={fmt(emp.place_of_issue)} />
-                      <Field label="Date of Issue" value={fmtDate(emp.date_of_issue)} />
-                      <Field label="Valid Upto" value={fmtDate(emp.valid_upto)} />
-                      <Field label="Health Insurance" value={fmt(emp.health_insurance_provider)} />
-                      <Field label="Insurance No." value={fmt(emp.health_insurance_no)} mono />
+                      <Field
+                        label="Passport Number"
+                        value={fmt(emp.passport_number)}
+                        mono
+                      />
+                      <Field
+                        label="Place of Issue"
+                        value={fmt(emp.place_of_issue)}
+                      />
+                      <Field
+                        label="Date of Issue"
+                        value={fmtDate(emp.date_of_issue)}
+                      />
+                      <Field
+                        label="Valid Upto"
+                        value={fmtDate(emp.valid_upto)}
+                      />
+                      <Field
+                        label="Health Insurance"
+                        value={fmt(emp.health_insurance_provider)}
+                      />
+                      <Field
+                        label="Insurance No."
+                        value={fmt(emp.health_insurance_no)}
+                        mono
+                      />
                     </div>
                   </Section>
                 </div>
@@ -493,42 +587,100 @@ useEffect(() => {
               {/* ── EMPLOYMENT ── */}
               {activeTab === "employment" && (
                 <div className="space-y-5">
-                  <Section title="Role & Assignment" icon={<Briefcase className="w-3.5 h-3.5" />}>
+                  <Section
+                    title="Role & Assignment"
+                    icon={<Briefcase className="w-3.5 h-3.5" />}
+                  >
                     <div className="grid grid-cols-2 gap-x-5 gap-y-4">
                       <Field label="Designation" value={fmt(emp.designation)} />
                       <Field label="Department" value={fmt(emp.department)} />
-                      <Field label="Employment Type" value={fmt(emp.employment_type)} />
-                      <Field label="Employee Type" value={fmt(emp.employee_type)} />
+                      <Field
+                        label="Employment Type"
+                        value={fmt(emp.employment_type)}
+                      />
+                      <Field
+                        label="Employee Type"
+                        value={fmt(emp.employee_type)}
+                      />
                       <Field label="Grade" value={fmt(emp.grade)} />
-                      <Field label="Branch / Location" value={fmt(emp.branch)} />
+                      <Field
+                        label="Branch / Location"
+                        value={fmt(emp.branch)}
+                      />
                       <Field label="Reports To" value={fmt(emp.reports_to)} />
                       <Field label="Company" value={fmt(emp.company)} />
                     </div>
                   </Section>
 
-                  <Section title="Dates & Contract" icon={<Calendar className="w-3.5 h-3.5" />}>
+                  <Section
+                    title="Dates & Contract"
+                    icon={<Calendar className="w-3.5 h-3.5" />}
+                  >
                     <div className="grid grid-cols-3 gap-x-5 gap-y-4">
-                      <Field label="Date of Joining" value={fmtDate(emp.date_of_joining)} />
-                      <Field label="Contract End" value={fmtDate(emp.contract_end_date)} />
-                      <Field label="Notice Period" value={emp.notice_number_of_days ? `${emp.notice_number_of_days} days` : null} />
-                      <Field label="Date of Retirement" value={fmtDate(emp.date_of_retirement)} />
-                      <Field label="Relieving Date" value={fmtDate(emp.relieving_date)} />
+                      <Field
+                        label="Date of Joining"
+                        value={fmtDate(emp.date_of_joining)}
+                      />
+                      <Field
+                        label="Contract End"
+                        value={fmtDate(emp.contract_end_date)}
+                      />
+                      <Field
+                        label="Notice Period"
+                        value={
+                          emp.notice_number_of_days
+                            ? `${emp.notice_number_of_days} days`
+                            : null
+                        }
+                      />
+                      <Field
+                        label="Date of Retirement"
+                        value={fmtDate(emp.date_of_retirement)}
+                      />
+                      <Field
+                        label="Relieving Date"
+                        value={fmtDate(emp.relieving_date)}
+                      />
                     </div>
                   </Section>
 
-                  <Section title="Approvers" icon={<User className="w-3.5 h-3.5" />}>
+                  <Section
+                    title="Approvers"
+                    icon={<User className="w-3.5 h-3.5" />}
+                  >
                     <div className="grid grid-cols-3 gap-x-5 gap-y-4">
-                      <Field label="Leave Approver" value={fmt(emp.leave_approver)} />
-                      <Field label="Expense Approver" value={fmt(emp.expense_approver)} />
-                      <Field label="Shift Approver" value={fmt(emp.shift_request_approver)} />
+                      <Field
+                        label="Leave Approver"
+                        value={fmt(emp.leave_approver)}
+                      />
+                      <Field
+                        label="Expense Approver"
+                        value={fmt(emp.expense_approver)}
+                      />
+                      <Field
+                        label="Shift Approver"
+                        value={fmt(emp.shift_request_approver)}
+                      />
                     </div>
                   </Section>
 
-                  <Section title="Leave" icon={<Clock className="w-3.5 h-3.5" />}>
+                  <Section
+                    title="Leave"
+                    icon={<Clock className="w-3.5 h-3.5" />}
+                  >
                     <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-                      <Field label="Leave Policy" value={fmt(emp.leave_policy)} />
-                      <Field label="Holiday List" value={fmt(emp.holiday_list)} />
-                      <Field label="Default Shift" value={fmt(emp.default_shift)} />
+                      <Field
+                        label="Leave Policy"
+                        value={fmt(emp.leave_policy)}
+                      />
+                      <Field
+                        label="Holiday List"
+                        value={fmt(emp.holiday_list)}
+                      />
+                      <Field
+                        label="Default Shift"
+                        value={fmt(emp.default_shift)}
+                      />
                     </div>
                   </Section>
                 </div>
@@ -537,10 +689,19 @@ useEffect(() => {
               {/* ── COMPENSATION ── */}
               {activeTab === "compensation" && (
                 <div className="space-y-5">
-                  <Section title="Salary" icon={<DollarSign className="w-3.5 h-3.5" />}>
+                  <Section
+                    title="Salary"
+                    icon={<DollarSign className="w-3.5 h-3.5" />}
+                  >
                     <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-                      <Field label="Salary Structure" value={fmt(emp.salary_structure)} />
-                      <Field label="Currency" value={fmt(emp.salary_currency)} />
+                      <Field
+                        label="Salary Structure"
+                        value={fmt(emp.salary_structure)}
+                      />
+                      <Field
+                        label="Currency"
+                        value={fmt(emp.salary_currency)}
+                      />
                       <Field label="Salary Mode" value={fmt(emp.salary_mode)} />
                       <Field
                         label="CTC / Gross"
@@ -559,12 +720,26 @@ useEffect(() => {
                     </div>
                   </Section>
 
-                  <Section title="Bank Account" icon={<CreditCard className="w-3.5 h-3.5" />}>
+                  <Section
+                    title="Bank Account"
+                    icon={<CreditCard className="w-3.5 h-3.5" />}
+                  >
                     <div className="grid grid-cols-2 gap-x-5 gap-y-4">
                       <Field label="Bank Name" value={fmt(emp.bank_name)} />
-                      <Field label="Account Number" value={fmt(emp.bank_ac_no)} mono />
-                      <Field label="Account Type" value={fmt(emp.account_type)} />
-                      <Field label="Branch Code" value={fmt(emp.branch_code)} mono />
+                      <Field
+                        label="Account Number"
+                        value={fmt(emp.bank_ac_no)}
+                        mono
+                      />
+                      <Field
+                        label="Account Type"
+                        value={fmt(emp.account_type)}
+                      />
+                      <Field
+                        label="Branch Code"
+                        value={fmt(emp.branch_code)}
+                        mono
+                      />
                     </div>
                   </Section>
                 </div>
@@ -599,7 +774,7 @@ useEffect(() => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold text-main truncate">
-                                {doc.description || doc.file_name}
+                                {doc.document_name}
                               </p>
                               <p className="text-[10px] text-muted">
                                 {doc.file_type || "Document"}
@@ -607,11 +782,11 @@ useEffect(() => {
                             </div>
                           </div>
                           <div className="flex items-center gap-1 ml-3">
-                            {doc.file ? (
+                            {doc.file_url ? (
                               <>
                                 <button
                                   onClick={() =>
-                                    window.open(getFileUrl(doc.file)!, "_blank")
+                                    window.open(getFileUrl(doc.file_url)!, "_blank")
                                   }
                                   className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition"
                                   title="View"
@@ -619,7 +794,7 @@ useEffect(() => {
                                   <Eye className="w-3.5 h-3.5" />
                                 </button>
                                 <a
-                                  href={getFileUrl(doc.file)!}
+                                  href={getFileUrl(doc.file_url)!}
                                   download
                                   className="p-1.5 text-muted hover:text-main hover:bg-app rounded-lg transition"
                                   title="Download"
