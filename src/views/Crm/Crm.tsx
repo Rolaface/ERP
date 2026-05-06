@@ -1,12 +1,11 @@
 import React, { Suspense, lazy, useMemo, useCallback } from "react";
 import { useOutletContext, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import {
-  FaCreditCard,
-  FaUsers,
-  FaChartBar,
-  FaTachometerAlt,
-  FaIdBadge,
-} from "react-icons/fa";
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  BarChart3
+} from "lucide-react";
 import {
   AppPage,
   AppPageBody,
@@ -37,11 +36,32 @@ type OutletContextType = {
   openPOEdit: (poId: string | number) => void;
 };
 
+const iconProps = {
+  size: 16,
+  strokeWidth: 1.75,
+};
+
 const crmTabs = [
-  { id: "dashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
-  { id: "customer-managment", label: "Customer Management", icon: <FaIdBadge /> },
-  { id: "payments", label: "Payments", icon: <FaCreditCard /> },
-  { id: "reports", label: "Reports", icon: <FaChartBar /> },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard {...iconProps} />,
+  },
+  {
+    id: "customer-managment",
+    label: "Customer Management",
+    icon: <Users {...iconProps} />, 
+  },
+  {
+    id: "payments",
+    label: "Payments",
+    icon: <CreditCard {...iconProps} />,
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: <BarChart3 {...iconProps} />,
+  },
 ];
 
 const DEFAULT_TAB = "dashboard";
@@ -80,7 +100,7 @@ const CRM: React.FC = () => {
       <AppPageHeader
         title="Customers"
         description="End-to-end customer management—from onboarding to payments."
-        icon={<FaUsers />}
+        icon={<Users size={20} strokeWidth={1.75} />}
       />
       <AppTabs tabs={crmTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody viewportLocked={isDashboardTab}>

@@ -25,13 +25,17 @@ export type ModalType =
   |"Rfq"
   |"JournalEntries"
   |"CreditNote"
-  |"DebitNote";
+  |"DebitNote"
+  |"UserRole"
+  |"Bank"
+  |"User";
 
 export interface ModalContext {
   source?: string;
   fieldId?: string;
   callback?: ModalCallback;
   onSuccess?: ModalCallback;
+  onSubmit?: (data: unknown) => Promise<void> | void;
 }
 
 export interface ModalMeta {
@@ -575,4 +579,39 @@ export const openDebitNoteModal = (
   useModalStore
     .getState()
     .openModal("DebitNote", initialData, isEdit, context, meta);    
+
+
+    
+export const openUserRoleModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("UserRole", initialData, isEdit, context, meta);    
+
+
+    
+export const openBankModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("Bank", initialData, isEdit, context, meta);    
+
+
+export const openUserModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("User", initialData, isEdit, context, meta);    
 

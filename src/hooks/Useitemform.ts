@@ -1,4 +1,4 @@
-/* eslint-disable camelcase */
+
 import { useCallback, useEffect, useState } from "react";
 import { createItem, updateItemByItemCode } from "../api/itemApi";
 import { getItemGroupTree } from "../api/itemGroupApi";
@@ -19,6 +19,8 @@ import type { ModalSubmitHandler, ModalValidationError } from "../types/modal";
 import { getSupplierList } from "../api/lookupApi";
 import { showSuccess } from "../utils/alert";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
+import { all } from "axios";
+import { fi } from "date-fns/locale";
 
 interface ItemNestedInitialData extends Partial<ItemFormData> {
   vendorInfo?: Partial<
@@ -128,7 +130,7 @@ export const emptyForm: ItemFormData = {
   itemClassCode: "",
   itemTypeCode: "",
   originNationCode: "",
-  countryOfOrigin:"",
+  countryOfOrigin: "",
   packagingUnitCode: "",
   packingUnit: 1,
   packingSize: 1,
@@ -160,7 +162,9 @@ export const emptyForm: ItemFormData = {
   manufacturingDate: "",
   shelfLife: "",
   endOfLife: "",
-  trackInventory: false,
+  trackInventory: true,
+  allowSales: true,
+  allowPurchase: true,
   has_batch_no: false,
   batchNo: "",
   create_new_batch: false,
@@ -190,7 +194,10 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   dimensionWidth: form.dimensionWidth,
   dimensionHeight: form.dimensionHeight,
   brand: form.brand,
-  countryOfOrigin: form.originNationCode ,
+  countryOfOrigin: form.originNationCode,
+  is_stock_item: form.trackInventory,
+  is_sales_item: form.allowSales,
+  is_purchase_item: form.allowPurchase,
   vendorInfo: {
     preferredVendor: form.preferredVendor,
     salesAccount: form.salesAccount,
@@ -211,6 +218,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
     minStockLevel: form.minStockLevel,
     maxStockLevel: form.maxStockLevel,
   },
+
   ...(Number(form.itemTypeCode) !== 3 && {
     batchInfo: {
       has_batch_no: form.has_batch_no,
@@ -248,7 +256,7 @@ const mapApiToForm = (item: any) => {
     // INVENTORY
     brand: item.brand || "",
     weight: String(item.weight || ""),
-    weightUnit: (item.weightUnit || "").toLowerCase(), 
+    weightUnit: (item.weightUnit || "").toLowerCase(),
 
     dimensionLength: String(item.dimensionLength || ""),
     dimensionWidth: String(item.dimensionWidth || ""),
@@ -265,12 +273,10 @@ const mapApiToForm = (item: any) => {
     trackingMethod: item.inventoryInfo?.trackingMethod || "",
     reorderLevel: item.inventoryInfo?.reorderLevel || "",
     maxStockLevel: item.inventoryInfo?.maxStockLevel || "",
-    trackInventory:
-      !!item.inventoryInfo ||
-      !!item.batchInfo ||
-      !!item.inventoryInfo?.trackingMethod,
     minStockLevel: item.inventoryInfo?.minStockLevel || "",
-
+    trackInventory: Boolean(item.is_stock_item ?? true),
+    allowSales: Boolean(item.is_sales_item ?? true),
+    allowPurchase: Boolean(item.is_purchase_item ?? true),
     // BATCH
     has_batch_no: item.batchInfo?.has_batch_no || false,
     has_expiry_date: item.batchInfo?.has_expiry_date || false,
@@ -394,11 +400,11 @@ export const useItemForm = ({
     return null;
   };
 
-const getTaxValidationError = (
-  taxRows: ItemTaxRow[],
-): ItemValidationError | null => {
-  return null;
-};
+  const getTaxValidationError = (
+    taxRows: ItemTaxRow[],
+  ): ItemValidationError | null => {
+    return null;
+  };
 
   const getValidationErrorForTab = (
     tab: ItemModalTab,
@@ -493,7 +499,7 @@ const getTaxValidationError = (
       return;
     }
 
-    if (activeTab === "taxDetails" && !isServiceItem) {
+    if (activeTab === "taxDetails" && !isServiceItem && form.trackInventory) {
       setActiveTab("inventoryDetails");
     }
   };

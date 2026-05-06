@@ -13,10 +13,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-
-import { Users, UserCheck, BadgeCheck, ClipboardList } from "lucide-react";
+import { Users, UserCheck, UserX, ClipboardList, Layers } from "lucide-react";
 
 import { ChartSkeleton } from "../../components/ChartSkeleton";
+import { AppMetricCard, AppSectionCard } from "../../components/ui/app-shell";
 import { getHrDashboardSummary } from "../../api/hrDashboardApi";
 
 const HrDashboard: React.FC = () => {
@@ -30,7 +30,6 @@ const HrDashboard: React.FC = () => {
     totalLeaveTypes: number;
   } | null>(null);
 
-  // const chartsLoading = summaryLoading || !summaryData;
   const chartsLoading = summaryLoading || (!summaryData && !summaryError);
 
   const palette = useMemo(
@@ -69,12 +68,12 @@ const HrDashboard: React.FC = () => {
 
   const legendProps = useMemo(
     () => ({
-      wrapperStyle: { fontSize: 11 },
+      wrapperStyle: { fontSize: 12 },
       layout: "horizontal" as const,
       verticalAlign: "bottom" as const,
       align: "center" as const,
       iconType: "square" as const,
-      height: 28,
+      height: 36,
     }),
     [],
   );
@@ -134,264 +133,254 @@ const HrDashboard: React.FC = () => {
   const renderDonutLabel = (props: any) => {
     const { x, y, name, value } = props;
     return (
-      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
+      <text
+        x={x}
+        y={y}
+        fill="#374151"
+        fontSize={11}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
         {String(name)}: {String(value)}
       </text>
     );
   };
 
-  const kpiCards = useMemo(
-    () => [
-      {
-        label: "Total Employees",
-        value: String(summaryData?.total ?? 0),
-        icon: Users,
-        gradient: "from-blue-500 to-blue-600",
-      },
-      {
-        label: "Active",
-        value: String(summaryData?.active ?? 0),
-        icon: UserCheck,
-        gradient: "from-emerald-500 to-emerald-600",
-      },
-      {
-        label: "Inactive",
-        value: String(summaryData?.inactive ?? 0),
-        icon: BadgeCheck,
-        gradient: "from-slate-500 to-slate-600",
-      },
-      {
-        label: "On Leave",
-        value: String(summaryData?.onLeave ?? 0),
-        icon: ClipboardList,
-        gradient: "from-amber-500 to-amber-600",
-      },
-      {
-        label: "Leave Types",
-        value: String(summaryData?.totalLeaveTypes ?? 0),
-        icon: ClipboardList,
-        gradient: "from-purple-500 to-purple-600",
-      },
-    ],
-    [summaryData],
-  );
+  const stats = [
+    {
+      label: "Total Employees",
+      value: String(summaryData?.total ?? 0),
+      icon: Users,
+      accentClassName: "from-blue-500 to-blue-600",
+    },
+    {
+      label: "Active",
+      value: String(summaryData?.active ?? 0),
+      icon: UserCheck,
+      accentClassName: "from-emerald-500 to-emerald-600",
+    },
+    {
+      label: "Inactive",
+      value: String(summaryData?.inactive ?? 0),
+      icon: UserX,
+      accentClassName: "from-slate-500 to-slate-600",
+    },
+    {
+      label: "On Leave",
+      value: String(summaryData?.onLeave ?? 0),
+      icon: ClipboardList,
+      accentClassName: "from-amber-500 to-amber-600",
+    },
+    {
+      label: "Leave Types",
+      value: String(summaryData?.totalLeaveTypes ?? 0),
+      icon: Layers,
+      accentClassName: "from-purple-500 to-purple-600",
+    },
+  ];
 
   return (
-    <div className="bg-app min-h-screen px-4 sm:px-6 pb-6 pt-3">
-      <div className="max-w-[1600px] mx-auto flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">HR Dashboard</h2>
-            <p className="text-sm text-gray-500">Employee overview</p>
-          </div>
-        </div>
-
-        {summaryError && (
-          <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-semibold">
-            {summaryError}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 mb-3">
-          {chartsLoading
-            ? Array.from({ length: 5 }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm min-h-[96px] animate-pulse"
-                >
-                  <div className="flex items-center justify-between h-full">
-                    <div>
-                      <div className="h-3 w-24 bg-gray-300 rounded" />
-                      <div className="h-6 w-16 bg-gray-300 rounded mt-2" />
-                    </div>
-                    <div className="h-10 w-10 bg-gray-300 rounded-xl border border-gray-400" />
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        {chartsLoading
+          ? Array.from({ length: 5 }).map((_, idx) => (
+              <div key={idx} className="app-surface min-h-[124px] animate-pulse p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="h-3 w-28 rounded bg-gray-300" />
+                    <div className="mt-3 h-8 w-20 rounded bg-gray-300" />
                   </div>
+                  <div className="h-12 w-12 rounded-xl border border-gray-300 bg-gray-300" />
                 </div>
-              ))
-            : kpiCards.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm min-h-[96px]"
+              </div>
+            ))
+          : stats.map((stat) => (
+              <AppMetricCard
+                key={stat.label}
+                label={stat.label}
+                value={stat.value}
+                icon={stat.icon}
+                accentClassName={stat.accentClassName}
+              />
+            ))}
+      </div>
+
+      {summaryError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
+          {summaryError}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <AppSectionCard title="Employee Status (Bar)">
+          <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
+            {chartsLoading ? (
+              <ChartSkeleton variant="bar" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={employeeStatusData}
+                  margin={{ top: 28, right: 18, left: 6, bottom: 4 }}
                 >
-                  <div className="flex items-center justify-between h-full">
-                    <div>
-                      <p className="text-xs font-semibold text-gray-600">{stat.label}</p>
-                      <p className="text-xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                    </div>
-                    <div className={`p-3 bg-gradient-to-br ${stat.gradient} rounded-xl shadow-sm`}>
-                      <stat.icon className="text-white" size={22} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Employee Status (Bar)</h3>
-            </div>
-
-            <div className="h-64 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
-              {chartsLoading ? (
-                <ChartSkeleton variant="bar" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={employeeStatusData} margin={{ top: 28, right: 18, left: 6, bottom: 4 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} width={52} />
-                    <Tooltip
-                      formatter={(v: any) => Number(v ?? 0)}
-                      contentStyle={{
-                        background: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                        padding: "8px 12px",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                      cursor={{ fill: "var(--primary)", opacity: 0.1 }}
-                    />
-                    <Legend {...legendProps} />
-                    <Bar dataKey="value" fill={palette.blue} radius={[6, 6, 0, 0]} name="Employees">
-                      <LabelList dataKey="value" position="top" offset={8} fill="#6b7280" fontSize={10} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Employee Status (Donut)</h3>
-            </div>
-
-            <div className="h-64 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
-              {chartsLoading ? (
-                <ChartSkeleton variant="pie" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
-                    <Tooltip
-                      formatter={(v: any) => Number(v ?? 0)}
-                      contentStyle={{
-                        background: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                        padding: "8px 12px",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                    />
-                    <Legend {...legendProps} />
-                    <Pie
-                      data={employeeStatusData}
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} width={52} />
+                  <Tooltip
+                    formatter={(v: any) => Number(v ?? 0)}
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      padding: "8px 12px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                    cursor={{ fill: "var(--primary)", opacity: 0.1 }}
+                  />
+                  <Legend {...legendProps} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Employees">
+                    {employeeStatusData.map((_, idx) => (
+                      <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
+                    ))}
+                    <LabelList
                       dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="45%"
-                      innerRadius={58}
-                      outerRadius={88}
-                      paddingAngle={2}
-                      label={renderDonutLabel}
-                      labelLine={false}
-                    >
-                      {employeeStatusData.map((_, idx) => (
-                        <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Active Rate</h3>
-            </div>
-
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
-              {chartsLoading ? (
-                <ChartSkeleton variant="pie" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart margin={{ top: 8, right: 12, bottom: 24, left: 12 }}>
-                    <Tooltip
-                      formatter={(v: any) => Number(v ?? 0)}
-                      contentStyle={{
-                        background: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                        padding: "8px 12px",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                      position="top"
+                      offset={8}
+                      fill="#6b7280"
+                      fontSize={10}
                     />
-                    <Legend {...legendProps} />
-                    <Pie
-                      data={activeRateDonutData}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </AppSectionCard>
+
+        <AppSectionCard title="Employee Status (Donut)">
+          <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
+            {chartsLoading ? (
+              <ChartSkeleton variant="pie" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+                  <Tooltip
+                    formatter={(v: any) => Number(v ?? 0)}
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      padding: "8px 12px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                  />
+                  <Legend {...legendProps} />
+                  <Pie
+                    data={employeeStatusData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={58}
+                    outerRadius={88}
+                    paddingAngle={2}
+                    label={renderDonutLabel}
+                    labelLine={false}
+                  >
+                    {employeeStatusData.map((_, idx) => (
+                      <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </AppSectionCard>
+
+        <AppSectionCard title="Active Rate">
+          <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
+            {chartsLoading ? (
+              <ChartSkeleton variant="pie" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart margin={{ top: 8, right: 12, bottom: 24, left: 12 }}>
+                  <Tooltip
+                    formatter={(v: any) => Number(v ?? 0)}
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      padding: "8px 12px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                  />
+                  <Legend {...legendProps} />
+                  <Pie
+                    data={activeRateDonutData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="42%"
+                    innerRadius={58}
+                    outerRadius={88}
+                    paddingAngle={2}
+                    label={renderDonutLabel}
+                    labelLine={false}
+                  >
+                    {activeRateDonutData.map((_, idx) => (
+                      <Cell key={idx} fill={idx === 0 ? palette.emerald : palette.slate} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </AppSectionCard>
+
+        <AppSectionCard title="Employees vs Leave Types">
+          <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
+            {chartsLoading ? (
+              <ChartSkeleton variant="bar" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={totalsVsLeaveTypesData}
+                  margin={{ top: 28, right: 18, left: 6, bottom: 16 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} width={52} />
+                  <Tooltip
+                    formatter={(v: any) => Number(v ?? 0)}
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      padding: "8px 12px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                    cursor={{ fill: "var(--primary)", opacity: 0.1 }}
+                  />
+                  <Legend {...legendProps} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Count">
+                    {totalsVsLeaveTypesData.map((_, idx) => (
+                      <Cell key={idx} fill={idx === 0 ? palette.blue : palette.purple} />
+                    ))}
+                    <LabelList
                       dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="42%"
-                      innerRadius={58}
-                      outerRadius={88}
-                      paddingAngle={2}
-                      label={renderDonutLabel}
-                      labelLine={false}
-                    >
-                      {activeRateDonutData.map((_, idx) => (
-                        <Cell key={idx} fill={idx === 0 ? palette.emerald : palette.slate} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Employees vs Leave Types</h3>
-            </div>
-
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
-              {chartsLoading ? (
-                <ChartSkeleton variant="bar" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={totalsVsLeaveTypesData} margin={{ top: 28, right: 18, left: 6, bottom: 16 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} width={52} />
-                    <Tooltip
-                      formatter={(v: any) => Number(v ?? 0)}
-                      contentStyle={{
-                        background: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                        padding: "8px 12px",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                      itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                      cursor={{ fill: "var(--primary)", opacity: 0.1 }}
+                      position="top"
+                      offset={8}
+                      fill="#6b7280"
+                      fontSize={10}
                     />
-                    <Legend {...legendProps} />
-                    <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Count">
-                      {totalsVsLeaveTypesData.map((_, idx) => (
-                        <Cell key={idx} fill={idx === 0 ? palette.blue : palette.purple} />
-                      ))}
-                      <LabelList dataKey="value" position="top" offset={8} fill="#6b7280" fontSize={10} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
-        </div>
+        </AppSectionCard>
       </div>
     </div>
   );

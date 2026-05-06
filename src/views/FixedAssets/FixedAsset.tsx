@@ -1,6 +1,12 @@
 import React, { useMemo, useCallback } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { FaWarehouse, FaChartPie, FaTags, FaList } from "react-icons/fa";
+import {
+  LayoutDashboard,
+  Layers,
+  Package,
+  ArrowRightLeft,
+  Building2
+} from "lucide-react";
 
 import {
   AppPage,
@@ -17,13 +23,33 @@ const AssetMovements = React.lazy(() => import("./AssetMovement"));
 
 const DEFAULT_TAB = "dashboard";
 
-const allTabs = [
-  { id: "dashboard", label: "Dashboard", icon: <FaChartPie /> },
-  { id: "category", label: "Asset Category", icon: <FaTags /> },
-  { id: "assets", label: " Assets", icon: <FaList /> },
-  { id: "assetmovements", label: "Asset Movements", icon: <FaList /> },
-];
+const iconProps = {
+  size: 16,
+  strokeWidth: 1.75,
+};
 
+const allTabs = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard {...iconProps} />,
+  },
+  {
+    id: "category",
+    label: "Asset Category",
+    icon: <Layers {...iconProps} />, 
+  },
+  {
+    id: "assets",
+    label: "Assets",
+    icon: <Package {...iconProps} />, 
+  },
+  {
+    id: "assetmovements",
+    label: "Asset Movements",
+    icon: <ArrowRightLeft {...iconProps} />, 
+  },
+];
 const FixedAssetsModule: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -37,7 +63,7 @@ const FixedAssetsModule: React.FC = () => {
     navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
   }, [navigate, location.pathname, searchParams]);
 
-  // Memoized tabs (NO remount issue)
+
   const tabComponents = useMemo(() => ({
     dashboard: <FADashboard />,
     category: <AssetCategory />,
@@ -54,7 +80,7 @@ const FixedAssetsModule: React.FC = () => {
       <AppPageHeader
         title="Fixed Assets"
         description="Track assets, categories, and financial impact."
-        icon={<FaWarehouse />}
+        icon={<Building2  />}
       />
 
       <AppTabs

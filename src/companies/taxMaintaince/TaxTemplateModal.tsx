@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Tag, Plus, Trash2 } from "lucide-react";
+import {  Plus, Trash2 , Percent } from "lucide-react";
 
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
@@ -180,9 +180,9 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditMode ? "Edit Tax Template" : "Add Tax Template"}
+      title={isEditMode ? "Edit Tax Template" : "Create Tax Template"}
       subtitle="Create tax template"
-      icon={Tag}
+      icon={Percent}
       footer={footer}
       customWidth="46vw"
       height="66vh"

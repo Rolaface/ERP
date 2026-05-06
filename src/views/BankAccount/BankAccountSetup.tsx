@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import { openBankAccountModal } from "../../store/modalStore";
 import { FaUniversity } from "react-icons/fa";
+import {Copy} from "lucide-react"
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -14,8 +15,8 @@ import { showApiError, showSuccess } from "../../utils/alert";
 
 const mask = (val?: string) => {
   if (!val) return "—";
-  if (val.length <= 4) return "•".repeat(val.length);
-  return "•".repeat(val.length - 4) + val.slice(-4);
+  if (val.length <= 4) return "*".repeat(val.length);
+  return "*".repeat(val.length - 4) + val.slice(-4);
 };
 
 const BankAccountSetup: React.FC = () => {
@@ -76,8 +77,6 @@ const BankAccountSetup: React.FC = () => {
 
 
 
-
-
   const handleSetDefault = useCallback(async (row: BankAccount) => {
     try {
       setActionLoadingId(String(row.id));
@@ -96,90 +95,144 @@ const BankAccountSetup: React.FC = () => {
     }
   }, [fetchAccounts]);
   const formatDate = (date: string | Date) => {
-  if (!date) return "";
+    if (!date) return "";
 
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-  }
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
 
-  // Date object — use local methods
-  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-};
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
   const columns: Column<BankAccount>[] = [
     {
       key: "dateAdded",
       header: "Date Added",
-      render: (row) => row.dateAdded ? formatDate(row.dateAdded) : "—",
+       align: "center",
+      tooltip: (row) => row.dateAdded ? formatDate(row.dateAdded) : "—",
+      render: (row) => (
+        <div className="py-1.5">
+          <span className="block">{row.dateAdded ? formatDate(row.dateAdded) : "—"}</span>
+        </div>
+      ),
     },
     {
       key: "accountFor",
-      header: "Account For",
-      render: (row) =>
-        Number(row.isCompanyAccount) === 1
-          ? "Company"
-          : row.accountFor || "—",
+      header: "Acc For",
+       align: "center",
+      tooltip: (row) =>
+        Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—",
+      render: (row) => (
+        <div className="py-1.5">
+          <span className="block">
+            {Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—"}
+          </span>
+        </div>
+      ),
     },
     {
       key: "bankName",
       header: "Bank",
+      align: "center",
+      tooltip: (row) => row.bankName || "—",
       render: (row) => (
-        <span className="font-semibold">{row.bankName}</span>
+        <div className="py-1.5">
+          <span className="block font-semibold">{row.bankName}</span>
+        </div>
       ),
     },
     {
       key: "accountNo",
-      header: "Account No",
+      header: "Acc No",
+       align: "center",
+      tooltip: (row) => row.accountNo || "—",
       render: (row) => (
-        <span title={row.accountNo || ""} className="cursor-pointer">
-          {mask(row.accountNo)}
-        </span>
+        <div className="py-1.5">
+          <span className="inline-flex items-center gap-1.5">
+            <code className="tracking-widest text-xs">{mask(row.accountNo)}</code>
+            {row.accountNo && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(row.accountNo!);
+                }}
+                className="text-gray-400 hover:text-blue-600 transition-colors cursor-pointer"
+                title="Copy account number"
+              >
+                <Copy size={13} />
+              </button>
+            )}
+          </span>
+        </div>
       ),
     },
     {
       key: "accountHolderName",
-      header: "Account Holder",
+      header: "Acc Holder",
+       align: "center",
+      tooltip: (row) => String(row.accountHolderName || "—"),
+      render: (row) => (
+        <div className="py-1.5">
+          <span className="block">{row.accountHolderName || "—"}</span>
+        </div>
+      ),
     },
     {
       key: "sortCode",
-      header: "IFSC / Sort Code",
+      header: "IFSC/Sort",
+       align: "center",
+      tooltip: (row) => row.sortCode || "—",
       render: (row) => (
-        <span title={row.sortCode || ""} className="cursor-pointer">
-          {mask(row.sortCode)}
-        </span>
+        <div className="py-1.5">
+          <span className="block">{(row.sortCode)}</span>
+        </div>
       ),
     },
     {
       key: "currency",
-      header: "currency",
+      header: "Currency",
+       align: "center",
+      tooltip: (row) => row.currency || "—",
       render: (row) => (
-        <span className="font-semibold">{row.currency}</span>
+        <div className="py-1.5">
+          <span className="block font-semibold">{row.currency}</span>
+        </div>
       ),
     },
-
-
     {
       key: "isDefault",
       header: "Default",
-      render: (row) =>
-        row.isDefault ? (
-          <span className="text-green-600 font-semibold">Yes</span>
-        ) : (
-          "—"
-        ),
+       align: "center",
+      tooltip: (row) => (row.isDefault ? "Default account" : "Not default"),
+      render: (row) => (
+        <div className="py-1.5">
+          {row.isDefault ? (
+            <span className="text-green-600 font-semibold">Yes</span>
+          ) : (
+            <span className="block">—</span>
+          )}
+        </div>
+      ),
     },
     {
       key: "isDisabled",
       header: "Status",
-      render: (row) =>
-        row.isDisabled ? (
-          <span className="text-red-500 font-semibold">Disabled</span>
-        ) : (
-          <span className="text-green-600">Active</span>
-        ),
+     align: "right",
+      tooltip: (row) => (row.isDisabled ? "Disabled" : "Active"),
+      render: (row) => (
+        <div className="py-1.5">
+          {row.isDisabled ? (
+            <span className="text-red-500 font-semibold">Disabled</span>
+          ) : (
+            <span className="text-green-600">Active</span>
+          )}
+        </div>
+      ),
     },
     {
       key: "actions",
@@ -197,12 +250,12 @@ const BankAccountSetup: React.FC = () => {
               {
                 label: "Set Default",
                 onClick: () => handleSetDefault(row),
-                disabled: actionLoadingId === String(row.id)
+                disabled: actionLoadingId === String(row.id),
               },
               {
                 label: row.isDisabled ? "Enable" : "Disable",
                 onClick: () => handleToggleDisable(row),
-                disabled: actionLoadingId === String(row.id)
+                disabled: actionLoadingId === String(row.id),
               },
             ]}
           />

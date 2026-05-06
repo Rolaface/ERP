@@ -352,7 +352,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
           >
             <Plus size={13} />
-            New Account
+            Add Account
           </button>
         }
       />

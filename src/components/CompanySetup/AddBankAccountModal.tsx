@@ -351,6 +351,7 @@ const AddBankAccountModal: React.FC<Props> = ({
               <SearchSelect2
                 label="Reporting Account"
                 value={form.reportingAccount}
+                required
                 onChange={(_: string, option: Option) =>
                   setForm((prev) => ({
                     ...prev,

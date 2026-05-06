@@ -209,13 +209,8 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
             placeholder="e.g. 365"
             disabled={!form.has_expiry_date}
           />
-          <InlineCheckbox
-            id="trackInventory"
-            label="Track Inventory"
-            checked={!!form.trackInventory}
-            onChange={(checked) => setField("trackInventory", checked)}
-          />
-          <div className="w-full max-w-[220px]">
+         
+          {/* <div className="w-full max-w-[220px]">
             <ModalSelect
               label="Tracking Method"
               name="trackingMethod"
@@ -229,7 +224,7 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
               <option value="serial">Serial</option>
               <option value="imei">IMEI</option>
             </ModalSelect>
-          </div>
+          </div> */}
         </div>
 
         {/* ── Stock Level Tracking ── */}

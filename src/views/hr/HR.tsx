@@ -8,6 +8,14 @@ import {
   FaChartLine,
   FaSlidersH,
 } from "react-icons/fa";
+
+import {
+  AppPage,
+  AppPageHeader,
+  AppTabs,
+  AppPageBody,
+} from "../../components/ui/app-shell";
+
 import HrDashboard from "./HrDashboard";
 import EmployeeManagement from "./EmployeeManagement/EmployeeManagement";
 import PerformanceDevelopment from "./performance&growth/performancedevolpment";
@@ -16,70 +24,53 @@ import TimeAttendance from "./time_leave/Attendance";
 import Leave from "./time_leave/Leave";
 import PayrollManagement from "./payroll-system/PayrollManagement";
 import HRSettingsPage from "./hrsetup";
-// import Recruitment from './EmployeeManagement/Recruitment';
 
 const navTabs = [
   { key: "dashboard", label: "HR Dashboard", icon: <FaChartLine /> },
-  { key: "Management", label: "Employee Management", icon: <FaUserFriends /> },
+  { key: "management", label: "Employee Management", icon: <FaUserFriends /> },
   { key: "leave", label: "Leave Management", icon: <FaClipboardList /> },
   { key: "attendance", label: "Time & Attendance", icon: <FaCalendarDay /> },
   { key: "performance", label: "Performance & Growth", icon: <FaChartLine /> },
-  // { key: 'attendance', label: 'Attendance', icon: <FaClipboardList /> },
-  // { key: 'leave', label: 'Leave Management', icon: <FaCalendarDay /> },
   { key: "payroll", label: "Payroll", icon: <FaMoneyCheckAlt /> },
-  {
-    key: `compliance`,
-    label: `Compliance Management`,
-    icon: <FaClipboardList />,
-  },
-  { key: "settings", label: "Settings", icon: <FaSlidersH /> },
+  // { key: "compliance", label: "Compliance Management", icon: <FaClipboardList /> },
+  { key: "Hrsetting", label: "HR Setup", icon: <FaSlidersH /> },
 ];
 
 const HrPayrollModule: React.FC = () => {
-  const [tab, setTab] = useState(navTabs[0].key);
+  const [tab, setTab] = useState("dashboard");
 
   return (
-    <div className="p-6 bg-app min-h-screen">
+    <AppPage viewportLocked>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-main">
-        <FaUserTie /> Human Resources
-      </h2>
-      </div>
+      <AppPageHeader
+        title="Human Resources"
+        icon={<FaUserTie />}
+        description="Manage employees, payroll, attendance, and compliance"
+      />
 
-      {/* Navbar */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 mb-4">
-        {navTabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors whitespace-nowrap 
-              ${
-                tab === t.key
-               ? "text-primary border-b-2 border-current"
-                : "text-muted hover:text-main"
-              }`}
-          >
-            {t.icon} {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Tabs */}
+      <AppTabs
+        tabs={navTabs.map((t) => ({
+          id: t.key,
+          label: t.label,
+          icon: t.icon,
+        }))}
+        activeTab={tab}
+        onChange={setTab}
+      />
 
-      {/* Tab Content */}
-      <div>
+      {/* Content */}
+      <AppPageBody className="mt-2">
         {tab === "dashboard" && <HrDashboard />}
-        {tab === "Management" && <EmployeeManagement />}
+        {tab === "management" && <EmployeeManagement />}
         {tab === "attendance" && <TimeAttendance />}
-        {/* {tab === 'attendance' && <Attendance />}
-        {tab === 'leave' && <LeaveManagement />} */}
-        {tab === "payroll" && <PayrollManagement />}
         {tab === "leave" && <Leave />}
-        {/* {tab === 'recruitment' && <Recruitment />} */}
+        {tab === "payroll" && <PayrollManagement />}
         {tab === "performance" && <PerformanceDevelopment />}
-        {tab === "compliance" && <ComplianceManagement />}
-        {tab === "settings" && <HRSettingsPage />}
-      </div>
-    </div>
+        {/* {tab === "compliance" && <ComplianceManagement />} */}
+        {tab === "Hrsetting" && <HRSettingsPage />}
+      </AppPageBody>
+    </AppPage>
   );
 };
 

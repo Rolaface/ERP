@@ -109,7 +109,7 @@ const PaymentEntry: React.FC = () => {
   const columns: Column<PaymentRow>[] = [
     {
       key: "id",
-      header: "P.Id",
+      header: "P Id",
       render: (row) => row.id || "-",
     },
     {

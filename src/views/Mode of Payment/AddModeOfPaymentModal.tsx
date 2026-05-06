@@ -6,7 +6,7 @@ import {
   ModalSelect,
 } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect";
-
+import { Wallet } from "lucide-react";
 import { useModeOfPaymentLogic } from "./useModeOfPaymentLogic";
 
 interface Props {

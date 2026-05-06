@@ -1,10 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import Table from "../../components/ui/Table/Table";
-import ActionButton, {
-  ActionGroup,
-  ActionMenu,
-} from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import {
   getAllBankAccounts,
@@ -12,11 +8,10 @@ import {
 } from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
 
-const mask = (val?: string | number | null) => {
-  const str = val ? String(val) : "";
-  if (!str) return "—";
-  if (str.length <= 4) return "•".repeat(str.length);
-  return "•".repeat(str.length - 4) + str.slice(-4);
+const mask = (val?: string) => {
+  if (!val) return "—";
+  if (val.length <= 4) return "*".repeat(val.length);
+  return "*".repeat(val.length - 4) + val.slice(-4);
 };
 
 interface Props {
@@ -197,31 +192,6 @@ const SupplierBankDetails: React.FC<Props> = ({
         ) : (
           <span className="text-green-600">Active</span>
         ),
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (row) => (
-        <ActionGroup>
-          <ActionButton type="edit" onClick={() => onEdit?.(row)} iconOnly />
-
-          <ActionMenu
-            customActions={[
-              {
-                label: "Set Default",
-                onClick: () => handleSetDefault(row),
-                disabled: actionLoadingId === String(row.id),
-              },
-              {
-                label: row.isDisabled ? "Enable" : "Disable",
-                onClick: () => handleToggleDisable(row),
-                disabled: actionLoadingId === String(row.id),
-              },
-            ]}
-          />
-        </ActionGroup>
-      ),
     },
   ];
 

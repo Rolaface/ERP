@@ -12,7 +12,12 @@ import type { ItemInitialData } from "../inventory/ItemModal";
 import type { TaxCategoryFormData as TaxTemplateFormData } from "../../types/tax/taxTemplate";
 import type { SalesTaxTemplateFormData } from "../../types/tax/salesTemplate";
 import type { BankAccount } from "../../types/BankAccount/bank";
-
+import type { UserRoleFormData } from "../../types/RoleManagement/UserRole";
+import { createUserRoles } from "../../api/RoleManagement/UserRoleApi";
+import { showSuccess } from "../../utils/alert";
+import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
+import { createUser } from "../../api/RoleManagement/CreateUserApi";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
 const CustomerModal = lazy(() => import("../crm/CustomerModal"));
 const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
 const InvoiceModal = lazy(() => import("../sales/InvoiceModal"));
@@ -58,10 +63,14 @@ const CurrencyConversionModal = lazy(
 const AddAssetModal = lazy(
   () => import("../../components/FixedAsset/AddAssetModal"),
 );
-const AddAssetMovementModal= lazy(()=>import("../../components/FixedAsset/Addassetmovementmodal "))
+const AddAssetMovementModal = lazy(() => import("../../components/FixedAsset/Addassetmovementmodal "))
 const RfqModal = lazy(() => import("../procurement/rfq/RfqModal"))
 const CreditNoteModal = lazy(() => import("../../views/Sales/CreateCreditNoteModal"))
-const DebitNoteModal = lazy(()=> import("../../views/Sales/createDebitNoteModal"))
+const DebitNoteModal = lazy(() => import("../../views/Sales/createDebitNoteModal"))
+const AssignUserRoleModal = lazy(() => import("../../components/User/AssignUserRoleModal"))
+const BankModal = lazy(() => import("../../components/BankModal"))
+const CreateUserModal = lazy(() => import("../../components/User/CreateUserModal"))
+
 
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
@@ -245,7 +254,7 @@ const GlobalModalHandler: React.FC = () => {
             pId={getModalSeedValue(modal.initialData, "pId")}
           />,
         );
-        case "JournalEntries":
+      case "JournalEntries":
         return wrappedModal(
           <JournalEntriesModal
             key={modal.id}
@@ -253,7 +262,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-           
+
           />,
         );
       case "item":
@@ -402,7 +411,7 @@ const GlobalModalHandler: React.FC = () => {
             mode={modal.isEdit ? "edit" : "create"}
           />,
         );
-        case "assetMovement":
+      case "assetMovement":
         return wrappedModal(
           <AddAssetMovementModal
             key={modal.id}
@@ -427,7 +436,7 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-         case "CreditNote":
+      case "CreditNote":
         return wrappedModal(
           <CreditNoteModal
             key={modal.id}
@@ -440,7 +449,7 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-         case "DebitNote":
+      case "DebitNote":
         return wrappedModal(
           <DebitNoteModal
             key={modal.id}
@@ -453,8 +462,83 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-      default:
-        return null;
+      case "UserRole":
+        return wrappedModal(
+          <AssignUserRoleModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={async (data: UserRoleFormData) => {
+              if (modal.isEdit && context?.onSubmit) {
+                await context.onSubmit(data);
+                showSuccess("Role updated successfully");
+              } else {
+                const response = await createUserRoles(data);
+                if (response.message.status !== "success") {
+                  throw new Error("Operation failed");
+                }
+                showSuccess("Role created successfully");
+              }
+              if (context?.onSuccess) {
+                await context.onSuccess(undefined);
+              }
+              handleClose();
+            }}
+            initialData={
+              modal.isEdit && isRecord(modal.initialData)
+                ? (modal.initialData as unknown as UserRoleFormData)
+                : null
+            }
+            isEdit={modal.isEdit}
+          />,
+        );
+
+      case "Bank":
+        return wrappedModal(
+          <BankModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={getInitialData<{ bank_name: string; swift_number: string; name?: string }>(modal.initialData)}  // ✅
+            isEditMode={modal.isEdit}
+          />,
+        );
+
+      case "User":
+        return wrappedModal(
+          <CreateUserModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData<CreateUserFormData>(modal.initialData)}
+            isEditMode={modal.isEdit}
+            onSubmit={
+              modal.isEdit && context?.onSubmit
+                ? async (data: CreateUserFormData) => {
+                  await context.onSubmit!(data);
+                  showSuccess("User updated successfully");
+                  useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
+                  if (context?.onSuccess) await context.onSuccess(undefined);
+                  handleClose();
+                }
+                : async (data: CreateUserFormData) => {
+                  const response = await createUser(data);
+                  if (response.message.status === "success") {
+                    showSuccess("User created successfully");
+                    useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
+                    if (context?.onSuccess) await context.onSuccess(response.message.data);
+                    handleClose();
+                  } else {
+                    throw new Error("User creation failed");
+                  }
+                }
+            }
+          />,
+        );
     }
   };
 
