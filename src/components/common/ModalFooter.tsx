@@ -17,6 +17,7 @@ export interface ModalFooterProps {
   resetDisabled?: boolean;
   onSave?: () => Promise<boolean | void> | boolean | void;
   saving?: boolean;
+  onPrevious?: () => void;
 }
 
 const ModalFooter: React.FC<ModalFooterProps> = ({
