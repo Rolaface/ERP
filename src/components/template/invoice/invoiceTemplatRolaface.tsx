@@ -101,10 +101,14 @@ export const generateInvoicePDF = async (
     doc.line(M, y, MR, y);
   };
 
-  curY = 12;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
+curY = 8;
+doc.setFont("helvetica", "bold");
+doc.setFontSize(13);
+doc.setTextColor(...BLACK);
+doc.text("TAX INVOICE", W / 2, curY, { align: "center" });
+curY = 16;  // push FROM down
+doc.setFont("helvetica", "bold");
+doc.setFontSize(8);
   doc.setTextColor(...BLACK);
   doc.text("FROM", M, curY);
   curY += 5;
@@ -354,9 +358,7 @@ export const generateInvoicePDF = async (
   }
   sigY += 22;
 
-  doc.setDrawColor(...BLACK);
-  doc.setLineWidth(0.4);
-  doc.line(sigBlockX + 10, sigY, MR, sigY);
+ 
   sigY += 4;
 
   doc.setFont("helvetica", "normal");
