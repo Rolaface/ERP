@@ -36,6 +36,7 @@ try {
   setCompanyInfo({
     companyName: company?.companyName,
     baseCurrency: company?.baseCurrency, 
+    companyAddress: `${company?.address?.addressLine1}, ${company?.address?.city}, ${company?.address?.country}`,
   });
 
   console.log("Stored baseCurrency:", company?.baseCurrency);

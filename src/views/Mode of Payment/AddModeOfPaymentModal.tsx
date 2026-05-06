@@ -14,13 +14,17 @@ interface Props {
   onClose: () => void;
   onSubmit: (data?: any) => void;  
  modalId: string;
+   initialData?: any;   
+  isEdit?: boolean;
 }
 
 const AddModeOfPaymentModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onSubmit,
-   modalId
+   modalId,
+    initialData,  
+  isEdit,
 }) => {
   const {
     form,
@@ -30,9 +34,11 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
     loading,
     companies,
     accounts,
+    fetchLoading,
     accLoading,
     companyLoading,
-  } = useModeOfPaymentLogic({ onSubmit, onClose });
+  } = useModeOfPaymentLogic({ onSubmit, onClose, initialData,  // ← pass down
+    isEdit,});
 
   const footer = (
     <>
@@ -51,12 +57,16 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      icon={Wallet}
-      title="Create Mode of Payment"
+     title={isEdit ? "Edit Mode of Payment" : "Add Mode of Payment"}
       subtitle="Configure mode of payment"
       footer={footer}
       customWidth="60vw"
     >
+       {fetchLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : (
       <div className="p-6 space-y-6">
         {/* FORM */}
         <div className="grid grid-cols-3 gap-4">
@@ -65,6 +75,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
             name="name"
             value={form.name}
             onChange={handleChange}
+             disabled={isEdit}
             required
           />
 
@@ -148,6 +159,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
           </div>
         </div>
       </div>
+      )}
     </MinimizableModal>
   );
 };
