@@ -103,16 +103,8 @@ export const useSupplierForm = ({
   const validateSupplierTab = (): boolean => {
     const newErrors: SupplierErrors = {};
 
-    if (!form.tpin || form.tpin.trim() === "") {
-      newErrors.tpin = "TPIN is required";
-    }
-
     if (!form.supplierName || form.supplierName.trim() === "") {
       newErrors.supplierName = "Supplier Name is required";
-    }
-
-    if (!form.taxCategory) {
-      newErrors.taxCategory = "Tax Category is required";
     }
 
     if (!form.contactPerson || form.contactPerson.trim() === "") {
@@ -308,9 +300,7 @@ export const useSupplierForm = ({
     if (!supplierValid) {
       setActiveTab("supplier");
       const emptyFields = [];
-      if (!form.tpin) emptyFields.push("TPIN");
       if (!form.supplierName) emptyFields.push("Supplier Name");
-      if (!form.taxCategory) emptyFields.push("Tax Category");
       if (!form.contactPerson) emptyFields.push("Contact Person");
       if (!form.phoneCode || !form.phoneNo) emptyFields.push("Phone Number");
       if (!form.emailId) emptyFields.push("Email");
@@ -519,9 +509,7 @@ export const useSupplierForm = ({
       isValid = validateSupplierTab();
       if (!isValid) {
         const emptyFields = [];
-        if (!form.tpin) emptyFields.push("TPIN");
         if (!form.supplierName) emptyFields.push("Supplier Name");
-        if (!form.taxCategory) emptyFields.push("Tax Category");
         if (!form.contactPerson) emptyFields.push("Contact Person");
         if (!form.phoneCode || !form.phoneNo) emptyFields.push("Phone Number");
         if (!form.emailId) emptyFields.push("Email");

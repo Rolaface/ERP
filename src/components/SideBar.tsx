@@ -18,7 +18,7 @@ import {
   Users2,
   LogOut,
   Landmark,
-  Percent,
+  Calculator
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -161,7 +161,7 @@ const settingsItems: SettingsItem[] = [
   {
     to: "/Tax-Maintenance",
     label: "Tax Maintenance",
-    icon: <Percent {...iconProps} />,
+    icon: <Calculator {...iconProps} />,
     modules: ["Item Tax Template"],
   },
   {
