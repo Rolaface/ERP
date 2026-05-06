@@ -379,12 +379,17 @@ doc.setFontSize(8);
 
   const selling = invoice?.terms?.selling;
   const tLines: string[] = [];
-  if (selling?.payment?.notes) tLines.push(`Payment is due within ${selling.payment.notes} from date of invoice.`);
-  if (selling?.general)        tLines.push(selling.general);
-  if (selling?.delivery)       tLines.push(`Delivery: ${selling.delivery}`);
-  if (selling?.cancellation)   tLines.push(`Cancellation: ${selling.cancellation}`);
-  if (selling?.warranty)       tLines.push(`Warranty: ${selling.warranty}`);
-  if (!tLines.length)          tLines.push("Payment is due within 0 days from date of invoice.");
+if (selling?.payment?.dueDates)  tLines.push(selling.payment.dueDates);
+if (selling?.general)            tLines.push(`General: ${selling.general}`);
+if (selling?.delivery)           tLines.push(`Delivery: ${selling.delivery}`);
+if (selling?.cancellation)       tLines.push(`Cancellation: ${selling.cancellation}`);
+if (selling?.warranty)           tLines.push(`Warranty: ${selling.warranty}`);
+if (selling?.liability)          tLines.push(`Liability: ${selling.liability}`);
+if (selling?.payment?.phases?.length) {
+  selling.payment.phases.forEach((phase: any) => {
+    tLines.push(`${phase.name}: ${phase.percentage}% within ${phase.credit_days} days${phase.condition ? ` (${phase.condition})` : ""}`);
+  });
+}
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
