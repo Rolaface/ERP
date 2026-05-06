@@ -26,7 +26,16 @@ const Login = () => {
     <div className="h-screen w-full flex overflow-hidden bg-[#0B1220]">
 
       {/* ================= LEFT: TRUST LAYER ================= */}
-      <div className="hidden lg:flex w-[58%] relative flex-col justify-between px-16 py-12 bg-gradient-to-br from-[#0B1220] to-[#0F172A]">
+      <div className="hidden lg:flex w-[58%] relative flex-col justify-between px-16 py-12 bg-gradient-to-br from-[#0B1220] to-[#0F172A] overflow-hidden">
+
+        {/* Animated Gradient Layer */}
+        <div className="absolute inset-0 opacity-30 animate-[pulse_12s_ease-in-out_infinite] 
+        bg-[radial-gradient(circle_at_20%_30%,rgba(59,130,246,0.25),transparent_40%),
+            radial-gradient(circle_at_80%_70%,rgba(99,102,241,0.2),transparent_40%)]" />
+
+        {/* Noise Texture */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none 
+        bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
         {/* Grid texture */}
         <div className="absolute inset-0 opacity-[0.05] pointer-events-none 
@@ -38,7 +47,7 @@ const Login = () => {
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-500/10 blur-[120px]" />
 
         {/* Logo */}
-        <div className="flex items-center gap-3 relative z-10">
+        <div className="flex items-center gap-3 relative z-10 animate-[fadeInUp_0.8s_ease-out]">
           <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-white">
             <span className="text-sm font-bold">⬢</span>
           </div>
@@ -48,9 +57,12 @@ const Login = () => {
         </div>
 
         {/* Main Content */}
-        <div className="relative z-10 max-w-xl">
+        <div className="relative z-10 max-w-xl animate-[fadeInUp_1s_ease-out]">
 
-          <h1 className="text-[48px] font-extrabold leading-[1.05] tracking-tight text-white mb-4">
+          {/* Headline Glow */}
+          <div className="absolute -top-10 -left-10 w-[300px] h-[300px] bg-blue-500/20 blur-[120px] pointer-events-none" />
+
+          <h1 className="relative text-[48px] font-extrabold leading-[1.05] tracking-tight text-white mb-4">
             Operate your business with clarity
           </h1>
 
@@ -92,8 +104,10 @@ const Login = () => {
         </div>
 
         {/* Bottom Insight */}
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1E293B]/40 border border-[#334155]/40 text-[#CBD5E1] text-xs">
+        <div className="relative z-10 animate-[fadeInUp_1.2s_ease-out]">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full 
+          bg-[#1E293B]/50 backdrop-blur-md border border-[#334155]/50 
+          text-[#CBD5E1] text-xs shadow-[0_0_20px_rgba(59,130,246,0.15)]">
             +18.4% operational efficiency this quarter
           </div>
         </div>
@@ -103,8 +117,11 @@ const Login = () => {
       {/* ================= RIGHT: ACCESS LAYER ================= */}
       <div className="w-full lg:w-[42%] flex items-center justify-center bg-gradient-to-b from-white to-[#F8FAFC] px-6">
 
-        {/* OVERLAP FIX (critical) */}
-        <div className="w-full max-w-md bg-white rounded-2xl p-10 border border-[#E5E7EB] shadow-[0_10px_30px_rgba(0,0,0,0.08)] lg:-ml-24 lg:-mt-16">
+        {/* Card with entrance animation */}
+        <div className="w-full max-w-md bg-white rounded-2xl p-10 border border-[#E5E7EB] 
+        shadow-[0_10px_30px_rgba(0,0,0,0.08)] 
+        lg:-ml-24 lg:-mt-16 
+        animate-[fadeInUp_0.9s_ease-out]">
 
           {/* Header */}
           <div className="mb-6">
