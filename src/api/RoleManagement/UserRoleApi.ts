@@ -126,3 +126,13 @@ export async function updateUserRoleStatus(
   );
   return resp.data;
 }
+
+export interface UserRoleDetails{
+  "message" : {
+    "status" : "success"|"error",
+    "message": string,
+    "data":{
+      
+    }
+  }
+}

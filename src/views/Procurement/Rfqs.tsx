@@ -10,6 +10,8 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
 interface RFQ {
   name: string;
@@ -22,6 +24,8 @@ interface RFQsTableProps {
   onAdd?: () => void;
 }
 
+const RFQ_MODULE = "Request For Quotation";
+
 const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
   const [rfqs, setRfqs] = useState<RFQ[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +34,7 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
+const { can } = usePermission();
   // ================= FETCH RFQs =================
   const fetchRFQs = async () => {
     try {
@@ -134,17 +138,16 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
       align: "center",
       render: (o) => (
         <ActionGroup>
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(o, e)}
-            iconOnly
-            disabled={o.status !== "Draft"}
-            title={
-              o.status !== "Draft"
-                ? "Only Draft rfqs can be edited"
-                : "Edit Request For Quotation"
-            }
-          />
+          {/* Edit — needs write + Draft status */}
+          <PermissionGate module={RFQ_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(o, e)}
+              iconOnly
+              disabled={o.status !== "Draft"}
+              title={o.status !== "Draft" ? "Only Draft RFQs can be edited" : "Edit RFQ"}
+            />
+          </PermissionGate>
         </ActionGroup>
       ),
     },
@@ -159,7 +162,7 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
         loading={loading}
         searchValue={searchTerm}
         onSearch={setSearchTerm}
-        enableAdd
+         enableAdd={can(RFQ_MODULE, "create")}
         addLabel="Add RFQ"
         enableColumnSelector
         onAdd={handleAddClick}

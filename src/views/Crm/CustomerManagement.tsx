@@ -21,7 +21,8 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
-
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 import { Copy } from "lucide-react";
@@ -35,12 +36,16 @@ interface Props {
   onAdd: () => void;
 }
 
+const CUSTOMER_MODULE = "Customer";
+const PAYMENT_MODULE  = "Payment Entry";
+
 const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const {
     openCustomerCreate,
     openCustomerEdit
   } =
     useOutletContext<OutletContextType>();
+    const { can } = usePermission();  
 
   const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
   const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
@@ -301,32 +306,46 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         </div>
       ),
     },
-    {
+ {
       key: "actions",
       header: "Actions",
       align: "center",
       render: (customer) => (
         <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={() => handleRowClick(customer)}
-            iconOnly
-          />
 
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEditCustomer(customer.id, e as any)}
-            iconOnly
-            title="Edit Customer"
-          />
+          {/* View — always shown if they can read */}
+          <PermissionGate module={CUSTOMER_MODULE} action="read">
+            <ActionButton
+              type="view"
+              onClick={() => handleRowClick(customer)}
+              iconOnly
+            />
+          </PermissionGate>
 
+          {/* Edit — needs write */}
+          <PermissionGate module={CUSTOMER_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEditCustomer(customer.id, e as any)}
+              iconOnly
+              title="Edit Customer"
+            />
+          </PermissionGate>
+
+          {/* Delete + Receive Payment — inside ActionMenu */}
           <ActionMenu
-            onDelete={(e) => handleDelete(customer.id, e as any)}
+            // Delete only if user has delete permission
+            {...(can(CUSTOMER_MODULE, "delete")
+              ? { onDelete: (e) => handleDelete(customer.id, e as any) }
+              : {})}
             customActions={[
-              {
-                label: "Receive Payment",
-                onClick: () => handleMakePayment(customer),
-              },
+              // Receive Payment only if user has Payment Entry create
+              ...(can(PAYMENT_MODULE, "create")
+                ? [{
+                    label: "Receive Payment",
+                    onClick: () => handleMakePayment(customer),
+                  }]
+                : []),
             ]}
           />
         </ActionGroup>
@@ -347,10 +366,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
           pageSizeOptions={[10, 25, 50, 100]}
           searchValue={searchTerm}
           onSearch={setSearchTerm}
-          enableAdd
+          enableAdd={can(CUSTOMER_MODULE, "create")} 
           addLabel="Add Customer"
           onAdd={handleAddCustomer}
           enableColumnSelector
+          enableExport={can(CUSTOMER_MODULE, "export")}
           currentPage={page}
           totalPages={totalPages}
           pageSize={pageSize}

@@ -6,88 +6,279 @@ import SignupPage from "../views/SignupPage/SignupPage";
 import Login from "../views/LoginPage";
 import AppLayout from "../layout/AppLayout";
 import GLView from "../views/Accounting/glview";
-const Dashboard = lazy(() => import("../views/DashbBoard"));
-const SalesModule = lazy(() => import("../views/Sales/Sales"));
-const ProcurementModule = lazy(() => import("../views/Procurement/Procurement"));
-const InventoryModule = lazy(() => import("../views/Inventory/Inventory"));
-const AccountingModule = lazy(() => import("../views/Accounting/Accounting"));
-const CrmModule = lazy(() => import("../views/Crm/Crm"));
-const Settings = lazy(() => import("../views/Settings"));
-const HrPayrollModule = lazy(() => import("../views/hr/HR"));
-const CompanySetup = lazy(() => import("../views/CompanySetup/CompanySetup"));
-const UserManagement = lazy(() => import("../views/User/UserModule"));
-const FixedAssets = lazy(() => import("../views/FixedAssets/FixedAsset"));
-const BankAccountPage = lazy(() => import("../views/BankAccount/BankAccountPage"))
-const ModeOfPaymentPage = lazy(
-  () => import("../views/Mode of Payment/ModeOfPaymentSetup")
-);
-const PaymentEntry = lazy(
-  () => import("../views/PaymentEntry/PaymentEntry")
-);
-const CurrencyConversion = lazy(
-  () => import("../views/CurrencyConversion/currencyConversion")
-);
-const CustomerGroup = lazy(
-  () => import("../views/Customergroup/CustomerGroup")
-);
-const TaxMaintenance = lazy(
-  () => import("../views/TaxMaintaince/taxmaintaince")
-)
-const Bank = lazy(() => import("../views/BankAccount/Bank"))
+import { usePermission } from "../hooks/permission/usePermission";
+import type { PermissionAction } from "../store/permissionStore"; 
+
+const Dashboard           = lazy(() => import("../views/DashbBoard"));
+const SalesModule         = lazy(() => import("../views/Sales/Sales"));
+const ProcurementModule   = lazy(() => import("../views/Procurement/Procurement"));
+const InventoryModule     = lazy(() => import("../views/Inventory/Inventory"));
+const AccountingModule    = lazy(() => import("../views/Accounting/Accounting"));
+const CrmModule           = lazy(() => import("../views/Crm/Crm"));
+const Settings            = lazy(() => import("../views/Settings"));
+const HrPayrollModule     = lazy(() => import("../views/hr/HR"));
+const CompanySetup        = lazy(() => import("../views/CompanySetup/CompanySetup"));
+const UserManagement      = lazy(() => import("../views/User/UserModule"));
+const FixedAssets         = lazy(() => import("../views/FixedAssets/FixedAsset"));
+const BankAccountPage     = lazy(() => import("../views/BankAccount/BankAccountPage"));
+const ModeOfPaymentPage   = lazy(() => import("../views/Mode of Payment/ModeOfPaymentSetup"));
+const PaymentEntry        = lazy(() => import("../views/PaymentEntry/PaymentEntry"));
+const CurrencyConversion  = lazy(() => import("../views/CurrencyConversion/currencyConversion"));
+const CustomerGroup       = lazy(() => import("../views/Customergroup/CustomerGroup"));
+const TaxMaintenance      = lazy(() => import("../views/TaxMaintaince/taxmaintaince"));
+const Bank                = lazy(() => import("../views/BankAccount/Bank"));
+
 import { Toaster } from "react-hot-toast";
 import ResetPassword from "../ResetPassword";
+
+// ─── PermissionRoute ──────────────────────────────────────────────────────────
+//
+// Wraps a route element. If the user doesn't have the required permission,
+// redirects to /dashboard (or a custom `redirectTo`).
+//
+// Props:
+//   modules    — one or more API module names (access granted if ANY matches)
+//   action     — permission action to check (default: "read")
+//   redirectTo — where to send the user on denial (default: "/dashboard")
+//   children   — the page component to render on success
+
+interface PermissionRouteProps {
+  modules: string[];
+  action?: PermissionAction;
+  redirectTo?: string;
+  children: React.ReactNode;
+}
+
+const PermissionRoute: React.FC<PermissionRouteProps> = ({
+  modules,
+  action = "read",
+  redirectTo = "/dashboard",
+  children,
+}) => {
+  const { canAccessAnyOf, can, isLoading } = usePermission();
+
+  // While permissions are still loading, render nothing (avoid flash-redirect)
+  if (isLoading) return null;
+
+  const hasAccess =
+    modules.length === 0
+      ? true
+      : modules.some((mod) => can(mod, action));
+
+  return hasAccess ? <>{children}</> : <Navigate to={redirectTo} replace />;
+};
+
+// ─── Routes ───────────────────────────────────────────────────────────────────
 
 const AppRoutes: React.FC = () => {
   return (
     <>
       <Toaster position="top-right" />
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/reset" element={<ResetPassword />} />
 
-        {/* Protected Routes */}
+        {/* ── Public Routes ── */}
+        <Route path="/"       element={<LandingPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/login"  element={<Login />} />
+        <Route path="/reset"  element={<ResetPassword />} />
+
+        {/* ── Protected Routes ── */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
+
+            {/* Dashboard — always accessible */}
             <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* Sales Module with sub-routes */}
-            <Route path="/sales" element={<SalesModule />} />
+            {/* Sales — needs read on Sales Invoice */}
+            <Route
+              path="/sales"
+              element={
+                <PermissionRoute modules={["Sales Invoice"]}>
+                  <SalesModule />
+                </PermissionRoute>
+              }
+            />
 
-            {/* Procurement Module */}
-            <Route path="/procurement" element={<ProcurementModule />} />
+            {/* CRM — needs read on Customer or Payment Entry */}
+            <Route
+              path="/crm"
+              element={
+                <PermissionRoute modules={["Customer", "Payment Entry"]}>
+                  <CrmModule />
+                </PermissionRoute>
+              }
+            />
 
-            {/* Inventory Module */}
-            <Route path="/inventory" element={<Navigate to="/inventory/dashboard" replace />} />
-            <Route path="/inventory/:tab" element={<InventoryModule />} />
+            {/* Procurement — needs any procurement module */}
+            <Route
+              path="/procurement"
+              element={
+                <PermissionRoute
+                  modules={["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice"]}
+                >
+                  <ProcurementModule />
+                </PermissionRoute>
+              }
+            />
 
-            {/* Accounting Module */}
-            <Route path="/accounting" element={<AccountingModule />} />
+            {/* Inventory */}
+            <Route
+              path="/inventory"
+              element={<Navigate to="/inventory/dashboard" replace />}
+            />
+            <Route
+              path="/inventory/:tab"
+              element={
+                <PermissionRoute modules={["Item", "Item Group", "Warehouse", "Stock Entry"]}>
+                  <InventoryModule />
+                </PermissionRoute>
+              }
+            />
 
-            {/* CRM Module */}
-            <Route path="/crm" element={<CrmModule />} />
+            {/* Accounting */}
+            <Route
+              path="/accounting"
+              element={
+                <PermissionRoute modules={["GL Entry", "Journal Entry"]}>
+                  <AccountingModule />
+                </PermissionRoute>
+              }
+            />
 
+            {/* Fixed Assets */}
+            <Route
+              path="/fasset"
+              element={
+                <PermissionRoute modules={["Asset Category", "Asset", "Asset Movement"]}>
+                  <FixedAssets />
+                </PermissionRoute>
+              }
+            />
+
+            {/* HR */}
+            <Route
+              path="/hr"
+              element={
+                <PermissionRoute modules={["Employee", "Payroll Entry"]}>
+                  <HrPayrollModule />
+                </PermissionRoute>
+              }
+            />
+
+            {/* GL ledger view — accounting read */}
+            <Route
+              path="/ledger"
+              element={
+                <PermissionRoute modules={["GL Entry"]}>
+                  <GLView />
+                </PermissionRoute>
+              }
+            />
+
+            {/* ── Settings sub-pages ── */}
+
+            {/* General settings — always accessible */}
             <Route path="/settings" element={<Settings />} />
-            <Route path="/hr" element={<HrPayrollModule />} />
-            <Route path="/fasset" element={<FixedAssets />} />
-            <Route path="/companySetup" element={<Navigate to="/companySetup/basic" replace />} />
-            <Route path="/companySetup/:tab" element={<CompanySetup />} />
-            <Route path="/userManagement" element={<UserManagement />} />
-            <Route path="/bank-account-setup" element={<BankAccountPage />} />
-            <Route path="/mode-of-payment-setup" element={<ModeOfPaymentPage />} />
-            <Route path="/payment-entry" element={<PaymentEntry />} />
-            <Route path="/currency-conversion" element={<CurrencyConversion />} />
-            <Route path="/customer-group" element={<CustomerGroup />} />
-            <Route path="/ledger" element={<GLView />} />
-            <Route path="/Tax-Maintenance" element={<TaxMaintenance />} />
-            <Route path="/bank" element={<Bank />} />
 
-            {/* Catch-all for unknown routes - redirect to dashboard */}
+            {/* Company Setup — needs Company read */}
+            <Route
+              path="/companySetup"
+              element={<Navigate to="/companySetup/basic" replace />}
+            />
+            <Route
+              path="/companySetup/:tab"
+              element={
+                <PermissionRoute modules={["Company"]}>
+                  <CompanySetup />
+                </PermissionRoute>
+              }
+            />
+
+            {/* User Management — needs User read */}
+            <Route
+              path="/userManagement"
+              element={
+                <PermissionRoute modules={["User"]}>
+                  <UserManagement />
+                </PermissionRoute>
+              }
+            />
+
+            {/* Bank Account */}
+            <Route
+              path="/bank-account-setup"
+              element={
+                <PermissionRoute modules={["Bank Account"]}>
+                  <BankAccountPage />
+                </PermissionRoute>
+              }
+            />
+
+            {/* Bank */}
+            <Route
+              path="/bank"
+              element={
+                <PermissionRoute modules={["Bank"]}>
+                  <Bank />
+                </PermissionRoute>
+              }
+            />
+
+            {/* Mode of Payment */}
+            <Route
+              path="/mode-of-payment-setup"
+              element={
+                <PermissionRoute modules={["Mode of Payment"]}>
+                  <ModeOfPaymentPage />
+                </PermissionRoute>
+              }
+            />
+
+            {/* Payment Entry */}
+            <Route
+              path="/payment-entry"
+              element={
+                <PermissionRoute modules={["Payment Entry"]}>
+                  <PaymentEntry />
+                </PermissionRoute>
+              }
+            />
+
+            {/* Currency Exchange */}
+            <Route
+              path="/currency-conversion"
+              element={
+                <PermissionRoute modules={["Currency Exchange"]}>
+                  <CurrencyConversion />
+                </PermissionRoute>
+              }
+            />
+
+            {/* Customer Group */}
+            <Route
+              path="/customer-group"
+              element={
+                <PermissionRoute modules={["Customer Group"]}>
+                  <CustomerGroup />
+                </PermissionRoute>
+              }
+            />
+
+            {/* Tax Maintenance */}
+            <Route
+              path="/Tax-Maintenance"
+              element={
+                <PermissionRoute modules={["Item Tax Template"]}>
+                  <TaxMaintenance />
+                </PermissionRoute>
+              }
+            />
+
+            {/* Catch-all */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Route>
+
       </Routes>
     </>
   );

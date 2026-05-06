@@ -10,6 +10,7 @@ import { showConfirm, showSuccess, showApiError } from "../../utils/alert";
 import { getUserRoles, getUserRoleById, updateUserRoleStatus } from "../../api/RoleManagement/UserRoleApi";
 import { updateUserRoles } from "../../api/RoleManagement/UserRoleApi";
 import type { UserRoleFormData } from "../../types/RoleManagement/UserRole";
+import { useAuth } from "../../context/AuthContext";
 
 const mapApiRoleToUserRole = (apiRole: {
   Id: string;
@@ -65,6 +66,7 @@ const UserRolePage: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const { refreshPermissions } = useAuth();
   
 
   const refreshKey = useDataRefreshStore(
@@ -125,6 +127,7 @@ const UserRolePage: React.FC = () => {
           ...(isEdit && {
             onSubmit: async (data: unknown) => {
               await updateUserRoles(data as UserRoleFormData);
+              await refreshPermissions();
             },
           }),
         }

@@ -11,7 +11,7 @@ export const MODULE_STRUCTURE: Record<string, string[]> = {
   Accounting: ["GL Entry", "Journal Entry"],
   Assets: ["Asset Category", "Asset", "Asset Movement"],
   HumanResource: ["Employee", "Payroll Entry"],
-  Settings: ["Company", "User","Bank", "Bank Account", "Mode of Payment", "Payment Entry", "Currency Exchange", "Customer Group", "Item Tax Template"],
+  Settings: ["Company", "User","Role","Bank", "Bank Account", "Mode of Payment", "Payment Entry", "Currency Exchange", "Customer Group", "Item Tax Template"],
 };
 
 export const ALL_MODULES = Object.keys(MODULE_STRUCTURE);

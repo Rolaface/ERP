@@ -2,12 +2,17 @@ import React, { useState, useCallback, useEffect } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
+import PermissionGate from "../PermissionGate";
+import { usePermission } from "../../hooks/permission/usePermission";
 import { openUserModal } from "../../store/modalStore";
 import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
 import { showConfirm, showSuccess, showApiError } from "../../utils/alert";
 import { getUsers, updateUser, deleteUser } from "../../api/RoleManagement/CreateUserApi";
 import type { UserRow } from "../../api/RoleManagement/CreateUserApi";
-import { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
+import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
+
+// The module name that controls User Management permissions
+const USER_MODULE = "User";
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -20,10 +25,10 @@ const CreateUserPage: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  const refreshKey = useDataRefreshStore(
-    (state) => state.refreshFlags[REFRESH_KEYS.CREATE_USER_LIST]
-  );
+  // ← NEW: read permission\ once
+  const { can } = usePermission();
 
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
 
   const fetchUsers = async (search?: string, currentPage?: number, currentPageSize?: number) => {
     setLoading(true);
@@ -40,19 +45,16 @@ const CreateUserPage: React.FC = () => {
     }
   };
 
-  // Initial load
   useEffect(() => {
     fetchUsers(searchQuery, page, pageSize);
   }, [page, pageSize]);
 
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.CREATE_USER_LIST, () => {
       fetchUsers(searchQuery, page, pageSize);
     });
     return () => unsubscribe();
   }, [subscribeToRefresh]);
-
 
   const handleAdd = () => {
     openUserModal(null, false, {
@@ -62,21 +64,11 @@ const CreateUserPage: React.FC = () => {
 
   const handleEdit = (row: UserRow, e: React.MouseEvent) => {
     e.stopPropagation();
-    openUserModal(
-      row,
-      true,
-      {
-        onSuccess: () => fetchUsers(searchQuery, page, pageSize),
-        onSubmit: async (data: unknown) => {
-          await updateUser(row.id, data as CreateUserFormData);
-        },
-      }
-    );
-  };
-
-  const handleView = (row: UserRow) => {
-    openUserModal(row, false, {
+    openUserModal(row, true, {
       onSuccess: () => fetchUsers(searchQuery, page, pageSize),
+      onSubmit: async (data: unknown) => {
+        await updateUser(row.id, data as CreateUserFormData);
+      },
     });
   };
 
@@ -97,8 +89,6 @@ const CreateUserPage: React.FC = () => {
     }
   };
 
-
-
   // ── Columns ────────────────────────────────────────────────────────────────
   const columns: Column<UserRow>[] = [
     {
@@ -111,26 +101,23 @@ const CreateUserPage: React.FC = () => {
     {
       key: "email",
       header: "Email",
-      render: (row) => (
-        <span className="text-sm text-muted">{row.email}</span>
-      ),
+      render: (row) => <span className="text-sm text-muted">{row.email}</span>,
     },
     {
       key: "name",
       header: "Name",
-      render: (row) => (
-        <span className="text-sm text-main">{row.name || "—"}</span>
-      ),
+      render: (row) => <span className="text-sm text-main">{row.name || "—"}</span>,
     },
     {
       key: "enabled",
       header: "Status",
       render: (row) => (
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${row.enabled
-            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-            : "bg-red-50 text-red-600 border-red-200"
-            }`}
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+            row.enabled
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : "bg-red-50 text-red-600 border-red-200"
+          }`}
         >
           {row.enabled ? "Active" : "Inactive"}
         </span>
@@ -142,16 +129,28 @@ const CreateUserPage: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(row, e as React.MouseEvent)}
-            iconOnly
-            title="Edit User"
-          />
+          {/* ── EDIT button — only if user has `write` on User module ── */}
+          <PermissionGate module={USER_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(row, e as React.MouseEvent)}
+              iconOnly
+              title="Edit User"
+            />
+          </PermissionGate>
+
+
           <ActionMenu
-            onDelete={(e) => handleDelete(row.id, e as React.MouseEvent)}
             customActions={[
-              // { label: "View Details", onClick: () => handleView(row) },
+              // Delete — only if user has `delete`
+              ...(can(USER_MODULE, "delete")
+                ? [
+                    {
+                      label: "Delete",
+                      onClick: (e: React.MouseEvent) => handleDelete(row.id, e),
+                    },
+                  ]
+                : []),
             ]}
           />
         </ActionGroup>
@@ -176,11 +175,13 @@ const CreateUserPage: React.FC = () => {
           setPage(1);
           fetchUsers(q, 1, pageSize);
         }}
-        enableAdd
+        // ── Add button: only show if user can create ──────────────────────
+        enableAdd={can(USER_MODULE, "create")}
         addLabel="Add User"
         onAdd={handleAdd}
         enableColumnSelector
-        enableExport
+        // ── Export: only show if user has export permission ───────────────
+        enableExport={can(USER_MODULE, "export")}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}

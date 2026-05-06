@@ -20,7 +20,8 @@ import { showApiError, showSuccess } from "../../utils/alert";
 
 import { openPaymentEntryModal } from "../../store/modalStore";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
-import { Copy } from "lucide-react";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
 type OutletContextType = {
   openSupplierCreate: () => void;
@@ -31,7 +32,11 @@ interface Props {
   onAdd?: () => void;
 }
 
+const SUPPLIER_MODULE = "Supplier";
+const PAYMENT_MODULE  = "Payment Entry";
+
 const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
+   const { can } = usePermission();
   const { openSupplierCreate, openSupplierEdit } =
     useOutletContext<OutletContextType>();
 
@@ -334,39 +339,46 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
         </div>
       ),
     },
-    {
+  {
       key: "actions",
       header: "Actions",
       align: "center",
       render: (supplier) => (
         <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={() => handleRowClick(supplier)}
-            iconOnly
-          />
 
-          <ActionButton
-            type="edit"
-            onClick={(e) => {
-              e?.stopPropagation();
-              handleEditSupplier(supplier);
-            }}
-            iconOnly
-            title="Edit Supplier"
-          />
+          {/* View — always if can read */}
+          <PermissionGate module={SUPPLIER_MODULE} action="read">
+            <ActionButton
+              type="view"
+              onClick={() => handleRowClick(supplier)}
+              iconOnly
+            />
+          </PermissionGate>
+
+          {/* Edit — needs write */}
+          <PermissionGate module={SUPPLIER_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => { e?.stopPropagation(); handleEditSupplier(supplier); }}
+              iconOnly
+              title="Edit Supplier"
+            />
+          </PermissionGate>
 
           <ActionMenu
-            onDelete={() => handleDeleteSupplier(supplier)}
+            // Delete — needs delete
+            {...(can(SUPPLIER_MODULE, "delete")
+              ? { onDelete: () => handleDeleteSupplier(supplier) }
+              : {})}
             customActions={[
-              {
-                label: "Make Payment",
-                onClick: () => handleMakePayment(supplier),
-              },
-              {
-                label: "Make Advance Payment",
-                onClick: () => handleMakeAdvancePayment(supplier),
-              },
+              // Make Payment — needs Payment Entry create
+              ...(can(PAYMENT_MODULE, "create")
+                ? [{ label: "Make Payment", onClick: () => handleMakePayment(supplier) }]
+                : []),
+              // Advance Payment — needs Payment Entry create
+              ...(can(PAYMENT_MODULE, "create")
+                ? [{ label: "Make Advance Payment", onClick: () => handleMakeAdvancePayment(supplier) }]
+                : []),
             ]}
           />
         </ActionGroup>
@@ -393,10 +405,11 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
           pageSizeOptions={[10, 25, 50, 100]}
           searchValue={searchTerm}
           onSearch={setSearchTerm}
-          enableAdd
+          enableAdd={can(SUPPLIER_MODULE, "create")} 
           addLabel="Add Supplier"
           onAdd={handleAddSupplier}
           enableColumnSelector
+          enableExport={can(SUPPLIER_MODULE, "export")}  
           currentPage={page}
           totalPages={totalPages}
           pageSize={pageSize}

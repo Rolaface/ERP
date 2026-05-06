@@ -33,14 +33,14 @@ import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
-
+import PermissionGate from "../PermissionGate";
+import { usePermission } from "../../hooks/permission/usePermission";
 type OutletContextType = {
   openPOCreate: () => void;
   openPOEdit: (poId: string | number) => void;
 };
 import PurchaseOrderDetailModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
-import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
-import { Copy } from "lucide-react";
+
 
 
 interface PurchaseOrder {
@@ -77,9 +77,13 @@ const statusOptions = [
   { label: "Completed", value: "Completed" },
 ];
 
+const PO_MODULE      = "Purchase Order";
+const PAYMENT_MODULE = "Payment Entry";
+const PI_MODULE      = "Purchase Invoice";
+
 const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const { openPOEdit } = useOutletContext<OutletContextType>();
-
+const { can } = usePermission();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -573,53 +577,50 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       align: "center",
       render: (o) => (
         <ActionGroup>
+
           <ActionButton
             type="view"
             onClick={(e) => handleView(o.id, e)}
             iconOnly
           />
 
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(o, e)}
-            iconOnly
-            disabled={o.status !== "Draft"}
-            title={
-              o.status !== "Draft"
-                ? "Only Draft purchase orders can be edited"
-                : "Edit Purchase Order"
-            }
-          />
+          {/* Edit — needs write + must be Draft */}
+          <PermissionGate module={PO_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(o, e)}
+              iconOnly
+              disabled={o.status !== "Draft"}
+              title={o.status !== "Draft" ? "Only Draft POs can be edited" : "Edit Purchase Order"}
+            />
+          </PermissionGate>
+
           <ActionMenu
-            onDelete={(e) => handleDelete(o, e as any)}
+            // Delete — needs delete
+            {...(can(PO_MODULE, "delete")
+              ? { onDelete: (e) => handleDelete(o, e as any) }
+              : {})}
             customActions={[
-              {
-                label: "View PDF",
-                onClick: () => handlePreviewPDF(o),
-              },
-              ...(o.status === "Approved"
-                ? [
-                  {
-                    label: "Make Advance Payment",
-                    onClick: () => handleMakePayment(o),
-                  },
-                ]
+              { label: "View PDF", onClick: () => handlePreviewPDF(o) },
+
+              // Advance Payment — needs Payment Entry create + Approved status
+              ...(can(PAYMENT_MODULE, "create") && o.status === "Approved"
+                ? [{ label: "Make Advance Payment", onClick: () => handleMakePayment(o) }]
                 : []),
-              ...(o.status === "Approved"
-                ? [
-                  {
-                    label: "Make Purchase Invoice",
-                    onClick: () => handleCreateInvoiceFromPO(o),
-                  },
-                ]
+
+              // Make Purchase Invoice — needs Purchase Invoice create + Approved
+              ...(can(PI_MODULE, "create") && o.status === "Approved"
+                ? [{ label: "Make Purchase Invoice", onClick: () => handleCreateInvoiceFromPO(o) }]
                 : []),
-              ...(STATUS_TRANSITIONS[o.status as POStatus] ?? []).map(
-                (status) => ({
-                  label: `Mark as ${status}`,
-                  danger: status === "Completed",
-                  onClick: () => handleStatusChange(o.id, status),
-                }),
-              ),
+
+              // Status transitions — needs write
+              ...(can(PO_MODULE, "write")
+                ? (STATUS_TRANSITIONS[o.status as POStatus] ?? []).map((status) => ({
+                    label: `Mark as ${status}`,
+                    danger: status === "Completed",
+                    onClick: () => handleStatusChange(o.id, status),
+                  }))
+                : []),
             ]}
           />
         </ActionGroup>
@@ -636,10 +637,10 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
         showToolbar
         loading={loading}
         searchValue={searchTerm}
-        enableExport
+        enableExport={can(PO_MODULE, "export")}  
         onExport={handleExportPDF}
         onSearch={setSearchTerm}
-        enableAdd
+        enableAdd={can(PO_MODULE, "create")}
         addLabel="Add Purchase Order"
         onAdd={handleAddClick}
         enableColumnSelector
