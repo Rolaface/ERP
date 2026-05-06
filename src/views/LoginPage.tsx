@@ -4,9 +4,6 @@ import {
   EyeOff,
   ArrowRight,
   ShieldCheck,
-  BarChart3,
-  Users,
-  Package,
 } from "lucide-react";
 import { useLogin } from "../hooks/useloginhooks";
 
@@ -26,256 +23,212 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-app relative overflow-hidden">
+    <div className="h-screen w-full flex overflow-hidden bg-[#0B1220]">
 
-      {/* Global ambient light */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 left-1/3 w-[500px] h-[500px] bg-radial-glow opacity-40 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-radial-glow opacity-30 blur-[100px]" />
+      {/* ================= LEFT: TRUST LAYER ================= */}
+      <div className="hidden lg:flex w-[58%] relative flex-col justify-between px-16 py-12 bg-gradient-to-br from-[#0B1220] to-[#0F172A]">
+
+        {/* Grid texture */}
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none 
+        bg-[linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),
+            linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)]
+        bg-[size:32px_32px]" />
+
+        {/* Glow */}
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-500/10 blur-[120px]" />
+
+        {/* Logo */}
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-white">
+            <span className="text-sm font-bold">⬢</span>
+          </div>
+          <span className="text-white text-lg font-semibold tracking-tight">
+            Nexus ERP
+          </span>
+        </div>
+
+        {/* Main Content */}
+        <div className="relative z-10 max-w-xl">
+
+          <h1 className="text-[48px] font-extrabold leading-[1.05] tracking-tight text-white mb-4">
+            Operate your business with clarity
+          </h1>
+
+          <p className="text-[#94A3B8] text-lg mb-10 max-w-md">
+            Secure, real-time control over finance, operations, and teams.
+          </p>
+
+          {/* Features */}
+          <div className="space-y-5">
+
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-[#1E293B] border border-[#334155] flex items-center justify-center">
+                <ShieldCheck className="text-white" size={18} />
+              </div>
+              <span className="text-white font-medium">
+                End-to-end encrypted infrastructure
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4 opacity-80">
+              <div className="w-10 h-10 rounded-lg bg-[#0F172A] border border-[#1E293B] flex items-center justify-center">
+                <ShieldCheck className="text-[#94A3B8]" size={18} />
+              </div>
+              <span className="text-[#94A3B8]">
+                Role-based access with audit trails
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4 opacity-80">
+              <div className="w-10 h-10 rounded-lg bg-[#0F172A] border border-[#1E293B] flex items-center justify-center">
+                <ShieldCheck className="text-[#94A3B8]" size={18} />
+              </div>
+              <span className="text-[#94A3B8]">
+                99.99% uptime across global systems
+              </span>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Bottom Insight */}
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1E293B]/40 border border-[#334155]/40 text-[#CBD5E1] text-xs">
+            +18.4% operational efficiency this quarter
+          </div>
+        </div>
+
       </div>
 
-      {/* ================= LEFT ================= */}
-      <section className="relative flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12 bg-app">
+      {/* ================= RIGHT: ACCESS LAYER ================= */}
+      <div className="w-full lg:w-[42%] flex items-center justify-center bg-gradient-to-b from-white to-[#F8FAFC] px-6">
 
-        {/* Soft gradient fade */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/5" />
+        {/* OVERLAP FIX (critical) */}
+        <div className="w-full max-w-md bg-white rounded-2xl p-10 border border-[#E5E7EB] shadow-[0_10px_30px_rgba(0,0,0,0.08)] lg:-ml-24 lg:-mt-16">
 
-        <div className="max-w-md w-full mx-auto relative z-10 backdrop-blur-[2px]">
-
-          {/* Logo */}
-          <div className="mb-10 flex items-center gap-3 animate-fade-up delay-1">
-            <div className="w-10 h-10 bg-primary flex items-center justify-center rounded-xl text-white">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <span className="heading-lg font-bold tracking-tight">
-              ERP
-            </span>
-          </div>
-
-          {/* Headline */}
-          <div className="mb-12 animate-fade-up delay-2">
-            <h1 className="heading-xl mb-4 tracking-tight leading-[1.1] text-main">
-              Regain Operational Clarity
-            </h1>
-
-            <p className="text-muted text-sm leading-relaxed max-w-sm">
-              All-in-one ERP to manage finance, inventory & teams with precision.
+          {/* Header */}
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-[#0F172A] mb-1">
+              Welcome back
+            </h2>
+            <p className="text-sm text-[#64748B]">
+              Sign in to access your workspace
             </p>
           </div>
 
           {/* Error */}
-          <div className="mb-6 min-h-[44px]">
-            {error && (
-              <div className="p-3 rounded-lg bg-danger/10 border border-danger/20 motion-fade-in">
-                <p className="text-danger text-sm">{error}</p>
-              </div>
-            )}
-          </div>
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
+              {error}
+            </div>
+          )}
 
-          {/* ================= FORM ================= */}
-          <form onSubmit={handleSubmit} className="form-section space-y-6 animate-fade-up delay-3">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
 
             {/* Email */}
-            <div className="form-group space-y-2">
-              <label className="form-label">Email or Username</label>
+            <div>
+              <label className="block text-xs font-semibold text-[#475569] uppercase mb-2">
+                Email or Username
+              </label>
               <input
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-base 
-transition-all duration-[120ms] ease-out
-focus:ring-2 focus:ring-primary/30 focus:border-primary 
-hover:shadow-sm focus:shadow-md
-focus:scale-[1.01]"
                 placeholder="name@company.com"
+                className="w-full h-12 px-4 rounded-lg 
+                bg-[#F9FAFB] border border-[#E5E7EB]
+                focus:bg-white focus:border-primary
+                outline-none transition"
                 required
               />
             </div>
 
             {/* Password */}
-            <div className="form-group space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="form-label">Password</label>
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="text-xs font-semibold text-[#475569] uppercase">
+                  Password
+                </label>
                 <button
                   type="button"
-                  className="text-sm text-primary hover:underline"
+                  className="text-xs text-primary hover:underline"
                 >
                   Forgot password?
                 </button>
               </div>
 
-              <div className="input-wrapper">
+              <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-base pr-10 transition-all duration-200 ease-out 
-            focus:ring-2 focus:ring-primary/30 focus:border-primary 
-            hover:shadow-sm focus:shadow-md"
                   placeholder="••••••••"
+                  className="w-full h-12 px-4 pr-10 rounded-lg 
+                  bg-[#F9FAFB] border border-[#E5E7EB]
+                  focus:bg-white focus:border-primary
+                  outline-none transition"
                   required
                 />
 
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 
-            text-muted hover:text-main 
-            transition-colors duration-200"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
+              {/* Remember */}
+              <div className="flex items-center mt-3">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={() => setRememberMe(!rememberMe)}
-                  className="w-4 h-4 accent-[var(--primary)]"
+                  className="w-4 h-4 accent-primary"
                 />
-                <label className="text-sm text-muted">
-                  Remember me for 30 days
-                </label>
+                <span className="ml-2 text-sm text-[#475569]">
+                  Remember me
+                </span>
               </div>
             </div>
 
             {/* Button */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="btn btn-primary group w-full h-12 flex items-center justify-center gap-2
-  relative overflow-hidden
-  transition-all duration-[120ms] ease-out
-  hover:shadow-lg hover:-translate-y-[1px]
-  active:scale-[0.97] active:shadow-md
-  disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-
-                {/* Gradient overlay */}
-                <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-300" />
-
-                {/* ✅ ADD IT HERE */}
-                {isSubmitting && (
-                  <span className="absolute inset-0 bg-white/10 animate-pulse z-10" />
-                )}
-
-                {/* Content */}
-                <span className="relative flex items-center gap-2 z-20">
-                  {isSubmitting ? "Checking..." : "Sign In"}
-                  <ArrowRight
-                    size={18}
-                    className="transition-transform duration-200 group-hover:translate-x-1"
-                  />
-                </span>
-
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-[52px] rounded-lg text-white font-semibold
+              bg-gradient-to-b from-blue-500 to-blue-600
+              hover:from-blue-500 hover:to-blue-700
+              active:scale-[0.98] transition"
+            >
+              {isSubmitting ? "Checking..." : "Sign in"}
+            </button>
 
           </form>
 
           {/* Footer */}
-          <div className="mt-10 pt-8 border-t border-theme animate-fade-in delay-4">
-            <div className="flex items-center gap-2 text-muted text-[11px] tracking-wider uppercase">
-              <ShieldCheck size={16} />
-              Secured with enterprise-grade encryption
-            </div>
-          </div>
+          <div className="mt-8 pt-6 border-t border-[#F1F5F9] text-center space-y-2">
 
-        </div>
-      </section>
-
-      {/* ================= RIGHT ================= */}
-      <section className="hidden md:flex relative items-center justify-center overflow-hidden bg-sidebar">
-
-        {/* Background glow (refined & softer) */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-radial-glow opacity-60 blur-[120px]" />
-          <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-radial-glow opacity-50 blur-[140px]" />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 w-full max-w-md px-8 space-y-6 animate-float-slow">
-
-          <div className="text-sm text-muted mb-2 px-1">
-            Your business at a glance
-          </div>
-
-          {/* Card 1 */}
-          <div className="card card-hover relative overflow-hidden
-      before:absolute before:inset-0
-      before:bg-gradient-to-br before:from-white/5 before:to-transparent
-      before:opacity-0 hover:before:opacity-100
-      before:transition-opacity">
-
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <BarChart3 className="text-primary" />
-              </div>
-              <span className="text-xs text-success bg-success/10 px-2 py-1 rounded-full">
-                +12.4%
+            <p className="text-sm text-[#475569]">
+              Don’t have an account?{" "}
+              <span className="text-primary font-semibold cursor-pointer">
+                Sign up here
               </span>
-            </div>
+            </p>
 
-            <p className="text-sm text-muted">Monthly Revenue</p>
-            <h3 className="text-2xl font-bold text-main">₹2,48,290</h3>
+            <p className="text-xs text-[#94A3B8]">
+              Need access?{" "}
+              <span className="hover:text-[#64748B] cursor-pointer">
+                Contact administrator
+              </span>
+            </p>
 
-            <div className="mt-4 h-1.5 w-full bg-muted/20 rounded-full overflow-hidden">
-              <div className="h-full bg-primary w-[78%]" />
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="card card-hover relative overflow-hidden
-      before:absolute before:inset-0
-      before:bg-gradient-to-br before:from-white/5 before:to-transparent
-      before:opacity-0 hover:before:opacity-100
-      before:transition-opacity">
-
-            <div className="flex items-center gap-4">
-              <Users className="text-primary" />
-              <div>
-                <p className="text-sm text-muted">Active Users</p>
-                <p className="text-lg font-bold text-main">1,240</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="card card-hover relative overflow-hidden
-      before:absolute before:inset-0
-      before:bg-gradient-to-br before:from-white/5 before:to-transparent
-      before:opacity-0 hover:before:opacity-100
-      before:transition-opacity">
-
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Package className="text-primary" />
-                <span className="text-sm font-semibold text-main">
-                  Stock Audit
-                </span>
-              </div>
-              <span className="text-xs text-muted">Batch #PX-992</span>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs text-muted">
-                <span>Progress</span>
-                <span>92%</span>
-              </div>
-              <div className="h-2 w-full bg-muted/20 rounded-full overflow-hidden">
-                <div className="h-full bg-primary w-[92%]" />
-              </div>
-            </div>
           </div>
 
         </div>
-
-        {/* Grid texture (enhanced blending) */}
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-grid-subtle mix-blend-overlay" />
-
-      </section>
+      </div>
     </div>
   );
 };
