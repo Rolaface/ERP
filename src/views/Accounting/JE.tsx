@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import DeleteModal from "../../components/actionModal/DeleteModal";
 
-// Assuming this triggers your global modal store
 import { JournalEntriesModal } from "../../store/modalStore";
 
 import { 
@@ -26,7 +25,7 @@ import {
   deleteJournalEntryById, 
   updateJournalEntryStatus 
 } from "../../api/Accounting/JournalEntryApi";
-import { showApiError, showSuccess } from "../../utils/alert";
+import { showApiError, showSuccess, showConfirm } from "../../utils/alert";
 
 export interface JETabProps {
   searchTerm: string;
@@ -118,7 +117,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   
-  const navigate = useNavigate();
+ 
 
   // --- Pagination States ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -174,7 +173,15 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   };
 
   const handleCancelEntry = async (id: string) => {
-    if (!window.confirm(`Are you sure you want to cancel entry ${id}?`)) return;
+   const isConfirmed = await showConfirm(
+      `Are you sure you want to cancel entry ${id}?`,
+      { 
+        title: "Cancel Entry", 
+        confirmButtonText: "Yes, Cancel", 
+        confirmButtonColor: "#ef4444" 
+      }
+    );
+    if (!isConfirmed) return;
 
     try {
       setLoading(true);
@@ -236,6 +243,18 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       </div>
     );
   }
+const formatDate = (date?: string | Date) => {
+  if (!date) return "";
+
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
 
   const jeColumns: Column<JournalEntry>[] = [
     {
@@ -254,7 +273,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       header: "Posting Date",
       align: "left",
       render: (row: JournalEntry) => (
-        <span className="text-xs text-muted">{row.posting_date || "—"}</span>
+        <span className="text-xs text-muted">{formatDate(row.posting_date) || "—"}</span>
       ),
     },
     {

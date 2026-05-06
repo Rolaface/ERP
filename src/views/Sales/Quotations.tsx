@@ -14,9 +14,6 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
-import InvoiceDetailsModal, {
-  type InvoiceDetails,
-} from "./InvoiceDetailsModal";
 import type { Column } from "../../components/ui/Table/type";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";

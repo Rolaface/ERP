@@ -1,6 +1,26 @@
-
-
 import type { TermSection } from "../termsAndCondition";
+
+export interface RFQListItem {
+  name: string;
+  transaction_date: string;
+  schedule_date: string;
+  status: string;
+}
+
+export interface RFQPagination {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
+export interface RFQListResponse {
+  data: RFQListItem[];
+  pagination: RFQPagination;
+}
+
 
 export type SupplierRow = {
   supplier: string;       

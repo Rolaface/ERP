@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Trash2, Copy, User, Mail, Phone } from "lucide-react";
 import type {
   ItemRow,
@@ -105,8 +105,6 @@ export const DetailsTab = ({
   const symbol = getCurrencySymbol();
 
   const [page, setPage] = useState(0);
-
-  // Keep page in range when items shrink
   useEffect(() => {
     const maxPage = Math.max(0, Math.ceil(items.length / ITEMS_PER_PAGE) - 1);
     if (page > maxPage) setPage(maxPage);
@@ -117,7 +115,6 @@ export const DetailsTab = ({
     (page + 1) * ITEMS_PER_PAGE,
   );
 
-  // ── Bulk-change helpers ────────────────────────────────────────────────────
 
   const handleTopRequiredByChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -133,15 +130,11 @@ export const DetailsTab = ({
     onBulkItemChange?.("warehouse", e.target.value);
   };
 
-  // ── Bridge to ItemTable's action/ui interface ──────────────────────────────
-
   const tableActions: ItemTableActions = {
-    // ItemTable calls handleItemChange(absoluteIndex, event)
     handleItemChange: (idx, e) => onItemChange(e, idx),
     removeItem: onRemoveItem,
     addItem: onAddItem,
     duplicateItem: onDuplicateItem,
-    // updateItemDirectly not needed for PO rows
   };
 
   const tableUI: ItemTableUI = {
@@ -150,7 +143,6 @@ export const DetailsTab = ({
     itemCount: items.length,
   };
 
-  // ── PO row renderer ────────────────────────────────────────────────────────
 
   const renderPORow = (
     it: ItemRow,
@@ -199,7 +191,7 @@ export const DetailsTab = ({
           </Tooltip>
         </td> */}
 
-  
+
         {/* Packing */}
         <td className="px-2 py-[2px]">
           <div className="flex items-center justify-center w-[70px]">
@@ -289,7 +281,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="quantity"
-              value={it.quantity}
+              placeholder="1"
+              value={it.quantity === 1 ? "" : it.quantity}
               onChange={(e) => onItemChange(e, i)}
               className="w-[80px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -317,7 +310,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="rate"
-              value={it.rate}
+              placeholder="0"
+              value={it.rate === 0 ? "" : it.rate}
               onChange={(e) => onItemChange(e, i)}
               className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -330,7 +324,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="vatRate"
-              value={it.vatRate}
+              value={it.vatRate === 0 ? "" : it.vatRate}
+              placeholder="0"
               onChange={(e) => onItemChange(e, i)}
               disabled
               className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
@@ -341,12 +336,12 @@ export const DetailsTab = ({
         {/* VAT Code */}
         <td className="px-2 py-1">
           <Tooltip
-    content={
-      it.taxTypes?.length
-        ? `Tax Types: ${it.taxTypes.join(", ")}`
-        : "No Tax Types"
-    }
-  >
+            content={
+              it.taxTypes?.length
+                ? `Tax Types: ${it.taxTypes.join(", ")}`
+                : "No Tax Types"
+            }
+          >
             <input
               name="vatCd"
               value={it.vatCd || ""}
@@ -506,12 +501,11 @@ export const DetailsTab = ({
             </Tooltip>
           </div>
         </div>
-     
+
       </div>
 
       {/* ── Main body ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-[4fr_1fr] gap-4">
-        {/* Generic ItemTable with PO-specific columns */}
         <ItemTable
           title="Order Items"
           paginatedItems={paginatedItems}

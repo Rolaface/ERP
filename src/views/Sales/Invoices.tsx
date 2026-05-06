@@ -462,14 +462,26 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   };
 
-  // ── PDF preview modal close (kept — do not remove)
+
   const handleClosePdf = () => {
     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
     setPdfUrl(null);
     setSelectedInvoice(null);
     setPdfOpen(false);
   };
+const formatDate = (date: string | Date) => {
+  if (!date) return "";
 
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  // Date object — use local methods
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
   const handleRowStatusChange = async (
     invoiceNumber: string,
     status: InvoiceStatus,
@@ -502,7 +514,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         return;
       }
 
-      // ✅ WHY THIS KOLAVERI DI?
+
       const updatedStatus = res.message.data?.status;
 
       setInvoices((prev) =>
@@ -562,41 +574,25 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       {
         key: "invoiceNumber",
         header: "Invoice No",
-        align: "center",
+        align: "left",
         sortable: true,
-        render: (inv) => {
-          const id = inv.invoiceNumber || "";
-          const shortId = id ? `--${id.slice(-4)}` : "-";
-
-          const handleCopy = (e: React.MouseEvent) => {
-            e.stopPropagation();
-            navigator.clipboard.writeText(id);
-          };
-
-          return (
-            <div className="flex items-center justify-center gap-1 group">
-              <span className="font-mono text-sm">
-                {shortId}
-              </span>
-
-              <button
-                onClick={handleCopy}
-                className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-                title="Copy full Invoice ID"
-              >
-                <Copy size={14} />
-              </button>
-            </div>
-          );
-        },
-        tooltip: (inv) => inv.invoiceNumber,
+        render: (inv) => (
+          <div className="py-1.5">
+          <span className="block">
+            {inv.invoiceNumber}
+          </span>
+          </div>
+        ),
+        tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
       },
       {
         key: "invoiceType",
-        header: "Type",
+        header: "Tax Type",
         align: "center",
         render: (inv) => (
-          <span className="whitespace-nowrap">{inv.invoiceType}</span>
+             <div className="py-1.5">
+          <span className="block">{inv.invoiceType}</span>
+          </div>
         ),
         tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
       },
@@ -606,7 +602,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "left",
         sortable: true,
         render: (inv) => (
+             <div className="py-1.5">
           <span className="block font-medium">{inv.customerName}</span>
+          </div>
         ),
         tooltip: (inv) => `Customer: ${inv.customerName}`,
       },
@@ -615,9 +613,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Date",
         align: "center",
         render: (inv) => (
-          <span className="text-sm whitespace-nowrap">
-            {inv.dateOfInvoice.toLocaleDateString()}
+             <div className="py-1.5">
+          <span className="block">
+            {formatDate(inv.dateOfInvoice)}
           </span>
+          </div>
         ),
       },
       {
@@ -626,9 +626,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <span className="text-sm whitespace-nowrap">
-            {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
+             <div className="py-1.5">
+          <span className="block">
+            {inv.dueDate ? formatDate(inv.dueDate) : "—"}
           </span>
+          </div>
         ),
       },
       {
@@ -637,9 +639,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <span className="tabular-nums font-medium whitespace-nowrap">
+             <div className="py-1.5">
+          <span className="block whitespace-nowrap">
             {inv.total.toLocaleString()} {inv.currency}
           </span>
+          </div>
         ),
         tooltip: (inv) =>
           `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
@@ -650,18 +654,20 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <span className="tabular-nums font-medium whitespace-nowrap">
+             <div className="py-1.5">
+          <span className="block whitespace-nowrap">
             {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
           </span>
+          </div>
         ),
         tooltip: (inv) =>
-          `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency}`,
+          `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency} `,
       },
       {
         key: "invoiceStatus",
         header: "Status",
         align: "center",
-        render: (inv) => <StatusBadge status={inv.invoiceStatus} />,
+        render: (inv) =>  <div className="py-1.5"><StatusBadge status={inv.invoiceStatus} /></div>,
       },
       {
         key: "actions",

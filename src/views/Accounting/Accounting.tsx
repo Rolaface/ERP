@@ -1,16 +1,15 @@
 import React, { useState, Suspense, lazy, useCallback } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import {
-  FaBriefcase,
-  FaChartPie,
-  FaChartBar,
-  FaCalendar,
-  FaDollarSign,
-  FaFileInvoiceDollar,
-  FaMoneyCheckAlt,
-  FaWarehouse,
-  FaUniversity,
-} from "react-icons/fa";
+  BookOpen,
+  Scale,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  BarChart3,
+  FileBarChart,
+  Wallet,
+  Repeat 
+} from "lucide-react";
 import {
   AppPage,
   AppPageBody,
@@ -32,15 +31,54 @@ const Banking            = lazy(() => import("./BankingModule"));
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
+const iconProps = {
+  size: 16,
+  strokeWidth: 1.75,
+};
+
 const allTabs = [
-  { id: "gl",       label: "General Ledger", icon: <FaChartPie /> },
-  { id: "trial",    label: "Trial Balance",  icon: <FaChartBar /> },
-  { id: "ar",       label: "Receivables",    icon: <FaFileInvoiceDollar /> },
-  { id: "ap",       label: "Payables",       icon: <FaMoneyCheckAlt /> },
-  { id: "bank",     label: "Banking",        icon: <FaUniversity /> },
-  { id: "pl",       label: "Profit & Loss",  icon: <FaCalendar /> },
-  { id: "balance",  label: "Balance Sheet",  icon: <FaDollarSign /> },
-  { id: "cashflow", label: "Cash Flow",      icon: <FaBriefcase /> },
+  {
+    id: "gl",
+    label: "General Ledger",
+    icon: <BookOpen {...iconProps} />,
+  },
+  {
+    id: "trial",
+    label: "Trial Balance",
+    icon: <Scale {...iconProps} />,
+  },
+  {
+    id: "ar",
+    label: "Receivables",
+    icon: <ArrowDownCircle {...iconProps} />,
+  },
+  {
+    id: "ap",
+    label: "Payables",
+    icon: <ArrowUpCircle {...iconProps} />,
+  },
+
+  // {
+  //   id: "bank",
+  //   label: "Banking",
+  //   icon: <Landmark {...iconProps} />, 
+  // },
+
+  {
+    id: "pl",
+    label: "Profit & Loss",
+    icon: <BarChart3 {...iconProps} />,
+  },
+  {
+    id: "balance",
+    label: "Balance Sheet",
+    icon: <FileBarChart {...iconProps} />,
+  },
+  {
+    id: "cashflow",
+    label: "Cash Flow",
+    icon: <Repeat {...iconProps} />,
+  },
 ];
 
 const DEFAULT_TAB = "gl";
@@ -138,8 +176,8 @@ const AccountingModule: React.FC = () => {
     <AppPage>
       <AppPageHeader
         title="Accounting"
-        description="Core ledgers, reports, and finance operations in the shared ERP layout."
-        icon={<FaBriefcase />}
+        description="Handle ledgers, reporting, and finance operations in one workflow"
+        icon={<Wallet />}
       />
       <AppTabs tabs={allTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody>

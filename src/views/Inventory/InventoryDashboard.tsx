@@ -33,7 +33,8 @@ const InventoryDashboard: React.FC = () => {
     totalImportedItems: number;
   } | null>(null);
 
-  const chartsLoading = summaryLoading || !summaryData;
+  // const chartsLoading = summaryLoading || !summaryData;
+  const chartsLoading = summaryLoading || (!summaryData && !summaryError);
 
   const palette = useMemo(
     () => ({

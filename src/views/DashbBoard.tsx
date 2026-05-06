@@ -44,7 +44,8 @@ const Dashboard = () => {
     Array<{ name: string; revenue: number }>
   >([]);
 
-  const chartsLoading = summaryLoading || !summaryData;
+  // const chartsLoading = summaryLoading || !summaryData;
+  const chartsLoading = summaryLoading || (!summaryData && !summaryError);
 
   useEffect(() => {
     let mounted = true;
@@ -283,7 +284,7 @@ const Dashboard = () => {
                           labelParts.push(dateWithDay.format(d));
                         }
                       }
-                      return labelParts.join(' • ');
+                      return labelParts.join(' ï¿½ ');
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />

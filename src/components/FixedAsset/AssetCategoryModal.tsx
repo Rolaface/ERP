@@ -1,106 +1,66 @@
-import React, { useState, useMemo, useCallback } from "react";
-import { Tag, Settings, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Layers, Settings, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
+import { ModalInput } from "../ui/modal/modalComponent";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-import { showApiError, showValidationError } from "../../utils/alert";
-import type {  } from "../../types/company";
+import SearchSelect2 from "../ui/modal/SearchSelect";
+import {
+  useFALogic,
+  type AssetCategoryForm,
+  type FinanceBookRow,
+  type AccountRow,
+} from "../../hooks/useFALogic";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface FinanceBookRow {
-  id: string;
-  financeBook: string;
-  depreciationMethod: string;
-  frequencyOfDepreciation: string;
-  totalNumberOfDepreciations: string;
-  depreciationPostingDate: string;
-}
-
-interface AccountRow {
-  id: string;
-  company: string;
-  fixedAssetAccount: string;
-  accumulatedDepreciationAccount: string;
-  depreciationExpenseAccount: string;
-  capitalWorkInProgressAccount: string;
-}
-
-interface AssetCategoryForm {
-  assetCategoryName: string;
-  enableCapitalWorkInProgress: boolean;
-  nonDepreciableCategory: boolean;
-  financeBooks: FinanceBookRow[];
-  accounts: AccountRow[];
-}
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface AssetCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (data: AssetCategoryForm) => void;
+  onSubmit?: (data: AssetCategoryForm) => Promise<void>;
   categoryId?: string | number;
   modalId?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ROWS_PER_PAGE =4;
-
-// ─── Defaults ─────────────────────────────────────────────────────────────────
-
-const defaultFinanceBookRow = (): FinanceBookRow => ({
-  id: crypto.randomUUID(),
-  financeBook: "",
-  depreciationMethod: "",
-  frequencyOfDepreciation: "",
-  totalNumberOfDepreciations: "",
-  depreciationPostingDate: "",
-});
-
-const defaultAccountRow = (): AccountRow => ({
-  id: crypto.randomUUID(),
-  company: "",
-  fixedAssetAccount: "",
-  accumulatedDepreciationAccount: "",
-  depreciationExpenseAccount: "",
-  capitalWorkInProgressAccount: "",
-});
-
-const defaultForm = (): AssetCategoryForm => ({
-  assetCategoryName: "",
-  enableCapitalWorkInProgress: false,
-  nonDepreciableCategory: false,
-  financeBooks: [defaultFinanceBookRow()],
-  accounts: [defaultAccountRow()],
-});
+const ROWS_PER_PAGE = 4;
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 
-const SectionHeading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <h3 className="text-sm font-semibold text-main mb-3">{children}</h3>
-);
+const SectionHeading: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => <h3 className="text-sm font-semibold text-main mb-3">{children}</h3>;
 
 const Divider = () => <div className="border-t border-theme my-5" />;
 
-const FieldInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props) => (
-  <input
-    {...props}
-    className={`h-8 w-full px-3 text-xs rounded border border-theme bg-app text-main
-      placeholder:text-muted focus:outline-none focus:border-primary transition-colors
-      ${props.className ?? ""}`}
-  />
+// CellSearch — wraps SearchSelect2 for use inside table cells
+// Removes the label and tightens padding to fit table rows
+interface CellSearchProps {
+  value: string;
+  fetchOptions: (q: string) => Promise<{ label: string; value: string }[]>;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}
+
+const CellSearch: React.FC<CellSearchProps> = ({
+  value,
+  fetchOptions,
+  onChange,
+  placeholder = "Select...",
+}) => (
+  <div className="px-1 py-0.5">
+    <SearchSelect2
+      label="" // no label inside table cells
+      value={value}
+      fetchOptions={fetchOptions}
+      onChange={(val) => onChange(val)}
+      placeholder={placeholder}
+    />
+  </div>
 );
 
-const CellInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props) => (
-  <input
-    {...props}
-    className="w-full h-7 px-2 text-xs bg-transparent border border-transparent
-      focus:border-primary focus:bg-app rounded focus:outline-none transition-colors
-      placeholder:text-muted"
-  />
-);
-
-// ─── Pagination Controls ──────────────────────────────────────────────────────
+// ─── Pagination ───────────────────────────────────────────────────────────────
 
 interface PaginationProps {
   currentPage: number;
@@ -118,7 +78,6 @@ const TablePagination: React.FC<PaginationProps> = ({
   onNext,
 }) => {
   if (totalPages <= 1) return null;
-
   const startRow = (currentPage - 1) * ROWS_PER_PAGE + 1;
   const endRow = Math.min(currentPage * ROWS_PER_PAGE, totalRows);
 
@@ -136,8 +95,7 @@ const TablePagination: React.FC<PaginationProps> = ({
             text-muted hover:text-main hover:border-primary transition-colors
             disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <ChevronLeft size={11} />
-          Previous
+          <ChevronLeft size={11} /> Previous
         </button>
         <span className="text-[10px] text-muted px-1">
           {currentPage} / {totalPages}
@@ -150,43 +108,12 @@ const TablePagination: React.FC<PaginationProps> = ({
             text-muted hover:text-main hover:border-primary transition-colors
             disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Next
-          <ChevronRight size={11} />
+          Next <ChevronRight size={11} />
         </button>
       </div>
     </div>
   );
 };
-
-// ─── Finance Books columns ────────────────────────────────────────────────────
-
-const financeBookColumns: { key: keyof FinanceBookRow; label: string }[] = [
-  { key: "financeBook",                label: "Finance Book" },
-  { key: "depreciationMethod",         label: "Depreciation Method" },
-  { key: "frequencyOfDepreciation",    label: "Frequency (Months)" },
-  { key: "totalNumberOfDepreciations", label: "Total Depreciations" },
-  { key: "depreciationPostingDate",    label: "Posting Date" },
-];
-
-// ─── Accounts columns ─────────────────────────────────────────────────────────
-
-const accountColumns: { key: keyof AccountRow; label: string; required?: boolean }[] = [
-  { key: "company",                          label: "Company", required: true },
-  { key: "fixedAssetAccount",                label: "Fixed Asset Account" },
-  { key: "accumulatedDepreciationAccount",   label: "Accumulated Dep. Account" },
-  { key: "depreciationExpenseAccount",       label: "Dep. Expense Account" },
-  { key: "capitalWorkInProgressAccount",     label: "Capital Work in Progress Account" },
-];
-
-// ─── Validation ───────────────────────────────────────────────────────────────
-
-function validate(form: AssetCategoryForm): string | null {
-  if (!form.assetCategoryName.trim()) return "Asset Category Name is required.";
-  for (const row of form.accounts) {
-    if (!row.company.trim()) return "Company is required for all account rows.";
-  }
-  return null;
-}
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
@@ -198,91 +125,49 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
   modalId,
 }) => {
   const resolvedModalId =
-    modalId ||
-    (categoryId ? `asset-category-edit-${categoryId}` : `asset-category-create`);
+    modalId ??
+    (categoryId
+      ? `asset-category-edit-${categoryId}`
+      : `asset-category-create`);
 
-  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
-  const [form, setForm] = useState<AssetCategoryForm>(defaultForm);
-  const [internalSaving, setInternalSaving] = useState(false);
+  const { handleCloseWithConfirm } = useUnsavedChanges();
 
-  // ── Pagination state ────────────────────────────────────────
+  const {
+    form,
+    isSaving,
+    patch,
+    reset,
+    addFinanceRow,
+    removeFinanceRow,
+    changeFinanceRow,
+    addAccountRow,
+    removeAccountRow,
+    changeAccountRow,
+    handleSubmit,
+    // fetchOptions — passed to SearchSelect2, API called on focus/click
+    fetchFinanceBooks,
+    fetchFixedAssetAccounts,
+    fetchAccumulatedDepAccounts,
+    fetchDepExpenseAccounts,
+    fetchCWIPAccounts,
+    fetchDepreciationMethods,
+    fetchFrequencyOptions,
+    fetchPostingDateOptions,
+  } = useFALogic(isOpen, onSubmit, onClose);
+
+  // ── Pagination ──────────────────────────────────────────────────────────────
   const [financeBookPage, setFinanceBookPage] = useState(1);
   const [accountPage, setAccountPage] = useState(1);
 
-  // ── Patch helper ────────────────────────────────────────────
-  const patch = useCallback((p: Partial<AssetCategoryForm>) => {
-    setForm((prev) => ({ ...prev, ...p }));
-    markDirty();
-  }, [markDirty]);
+  const financeBookTotalPages = Math.max(
+    1,
+    Math.ceil(form.financeBooks.length / ROWS_PER_PAGE)
+  );
+  const accountTotalPages = Math.max(
+    1,
+    Math.ceil(form.accounts.length / ROWS_PER_PAGE)
+  );
 
-  const handleReset = useCallback(() => {
-    setForm(defaultForm());
-    setFinanceBookPage(1);
-    setAccountPage(1);
-    resetDirty();
-  }, [resetDirty]);
-
-  // ── Finance book row ops ────────────────────────────────────
-  const addFinanceRow = useCallback(() => {
-    setForm((p) => {
-      const updated = [...p.financeBooks, defaultFinanceBookRow()];
-      // Jump to the last page after adding
-      const newPage = Math.ceil(updated.length / ROWS_PER_PAGE);
-      setFinanceBookPage(newPage);
-      return { ...p, financeBooks: updated };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const removeFinanceRow = useCallback((id: string) => {
-    setForm((p) => {
-      const updated = p.financeBooks.filter((r) => r.id !== id);
-      // Clamp page if needed
-      const maxPage = Math.max(1, Math.ceil(updated.length / ROWS_PER_PAGE));
-      setFinanceBookPage((prev) => Math.min(prev, maxPage));
-      return { ...p, financeBooks: updated };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const changeFinanceRow = useCallback((id: string, field: keyof FinanceBookRow, value: string) => {
-    setForm((p) => ({
-      ...p,
-      financeBooks: p.financeBooks.map((r) => r.id === id ? { ...r, [field]: value } : r),
-    }));
-    markDirty();
-  }, [markDirty]);
-
-  // ── Account row ops ─────────────────────────────────────────
-  const addAccountRow = useCallback(() => {
-    setForm((p) => {
-      const updated = [...p.accounts, defaultAccountRow()];
-      const newPage = Math.ceil(updated.length / ROWS_PER_PAGE);
-      setAccountPage(newPage);
-      return { ...p, accounts: updated };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const removeAccountRow = useCallback((id: string) => {
-    setForm((p) => {
-      const updated = p.accounts.filter((r) => r.id !== id);
-      const maxPage = Math.max(1, Math.ceil(updated.length / ROWS_PER_PAGE));
-      setAccountPage((prev) => Math.min(prev, maxPage));
-      return { ...p, accounts: updated };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const changeAccountRow = useCallback((id: string, field: keyof AccountRow, value: string) => {
-    setForm((p) => ({
-      ...p,
-      accounts: p.accounts.map((r) => r.id === id ? { ...r, [field]: value } : r),
-    }));
-    markDirty();
-  }, [markDirty]);
-
-  // ── Paginated slices ────────────────────────────────────────
   const paginatedFinanceBooks = useMemo(() => {
     const start = (financeBookPage - 1) * ROWS_PER_PAGE;
     return form.financeBooks.slice(start, start + ROWS_PER_PAGE);
@@ -293,73 +178,97 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
     return form.accounts.slice(start, start + ROWS_PER_PAGE);
   }, [form.accounts, accountPage]);
 
-  const financeBookTotalPages = Math.max(1, Math.ceil(form.financeBooks.length / ROWS_PER_PAGE));
-  const accountTotalPages = Math.max(1, Math.ceil(form.accounts.length / ROWS_PER_PAGE));
+  // ── Row helpers with page auto-advance ─────────────────────────────────────
+  const handleAddFinanceRow = () => {
+    addFinanceRow();
+    setFinanceBookPage(
+      Math.ceil((form.financeBooks.length + 1) / ROWS_PER_PAGE)
+    );
+  };
 
-  // ── Submit ──────────────────────────────────────────────────
-  const handleSubmitForm = useCallback(async () => {
-    if (internalSaving) return;
-    const error = validate(form);
-    if (error) { showValidationError(error); return; }
+  const handleRemoveFinanceRow = (id: string) => {
+    removeFinanceRow(id);
+    const maxPage = Math.max(
+      1,
+      Math.ceil((form.financeBooks.length - 1) / ROWS_PER_PAGE)
+    );
+    setFinanceBookPage((p) => Math.min(p, maxPage));
+  };
 
-    setInternalSaving(true);
-    try {
-      resetDirty();
-      await onSubmit?.(form);
-      onClose();
-    } catch (err: any) {
-      showApiError(err);
-    } finally {
-      setInternalSaving(false);
-    }
-  }, [internalSaving, form, resetDirty, onSubmit, onClose]);
+  const handleAddAccountRow = () => {
+    addAccountRow();
+    setAccountPage(Math.ceil((form.accounts.length + 1) / ROWS_PER_PAGE));
+  };
 
-  // ── Footer ──────────────────────────────────────────────────
-  const footer = useMemo(() => (
+  const handleRemoveAccountRow = (id: string) => {
+    removeAccountRow(id);
+    const maxPage = Math.max(
+      1,
+      Math.ceil((form.accounts.length - 1) / ROWS_PER_PAGE)
+    );
+    setAccountPage((p) => Math.min(p, maxPage));
+  };
+
+  // ── Footer ──────────────────────────────────────────────────────────────────
+  const footer = (
     <>
-      <Button variant="secondary" onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}>
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+      >
         Cancel
       </Button>
       <div className="flex gap-2">
-        <Button variant="secondary" onClick={handleReset}>Reset</Button>
-        <Button variant="primary" onClick={handleSubmitForm} disabled={internalSaving}>
-          {internalSaving ? "Saving..." : "Submit"}
+        <Button variant="secondary" onClick={reset}>
+          Reset
+        </Button>
+        <Button variant="primary" onClick={handleSubmit} disabled={isSaving}>
+          {isSaving ? "Saving..." : "Submit"}
         </Button>
       </div>
     </>
-  ), [handleCloseWithConfirm, onClose, resolvedModalId, handleReset, handleSubmitForm, internalSaving]);
+  );
 
-  // ── Body ────────────────────────────────────────────────────
+  // ── Body ────────────────────────────────────────────────────────────────────
   const body = (
-    <div className="p-6 flex flex-col gap-0" onChange={() => markDirty()}>
+    <div className="p-6 flex flex-col gap-0">
 
-      {/* Asset Category Name + checkboxes */}
+      {/* ── Header fields ─────────────────────────────────────────────────── */}
       <div className="flex items-start gap-5 mb-5">
-        <div className="flex flex-col gap-1 w-80 shrink-0">
-          <label className="text-xs font-medium text-muted">
-            Asset Category Name <span className="text-red-500">*</span>
-          </label>
-          <FieldInput
+        {/* Asset Category Name */}
+        <div className="w-80 shrink-0">
+          <ModalInput
+            label="Asset Category Name"
+            name="assetCategoryName"
             value={form.assetCategoryName}
             onChange={(e) => patch({ assetCategoryName: e.target.value })}
             placeholder="Enter asset category name"
+            required
           />
         </div>
+
+        {/* Checkboxes */}
         <div className="flex flex-col gap-2 pt-5">
-          <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={form.enableCapitalWorkInProgress}
-              onChange={(e) => patch({ enableCapitalWorkInProgress: e.target.checked })}
+              onChange={(e) =>
+                patch({ enableCapitalWorkInProgress: e.target.checked })
+              }
               className="w-4 h-4 accent-primary rounded"
             />
-            <span className="text-xs text-main">Enable Capital Work in Progress Accounting</span>
+            <span className="text-xs text-main">
+              Enable Capital Work in Progress Accounting
+            </span>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={form.nonDepreciableCategory}
-              onChange={(e) => patch({ nonDepreciableCategory: e.target.checked })}
+              onChange={(e) =>
+                patch({ nonDepreciableCategory: e.target.checked })
+              }
               className="w-4 h-4 accent-primary rounded"
             />
             <span className="text-xs text-main">Non Depreciable Category</span>
@@ -367,21 +276,22 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
         </div>
       </div>
 
-      <Divider />
 
-      {/* Finance Book Detail */}
-      <div className="mb-5">
+
+
+      {/* <div className="mb-5">
         <SectionHeading>Finance Book Detail</SectionHeading>
 
-
-        <div className="rounded border border-theme mb-2">
-          <table className="w-full text-xs border-collapse table-fixed">
+        <div className="rounded border border-theme mb-2 overflow-x-auto">
+          <table className="w-full text-xs border-collapse min-w-[700px]">
             <colgroup>
               <col style={{ width: "28px" }} />
               <col style={{ width: "32px" }} />
-              {financeBookColumns.map((col) => (
-                <col key={col.key} />
-              ))}
+              <col /> 
+              <col /> 
+              <col style={{ width: "120px" }} /> 
+              <col style={{ width: "120px" }} /> 
+              <col style={{ width: "140px" }} /> 
               <col style={{ width: "32px" }} />
             </colgroup>
             <thead>
@@ -389,12 +299,24 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
                 <th className="p-2 border-b border-theme">
                   <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
                 </th>
-                <th className="p-2 border-b border-theme text-left font-medium text-muted">No.</th>
-                {financeBookColumns.map((col) => (
-                  <th key={col.key} className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
-                    {col.label}
-                  </th>
-                ))}
+                <th className="p-2 border-b border-theme text-left font-medium text-muted">
+                  No.
+                </th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
+                  Finance Book
+                </th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
+                  Depreciation Method
+                </th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
+                  Frequency (Months)
+                </th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
+                  Total Depreciations
+                </th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
+                  Posting Date
+                </th>
                 <th className="p-2 border-b border-theme">
                   <Settings size={12} className="text-muted mx-auto" />
                 </th>
@@ -408,20 +330,88 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
                     <td className="p-2 border-b border-theme text-center">
                       <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
                     </td>
-                    <td className="p-2 border-b border-theme text-muted text-center">{globalIdx + 1}</td>
-                    {financeBookColumns.map((col) => (
-                      <td key={col.key} className="border-b border-theme">
-                        <CellInput
-                          value={row[col.key]}
-                          placeholder=""
-                          onChange={(e) => changeFinanceRow(row.id, col.key, e.target.value)}
-                        />
-                      </td>
-                    ))}
+                    <td className="p-2 border-b border-theme text-muted text-center">
+                      {globalIdx + 1}
+                    </td>
+
+                    
+                    <td className="border-b border-theme">
+                      <CellSearch
+                        value={row.financeBook}
+                        fetchOptions={fetchFinanceBooks}
+                        onChange={(v) =>
+                          changeFinanceRow(row.id, "financeBook", v)
+                        }
+                        placeholder="Select finance book..."
+                      />
+                    </td>
+
+                   
+                    <td className="border-b border-theme">
+                      <CellSearch
+                        value={row.depreciationMethod}
+                        fetchOptions={fetchDepreciationMethods}
+                        onChange={(v) =>
+                          changeFinanceRow(row.id, "depreciationMethod", v)
+                        }
+                        placeholder="Select method..."
+                      />
+                    </td>
+
+                   
+                    <td className="border-b border-theme">
+                      <CellSearch
+                        value={row.frequencyOfDepreciation}
+                        fetchOptions={fetchFrequencyOptions}
+                        onChange={(v) =>
+                          changeFinanceRow(
+                            row.id,
+                            "frequencyOfDepreciation",
+                            v
+                          )
+                        }
+                        placeholder="Months..."
+                      />
+                    </td>
+
+                    
+                    <td className="border-b border-theme px-1 py-0.5">
+                      <ModalInput
+                        label=""
+                        name="totalNumberOfDepreciations"
+                        type="number"
+                        value={row.totalNumberOfDepreciations}
+                        placeholder="0"
+                        onChange={(e) =>
+                          changeFinanceRow(
+                            row.id,
+                            "totalNumberOfDepreciations",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </td>
+
+                  
+                    <td className="border-b border-theme">
+                      <CellSearch
+                        value={row.depreciationPostingDate}
+                        fetchOptions={fetchPostingDateOptions}
+                        onChange={(v) =>
+                          changeFinanceRow(
+                            row.id,
+                            "depreciationPostingDate",
+                            v
+                          )
+                        }
+                        placeholder="Select date..."
+                      />
+                    </td>
+
                     <td className="p-2 border-b border-theme text-center">
                       <button
                         type="button"
-                        onClick={() => removeFinanceRow(row.id)}
+                        onClick={() => handleRemoveFinanceRow(row.id)}
                         className="text-red-500 hover:text-red-700 transition-colors"
                         title="Delete row"
                       >
@@ -440,28 +430,33 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
           totalPages={financeBookTotalPages}
           totalRows={form.financeBooks.length}
           onPrev={() => setFinanceBookPage((p) => Math.max(1, p - 1))}
-          onNext={() => setFinanceBookPage((p) => Math.min(financeBookTotalPages, p + 1))}
+          onNext={() =>
+            setFinanceBookPage((p) => Math.min(financeBookTotalPages, p + 1))
+          }
         />
 
         <div className="mt-3">
-          <Button variant="secondary" onClick={addFinanceRow}>Add row</Button>
+          <Button variant="secondary" onClick={handleAddFinanceRow}>
+            Add row
+          </Button>
         </div>
-      </div>
+      </div> */}
 
-      <Divider />
 
-      {/* Accounts */}
+
+      {/* ── Accounts ──────────────────────────────────────────────────────── */}
       <div>
         <SectionHeading>Accounts</SectionHeading>
 
-        <div className="rounded border border-theme mb-2">
+        <div className="rounded border border-theme mb-2 overflow-x-auto">
           <table className="w-full text-xs border-collapse table-fixed">
             <colgroup>
               <col style={{ width: "28px" }} />
               <col style={{ width: "32px" }} />
-              {accountColumns.map((col) => (
-                <col key={col.key} />
-              ))}
+              <col style={{ width: "150px" }} />
+              <col style={{ width: "150px" }} />
+              <col style={{ width: "150px" }} />
+              <col style={{ width: "150px" }} />
               <col style={{ width: "32px" }} />
             </colgroup>
             <thead>
@@ -469,13 +464,21 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
                 <th className="p-2 border-b border-theme">
                   <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
                 </th>
-                <th className="p-2 border-b border-theme text-left font-medium text-muted">No.</th>
-                {accountColumns.map((col) => (
-                  <th key={col.key} className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
-                    {col.label}
-                    {col.required && <span className="text-red-500 ml-0.5">*</span>}
-                  </th>
-                ))}
+                <th className="p-2 border-b border-theme text-left font-medium text-muted">
+                  No.
+                </th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
+                  Fixed Asset Account
+                </th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
+                  Accumulated Dep. Account
+                </th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
+                  Dep. Expense Account
+                </th>
+                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
+                  Capital Work in Progress Account
+                </th>
                 <th className="p-2 border-b border-theme">
                   <Settings size={12} className="text-muted mx-auto" />
                 </th>
@@ -489,23 +492,74 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
                     <td className="p-2 border-b border-theme text-center">
                       <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
                     </td>
-                    <td className="p-2 border-b border-theme text-muted text-center">{globalIdx + 1}</td>
-                    {accountColumns.map((col) => (
-                      <td
-                        key={col.key}
-                        className={`border-b border-theme ${col.key === "company" ? "font-semibold" : ""}`}
-                      >
-                        <CellInput
-                          value={row[col.key]}
-                          placeholder=""
-                          onChange={(e) => changeAccountRow(row.id, col.key, e.target.value)}
-                        />
-                      </td>
-                    ))}
+                    <td className="p-2 border-b border-theme text-muted text-center">
+                      {globalIdx + 1}
+                    </td>
+
+                    {/* Fixed Asset Account — API call on focus */}
+                    <td className="border-b border-theme">
+                      <CellSearch
+                        value={row.fixedAssetAccount}
+                        fetchOptions={fetchFixedAssetAccounts}
+                        onChange={(v) =>
+                          changeAccountRow(row.id, "fixedAssetAccount", v)
+                        }
+                        placeholder="Select account..."
+                      />
+                    </td>
+
+                    {/* Accumulated Depreciation Account */}
+                    <td className="border-b border-theme">
+                      <CellSearch
+                        value={row.accumulatedDepreciationAccount}
+                        fetchOptions={fetchAccumulatedDepAccounts}
+                        onChange={(v) =>
+                          changeAccountRow(
+                            row.id,
+                            "accumulatedDepreciationAccount",
+                            v
+                          )
+                        }
+                        placeholder="Select account..."
+                      />
+                    </td>
+
+                    {/* Depreciation Expense Account */}
+                    <td className="border-b border-theme">
+                      <CellSearch
+                        value={row.depreciationExpenseAccount}
+                        fetchOptions={fetchDepExpenseAccounts}
+                        onChange={(v) =>
+                          changeAccountRow(
+                            row.id,
+                            "depreciationExpenseAccount",
+                            v
+                          )
+                        }
+                        placeholder="Select account..."
+                      />
+                    </td>
+
+                    {/* CWIP Account */}
+                    <td className="border-b border-theme">
+                      <CellSearch
+                        value={row.capitalWorkInProgressAccount}
+                        fetchOptions={fetchCWIPAccounts}
+                        onChange={(v) =>
+                          changeAccountRow(
+                            row.id,
+                            "capitalWorkInProgressAccount",
+                            v
+                          )
+                        }
+                        placeholder="Select account..."
+                      />
+                    </td>
+
                     <td className="p-2 border-b border-theme text-center">
                       <button
                         type="button"
-                        onClick={() => removeAccountRow(row.id)}
+                        onClick={() => handleRemoveAccountRow(row.id)}
                         className="text-red-500 hover:text-red-700 transition-colors"
                         title="Delete row"
                       >
@@ -524,14 +578,17 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
           totalPages={accountTotalPages}
           totalRows={form.accounts.length}
           onPrev={() => setAccountPage((p) => Math.max(1, p - 1))}
-          onNext={() => setAccountPage((p) => Math.min(accountTotalPages, p + 1))}
+          onNext={() =>
+            setAccountPage((p) => Math.min(accountTotalPages, p + 1))
+          }
         />
 
         <div className="mt-3">
-          <Button variant="secondary" onClick={addAccountRow}>Add row</Button>
+          <Button variant="secondary" onClick={handleAddAccountRow}>
+            Add row
+          </Button>
         </div>
       </div>
-
     </div>
   );
 
@@ -540,16 +597,14 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={categoryId ? "Edit Asset Category" : "New Asset Category"}
+      title={categoryId ? "Edit Asset Category" : "Create Asset Category"}
       subtitle="Create and manage asset categories"
-      icon={Tag}
+      icon={Layers}
       customWidth="60vw"
-      height="93vh"
+      height="80vh"
       footer={footer}
     >
-      <section className="overflow-y-auto h-full">
-        {body}
-      </section>
+      <section className="overflow-y-auto h-full">{body}</section>
     </MinimizableModal>
   );
 };

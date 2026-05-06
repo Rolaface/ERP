@@ -267,6 +267,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
       header: "Warehouse Name",
       align: "left",
       render: (row) => (
+        <div className="py-1.5">
         <span
           className={
             row.is_group ? "font-semibold text-main" : "font-normal text-main"
@@ -274,20 +275,27 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
         >
           {row.warehouse_name}
         </span>
+        </div>
       ),
     },
     {
       key: "name",
       header: "ID",
       align: "left",
-      render: (row) => <span className="text-xs text-muted">{row.name}</span>,
+      render: (row) => (
+        <div className="py-1.5">
+          <span className="text-xs text-muted">{row.name}</span>
+        </div>
+      ),
     },
     {
       key: "company",
       header: "Company",
       align: "left",
       render: (row) => (
-        <span className="text-xs text-muted">{row.company}</span>
+        <div className="py-1.5">
+          <span className="text-xs text-muted">{row.company}</span>
+        </div>
       ),
     },
     {
@@ -298,9 +306,11 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
         if (row.bin_count === 0)
           return <span className="text-muted text-xs">—</span>;
         return (
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {row.bin_count} Bins
-          </code>
+          <div className="py-1.5">
+            <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+              {row.bin_count} Bins
+            </code>
+          </div>
         );
       },
     },
@@ -378,7 +388,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
           >
             <Plus size={13} />
-            New Warehouse
+            Add Warehouse
           </button>
         }
       />

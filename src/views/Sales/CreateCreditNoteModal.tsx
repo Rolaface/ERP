@@ -1,62 +1,162 @@
-import React, { useState } from "react";
+import React, { useMemo, useRef } from "react";
+import { ArrowDownLeft,FileMinus} from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
-import CreditNoteInvoiceLikeForm from "./CreditNoteForm";
-import { FileMinus } from "lucide-react";
 import { Button } from "../../components/ui/modal/formComponent";
+import { CreditNoteDetailsTab } from "./CreditNoteDetailsTab";
+import { useCreditNoteForm } from "../../hooks/useCreditNoteForm";
 
-interface Props {
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const FORM_ID = "credit-note-form";
+
+// ─── Props ────────────────────────────────────────────────────────────────────
+
+interface CreateCreditNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (payload: any) => void;
-  invoiceId: string;
+  onSubmit?: (data: any) => void;
+  initialData?: any;
+  isEdit?: boolean;
   modalId?: string;
 }
 
-const CreateCreditNoteModal: React.FC<Props> = ({
+// ─── Component ────────────────────────────────────────────────────────────────
+
+const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  invoiceId,
   modalId,
+  initialData,
+  isEdit = false,
 }) => {
-  const [saving, setSaving] = useState(false);
-  const resolvedModalId = modalId || `credit-note-create-${Date.now()}`;
+  // Stable modal ID — computed once per mount, same strategy as Asset modal
+  const resolvedModalId = useRef(
+    modalId ??
+      (isEdit && initialData?.name
+        ? `credit-note-edit-${initialData.name}-${Date.now()}`
+        : `credit-note-create-${Date.now()}`),
+  ).current;
 
-  const footerContent = (
-    <>
-      <Button variant="secondary" onClick={onClose} type="button">
-        Cancel
-      </Button>
+  const {
+    form,
+    saving,
+    invoiceLoading,
+    grandTotal,
+    fetchInvoiceOptions,
+    handleInvoiceSelect,
+    handleItemChange,
+    handleWarehouseDefault,
+    removeItem,
+    toggleUpdateStock,
+    reset,
+    handleSubmit,
+    handleCloseWithConfirm, // ← from useUnsavedChanges inside the hook
+  } = useCreditNoteForm(onSubmit, onClose, initialData, isEdit);
 
-      <Button
-        variant="primary"
-        type="submit"
-        form="credit-note-form"
-        disabled={saving}
-      >
-        {saving ? "Saving..." : "Create Credit Note"}
-      </Button>
-    </>
+  // ── Close handler — asks for confirmation when dirty ────────────────────
+  const handleClose = () => handleCloseWithConfirm(onClose, resolvedModalId);
+
+  // ── Footer ───────────────────────────────────────────────────────────────
+
+  const footer = useMemo(
+    () => (
+      <>
+        <Button variant="secondary" type="button" onClick={handleClose}>
+          Cancel
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={reset}
+          >
+            Reset
+          </Button>
+          <Button
+            variant="primary"
+            type="submit"
+            form={FORM_ID}
+            disabled={saving}
+          >
+            {saving
+              ? "Saving..."
+              : isEdit
+                ? "Update Credit Note"
+                : "Create Credit Note"}
+          </Button>
+        </div>
+      </>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [saving, isEdit],
   );
+
+  // ── Tab content ──────────────────────────────────────────────────────────
+
+  const tabContent = useMemo(
+    () => (
+      <CreditNoteDetailsTab
+        form={form}
+        invoiceLoading={invoiceLoading}
+        grandTotal={grandTotal}
+        fetchInvoiceOptions={fetchInvoiceOptions}
+        onInvoiceSelect={handleInvoiceSelect}
+        onItemChange={handleItemChange}
+        onWarehouseDefault={handleWarehouseDefault}
+        onRemoveItem={removeItem}
+        onToggleUpdateStock={toggleUpdateStock}
+      />
+    ),
+    [
+      form,
+      invoiceLoading,
+      grandTotal,
+      fetchInvoiceOptions,
+      handleInvoiceSelect,
+      handleItemChange,
+      handleWarehouseDefault,
+      removeItem,
+      toggleUpdateStock,
+    ],
+  );
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={onClose}
-      title="Create Credit Note"
-      subtitle="Sales Invoice Adjustment"
-      footer={footerContent}
+      onClose={handleClose} // ← guarded close
+      title={isEdit ? "Edit Credit Note" : "Create Credit Note"}
+      subtitle="Create and manage credit notes"
       icon={FileMinus}
+      footer={footer}
       maxWidth="6xl"
       height="82vh"
     >
-      <CreditNoteInvoiceLikeForm
-        onSubmit={onSubmit}
-        invoiceId={invoiceId}
-        saving={saving}
-        setSaving={setSaving}
-      />
+      <form
+        id={FORM_ID}
+        onSubmit={handleSubmit}
+        className="h-full flex flex-col"
+      >
+        {/* ── Tab bar ── */}
+        <div className="bg-app border-b border-theme px-8 shrink-0">
+          <div className="flex gap-8">
+            <button
+              type="button"
+              className="py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all text-primary border-b-[3px] border-primary"
+            >
+              Details
+            </button>
+          </div>
+        </div>
+
+        {/* ── Tab content ── */}
+        <section className="flex-1 overflow-y-auto">
+          {tabContent}
+        </section>
+      </form>
     </MinimizableModal>
   );
 };

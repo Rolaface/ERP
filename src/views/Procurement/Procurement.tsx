@@ -2,22 +2,25 @@ import React, { Suspense, lazy, useState, useMemo, useCallback } from "react";
 import { useOutletContext, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import ApprovalModal from "../../components/procurement/ApprovalModal";
 import {
-  FaClipboardList,
-  FaCheckCircle,
-  FaShoppingBag,
-  FaTachometerAlt,
-  FaFileSignature,
-  FaTruckLoading,
-  FaLandmark,
-  FaCreditCard,
-} from "react-icons/fa";
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  FileText,
+  ClipboardList,
+  CheckCircle2,
+  Receipt,
+  FileMinus,
+  BarChart3,
+  ShoppingBag
+} from "lucide-react";
 import {
   AppPage,
   AppPageBody,
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
-import AppSkeleton from "../../components/ui/AppSkeleton";
+import DebitNotesTable from "../Sales/DebitNotesTable";
+
 
 const RFQsTable = lazy(() => import("./Rfqs"));
 const PurchaseOrdersTable = lazy(() => import("./PurchaseOrders"));
@@ -43,17 +46,58 @@ type OutletContextType = {
   openPOEdit: (poId: string | number) => void;
 };
 
-const procurementTabs = [
-  { id: "procurementdashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
-  { id: "supplier", label: "Supplier Management", icon: <FaLandmark /> },
-  { id: "payments", label: "Payments", icon: <FaCreditCard /> },
-  { id: "rfqs", label: "RFQs", icon: <FaFileSignature /> },
-  { id: "orders", label: "Purchase Orders", icon: <FaClipboardList /> },
-  { id: "approvals", label: "Approvals", icon: <FaCheckCircle /> },
-  { id: "purchase", label: "Purchase Invoice", icon: <FaTruckLoading /> },
-  { id: "purchaseAnalytics", label: "Purchase Analytics", icon: <FaTruckLoading /> },
-];
+const iconProps = {
+  size: 16,
+  strokeWidth: 1.75,
+};
 
+const procurementTabs = [
+  {
+    id: "procurementdashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard {...iconProps} />,
+  },
+  {
+    id: "supplier",
+    label: "Supplier Management",
+    icon: <Users {...iconProps} />, 
+  },
+  {
+    id: "payments",
+    label: "Payments",
+    icon: <CreditCard {...iconProps} />,
+  },
+  {
+    id: "rfqs",
+    label: "RFQs",
+    icon: <FileText {...iconProps} />, 
+  },
+  {
+    id: "orders",
+    label: "Purchase Orders",
+    icon: <ClipboardList {...iconProps} />,
+  },
+  // {
+  //   id: "approvals",
+  //   label: "Approvals",
+  //   icon: <CheckCircle2 {...iconProps} />,
+  // },
+  {
+    id: "purchase",
+    label: "Purchase Invoice",
+    icon: <Receipt {...iconProps} />,
+  },
+  {
+    id: "debitNotes",
+    label: "Debit Notes",
+    icon: <FileMinus {...iconProps} />, 
+  },
+  {
+    id: "purchaseAnalytics",
+    label: "Purchase Analytics",
+    icon: <BarChart3 {...iconProps} />,
+  },
+];
 const DEFAULT_TAB = "procurementdashboard";
 
 const Procurement: React.FC = () => {
@@ -84,7 +128,7 @@ const Procurement: React.FC = () => {
     else if (activeTab === "invoicematching") setShowInvoiceModal(true);
   }, [activeTab, openSupplierCreate, openPOCreate]);
 
-  // Stable tab components - NO remounting on tab switch
+
   const tabComponents = useMemo(() => ({
     procurementdashboard: <Dashboard />,
     supplier: <SupplierManagement onAdd={handleAdd} />,
@@ -94,6 +138,7 @@ const Procurement: React.FC = () => {
     purchase: <PurchaseInvoiceTable onAdd={handleAdd} />,
     payments: <Payments />,
     purchaseAnalytics: <PurchaseAnalytics />,
+    debitNotes: <DebitNotesTable/>
   }), [handleAdd]);
 
   const currentTabComponent = tabComponents[activeTab as keyof typeof tabComponents] || <Dashboard />;
@@ -102,8 +147,8 @@ const Procurement: React.FC = () => {
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title="Procurement"
-        description="Supplier operations, approvals, and purchasing analytics in one layout system."
-        icon={<FaShoppingBag />}
+        description="Manage the full procurement cycle—from RFQs and POs to payments."
+         icon={<ShoppingBag size={20} strokeWidth={1.75} />}
       />
       <AppTabs tabs={procurementTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody viewportLocked={isDashboardTab}>

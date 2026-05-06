@@ -328,10 +328,7 @@ export const usePurchaseOrderForm = ({
       hasLoadedRef.current = true
       const apiData = await getPurchaseOrderById(poId);
       const mapped = mapApiToUI(apiData);
-
       setForm(mapped);
-
-
       setAddressSelected((prev) => ({
         companyBilling: prev.companyBilling,
 

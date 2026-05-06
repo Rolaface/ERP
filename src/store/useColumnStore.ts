@@ -14,10 +14,13 @@ export const useColumnStore = create<ColumnState>()(
     (set, get) => ({
       columnPrefs: {},
 
-      getVisibleKeys: (tableId, allKeys) => {
-        const saved = get().columnPrefs[tableId];
-        return saved ?? allKeys;
-      },
+     getVisibleKeys: (tableId, allKeys) => {
+  const saved = get().columnPrefs[tableId];
+
+  if (saved && saved.length > 0) return saved;
+
+  return allKeys;
+},
 
       setVisibleKeys: (tableId, keys) => {
         set((state) => ({

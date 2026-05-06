@@ -1,5 +1,5 @@
 import React from "react";
-import { Building2, DollarSign, MapPin, FileText } from "lucide-react";
+import { Building2,Users, DollarSign, MapPin, FileText } from "lucide-react";
 import { SupplierInfoTab } from "./SupplierInfoTab";
 import { useSupplierForm } from "../../../hooks/useSupplierForm";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
@@ -103,13 +103,13 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={isEditMode ? "Edit Supplier" : "Add New Supplier"}
+      title={isEditMode ? "Edit Supplier" : "Create Supplier"}
       subtitle={
         isEditMode
           ? "Update supplier information"
           : "Fill in the details to create a new supplier"
       }
-      icon={Building2}
+      icon={Users}
       footer={footer}
       maxWidth="6xl"
       height="77vh"
@@ -163,7 +163,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     isEditMode={isEditMode}
     partyType="Supplier"
     partyName={form.supplierName || initialData?.supplierName || ""}
-    partyId={initialData?.id ? String(initialData.id) : undefined}  // ← ADD
+    partyId={initialData?.id ? String(initialData.id) : undefined}  
     currency={form.currency}
   />
 )}

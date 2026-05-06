@@ -1,7 +1,3 @@
-// ─── Stock Correction Modal ───────────────────────────────────────────────────
-// Sections: Item Info (with Warehouse + Date) · System Stock · Correction Details · Reason
-// Uses project CSS variables from index.css — fully theme-aware.
-
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import {
@@ -9,6 +5,7 @@ import {
   RotateCcw,
   ShieldCheck,
   Package,
+  Boxes,
   CheckCircle2,
   Loader2,
   ArrowUpCircle,
@@ -381,7 +378,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
                 border: "1px solid rgba(255,255,255,0.2)",
                 display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
               }}>
-                <Package size={17} style={{ color: "var(--table-head-text,#fff)" }} />
+                <Boxes size={17} style={{ color: "var(--table-head-text,#fff)" }} />
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: "var(--table-head-text,#fff)", letterSpacing: "-0.01em" }}>

@@ -308,7 +308,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   // ── Modal handlers
   const handleAddClick = () => {
     console.log("OPEN PURCHASE MODAL");
-    openPOEdit(0); // This will create a new PO (poId is undefined)
+    openPOEdit(0);
   };
 
   const handleEdit = (order: PurchaseOrder, e?: React.MouseEvent) => {
@@ -479,48 +479,44 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       showApiError(error);
     }
   };
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
+
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
 
   const columns: Column<PurchaseOrder>[] = [
     {
       key: "id",
       header: "PO ID",
-      align: "center",
-      render: (o) => {
-        const id = o.id || "";
-        const shortId = id ? `--${id.slice(-4)}` : "—";
-
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
-
-        return (
-          <div className="flex items-center justify-center gap-1 group">
-            <span className="font-mono text-sm">
-              {shortId}
-            </span>
-
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full PO ID"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
-      tooltip: (o) => o.id || "—",
+      align: "left",
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.id || "—"}
+          </span>
+        </div>
+      ),
     },
     {
       key: "supplier",
       header: "Supplier",
       align: "center",
       render: (o) => (
-        <span className="block">
-          {o.supplier || "—"}
-        </span>
+        <div className="py-1.5">
+          <span className="block">
+            {o.supplier || "—"}
+          </span>
+        </div>
       ),
       tooltip: (o) => o.supplier || "—",
     },
@@ -529,7 +525,11 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       header: "Date",
       align: "center",
       render: (o) => (
-        <span>{o.date || "—"}</span>
+        <div className="py-1.5">
+          <span className="block">
+            {o.date ? formatDate(o.date) : "—"}
+          </span>
+        </div>
       ),
       tooltip: (o) => o.date || "—",
     },
@@ -538,23 +538,33 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       header: "Amount",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {o.currency} {Number(o.amount || 0).toFixed(2)}
-        </code>
+        <div className="py-1.5">
+          <code className="inline-flex max-w-full rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+            {o.currency} {Number(o.amount || 0).toFixed(2)}
+          </code>
+        </div>
       ),
     },
     {
       key: "status",
       header: "Status",
       align: "center",
-      render: (o) => <StatusBadge status={o.status} />,
+      render: (o) => (
+        <div className="py-1.5">
+          <StatusBadge status={o.status} />
+        </div>
+      ),
     },
     {
       key: "deliveryDate",
       header: "Required By",
       align: "center",
       render: (o) => (
-        <span>{o.deliveryDate || "—"}</span>
+        <div className="py-1.5">
+          <span className="block">
+            {o.deliveryDate ? formatDate(o.deliveryDate) : "—"}
+          </span>
+        </div>
       ),
     },
     {
@@ -715,8 +725,6 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
           }}
         />
       )}
-
-
     </div>
   );
 };

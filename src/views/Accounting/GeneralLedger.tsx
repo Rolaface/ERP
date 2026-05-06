@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import COATab from "./COA";
 import JETab, { type JournalEntry } from "./JE";
-
+import { FolderTree, BookText } from "lucide-react";
 /*
    Types */
 type Account = {
@@ -45,23 +45,23 @@ const GeneralLedger: React.FC<Props> = ({
       <div className="flex gap-6 border-b border-[var(--border)] mb-6">
         <button
           onClick={() => setGlSubTab("chart")}
-          className={`pb-3 border-b-2 text-sm font-medium transition-colors ${
-            glSubTab === "chart"
+          className={`flex items-center gap-2 pb-3 border-b-2 text-sm font-medium transition-colors ${glSubTab === "chart"
               ? "text-primary border-current"
               : "text-muted hover:text-main border-transparent"
-          }`}
+            }`}
         >
-          Chart of Accounts
+          <FolderTree size={16} strokeWidth={1.75} />
+          <span>Chart of Accounts</span>
         </button>
         <button
           onClick={() => setGlSubTab("journal")}
-          className={`pb-3 border-b-2 text-sm font-medium transition-colors ${
-            glSubTab === "journal"
+          className={`flex items-center gap-2 pb-3 border-b-2 text-sm font-medium transition-colors ${glSubTab === "journal"
               ? "text-primary border-current"
               : "text-muted hover:text-main border-transparent"
-          }`}
+            }`}
         >
-          Journal Entries
+          <BookText size={16} strokeWidth={1.75} />
+          <span>Journal Entries</span>
         </button>
       </div>
 

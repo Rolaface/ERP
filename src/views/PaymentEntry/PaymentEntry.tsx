@@ -68,9 +68,7 @@ const PaymentEntry: React.FC = () => {
         partyName: p.partyName || "—",
         mode: p.paymentMode || "—",
         amount: Number(p.amount) || 0,
-        paymentDate: p.paymentDate
-          ? new Date(p.paymentDate).toLocaleDateString("en-IN")
-          : "-",
+        paymentDate: p.paymentDate || "-",
       }));
 
       setData(mapped);
@@ -94,19 +92,30 @@ const PaymentEntry: React.FC = () => {
     return () => clearTimeout(delay);
   }, [fetchPayments]);
 
-  /**
-   * TABLE COLUMNS
-   */
+  const formatDate = (date: string | Date) => {
+  if (!date) return "";
+
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  // Date object — use local methods
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
+  
   const columns: Column<PaymentRow>[] = [
     {
       key: "id",
-      header: "P.Id",
+      header: "P Id",
       render: (row) => row.id || "-",
     },
     {
       key: "paymentDate",
       header: "Payment Date",
-      render: (row) => row.paymentDate || "-",
+      render: (row) => row.paymentDate ? formatDate(row.paymentDate) : "-",
     },
     {
       key: "partyType",

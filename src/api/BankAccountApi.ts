@@ -188,7 +188,7 @@ export async function updateBankAccountStatus(
       payload
     );
 
-    const res = resp?.data?.message;
+    const res = resp?.data;
 
     if (res?.status_code !== 200) {
       throw new Error(res?.message || "Failed to update bank status");
@@ -367,8 +367,10 @@ export type PartyDetails = {
   partyLedgerAccount: string;
   partyName: string;
   partyAccountCurrency: string;
-  partyBankAccount: string;
-  companyBankAccount: string;
+  partyBankAccountId: string;      // id → payload
+  partyBankAccountName: string;    // name → UI display
+  companyBankAccountId: string;    // id → payload
+  companyBankAccountName: string;  // name → UI display
   companyLedgerAccount: string;
   companyLedgerCurrency: string;
   companyDefaultCurrency: string;
@@ -384,9 +386,9 @@ export async function getPartyDetails(
       Account.GetPartyDetails,
       { party, party_type }
     );
-    
-    const res = resp?.data?.message;   
-    
+
+    const res = resp?.data?.message;
+
     if (res?.status_code !== 201) {
       throw new Error(res?.message || "Failed to fetch party details");
     }
@@ -397,8 +399,10 @@ export async function getPartyDetails(
       partyLedgerAccount: d?.party_ledger_account ?? "",
       partyName: d?.party_name ?? "",
       partyAccountCurrency: d?.party_account_currency ?? "",
-      partyBankAccount: d?.party_bank_account ?? "",
-      companyBankAccount: d?.company_bank_account ?? "",
+      partyBankAccountId: d?.party?.id ?? "",           // id → payload
+      partyBankAccountName: d?.party?.name ?? "",        // name → UI display
+      companyBankAccountId: d?.company?.id ?? "",        // id → payload
+      companyBankAccountName: d?.company?.name ?? "",    // name → UI display
       companyLedgerAccount: d?.company_account_ledger ?? "",
       companyLedgerCurrency: d?.company_account_ledger_currency ?? "",
       companyDefaultCurrency: d?.company_default_currency ?? "",
@@ -415,7 +419,6 @@ export async function getPartyDetails(
 
 
 
-// ── Add type (exported for use in hooks + component) ─────────────────────────
 export type BankAccountOption = {
   label: string;
   value: string;
@@ -430,7 +433,7 @@ export async function getBankAccountOptions(filters: {
   party?: string;
   search?: string;
 }): Promise<BankAccountOption[]> {
-  console.log("STEP 6 👉 FINAL API PARAM:", {
+  console.log("API PARAM:", {
     party_type: filters.party_type,
     party: filters.party,
   });
@@ -450,10 +453,10 @@ export async function getBankAccountOptions(filters: {
     const raw: any[] = resp?.data?.message?.data?.bank_accounts ?? [];
 
     return raw
-      .filter((item) => item.isDisabled !== 1)  // exclude disabled accounts
+      .filter((item) => item.isDisabled !== 1)
       .map((item) => ({
         label: item.name,
-        value: item.name,
+        value: item.id,
         ledgerAccount: item.ledgerAccount ?? "",
         currency: item.currency ?? "",
       }));
@@ -605,19 +608,19 @@ export type CreatePaymentEntryResponse = {
   status_code: 201;
   status: "success";
   message: string;
-data: {
-  paymentId: string;
-  paymentType: string;
-  partyType: string;
-  partyName: string;
-  paidFrom: string;
-  paidTo: string;
-  paidAmount: number;
-  receivedAmount: number;
-  paymentDate: string;
-  referenceNo: string;
-  status: string;
-};
+  data: {
+    paymentId: string;
+    paymentType: string;
+    partyType: string;
+    partyName: string;
+    paidFrom: string;
+    paidTo: string;
+    paidAmount: number;
+    receivedAmount: number;
+    paymentDate: string;
+    referenceNo: string;
+    status: string;
+  };
 };
 
 export async function createPaymentEntry(

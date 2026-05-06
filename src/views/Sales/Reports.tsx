@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { getAllQuotations } from "../../api/quotationApi";
 import { getAllProformaInvoices } from "../../api/proformaInvoiceApi";
 import {
-  getAllCreditNotes,
-  getAllDebitNotes,
   getAllSalesInvoices,
 } from "../../api/salesApi";
+import { getAllCreditNotes } from "../../api/CreditNoteapi";
+import { getAllDebitNotes } from "../../api/DebitNoteapi";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";

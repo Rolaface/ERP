@@ -195,7 +195,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       setSelectedCustomer(fullCustomer);
       setViewMode("detail");
     } catch (error) {
-     
+
       showApiError(error);
     } finally {
       setCustLoading(false);
@@ -212,42 +212,23 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "id",
       header: "Customer ID",
       align: "left",
-      render: (customer) => {
-        const id = customer.id || "";
-        const shortId = id ? `--${id.slice(-4)}` : "-";
-
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
-
-        return (
-          <div className="flex items-center justify-start gap-1 group">
-            <span className="font-mono text-sm">
-              {shortId}
-            </span>
-
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full Customer ID"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
+      render: (customer) => (
+        <div className="py-1.5">
+          <span className="font-medium whitespace-nowrap">{customer.id}</span>
+        </div>
+      ),
       tooltip: (customer) => customer.id,
     },
     {
       key: "name",
       header: "Name",
       align: "left",
-      width: "280px",
       render: (customer) => (
-        <span className="cursor-pointer font-medium block">
-          {customer.name}
-        </span>
+        <div className="py-1.5">
+          <span className="cursor-pointer font-medium block">
+            {customer.name}
+          </span>
+        </div>
       ),
       tooltip: (customer) => customer.name,
     },
@@ -256,9 +237,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Type",
       align: "left",
       render: (customer) => (
-        <span className="text-muted whitespace-nowrap">
-          {customer.type ?? "-"}
-        </span>
+        <div className="py-1.5">
+          <span className="text-muted whitespace-nowrap">
+            {customer.type ?? "-"}
+          </span>
+        </div>
       ),
       tooltip: (customer) => customer.type ?? "-",
     },
@@ -267,9 +250,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "TPIN",
       align: "left",
       render: (customer) => (
-       <span className="font-mono text-sm tabular-nums whitespace-nowrap block text-left">
-          {customer.tpin}
-        </span>
+        <div className="py-1.5">
+          <span className="font-mono text-sm tabular-nums whitespace-nowrap block text-left">
+            {customer.tpin}
+          </span>
+        </div>
       ),
       tooltip: (customer) => customer.tpin,
     },
@@ -278,9 +263,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Tax Category",
       align: "left",
       render: (customer) => (
-        <span className="whitespace-nowrap">
-          {customer.customerTaxCategory ?? "-"}
-        </span>
+        <div className="py-1.5">
+          <span className="whitespace-nowrap">
+            {customer.customerTaxCategory ?? "-"}
+          </span>
+        </div>
       ),
       tooltip: (customer) => customer.customerTaxCategory ?? "-",
     },
@@ -289,9 +276,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Currency",
       align: "center",
       render: (customer) => (
+          <div className="py-1.5">
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main whitespace-nowrap block text-center">
           {customer.currency}
         </code>
+          </div>
       ),
       tooltip: (customer) => customer.currency,
     },
@@ -300,14 +289,16 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Status",
       align: "center",
       render: (customer) => (
-        <span
-          className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
-            ? "bg-green-100 text-green-700"
-            : "bg-gray-100 text-gray-600"
-            }`}
-        >
+        <div className="py-1.5">
+          <span
+            className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-gray-600"
+              }`}
+          >
           {customer.status}
         </span>
+        </div>
       ),
     },
     {

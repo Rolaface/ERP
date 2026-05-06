@@ -103,37 +103,55 @@ const Payments: React.FC = () => {
       showApiError(error);
     }
   };
+  const formatDate = (date: string | Date) => {
+  if (!date) return "";
+
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  // Date object — use local methods
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
 
   const columns: Column<PaymentSummary>[] = [
     {
       key: "id",
       header: "Id",
       align: "left",
+      render: (p) => <div className="py-1.5">{p.id || "—"}</div>
     },
     {
       key: "paymentDate",
       header: "Payment Date",
       align: "left",
+      render: (p) => <div className="py-1.5">{p.paymentDate ? formatDate(p.paymentDate) : "—"}</div>
     },
     {
       key: "supplierName",
       header: "Supplier Name",
       align: "left",
+      render: (p) => <div className="py-1.5">{p.supplierName || "—"}</div>
     },
     {
       key: "modeOfPayment",
       header: "Mode of Payment",
       align: "left",
-      render: (p) => p.modeOfPayment || "—",
+      render: (p) => <div className="py-1.5">{p.modeOfPayment || "—"}</div>
     },
     {
       key: "amount",
       header: "Amount",
       align: "right",
       render: (p: PaymentSummary) => (
+        <div className="py-1.5">
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
            {p.amount}
         </code>
+        </div>
       ),
     },
     {
@@ -141,7 +159,9 @@ const Payments: React.FC = () => {
       header: "Status",
       align: "center",
       render: (p: PaymentSummary) => (
-        <StatusBadge status={p.status} />
+        <div className="py-1.5">
+          <StatusBadge status={p.status} />
+        </div>
       ),
     },
   ];

@@ -24,6 +24,8 @@ type Props = {
   variant?: "outline" | "filled" | "ghost";
   floatingLabel?: boolean;
 
+  readOnly?: boolean;
+
   inputRef?: React.Ref<HTMLInputElement>;
 };
 
@@ -45,6 +47,8 @@ export default function FormFieldPro({
 
   variant = "outline",
   floatingLabel = false,
+
+  readOnly,
 
   inputRef, // ✅ FIX: destructured here
 }: Props) {
@@ -87,13 +91,14 @@ export default function FormFieldPro({
 
       <div className="input-wrapper">
         <motion.input
-          ref={inputRef} // ✅ now works
-          value={value}
+          ref={inputRef}
+          value={value || ""}
           onChange={onChange}
-          onKeyDown={onKeyDown} // ✅ added
+          onKeyDown={onKeyDown}
           type={type}
           placeholder={floatingLabel ? " " : placeholder}
           disabled={disabled}
+          readOnly={readOnly} // ✅ FIX
           className={getInputClasses()}
           whileFocus={{ scale: 1.01 }}
         />
@@ -123,9 +128,8 @@ export default function FormFieldPro({
       {/* HELPER / ERROR */}
       {(helperText || error) && (
         <div
-          className={`form-helper ${
-            error ? "error" : success ? "success" : ""
-          }`}
+          className={`form-helper ${error ? "error" : success ? "success" : ""
+            }`}
         >
           {typeof error === "string" ? error : helperText}
         </div>

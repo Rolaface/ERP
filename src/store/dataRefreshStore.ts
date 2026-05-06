@@ -88,7 +88,12 @@ export const REFRESH_KEYS = {
   MODE_OF_PAYMENT_LIST: "mode_of_payment_list",
   BANK_ACCOUNT_LIST: "bank_account_list",
     FIXED_ASSET_LIST: "fixed_asset_list",
-
+    ASSET_MOVEMENT_LIST: "asset_movement_list",
+    CREDIT_NOTE_LIST: "credit_note_list",
+    DEBIT_NOTE_LIST: "debit_note_list",
+   USER_ROLE_LIST: "user_role_list",
+   Bank: "bank",
+   CREATE_USER_LIST: "create_user_list"
   
 } as const;
 

@@ -189,7 +189,7 @@ const RfqItemSelect: React.FC<RfqItemSelectProps> = ({
         )}
 
         {open && !loading && (
-          <div className="absolute left-0 top-full mt-1 w-full min-w-[220px] bg-card border border-[var(--border)] shadow rounded z-30">
+          <div className="absolute left-0 top-full mt-1 w-full min-w-[220px] bg-card border border-[var(--border)] shadow-lg rounded z-[9999]">
             <ul className="max-h-56 overflow-y-auto text-[13px]">
               {filtered.length === 0 ? (
                 <li className="px-2 py-1 text-muted text-[11px]">

@@ -197,6 +197,7 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
         const isExpanded = expandedRows.has(tc.name);
         if (tc.taxes.length === 0) return <span className="w-7 h-7 block" />;
         return (
+          <div className="py-1.5">
           <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
             {isExpanded ? (
               <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -208,6 +209,7 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
               </svg>
             )}
           </span>
+          </div>
         );
       },
     },
@@ -217,9 +219,11 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
       align: "left",
       render: (tc) => (
         <Tooltip content={tc.title}>
-          <span className="cursor-pointer font-medium text-main text-xs">
-            {tc.title}
-          </span>
+          <div className="py-1.5">
+            <span className="cursor-pointer font-medium text-main text-xs">
+              {tc.title}
+            </span>
+          </div>
         </Tooltip>
       ),
     },
@@ -228,9 +232,12 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
       header: "Category",
       align: "left",
       render: (tc) => (
-        <span className="text-xs text-muted">
-          {tc.tax_category || <span className="italic text-muted/60">—</span>}
-        </span>
+        <div className="py-1.5">
+          <span className="text-xs text-muted">
+            {tc.tax_category || <span className="italic text-muted/60">—</span>}
+          </span>
+        </div>
+        
       ),
     },
     {
@@ -241,9 +248,11 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
         if (tc.taxes.length === 0)
           return <span className="text-xs text-muted">None</span>;
         return (
-          <span className="text-xs text-muted">
-            {tc.taxes.length} charge{tc.taxes.length === 1 ? "" : "s"}
-          </span>
+          <div className="py-1.5">
+            <span className="text-xs text-muted">
+              {tc.taxes.length} charge{tc.taxes.length === 1 ? "" : "s"}
+            </span>
+          </div>
         );
       },
     },
@@ -252,6 +261,7 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
       header: "Status",
       align: "left",
       render: (tc) => (
+        <div className="py-1.5">
         <code
           className={[
             "text-xs px-2 py-1 rounded",
@@ -262,6 +272,7 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
         >
           {tc.disabled ? "Disabled" : "Enabled"}
         </code>
+        </div>
       ),
     },
     {

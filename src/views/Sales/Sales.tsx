@@ -1,12 +1,15 @@
 import React, { Suspense, lazy, useMemo } from "react";
 import { useSearchParams, useNavigate, useLocation, useOutletContext } from "react-router-dom";
 import {
-  FaMoneyBillWave,
-  FaTachometerAlt,
-  FaFileInvoice,
-  FaFileInvoiceDollar,
-  FaChartBar,
-} from "react-icons/fa";
+  LayoutDashboard,
+  FileSignature,
+  FileClock,
+  Receipt,
+  FileMinus,
+  BarChart3,
+  TrendingUp,
+  ShoppingCart
+} from "lucide-react";
 import {
   AppPage,
   AppPageBody,
@@ -22,7 +25,6 @@ const POS = lazy(() => import("./POS"));
 const SalesDashboard = lazy(() => import("./SalesDashboard"));
 const ProformaInvoicesTable = lazy(() => import("./ProformaInvoice"));
 const CreditNotesTable = lazy(() => import("./CreditNotesTable"));
-const DebitNotesTable = lazy(() => import("./DebitNotesTable"));
 const SalesAnalytics = lazy(() => import("./SalesAnalytics"));
 
 type OutletContextType = {
@@ -41,18 +43,41 @@ type OutletContextType = {
 };
 
 const salesTabs = [
-  { id: "salesdashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
-  { id: "quotations", label: "Quotations", icon: <FaFileInvoice /> },
+  {
+    id: "salesdashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "quotations",
+    label: "Quotations",
+    icon: <FileSignature size={16} strokeWidth={1.75} />,
+  },
   {
     id: "proformaInvoice",
     label: "Proforma Invoice",
-    icon: <FaFileInvoiceDollar />,
+    icon: <FileClock size={16} strokeWidth={1.75} />,
   },
-  { id: "invoices", label: "Invoices", icon: <FaFileInvoiceDollar /> },
-  { id: "creditNotes", label: "Credit Notes", icon: <FaFileInvoiceDollar /> },
-  { id: "debitNotes", label: "Debit Notes", icon: <FaFileInvoiceDollar /> },
-  { id: "reports", label: "Reports", icon: <FaChartBar /> },
-  { id: "salesAnalytics", label: "Sales Analytics", icon: <FaChartBar /> },
+  {
+    id: "invoices",
+    label: "Invoices",
+    icon: <Receipt size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "creditNotes",
+    label: "Credit Notes",
+    icon: <FileMinus size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: <BarChart3 size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "salesAnalytics",
+    label: "Sales Analytics",
+    icon: <TrendingUp size={16} strokeWidth={1.75} />,
+  },
 ];
 
 const DEFAULT_TAB = "salesdashboard";
@@ -108,8 +133,6 @@ const SalesModule: React.FC = () => {
         return <POS />;
       case "creditNotes":
         return <CreditNotesTable />;
-      case "debitNotes":
-        return <DebitNotesTable />;
       case "reports":
         return <ReportTable />;
       case "salesAnalytics":
@@ -123,8 +146,8 @@ const SalesModule: React.FC = () => {
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title="Sales"
-        description="Quotes, invoices and sales analytics in one workflow."
-        icon={<FaMoneyBillWave />}
+        description="End-to-end sales management"
+          icon={<ShoppingCart size={20} strokeWidth={1.75} />}
       />
       <AppTabs tabs={salesTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody viewportLocked={isDashboardTab}>

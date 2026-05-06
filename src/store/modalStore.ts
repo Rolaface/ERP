@@ -21,14 +21,21 @@ export type ModalType =
   |"paymentEntry"
   |"currencyExchange"
   |"fixedAsset"
+  |"assetMovement"
   |"Rfq"
-  |"JournalEntries";
+  |"JournalEntries"
+  |"CreditNote"
+  |"DebitNote"
+  |"UserRole"
+  |"Bank"
+  |"User";
 
 export interface ModalContext {
   source?: string;
   fieldId?: string;
   callback?: ModalCallback;
   onSuccess?: ModalCallback;
+  onSubmit?: (data: unknown) => Promise<void> | void;
 }
 
 export interface ModalMeta {
@@ -63,6 +70,18 @@ export const MODAL_LAYER = {
   modalPanelOffset: 10,
   minimizedTaskbar: 1800,
 } as const;
+4
+let modalIdCounter = 0;
+
+const createModalId = (type: ModalType) => {
+  modalIdCounter += 1;
+  const randomSuffix =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${modalIdCounter}`;
+
+  return `${type}-${randomSuffix}`;
+};
 
 interface ModalState {
   modals: ModalInstance[];
@@ -115,24 +134,28 @@ export const useModalStore = create<ModalState>((set, get) => ({
   focusCounter: 0,
 
   openModal: (type, initialData, isEdit = false, context, meta) => {
-    const state = get();
-    const id = `${type}-${Date.now()}`;
-    const newModal: ModalInstance = {
-      id,
-      type,
-      initialData,
-      isEdit,
-      context,
-      meta,
-      minimized: false,
-      openedAt: Date.now(),
-      focusOrder: state.focusCounter + 1,
-    };
+    const id = createModalId(type);
 
-    set({
-      modals: [...state.modals, newModal],
-      activeModalId: id,
-      focusCounter: state.focusCounter + 1,
+    set((state) => {
+      const nextFocusOrder = state.focusCounter + 1;
+      const openedAt = Date.now();
+      const newModal: ModalInstance = {
+        id,
+        type,
+        initialData,
+        isEdit,
+        context,
+        meta,
+        minimized: false,
+        openedAt,
+        focusOrder: nextFocusOrder,
+      };
+
+      return {
+        modals: [...state.modals, newModal],
+        activeModalId: id,
+        focusCounter: nextFocusOrder,
+      };
     });
 
     return id;
@@ -505,6 +528,15 @@ export const openFixedAssetModal = (
   useModalStore
     .getState()
     .openModal("fixedAsset", initialData, isEdit, context, meta);    
+    export const openAssetMovementModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("assetMovement", initialData, isEdit, context, meta);    
 
 export const openRfqModal = (
   initialData?: unknown,
@@ -525,4 +557,61 @@ export const JournalEntriesModal = (
   useModalStore
     .getState()
     .openModal("JournalEntries", initialData, isEdit, context, meta);  
+
+
+export const openCreditNoteModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("CreditNote", initialData, isEdit, context, meta);    
+    
+
+export const openDebitNoteModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("DebitNote", initialData, isEdit, context, meta);    
+
+
+    
+export const openUserRoleModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("UserRole", initialData, isEdit, context, meta);    
+
+
+    
+export const openBankModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("Bank", initialData, isEdit, context, meta);    
+
+
+export const openUserModal = (
+  initialData?: unknown,
+  isEdit = false, 
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("User", initialData, isEdit, context, meta);    
 

@@ -1,4 +1,6 @@
+
 import { ENV } from "./env";
+
 
 const getApiBaseUrl = (): string => {
   if (typeof window === "undefined") {
@@ -31,7 +33,7 @@ const getApiBaseUrl = (): string => {
 };
 
 export const ERP_BASE = getApiBaseUrl();
-//  export const ERP_BASE = "";
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -103,6 +105,21 @@ export const API = {
     updateCompanyFiles: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.upload_company_documents`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
   },
+
+  RoleManagement: {
+    createUserRoles: `${ERP_BASE}/api/method/auth_api.role_management.api.role.create`,
+    getUserRoles:`${ERP_BASE}/api/method/auth_api.role_management.api.role.get`,
+    getUserRolesbyId:`${ERP_BASE}/api/method/auth_api.role_management.api.role.get_by_id`,
+    updateUserRoles: `${ERP_BASE}/api/method/auth_api.role_management.api.role.update`,
+    updateUserRolesStatus: `${ERP_BASE}/api/method/auth_api.role_management.api.role.update_status`,
+    createUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.signup`,
+    Language: `${ERP_BASE}/api/method/frappe.desk.search.search_link`,
+    getUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get`,
+    getUserbyId: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_user_by_id`,
+    updateUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.update`,
+    deleteUser:  `${ERP_BASE}/api/method/frappe.client.delete`,
+  },
+  
   Account: {
     createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
     getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
@@ -117,6 +134,7 @@ export const API = {
     getLedgerAccount: `${ERP_BASE}/api/method/custom_api.api.payment.get_ledger_account`,
     getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
     createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
+    getAccountsResource: `${ERP_BASE}/api/resource/Account`,
   },
 
   accounting: {
@@ -299,16 +317,21 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoices`,
     getById: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.get_sales_invoice_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.create_sales_invoice`,
-
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice_status`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.delete_sales_invoice`,
-    createCreditNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_credit_note_from_sales_invoice`,
-    createDebitNote: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.create_debit_note_from_invoice`,
-    getCreditNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_credit_notes`,
-    getDebitNotes: `${ERP_BASE}/api/method/erpnext.zra_client.sales.api.get_debit_notes`,
     editInvoice: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
   },
 
+  CreditNote:{
+    Credit_note:`${ERP_BASE}/api/resource/Sales Invoice`,
+  },
+  DebitNote:{
+      Debit_note:`${ERP_BASE}/api/resource/Purchase Invoice`
+  },
+
+ Bank:{
+      Bank:`${ERP_BASE}/api/resource/Bank`
+  },
   /* =========================
    * STOCK
    * ========================= */
@@ -373,6 +396,8 @@ export const API = {
 
   rfq:{
     create: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.create_rfq`,
+    GetAll: `${ERP_BASE}/api/resource/Request for Quotation`,
+    update: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.update_rfq`
   },
 
   
@@ -393,6 +418,21 @@ export const API = {
     getCountry: `${CODES_BASE}/countries/`,
     getProvinces: `${CODES_BASE}/provinces/`,
     getTown: `${CODES_BASE}/towns/`,
+  },
+
+  AssetsTypes: { 
+    getall: `${ERP_BASE}/api/resource/Asset Category`,
+    create: `${ERP_BASE}/api/method/custom_api.api.fixed_assets.api.create_asset_category`,
+    update: `${ERP_BASE}/api/method/custom_api.api.fixed_assets.api.update_asset_category`,
+    delete: `${ERP_BASE}/api/method/frappe.client.delete`,
+  },
+  Assets: {
+    getall: `${ERP_BASE}/api/resource/Asset`,
+    create: `${ERP_BASE}/api/resource/Asset`,
+    update: `${ERP_BASE}/api/resource/Asset`,
+    delete: `${ERP_BASE}/api/method/frappe.client.delete`,
+    // Assit movement
+    Movement: `${ERP_BASE}/api/resource/Asset Movement`,
   },
 
   /* =========================
@@ -442,9 +482,77 @@ export const API = {
   },
 
   /* =========================
+   * PAYROLL CONFIGURATION
+   * ========================= */
+  payroll: {
+    // Salary Component
+    salaryComponent: {
+      getAll:   `${ERP_BASE}/api/resource/Salary Component`,
+      getById:  `${ERP_BASE}/api/resource/Salary Component`,   
+      create:   `${ERP_BASE}/api/resource/Salary Component`,
+      update:   `${ERP_BASE}/api/resource/Salary Component`,  
+      delete:   `${ERP_BASE}/api/resource/Salary Component`,   
+    },
+ 
+    // Salary Structure
+    salaryStructure: {
+      getAll:   `${ERP_BASE}/api/resource/Salary Structure`,
+      getById:  `${ERP_BASE}/api/resource/Salary Structure`,  
+      create:   `${ERP_BASE}/api/resource/Salary Structure`,
+      update:   `${ERP_BASE}/api/resource/Salary Structure`,   
+      delete:   `${ERP_BASE}/api/resource/Salary Structure`,  
+    },
+
+    incomeTaxSlab: {
+      getAll: `${ERP_BASE}/api/resource/Income Tax Slab`,
+      getById: `${ERP_BASE}/api/resource/Income Tax Slab`,
+      create: `${ERP_BASE}/api/resource/Income Tax Slab`,
+      update: `${ERP_BASE}/api/resource/Income Tax Slab`,
+      delete: `${ERP_BASE}/api/resource/Income Tax Slab`,
+    },
+  },
+
+  employeeConfig: {
+    department: {
+      getAll: `${ERP_BASE}/api/resource/Department`,
+      getById: `${ERP_BASE}/api/resource/Department`,
+      create: `${ERP_BASE}/api/resource/Department`,
+      update: `${ERP_BASE}/api/resource/Department`,
+      delete: `${ERP_BASE}/api/resource/Department`,
+    },
+    designation: {
+      getAll: `${ERP_BASE}/api/resource/Designation`,
+      getById: `${ERP_BASE}/api/resource/Designation`,
+      create: `${ERP_BASE}/api/resource/Designation`,
+      update: `${ERP_BASE}/api/resource/Designation`,
+      delete: `${ERP_BASE}/api/resource/Designation`,
+    },
+    grade: {
+      getAll: `${ERP_BASE}/api/resource/Employee Grade`,
+      getById: `${ERP_BASE}/api/resource/Employee Grade`,
+      create: `${ERP_BASE}/api/resource/Employee Grade`,
+      update: `${ERP_BASE}/api/resource/Employee Grade`,
+      delete: `${ERP_BASE}/api/resource/Employee Grade`,
+    },
+    employeeType: {
+      getAll: `${ERP_BASE}/api/resource/Employee Type`,
+      getById: `${ERP_BASE}/api/resource/Employee Type`,
+      create: `${ERP_BASE}/api/resource/Employee Type`,
+      update: `${ERP_BASE}/api/resource/Employee Type`,
+      delete: `${ERP_BASE}/api/resource/Employee Type`,
+    },
+  },
+ 
+
+  /* =========================
    * UTILS
    * ========================= */
   frappeUtilsAPI: {
     getCompanyCurrentFiscalYear: `${ERP_BASE}/api/method/custom_api.utils.frappe_utils.get_current_fiscal_year`,
+    locationSearch: `${ERP_BASE}/api/method/custom_api.api.search.get_locations`,
+    createlocation: `${ERP_BASE}/api/resource/Location`,
+    getitemcodeforFaixedAsset: `${ERP_BASE}/api/method/custom_api.api.search.get_items`,
+    getemployeeforAssetMovement: `${ERP_BASE}/api/method/custom_api.api.search.get_employees`,
+  
   },
 } as const;

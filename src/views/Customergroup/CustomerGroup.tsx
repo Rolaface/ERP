@@ -5,6 +5,11 @@ import { FaUsersCog } from "react-icons/fa";
 import type { Column } from "../../components/ui/Table/type";
 import { getCustomerGroupTree } from "../../api/customerApi";
 import { Folder, FolderOpen, Plus } from "lucide-react";
+import {
+  AppPage,
+  AppPageHeader,
+  AppPageBody,
+} from "../../components/ui/app-shell";
 
 const CustomerGroup: React.FC = () => {
   const [treeData, setTreeData] = useState<any[]>([]);
@@ -28,8 +33,7 @@ const CustomerGroup: React.FC = () => {
     try {
       setLoading(true);
       const res = await getCustomerGroupTree();
-      const normalized = normalizeCustomerGroups(res);
-      setTreeData(normalized);
+      setTreeData(normalizeCustomerGroups(res));
     } catch (err) {
       console.error("Error fetching customer groups:", err);
     } finally {
@@ -60,13 +64,11 @@ const CustomerGroup: React.FC = () => {
           <button className="text-xs px-2 py-1 hover:bg-row-hover rounded">
             Edit
           </button>
-
           {row.isGroup && (
             <button className="text-xs px-2 py-1 hover:bg-row-hover rounded">
               Add Child
             </button>
           )}
-
           <button className="text-xs px-2 py-1 hover:bg-row-hover rounded text-red-500">
             Delete
           </button>
@@ -85,50 +87,52 @@ const CustomerGroup: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-semibold flex items-center gap-2 mb-4">
-        <FaUsersCog className="text-primary" />
-        Customer Groups
-      </h1>
-
-      <ExpandableTreeTable
-        columns={columns}
-        data={treeData}
-        childrenKey="children"
-        nodeKey={(node) => node.id}
-        showToolbar
-        searchValue={search}
-        onSearch={setSearch}
-        toolbarPlaceholder="Search customer groups..."
-        showExpandControls
-        onRefresh={fetchTree}
-        defaultExpandDepth={0}
-        indentSize={18}
-        loading={loading}
-        emptyMessage="No customer groups found"
-        expandIconRender={expandIcon}
-        extraFilters={
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded text-xs"
-          >
-            <Plus size={12} />
-            New
-          </button>
-        }
+    <AppPage>
+      <AppPageHeader
+        title="Customer Groups"
+        description="Manage customer group hierarchy and structure."
+        icon={<FaUsersCog />}
       />
-
-      {showModal && (
-        <CustomerGroupModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSubmit={() => {
-            setShowModal(false);
-            fetchTree();
-          }}
+      <AppPageBody>
+        <ExpandableTreeTable
+          columns={columns}
+          data={treeData}
+          childrenKey="children"
+          nodeKey={(node) => node.id}
+          showToolbar
+          searchValue={search}
+          onSearch={setSearch}
+          toolbarPlaceholder="Search customer groups..."
+          showExpandControls
+          onRefresh={fetchTree}
+          defaultExpandDepth={0}
+          indentSize={18}
+          loading={loading}
+          emptyMessage="No customer groups found"
+          expandIconRender={expandIcon}
+          extraFilters={
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded text-xs"
+            >
+              <Plus size={12} />
+              Add
+            </button>
+          }
         />
-      )}
-    </div>
+
+        {showModal && (
+          <CustomerGroupModal
+            isOpen={showModal}
+            onClose={() => setShowModal(false)}
+            onSubmit={() => {
+              setShowModal(false);
+              fetchTree();
+            }}
+          />
+        )}
+      </AppPageBody>
+    </AppPage>
   );
 };
 
