@@ -178,10 +178,15 @@ animate-[fadeInUp_0.9s_ease-out]">
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full h-12 px-4 rounded-lg 
-                bg-[#F9FAFB] border border-[#E5E7EB]
-                focus:bg-white focus:border-primary
-                outline-none transition"
+                className="w-full h-12 px-4 rounded-xl 
+bg-[#F9FAFB] border border-[#E5E7EB]
+shadow-inner
+placeholder:text-[#94A3B8]
+focus:bg-white focus:border-primary 
+focus:ring-2 focus:ring-primary/30
+focus:shadow-[0_0_0_2px_rgba(59,130,246,0.15)]
+focus:placeholder:opacity-60
+outline-none transition-all duration-200"
                 required
               />
             </div>
@@ -206,10 +211,15 @@ animate-[fadeInUp_0.9s_ease-out]">
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-12 px-4 pr-10 rounded-lg 
-                  bg-[#F9FAFB] border border-[#E5E7EB]
-                  focus:bg-white focus:border-primary
-                  outline-none transition"
+                  className="w-full h-12 px-4 pr-10 rounded-xl 
+bg-[#F9FAFB] border border-[#E5E7EB]
+shadow-inner
+placeholder:text-[#94A3B8]
+focus:bg-white focus:border-primary 
+focus:ring-2 focus:ring-primary/30
+focus:shadow-[0_0_0_2px_rgba(59,130,246,0.15)]
+focus:placeholder:opacity-60
+outline-none transition-all duration-200"
                   required
                 />
 
@@ -240,13 +250,26 @@ animate-[fadeInUp_0.9s_ease-out]">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-[52px] rounded-lg text-white font-semibold
-              bg-gradient-to-b from-blue-500 to-blue-600
-              hover:from-blue-500 hover:to-blue-700
-              active:scale-[0.98] transition"
+              className="relative w-full h-[52px] rounded-xl text-white font-semibold overflow-hidden
+  bg-gradient-to-b from-blue-500 to-blue-600
+  transition-all duration-200
+  hover:from-blue-500 hover:to-blue-700
+  hover:-translate-y-[1px]
+  hover:shadow-[0_10px_20px_rgba(59,130,246,0.25)]
+  active:scale-[0.97]"
             >
-              {isSubmitting ? "Checking..." : "Sign in"}
+              {/* Shine Effect */}
+              <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500
+  bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.25),transparent)]" />
+
+              <span className="relative z-10">
+                {isSubmitting ? "Checking..." : "Sign in"}
+              </span>
             </button>
+            <div className="flex items-center justify-center gap-2 text-xs text-[#64748B] mt-3">
+              <span>🔒</span>
+              <span>Your data is protected</span>
+            </div>
 
           </form>
 
