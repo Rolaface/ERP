@@ -43,7 +43,7 @@ const Login = () => {
             <span className="text-sm font-bold">⬢</span>
           </div>
           <span className="text-white text-lg font-semibold tracking-tight">
-            Nexus ERP
+            RolaERP
           </span>
         </div>
 
