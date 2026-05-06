@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { ERP_BASE } from "../../../config/api";
+import { useCompanyStore } from "../../../store/companyStore";
 
 
 const BLACK: [number, number, number] = [0, 0, 0];
@@ -112,7 +113,9 @@ export const generateInvoicePDF = async (
   const compGstin = company?.tpin ?? "";
   const compPhone = company?.contactInfo?.companyPhone ?? "";
   const compEmail = company?.contactInfo?.companyEmail ?? "";
-  const compAddr = stripHtml(company?.address ?? "");
+ const compAddr =
+  useCompanyStore.getState().companyAddress ||
+  stripHtml(company?.address ?? "");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
