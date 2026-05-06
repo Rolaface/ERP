@@ -14,7 +14,7 @@ export interface CreatePayrollEntryPayload {
   payroll_payable_account: string;
   payment_account: string;
   bank_account: string;
-  docstatus:1,
+
 
   employees: Array<{
     employee: string;
@@ -55,4 +55,16 @@ export async function getAllPayrollEntries(
   return {
     data: resp.data?.data || [],
   };
+}
+export async function runPayrollEntry(
+  id: string,
+): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    API.payroll.payrollentry.runpayroll,
+    {
+      id,
+    },
+  );
+
+  return resp.data;
 }

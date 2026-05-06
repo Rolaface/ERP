@@ -1,12 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { Eye, Edit, Trash2, Download, MoreVertical } from "lucide-react";
+import { Eye, Edit, Trash2, Download, MoreVertical, Play } from "lucide-react";
 
 /* ======================================================
    ACTION BUTTON
 ====================================================== */
 
-type ActionType = "view" | "edit" | "delete" | "download" | "custom";
+// 1. Extend the union type
+type ActionType = "view" | "edit" | "delete" | "download" | "run-payroll" | "custom";
 
 interface ActionButtonProps {
   type: ActionType;
@@ -36,6 +37,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
       case "edit": return <Edit className="w-4 h-4" />;
       case "delete": return <Trash2 className="w-4 h-4" />;
       case "download": return <Download className="w-4 h-4" />;
+      case "run-payroll": return <Play className="w-4 h-4" />;
       default: return <MoreVertical className="w-4 h-4" />;
     }
   };
@@ -52,11 +54,14 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
     }
   };
 
-  const variantStyles = {
-    primary: "text-primary hover:bg-row-hover hover:text-primary",
-    secondary: "text-muted hover:bg-row-hover hover:text-main",
-    danger: "text-red-500 hover:bg-row-hover hover:text-red-600",
-  };
+
+
+const variantStyles = {
+  primary:  "text-primary hover:bg-row-hover hover:text-primary",
+  secondary:"text-muted hover:bg-row-hover hover:text-main",
+  danger:   "text-red-500 hover:bg-row-hover hover:text-red-600",
+  success:  "bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 rounded-lg font-medium text-sm transition-all",
+};
 
   const base = iconOnly
     ? `inline-flex items-center justify-center w-8 h-8 rounded-md ${variantStyles[variant]}`

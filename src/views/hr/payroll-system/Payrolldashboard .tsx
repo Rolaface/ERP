@@ -5,10 +5,12 @@ import { FilterBar } from "./FilterBar";
 import Table from "../../../components/ui/Table/Table";
 import type { Column } from "../../../components/ui/Table/type";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
+import { Play } from "lucide-react";
+import { ActionButton, ActionGroup, ActionMenu } from "../../../components/ui/Table/ActionButton";
 
 interface Props {
   records: PayrollRecord[];
-  onRunPayroll: () => void;
+  onRunPayroll: (id: string) => void;
   onViewPayslip: (r: PayrollRecord) => void;
   onEditRecord: (r: PayrollRecord) => void;
   onViewDetails: (r: PayrollRecord) => void;
@@ -106,7 +108,44 @@ const payrollColumns: Column<any>[] = [
   render: (row) => (
     <StatusBadge status={row.status} />
   ),
+  
 },
+{
+    key: "actions",
+    header: "Actions",
+    render: (row) => (
+      <ActionGroup>
+        <ActionButton
+          type="view"
+          iconOnly
+          variant="secondary"
+          onClick={() => onViewDetails(row)}
+          title="View details"
+        />
+        <ActionButton
+          type="download"
+          iconOnly
+          variant="secondary"
+          onClick={() => onViewPayslip(row)}
+          title="View payslip"
+        />
+        <ActionMenu
+          onEdit={() => onEditRecord(row)}
+          editLabel="Edit Record"
+          onDelete={() => {/* wire delete handler if needed */}}
+          deleteLabel="Remove"
+          customActions={[
+            {
+              label: "Run Payroll",
+              icon: <Play className="w-4 h-4" />,
+            onClick: () => onRunPayroll(row.name),
+              disabled: row.status !== "Draft",
+            },
+          ]}
+        />
+      </ActionGroup>
+    ),
+  },
 ];
 
   return (

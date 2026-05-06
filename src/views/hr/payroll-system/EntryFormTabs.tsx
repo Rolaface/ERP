@@ -1,5 +1,4 @@
-// EntryFormTabs.tsx — New Payroll Entry: Overview, Employees, Accounting tabs
-// Fields aligned to Create Payroll Entry API payload
+
 
 import React from "react";
 import { Edit2 } from "lucide-react";
