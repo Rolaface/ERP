@@ -55,11 +55,7 @@ const DatePickerInput: React.FC<Props> = ({
   };
 
   return (
-    // : LocalizationProvider removed — should wrap the app root, not each instance.
-    // Wrap your app with:
-    //   <LocalizationProvider dateAdapter={AdapterDayjs}>
-    //     <App />
-    //   </LocalizationProvider>
+ 
     <div className="flex flex-col text-sm w-full min-w-0">
       {label && (
         <span className="block text-[10px] font-medium text-main mb-1">
@@ -91,8 +87,7 @@ const DatePickerInput: React.FC<Props> = ({
             disablePortal: false,
             modifiers: [{ name: "preventOverflow", enabled: true }],
           },
-          // : Pass error state; placeholder works correctly
-          // with enableAccessibleFieldDOMStructure={false}
+         
           textField: {
             size: "small",
             required,
@@ -100,11 +95,10 @@ const DatePickerInput: React.FC<Props> = ({
             error: !!error,
             placeholder: "DD-MMM-YYYY",
             inputProps: {
-              // : hint to browsers/screen readers about the expected format
+              
               "aria-label": label ?? "Date",
             },
-            // : Merge sx safely at the top level — consumer overrides win
-            // without breaking internal fieldset/border styles
+           
             sx: {
               "& .MuiOutlinedInput-root": {
                 height: "28px",
@@ -138,8 +132,7 @@ const DatePickerInput: React.FC<Props> = ({
               "&:hover fieldset": {
                 borderColor: "rgba(37,99,235,0.4)",
               },
-              // FIX 8: sx spread is kept at the same level so consumer keys
-              // (like "& fieldset") deep-override rather than silently losing
+             
               ...sx,
             },
           },

@@ -39,7 +39,7 @@ type Option = {
 
 type BankAccountFilters = {
   company?: boolean;
-  party_type?: "Supplier" | "Customer";
+  party_type?: "Supplier" | "Customer"|"Employee";
   party?: string;
   search?: string;
   page?: number;

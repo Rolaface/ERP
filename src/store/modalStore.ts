@@ -28,6 +28,7 @@ export type ModalType =
   |"DebitNote"
   |"UserRole"
   |"Bank"
+  |"employee"
   |"User";
 
 export interface ModalContext {
@@ -603,6 +604,17 @@ export const openBankModal = (
   useModalStore
     .getState()
     .openModal("Bank", initialData, isEdit, context, meta);    
+
+export const openEmployeeModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta
+) =>
+  useModalStore
+    .getState()
+    .openModal("employee", initialData, isEdit, context, meta);
+
 
 
 export const openUserModal = (

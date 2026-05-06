@@ -123,7 +123,7 @@ const BankPage: React.FC = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
           <FaUniversity className="text-primary" />
-          Bank Accounts
+          Banks 
         </h1>
       </div>
       <Table

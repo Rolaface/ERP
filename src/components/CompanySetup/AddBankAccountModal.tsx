@@ -28,7 +28,7 @@ type Option = {
   meta?: Record<string, any>;
 };
 
-type AccountType = "Supplier" | "Customer" | "Company" | "Bank";
+type AccountType = "Supplier" | "Customer" | "Company" | "Bank" | "Employee";
 
 const AddBankAccountModal: React.FC<Props> = ({
   isOpen,
@@ -192,6 +192,7 @@ const AddBankAccountModal: React.FC<Props> = ({
                 { label: "Supplier", value: "Supplier" },
                 { label: "Customer", value: "Customer" },
                 { label: "Company", value: "Company" },
+                { label: "Employee", value: "Employee" }, 
               ]}
               required
               disabled={!!defaultAccountFor}

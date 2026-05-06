@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
+import {buildListParams} from "../api/utils/queryBuilder"
 
 
 const api = createAxiosInstance(ERP_BASE);
@@ -185,6 +186,76 @@ export async function getAssetCategoryOptions(search?: string) {
     const raw = resp?.data?.data ?? [];
 
     return raw.map((item: any) => ({
+      label: item.name,
+      value: item.name,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getPayrollPayableAccounts(
+  companyName: string,
+  search?: string
+): Promise<AccountOption[]> {
+  try {
+    const params = buildListParams({
+      fields: ["name"],
+      pageSize: 20,
+      search,
+      searchFields: ["name"],
+    });
+
+    const filters = encodeURIComponent(
+      JSON.stringify([
+        ["company", "=", companyName],
+        ["root_type", "=", "Liability"],
+        ["is_group", "=", "0"],
+      ])
+    );
+
+    const resp: AxiosResponse = await api.get(
+      `${Account.getAccountsResource}?${params}&filters=${filters}`
+    );
+
+    const raw: any[] = resp?.data?.data ?? [];
+
+    return raw.map((item) => ({
+      label: item.name,
+      value: item.name,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getPayrollPaymentAccounts(
+  companyName: string,
+  search?: string
+): Promise<AccountOption[]> {
+  try {
+    const params = buildListParams({
+      fields: ["name"],
+      pageSize: 20,
+      search,
+      searchFields: ["name"],
+    });
+
+    const filters = encodeURIComponent(
+      JSON.stringify([
+        ["account_type", "in", ["Bank", "Cash"]],
+        ["company", "=", companyName],
+        ["is_group", "=", "0"],
+      ])
+    );
+
+    const resp: AxiosResponse = await api.get(
+      `${Account.getAccountsResource}?${params}&filters=${filters}`
+    );
+
+    const raw: any[] = resp?.data?.data ?? [];
+
+    return raw.map((item) => ({
       label: item.name,
       value: item.name,
     }));
