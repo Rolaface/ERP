@@ -32,8 +32,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -118,6 +118,7 @@ export const API = {
     getUserbyId: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_user_by_id`,
     updateUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.update`,
     deleteUser:  `${ERP_BASE}/api/method/frappe.client.delete`,
+    getUserDetails: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_login_user`
   },
   
   Account: {
