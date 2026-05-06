@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { CreditCard, FileText, AlertCircle, X, Loader2 } from "lucide-react";
+import { CreditCard, FileText, Receipt, X, Loader2 } from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
@@ -592,13 +592,13 @@ const PaymentEntryModal: React.FC<Props> = ({
         resetModalState();
         onClose();
       }}
-      title="Payment Entry"
+      title="Create Payment Entry"
       subtitle={
         isAdvanceFromPO
           ? `Advance payment against PO: ${defaultValues?.referenceName}`
           : "Pay or receive payment from Customer / Supplier / Employee / Shareholder"
       }
-      icon={CreditCard}
+      icon={Receipt}
       footer={footer}
       customWidth="62vw"
       height="95vh"

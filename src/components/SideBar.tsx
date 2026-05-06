@@ -18,7 +18,7 @@ import {
   Users2,
   LogOut,
   Landmark,
-  Percent
+  Calculator
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -54,7 +54,7 @@ const settingsItems = [
   { to: "/payment-entry",       label: "Payment Entry",     icon: <Receipt {...iconProps} /> },
   { to: "/currency-conversion", label: "Currency Exchange", icon: <Repeat {...iconProps} /> },
   { to: "/customer-group",      label: "Customer Group",    icon: <Users {...iconProps} /> },
-  { to: "/Tax-Maintenance",     label: "Tax Maintenance",   icon: <Percent {...iconProps} /> },
+  { to: "/Tax-Maintenance",     label: "Tax Maintenance",   icon: <Calculator {...iconProps} /> },
   { to: "/settings",            label: "General Settings",  icon: <Settings {...iconProps} /> },
 ];
 

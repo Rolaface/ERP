@@ -66,16 +66,16 @@ const fetchUoms = getRolaUOMs;
 
               const list = data?.data ?? [];
 
-            return list
-  .filter((item: any) =>
-    (item.name ?? item.cdNm ?? "")
-      .toLowerCase()
-      .includes(q.toLowerCase()),
-  )
-  .map((item: any) => ({
-    label: item.name ?? item.cdNm ?? "",
-    value: item.name ?? item.cdNm ?? "",
-  }));
+              return list
+                .filter((item: any) =>
+                  (item.name ?? item.cdNm ?? "")
+                    .toLowerCase()
+                    .includes(q.toLowerCase()),
+                )
+                .map((item: any) => ({
+                  label: item.name ?? item.cdNm ?? "",
+                  value: item.name ?? item.cdNm ?? "",
+                }));
             }}
             onChange={(value) => setField("unitOfMeasureCd", value)}
             placeholder="Search..."
@@ -94,7 +94,7 @@ const fetchUoms = getRolaUOMs;
           />
         </div>
 
-       
+
         <div className="w-[160px] min-w-0">
           <SearchSelect2
             label="Country of origin"
@@ -142,6 +142,30 @@ const fetchUoms = getRolaUOMs;
           value={form.taxPreference === "Taxable" ? "Y" : "N"}
           onChange={(name, value) =>
             onToggleChange(name, value === "Y" ? "Taxable" : "Non-Taxable")
+          }
+        />
+        <YesNoCheckbox
+          name="trackInventory"
+          label="Track Inventory"
+          value={form.trackInventory ? "Y" : "N"}
+          onChange={(name, value) =>
+            setField("trackInventory", value === "Y")
+          }
+        />
+        <YesNoCheckbox
+          name="allowSales"
+          label="Allow Sales"
+          value={form.allowSales ? "Y" : "N"}
+          onChange={(name, value) =>
+            setField("allowSales", value === "Y")
+          }
+        />
+        <YesNoCheckbox
+          name="allowPurchase"
+          label="Allow Purchase"
+          value={form.allowPurchase ? "Y" : "N"}
+          onChange={(name, value) =>
+            setField("allowPurchase", value === "Y")
           }
         />
       </div>
