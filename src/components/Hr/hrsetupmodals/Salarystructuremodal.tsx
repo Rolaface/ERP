@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { LayoutList, Save, X, Trash2 } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
-import { getAllSalaryComponents } from "../../../api/payrollConfigApi";
+import { getSalaryComponentOptions } from "../../../api/payrollConfigApi";
 import {
   ModalInput,
   ModalSelect,
@@ -18,7 +18,7 @@ import { searchSalaryComponents } from "../../../api/resolversapifun";
 
 interface UnifiedRow {
   salary_component: string;
-  type: "Earning" | "Deduction";
+  type: "Earning" | "Deduction" | "Flexible";
 }
 
 interface Props {
@@ -44,7 +44,7 @@ function toUnified(
 function fromUnified(rows: UnifiedRow[]) {
   return {
     earnings: rows
-      .filter((r) => r.type === "Earning")
+      .filter((r) => r.type === "Earning" || r.type === "Flexible")
       .map(({ salary_component }) => ({ salary_component })),
     deductions: rows
       .filter((r) => r.type === "Deduction")
@@ -83,7 +83,6 @@ export const SalaryStructureModal: React.FC<Props> = ({
         initialData?.earnings ?? [],
         initialData?.deductions ?? [],
       );
-
       setRows(
         initialRows.length > 0
           ? initialRows
@@ -101,16 +100,13 @@ export const SalaryStructureModal: React.FC<Props> = ({
 
   const loadComponents = async () => {
     try {
-      const data = await getAllSalaryComponents();
-
+      const data = await getSalaryComponentOptions();
       const earnings = data
         .filter((c) => c.type === "Earning")
         .map((c) => c.salary_component);
-
       const deductions = data
         .filter((c) => c.type === "Deduction")
         .map((c) => c.salary_component);
-
       setEarningOptions(earnings);
       setDeductionOptions(deductions);
     } catch (err) {
@@ -152,9 +148,6 @@ export const SalaryStructureModal: React.FC<Props> = ({
     setRows((prev) => prev.filter((_, i) => i !== globalIdx));
   };
 
-  const optionsFor = (type: "Earning" | "Deduction") =>
-    type === "Earning" ? earningOptions : deductionOptions;
-
   const handleSave = async () => {
     if (!structureName.trim()) {
       showApiError("Structure name is required");
@@ -193,6 +186,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
 
   const earningCount = rows.filter((r) => r.type === "Earning").length;
   const deductionCount = rows.filter((r) => r.type === "Deduction").length;
+  const flexibleCount = rows.filter((r) => r.type === "Flexible").length;
 
   const footer = (
     <div className="flex w-full items-center justify-end gap-3">
@@ -254,7 +248,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* ── Description — above the table ─────────────────────────────── */}
+        {/* ── Description ───────────────────────────────────────────────── */}
         <ModalInput
           label="Description"
           value={description}
@@ -269,16 +263,16 @@ export const SalaryStructureModal: React.FC<Props> = ({
             <span className="text-xs font-semibold text-main">Components</span>
           </div>
 
-          {/* column headings */}
-          <div className="grid grid-cols-[2rem_1fr_10rem_2.5rem] border-b border-[var(--border)] bg-[var(--border)]/30 px-4 py-2">
+          {/* column headings — Type first, then Component */}
+          <div className="grid grid-cols-[2rem_10rem_1fr_2.5rem] border-b border-[var(--border)] bg-[var(--border)]/30 px-4 py-2">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-sub">
               No.
             </span>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-sub">
-              Component
+              Type
             </span>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-sub">
-              Type
+              Component
             </span>
             <span />
           </div>
@@ -294,15 +288,34 @@ export const SalaryStructureModal: React.FC<Props> = ({
             ) : (
               paginatedRows.map((row, pageIdx) => {
                 const globalIdx = safePage * ITEMS_PER_PAGE + pageIdx;
-                const options = optionsFor(row.type);
                 return (
                   <div
                     key={globalIdx}
-                    className="grid grid-cols-[2rem_1fr_10rem_2.5rem] items-center gap-3 px-4 py-2 hover:bg-app transition"
+                    className="grid grid-cols-[2rem_10rem_1fr_2.5rem] items-center gap-3 px-4 py-2 hover:bg-app transition"
                   >
                     <span className="text-center text-xs font-mono text-sub">
                       {globalIdx + 1}
                     </span>
+
+                    {/* Type — first */}
+                    <ModalSelect
+                      label=""
+                      value={row.type}
+                      onChange={(e) =>
+                        updateRow(
+                          globalIdx,
+                          "type",
+                          e.target.value as "Earning" | "Deduction" | "Flexible",
+                        )
+                      }
+                      options={[
+                        { label: "Earning", value: "Earning" },
+                        { label: "Deduction", value: "Deduction" },
+                        { label: "Flexible", value: "Flexible" },
+                      ]}
+                    />
+
+                    {/* Component — second, filtered by selected type */}
                     <SearchSelect2
                       label=""
                       value={row.salary_component}
@@ -319,21 +332,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
                         updateRow(globalIdx, "salary_component", value)
                       }
                     />
-                    <ModalSelect
-                      label=""
-                      value={row.type}
-                      onChange={(e) =>
-                        updateRow(
-                          globalIdx,
-                          "type",
-                          e.target.value as "Earning" | "Deduction",
-                        )
-                      }
-                      options={[
-                        { label: "Earning", value: "Earning" },
-                        { label: "Deduction", value: "Deduction" },
-                      ]}
-                    />
+
                     <button
                       type="button"
                       onClick={() => removeRow(globalIdx)}
@@ -347,9 +346,9 @@ export const SalaryStructureModal: React.FC<Props> = ({
             )}
           </div>
 
-          {/* table footer — Add Row + counts left | pagination right */}
+          {/* table footer */}
           <div className="flex items-center justify-between gap-3 border-t border-[var(--border)] bg-app px-4 py-2.5">
-            {/* left: Add Row button + row count + earning/deduction summary */}
+            {/* left: Add Row + counts */}
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -374,6 +373,13 @@ export const SalaryStructureModal: React.FC<Props> = ({
                   {deductionCount}
                 </span>{" "}
                 Deduction{deductionCount !== 1 ? "s" : ""}
+              </span>
+              <span className="h-3 w-px bg-[var(--border)]" />
+              <span className="text-[11px] text-sub">
+                <span className="font-semibold text-blue-500">
+                  {flexibleCount}
+                </span>{" "}
+                Flexible{flexibleCount !== 1 ? "s" : ""}
               </span>
             </div>
 

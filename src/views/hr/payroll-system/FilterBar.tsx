@@ -1,18 +1,19 @@
 // FilterBar.tsx
 import React from "react";
 import { Search, Play, ChevronDown } from "lucide-react";
+import { PAYROLL_STATUS_OPTIONS } from "./constants";
 
 interface FilterBarProps {
-  searchQuery: string;
+  searchQuery:    string;
   onSearchChange: (v: string) => void;
-  selectedDept: string;
-  onDeptChange: (v: string) => void;
-  departments: string[];
-  filterStatus: string;
+  selectedDept:   string;
+  onDeptChange:   (v: string) => void;
+  departments:    string[];
+  filterStatus:   string;
   onStatusChange: (v: string) => void;
-  pendingCount: number;
-  onRunPayroll: () => void;
-  totalShown: number;
+  pendingCount:   number;
+  onRunPayroll:   () => void;
+  totalShown:     number;
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
@@ -30,7 +31,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         value={searchQuery}
         onChange={e => onSearchChange(e.target.value)}
         placeholder="Search name or ID…"
-        className="w-full pl-9 pr-3 py-2 bg-card border border-theme rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
+        className="w-full pl-9 pr-3 py-2 bg-card border border-theme rounded-lg text-xs text-main
+          placeholder:text-muted focus:outline-none focus:border-primary transition"
       />
     </div>
 
@@ -39,7 +41,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       <select
         value={selectedDept}
         onChange={e => onDeptChange(e.target.value)}
-        className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary cursor-pointer"
+        className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main
+          focus:outline-none focus:border-primary cursor-pointer"
       >
         {departments.map(d => <option key={d}>{d}</option>)}
       </select>
@@ -51,9 +54,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       <select
         value={filterStatus}
         onChange={e => onStatusChange(e.target.value)}
-        className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main focus:outline-none focus:border-primary cursor-pointer"
+        className="appearance-none pl-3 pr-8 py-2 bg-card border border-theme rounded-lg text-xs text-main
+          focus:outline-none focus:border-primary cursor-pointer"
       >
-        {["All", "Paid", "Pending", "Processing", "Draft", "Rejected"].map(s => (
+        {PAYROLL_STATUS_OPTIONS.map(s => (
           <option key={s} value={s}>{s === "All" ? "All Status" : s}</option>
         ))}
       </select>
@@ -64,11 +68,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       {totalShown} record{totalShown !== 1 ? "s" : ""}
     </span>
 
-    {/* Run Payroll CTA */}
     {pendingCount > 0 && (
       <button
         onClick={onRunPayroll}
-        className="flex items-center gap-2 px-4 py-2 bg-success text-white rounded-lg text-xs font-bold hover:opacity-90 transition shadow-md shadow-success/30"
+        className="flex items-center gap-2 px-4 py-2 bg-success text-white rounded-lg text-xs font-bold
+          hover:opacity-90 transition shadow-md shadow-success/30"
       >
         <Play className="w-3.5 h-3.5" />
         Run Payroll

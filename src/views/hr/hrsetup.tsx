@@ -8,6 +8,7 @@ import {
 import GeneralSettingsTab from "./tabs/GeneralSettingsTab";
 import EmployeeConfigTab from "./tabs/EmployeeConfig";
 import PayrollConfigTab from "./tabs/payrollconfigtab";
+import LeaveConfigTab from "./tabs/leaveConfigTab";
 import WorkScheduleTab from "./tabs/WorkScheduleTab";
 import SalarySlipSetup from "./tabs/Salaryslipsetup";
 
@@ -27,7 +28,7 @@ export default function HRSetup() {
       case "general": return <GeneralSettingsTab />;
       case "employee": return <EmployeeConfigTab />;
       case "payroll": return <PayrollConfigTab />;
-      case "leave": return <WorkScheduleTab />;
+      case "leave": return <LeaveConfigTab />;
       case "slip": return <SalarySlipSetup />;
       default: return null;
     }

@@ -13,7 +13,7 @@ import {
   deleteEmployeeById,
 } from "../../../api/employeeapi";
 
-import AddEmployeeModal from "../../../components/Hr/employeedirectorymodal/AddEmployeeModal";
+import { openEmployeeModal } from "../../../store/modalStore";
 
 import Table from "../../../components/ui/Table/Table";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
@@ -23,8 +23,11 @@ import ActionButton, {
 } from "../../../components/ui/Table/ActionButton";
 
 import type { Column } from "../../../components/ui/Table/type";
-import type { EmployeeSummary, Employee } from "../../../types/employee";
+import type { EmployeeSummary } from "../../../types/employee";
 import EmployeeDetailView from "../EmployeeManagement/mployeeDetailView";
+
+const unwrapEmployee = (res: any): any =>
+  res?.message?.data ?? res?.data ?? res;
 
 const EmployeeDirectory: React.FC = () => {
   const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
@@ -33,132 +36,118 @@ const EmployeeDirectory: React.FC = () => {
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const [showModal, setShowModal] = useState(false);
-  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
-  //state for detail view
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
-    null,
-  );
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
-  //function to handle view employee details
- const handleViewEmployee = async (id: string) => {
-  try {
-    showLoading("Loading Employee...");
-    const res = await getEmployeeById(id);
-    setSelectedEmployee(res.data ?? res);
-    setViewMode("detail");
-    closeSwal();
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
-
-
-  const refreshSelectedEmployee = async () => {
-    if (!selectedEmployee?.id) return;
-
-    const res = await getEmployeeById(selectedEmployee.id);
-    setSelectedEmployee(res.data ?? res);
+  // ── View detail ──────────────────────────────────────────────────────────
+  const handleViewEmployee = async (id: string) => {
+    try {
+      showLoading("Loading Employee...");
+      const res = await getEmployeeById(id);
+      setSelectedEmployee(unwrapEmployee(res));
+      setViewMode("detail");
+      closeSwal();
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
   };
 
-const fetchEmployees = async () => {
-  try {
-    setLoading(true);
-    const res = await getAllEmployees(page, pageSize, searchTerm);
+  const refreshSelectedEmployee = async () => {
+    const id = selectedEmployee?.employee || selectedEmployee?.id;
+    if (!id) return;
+    const res = await getEmployeeById(id);
+    setSelectedEmployee(unwrapEmployee(res));
+  };
 
-    setEmployees(res.data.employees);
-    setTotalPages(res.data.pagination?.total_pages || 1);
-    setTotalItems(res.data.pagination?.total || 0);
-  } catch (error) {
-    showApiError(error);
-  } finally {
-    setLoading(false);
-  }
-};
+  // ── Fetch list ───────────────────────────────────────────────────────────
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const res = await getAllEmployees(page, pageSize, searchTerm);
 
+      const mapped = (res.data || []).map((e: any) => ({
+        id: e.name,
+        employeeId: e.name,
+        name: e.employee_name,
+        jobTitle: e.designation,
+        department: e.department || "-",
+        workLocation: e.branch || "-",
+        status: e.status,
+      }));
+
+      setEmployees(mapped);
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total_items || 0);
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchEmployees();
   }, [page]);
-  /* ===============================
-     ACTION HANDLERS
-  ================================ */
 
+  // ── Add ──────────────────────────────────────────────────────────────────
   const handleAdd = () => {
-    setEditEmployee(null);
-    setShowModal(true);
+    openEmployeeModal(null, false);
   };
 
-const handleEdit = async (id: string, e: React.MouseEvent) => {
-  e.stopPropagation();
-  try {
-    showLoading("Fetching Employee...");
-    const res = await getEmployeeById(id);
-    setEditEmployee(res.data ?? res);
-    setShowModal(true);
-    closeSwal();
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+  // ── Edit ─────────────────────────────────────────────────────────────────
+  const handleEdit = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      showLoading("Fetching Employee...");
+      const res = await getEmployeeById(id);
+      const employeeData = unwrapEmployee(res); // flat data object
+      closeSwal();
 
+      
+      openEmployeeModal(employeeData, true);
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
-const handleDelete = async (id: string, e: React.MouseEvent) => {
-  e.stopPropagation();
+  // ── Delete ───────────────────────────────────────────────────────────────
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
 
-  const result = await fireManagedSwal({
-    title: "Are you sure?",
-    text: "This employee will be permanently deleted.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, delete",
-  });
+    const result = await fireManagedSwal({
+      title: "Are you sure?",
+      text: "This employee will be permanently deleted.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+    });
 
-  if (!result.isConfirmed) return;
+    if (!result.isConfirmed) return;
 
-  try {
-    showLoading("Deleting Employee...");
-    await deleteEmployeeById(id);
+    try {
+      showLoading("Deleting Employee...");
+      await deleteEmployeeById(id);
+      setEmployees((prev) => prev.filter((emp) => emp.id !== id));
+      closeSwal();
+      showSuccess("Employee deleted successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
-    setEmployees((prev) => prev.filter((emp) => emp.id !== id));
-
-    closeSwal();
-    showSuccess("Employee deleted successfully");
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
-
-const handleSaved = async () => {
-  setShowModal(false);
-  setEditEmployee(null);
-  await fetchEmployees();
-
-  showSuccess(editEmployee ? "Employee updated" : "Employee added");
-};
-
-  const uniqueDepartments = Array.from(
-    new Set(employees.map((e) => e.department)),
-  ).filter((d) => d !== "");
-
-  /* ===============================
-     TABLE COLUMNS
-  ================================ */
-
+  // ── Columns ──────────────────────────────────────────────────────────────
   const columns: Column<EmployeeSummary>[] = [
     { key: "employeeId", header: "Employee ID", align: "left" },
-    { key: "name", header: "Name", align: "left" },
-    { key: "jobTitle", header: "Job Title", align: "left" },
+    { key: "name",       header: "Name",        align: "left" },
+    { key: "jobTitle",   header: "Job Title",   align: "left" },
     {
       key: "department",
       header: "Department",
@@ -182,8 +171,11 @@ const handleSaved = async () => {
       align: "center",
       render: (e) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={() => handleViewEmployee(e.id)}iconOnly />
-
+          <ActionButton
+            type="view"
+            onClick={() => handleViewEmployee(e.id)}
+            iconOnly
+          />
           <ActionMenu
             onEdit={(ev) => handleEdit(e.id, ev as any)}
             onDelete={(ev) => handleDelete(e.id, ev as any)}
@@ -193,10 +185,7 @@ const handleSaved = async () => {
     },
   ];
 
-  /* ===============================
-     RENDER
-  ================================ */
-
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="p-6">
       {viewMode === "table" ? (
@@ -204,7 +193,6 @@ const handleSaved = async () => {
           loading={loading}
           columns={columns}
           data={employees}
-          serverSide
           showToolbar
           searchValue={searchTerm}
           onSearch={setSearchTerm}
@@ -219,7 +207,7 @@ const handleSaved = async () => {
           pageSizeOptions={[10, 25, 50, 100]}
           onPageSizeChange={(size) => {
             setPageSize(size);
-            setPage(1); // reset page
+            setPage(1);
           }}
           onPageChange={setPage}
         />
@@ -233,20 +221,6 @@ const handleSaved = async () => {
           onDocumentUploaded={refreshSelectedEmployee}
         />
       ) : null}
-
-      {/* Add / Edit Modal */}
-      <AddEmployeeModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditEmployee(null);
-        }}
-        onSuccess={handleSaved}
-        
-        level={[]}
-        editData={editEmployee}
-        mode={editEmployee ? "edit" : "add"}
-      />
     </div>
   );
 };

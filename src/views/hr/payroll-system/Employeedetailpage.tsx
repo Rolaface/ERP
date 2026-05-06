@@ -1,4 +1,4 @@
-// EmployeeDetailPage.tsx — Full employee payroll detail view
+
 import React, { useState } from "react";
 import {
   ChevronLeft, Search, User, Mail, Briefcase, Calendar,
