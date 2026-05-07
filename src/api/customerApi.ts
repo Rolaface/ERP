@@ -1,7 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
-import type { CustomerDetail } from "../types/customer";
+
 
 const api = createAxiosInstance(ERP_BASE);
 export const CustomerAPI = API.customer;
@@ -27,7 +27,7 @@ export async function getCustomerByCustomerCode(id: string): Promise<any> {
   return resp.data;
 }
 
-/** POST — create new customer */
+
 export async function createCustomer(payload: any): Promise<any> {
   const resp: AxiosResponse = await api.post(CustomerAPI.create, payload);
   return resp.data;

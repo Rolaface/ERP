@@ -15,6 +15,7 @@ import {
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
+import { usePermission } from "../../hooks/permission/usePermission";
 
 
 const Items = lazy(() => import("./Items"));
@@ -37,41 +38,53 @@ const iconProps = {
   strokeWidth: 1.75,
 };
 
-const inventoryTabs = [
+const ALL_INVENTORY_TAB = [
   {
     id: "dashboard",
     label: "Dashboard",
     icon: <LayoutDashboard {...iconProps} />,
+     module: null,
   },
   {
     id: "taxTemplates",
     label: "Tax Templates",
     icon: <ReceiptText  {...iconProps} />, 
+     module: "Item Tax Template",
+    action: "read" as const,
   },
   {
     id: "items",
     label: "Items",
     icon: <Package {...iconProps} />, 
+     module: "Item",
+    action: "read" as const,
   },
   {
     id: "itemsCategory",
     label: "Item Group",
     icon: <Layers {...iconProps} />,
+     module: "Item Group",
+    action: "read" as const,
   },
   {
     id: "warehouse",
     label: "Warehouse",
     icon: <Warehouse {...iconProps} />,
+     module: "Warehouse",
+    action: "read" as const,
   },
   {
     id: "stock",
     label: "Stock",
     icon: <Boxes {...iconProps} />, 
+     module: "Stock Entry",
+    action: "read" as const,
   },
   {
     id: "import",
     label: "Import",
     icon: <Upload {...iconProps} />, 
+    module: null,
   },
 ];
 const DEFAULT_TAB = "dashboard";
@@ -80,6 +93,12 @@ const Inventory: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { openWarehouseCreate, openWarehouseEdit } = useOutletContext<OutletContextType>();
+   const { can } = usePermission();       
+    
+     const inventoryTabs = useMemo(
+    () => ALL_INVENTORY_TAB.filter((t) => !t.module || can(t.module, t.action)),
+    [can]
+  );   
 
   const activeTab = useMemo(() => {
     const path = location.pathname;
@@ -97,7 +116,12 @@ const Inventory: React.FC = () => {
     }
   }, [location.pathname, navigate]);
 
-  const isDashboardTab = activeTab === "dashboard";
+    const resolvedTab =
+    inventoryTabs.find((t) => t.id === activeTab)?.id ??
+    inventoryTabs[0]?.id ??
+    DEFAULT_TAB;     
+
+  const isDashboardTab = resolvedTab === "dashboard";
 
   const handleTabChange = useCallback((tabId: string) => {
     navigate(`/inventory/${tabId}`, { replace: true });
@@ -112,11 +136,10 @@ const Inventory: React.FC = () => {
     warehouse: <WarehouseView openWarehouseCreate={openWarehouseCreate} openWarehouseEdit={openWarehouseEdit} />,
     stock: <Stock />,
     import: <Import />,
-    movements: <Movements />,
     taxTemplates: <TaxTemplate />,
   }), [openWarehouseCreate, openWarehouseEdit]);
 
-  const currentTabComponent = tabComponents[activeTab as keyof typeof tabComponents] || <InventoryDashboard />;
+  const currentTabComponent = tabComponents[resolvedTab as keyof typeof tabComponents] || <InventoryDashboard />;
 
   return (
     <AppPage viewportLocked={isDashboardTab}>
@@ -127,7 +150,7 @@ const Inventory: React.FC = () => {
       />
       <AppTabs
         tabs={inventoryTabs}
-        activeTab={activeTab}
+        activeTab={resolvedTab}
         onChange={handleTabChange}
       />
       <AppPageBody viewportLocked={isDashboardTab}>

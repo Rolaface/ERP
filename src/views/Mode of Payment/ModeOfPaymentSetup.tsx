@@ -17,6 +17,11 @@ import {
   AppPageHeader,
   AppPageBody,
 } from "../../components/ui/app-shell";
+import { usePermission } from "../../hooks/permission/usePermission";
+
+
+
+const MODE_OF_PAYMENT_MODULE = "Mode Of Payment";
 
 const ModeOfPaymentSetup: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
@@ -27,7 +32,7 @@ const ModeOfPaymentSetup: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-
+  const { can } = usePermission();
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -36,7 +41,7 @@ const ModeOfPaymentSetup: React.FC = () => {
       setTotalPages(res.pagination.total_pages);
       setTotalItems(res.pagination.total);
     } catch (err: any) {
-      showApiError(err.message);
+      showApiError(err);
     } finally {
       setLoading(false);
     }
@@ -54,7 +59,7 @@ const ModeOfPaymentSetup: React.FC = () => {
       await fetchData();
       showSuccess("Status updated successfully");
     } catch (err: any) {
-      showApiError(err.message);
+      showApiError(err);
     } finally {
       setActionLoadingId(null);
     }
@@ -85,13 +90,17 @@ const ModeOfPaymentSetup: React.FC = () => {
       render: (row: any) => (
         <ActionGroup>
           <ActionMenu
-            customActions={[
-              {
-                label: row.enabled ? "Disable" : "Enable",
-                onClick: () => handleToggle(row),
-                disabled: actionLoadingId === String(row.id),
-              },
-            ]}
+            customActions={
+              can(MODE_OF_PAYMENT_MODULE, "write")
+                ? [
+                  {
+                    label: row.enabled ? "Disable" : "Enable",
+                    onClick: () => handleToggle(row),
+                    disabled: actionLoadingId === String(row.id),
+                  },
+                ]
+                : []
+            }
           />
         </ActionGroup>
       ),
@@ -112,9 +121,16 @@ const ModeOfPaymentSetup: React.FC = () => {
           loading={loading}
           rowKey={(r) => String(r.id)}
           showToolbar
-          enableAdd
+          enableAdd={can(MODE_OF_PAYMENT_MODULE, "create")}
           addLabel="Add Mode of Payment"
-          onAdd={() => openModeOfPaymentModal(null, false, { onSuccess: fetchData })}
+          onAdd={
+            can(MODE_OF_PAYMENT_MODULE, "create")
+              ? () =>
+                openModeOfPaymentModal(null, false, {
+                  onSuccess: fetchData,
+                })
+              : undefined
+          }
           currentPage={page}
           totalPages={totalPages}
           pageSize={pageSize}

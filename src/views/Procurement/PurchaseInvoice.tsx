@@ -38,7 +38,8 @@ import {
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { Copy } from "lucide-react";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
 interface Purchaseinvoice {
   pId: string;
@@ -94,6 +95,9 @@ type OutletContextType = {
   openPIEdit: (pId: string | number) => void;
 };
 
+const PI_MODULE      = "Purchase Invoice";
+const PAYMENT_MODULE = "Payment Entry";
+
 const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   onAdd,
 }) => {
@@ -109,7 +113,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
   const [company, setCompany] = useState<any | null>(null);
-
+const { can } = usePermission(); 
   // ── PDF preview modal
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
@@ -587,52 +591,51 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         </div>
       ),
     },
-    {
+   {
       key: "actions",
       header: "Actions",
       align: "center",
       render: (o) => (
         <ActionGroup>
+
           <ActionButton
             type="view"
             onClick={(e) => handleViewClick(o.pId, e)}
             iconOnly
           />
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(o, e)}
-            iconOnly
-            disabled={o.status !== "Draft"}
-            title={
-              o.status !== "Draft"
-                ? "Only Draft purchase invoices can be edited"
-                : "Edit Purchase Invoice"
-            }
-          />
-          <ActionMenu
-            onDelete={(e) => handleDelete(o, e as any)}
-            customActions={[
-              {
-                label: "View PDF",
-                onClick: () => handleOpenPDF(o),
-              },
 
-              ...(Number(o.outstanding_amount || 0) > 0
-                ? [
-                  {
-                    label: "Make Payment",
-                    onClick: () => handleMakePayment(o.pId),
-                  },
-                ]
+          {/* Edit — needs write + Draft status */}
+          <PermissionGate module={PI_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(o, e)}
+              iconOnly
+              disabled={o.status !== "Draft"}
+              title={o.status !== "Draft" ? "Only Draft invoices can be edited" : "Edit Purchase Invoice"}
+            />
+          </PermissionGate>
+
+          <ActionMenu
+            // Delete — needs delete
+            {...(can(PI_MODULE, "delete")
+              ? { onDelete: (e) => handleDelete(o, e as any) }
+              : {})}
+            customActions={[
+              { label: "View PDF", onClick: () => handleOpenPDF(o) },
+
+              // Make Payment — needs Payment Entry create + outstanding > 0
+              ...(can(PAYMENT_MODULE, "create") && Number(o.outstanding_amount || 0) > 0
+                ? [{ label: "Make Payment", onClick: () => handleMakePayment(o.pId) }]
                 : []),
 
-              ...(STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
-                (status) => ({
-                  label: `Mark as ${status}`,
-                  danger: status === "Cancelled" || status === "Debit Note Issued",
-                  onClick: () => handleStatusChange(o.pId, status),
-                }),
-              ),
+              // Status transitions — needs write
+              ...(can(PI_MODULE, "write")
+                ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map((status) => ({
+                    label: `Mark as ${status}`,
+                    danger: status === "Cancelled" || status === "Debit Note Issued",
+                    onClick: () => handleStatusChange(o.pId, status),
+                  }))
+                : []),
             ]}
           />
         </ActionGroup>
@@ -650,10 +653,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         loading={loading}
         searchValue={searchTerm}
         onSearch={setSearchTerm}
-        enableAdd
+        enableAdd={can(PI_MODULE, "create")} 
         addLabel="Add Purchase Invoice"
         onAdd={handleAddClick}
-        enableExport
+        enableExport={can(PI_MODULE, "export")}   
         onExport={handleExportExcel}
         enableColumnSelector
         currentPage={page}

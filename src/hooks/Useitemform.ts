@@ -321,8 +321,8 @@ export const useItemForm = ({
       const response = (await getItemGroupTree()) as ItemGroupTreeResponse;
       const treeData = response.message?.data?.item_groups;
       setItemGroups(Array.isArray(treeData) ? flattenItemGroups(treeData) : []);
-    } catch {
-      showApiError("Error fetching item groups");
+    } catch (err) {
+      showApiError(err);
     } finally {
       setLoadingItemGroups(false);
     }
@@ -349,8 +349,8 @@ export const useItemForm = ({
       }));
 
       setSuppliers(mapped);
-    } catch {
-      showApiError("Error fetching suppliers");
+    } catch (err) {
+      showApiError(err);
     } finally {
       setLoadingSuppliers(false);
     }
@@ -467,7 +467,7 @@ export const useItemForm = ({
 
       if (!isSuccess) {
         closeSwal();
-        showApiError(response.message || "Something went wrong");
+        showApiError(response || "Something went wrong");
         return false;
       }
 
@@ -477,72 +477,68 @@ export const useItemForm = ({
       if (canClose === false) return false;
       handleClose();
       return true;
-    } catch (error) {
+    }  catch (error) {
       closeSwal();
-      showApiError(
-        typeof error === "string"
-          ? error
-          : (error as any)?.message?.message || "Something went wrong",
-      );
+      showApiError(error);
       return false;
     } finally {
-      setLoading(false);
-    }
-  };
+    setLoading(false);
+  }
+};
 
-  const handleNext = (taxRows: ItemTaxRow[]) => {
-    const error = getValidationErrorForTab(activeTab, taxRows);
-    if (!validateAndShow(error)) return;
+const handleNext = (taxRows: ItemTaxRow[]) => {
+  const error = getValidationErrorForTab(activeTab, taxRows);
+  if (!validateAndShow(error)) return;
 
-    if (activeTab === "details") {
-      setActiveTab("taxDetails");
-      return;
-    }
+  if (activeTab === "details") {
+    setActiveTab("taxDetails");
+    return;
+  }
 
-    if (activeTab === "taxDetails" && !isServiceItem && form.trackInventory) {
-      setActiveTab("inventoryDetails");
-    }
-  };
+  if (activeTab === "taxDetails" && !isServiceItem && form.trackInventory) {
+    setActiveTab("inventoryDetails");
+  }
+};
 
-  const handleSave = async (
-    event: React.FormEvent | undefined,
-    taxRows: ItemTaxRow[],
-  ) => {
-    event?.preventDefault();
+const handleSave = async (
+  event: React.FormEvent | undefined,
+  taxRows: ItemTaxRow[],
+) => {
+  event?.preventDefault();
 
-    const error = getFirstValidationError(taxRows);
-    if (!validateAndShow(error)) return false;
+  const error = getFirstValidationError(taxRows);
+  if (!validateAndShow(error)) return false;
 
-    return saveItem(taxRows);
-  };
+  return saveItem(taxRows);
+};
 
-  const handleSubmit = async (
-    event: React.FormEvent,
-    taxRows: ItemTaxRow[],
-  ) => {
-    await handleSave(event, taxRows);
-  };
+const handleSubmit = async (
+  event: React.FormEvent,
+  taxRows: ItemTaxRow[],
+) => {
+  await handleSave(event, taxRows);
+};
 
-  return {
-    form,
-    setForm,
-    loading,
-    activeTab,
-    setActiveTab,
-    isServiceItem,
-    handleForm,
-    reset,
-    handleClose,
-    handleSubmit,
-    handleSave,
-    handleNext,
-    getFirstValidationError,
-    getValidationErrorForTab,
-    taxRows,
-    setTaxRows,
-    itemGroups,
-    loadingItemGroups,
-    suppliers,
-    loadingSuppliers,
-  };
+return {
+  form,
+  setForm,
+  loading,
+  activeTab,
+  setActiveTab,
+  isServiceItem,
+  handleForm,
+  reset,
+  handleClose,
+  handleSubmit,
+  handleSave,
+  handleNext,
+  getFirstValidationError,
+  getValidationErrorForTab,
+  taxRows,
+  setTaxRows,
+  itemGroups,
+  loadingItemGroups,
+  suppliers,
+  loadingSuppliers,
+};
 };

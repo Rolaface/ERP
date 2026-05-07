@@ -219,12 +219,6 @@ const SupplierStatement = ({
   return (
     <div className="max-w-[1400px] mx-auto space-y-4 pb-4">
 
-      {/*
-        ════════════════════════════════════════════════════
-        UNIFIED STATS BAR — ONE card, zero height mismatch.
-        Left: 3 KPI cells  |  thick divider  |  Right: aging
-        ════════════════════════════════════════════════════
-      */}
       <div className="bg-card border border-theme rounded-2xl flex items-stretch overflow-hidden divide-x divide-theme">
 
         {/* KPI 1 */}

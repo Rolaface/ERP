@@ -168,8 +168,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
         isSelling:    form.isSelling,
       });
       onClose();
-    } catch (error) {
-      showApiError(error);
+    } catch (err) {
+      showApiError(err);
     } finally {
       setSubmitting(false);
     }

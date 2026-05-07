@@ -80,6 +80,8 @@ export interface GetUserRoleByIdResponse {
         report: 0 | 1;
         import: 0 | 1;
         export: 0 | 1;
+        submit: 0 | 1;
+        cancel: 0 | 1;
       }[];
     };
   };
@@ -125,4 +127,14 @@ export async function updateUserRoleStatus(
     { id, isDisabled }
   );
   return resp.data;
+}
+
+export interface UserRoleDetails{
+  "message" : {
+    "status" : "success"|"error",
+    "message": string,
+    "data":{
+      
+    }
+  }
 }

@@ -115,7 +115,8 @@ export const API = {
     getUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get`,
     getUserbyId: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_user_by_id`,
     updateUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.update`,
-    deleteUser: `${ERP_BASE}/api/method/frappe.client.delete`,
+    deleteUser:  `${ERP_BASE}/api/method/frappe.client.delete`,
+    getUserDetails: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_login_user`
   },
 
   Account: {
