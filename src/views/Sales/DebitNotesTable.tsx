@@ -13,6 +13,9 @@ import { deleteDebitNote, submitDebitNote, cancelDebitNote } from "../../api/Deb
 import { fireManagedSwal } from "../../utils/swalManager";
 import { getDebitNotebyId } from "../../api/DebitNoteapi";
 import { DebitNote } from "../../types/sales/Debitnotes";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
+
 
 const mapItem = (item: any): DebitNote => ({
   noteNo: item.name,
@@ -24,11 +27,13 @@ const mapItem = (item: any): DebitNote => ({
   currency: item.currency,
 });
 
+const DEBIT_NOTE_MODULE = "Purchase Invoice Return";
+
 const DebitNotesTable: React.FC = () => {
   const [data, setData] = useState<DebitNote[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
-
+const { can } = usePermission();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -322,7 +327,7 @@ const DebitNotesTable: React.FC = () => {
         </div>
       ),
     },
-    {
+     {
       key: "actions",
       header: "Actions",
       align: "center",
@@ -331,59 +336,39 @@ const DebitNotesTable: React.FC = () => {
           <ActionButton
             type="view"
             iconOnly
-            onClick={() => {
-              setDetailsId(r.noteNo);
-              setDetailsOpen(true);
-            }}
+            onClick={() => { setDetailsId(r.noteNo); setDetailsOpen(true); }}
           />
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(r, e)}
-            iconOnly
-            disabled={r.status !== "Draft"}
-            title={
-              r.status !== "Draft"
-                ? "Only Draft invoices can be edited"
-                : "Edit DebitNote"
-            }
-          />
-          <ActionMenu
-            customActions={[
 
-              ...(r.status === "Draft"
-                ? [{
-                  label: "Submit",
-                  icon: (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  ),
-                  onClick: () => handleSubmit(r.noteNo),
-                }]
+          {/* Edit — needs write + Draft */}
+          <PermissionGate module={DEBIT_NOTE_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(r, e)}
+              iconOnly
+              disabled={r.status !== "Draft"}
+              title={r.status !== "Draft" ? "Only Draft invoices can be edited" : "Edit DebitNote"}
+            />
+          </PermissionGate>
+
+          <ActionMenu
+            // Delete — needs delete
+            {...(can(DEBIT_NOTE_MODULE, "delete")
+              ? { onDelete: (e) => { e?.stopPropagation(); handleDelete(r.noteNo); } }
+              : {})}
+            customActions={[
+              ...(r.status === "Draft" && can(DEBIT_NOTE_MODULE, "write")
+                ? [{ label: "Submit", onClick: () => handleSubmit(r.noteNo) }]
                 : []),
-              ...(!["Draft", "Cancelled"].includes(r.status)
-                ? [{
-                  label: "Cancel",
-                  icon: (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  ),
-                  onClick: () => handleCancel(r.noteNo),
-                  danger: true,
-                }]
+              ...(!["Draft", "Cancelled"].includes(r.status) && can(DEBIT_NOTE_MODULE, "write")
+                ? [{ label: "Cancel", onClick: () => handleCancel(r.noteNo), danger: true }]
                 : []),
             ]}
-            onDelete={(e) => {
-              e?.stopPropagation();
-              handleDelete(r.noteNo);
-            }}
           />
         </ActionGroup>
       ),
     },
   ];
+
 
   return (
     <div className="h-full min-h-0">
@@ -396,12 +381,12 @@ const DebitNotesTable: React.FC = () => {
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => { setSearchTerm(q); setPage(1); }}
-        enableAdd
+        enableAdd={can(DEBIT_NOTE_MODULE, "create")} 
         addLabel="Add Debit Note"
         onAdd={() => openDebitNoteModal()}
         emptyMessage="No debit notes found"
         enableColumnSelector
-        enableExport
+       enableExport={can(DEBIT_NOTE_MODULE, "export")}
         onExport={handleExportExcel}
         currentPage={page}
         totalPages={totalPages}

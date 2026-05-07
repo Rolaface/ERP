@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
 import {
   X,
   Search,
   FileText,
   Receipt,
-  Plus,
   MapPin,
   Mail,
   Building2,
@@ -25,24 +23,14 @@ import {
   CalendarDays,
 } from "lucide-react";
 import type { CustomerDetail } from "../../types/customer";
-import QuotationModal from "../../components/sales/QuotationModal";
-import InvoiceModal from "../../components/sales/InvoiceModal";
 import CustomerStatement from "../Crm/CustomerStatement";
 import CustomerInvoices from "./CustomerInvoices";
 import CustomerQuotations from "./CustomerQuotations";
 import CustomerBankDetails from "./CustomerBankDetails";
-import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
-import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
 import CustomerdetailviewPayment from "./CustomerDetailViewPayments";
 import { getCustomerByCustomerCode } from "../../api/customerApi";
 
 
-
-type OutletContextType = {
-  openCustomerCreate: () => void;
-  openInvoiceCreate:()=>void;
-  openQuotationCreate: () => void;
-};
 
 interface Props {
   customerId: string;
@@ -95,18 +83,10 @@ const CustomerDetailView: React.FC<Props> = ({
   onBack,
   onCustomerSelect,
 }) => {
-  const { openCustomerCreate } = useOutletContext<OutletContextType>();
-  const { openInvoiceCreate } = useOutletContext<OutletContextType>();
-  const { openQuotationCreate } = useOutletContext<OutletContextType> ();
-
   const [searchTerm,          setSearchTerm]          = useState("");
   const [customer,            setCustomer]            = useState<CustomerDetail | null>(null);
   const [loading,             setLoading]             = useState(true);
   const [activeTab,           setActiveTab]           = useState<TabId>("overview");
-  const [showQuotationModal,  setShowQuotationModal]  = useState(false);
-  const [showInvoiceModal,    setShowInvoiceModal]    = useState(false);
-  const [showPaymentModal,    setShowPaymentModal]    = useState(false);
-  const [showBankAccountModal,setShowBankAccountModal]= useState(false);
   const [editingRow,          setEditingRow]          = useState<any>(null);
   const [sidebarOpen,         setSidebarOpen]         = useState(true);
   const [mobileDrawer,        setMobileDrawer]        = useState(false);
@@ -567,9 +547,8 @@ const CustomerDetailView: React.FC<Props> = ({
                   onAdd={(refresh) => {
                     setEditingRow(null);
                     refreshBankAccounts.current = refresh;
-                    setShowBankAccountModal(true);
                   }}
-                  onEdit={(row) => { setEditingRow(row); setShowBankAccountModal(true); }}
+                  onEdit={(row) => { setEditingRow(row); }}
                 />
               </div>
             )}
@@ -604,15 +583,15 @@ const CustomerDetailView: React.FC<Props> = ({
       </div>
 
       {/* ── MODALS ── */}
-      <QuotationModal  isOpen={showQuotationModal}  onClose={() => setShowQuotationModal(false)} />
-      <InvoiceModal    isOpen={showInvoiceModal}    onClose={() => setShowInvoiceModal(false)} />
-      <PaymentEntryModal
+      {/* <QuotationModal  isOpen={showQuotationModal}  onClose={() => setShowQuotationModal(false)} />
+      <InvoiceModal    isOpen={showInvoiceModal}    onClose={() => setShowInvoiceModal(false)} /> */}
+      {/* <PaymentEntryModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onSuccess={() => setShowPaymentModal(false)}
         customerId={customer.id}
-      />
-      <AddBankAccountModal
+      /> */}
+      {/* <AddBankAccountModal
         isOpen={showBankAccountModal}
       
         onClose={() => { setShowBankAccountModal(false); setEditingRow(null); }}
@@ -621,7 +600,7 @@ const CustomerDetailView: React.FC<Props> = ({
         defaultAccountFor="Customer"
         initialData={editingRow}
          customerId={customer.id}
-      />
+      /> */}
     </div>
   );
 };

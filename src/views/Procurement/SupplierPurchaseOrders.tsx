@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import { getPurchaseOrdersBySupplier } from "../../api/procurement/PurchaseOrderApi";
+import { showApiError } from "../../utils/alert";
 
 
 /*  TYPES  */
@@ -51,8 +52,8 @@ const SupplierPurchaseOrders = ({ supplierName }: Props) => {
         setPurchaseOrders(resp.data);
         setTotalPages(resp.pagination.total_pages || 1);
         setTotalItems(resp.pagination.total || 0);
-      } catch (e) {
-        console.error("PO fetch failed", e);
+      } catch (err) {
+         showApiError(err)
       } finally {
         setLoading(false);
       }

@@ -261,6 +261,24 @@ export function mapApiResponseToFormState(
     ];
   }
 
+  const billingAddress = addresses.find(
+    (a) => a.type === "Billing"
+  );
+
+  const shippingAddress = addresses.find(
+    (a) => a.type === "Shipping"
+  );
+
+  const sameAsBilling =
+    !!billingAddress &&
+    !!shippingAddress &&
+    billingAddress.line1 === shippingAddress.line1 &&
+    billingAddress.line2 === shippingAddress.line2 &&
+    billingAddress.city === shippingAddress.city &&
+    billingAddress.state === shippingAddress.state &&
+    billingAddress.postalCode === shippingAddress.postalCode &&
+    billingAddress.country === shippingAddress.country;
+
   return {
     id: data.id ?? "",
     name: data.name ?? "",
@@ -275,7 +293,7 @@ export function mapApiResponseToFormState(
     customerTaxCategory: data.customerTaxCategory ?? "",
     contacts,
     addresses,
-    sameAsBilling: false,
+    sameAsBilling,
     terms: data.terms ?? {
       selling: companySellingTerms ?? defaultSellingTerms,
     },
@@ -413,7 +431,7 @@ export function useCustomerForm({
 
   // ── Sync shipping ← billing when sameAsBilling ────────────────────────────
   useEffect(() => {
-    if (!form.sameAsBilling || isEditMode) return;
+    if (!form.sameAsBilling) return;
 
     const billing = form.addresses.find((a) => a.type === "Billing");
     if (!billing) return;

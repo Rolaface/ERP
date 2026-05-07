@@ -10,6 +10,10 @@ import { showConfirm, showSuccess, showApiError } from "../../utils/alert";
 import { getUserRoles, getUserRoleById, updateUserRoleStatus } from "../../api/RoleManagement/UserRoleApi";
 import { updateUserRoles } from "../../api/RoleManagement/UserRoleApi";
 import type { UserRoleFormData } from "../../types/RoleManagement/UserRole";
+import { useAuth } from "../../context/AuthContext";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
+
 
 const mapApiRoleToUserRole = (apiRole: {
   Id: string;
@@ -22,6 +26,7 @@ const mapApiRoleToUserRole = (apiRole: {
   disabled: apiRole.disabled,
 });
 
+const USER_ROLE_MODULE = "User Role";
 // const deleteUserRole = async (role: string): Promise<void> => {
 //   console.log("Delete role:", role);
 // };
@@ -65,7 +70,8 @@ const UserRolePage: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  
+  const { refreshPermissions } = useAuth();
+  const { can } = usePermission();
 
   const refreshKey = useDataRefreshStore(
     (state) => state.refreshFlags[REFRESH_KEYS.USER_ROLE_LIST]
@@ -117,6 +123,8 @@ const UserRolePage: React.FC = () => {
             import: p.import ?? 0,
             export: p.export ?? 0,
             report: p.report ?? 0,
+            submit: p.submit ?? 0,
+            cancel: p.cancel ?? 0,
           })),
         },
         isEdit,
@@ -125,6 +133,7 @@ const UserRolePage: React.FC = () => {
           ...(isEdit && {
             onSubmit: async (data: unknown) => {
               await updateUserRoles(data as UserRoleFormData);
+              await refreshPermissions();
             },
           }),
         }
@@ -135,21 +144,21 @@ const UserRolePage: React.FC = () => {
   };
 
   const handleView = (row: UserRole) => openRoleModal(row, true);
- const handleEdit = (row: UserRole) => openRoleModal(row, true);
+  const handleEdit = (row: UserRole) => openRoleModal(row, true);
 
-const handleToggleStatus = async (row: UserRole) => {
-  const id = row.roleId ?? row.role;
-  setTogglingId(id);
-  try {
-    await updateUserRoleStatus(id, row.disabled ? 0 : 1);
-    showSuccess(`Role ${row.disabled ? "enabled" : "disabled"} successfully`);
-    fetchRoles(searchQuery, page, pageSize);
-  } catch (err) {
-    showApiError(err);
-  } finally {
-    setTogglingId(null);
-  }
-};
+  const handleToggleStatus = async (row: UserRole) => {
+    const id = row.roleId ?? row.role;
+    setTogglingId(id);
+    try {
+      await updateUserRoleStatus(id, row.disabled ? 0 : 1);
+      showSuccess(`Role ${row.disabled ? "enabled" : "disabled"} successfully`);
+      fetchRoles(searchQuery, page, pageSize);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   // const handleDelete = useCallback(
   //   async (role: string, e: React.MouseEvent) => {
@@ -202,24 +211,47 @@ const handleToggleStatus = async (row: UserRole) => {
       align: "center",
       render: (row) => (
         <ActionGroup>
-          <ActionButton
-            type="edit"
-            onClick={() => handleEdit(row)}
-            iconOnly
-            title="Edit Role"
-          />
-          <ActionMenu
-            customActions={[
-              { label: "View Details", onClick: () => handleView(row) },
-              {
-                label: togglingId === (row.roleId ?? row.role)
-                  ? "Updating..."
-                  : row.disabled ? "Enable" : "Disable",
-             onClick: () => { handleToggleStatus(row); },
-                disabled: togglingId === (row.roleId ?? row.role),
-              },
-            ]}
-          />
+          <PermissionGate module={USER_ROLE_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={() => handleEdit(row)}
+              iconOnly
+              title="Edit Role"
+            />
+          </PermissionGate>
+          {(can(USER_ROLE_MODULE, "read") ||
+            can(USER_ROLE_MODULE, "write")) && (
+              <ActionMenu
+                customActions={[
+                  ...(can(USER_ROLE_MODULE, "read")
+                    ? [
+                      {
+                        label: "View Details",
+                        onClick: () => handleView(row),
+                      },
+                    ]
+                    : []),
+
+                  ...(can(USER_ROLE_MODULE, "write")
+                    ? [
+                      {
+                        label:
+                          togglingId === (row.roleId ?? row.role)
+                            ? "Updating..."
+                            : row.disabled
+                              ? "Enable"
+                              : "Disable",
+                        onClick: () => {
+                          handleToggleStatus(row);
+                        },
+                        disabled:
+                          togglingId === (row.roleId ?? row.role),
+                      },
+                    ]
+                    : []),
+                ]}
+              />
+            )}
         </ActionGroup>
       ),
     },
@@ -241,7 +273,7 @@ const handleToggleStatus = async (row: UserRole) => {
           setPage(1);
           fetchRoles(q, 1, pageSize);
         }}
-        enableAdd
+        enableAdd={can(USER_ROLE_MODULE, "create")}
         addLabel="Add Role"
         onAdd={() =>
           openUserRoleModal(null, false, {
@@ -249,7 +281,7 @@ const handleToggleStatus = async (row: UserRole) => {
           })
         }
         enableColumnSelector
-        enableExport
+        enableExport={can(USER_ROLE_MODULE, "export")}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}

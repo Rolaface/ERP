@@ -1,6 +1,5 @@
 export interface PermissionEntry {
   module: string;
-  root_module?: string;
   read: 0 | 1;
   write: 0 | 1;
   create: 0 | 1;
@@ -8,6 +7,8 @@ export interface PermissionEntry {
   import: 0 | 1;
   export: 0 | 1;
   report: 0 | 1;
+  submit: 0 | 1;
+  cancel: 0 | 1;
 }
 
 export interface UserRoleFormData {

@@ -38,8 +38,8 @@ export const useModeOfPaymentLogic = ({
         setCompanyLoading(true);
         const data = await getBankAccounts("Company");
         setCompanies(Array.isArray(data) ? data : []);
-      } catch {
-        showApiError("Failed to load companies");
+      } catch(err) {
+        showApiError(err);
       } finally {
         setCompanyLoading(false);
       }
@@ -53,8 +53,8 @@ export const useModeOfPaymentLogic = ({
         setAccLoading(true);
         const data = await getDefaultAccounts();
         setAccounts(Array.isArray(data) ? data : []);
-      } catch {
-        showApiError("Failed to load accounts");
+      } catch(err) {
+        showApiError(err);
       } finally {
         setAccLoading(false);
       }
@@ -112,7 +112,7 @@ export const useModeOfPaymentLogic = ({
       });
 
     } catch (err: any) {
-      showApiError(err.message);
+      showApiError(err);
     } finally {
       setLoading(false);
     }

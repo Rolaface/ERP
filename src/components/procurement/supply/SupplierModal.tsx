@@ -1,5 +1,5 @@
 import React from "react";
-import { Building2,Users, DollarSign, MapPin, FileText } from "lucide-react";
+import { Building2, Users, DollarSign, MapPin, FileText } from "lucide-react";
 import { SupplierInfoTab } from "./SupplierInfoTab";
 import { useSupplierForm } from "../../../hooks/useSupplierForm";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
@@ -62,8 +62,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     onSuccess: async (data) => {
       const result = await onSubmit?.(data);
       if (result) {
-    onClose();
-  }
+        onClose();
+      }
       return result ?? false;
     },
     isOpen,
@@ -81,10 +81,10 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     reset();
   };
 
- const handleSubmitForm = async () => {
-  await handleFormSubmit(new Event("submit") as unknown as React.FormEvent);
-  return true; 
-};
+  const handleSubmitForm = async () => {
+    await handleFormSubmit(new Event("submit") as unknown as React.FormEvent);
+    return true;
+  };
 
   const footer = (
     <ModalFooter
@@ -134,11 +134,10 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
                 type="button"
                 onClick={() => setActiveTab(key)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2
-          ${
-            activeTab === key
-              ? "text-primary border-b-[3px] border-primary"
-              : "text-muted border-b-[3px] border-transparent hover:text-main"
-          }`}
+          ${activeTab === key
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  }`}
               >
                 {label}
               </button>
@@ -155,18 +154,18 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               errors={errors}
             />
           )}
-         {activeTab === "payment" && (
-  <PaymentInfoTab
-    form={form}
-    onChange={handleChange}
-    errors={errors}
-    isEditMode={isEditMode}
-    partyType="Supplier"
-    partyName={form.supplierName || initialData?.supplierName || ""}
-    partyId={initialData?.id ? String(initialData.id) : undefined}  
-    currency={form.currency}
-  />
-)}
+          {activeTab === "payment" && (
+            <PaymentInfoTab
+              form={form}
+              onChange={handleChange}
+              errors={errors}
+              isEditMode={isEditMode}
+              partyType="Supplier"
+              partyName={form.supplierName || initialData?.supplierName || ""}
+              partyId={initialData?.id ? String(initialData.id) : undefined}
+              currency={form.currency}
+            />
+          )}
           {activeTab === "address" && (
             <AddressTab form={form} onChange={handleChange} errors={errors} />
           )}

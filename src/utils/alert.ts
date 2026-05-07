@@ -4,17 +4,21 @@ import { closeManagedSwal, fireManagedSwal } from "./swalManager";
 const extractErrorMessage = (error: any): string => {
   if (typeof error === "string") return error;
 
-if (error?.response?.data?.message) {
-  const msg = error.response.data.message;
+  const msg = error?.response?.data?.message;
 
-  if (typeof msg === "string") return msg;
-
-  if (typeof msg === "object" && msg?.message) {
-    return String(msg.message);
+  if (
+    typeof msg === "string" &&
+    msg.trim()
+  ) {
+    return msg.trim();
   }
 
-  return JSON.stringify(msg);
-}
+  if (
+    typeof msg === "object" &&
+    msg?.message
+  ) {
+    return String(msg.message).trim();
+  }
 
   if (error?.response?.data?._server_messages) {
     try {
@@ -156,14 +160,8 @@ export const showPOConflictDialog = async (
   if (result.isDenied) return "replace";
   return "cancel";
 };
-// ─────────────────────────────────────────────────────────────────────────────
-// ADD these two functions to your existing alert.ts
-// Everything else in alert.ts stays exactly the same.
-// ─────────────────────────────────────────────────────────────────────────────
 
 
-// ── Show a non-closable loading Swal with a custom HTML message ───────────────
-// Used for staged steps: "Creating employee…", "Uploading photo…"
 export const showStepLoader = (title: string, html: string) => {
   fireManagedSwal({
     title,
@@ -258,8 +256,8 @@ export const showEmployeeCreationResult = async (options: {
   const title = photoUploaded
     ? "Employee Profile Complete"
     : photoError
-    ? "Employee Saved — Photo Pending"
-    : "Employee Created Successfully";
+      ? "Employee Saved — Photo Pending"
+      : "Employee Created Successfully";
 
   await fireManagedSwal({
     icon,

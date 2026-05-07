@@ -10,13 +10,15 @@ import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore"
 import { getAllBanks, deleteBank } from "../../api/BankApi";
 import type { Bank } from "../../api/BankApi";
 import { showApiError, showConfirm, showSuccess } from "../../utils/alert";
-import { Landmark } from "lucide-react";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 import {
   AppPage,
   AppPageHeader,
   AppPageBody,
 } from "../../components/ui/app-shell";
-// ─── Main Component ───────────────────────────────────────────────────────────
+
+const BANK_MODULE = "Bank";
 
 const BankPage: React.FC = () => {
   const [banks, setBanks] = useState<Bank[]>([]);
@@ -24,7 +26,7 @@ const BankPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
-
+  const { can } = usePermission();
   const refreshKey = useDataRefreshStore(
     (state) => state.refreshFlags[REFRESH_KEYS.Bank],
   );
@@ -108,15 +110,21 @@ const BankPage: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(row, e as React.MouseEvent)}
-            iconOnly
-            title="Edit Bank"
-          />
-          <ActionMenu
-            onDelete={(e) => handleDelete(row.name, e as React.MouseEvent)}
-          />
+          <PermissionGate module={BANK_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(row, e as React.MouseEvent)}
+              iconOnly
+              title="Edit Bank"
+            />
+          </PermissionGate>
+          {can(BANK_MODULE, "delete") && (
+            <ActionMenu
+              onDelete={(e) =>
+                handleDelete(row.name, e as React.MouseEvent)
+              }
+            />
+          )}
         </ActionGroup>
       ),
     },
@@ -124,11 +132,7 @@ const BankPage: React.FC = () => {
 
   return (
     <AppPage>
-      <AppPageHeader
-        title="Bank"
-        description="Manage Bank"
-        icon={<Landmark />}
-      />
+
       <AppPageBody>
         <Table
           columns={columns}
@@ -138,11 +142,11 @@ const BankPage: React.FC = () => {
           loading={loading}
           isFetching={false}
           showToolbar
-          enableAdd
+          enableAdd={can(BANK_MODULE, "create")}
           addLabel="Add Bank"
           onAdd={() => openBankModal(null, false)}
           enableColumnSelector
-          enableExport
+          enableExport={can(BANK_MODULE, "export")}
           currentPage={page}
           totalPages={totalPages}
           pageSize={pageSize}

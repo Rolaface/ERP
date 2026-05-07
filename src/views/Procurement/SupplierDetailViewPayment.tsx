@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Table from "../../components/ui/Table/Table";
 import { getAllPayments } from "../../api/CustomerPayment";
+import { showApiError } from "../../utils/alert";
 
 interface Payment {
   id: string;
@@ -52,7 +53,7 @@ const SupplierDetailViewPayments = ({ supplierName }: Props) => {
         setTotalPages(res?.data?.pagination?.totalPages ?? 1);
         setTotalItems(res?.data?.pagination?.total ?? mapped.length);
       } catch (err) {
-        console.error("Supplier payment fetch failed", err);
+        showApiError(err);
       } finally {
         setLoading(false);
       }
@@ -100,13 +101,12 @@ const SupplierDetailViewPayments = ({ supplierName }: Props) => {
       header: "Status",
       render: (row: Payment) => (
         <span
-          className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${
-            row.status === "Submitted"
+          className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${row.status === "Submitted"
               ? "bg-success/10 text-success"
               : row.status === "Draft"
-              ? "bg-warning/10 text-warning"
-              : "bg-muted/10 text-muted"
-          }`}
+                ? "bg-warning/10 text-warning"
+                : "bg-muted/10 text-muted"
+            }`}
         >
           {row.status}
         </span>
@@ -118,7 +118,7 @@ const SupplierDetailViewPayments = ({ supplierName }: Props) => {
       align: "right" as const,
       render: (row: Payment) => (
         <span className="text-sm font-black text-primary">
-           {row.amount.toLocaleString()}
+          {row.amount.toLocaleString()}
         </span>
       ),
     },

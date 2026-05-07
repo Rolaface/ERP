@@ -24,6 +24,11 @@ import {
   AppPageHeader,
   AppPageBody,
 } from "../../components/ui/app-shell";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
+
+
+const CURRENCY_EXCHANGE_MODULE = "Currency Exchange";
 
 const CurrencyConversion: React.FC = () => {
   const {
@@ -38,6 +43,7 @@ const CurrencyConversion: React.FC = () => {
     actionLoading,
     deleteConversion,
   } = useCurrencyConversion();
+  const { can } = usePermission();
 
   const handleAdd = () =>
     openCurrencyExchangeModal(null, false, {
@@ -138,33 +144,44 @@ const CurrencyConversion: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
-          <ActionButton type="edit" onClick={() => handleEdit(row)} iconOnly />
-          <ActionMenu
-            customActions={[
-              {
-                label: "Delete",
-                onClick: async () => {
-                  if (actionLoading) return;
-                  const confirmed = await showConfirm("Do you want to delete this record?");
-                  if (!confirmed) return;
-                  try {
-                    showLoading("Deleting...");
-                    const res = await deleteConversion(row.id);
-                    closeSwal();
-                    const backend = res?.message;
-                    if (!backend || backend.status === "error" || backend.status_code >= 400) {
-                      showApiError(res);
-                      return;
+          <PermissionGate
+            module={CURRENCY_EXCHANGE_MODULE}
+            action="write"
+          >
+            <ActionButton
+              type="edit"
+              onClick={() => handleEdit(row)}
+              iconOnly
+            />
+          </PermissionGate>
+          {can(CURRENCY_EXCHANGE_MODULE, "delete") && (
+            <ActionMenu
+              customActions={[
+                {
+                  label: "Delete",
+                  onClick: async () => {
+                    if (actionLoading) return;
+                    const confirmed = await showConfirm("Do you want to delete this record?");
+                    if (!confirmed) return;
+                    try {
+                      showLoading("Deleting...");
+                      const res = await deleteConversion(row.id);
+                      closeSwal();
+                      const backend = res?.message;
+                      if (!backend || backend.status === "error" || backend.status_code >= 400) {
+                        showApiError(res);
+                        return;
+                      }
+                      showSuccess(backend.message);
+                    } catch (err) {
+                      closeSwal();
+                      showApiError(err);
                     }
-                    showSuccess(backend.message);
-                  } catch (err) {
-                    closeSwal();
-                    showApiError(err);
-                  }
+                  },
                 },
-              },
-            ]}
-          />
+              ]}
+            />
+          )}
         </ActionGroup>
       ),
     },
@@ -186,9 +203,13 @@ const CurrencyConversion: React.FC = () => {
           tableId="currency-exchange"
           rowKey={(r) => r.id}
           showToolbar
-          enableAdd
+          enableAdd={can(CURRENCY_EXCHANGE_MODULE, "create")}
           addLabel="Add Currency Exchange"
-          onAdd={handleAdd}
+          onAdd={
+            can(CURRENCY_EXCHANGE_MODULE, "create")
+              ? handleAdd
+              : undefined
+          }
           searchValue={search}
           onSearch={handleSearch}
           currentPage={pagination.page}
