@@ -175,8 +175,8 @@ export const SalaryStructureModal: React.FC<Props> = ({
         await createSalaryStructure({ name: structureName, ...payload });
         showSuccess("Salary structure created");
       }
-      onSuccess?.();
-      onClose();
+     onSuccess?.();
+onClose(); 
     } catch (err: any) {
       showApiError(err?.message ?? "Failed to save salary structure");
     } finally {
