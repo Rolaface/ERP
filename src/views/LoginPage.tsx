@@ -140,7 +140,7 @@ const Login = () => {
         <div className="absolute inset-0 pointer-events-none 
   bg-[radial-gradient(circle_at_50%_40%,rgba(59,130,246,0.08),transparent_60%)]" />
         {/* Card with entrance animation */}
-        
+
         <div className="relative w-full max-w-md 
 bg-[rgba(255,255,255,0.72)] backdrop-blur-2xl
 rounded-[30px] p-10
@@ -259,13 +259,23 @@ outline-none transition-all duration-200"
             <button
               type="submit"
               disabled={isSubmitting}
-              className="relative w-full h-[52px] rounded-xl text-white font-semibold overflow-hidden
-  bg-gradient-to-b from-blue-500 to-blue-600
-  transition-all duration-200
-  hover:from-blue-500 hover:to-blue-700
-  hover:-translate-y-[1px]
-  hover:shadow-[0_10px_20px_rgba(59,130,246,0.25)]
-  active:scale-[0.97]"
+              className="group relative w-full h-[54px] rounded-xl 
+text-white font-semibold overflow-hidden
+
+bg-gradient-to-b from-blue-500 to-blue-600
+
+transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+
+hover:-translate-y-[2px]
+hover:from-blue-500 hover:to-blue-700
+hover:shadow-[0_14px_30px_rgba(59,130,246,0.28)]
+
+active:translate-y-[1px]
+active:scale-[0.985]
+active:shadow-[0_6px_14px_rgba(59,130,246,0.18)]
+
+disabled:opacity-70
+disabled:cursor-not-allowed"
             >
               {/* Shine Effect */}
               <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500
@@ -278,8 +288,8 @@ outline-none transition-all duration-200"
             <div className="flex items-center justify-center gap-2 text-xs text-[#64748B] mt-3">
               <div className="w-5 h-5 rounded-full bg-blue-500/10 
 flex items-center justify-center text-[10px]">
-  🔒
-</div>
+                🔒
+              </div>
               <span>Your data is protected</span>
             </div>
 
