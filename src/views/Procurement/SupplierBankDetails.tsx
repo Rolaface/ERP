@@ -53,7 +53,7 @@ const SupplierBankDetails: React.FC<Props> = ({
       setBankAccounts(res.data);
 
     } catch (err: any) {
-      showApiError(err?.message || "Failed to load bank accounts");
+      showApiError(err);
     } finally {
       setLoading(false);
     }

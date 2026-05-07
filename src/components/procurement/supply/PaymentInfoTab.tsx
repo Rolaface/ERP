@@ -106,7 +106,7 @@ const columns: Column<any>[] = useMemo(() => [
           target: { name: "bankAccounts", value: mapped },
         } as any);
       } catch (err) {
-        showApiError("Failed to load bank accounts");
+        showApiError(err);
       } finally {
         setLoadingAccounts(false);
       }
