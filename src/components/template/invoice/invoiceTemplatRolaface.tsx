@@ -113,7 +113,7 @@ doc.setFontSize(8);
 
   if (company?.documents?.companyLogoUrl) {
     try {
-      doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 70, logoTopY, 70, 40);
+      doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 70, logoTopY, 70, 55);
     } catch {}
   } else {
 
@@ -123,7 +123,7 @@ doc.setFontSize(8);
     doc.text((compName || "COMPANY").toUpperCase(), logoRightX, logoTopY + 10, { align: "right" });
   }
 
-  curY = Math.max(curY, logoTopY + 28);
+  curY = Math.max(curY, logoTopY + 55);
   curY += 4;
 
 
