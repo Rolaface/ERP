@@ -8,7 +8,7 @@ export const MODULE_STRUCTURE: Record<string, string[]> = {
   CustomerManagement: ["Customer"],
   Procurement: ["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice"],
   Inventory: ["Item", "Item Group", "Warehouse", "Stock Entry"],
-  Accounting: ["GL Entry", "Journal Entry","Account"],
+  Accounting: ["Journal Entry","Account"],
   Assets: ["Asset Category", "Asset", "Asset Movement"],
   HumanResource: ["Employee", "Payroll Entry"],
   Settings: ["Company", "User","Role","Bank", "Bank Account", "Mode of Payment", "Payment Entry", "Currency Exchange", "Customer Group", "Item Tax Template","Tax Category","Sales Taxes and Charges Template"],

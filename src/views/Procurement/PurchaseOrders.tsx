@@ -77,13 +77,13 @@ const statusOptions = [
   { label: "Completed", value: "Completed" },
 ];
 
-const PO_MODULE      = "Purchase Order";
+const PO_MODULE = "Purchase Order";
 const PAYMENT_MODULE = "Payment Entry";
-const PI_MODULE      = "Purchase Invoice";
+const PI_MODULE = "Purchase Invoice";
 
 const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const { openPOEdit } = useOutletContext<OutletContextType>();
-const { can } = usePermission();
+  const { can } = usePermission();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -161,6 +161,7 @@ const { can } = usePermission();
 
       setOrders(mappedOrders);
     } catch (err) {
+      showApiError(err);
       setOrders([]);
     } finally {
       setLoading(false);
@@ -616,10 +617,10 @@ const { can } = usePermission();
               // Status transitions — needs write
               ...(can(PO_MODULE, "write")
                 ? (STATUS_TRANSITIONS[o.status as POStatus] ?? []).map((status) => ({
-                    label: `Mark as ${status}`,
-                    danger: status === "Completed",
-                    onClick: () => handleStatusChange(o.id, status),
-                  }))
+                  label: `Mark as ${status}`,
+                  danger: status === "Completed",
+                  onClick: () => handleStatusChange(o.id, status),
+                }))
                 : []),
             ]}
           />
@@ -637,7 +638,7 @@ const { can } = usePermission();
         showToolbar
         loading={loading}
         searchValue={searchTerm}
-        enableExport={can(PO_MODULE, "export")}  
+        enableExport={can(PO_MODULE, "export")}
         onExport={handleExportPDF}
         onSearch={setSearchTerm}
         enableAdd={can(PO_MODULE, "create")}

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import { openBankAccountModal } from "../../store/modalStore";
-import { Landmark } from "lucide-react";
 import { Copy } from "lucide-react"
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
@@ -16,12 +15,16 @@ import {
   AppPageBody,
 } from "../../components/ui/app-shell";
 import { showApiError, showSuccess } from "../../utils/alert";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
 const mask = (val?: string) => {
   if (!val) return "—";
   if (val.length <= 4) return "*".repeat(val.length);
   return "*".repeat(val.length - 4) + val.slice(-4);
 };
+
+const BANK_ACCOUNT_MODULE = "Bank Account";
 
 const BankAccountSetup: React.FC = () => {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
@@ -33,7 +36,7 @@ const BankAccountSetup: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
+  const { can } = usePermission();
 
   const fetchAccounts = useCallback(async () => {
     try {
@@ -48,8 +51,8 @@ const BankAccountSetup: React.FC = () => {
       setBankAccounts(res.data || []);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || 0);
-    } catch (err: any) {
-      showApiError(err?.message);
+    } catch (err) {
+      showApiError(err);
     } finally {
       setLoading(false);
     }
@@ -72,8 +75,8 @@ const BankAccountSetup: React.FC = () => {
       });
 
       await fetchAccounts();
-    } catch (err: any) {
-      showApiError(err.message);
+    } catch (err) {
+      showApiError(err);
     } finally {
       setActionLoadingId(null);
     }
@@ -92,8 +95,8 @@ const BankAccountSetup: React.FC = () => {
       });
 
       await fetchAccounts();
-    } catch (err: any) {
-      showApiError(err.message);
+    } catch (err) {
+      showApiError(err);
     } finally {
       setActionLoadingId(null);
     }
@@ -244,24 +247,34 @@ const BankAccountSetup: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
-          <ActionButton
-            type="edit"
-            onClick={() => console.log("EDIT:", row)}
-            iconOnly
-          />
+          <PermissionGate module={BANK_ACCOUNT_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={() =>
+                openBankAccountModal(row, true, {
+                  onSuccess: () => fetchAccounts(),
+                })
+              }
+              iconOnly
+            />
+          </PermissionGate>
           <ActionMenu
-            customActions={[
-              {
-                label: "Set Default",
-                onClick: () => handleSetDefault(row),
-                disabled: actionLoadingId === String(row.id),
-              },
-              {
-                label: row.isDisabled ? "Enable" : "Disable",
-                onClick: () => handleToggleDisable(row),
-                disabled: actionLoadingId === String(row.id),
-              },
-            ]}
+            customActions={
+              can(BANK_ACCOUNT_MODULE, "write")
+                ? [
+                  {
+                    label: "Set Default",
+                    onClick: () => handleSetDefault(row),
+                    disabled: actionLoadingId === String(row.id),
+                  },
+                  {
+                    label: row.isDisabled ? "Enable" : "Disable",
+                    onClick: () => handleToggleDisable(row),
+                    disabled: actionLoadingId === String(row.id),
+                  },
+                ]
+                : []
+            }
           />
         </ActionGroup>
       ),
@@ -270,7 +283,7 @@ const BankAccountSetup: React.FC = () => {
 
   return (
     <AppPage>
-     
+
 
       {/* TABLE */}
       <AppPageBody>
@@ -282,7 +295,7 @@ const BankAccountSetup: React.FC = () => {
           showToolbar
           searchValue={search}
           onSearch={setSearch}
-          enableAdd
+          enableAdd={can(BANK_ACCOUNT_MODULE, "create")}
           currentPage={page}
           totalPages={totalPages}
           enableColumnSelector

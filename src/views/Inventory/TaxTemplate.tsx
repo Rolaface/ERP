@@ -21,11 +21,16 @@ import type {
   TaxCategoryFormData,
   TaxRow,
 } from "../../types/tax/taxTemplate";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
+
 
 interface OutletContextType {
   openTaxTemplateCreate?: () => void;
   openTaxTemplateEdit?: (id: string, data: any) => void;
 }
+
+const TAX_TEMPLATE_MODULE = "Item Tax Template";
 
 //  Types 
 
@@ -48,6 +53,7 @@ const TaxTemplate: React.FC<Props> = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
+  const { can } = usePermission();
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -256,16 +262,16 @@ const TaxTemplate: React.FC<Props> = () => {
       align: "left",
       render: (tc) => (
         <div className="py-1.5">
-        <code
-          className={[
-            "text-xs px-2 py-1 rounded",
-            tc.disabled
-              ? "bg-danger/10 text-danger"
-              : "bg-success/10 text-success",
-          ].join(" ")}
-        >
-          {tc.disabled ? "Disabled" : "Enabled"}
-        </code>
+          <code
+            className={[
+              "text-xs px-2 py-1 rounded",
+              tc.disabled
+                ? "bg-danger/10 text-danger"
+                : "bg-success/10 text-success",
+            ].join(" ")}
+          >
+            {tc.disabled ? "Disabled" : "Enabled"}
+          </code>
         </div>
       ),
     },
@@ -275,22 +281,38 @@ const TaxTemplate: React.FC<Props> = () => {
       align: "center",
       render: (tc) => (
         <ActionGroup>
-     
-          <ActionMenu
-            onEdit={(e) => handleEdit(tc, e as any)}
-            onDelete={(e) => handleDelete(tc.name, e as any)}
-            customActions={[
-              {
-                label: tc.disabled ? "Enable" : "Disable",
-                onClick: () =>
-                  handleToggleStatus(
-                    tc,
-                    { stopPropagation: () => { } } as React.MouseEvent
-                  ),
-                danger: !tc.disabled, // Disable option = red, Enable = normal
-              },
-            ]}
-          />
+
+          {(can(TAX_TEMPLATE_MODULE, "write") ||
+            can(TAX_TEMPLATE_MODULE, "delete")) && (
+              <ActionMenu
+                {...(can(TAX_TEMPLATE_MODULE, "write")
+                  ? {
+                    onEdit: (e) => handleEdit(tc, e as any),
+                  }
+                  : {})}
+                {...(can(TAX_TEMPLATE_MODULE, "delete")
+                  ? {
+                    onDelete: (e) =>
+                      handleDelete(tc.name, e as any),
+                  }
+                  : {})}
+                customActions={
+                  can(TAX_TEMPLATE_MODULE, "write")
+                    ? [
+                      {
+                        label: tc.disabled ? "Enable" : "Disable",
+                        onClick: () =>
+                          handleToggleStatus(
+                            tc,
+                            { stopPropagation: () => { } } as React.MouseEvent
+                          ),
+                        danger: !tc.disabled, // Disable option = red, Enable = normal
+                      },
+                    ]
+                    : []
+                }
+              />
+            )}
         </ActionGroup>
       ),
     },
@@ -355,7 +377,7 @@ const TaxTemplate: React.FC<Props> = () => {
           setSearchTerm(val);
           setPage(1); // reset page on search
         }}
-        enableAdd
+        enableAdd={can(TAX_TEMPLATE_MODULE, "create")}
         addLabel="Add Tax Template"
         onAdd={openCreate}
         enableColumnSelector

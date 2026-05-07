@@ -171,7 +171,7 @@ const Items: React.FC = () => {
       setTotalPages(pagination?.total_pages ?? 1);
       setTotalItems(pagination?.total ?? 0);
     } catch (err) {
-      console.error(err);
+      showApiError(err);
       setItems([]);
       setTotalPages(1);
       setTotalItems(0);
@@ -218,7 +218,7 @@ const Items: React.FC = () => {
       }));
       setAllItems(flat);
     } catch (err) {
-      console.error("Failed to fetch all items for sidebar", err);
+       showApiError(err);
     }
   }, []);
 
@@ -238,7 +238,7 @@ const Items: React.FC = () => {
       }
       setSelectedItem(flattenItemDetail(raw));
     } catch (err) {
-      console.error("Failed to refetch selected item", err);
+      showApiError(err)
     }
   }, [activeSummary?.id, fetchAllItems, fetchItems]);
 
@@ -277,7 +277,6 @@ const Items: React.FC = () => {
 
       setSelectedItem(flattenItemDetail(raw));
     } catch (err) {
-      console.error("handleRowClick: API call failed", err);
       showApiError(err);
       setViewMode("table");
     } finally {

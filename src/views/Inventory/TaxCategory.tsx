@@ -12,7 +12,8 @@ import { getAllTaxCategories } from "../../api/taxCategoryApi";
 import { useTaxCategory } from "../../hooks/useTaxCategory";
 import TaxCategoryModal from "../../components/inventory/TaxCategoryModal";
 import type { TaxCategoryFormData } from "../../hooks/useTaxCategory";
-
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface TaxCategorySummary {
@@ -21,6 +22,8 @@ interface TaxCategorySummary {
   disabled: 0 | 1;
 }
 
+const TAX_CATEGORY_MODULE = "Tax Category";
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const TaxCategory: React.FC = () => {
@@ -28,7 +31,7 @@ const TaxCategory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
-
+  const { can } = usePermission();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -46,7 +49,7 @@ const TaxCategory: React.FC = () => {
 
   const fetchCategories = useCallback(async () => {
     if (!mountedRef.current) return;
-    
+
     setIsFetching(true);
     try {
       const res = await getAllTaxCategories(
@@ -85,11 +88,11 @@ const TaxCategory: React.FC = () => {
   // Fetch on page/size/search changes - with debounce for search
   useEffect(() => {
     if (isInitialLoad) return;
-    
+
     const timer = setTimeout(() => {
       fetchCategories();
     }, searchTerm ? 300 : 0);
-    
+
     return () => clearTimeout(timer);
   }, [page, pageSize, searchTerm, isInitialLoad]);
 
@@ -191,16 +194,28 @@ const TaxCategory: React.FC = () => {
       align: "center",
       render: (tc) => (
         <ActionGroup>
-          <ActionMenu
-            onDelete={(e) => handleDelete(tc.name, e as React.MouseEvent)}
-            customActions={[
-              {
-                label: tc.disabled ? "Enable" : "Disable",
-                onClick: () => handleToggleStatus(tc),
-                danger: !tc.disabled,
-              },
-            ]}
-          />
+          {(can(TAX_CATEGORY_MODULE, "delete") ||
+            can(TAX_CATEGORY_MODULE, "write")) && (
+              <ActionMenu
+                {...(can(TAX_CATEGORY_MODULE, "delete")
+                  ? {
+                    onDelete: (e) =>
+                      handleDelete(tc.name, e as React.MouseEvent),
+                  }
+                  : {})}
+                customActions={
+                  can(TAX_CATEGORY_MODULE, "write")
+                    ? [
+                      {
+                        label: tc.disabled ? "Enable" : "Disable",
+                        onClick: () => handleToggleStatus(tc),
+                        danger: !tc.disabled,
+                      },
+                    ]
+                    : []
+                }
+              />
+            )}
         </ActionGroup>
       ),
     },
@@ -227,7 +242,7 @@ const TaxCategory: React.FC = () => {
           setSearchTerm(val);
           setPage(1);
         }}
-        enableAdd
+       enableAdd={can(TAX_CATEGORY_MODULE, "create")}
         addLabel="Add Tax Category"
         onAdd={() => setIsModalOpen(true)}
         enableColumnSelector
@@ -242,7 +257,7 @@ const TaxCategory: React.FC = () => {
       <TaxCategoryModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-       onSubmit={handleCreate} 
+        onSubmit={handleCreate}
       />
     </>
   );

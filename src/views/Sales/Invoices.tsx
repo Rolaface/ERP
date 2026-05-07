@@ -161,7 +161,16 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         filters.from_date,
         filters.to_date,
       );
-      if (!res || res.status_code !== 200) return;
+
+      if (!res || res.status_code !== 200) {
+        showApiError(res || "Failed to fetch invoices");
+
+        setInvoices([]);
+        setTotalPages(1);
+        setTotalItems(0);
+
+        return;
+      }
 
       if (!mountedRef.current) return;
 
@@ -184,6 +193,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       setInvoices(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || mapped.length);
+    } catch (err) {
+      showApiError(err);
+
+      setInvoices([]);
+      setTotalPages(1);
+      setTotalItems(0);
     } finally {
       if (mountedRef.current) {
         setIsFetching(false);

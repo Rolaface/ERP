@@ -160,14 +160,8 @@ export const showPOConflictDialog = async (
   if (result.isDenied) return "replace";
   return "cancel";
 };
-// ─────────────────────────────────────────────────────────────────────────────
-// ADD these two functions to your existing alert.ts
-// Everything else in alert.ts stays exactly the same.
-// ─────────────────────────────────────────────────────────────────────────────
 
 
-// ── Show a non-closable loading Swal with a custom HTML message ───────────────
-// Used for staged steps: "Creating employee…", "Uploading photo…"
 export const showStepLoader = (title: string, html: string) => {
   fireManagedSwal({
     title,
