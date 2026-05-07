@@ -281,8 +281,29 @@ disabled:cursor-not-allowed"
               <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500
   bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.25),transparent)]" />
 
-              <span className="relative z-10">
-                {isSubmitting ? "Signing you in..." : "Sign in"}
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                <span
+                  className="
+      transition-transform duration-300
+      ease-[cubic-bezier(0.22,1,0.36,1)]
+      group-hover:-translate-x-[1px]
+    "
+                >
+                  {isSubmitting ? "Signing you in..." : "Sign in"}
+                </span>
+
+                {!isSubmitting && (
+                  <ArrowRight
+                    size={16}
+                    className="
+        transition-all duration-300
+        ease-[cubic-bezier(0.22,1,0.36,1)]
+        opacity-70
+        group-hover:translate-x-[3px]
+        group-hover:opacity-100
+      "
+                  />
+                )}
               </span>
             </button>
             <div className="flex items-center justify-center gap-2 text-xs text-[#64748B] mt-3">
