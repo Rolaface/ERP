@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useCallback } from "react";
 
 import {
   showApiError,
@@ -21,6 +21,8 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../../components/ui/Table/ActionButton";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../../store/dataRefreshStore";
+
 
 import type { Column } from "../../../components/ui/Table/type";
 import type { EmployeeSummary } from "../../../types/employee";
@@ -41,6 +43,13 @@ const EmployeeDirectory: React.FC = () => {
 
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const triggerRefresh = useDataRefreshStore(
+  (state) => state.triggerRefresh
+);
+
+const subscribeToRefresh = useDataRefreshStore(
+  (state) => state.subscribeToRefresh
+);
 
   // ── View detail ──────────────────────────────────────────────────────────
   const handleViewEmployee = async (id: string) => {
@@ -64,7 +73,7 @@ const EmployeeDirectory: React.FC = () => {
   };
 
   // ── Fetch list ───────────────────────────────────────────────────────────
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
       const res = await getAllEmployees(page, pageSize, searchTerm);
@@ -87,15 +96,27 @@ const EmployeeDirectory: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+}, [page, pageSize, searchTerm]);
 
+useEffect(() => {
+  fetchEmployees();
+}, [fetchEmployees]);
   useEffect(() => {
-    fetchEmployees();
-  }, [page]);
+  const unsubscribe = subscribeToRefresh(
+    REFRESH_KEYS.EMPLOYEE_LIST,
+    fetchEmployees
+  );
+
+  return () => unsubscribe();
+}, [subscribeToRefresh, fetchEmployees]);
 
   // ── Add ──────────────────────────────────────────────────────────────────
   const handleAdd = () => {
-    openEmployeeModal(null, false);
+    openEmployeeModal(null, false, {
+  onSuccess: () => {
+    triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
+  },
+});
   };
 
   // ── Edit ─────────────────────────────────────────────────────────────────
@@ -134,9 +155,10 @@ const EmployeeDirectory: React.FC = () => {
     try {
       showLoading("Deleting Employee...");
       await deleteEmployeeById(id);
-      setEmployees((prev) => prev.filter((emp) => emp.id !== id));
+    
       closeSwal();
       showSuccess("Employee deleted successfully");
+      triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
     } catch (error) {
       closeSwal();
       showApiError(error);

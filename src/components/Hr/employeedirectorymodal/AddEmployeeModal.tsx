@@ -10,6 +10,7 @@ import { LeaveSetupTab } from "./LeaveSetupTab";
 import WorkScheduleTab from "./WorkScheduletab";
 import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
 import { MinimizableModal } from "../../common/MinimizableModal";
+import { fireManagedSwal } from "../../../utils/swalManager";
 
 import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
 import { EMPLOYEE_ROLE_CONFIG } from "../../../api/config/employeeRoleConfig";
@@ -29,7 +30,7 @@ import {
   type TabName,
   DEFAULT_FORM,
   mapEditDataToForm,
-  buildEmployeePayload,   // ← single source of truth
+  buildEmployeePayload,  
 } from "./Employeeformconfig";
 import EmployeeBankTab from "./EmployeeBankTab";
 
@@ -101,15 +102,15 @@ const AddEmployeeModal: React.FC<Props> = ({
 
 
   // ── Documents ───────────────────────────────────────────────────────────
-  const [documents, setDocuments] = useState<Record<string, DocumentUpload>>({
+  const [, setDocuments] = useState<Record<string, DocumentUpload>>({
     "NRC Copy": { uploaded: false },
     "Offer Letter": { uploaded: false },
     "Employment Contract": { uploaded: false },
     "NAPSA Certificate": { uploaded: false },
   });
-  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+
   const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "uploading">("idle");
+  const [, setSaveStatus] = useState<"idle" | "saving" | "uploading">("idle");
 
   // ── Reset / seed on open ────────────────────────────────────────────────
   useEffect(() => {
@@ -211,6 +212,30 @@ const AddEmployeeModal: React.FC<Props> = ({
   };
 
   const handleSave = async () => {
+    if (!employeeFile) {
+  const result = await fireManagedSwal({
+    icon: "info",
+    title: "Add Employee Photo?",
+    html: `
+      <div style="text-align:center">
+        <p style="font-size:13px;color:#64748b;margin-top:6px">
+          A profile picture helps HR teams quickly identify employees
+          across payroll, attendance, and approvals.
+        </p>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Upload Photo",
+    cancelButtonText: "Skip for Now",
+    confirmButtonColor: "#2563eb",
+    cancelButtonColor: "#64748b",
+  });
+
+  if (result.isConfirmed) {
+    document.getElementById("employee-photo-input")?.click();
+    return;
+  }
+}
     const payload = buildEmployeePayload(formData);
     const isEdit = mode === "edit" || !!editData;
 

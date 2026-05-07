@@ -48,7 +48,7 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
           options={[
             { label: "Company Email", value: "Company Email" },
             { label: "Personal Email", value: "Personal Email" },
-            { label: "User ID ", value: "User ID" },
+            { label: "User ID", value: "User ID" },
           ]}
           />
           <ModalInput
