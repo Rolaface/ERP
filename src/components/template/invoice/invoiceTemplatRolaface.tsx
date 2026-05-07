@@ -129,7 +129,7 @@ doc.setFontSize(8);
 
 
   const billToX = M;
-  const metaX = W / 2 + 30; 
+  const metaX = W / 2 + 45; 
   const col2ValX = MR;       
 
 
