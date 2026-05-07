@@ -138,11 +138,11 @@ const Login = () => {
 
         {/* Subtle background glow */}
         {/* ================= Ambient Background Depth ================= */}
-<div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
 
-  {/* Primary Blue Glow */}
-  <div
-    className="
+          {/* Primary Blue Glow */}
+          <div
+            className="
       absolute
 
       top-[12%]
@@ -157,11 +157,11 @@ const Login = () => {
 
       blur-[110px]
     "
-  />
+          />
 
-  {/* Secondary Indigo Glow */}
-  <div
-    className="
+          {/* Secondary Indigo Glow */}
+          <div
+            className="
       absolute
 
       bottom-[8%]
@@ -176,11 +176,11 @@ const Login = () => {
 
       blur-[120px]
     "
-  />
+          />
 
-  {/* Soft Top Atmospheric Light */}
-  <div
-    className="
+          {/* Soft Top Atmospheric Light */}
+          <div
+            className="
       absolute
 
       top-[-10%]
@@ -194,59 +194,128 @@ const Login = () => {
 
       blur-[120px]
     "
-  />
+          />
 
-  {/* Subtle Vignette Depth */}
-  <div
-    className="
+          {/* Subtle Vignette Depth */}
+          <div
+            className="
       absolute inset-0
 
       bg-[radial-gradient(circle_at_center,transparent_45%,rgba(15,23,42,0.04)_100%)]
     "
-  />
-</div>
+          />
+        </div>
         {/* Card with entrance animation */}
 
-        <div className="relative w-full max-w-md 
-bg-[rgba(255,255,255,0.72)] backdrop-blur-2xl
-rounded-[30px] p-10
-border border-white/50
-shadow-[0_8px_30px_rgba(15,23,42,0.08),0_20px_60px_rgba(59,130,246,0.10)]
-lg:-ml-24 lg:-mt-16 
-animate-[fadeInUp_0.9s_ease-out]">
+        <div className="relative lg:-ml-24 lg:-mt-16 animate-[fadeInUp_0.9s_ease-out]">
 
-          {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-[22px] font-bold text-[#0F172A] mb-2 tracking-tight">
-              Welcome back to Rola
-            </h2>
+          {/* ================= Gradient Border Aura ================= */}
+          <div
+            className="
+      absolute inset-0
 
-            <p className="text-sm leading-relaxed text-[#64748B] max-w-[320px]">
-              Continue managing operations, finance, and teams in one secure place.
-            </p>
-          </div>
+      rounded-[32px]
 
-          {/* Error */}
-          {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
-              {error}
+      bg-[linear-gradient(135deg,
+      rgba(255,255,255,0.55),
+      rgba(59,130,246,0.18),
+      rgba(255,255,255,0.28),
+      rgba(99,102,241,0.16)
+      )]
+
+      opacity-80
+
+      blur-[10px]
+    "
+          />
+
+          {/* ================= Top Edge Highlight ================= */}
+          <div
+            className="
+      absolute
+
+      inset-x-6
+      top-0
+
+      h-px
+
+      bg-gradient-to-r
+      from-transparent
+      via-white/90
+      to-transparent
+
+      opacity-70
+    "
+          />
+
+          {/* ================= Card Surface ================= */}
+          <div
+            className="
+      relative w-full max-w-md
+
+      bg-[linear-gradient(
+        135deg,
+        rgba(255,255,255,0.78),
+        rgba(255,255,255,0.68)
+      )]
+
+      backdrop-blur-2xl
+
+      rounded-[30px]
+
+      p-10
+
+      border border-white/45
+
+      shadow-[0_8px_30px_rgba(15,23,42,0.08),0_20px_60px_rgba(59,130,246,0.10)]
+
+      overflow-hidden
+    "
+          >
+            {/* ================= Inner Glass Rim ================= */}
+            <div
+              className="
+        absolute inset-0 rounded-[30px]
+
+        ring-1 ring-white/20
+
+        pointer-events-none
+      "
+            />
+
+
+            {/* Header */}
+            <div className="mb-6">
+              <h2 className="text-[22px] font-bold text-[#0F172A] mb-2 tracking-tight">
+                Welcome back to Rola
+              </h2>
+
+              <p className="text-sm leading-relaxed text-[#64748B] max-w-[320px]">
+                Continue managing operations, finance, and teams in one secure place.
+              </p>
             </div>
-          )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error */}
+            {error && (
+              <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
+                {error}
+              </div>
+            )}
 
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-semibold text-[#475569] uppercase mb-2">
-                Email or Username
-              </label>
-              <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@company.com"
-                className="w-full h-12 px-4 rounded-xl
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-semibold text-[#475569] uppercase mb-2">
+                  Email or Username
+                </label>
+                <input
+                  type="text"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  className="w-full h-12 px-4 rounded-xl
 bg-[#F4F8FC] border border-[#DCE7F3]
 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)]
 text-[15px] text-[#0F172A]
@@ -261,31 +330,31 @@ focus:placeholder:opacity-60
 
 outline-none
 transition-all duration-300 ease-out"
-                required
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <div className="flex justify-between mb-2">
-                <label className="text-xs font-semibold text-[#475569] uppercase">
-                  Password
-                </label>
-                <button
-                  type="button"
-                  className="text-xs text-primary hover:underline"
-                >
-                  Forgot password?
-                </button>
+                  required
+                />
               </div>
 
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full h-12 px-4 pr-10 rounded-xl 
+              {/* Password */}
+              <div>
+                <div className="flex justify-between mb-2">
+                  <label className="text-xs font-semibold text-[#475569] uppercase">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-12 px-4 pr-10 rounded-xl 
 bg-[#F4F8FC] border border-[#DCE7F3]
 shadow-inner
 placeholder:text-[#94A3B8]
@@ -295,13 +364,13 @@ focus:border-blue-500/70
 focus:shadow-[0_0_0_1px_rgba(59,130,246,0.30),0_8px_20px_rgba(59,130,246,0.10)]
 focus:placeholder:opacity-60
 outline-none transition-all duration-200"
-                  required
-                />
+                    required
+                  />
 
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="
     group
     absolute right-2 top-1/2 -translate-y-1/2
 
@@ -319,37 +388,37 @@ outline-none transition-all duration-200"
     transition-all duration-200
     ease-[cubic-bezier(0.22,1,0.36,1)]
   "
-                >
-                  <span
-                    className="
+                  >
+                    <span
+                      className="
       transition-all duration-200
       ease-[cubic-bezier(0.22,1,0.36,1)]
 
       group-hover:scale-110
     "
-                  >
-                    {showPassword ? (
-                      <Eye
-                        size={18}
-                        className="transition-all duration-200"
-                      />
-                    ) : (
-                      <EyeOff
-                        size={18}
-                        className="transition-all duration-200"
-                      />
-                    )}
-                  </span>
-                </button>
-              </div>
+                    >
+                      {showPassword ? (
+                        <Eye
+                          size={18}
+                          className="transition-all duration-200"
+                        />
+                      ) : (
+                        <EyeOff
+                          size={18}
+                          className="transition-all duration-200"
+                        />
+                      )}
+                    </span>
+                  </button>
+                </div>
 
-              {/* Remember */}
-              <label className="group flex items-center gap-3 mt-4 cursor-pointer select-none w-fit">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={() => setRememberMe(!rememberMe)}
-                  className="
+                {/* Remember */}
+                <label className="group flex items-center gap-3 mt-4 cursor-pointer select-none w-fit">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={() => setRememberMe(!rememberMe)}
+                    className="
       w-4 h-4 rounded-[4px]
 
       border border-[#C7D7EA]
@@ -369,27 +438,27 @@ outline-none transition-all duration-200"
 
       cursor-pointer
     "
-                />
+                  />
 
-                <span
-                  className="
+                  <span
+                    className="
       text-sm font-medium text-[#475569]
 
       transition-colors duration-200
 
       group-hover:text-[#334155]
     "
-                >
-                  Remember me
-                </span>
-              </label>
-            </div>
+                  >
+                    Remember me
+                  </span>
+                </label>
+              </div>
 
-            {/* Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="group relative w-full h-[54px] rounded-xl 
+              {/* Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="group relative w-full h-[54px] rounded-xl 
 text-white font-semibold overflow-hidden
 
 bg-gradient-to-b from-blue-500 to-blue-600
@@ -406,65 +475,69 @@ active:shadow-[0_6px_14px_rgba(59,130,246,0.18)]
 
 disabled:opacity-70
 disabled:cursor-not-allowed"
-            >
-              {/* Shine Effect */}
-              <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500
+              >
+                {/* Shine Effect */}
+                <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500
   bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.25),transparent)]" />
 
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                <span
-                  className="
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span
+                    className="
       transition-transform duration-300
       ease-[cubic-bezier(0.22,1,0.36,1)]
       group-hover:-translate-x-[1px]
     "
-                >
-                  {isSubmitting ? "Signing you in..." : "Sign in"}
-                </span>
+                  >
+                    {isSubmitting ? "Signing you in..." : "Sign in"}
+                  </span>
 
-                {!isSubmitting && (
-                  <ArrowRight
-                    size={16}
-                    className="
+                  {!isSubmitting && (
+                    <ArrowRight
+                      size={16}
+                      className="
         transition-all duration-300
         ease-[cubic-bezier(0.22,1,0.36,1)]
         opacity-70
         group-hover:translate-x-[3px]
         group-hover:opacity-100
       "
-                  />
-                )}
-              </span>
-            </button>
-            <div className="flex items-center justify-center gap-2 text-xs text-[#64748B] mt-3">
-              <div className="w-5 h-5 rounded-full bg-blue-500/10 
+                    />
+                  )}
+                </span>
+              </button>
+              <div className="flex items-center justify-center gap-2 text-xs text-[#64748B] mt-3">
+                <div className="w-5 h-5 rounded-full bg-blue-500/10 
 flex items-center justify-center text-[10px]">
-                🔒
+                  🔒
+                </div>
+                <span>Your data is protected</span>
               </div>
-              <span>Your data is protected</span>
-            </div>
 
-          </form>
+            </form>
 
-          {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-[#F1F5F9] text-center space-y-2">
+            {/* Footer */}
+            <div className="mt-8 pt-6 border-t border-[#F1F5F9] text-center space-y-2">
 
-            <p className="text-sm text-[#475569]">
-              New to Rola?{" "}
-              <span className="text-primary font-semibold cursor-pointer 
+              <p className="text-sm text-[#475569]">
+                New to Rola?{" "}
+                <span className="text-primary font-semibold cursor-pointer 
 hover:text-blue-700 transition-colors duration-200">
-                Create your workspace
-              </span>
-            </p>
+                  Create your workspace
+                </span>
+              </p>
 
-            <p className="text-xs text-[#94A3B8]">
-              Need access?{" "}
-              <span className="hover:text-[#64748B] cursor-pointer">
-                Contact administrator
-              </span>
-            </p>
+              <p className="text-xs text-[#94A3B8]">
+                Need access?{" "}
+                <span className="hover:text-[#64748B] cursor-pointer">
+                  Contact administrator
+                </span>
+              </p>
 
+            </div>
           </div>
+
+
+
 
         </div>
       </div>
