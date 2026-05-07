@@ -6,15 +6,15 @@ export function usePermission() {
   const canAccessAnyOf  = usePermissionStore((s) => s.canAccessAnyOf);
   const permissions     = usePermissionStore((s) => s.permissions);
   const isLoading       = usePermissionStore((s) => s.isLoading);
-  const isAdmin         = usePermissionStore((s) => s.isAdmin);  // ← ADD
+  const isAdmin         = usePermissionStore((s) => s.isAdmin);  
 
   const canAll = (module: string, actions: PermissionAction[]): boolean => {
-    if (isAdmin) return true;                                      // ← ADD
+    if (isAdmin) return true;                                      
     return actions.every((action) => can(module, action));
   };
 
   const canAny = (module: string, actions: PermissionAction[]): boolean => {
-    if (isAdmin) return true;                                      // ← ADD
+    if (isAdmin) return true;                                      
     return actions.some((action) => can(module, action));
   };
 
@@ -26,6 +26,6 @@ export function usePermission() {
     canAccessAnyOf,
     permissions,
     isLoading,
-    isAdmin,              // ← ADD
+    isAdmin,              
   };
 }

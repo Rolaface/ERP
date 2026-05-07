@@ -92,7 +92,7 @@ interface GetLoginUserResponse {
       username: string;
       gender: string | null;
       roles: string[];
-      permission: RawPermissionEntry[];   // ← "permission" not "permissions"
+      permission: RawPermissionEntry[];   
     };
   };
 }
@@ -116,7 +116,7 @@ export const fetchLoginUser = async (): Promise<AuthUser> => {
     fullName:    d.fullName,
     gender:      d.gender,
     roles:       d.roles ?? [],
-    permissions: d.permission ?? [],    // ← "permission" field se lena
+    permissions: d.permission ?? [],  
   };
 
   // Update localStorage with fresh data

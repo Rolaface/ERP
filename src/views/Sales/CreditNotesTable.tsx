@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-import {openCreditNoteModal} from "../../store/modalStore";
+import { openCreditNoteModal } from "../../store/modalStore";
 import { getAllCreditNotes, deleteCreditNote } from "../../api/CreditNoteapi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -12,13 +12,16 @@ import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table
 import { fireManagedSwal } from "../../utils/swalManager";
 import { getCreditNoteById, submitCreditNote, cancelCreditNote } from "../../api/CreditNoteapi";
 import { CreditNote } from "../../types/sales/Creditnotes";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
 
+const CREDIT_NOTE_MODULE = "Sales Invoice";
 const CreditNotesTable: React.FC = () => {
   const [data, setData] = useState<CreditNote[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
-
+  const { can } = usePermission();
   // ── Pagination (server) ───────────────────────────────────────────────────
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -34,7 +37,7 @@ const CreditNotesTable: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // ── Modals ────────────────────────────────────────────────────────────────
- 
+
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
@@ -218,27 +221,27 @@ const CreditNotesTable: React.FC = () => {
     }
   };
 
-const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
-  e?.stopPropagation();
+  const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
+    e?.stopPropagation();
 
-  try {
-    showLoading("Loading Credit Note...");
-    const res = await getCreditNoteById(note.noteNo);
-    closeSwal();
+    try {
+      showLoading("Loading Credit Note...");
+      const res = await getCreditNoteById(note.noteNo);
+      closeSwal();
 
-    const doc = res?.data;
+      const doc = res?.data;
 
-    if (!doc) {
-      showApiError("Credit Note data could not be loaded");
-      return;
+      if (!doc) {
+        showApiError("Credit Note data could not be loaded");
+        return;
+      }
+
+      openCreditNoteModal(doc, true);
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
     }
-
-    openCreditNoteModal(doc, true); 
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+  };
 
   const handleExportExcel = async () => {
     try {
@@ -283,27 +286,27 @@ const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
     }
   };
   const formatDate = (date: string | Date) => {
-  if (!date) return "";
+    if (!date) return "";
 
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-  }
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
 
-  // Date object — use local methods
-  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-};
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
   const columns: Column<CreditNote>[] = [
     {
       key: "noteNo", header: "Credit Invoice No",
       render: (o) => (
         <div className="py-1.5">
-        <span className="block">
-          {o.noteNo || "—"}
-        </span>
+          <span className="block">
+            {o.noteNo || "—"}
+          </span>
         </div>
       ),
     },
@@ -333,18 +336,18 @@ const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
       align: "right",
       render: (r) => (
         <div className="py-1.5">
-        <code className="block whitespace-nowrap">
-          {r.amount.toLocaleString()} {r.currency}
-        </code>
+          <code className="block whitespace-nowrap">
+            {r.amount.toLocaleString()} {r.currency}
+          </code>
         </div>
       ),
     },
     {
       key: "date", header: "Date", render: (o) => (
         <div className="py-1.5">
-        <span className="block">
-          {formatDate(o.date) || "—"}
-        </span>
+          <span className="block">
+            {formatDate(o.date) || "—"}
+          </span>
         </div>
       ),
     },
@@ -366,53 +369,35 @@ const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
           <ActionButton
             type="view"
             iconOnly
-            onClick={() => {
-              setDetailsId(r.noteNo);
-              setDetailsOpen(true);
-            }}
+            onClick={() => { setDetailsId(r.noteNo); setDetailsOpen(true); }}
           />
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(r, e)}
-            iconOnly
-            disabled={r.status !== "Draft"}
-            title={
-              r.status !== "Draft"
-                ? "Only Draft invoices can be edited"
-                : "Edit Credit Note"
-            }
-          />
+
+          {/* Edit — needs write + Draft */}
+          <PermissionGate module={CREDIT_NOTE_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(r, e)}
+              iconOnly
+              disabled={r.status !== "Draft"}
+              title={r.status !== "Draft" ? "Only Draft invoices can be edited" : "Edit Credit Note"}
+            />
+          </PermissionGate>
+
           <ActionMenu
+            // Delete — needs delete
+            {...(can(CREDIT_NOTE_MODULE, "delete")
+              ? { onDelete: (e) => { e?.stopPropagation(); handleDelete(r.noteNo); } }
+              : {})}
             customActions={[
-              ...(r.status === "Draft"
-                ? [{
-                  label: "Submit",
-                  icon: (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  ),
-                  onClick: () => handleSubmit(r.noteNo),
-                }]
+              // Submit — needs write + Draft
+              ...(r.status === "Draft" && can(CREDIT_NOTE_MODULE, "write")
+                ? [{ label: "Submit", onClick: () => handleSubmit(r.noteNo) }]
                 : []),
-              ...(!["Draft", "Cancelled"].includes(r.status)
-                ? [{
-                  label: "Cancel",
-                  icon: (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  ),
-                  onClick: () => handleCancel(r.noteNo),
-                  danger: true,
-                }]
+              // Cancel — needs write
+              ...(!["Draft", "Cancelled"].includes(r.status) && can(CREDIT_NOTE_MODULE, "write")
+                ? [{ label: "Cancel", onClick: () => handleCancel(r.noteNo), danger: true }]
                 : []),
             ]}
-            onDelete={(e) => {
-              e?.stopPropagation();
-              handleDelete(r.noteNo);
-            }}
           />
         </ActionGroup>
       ),
@@ -431,13 +416,13 @@ const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => { setSearchTerm(q); setPage(1); }}
-        enableAdd
+        enableAdd={can(CREDIT_NOTE_MODULE, "create")}
         addLabel="Add Credit Note"
         onAdd={() => openCreditNoteModal()}
-       
+
         emptyMessage="No credit notes found"
         enableColumnSelector
-        enableExport
+        enableExport={can(CREDIT_NOTE_MODULE, "export")} 
         onExport={handleExportExcel}
         currentPage={page}
         totalPages={totalPages}
@@ -451,11 +436,11 @@ const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
         onSortChange={handleSortChange}
       />
 
-      
 
-     
 
-     
+
+
+
     </div>
   );
 };

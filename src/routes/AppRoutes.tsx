@@ -31,16 +31,6 @@ const Bank                = lazy(() => import("../views/BankAccount/Bank"));
 import { Toaster } from "react-hot-toast";
 import ResetPassword from "../ResetPassword";
 
-// ─── PermissionRoute ──────────────────────────────────────────────────────────
-//
-// Wraps a route element. If the user doesn't have the required permission,
-// redirects to /dashboard (or a custom `redirectTo`).
-//
-// Props:
-//   modules    — one or more API module names (access granted if ANY matches)
-//   action     — permission action to check (default: "read")
-//   redirectTo — where to send the user on denial (default: "/dashboard")
-//   children   — the page component to render on success
 
 interface PermissionRouteProps {
   modules: string[];
@@ -114,7 +104,7 @@ const AppRoutes: React.FC = () => {
               path="/procurement"
               element={
                 <PermissionRoute
-                  modules={["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice"]}
+                  modules={["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice","Payment Entry"]}
                 >
                   <ProcurementModule />
                 </PermissionRoute>

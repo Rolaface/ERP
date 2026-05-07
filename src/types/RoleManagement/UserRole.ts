@@ -1,6 +1,5 @@
 export interface PermissionEntry {
   module: string;
-  root_module?: string;
   read: 0 | 1;
   write: 0 | 1;
   create: 0 | 1;

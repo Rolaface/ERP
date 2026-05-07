@@ -70,6 +70,7 @@ const menuItems: MenuItem[] = [
     icon: <ShoppingBag {...iconProps} />,
     modules: [
       "Supplier",
+      "Payment Entry",
       "Request For Quotation",
       "Purchase Order",
       "Purchase Invoice",
@@ -221,6 +222,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const visibleMenuItems = useMemo(
     () =>
       menuItems.filter((item) => {
+        
         // No modules declared → always show (e.g. Dashboard)
         if (!item.modules || item.modules.length === 0) return true;
         return canAccessAnyOf(item.modules);

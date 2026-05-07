@@ -7,7 +7,7 @@ import {
   ArrowRightLeft,
   Building2
 } from "lucide-react";
-
+import { usePermission } from "../../hooks/permission/usePermission";
 import {
   AppPage,
   AppPageHeader,
@@ -33,29 +33,48 @@ const allTabs = [
     id: "dashboard",
     label: "Dashboard",
     icon: <LayoutDashboard {...iconProps} />,
+    module: null,
   },
   {
     id: "category",
     label: "Asset Category",
-    icon: <Layers {...iconProps} />, 
+    icon: <Layers {...iconProps} />,
+    module: "Asset Category",
+    action: "read" as const,
   },
   {
     id: "assets",
-    label: "Assets",
-    icon: <Package {...iconProps} />, 
+    label: "Asset",
+    icon: <Package {...iconProps} />,
+    module: "Asset",
+    action: "read" as const,
   },
   {
     id: "assetmovements",
-    label: "Asset Movements",
-    icon: <ArrowRightLeft {...iconProps} />, 
+    label: "Asset Movement",
+    icon: <ArrowRightLeft {...iconProps} />,
+    module: "Asset Movement",
+    action: "read" as const,
   },
 ];
 const FixedAssetsModule: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { can } = usePermission();
 
-  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
+   const assetTabs = useMemo(
+    () => allTabs.filter((t) => !t.module || can(t.module, t.action)),
+    [can]
+  );         
+
+    const activeTab = searchParams.get("tab") || DEFAULT_TAB;
+  
+   const resolvedTab =
+    assetTabs.find((t) => t.id === activeTab)?.id ??
+    assetTabs[0]?.id ??
+    DEFAULT_TAB;     
+
 
   const handleTabChange = useCallback((tabId: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -72,7 +91,7 @@ const FixedAssetsModule: React.FC = () => {
   }), []);
 
   const currentTab =
-    tabComponents[activeTab as keyof typeof tabComponents] ||
+    tabComponents[resolvedTab as keyof typeof tabComponents] ||
     tabComponents.dashboard;
 
   return (
@@ -80,12 +99,12 @@ const FixedAssetsModule: React.FC = () => {
       <AppPageHeader
         title="Fixed Assets"
         description="Track assets, categories, and financial impact."
-        icon={<Building2  />}
+        icon={<Building2 />}
       />
 
       <AppTabs
-        tabs={allTabs}
-        activeTab={activeTab}
+        tabs={assetTabs}
+        activeTab={resolvedTab}
         onChange={handleTabChange}
       />
 

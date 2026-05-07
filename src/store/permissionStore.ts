@@ -33,11 +33,11 @@ export type PermissionAction =
 interface PermissionState {
   permissions: Map<string, NormalizedPermission>;
   isLoading: boolean;
-  isAdmin: boolean;          // ← ADD
+  isAdmin: boolean;          
   error: string | null;
 
   setPermissions: (raw: RawPermission[]) => void;
-  setAdmin: (isAdmin: boolean) => void;  // ← ADD
+  setAdmin: (isAdmin: boolean) => void;  
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearPermissions: () => void;
@@ -50,7 +50,7 @@ interface PermissionState {
 export const usePermissionStore = create<PermissionState>((set, get) => ({
   permissions: new Map(),
   isLoading: true,
-  isAdmin: false,            // ← ADD
+  isAdmin: false,            
   error: null,
 
   setPermissions: (raw) => {

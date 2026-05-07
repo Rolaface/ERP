@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { Users, UserCog, ShieldCheck } from "lucide-react";
+import { Users, ShieldCheck } from "lucide-react";
 import {
   AppPage,
   AppPageHeader,
@@ -15,21 +15,20 @@ const UserRole = React.lazy(() => import("./UserRoles"));
 const DEFAULT_TAB = "users";
 const iconProps = { size: 16, strokeWidth: 1.75 };
 
-// ─── Tab definitions with their required module + action ─────────────────────
-// Adjust `requiredModule` to match exactly what your API returns.
+
 const TAB_DEFINITIONS = [
   {
     id: "users",
     label: "User Management",
-    icon: <UserCog {...iconProps} />,
-    requiredModule: "User",   // must match a `module` string from the API
+    icon: <Users {...iconProps} />,
+    requiredModule: "User",  
     requiredAction: "read" as const,
   },
   {
     id: "roles",
     label: "Role Management",
     icon: <ShieldCheck {...iconProps} />,
-    requiredModule: "User",   // roles are typically admin-only — same module
+    requiredModule: "User",   
     requiredAction: "read" as const,
   },
 ] as const;

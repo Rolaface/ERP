@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Users,
   ChevronDown,
   ChevronRight,
-  CheckSquare,
-  Square,
-  Minus,
+  ShieldCheck
 } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
@@ -283,9 +280,9 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={isEdit ? "Edit Role" : "Add New Role"}
+      title={isEdit ? "Edit Role" : "Create New Role"}
       subtitle="Define role name and module permissions"
-      icon={Users}
+      icon={ShieldCheck}
       footer={footer}
       maxWidth="5xl"
       height="82vh"

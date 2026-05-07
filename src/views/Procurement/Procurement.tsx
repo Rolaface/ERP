@@ -63,42 +63,49 @@ const ALL_PROCUREMENT_TABS = [
     label: "Supplier Management",
     icon: <Users {...iconProps} />,
     module: "Supplier",
+    action: "read" as const, 
   },
   {
     id: "payments",
     label: "Payments",
     icon: <CreditCard {...iconProps} />,
     module: "Payment Entry",
+    action: "read" as const, 
   },
   {
     id: "rfqs",
     label: "RFQs",
     icon: <FileText {...iconProps} />,
     module: "Request For Quotation",
+    action: "read" as const, 
   },
   {
     id: "orders",
     label: "Purchase Orders",
     icon: <ClipboardList {...iconProps} />,
     module: "Purchase Order",
+    action: "read" as const, 
   },
   {
     id: "purchase",
     label: "Purchase Invoice",
     icon: <Receipt {...iconProps} />,
     module: "Purchase Invoice",
+    action: "read" as const, 
   },
   {
     id: "debitNotes",
     label: "Debit Notes",
     icon: <FileMinus {...iconProps} />,
     module: "Debit Note",
+    action: "read" as const, 
   },
   {
     id: "purchaseAnalytics",
     label: "Purchase Analytics",
     icon: <BarChart3 {...iconProps} />,
     module: "Purchase Invoice",
+    action: "read" as const, 
   },
 ];
 const DEFAULT_TAB = "procurementdashboard";
@@ -111,18 +118,20 @@ const Procurement: React.FC = () => {
 
   // Filter tabs based on permissions
   const procurementTabs = useMemo(
-    () => ALL_PROCUREMENT_TABS.filter((t) => !t.module || can(t.module, "read")),
+    () => ALL_PROCUREMENT_TABS.filter((t) => !t.module || can(t.module, t.action)),
     [can]
   );                                                        
 
   const activeTab = searchParams.get("tab") || DEFAULT_TAB;
 
   // If current tab not visible, fall back to first visible
+
   const resolvedTab =
     procurementTabs.find((t) => t.id === activeTab)?.id ??
     procurementTabs[0]?.id ??
-    DEFAULT_TAB;                                           
-
+    DEFAULT_TAB;      
+          
+  
   const isDashboardTab = resolvedTab === "procurementdashboard";
   const { openSupplierCreate, openPOCreate } = useOutletContext<OutletContextType>();
 
@@ -130,6 +139,7 @@ const Procurement: React.FC = () => {
 
   const handleTabChange = useCallback((tabId: string) => {
     const newParams = new URLSearchParams(searchParams);
+
     newParams.set("tab", tabId);
     navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
   }, [navigate, location.pathname, searchParams]);

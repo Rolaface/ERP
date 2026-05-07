@@ -52,19 +52,22 @@ const ALL_TABS = [
     id: "customer-managment",
     label: "Customer Management",
     icon: <Users {...iconProps} />,
-    module: "Customer",     // needs Customer read
+    module: "Customer",    
+    action: "read" as const, 
   },
   {
     id: "payments",
     label: "Payments",
     icon: <CreditCard {...iconProps} />,
-    module: "Payment Entry", // needs Payment Entry read
+    module: "Payment Entry", 
+    action: "read" as const, 
   },
   {
     id: "reports",
     label: "Reports",
     icon: <BarChart3 {...iconProps} />,
-    module: "Customer",     // needs Customer read
+    module: "Customer", 
+    action: "report" as const,     
   },
 ];
 
@@ -78,10 +81,10 @@ const CRM: React.FC = () => {
   const { can } = usePermission();                      
 
   // Filter tabs based on permissions
-  const crmTabs = useMemo(
-    () => ALL_TABS.filter((t) => !t.module || can(t.module, "read")),
+   const crmTabs = useMemo(
+    () => ALL_TABS.filter((t) => !t.module || can(t.module, t.action)),
     [can]
-  );                                                    
+  );                                                      
 
   const activeTab = searchParams.get("tab") || DEFAULT_TAB;
 

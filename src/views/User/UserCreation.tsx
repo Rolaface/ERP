@@ -25,7 +25,7 @@ const CreateUserPage: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  // ← NEW: read permission\ once
+
   const { can } = usePermission();
 
   const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);

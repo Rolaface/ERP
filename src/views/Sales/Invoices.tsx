@@ -43,7 +43,8 @@ import {
 import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { Copy } from "lucide-react";
 
@@ -80,6 +81,11 @@ interface InvoiceTableProps {
   onExportInvoice?: () => void;
 }
 
+
+const SALES_MODULE = "Sales Invoice";
+const PAYMENT_MODULE = "Payment Entry";
+
+
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const { openInvoiceEdit } = useOutletContext<OutletContextType>();
   const mountedRef = useRef(true);
@@ -95,6 +101,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
 
+  const { can } = usePermission();
   // ── Drawer (same pattern as ProformaInvoicesTable)
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<InvoiceDetail | null>(null);
@@ -469,19 +476,19 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setSelectedInvoice(null);
     setPdfOpen(false);
   };
-const formatDate = (date: string | Date) => {
-  if (!date) return "";
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
 
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-  }
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
 
-  // Date object — use local methods
-  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-};
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
   const handleRowStatusChange = async (
     invoiceNumber: string,
     status: InvoiceStatus,
@@ -578,9 +585,9 @@ const formatDate = (date: string | Date) => {
         sortable: true,
         render: (inv) => (
           <div className="py-1.5">
-          <span className="block">
-            {inv.invoiceNumber}
-          </span>
+            <span className="block">
+              {inv.invoiceNumber}
+            </span>
           </div>
         ),
         tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
@@ -590,8 +597,8 @@ const formatDate = (date: string | Date) => {
         header: "Tax Type",
         align: "center",
         render: (inv) => (
-             <div className="py-1.5">
-          <span className="block">{inv.invoiceType}</span>
+          <div className="py-1.5">
+            <span className="block">{inv.invoiceType}</span>
           </div>
         ),
         tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
@@ -602,8 +609,8 @@ const formatDate = (date: string | Date) => {
         align: "left",
         sortable: true,
         render: (inv) => (
-             <div className="py-1.5">
-          <span className="block font-medium">{inv.customerName}</span>
+          <div className="py-1.5">
+            <span className="block font-medium">{inv.customerName}</span>
           </div>
         ),
         tooltip: (inv) => `Customer: ${inv.customerName}`,
@@ -613,10 +620,10 @@ const formatDate = (date: string | Date) => {
         header: "Date",
         align: "center",
         render: (inv) => (
-             <div className="py-1.5">
-          <span className="block">
-            {formatDate(inv.dateOfInvoice)}
-          </span>
+          <div className="py-1.5">
+            <span className="block">
+              {formatDate(inv.dateOfInvoice)}
+            </span>
           </div>
         ),
       },
@@ -626,10 +633,10 @@ const formatDate = (date: string | Date) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-             <div className="py-1.5">
-          <span className="block">
-            {inv.dueDate ? formatDate(inv.dueDate) : "—"}
-          </span>
+          <div className="py-1.5">
+            <span className="block">
+              {inv.dueDate ? formatDate(inv.dueDate) : "—"}
+            </span>
           </div>
         ),
       },
@@ -639,10 +646,10 @@ const formatDate = (date: string | Date) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-             <div className="py-1.5">
-          <span className="block whitespace-nowrap">
-            {inv.total.toLocaleString()} {inv.currency}
-          </span>
+          <div className="py-1.5">
+            <span className="block whitespace-nowrap">
+              {inv.total.toLocaleString()} {inv.currency}
+            </span>
           </div>
         ),
         tooltip: (inv) =>
@@ -654,10 +661,10 @@ const formatDate = (date: string | Date) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-             <div className="py-1.5">
-          <span className="block whitespace-nowrap">
-            {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
-          </span>
+          <div className="py-1.5">
+            <span className="block whitespace-nowrap">
+              {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
+            </span>
           </div>
         ),
         tooltip: (inv) =>
@@ -667,7 +674,7 @@ const formatDate = (date: string | Date) => {
         key: "invoiceStatus",
         header: "Status",
         align: "center",
-        render: (inv) =>  <div className="py-1.5"><StatusBadge status={inv.invoiceStatus} /></div>,
+        render: (inv) => <div className="py-1.5"><StatusBadge status={inv.invoiceStatus} /></div>,
       },
       {
         key: "actions",
@@ -680,46 +687,49 @@ const formatDate = (date: string | Date) => {
               onClick={(e) => handleView(inv.invoiceNumber, e)}
               iconOnly
             />
-            <ActionButton
-              type="edit"
-              onClick={(e) => handleEdit(inv.invoiceNumber, e)}
-              iconOnly
-              disabled={inv.invoiceStatus !== "Draft"}
-              title={
-                inv.invoiceStatus !== "Draft"
-                  ? "Only Draft invoices can be edited"
-                  : "Edit Invoice"
-              }
-            />
+            <PermissionGate module={SALES_MODULE} action="write">
+              <ActionButton
+                type="edit"
+                onClick={(e) => handleEdit(inv.invoiceNumber, e)}
+                iconOnly
+                disabled={inv.invoiceStatus !== "Draft"}
+                title={
+                  inv.invoiceStatus !== "Draft"
+                    ? "Only Draft invoices can be edited"
+                    : "Edit Invoice"
+                }
+              />
+            </PermissionGate>
             <ActionMenu
               showDownload
               onDownload={(e) => handleDownload(inv, e)}
-              onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
+              // Delete — needs delete permission
+              {...(can(SALES_MODULE, "delete")
+                ? { onDelete: (e) => handleDelete(inv.invoiceNumber, e) }
+                : {})}
               customActions={[
+                // Receive Payment — needs Payment Entry create
                 ...(inv.invoiceStatus !== "Draft" &&
                   inv.invoiceStatus !== "Cancelled" &&
-                  inv.outstandingAmount > 0
-                  ? [
-                    {
-                      label: "Receive Payment",
-                      onClick: () => handleReceivePayment(inv),
-                    },
-                  ]
+                  inv.outstandingAmount > 0 &&
+                  can(PAYMENT_MODULE, "create")
+                  ? [{ label: "Receive Payment", onClick: () => handleReceivePayment(inv) }]
                   : []),
                 {
                   label: "View PDF",
                   onClick: () => handlePreviewPDF(inv),
                 },
-                ...(STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
-                  (status) => ({
+                // Status transitions — needs write
+                ...(can(SALES_MODULE, "write")
+                  ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
                     label: `Mark as ${status}`,
                     danger: status === "Paid",
-                    onClick: () =>
-                      handleRowStatusChange(inv.invoiceNumber, status),
-                  }),
-                ),
+                    onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
+                  }))
+                  : []),
               ]}
             />
+
           </div>
         ),
       },
@@ -750,11 +760,11 @@ const formatDate = (date: string | Date) => {
           setSearchTerm(q);
           setPage(1);
         }}
-        enableAdd
+        enableAdd={can(SALES_MODULE, "create")}
         addLabel="Add Invoice"
         onAdd={onAddInvoice}
         enableColumnSelector
-        enableExport
+        enableExport={can(SALES_MODULE, "export")}
         onExport={handleExportExcel}
         currentPage={page}
         totalPages={totalPages}
