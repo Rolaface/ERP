@@ -31,19 +31,12 @@ export function GradeSetup() {
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getAllEmployeeGrades();
-      const filtered = search
-        ? data.filter(
-            (r) =>
-              r.name?.toLowerCase().includes(search.toLowerCase()) ||
-              r.default_salary_structure
-                ?.toLowerCase()
-                .includes(search.toLowerCase()),
-          )
-        : data;
-      setTotalItems(filtered.length);
-      setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
-      setRows(filtered.slice((page - 1) * pageSize, page * pageSize));
+      const start = (page - 1) * pageSize;
+      const response = await getAllEmployeeGrades(start, pageSize, search);
+
+      setRows(response.data);
+      setTotalItems(response.pagination.total);
+      setTotalPages(response.pagination.total_pages);
     } catch (err: any) {
       showApiError(err?.message ?? "Failed to load grades");
     } finally {

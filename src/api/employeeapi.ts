@@ -79,5 +79,22 @@ export async function getCurrentCeiling(): Promise<any> {
   return resp.data;
 }
 
+export async function uploadEmployeePhoto(
+  employeeId: string,
+  file: File
+): Promise<any> {
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  const resp: AxiosResponse = await api.post(
+    `${EmployeeAPI.Dp}?id=${employeeId}`,  
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
 
-
+  return resp.data;
+}

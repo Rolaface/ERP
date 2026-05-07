@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
-  getAllSalaryComponents,
+ getSalaryComponentOptions,
   getAllSalaryStructures,
   getSalaryStructure,
   type SalaryComponent,
@@ -37,20 +37,15 @@ export function useSalaryStructures() {
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const [structures, components] = await Promise.all([
-        getAllSalaryStructures(),
-        getAllSalaryComponents(),
+      const start = (page - 1) * pageSize;
+      const [response, components] = await Promise.all([
+        getAllSalaryStructures(start, pageSize, search),
+        getSalaryComponentOptions(),
       ]);
       setAllComponents(components);
-
-      const filtered = search
-        ? structures.filter((r) =>
-            r.name?.toLowerCase().includes(search.toLowerCase()),
-          )
-        : structures;
-      setTotalItems(filtered.length);
-      setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
-      setRows(filtered.slice((page - 1) * pageSize, page * pageSize));
+      setRows(response.data);
+      setTotalItems(response.pagination.total);
+      setTotalPages(response.pagination.total_pages);
     } catch (err: any) {
       showApiError(err?.message ?? "Failed to load salary structures");
     } finally {

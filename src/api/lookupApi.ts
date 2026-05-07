@@ -94,8 +94,9 @@ export async function getSupplierList(params: SearchApiParams = {}): Promise<any
 }
 
 export async function getCurrencyList(params: SearchApiParams = {}): Promise<any[]> {
-  const resp: AxiosResponse = await api.get(RolaLookupAPI.getCurrency, { params });
-  return resp.data.message?.data || [];
+  const resp = await api.get(RolaLookupAPI.getCurrency, { params });
+
+  return resp.data?.data || [];
 }
 
 export async function getItemGroupList(params: SearchApiParams = {}): Promise<any[]> {
