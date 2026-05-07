@@ -109,7 +109,7 @@ doc.setFontSize(8);
   if (compEmail) { doc.text(compEmail, M, curY); curY += 4; }
 
   const logoRightX = MR;
-  const logoTopY = 21;
+  const logoTopY = 12;
 
   if (company?.documents?.companyLogoUrl) {
     try {
