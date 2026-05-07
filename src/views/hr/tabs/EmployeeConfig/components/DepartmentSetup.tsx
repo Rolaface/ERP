@@ -13,8 +13,7 @@ import {
   type Department,
 } from "../../../../../api/employeeConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
-import { DepartmentModal } from "../../../../../components/empployeesetupmodal/DepartmentModal";
-
+import { openDepartmentModal } from "../../../../../store/modalStore";
 export function DepartmentSetup() {
   const [rows, setRows] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,10 +24,7 @@ export function DepartmentSetup() {
   const [totalItems, setTotalItems] = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Department | null>(null);
-  const MODAL_ID = "department-modal";
-
+ 
 const fetchAll = useCallback(async () => {
   try {
     setLoading(true);
@@ -55,8 +51,16 @@ setTotalPages(response.pagination.total_pages);
     if (!row.name) return;
     try {
       const detail = await getDepartment(row.name);
-      setEditTarget(detail);
-      setModalOpen(true);
+     openDepartmentModal(
+  detail,
+  true,
+  {
+    onSuccess: fetchAll,
+  },
+  {
+    title: "Edit Department",
+  },
+);
     } catch (err: any) {
       showApiError(err?.message ?? "Failed to load department details");
     }
@@ -161,10 +165,18 @@ setTotalPages(response.pagination.total_pages);
         }}
         enableAdd
         addLabel="Add Department"
-        onAdd={() => {
-          setEditTarget(null);
-          setModalOpen(true);
-        }}
+      onAdd={() =>
+  openDepartmentModal(
+    null,
+    false,
+    {
+      onSuccess: fetchAll,
+    },
+    {
+      title: "New Department",
+    },
+  )
+}
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -179,13 +191,7 @@ setTotalPages(response.pagination.total_pages);
         tableId="employee-departments"
       />
 
-      <DepartmentModal
-        modalId={MODAL_ID}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialData={editTarget}
-        onSuccess={fetchAll}
-      />
+      
     </>
   );
 }

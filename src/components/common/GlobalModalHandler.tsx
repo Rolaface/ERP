@@ -105,10 +105,41 @@ const SalaryStructureModal = lazy(
       default: m.SalaryStructureModal,
     })),
 );
+const TaxConfigModal = lazy(
+  () =>
+    import("../Hr/hrsetupmodals/TaxConfigModal").then((m) => ({
+      default: m.TaxConfigModal,
+    })),
+);
+
+const DepartmentModal = lazy(
+  () =>
+    import("../empployeesetupmodal/DepartmentModal").then((m) => ({
+      default: m.DepartmentModal,
+    })),
+);
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
   </div>
+);
+const DesignationModal = lazy(
+  () =>
+    import("../empployeesetupmodal/DesignationModal").then((m) => ({
+      default: m.DesignationModal,
+    })),
+);
+const GradeModal = lazy(
+  () =>
+    import("../empployeesetupmodal/GradeModal").then((m) => ({
+      default: m.GradeModal,
+    })),
+);
+const EmployeeTypeModal = lazy(
+  () =>
+    import("../empployeesetupmodal/EmployeeTypeModal").then((m) => ({
+      default: m.EmployeeTypeModal,
+    })),
 );
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -654,7 +685,73 @@ const GlobalModalHandler: React.FC = () => {
       deductionComponents={[]}
       onSuccess={() => {
         if (context?.onSuccess) context.onSuccess(undefined);
-        handleClose();
+      }}
+    />,
+  );
+
+  case "taxConfig":
+  return wrappedModal(
+    <TaxConfigModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+      }}
+    />,
+  );
+  case "department":
+  return wrappedModal(
+    <DepartmentModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+      }}
+    />,
+  );
+
+  case "designation":
+  return wrappedModal(
+    <DesignationModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+      }}
+    />,
+  );
+  case "grade":
+  return wrappedModal(
+    <GradeModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+      }}
+    />,
+  );
+  case "employeeType":
+  return wrappedModal(
+    <EmployeeTypeModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
       }}
     />,
   );

@@ -6,13 +6,14 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
-import { TaxConfigModal } from "../../../../../components/Hr/hrsetupmodals/TaxConfigModal";
+
 import {
   deleteTaxConfig,
   type TaxConfig,
 } from "../../../../../api/payrollConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { useTaxConfigs } from "../hooks/useTaxConfigs";
+import { openTaxConfigModal } from "../../../../../store/modalStore";
 
 export function TaxConfigurationSetup() {
   const {
@@ -31,16 +32,22 @@ export function TaxConfigurationSetup() {
   } = useTaxConfigs();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<TaxConfig | null>(null);
-  const MODAL_ID = "tax-config-modal";
+
 
   const handleEdit = useCallback(
     async (row: TaxConfig) => {
       const detail = await fetchDetail(row.name);
       if (!detail) return;
-      setEditTarget(detail);
-      setModalOpen(true);
+      openTaxConfigModal(
+  detail,
+  true,
+  {
+    onSuccess: fetchAll,
+  },
+  {
+    title: "Edit Tax Configuration",
+  },
+);
     },
     [fetchDetail],
   );
@@ -154,10 +161,18 @@ export function TaxConfigurationSetup() {
         }}
         enableAdd
         addLabel="Add Tax"
-        onAdd={() => {
-          setEditTarget(null);
-          setModalOpen(true);
-        }}
+        onAdd={() =>
+  openTaxConfigModal(
+    null,
+    false,
+    {
+      onSuccess: fetchAll,
+    },
+    {
+      title: "New Tax Configuration",
+    },
+  )
+}
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -172,13 +187,7 @@ export function TaxConfigurationSetup() {
         tableId="tax-configurations"
       />
 
-      <TaxConfigModal
-        modalId={MODAL_ID}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialData={editTarget}
-        onSuccess={fetchAll}
-      />
+      
     </>
   );
 }

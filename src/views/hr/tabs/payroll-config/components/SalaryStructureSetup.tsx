@@ -6,13 +6,13 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
-import { SalaryStructureModal } from "../../../../../components/Hr/hrsetupmodals/Salarystructuremodal";
 import {
   deleteSalaryStructure,
   type SalaryStructure,
 } from "../../../../../api/payrollConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { useSalaryStructures } from "../hooks/useSalaryStructures";
+import { openSalaryStructureModal } from "../../../../../store/modalStore";
 
 export function SalaryStructureSetup() {
   const {
@@ -26,23 +26,27 @@ export function SalaryStructureSetup() {
     setPageSize,
     totalPages,
     totalItems,
-    earningComponents,
-    deductionComponents,
+   
     fetchAll,
     fetchDetail,
   } = useSalaryStructures();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<SalaryStructure | null>(null);
-  const MODAL_ID = "salary-structure-modal";
 
   const handleEdit = useCallback(
     async (row: SalaryStructure) => {
       const detail = await fetchDetail(row.name!);
       if (!detail) return;
-      setEditTarget(detail);
-      setModalOpen(true);
+      openSalaryStructureModal(
+  detail,
+  true,
+  {
+    onSuccess: fetchAll,
+  },
+  {
+    title: "Edit Salary Structure",
+  },
+);
     },
     [fetchDetail],
   );
@@ -165,10 +169,18 @@ export function SalaryStructureSetup() {
         }}
         enableAdd
         addLabel="Add Structure"
-        onAdd={() => {
-          setEditTarget(null);
-          setModalOpen(true);
-        }}
+        onAdd={() =>
+  openSalaryStructureModal(
+    null,
+    false,
+    {
+      onSuccess: fetchAll,
+    },
+    {
+      title: "New Salary Structure",
+    },
+  )
+}
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -183,15 +195,7 @@ export function SalaryStructureSetup() {
         tableId="salary-structures"
       />
 
-      <SalaryStructureModal
-        modalId={MODAL_ID}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialData={editTarget}
-        earningComponents={earningComponents}
-        deductionComponents={deductionComponents}
-        onSuccess={fetchAll}
-      />
+   
     </>
   );
 }
