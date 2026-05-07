@@ -181,12 +181,13 @@ animate-[fadeInUp_0.9s_ease-out]">
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
                 className="w-full h-12 px-4 rounded-xl 
-bg-[#F4F8FC] border border-[#E5E7EB]
+bg-[#F4F8FC] border border-[#DCE7F3]
 shadow-inner
 placeholder:text-[#94A3B8]
 focus:bg-white focus:border-primary 
-focus:ring-2 focus:ring-primary/30
-focus:shadow-[0_0_0_2px_rgba(59,130,246,0.15)]
+focus:ring-4 focus:ring-blue-500/10
+focus:border-blue-500/70
+focus:shadow-[0_0_0_1px_rgba(59,130,246,0.30),0_8px_20px_rgba(59,130,246,0.10)]
 focus:placeholder:opacity-60
 outline-none transition-all duration-200"
                 required
@@ -214,12 +215,13 @@ outline-none transition-all duration-200"
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full h-12 px-4 pr-10 rounded-xl 
-bg-[#F4F8FC] border border-[#E5E7EB]
+bg-[#F4F8FC] border border-[#DCE7F3]
 shadow-inner
 placeholder:text-[#94A3B8]
 focus:bg-white focus:border-primary 
-focus:ring-2 focus:ring-primary/30
-focus:shadow-[0_0_0_2px_rgba(59,130,246,0.15)]
+focus:ring-4 focus:ring-blue-500/10
+focus:border-blue-500/70
+focus:shadow-[0_0_0_1px_rgba(59,130,246,0.30),0_8px_20px_rgba(59,130,246,0.10)]
 focus:placeholder:opacity-60
 outline-none transition-all duration-200"
                   required
