@@ -27,7 +27,6 @@ import {
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
-  ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
@@ -46,7 +45,7 @@ import { saveAs } from "file-saver";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { Copy } from "lucide-react";
+
 
 type OutletContextType = {
   openInvoiceCreate: () => void;

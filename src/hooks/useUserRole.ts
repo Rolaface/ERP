@@ -7,11 +7,11 @@ export const MODULE_STRUCTURE: Record<string, string[]> = {
   Sales: ["Sales Invoice"],
   CustomerManagement: ["Customer"],
   Procurement: ["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice"],
-  Inventory: ["Item Tax Template", "Item", "Item Group", "Warehouse", "Stock Entry"],
+  Inventory: ["Item", "Item Group", "Warehouse", "Stock Entry"],
   Accounting: ["GL Entry", "Journal Entry","Account"],
   Assets: ["Asset Category", "Asset", "Asset Movement"],
   HumanResource: ["Employee", "Payroll Entry"],
-  Settings: ["Company", "User","Role","Bank", "Bank Account", "Mode of Payment", "Payment Entry", "Currency Exchange", "Customer Group", "Item Tax Template"],
+  Settings: ["Company", "User","Role","Bank", "Bank Account", "Mode of Payment", "Payment Entry", "Currency Exchange", "Customer Group", "Item Tax Template","Tax Category","Sales Taxes and Charges Template"],
 };
 
 export const ALL_MODULES = Object.keys(MODULE_STRUCTURE);
@@ -112,6 +112,8 @@ const buildPayload = (): UserRoleFormData => {
       import: existing?.import ?? 0,
       export: existing?.export ?? 0,
       report: existing?.report ?? 0,
+      submit: existing?.submit ?? 0,
+      cancel: existing?.cancel ?? 0,
     };
   });
 
@@ -151,7 +153,7 @@ const buildPayload = (): UserRoleFormData => {
         const newEntry: PermissionEntry = {
           module,
           read: 0, write: 0, create: 0,
-          delete: 0, import: 0, export: 0, report: 0,
+          delete: 0, import: 0, export: 0, report: 0,submit: 0, cancel: 0,
           [action]: 1,
         };
         return { ...prev, permission: [...prev.permission, newEntry] };
@@ -170,7 +172,7 @@ const buildPayload = (): UserRoleFormData => {
           ...prev,
           permission: [
             ...filtered,
-            { module, read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1 },
+            { module, read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1, submit: 1, cancel: 1 ,},
           ],
         };
       });
@@ -196,7 +198,7 @@ const buildPayload = (): UserRoleFormData => {
         if (!on) return { ...prev, permission: filtered };
         const newEntries: PermissionEntry[] = subModules.map((sub) => ({
           module: sub,
-          read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1,
+          read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1, submit: 1, cancel: 1,
         }));
         return { ...prev, permission: [...filtered, ...newEntries] };
       });

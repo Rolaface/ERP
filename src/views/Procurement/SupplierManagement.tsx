@@ -22,6 +22,7 @@ import { openPaymentEntryModal } from "../../store/modalStore";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 type OutletContextType = {
   openSupplierCreate: () => void;
@@ -228,9 +229,15 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const handleDeleteSupplier = async (supplier: Supplier) => {
     if (!supplier.supplierId) return;
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${supplier.supplierName}?`,
-    );
+    const confirmed = await fireManagedSwal({
+         icon: "warning",
+         title: "Are you sure?",
+         text: `Delete supplier ${supplier.supplierId}?`,
+         showCancelButton: true,
+         confirmButtonColor: "#ef4444",
+         cancelButtonColor: "#6b7280",
+         confirmButtonText: "Yes, delete",
+       });
 
     if (!confirmed) return;
 

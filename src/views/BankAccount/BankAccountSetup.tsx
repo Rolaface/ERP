@@ -270,11 +270,7 @@ const BankAccountSetup: React.FC = () => {
 
   return (
     <AppPage>
-      <AppPageHeader
-        title="Bank Accounts"
-        description="Manage bank accounts"
-        icon={<Landmark />}
-      />
+     
 
       {/* TABLE */}
       <AppPageBody>

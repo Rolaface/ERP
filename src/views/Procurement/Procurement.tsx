@@ -105,7 +105,7 @@ const ALL_PROCUREMENT_TABS = [
     label: "Purchase Analytics",
     icon: <BarChart3 {...iconProps} />,
     module: "Purchase Invoice",
-    action: "read" as const, 
+    action: "report" as const, 
   },
 ];
 const DEFAULT_TAB = "procurementdashboard";

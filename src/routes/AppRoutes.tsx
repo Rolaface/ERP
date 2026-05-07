@@ -7,26 +7,26 @@ import Login from "../views/LoginPage";
 import AppLayout from "../layout/AppLayout";
 import GLView from "../views/Accounting/glview";
 import { usePermission } from "../hooks/permission/usePermission";
-import type { PermissionAction } from "../store/permissionStore"; 
+import type { PermissionAction } from "../store/permissionStore";
 
-const Dashboard           = lazy(() => import("../views/DashbBoard"));
-const SalesModule         = lazy(() => import("../views/Sales/Sales"));
-const ProcurementModule   = lazy(() => import("../views/Procurement/Procurement"));
-const InventoryModule     = lazy(() => import("../views/Inventory/Inventory"));
-const AccountingModule    = lazy(() => import("../views/Accounting/Accounting"));
-const CrmModule           = lazy(() => import("../views/Crm/Crm"));
-const Settings            = lazy(() => import("../views/Settings"));
-const HrPayrollModule     = lazy(() => import("../views/hr/HR"));
-const CompanySetup        = lazy(() => import("../views/CompanySetup/CompanySetup"));
-const UserManagement      = lazy(() => import("../views/User/UserModule"));
-const FixedAssets         = lazy(() => import("../views/FixedAssets/FixedAsset"));
-const BankAccountPage     = lazy(() => import("../views/BankAccount/BankAccountPage"));
-const ModeOfPaymentPage   = lazy(() => import("../views/Mode of Payment/ModeOfPaymentSetup"));
-const PaymentEntry        = lazy(() => import("../views/PaymentEntry/PaymentEntry"));
-const CurrencyConversion  = lazy(() => import("../views/CurrencyConversion/currencyConversion"));
-const CustomerGroup       = lazy(() => import("../views/Customergroup/CustomerGroup"));
-const TaxMaintenance      = lazy(() => import("../views/TaxMaintaince/taxmaintaince"));
-const Bank                = lazy(() => import("../views/BankAccount/Bank"));
+const Dashboard = lazy(() => import("../views/DashbBoard"));
+const SalesModule = lazy(() => import("../views/Sales/Sales"));
+const ProcurementModule = lazy(() => import("../views/Procurement/Procurement"));
+const InventoryModule = lazy(() => import("../views/Inventory/Inventory"));
+const AccountingModule = lazy(() => import("../views/Accounting/Accounting"));
+const CrmModule = lazy(() => import("../views/Crm/Crm"));
+const Settings = lazy(() => import("../views/Settings"));
+const HrPayrollModule = lazy(() => import("../views/hr/HR"));
+const CompanySetup = lazy(() => import("../views/CompanySetup/CompanySetup"));
+const UserManagement = lazy(() => import("../views/User/UserModule"));
+const FixedAssets = lazy(() => import("../views/FixedAssets/FixedAsset"));
+const BankModule = lazy(() => import("../views/BankAccount/BankModule"));
+const ModeOfPaymentPage = lazy(() => import("../views/Mode of Payment/ModeOfPaymentSetup"));
+const PaymentEntry = lazy(() => import("../views/PaymentEntry/PaymentEntry"));
+const CurrencyConversion = lazy(() => import("../views/CurrencyConversion/currencyConversion"));
+const CustomerGroup = lazy(() => import("../views/Customergroup/CustomerGroup"));
+const TaxMaintenance = lazy(() => import("../views/TaxMaintaince/taxmaintaince"));
+
 
 import { Toaster } from "react-hot-toast";
 import ResetPassword from "../ResetPassword";
@@ -67,10 +67,10 @@ const AppRoutes: React.FC = () => {
       <Routes>
 
         {/* ── Public Routes ── */}
-        <Route path="/"       element={<LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/login"  element={<Login />} />
-        <Route path="/reset"  element={<ResetPassword />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/reset" element={<ResetPassword />} />
 
         {/* ── Protected Routes ── */}
         <Route element={<ProtectedRoute />}>
@@ -104,7 +104,7 @@ const AppRoutes: React.FC = () => {
               path="/procurement"
               element={
                 <PermissionRoute
-                  modules={["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice","Payment Entry"]}
+                  modules={["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice", "Payment Entry"]}
                 >
                   <ProcurementModule />
                 </PermissionRoute>
@@ -159,7 +159,7 @@ const AppRoutes: React.FC = () => {
             <Route
               path="/ledger"
               element={
-                <PermissionRoute modules={["GL Entry"]}>
+                <PermissionRoute modules={["GL Entry", "Journal Entry"]}>
                   <GLView />
                 </PermissionRoute>
               }
@@ -196,23 +196,16 @@ const AppRoutes: React.FC = () => {
 
             {/* Bank Account */}
             <Route
-              path="/bank-account-setup"
+              path="/bank-management"
               element={
-                <PermissionRoute modules={["Bank Account"]}>
-                  <BankAccountPage />
+                <PermissionRoute
+                  modules={["Bank", "Bank Account"]}
+                >
+                  <BankModule />
                 </PermissionRoute>
               }
             />
 
-            {/* Bank */}
-            <Route
-              path="/bank"
-              element={
-                <PermissionRoute modules={["Bank"]}>
-                  <Bank />
-                </PermissionRoute>
-              }
-            />
 
             {/* Mode of Payment */}
             <Route
@@ -258,7 +251,7 @@ const AppRoutes: React.FC = () => {
             <Route
               path="/Tax-Maintenance"
               element={
-                <PermissionRoute modules={["Item Tax Template"]}>
+                <PermissionRoute modules={["Item Tax Template", "Tax Category", "Sales Taxes and Charges Template"]}>
                   <TaxMaintenance />
                 </PermissionRoute>
               }

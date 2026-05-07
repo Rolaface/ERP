@@ -9,6 +9,8 @@ export interface RawPermission {
   report: 0 | 1;
   import: 0 | 1;
   export: 0 | 1;
+  submit: 0 | 1;
+  cancel: 0 | 1;
 }
 
 export interface NormalizedPermission {
@@ -19,6 +21,8 @@ export interface NormalizedPermission {
   report: boolean;
   import: boolean;
   export: boolean;
+  submit: boolean;
+  cancel: boolean;
 }
 
 export type PermissionAction =
@@ -28,7 +32,9 @@ export type PermissionAction =
   | "delete"
   | "report"
   | "import"
-  | "export";
+  | "export"
+  | "submit"
+  | "cancel";
 
 interface PermissionState {
   permissions: Map<string, NormalizedPermission>;
@@ -64,6 +70,8 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
         report: entry.report === 1,
         import: entry.import === 1,
         export: entry.export === 1,
+        submit: entry.submit === 1,
+        cancel: entry.cancel === 1,
       });
     }
     set({ permissions: map, isLoading: false, error: null });

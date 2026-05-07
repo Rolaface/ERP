@@ -7,6 +7,8 @@ export interface PermissionEntry {
   import: 0 | 1;
   export: 0 | 1;
   report: 0 | 1;
+  submit: 0 | 1;
+  cancel: 0 | 1;
 }
 
 export interface UserRoleFormData {

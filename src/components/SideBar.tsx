@@ -28,12 +28,7 @@ import { useCompanyStore } from "../store/companyStore";
 import { MODAL_LAYER } from "../store/modalStore";
 import { usePermission } from "../hooks/permission/usePermission";
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   PERMISSION MAP
-   Each nav item declares which API module(s) it needs `read` access to.
-   If `modules` is empty / undefined, the item is always visible (e.g. Dashboard).
-   The sidebar will hide the item if the user has no `read` on ANY listed module.
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const iconProps = { size: 18, strokeWidth: 1.75 };
 
@@ -124,16 +119,10 @@ const settingsItems: SettingsItem[] = [
     modules: ["User"],
   },
   {
-    to: "/bank-account-setup",
-    label: "Bank Account",
+    to: "/bank-management",
+    label: "Bank Management",
     icon: <Landmark {...iconProps} />,
-    modules: ["Bank Account"],
-  },
-  {
-    to: "/bank",
-    label: "Bank",
-    icon: <Landmark {...iconProps} />,
-    modules: ["Bank"],
+    modules: ["Bank", "Bank Account"],
   },
   {
     to: "/mode-of-payment-setup",
@@ -163,7 +152,11 @@ const settingsItems: SettingsItem[] = [
     to: "/Tax-Maintenance",
     label: "Tax Maintenance",
     icon: <Calculator {...iconProps} />,
-    modules: ["Item Tax Template"],
+    modules: [
+      "Item Tax Template",
+      "Tax Category",
+      "Sales Taxes and Charges Template",
+    ],
   },
   {
     to: "/settings",
@@ -222,7 +215,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const visibleMenuItems = useMemo(
     () =>
       menuItems.filter((item) => {
-        
+
         // No modules declared → always show (e.g. Dashboard)
         if (!item.modules || item.modules.length === 0) return true;
         return canAccessAnyOf(item.modules);

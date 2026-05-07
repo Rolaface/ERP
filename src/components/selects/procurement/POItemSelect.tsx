@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { getAllItems } from "../../../api/itemApi";
+import { showApiError } from "../../../utils/alert";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,8 +64,9 @@ export default function POItemSelect({
               : [];
           setItems(rawList);
         }
-      } catch {
+      } catch(err) {
         if (!cancelled) setItems([]);
+        showApiError(err)
       } finally {
         if (!cancelled) setLoading(false);
       }

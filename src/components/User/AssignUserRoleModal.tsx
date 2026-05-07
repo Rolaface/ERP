@@ -24,6 +24,8 @@ const PERMISSION_KEYS: PermissionKey[] = [
   "import",
   "export",
   "report",
+  "submit",
+  "cancel",
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -46,6 +48,8 @@ const ACTION_LABELS: Record<PermissionKey, string> = {
   import: "Import",
   export: "Export",
   report: "Report",
+  submit: "Submit",
+  cancel: "Cancel",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

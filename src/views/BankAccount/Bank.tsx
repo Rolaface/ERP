@@ -124,11 +124,7 @@ const BankPage: React.FC = () => {
 
   return (
     <AppPage>
-      <AppPageHeader
-        title="Bank"
-        description="Manage Bank"
-        icon={<Landmark />}
-      />
+     
       <AppPageBody>
         <Table
           columns={columns}
