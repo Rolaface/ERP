@@ -137,8 +137,74 @@ const Login = () => {
       <div className="w-full lg:w-[42%] flex items-center justify-center bg-gradient-to-b from-white to-[#F8FAFC] px-6">
 
         {/* Subtle background glow */}
-        <div className="absolute inset-0 pointer-events-none 
-  bg-[radial-gradient(circle_at_50%_40%,rgba(59,130,246,0.08),transparent_60%)]" />
+        {/* ================= Ambient Background Depth ================= */}
+<div className="absolute inset-0 pointer-events-none overflow-hidden">
+
+  {/* Primary Blue Glow */}
+  <div
+    className="
+      absolute
+
+      top-[12%]
+      left-[18%]
+
+      w-[420px]
+      h-[420px]
+
+      rounded-full
+
+      bg-blue-500/12
+
+      blur-[110px]
+    "
+  />
+
+  {/* Secondary Indigo Glow */}
+  <div
+    className="
+      absolute
+
+      bottom-[8%]
+      right-[12%]
+
+      w-[320px]
+      h-[320px]
+
+      rounded-full
+
+      bg-indigo-500/10
+
+      blur-[120px]
+    "
+  />
+
+  {/* Soft Top Atmospheric Light */}
+  <div
+    className="
+      absolute
+
+      top-[-10%]
+      left-1/2
+      -translate-x-1/2
+
+      w-[70%]
+      h-[240px]
+
+      bg-white/20
+
+      blur-[120px]
+    "
+  />
+
+  {/* Subtle Vignette Depth */}
+  <div
+    className="
+      absolute inset-0
+
+      bg-[radial-gradient(circle_at_center,transparent_45%,rgba(15,23,42,0.04)_100%)]
+    "
+  />
+</div>
         {/* Card with entrance animation */}
 
         <div className="relative w-full max-w-md 
