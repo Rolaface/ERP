@@ -109,11 +109,11 @@ doc.setFontSize(8);
   if (compEmail) { doc.text(compEmail, M, curY); curY += 4; }
 
   const logoRightX = MR;
-  const logoTopY = 16;
+  const logoTopY = 21;
 
   if (company?.documents?.companyLogoUrl) {
     try {
-     doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 55, logoTopY, 55, 25);
+     doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 60, logoTopY, 60, 35);
     } catch {}
   } else {
 
