@@ -119,6 +119,8 @@ const UserRolePage: React.FC = () => {
             import: p.import ?? 0,
             export: p.export ?? 0,
             report: p.report ?? 0,
+            submit: p.submit ?? 0,
+            cancel: p.cancel ?? 0,
           })),
         },
         isEdit,

@@ -18,6 +18,8 @@ export interface RawPermissionEntry {
   report: 0 | 1;
   import: 0 | 1;
   export: 0 | 1;
+  submit: 0 | 1;
+  cancel: 0 | 1;
 }
 
 export interface AuthUser {
