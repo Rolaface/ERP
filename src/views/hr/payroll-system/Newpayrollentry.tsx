@@ -26,8 +26,10 @@ interface Props {
     formData: PayrollEntry,
     docName?: string,
   ) => Promise<void>;
-}
 
+  initialData?: PayrollEntry | null;
+  isEdit?: boolean;
+}
 const TABS: { label: string; icon: React.ReactNode }[] = [
   { label: "Overview", icon: <FileText className="w-3.5 h-3.5" /> },
   { label: "Employees", icon: <Users className="w-3.5 h-3.5" /> },
@@ -55,12 +57,22 @@ const EMPTY_FORM: PayrollEntry = {
   selectedEmployees: [],
 };
 
-export const NewPayrollEntry: React.FC<Props> = ({ onBack, onSuccess }) => {
-  const [step, setStep] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+const NewPayrollEntry: React.FC<Props> = ({
+  onBack,
+  onSuccess,
+  initialData,
+  isEdit,
+}) => {
+  const [step,        setStep]        = useState(0);
+  const [submitting,  setSubmitting]  = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<PayrollEntry>(EMPTY_FORM);
-  const [employees, setEmployees] = useState<any[]>([]);
+const [formData, setFormData] = useState<PayrollEntry>({
+  ...EMPTY_FORM,
+  ...initialData,
+  selectedEmployees:
+    initialData?.selectedEmployees || [],
+});
+  const [employees,   setEmployees]   = useState<any[]>([]);
 
   const isLastStep = step === TABS.length - 1;
 
@@ -199,9 +211,40 @@ export const NewPayrollEntry: React.FC<Props> = ({ onBack, onSuccess }) => {
         </div>
       )}
 
-      <div className="shrink-0 border-t border-theme bg-app px-5 py-3">
-        {footer}
-      </div>
+    <div className="shrink-0 border-t border-theme bg-app px-5 py-3">
+  <ModalFooter
+    onCancel={onBack}
+    onNext={
+      !isLastStep
+        ? () =>
+            setStep((p) =>
+              Math.min(
+                TABS.length - 1,
+                p + 1,
+              ),
+            )
+        : undefined
+    }
+    onSubmit={
+      isLastStep
+        ? handleSubmit
+        : undefined
+    }
+    currentTab={step}
+    totalTabs={TABS.length}
+    isSubmitting={submitting}
+    nextLabel="Next"
+    submitLabel={
+  isEdit
+    ? "Update Payroll"
+    : `Create Payroll (${formData.selectedEmployees.length})`
+}
+    submitDisabled={
+      !formData.selectedEmployees.length
+    }
+  />
+</div>
     </div>
   );
 };
+export default NewPayrollEntry;

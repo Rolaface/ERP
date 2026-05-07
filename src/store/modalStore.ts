@@ -14,22 +14,23 @@ export type ModalType =
   | "itemCategory"
   | "warehouse"
   | "taxTemplate"
-  |"salesTax"
+  | "salesTax"
   | "taxCategory"
   | "bankAccount"
-  |"modeOfPayment"
-  |"paymentEntry"
-  |"currencyExchange"
-  |"fixedAsset"
-  |"assetMovement"
-  |"Rfq"
-  |"JournalEntries"
-  |"CreditNote"
-  |"DebitNote"
-  |"UserRole"
-  |"Bank"
-  |"employee"
-  |"User";
+  | "modeOfPayment"
+  | "paymentEntry"
+  | "currencyExchange"
+  | "fixedAsset"
+  | "assetMovement"
+  | "Rfq"
+  | "JournalEntries"
+  | "CreditNote"
+  | "DebitNote"
+  | "UserRole"
+  | "Bank"
+  | "employee"
+  | "payroll"
+  | "User";
 
 export interface ModalContext {
   source?: string;
@@ -71,7 +72,7 @@ export const MODAL_LAYER = {
   modalPanelOffset: 10,
   minimizedTaskbar: 1800,
 } as const;
-4
+4;
 let modalIdCounter = 0;
 
 const createModalId = (type: ModalType) => {
@@ -95,7 +96,7 @@ interface ModalState {
     initialData?: unknown,
     isEdit?: boolean,
     context?: ModalContext,
-    meta?: ModalMeta
+    meta?: ModalMeta,
   ) => string;
   closeModal: (id: string) => void;
   closeAllModals: () => void;
@@ -197,7 +198,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
                 onRequestClose: meta.onRequestClose,
               },
             }
-          : m
+          : m,
       ),
     }));
   },
@@ -205,7 +206,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
   unregisterModalMeta: (id) => {
     set((state) => ({
       modals: state.modals.map((m) =>
-        m.id === id ? { ...m, meta: undefined } : m
+        m.id === id ? { ...m, meta: undefined } : m,
       ),
     }));
   },
@@ -213,7 +214,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
   minimizeModal: (id) => {
     set((state) => ({
       modals: state.modals.map((m) =>
-        m.id === id ? { ...m, minimized: true } : m
+        m.id === id ? { ...m, minimized: true } : m,
       ),
     }));
   },
@@ -226,7 +227,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
         modals: state.modals.map((m) =>
           m.id === id
             ? { ...m, minimized: false, focusOrder: newFocusOrder }
-            : m
+            : m,
         ),
       };
     });
@@ -236,7 +237,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
     set((state) => {
       const visible = state.modals.filter((m) => !m.minimized);
       const topVisible = [...visible].sort(
-        (a, b) => b.focusOrder - a.focusOrder
+        (a, b) => b.focusOrder - a.focusOrder,
       )[0];
 
       if (!topVisible || topVisible.id === id) {
@@ -249,7 +250,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
         modals: state.modals.map((m) =>
           m.id === id
             ? { ...m, minimized: false, focusOrder: newFocusOrder }
-            : m
+            : m,
         ),
       };
     });
@@ -280,7 +281,10 @@ export const useModalStore = create<ModalState>((set, get) => ({
     const visible = state.modals
       .filter((m) => !m.minimized)
       .sort((a, b) => a.focusOrder - b.focusOrder);
-    const rank = Math.max(visible.findIndex((m) => m.id === id), 0);
+    const rank = Math.max(
+      visible.findIndex((m) => m.id === id),
+      0,
+    );
     const backdrop =
       MODAL_LAYER.modalBackdropBase + rank * MODAL_LAYER.modalStep;
     return {
@@ -299,16 +303,14 @@ export const useModalStore = create<ModalState>((set, get) => ({
 
   setModalContext: (id, context) => {
     set((state) => ({
-      modals: state.modals.map((m) =>
-        m.id === id ? { ...m, context } : m
-      ),
+      modals: state.modals.map((m) => (m.id === id ? { ...m, context } : m)),
     }));
   },
 
   clearModalContext: (id) => {
     set((state) => ({
       modals: state.modals.map((m) =>
-        m.id === id ? { ...m, context: undefined } : m
+        m.id === id ? { ...m, context: undefined } : m,
       ),
     }));
   },
@@ -354,7 +356,7 @@ export const openCustomerModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
@@ -364,7 +366,7 @@ export const openSupplierModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
@@ -374,7 +376,7 @@ export const openInvoiceModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
@@ -384,7 +386,7 @@ export const openQuotationModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
@@ -394,7 +396,7 @@ export const openItemModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
@@ -404,7 +406,7 @@ export const openItemCategoryModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
@@ -413,7 +415,7 @@ export const openItemCategoryModal = (
 export const openPurchaseOrderModal = (
   poId?: string | number,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
@@ -422,7 +424,7 @@ export const openPurchaseOrderModal = (
 export const openPurchaseInvoiceModal = (
   pId?: string | number,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
@@ -432,7 +434,7 @@ export const openProformaModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
@@ -442,39 +444,37 @@ export const openTaxTemplateModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
     .openModal("taxTemplate", initialData, isEdit, context, meta);
 
-
-
 export const openWarehouseModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
     .openModal("warehouse", initialData, isEdit, context, meta);
 
 export const openTaxCategoryModal = (
-      initialData?: unknown,
-      isEdit = false,
-      context?: ModalContext,
-      meta?: ModalMeta
-    ) =>
-      useModalStore
-        .getState()
-        .openModal("taxCategory", initialData, isEdit, context, meta);
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("taxCategory", initialData, isEdit, context, meta);
 
 export const openSalesTaxTemplateModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
@@ -484,146 +484,144 @@ export const openBankAccountModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("bankAccount", initialData, isEdit, context, meta);    
-        
+    .openModal("bankAccount", initialData, isEdit, context, meta);
+
 export const openModeOfPaymentModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("modeOfPayment", initialData, isEdit, context, meta);  
-    export const openPaymentEntryModal = (
+    .openModal("modeOfPayment", initialData, isEdit, context, meta);
+export const openPaymentEntryModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("paymentEntry", initialData, isEdit, context, meta);  
-
+    .openModal("paymentEntry", initialData, isEdit, context, meta);
 
 export const openCurrencyExchangeModal = (
   initialData?: unknown,
-  isEdit = false, 
+  isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("currencyExchange", initialData, isEdit, context, meta);    
+    .openModal("currencyExchange", initialData, isEdit, context, meta);
 
 export const openFixedAssetModal = (
   initialData?: unknown,
-  isEdit = false, 
+  isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("fixedAsset", initialData, isEdit, context, meta);    
-    export const openAssetMovementModal = (
+    .openModal("fixedAsset", initialData, isEdit, context, meta);
+export const openAssetMovementModal = (
   initialData?: unknown,
-  isEdit = false, 
+  isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("assetMovement", initialData, isEdit, context, meta);    
+    .openModal("assetMovement", initialData, isEdit, context, meta);
 
 export const openRfqModal = (
   initialData?: unknown,
-  isEdit = false, 
+  isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
-  useModalStore
-    .getState()
-    .openModal("Rfq", initialData, isEdit, context, meta);    
+  useModalStore.getState().openModal("Rfq", initialData, isEdit, context, meta);
 
 export const JournalEntriesModal = (
   initialData?: unknown,
-  isEdit = false, 
+  isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("JournalEntries", initialData, isEdit, context, meta);  
-
+    .openModal("JournalEntries", initialData, isEdit, context, meta);
 
 export const openCreditNoteModal = (
   initialData?: unknown,
-  isEdit = false, 
+  isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("CreditNote", initialData, isEdit, context, meta);    
-    
+    .openModal("CreditNote", initialData, isEdit, context, meta);
 
 export const openDebitNoteModal = (
   initialData?: unknown,
-  isEdit = false, 
+  isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("DebitNote", initialData, isEdit, context, meta);    
+    .openModal("DebitNote", initialData, isEdit, context, meta);
 
-
-    
 export const openUserRoleModal = (
   initialData?: unknown,
-  isEdit = false, 
+  isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("UserRole", initialData, isEdit, context, meta);    
+    .openModal("UserRole", initialData, isEdit, context, meta);
 
-
-    
 export const openBankModal = (
   initialData?: unknown,
-  isEdit = false, 
+  isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("Bank", initialData, isEdit, context, meta);    
+    .openModal("Bank", initialData, isEdit, context, meta);
 
 export const openEmployeeModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
     .openModal("employee", initialData, isEdit, context, meta);
 
-
-
 export const openUserModal = (
   initialData?: unknown,
-  isEdit = false, 
+  isEdit = false,
   context?: ModalContext,
-  meta?: ModalMeta
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
-    .openModal("User", initialData, isEdit, context, meta);    
+    .openModal("User", initialData, isEdit, context, meta);
 
+export const openPayrollModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("payroll", initialData, isEdit, context, meta);

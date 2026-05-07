@@ -16,6 +16,7 @@ import type { UserRoleFormData } from "../../types/RoleManagement/UserRole";
 import { createUserRoles } from "../../api/RoleManagement/UserRoleApi";
 import { showSuccess } from "../../utils/alert";
 import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
+import { MinimizableModal } from "./MinimizableModal";
 import { createUser } from "../../api/RoleManagement/CreateUserApi";
 import {
   useDataRefreshStore,
@@ -87,6 +88,9 @@ const EmployeeModal = lazy(
   () => import("../../components/Hr/employeedirectorymodal/AddEmployeeModal"),
 );
 
+const NewPayrollEntry = lazy(
+  () => import("../../views/hr/payroll-system/Newpayrollentry"),
+);
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -522,7 +526,7 @@ const GlobalModalHandler: React.FC = () => {
               bank_name: string;
               swift_number: string;
               name?: string;
-            }>(modal.initialData)} // ✅
+            }>(modal.initialData)} 
             isEditMode={modal.isEdit}
           />,
         );
@@ -577,6 +581,39 @@ const GlobalModalHandler: React.FC = () => {
             mode={modal.isEdit ? "edit" : "add"}
           />,
         );
+
+
+
+   case "payroll":
+  return wrappedModal(
+    <MinimizableModal
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      title={
+        modal.isEdit
+          ? "Edit Payroll Entry"
+          : "New Payroll Entry"
+      }
+      subtitle="Create payroll entries"
+      maxWidth="6xl"
+      height="90vh"
+    >
+      <NewPayrollEntry
+        onBack={handleClose}
+        initialData={modal.initialData as any}
+        isEdit={modal.isEdit}
+        onSuccess={async (empIds, formData) => {
+          await handleSubmit({
+            empIds,
+            formData,
+          });
+
+          handleClose();
+        }}
+      />
+    </MinimizableModal>,
+  );
     }
   };
 
