@@ -271,7 +271,10 @@ outline-none transition-all duration-200"
               </span>
             </button>
             <div className="flex items-center justify-center gap-2 text-xs text-[#64748B] mt-3">
-              <span>🔒</span>
+              <div className="w-5 h-5 rounded-full bg-blue-500/10 
+flex items-center justify-center text-[10px]">
+  🔒
+</div>
               <span>Your data is protected</span>
             </div>
 
