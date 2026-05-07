@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
-export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -522,8 +522,9 @@ export const API = {
     },
 
     payrollentry: {
-      createpayrollentry: `${ERP_BASE}/api/resource/Payroll Entry`,
+      createpayrollentry:`${ERP_BASE}/api/resource/Payroll Entry`,
       runpayroll:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.run_payroll`,
+      salaryslip:`${ERP_BASE}/api/resource/Salary Slip`,
     },
   },
 

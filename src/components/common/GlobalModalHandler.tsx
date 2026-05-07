@@ -655,14 +655,21 @@ const GlobalModalHandler: React.FC = () => {
         onBack={handleClose}
         initialData={modal.initialData as any}
         isEdit={modal.isEdit}
-        onSuccess={async (empIds, formData) => {
-          await handleSubmit({
-            empIds,
-            formData,
-          });
+onSuccess={async (empIds, formData) => {
+  try {
+    if (context?.onSubmit) {
+      await context.onSubmit({
+        empIds,
+        formData,
+      });
+    }
 
-          handleClose();
-        }}
+    handleClose();
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}}
       />
     </MinimizableModal>,
   );

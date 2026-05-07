@@ -91,31 +91,32 @@ export default function PayrollManagement() {
   }, []);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const handleCreatePayroll = async (
-    empIds: string[],
-    formData?: PayrollEntry,
-  ) => {
-    if (!empIds.length) return;
-    try {
-      showLoading("Creating Payroll");
-      if (formData) {
-        const payload = buildPayload(formData, empIds);
-        const created = await createPayrollEntry(payload);
-        if (!created) throw new Error("Payroll creation failed");
-      }
-      await loadPayrollEntries();
-      setSelectedEmpIds([]);
-      setShowCreateModal(false);
-      closeSwal();
-      showSuccess(
-        `Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`,
-      );
-    } catch (error) {
-      closeSwal();
-      console.error(error);
-      showApiError(error);
+//
+const handleCreatePayroll = async (
+  empIds: string[],
+  formData?: PayrollEntry,
+) => {
+  if (!empIds.length) return;
+  try {
+    showLoading("Creating Payroll");
+    if (formData) {
+      const payload = buildPayload(formData, empIds);
+      const created = await createPayrollEntry(payload);
+      if (!created) throw new Error("Payroll creation failed");
     }
-  };
+    await loadPayrollEntries();
+    setSelectedEmpIds([]);
+    setShowCreateModal(false);
+    closeSwal();
+    showSuccess(
+      `Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`,
+    );
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+    throw error; // ← THIS is the critical missing line
+  }
+};
 
   const pendingRecords = payrollRecords.filter((r) => r.status === "Pending");
 
@@ -184,9 +185,10 @@ export default function PayrollManagement() {
   onNewPayroll={() =>
     openPayrollModal(null, false, {
       onSubmit: async ({ empIds, formData }: any) => {
-        await handleCreatePayroll(empIds, formData);
-        await loadPayrollEntries();
-      },
+  await handleCreatePayroll(empIds, formData);
+  // loadPayrollEntries is already called inside handleCreatePayroll
+  // no need to call it again here
+},
     })
   }
   onRunPayroll={handleRunPayroll}

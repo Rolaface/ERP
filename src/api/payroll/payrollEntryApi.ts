@@ -144,3 +144,71 @@ export async function getPayrollEntryDetail(
 //   );
 //   return resp.data?.data || [];
 // }
+
+export interface SalarySlip {
+  name: string;
+
+  employee: string;
+  employee_name: string;
+
+  company: string;
+  posting_date: string;
+
+  status: string;
+  salary_structure: string;
+
+  gross_pay: number;
+  total_deduction: number;
+  net_pay: number;
+
+  total_earnings: number;
+
+  ctc: number;
+
+  annual_taxable_amount: number;
+  current_month_income_tax: number;
+  total_income_tax: number;
+
+  currency: string;
+}
+
+export async function getSalarySlipsByEmployee(
+  employeeId: string,
+): Promise<SalarySlip[]> {
+  const filters = JSON.stringify([
+    ["employee", "=", employeeId],
+  ]);
+
+  const fields = JSON.stringify([
+    "name",
+
+    "employee",
+    "employee_name",
+
+    "company",
+    "posting_date",
+
+    "status",
+    "salary_structure",
+
+    "gross_pay",
+    "total_deduction",
+    "net_pay",
+
+    "total_earnings",
+
+    "ctc",
+
+    "annual_taxable_amount",
+    "current_month_income_tax",
+    "total_income_tax",
+
+    "currency",
+  ]);
+
+  const resp: AxiosResponse = await api.get(
+    `${API.payroll.payrollentry.salaryslip}?filters=${filters}&fields=${fields}`,
+  );
+
+  return resp.data?.data || [];
+}
