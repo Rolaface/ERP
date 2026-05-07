@@ -24,6 +24,8 @@ import {
   useDataRefreshStore,
   REFRESH_KEYS,
 } from "../../store/dataRefreshStore";
+import type { LeaveApplication } from "../../api/leaveApplicationApi";
+
 const CustomerModal = lazy(() => import("../crm/CustomerModal"));
 const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
 const InvoiceModal = lazy(() => import("../sales/InvoiceModal"));
@@ -105,6 +107,10 @@ const SalaryStructureModal = lazy(
       default: m.SalaryStructureModal,
     })),
 );
+const LeaveApplyModal = lazy(
+  () =>
+    import("../../components/Hr/hrsetupmodals/LeaveApplyModal"),
+);
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -155,6 +161,7 @@ const GlobalModalHandler: React.FC = () => {
         taxTemplate: "taxTemplate",
         taxCategory: "taxCategory",
         employeemodal: "employee",
+        leaveApplymodal: "leaveApply",
       };
 
       const modalType = entityTypeMap[pending.entityType];
@@ -652,6 +659,22 @@ const GlobalModalHandler: React.FC = () => {
       initialData={getInitialData<SalaryStructure>(modal.initialData)}
       earningComponents={[]}
       deductionComponents={[]}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+        handleClose();
+      }}
+    />,
+  );
+  case "leaveApply":
+  return wrappedModal(
+    <LeaveApplyModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData<LeaveApplication>(modal.initialData)}
+      // earningComponents={[]}
+      // deductionComponents={[]}
       onSuccess={() => {
         if (context?.onSuccess) context.onSuccess(undefined);
         handleClose();

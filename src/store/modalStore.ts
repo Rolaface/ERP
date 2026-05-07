@@ -32,7 +32,8 @@ export type ModalType =
   | "payroll"
   | "salaryComponent"
   | "salaryStructure"
-  | "User";
+  | "User"
+  | "leaveApply";
 
 export interface ModalContext {
   source?: string;
@@ -647,3 +648,14 @@ export const openSalaryStructureModal = (
   useModalStore
     .getState()
     .openModal("salaryStructure", initialData, isEdit, context, meta);
+
+export const openLeaveApplyModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("leaveApply", initialData, isEdit, context, meta);
+   
