@@ -49,37 +49,6 @@ const parseAddressParts = (html?: any): string[] => {
     .filter(Boolean);
 };
 
-
-const toWords = (num: number, currency = "INR"): string => {
-  const ones = [
-    "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
-    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
-    "Seventeen", "Eighteen", "Nineteen",
-  ];
-  const tens = [
-    "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety",
-  ];
-
-  const convert = (n: number): string => {
-    if (n === 0) return "";
-    if (n < 20) return ones[n] + " ";
-    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "") + " ";
-    if (n < 1000) return ones[Math.floor(n / 100)] + " Hundred " + convert(n % 100);
-    if (n < 100000) return convert(Math.floor(n / 1000)) + "Thousand " + convert(n % 1000);
-    if (n < 10000000) return convert(Math.floor(n / 100000)) + "Lakh " + convert(n % 100000);
-    return convert(Math.floor(n / 10000000)) + "Crore " + convert(n % 10000000);
-  };
-
-  const abs = Math.abs(num);
-  const intPart = Math.floor(abs);
-  const decPart = Math.round((abs - intPart) * 100);
-  let result = currency + " " + convert(intPart).trim();
-  if (decPart > 0) result += " and " + convert(decPart).trim() + " Paise";
-  result += " Only.";
-  return result;
-};
-
-
 export const generateInvoicePDF = async (
   invoice: any,
   company: any,
@@ -91,7 +60,7 @@ export const generateInvoicePDF = async (
   const M = 14;   
   const MR = W - M;
 
-  const cur = invoice.currency ?? "INR";
+  const cur = invoice.currency;
   let curY = M;
 
 
@@ -106,7 +75,7 @@ doc.setFont("helvetica", "bold");
 doc.setFontSize(13);
 doc.setTextColor(...BLACK);
 doc.text("TAX INVOICE", W / 2, curY, { align: "center" });
-curY = 16;  // push FROM down
+curY = 16; 
 doc.setFont("helvetica", "bold");
 doc.setFontSize(8);
   doc.setTextColor(...BLACK);
@@ -120,8 +89,10 @@ doc.setFontSize(8);
  const compAddr =
   useCompanyStore.getState().companyAddress ||
   stripHtml(company?.address ?? "");
+   const compCurr =
+  useCompanyStore.getState().baseCurrency;
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...BLACK);
   doc.text(compName, M, curY);
@@ -142,7 +113,7 @@ doc.setFontSize(8);
 
   if (company?.documents?.companyLogoUrl) {
     try {
-      doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 50, logoTopY, 50, 20);
+      doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 70, logoTopY, 70, 25);
     } catch {}
   } else {
 
@@ -155,8 +126,7 @@ doc.setFontSize(8);
   curY = Math.max(curY, logoTopY + 28);
   curY += 4;
 
-  hRule(curY);
-  curY += 6;
+
 
   const billToX = M;
   const metaX = W / 2 + 10; 
@@ -164,7 +134,7 @@ doc.setFontSize(8);
 
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(...BLACK);
   doc.text("BILL TO", billToX, curY);
 
@@ -173,8 +143,8 @@ doc.setFontSize(8);
   let metaY = curY;
 
   const metaRows = [
-    { label: "INVOICE #:", value: invoice.id ?? "-" },
-    { label: "DATE :", value: fmtDate(invoice.postingDate) },
+    { label: "INVOICE NO :", value: invoice.id ?? "-" },
+    { label: "INVOICE DATE :", value: fmtDate(invoice.postingDate) },
     { label: "DUE DATE:", value: fmtDate(invoice.dueDate) },
   ];
 
@@ -208,19 +178,20 @@ doc.setFontSize(8);
     ["Address :", [bAddr, bCity].filter(Boolean).join(", ")],
     ["State :", bState],
     ["Country :", bCountry],
-    ["Pincode :", bPin],
+    ["Postal Code :", bPin],
   ];
 
   billLines.forEach(([label, val]) => {
-    doc.setFont("helvetica", "bold");
+    doc.setFont("helvetica", "normal");
     doc.text(label, billToX, curY);
     doc.setFont("helvetica", "normal");
     doc.text(val, billToX + 20, curY);
     curY += 5;
   });
+   curY += 4;
+  hRule(curY);
 
-  curY += 8;
-
+   curY += 4;
   const tableBody = invoice.items.map((item: any, idx: number) => {
     const qty = Number(item.quantity ?? 0);
     const rate = Number(item.rate ?? 0);
@@ -253,7 +224,7 @@ doc.setFontSize(8);
   autoTable(doc, {
     startY: curY,
     theme: "plain",
-    head: [["Service", "HSN Code", "Unit", "Qty", "Rate", "Taxable", "Tax Rate", "Tax Amount", "Total"]],
+    head: [["Service", "HSN", "Unit", "Qty", "Rate", "Taxable", "Tax Rate", "Tax Amount", "Total"]],
     body: tableBody,
     styles: {
       fontSize: 8,
@@ -299,8 +270,7 @@ doc.setFontSize(8);
 
 
   const inWords =
-    invoice.in_words ??
-    toWords(grandTotal, cur);
+    invoice.in_words;
 
 
   const summaryX = W - M - 70; 
@@ -317,7 +287,7 @@ doc.setFontSize(8);
   curY += inWordsWrapped.length * 4.5 + 2;
 
   const summaryRows: [string, string, boolean][] = [  
-    ["SubTotal", fmt2(grandTotal), false],
+    ["Sub Total", fmt2(grandTotal), false],
     [`${taxLabel} ${taxTotal > 0 ? "" : "0"}%`, fmt2(taxTotal), false],
     ["Total", `${cur} ${fmt2(grandTotal)}`, true],
   ];
@@ -327,6 +297,15 @@ doc.setFontSize(8);
     doc.setFontSize(bold ? 9 : 8);
     doc.text(label, summaryX, sY);
     doc.text(val, summaryValX, sY, { align: "right" });
+    if (bold && invoice.exchangeRate) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(
+      `Exchange Rate: ${cur} 1= ${compCurr} ${fmt2(invoice.exchangeRate)}`,
+      M,
+      sY
+    );
+  }
     sY += 6;
   });
 
