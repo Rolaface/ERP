@@ -285,7 +285,8 @@ flex items-center justify-center text-[10px]">
 
             <p className="text-sm text-[#475569]">
               New to Rola?{" "}
-              <span className="text-primary font-semibold cursor-pointer hover:opacity-80 transition">
+              <span className="text-primary font-semibold cursor-pointer 
+hover:text-blue-700 transition-colors duration-200">
                 Create your workspace
               </span>
             </p>
