@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import { getCustomerStatement } from "../../api/statementApi";
+import { showApiError } from "../../utils/alert";
 
 /*  TYPES  */
 
@@ -74,8 +75,8 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
         } else {
           setError("Failed to load customer statement");
         }
-      } catch {
-        setError("Unable to fetch customer statement");
+      } catch (err){
+       showApiError(err);
       } finally {
         setLoading(false);
       }

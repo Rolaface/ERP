@@ -45,7 +45,7 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
             setTotalItems(res.pagination?.total || 0);
 
         } catch (err: any) {
-            showApiError(err?.message || "Failed to load bank accounts");
+            showApiError(err);
         } finally {
             setLoading(false);
         }
