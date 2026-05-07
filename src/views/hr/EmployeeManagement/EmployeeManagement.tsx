@@ -12,7 +12,7 @@ const EmployeeManagement: React.FC = () => {
   return (
     <div className="bg-app">
       <div className="space-y-6">
-        <div className="flex gap-8 border-b border-gray-300 pb-4 overflow-x-auto">
+        <div className="flex gap-8 border-b border-gray-300 overflow-x-auto">
           <button
             onClick={() => setMainTab("directory")}
             className={`flex items-center gap-2 text-sm font-semibold pb-2 border-b-2 transition ${

@@ -10,8 +10,12 @@ import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore"
 import { getAllBanks, deleteBank } from "../../api/BankApi";
 import type { Bank } from "../../api/BankApi";
 import { showApiError, showConfirm, showSuccess } from "../../utils/alert";
-import { FaUniversity } from "react-icons/fa";
-
+import { Landmark } from "lucide-react";
+import {
+  AppPage,
+  AppPageHeader,
+  AppPageBody,
+} from "../../components/ui/app-shell";
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const BankPage: React.FC = () => {
@@ -119,38 +123,39 @@ const BankPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
-          <FaUniversity className="text-primary" />
-          Banks 
-        </h1>
-      </div>
-      <Table
-        columns={columns}
-        data={banks}
-        rowKey={(row) => row.name}
-        tableId="banks"
-        loading={loading}
-        isFetching={false}
-        showToolbar
-        enableAdd
-        addLabel="Add Bank"
-        onAdd={() => openBankModal(null, false)}
-        enableColumnSelector
-        enableExport
-        currentPage={page}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
-        onPageChange={setPage}
+    <AppPage>
+      <AppPageHeader
+        title="Bank"
+        description="Manage Bank"
+        icon={<Landmark />}
       />
-    </div>
+      <AppPageBody>
+        <Table
+          columns={columns}
+          data={banks}
+          rowKey={(row) => row.name}
+          tableId="banks"
+          loading={loading}
+          isFetching={false}
+          showToolbar
+          enableAdd
+          addLabel="Add Bank"
+          onAdd={() => openBankModal(null, false)}
+          enableColumnSelector
+          enableExport
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          pageSizeOptions={[10, 25, 50, 100]}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          onPageChange={setPage}
+        />
+      </AppPageBody>
+    </AppPage>
   );
 };
 

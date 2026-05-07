@@ -1,15 +1,30 @@
-
+// ─── Tab Order ────────────────────────────────────────────────────────────────
 export const TAB_ORDER = [
   "Personal",
   "Address & Contact",
   "Employment",
   "Leave Setup",
   "Compensation",
+   "Bank",
   "Work Schedule",
-  "Documents",
 ] as const;
 
 export type TabName = (typeof TAB_ORDER)[number];
+
+// ─── SalaryResult type (mirror of salaryengine) ───────────────────────────────
+export type SalaryResult = {
+  gross: number;
+  net: number;
+  deductionsTotal: number;
+  components: Array<{
+    key: string;
+    name: string;
+    type: "Earning" | "Deduction";
+    amount: number;
+    isFormula: boolean;
+    formula?: string;
+  }>;
+};
 
 // ─── Default form state ───────────────────────────────────────────────────────
 export const DEFAULT_FORM: Record<string, any> = {
@@ -21,66 +36,93 @@ export const DEFAULT_FORM: Record<string, any> = {
   gender: "",
   nationality: "",
   maritalStatus: "",
+  blood_group: "",
+  bio: "",
+  salutation: "",
+  nationalidentificationnumber: "",
+taxidentificationnumber: "",
+universalaccountnumber: "",
 
-  // IDs
+  // IDs / Statutory
   nrcId: "",
   socialSecurityNapsa: "",
   nhimaHealthInsurance: "",
   tpinId: "",
 
+  // Health / Passport
+  healthInsuranceProvider: "",
+  healthInsuranceNo: "",
+  healthDetails: "",
+  passportNumber: "",
+  placeOfIssue: "",
+  dateOfIssue: "",
+  validUpto: "",
+
   // Contact
   email: "",
-  companyEmail: "",
+  CompanyEmail: "",
+  preferredEmail: "",
+  preferredContactEmail: "",
   phoneNumber: "",
   alternatePhone: "",
+
+  // Address
   street: "",
   city: "",
   province: "",
   postalCode: "",
   country: "",
+  accommodationType: "",
+
+  // Emergency
   emergencyContactName: "",
   emergencyContactPhone: "",
-  emergencyContactRelationship: "",
+  emergencyContactRelation: "",
 
   // Employment
   department: "",
-  jobTitle: "",
-  level: "",
-  employmentStatus: "Actve",
-  hrManager: "",
-  reportingManager: "",
+  designation: "",
+  grade: "",
+  employment_type: "",
   employeeType: "",
-  engagementDate: "",
+  employmentStatus: "Active",
+  reportingManager: "",
+  hrManager: "",
+  dateOfJoining: "",
   contractEndDate: "",
   workLocation: "",
   workAddress: "",
   probationPeriod: "",
   shift: "Day",
 
-   // Compensation
-   basicSalary: "",
-   housingAllowance: "",
-   housingAllowanceType: "amount",
-   mealAllowance: "",
-   mealAllowanceType: "amount",
-   transportAllowance: "",
-   transportAllowanceType: "amount",
-   otherAllowances: "",
-   otherAllowancesType: "",
-   grossSalary: "",
-   currency: "",
-   paymentFrequency: "",
-   paymentMethod: " ",
-   accountName: "",
-   accountNumber: "",
-   bankName: "",
-   branchCode: "",
-   accountType: "Savings",
-   ceilingAmount: "",
-   ceilingYear: String(new Date().getFullYear()),
+  // Approvers
+  leaveApprover: "",
+  leaveApproverLabel: "",
+  expenseApprover: "",
+  shiftRequestApprover: "",
+
+  // Compensation
+  salaryStructure: "",
+  basicSalary: "",
+  grossSalary: "",
+  currency: "",
+  paymentFrequency: "",
+  paymentMethod: "Bank",
+
+  // Bank
+  accountName: "",
+  accountNumber: "",
+  bankName: "",
+  branchCode: "",
+  accountType: "Savings",
+
+  // NAPSA Ceiling
+  ceilingAmount: "",
+  ceilingYear: String(new Date().getFullYear()),
 
   // Leave
   leavePolicy: "",
+  leavePolicyLabel: "",
 
   // Work Schedule
   weeklyScheduleMonday: "",
@@ -92,187 +134,288 @@ export const DEFAULT_FORM: Record<string, any> = {
   weeklyScheduleSunday: "",
 
   notes: "",
+
+  // Internal: computed salary result (not sent to server directly)
+  _salaryResult: null,
+
+  // Profile photo (existing, from edit — relative path from API)
+  existingPhotoUrl: "",
 };
 
-// ─── Map editData → formData ──────────────────────────────────────────────────
-export function mapEditDataToForm(editData: any): Record<string, any> {
+// ─── Map API response → formData ─────────────────────────────────────────────
+/**
+ * Maps the flat API response (from getEmployeeById) into the formData shape.
+ * This is the ONLY place where API field names are translated to form field names.
+ */
+export function mapEditDataToForm(data: any): Record<string, any> {
+  // Parse the joined address back into parts if possible
+  // The address is stored as a comma-separated string: "street, city, province, postal, country"
+  const addressParts = (data.current_address || "")
+    .split(", ")
+    .map((s: string) => s.trim());
+
   return {
-    firstName: editData.personalInfo?.FirstName || "",
-    middleName: editData.personalInfo?.MiddleName || "",
-    lastName: editData.personalInfo?.LastName || "",
-    dateOfBirth: editData.personalInfo?.Dob || "",
-    gender: editData.personalInfo?.Gender || "",
-    nationality: editData.personalInfo?.Nationality || "",
-    maritalStatus: editData.personalInfo?.maritalStatus || "",
+    // ── Personal ──────────────────────────────────────────────
+    firstName: data.first_name || "",
+    middleName: data.middle_name || "",
+    lastName: data.last_name || "",
+    dateOfBirth: data.date_of_birth || "",
+    gender: data.gender || "",
+    maritalStatus: data.marital_status || "",
+    blood_group: data.blood_group || "",
+    bio: data.bio || "",
+    salutation: data.salutation || "",
+    nationality: data.nationality || "",
+    nationalidentificationnumber: data.national_identification_number || "",
+taxidentificationnumber: data.tax_identification_number || "",
+universalaccountnumber: data.universal_account_number || "",
 
-    nrcId: editData.identityInfo?.nrc || "",
-    socialSecurityNapsa: editData.identityInfo?.napsa || "",
-    nhimaHealthInsurance: editData.identityInfo?.nhima || "",
-    tpinId: editData.identityInfo?.tpin || "",
+    // ── Statutory IDs ─────────────────────────────────────────
+    nrcId: data.nrc_id || "",
+    socialSecurityNapsa: data.social_security_napsa || "",
+    nhimaHealthInsurance: data.nhima_health_insurance || "",
+    tpinId: data.tpin_id || "",
 
-    email: editData.contactInfo?.Email || "",
-    companyEmail: editData.contactInfo?.workEmail || "",
-    phoneNumber: editData.contactInfo?.phoneNumber || "",
-    alternatePhone: editData.contactInfo?.alternatePhone || "",
-    street: editData.contactInfo?.address?.street || "",
-    city: editData.contactInfo?.address?.city || "",
-    province: editData.contactInfo?.address?.province || "",
-    postalCode: editData.contactInfo?.address?.postalCode || "",
-    country: editData.contactInfo?.address?.country || "",
-    emergencyContactName: editData.contactInfo?.emergencyContact?.name || "",
-    emergencyContactPhone: editData.contactInfo?.emergencyContact?.phone || "",
-    emergencyContactRelationship: editData.contactInfo?.emergencyContact?.relationship || "",
+    // ── Health / Passport ─────────────────────────────────────
+    healthInsuranceProvider: data.health_insurance_provider || "",
+    healthInsuranceNo: data.health_insurance_no || "",
+    healthDetails: data.health_details || "",
+    passportNumber: data.passport_number || "",
+    placeOfIssue: data.place_of_issue || "",
+    dateOfIssue: data.date_of_issue || "",
+    validUpto: data.valid_upto || "",
 
-    department: editData.employmentInfo?.Department || "",
-    jobTitle: editData.employmentInfo?.JobTitle || "",
-    level: editData.employmentInfo?.level || "",
-    employeeType: editData.employmentInfo?.EmployeeType || "Permanent",
-    employmentStatus: editData.status || "Active",
-    engagementDate: editData.employmentInfo?.joiningDate || "",
-    probationPeriod: editData.employmentInfo?.probationPeriod || "",
-    contractEndDate: editData.employmentInfo?.contractEndDate || "",
-    workLocation: editData.employmentInfo?.workLocation || "",
-    workAddress: editData.employmentInfo?.workAddress || "",
-    shift: editData.employmentInfo?.shift || "Day",
-    reportingManager: editData.employmentInfo?.reportingManager || "",
-    hrManager: editData.employmentInfo?.hrManager || "",
+    // ── Contact ───────────────────────────────────────────────
+    email: data.personal_email || "",
+    CompanyEmail: data.company_email || "",
+    preferredEmail: data.prefered_email || "",
+    preferredContactEmail: data.prefered_contact_email || "",
+    phoneNumber: data.cell_number || "",
+    alternatePhone: data.alternate_phone || "",
 
-    basicSalary: editData.payrollInfo?.salaryBreakdown?.BasicSalary || "",
-    housingAllowance: editData.payrollInfo?.salaryBreakdown?.HousingAllowance || "",
-    mealAllowance: editData.payrollInfo?.salaryBreakdown?.MealAllowance || "",
-    transportAllowance: editData.payrollInfo?.salaryBreakdown?.TransportAllowance || "",
-    otherAllowances: editData.payrollInfo?.salaryBreakdown?.otherAllowances || "",
-    grossSalary: editData.payrollInfo?.grossSalary || "",
-    currency: editData.payrollInfo?.currency || "ZMW",
-    paymentFrequency: editData.payrollInfo?.paymentFrequency || "Monthly",
-    paymentMethod: editData.payrollInfo?.paymentMethod || "Bank Transfer",
-    accountNumber: editData.payrollInfo?.bankAccount?.AccountNumber || "",
-    accountName: editData.payrollInfo?.bankAccount?.AccountName || "",
-    bankName: editData.payrollInfo?.bankAccount?.BankName || "",
-    branchCode: editData.payrollInfo?.bankAccount?.branchCode || "",
-    accountType: editData.payrollInfo?.bankAccount?.AccountType || "Savings",
-    ceilingAmount: editData.leaveInfo?.ceilingAmount?.toString() || "",
-    ceilingYear: editData.leaveInfo?.ceilingYear?.toString() || String(new Date().getFullYear()),
+    // ── Address (best-effort parse from joined string) ────────
+    street: addressParts[0] || "",
+    city: addressParts[1] || "",
+    province: addressParts[2] || "",
+    postalCode: addressParts[3] || "",
+    country: addressParts[4] || "",
+    accommodationType: data.permanent_accommodation_type || "",
 
-    leavePolicy: editData.leaveInfo?.leavePolicy || "",
+    // ── Emergency Contact ─────────────────────────────────────
+    emergencyContactName: data.person_to_be_contacted || "",
+    emergencyContactPhone: data.emergency_phone_number || "",
+    emergencyContactRelation: data.relation || "",
 
-    weeklyScheduleMonday: editData.employmentInfo?.weeklySchedule?.monday || "",
-    weeklyScheduleTuesday: editData.employmentInfo?.weeklySchedule?.tuesday || "",
-    weeklyScheduleWednesday: editData.employmentInfo?.weeklySchedule?.wednesday || "",
-    weeklyScheduleThursday: editData.employmentInfo?.weeklySchedule?.thursday || "",
-    weeklyScheduleFriday: editData.employmentInfo?.weeklySchedule?.friday || "",
-    weeklyScheduleSaturday: editData.employmentInfo?.weeklySchedule?.saturday || "",
-    weeklyScheduleSunday: editData.employmentInfo?.weeklySchedule?.sunday || "",
+    // ── Employment ────────────────────────────────────────────
+    department: data.department || "",
+    designation: data.designation || "",
+    grade: data.grade || "",
+    employment_type: data.employment_type || "",
+    employeeType: data.employee_type || "",
+    employmentStatus: data.status || "Active",
+    reportingManager: data.reports_to || "",
+    workLocation: data.branch || "",
+    dateOfJoining: data.date_of_joining || "",
+    contractEndDate: data.contract_end_date || "",
+    probationPeriod:
+      data.notice_number_of_days != null
+        ? String(data.notice_number_of_days)
+        : "",
+    shift: data.default_shift || "Day",
 
-    notes: editData.notes || "",
+    // ── Approvers ─────────────────────────────────────────────
+    leaveApprover: data.leave_approver || "",
+    leaveApproverLabel: data.leave_approver || "",
+    expenseApprover: data.expense_approver || "",
+    shiftRequestApprover: data.shift_request_approver || "",
+
+    // ── Compensation ──────────────────────────────────────────
+    salaryStructure: data.salary_structure || "",
+    // Use base_salary if present, else fall back to ctc
+    basicSalary:
+      data.base_salary != null
+        ? String(data.base_salary)
+        : data.ctc != null
+          ? String(data.ctc)
+          : "",
+    grossSalary: data.gross != null ? String(data.gross) : "",
+    currency: data.salary_currency || "",
+    paymentMethod: data.salary_mode || "",
+    paymentFrequency: data.payment_frequency || "",
+
+    // ── Bank ──────────────────────────────────────────────────
+    accountNumber: data.bank_ac_no || "",
+    bankName: data.bank_name || "",
+    accountType: data.account_type || "Savings",
+    branchCode: data.branch_code || "",
+    accountName: data.account_name || "",
+
+    // ── Leave ─────────────────────────────────────────────────
+    leavePolicy: data.leave_policy || "",
+    leavePolicyLabel: data.leave_policy || "",
+
+    // ── Work Schedule ─────────────────────────────────────────
+    weeklyScheduleMonday: data.weekly_schedule_monday || "",
+    weeklyScheduleTuesday: data.weekly_schedule_tuesday || "",
+    weeklyScheduleWednesday: data.weekly_schedule_wednesday || "",
+    weeklyScheduleThursday: data.weekly_schedule_thursday || "",
+    weeklyScheduleFriday: data.weekly_schedule_friday || "",
+    weeklyScheduleSaturday: data.weekly_schedule_saturday || "",
+    weeklyScheduleSunday: data.weekly_schedule_sunday || "",
+
+    notes: data.notes || "",
+
+    // Internal
+    _salaryResult: null,
+
+    // Profile photo — relative path from API e.g. "/files/photo.jpg"
+    // EmployeeSummaryPanel will prepend the base URL to render it
+    existingPhotoUrl: data.image || "",
   };
 }
 
-// ─── Build API payload from form ─────────────────────────────────────────────
-export function buildPayload(formData: Record<string, any>, isEdit: boolean) {
-  const payload: Record<string, any> = {
-    // Personal
-    FirstName: formData.firstName,
-    LastName: formData.lastName,
-    OtherNames: formData.middleName,
-    Dob: formData.dateOfBirth,
-    Gender: formData.gender,
-    MaritalStatus: formData.maritalStatus,
-    Nationality: formData.nationality,
+// ─── Build API payload from formData ─────────────────────────────────────────
+/**
+ * Converts formData → the shape expected by createEmployee / updateEmployeeById.
+ * This is the ONLY place where form field names are translated back to API field names.
+ */
+export function buildEmployeePayload(formData: Record<string, any>) {
+  // Join address parts into the single stored string
+  const fullAddress = [
+    formData.street,
+    formData.city,
+    formData.province,
+    formData.postalCode,
+    formData.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
-    // Contact
-    Email: formData.email,
-    CompanyEmail: formData.companyEmail,
-    PhoneNumber: formData.phoneNumber,
-    AlternatePhone: formData.alternatePhone,
-    addressStreet: formData.street,
-    addressCity: formData.city,
-    addressProvince: formData.province,
-    addressPostalCode: formData.postalCode,
-    addressCountry: formData.country,
-    emergencyContactName: formData.emergencyContactName,
-    emergencyContactPhone: formData.emergencyContactPhone,
-    emergencyContactRelationship: formData.emergencyContactRelationship,
-
-    // Employment
-    EngagementDate: formData.engagementDate,
-    contractEndDate: formData.contractEndDate,
-    Department: formData.department,
-    JobTitle: formData.jobTitle,
-    level: formData.level,
-    EmployeeType: formData.employeeType,
-    status: formData.employmentStatus,
-    ReportingManager: formData.reportingManager,
-    HrManager: formData.hrManager,
-    probationPeriod: formData.probationPeriod,
-    workLocation: formData.workLocation,
-    workAddress: formData.workAddress,
-    shift: formData.shift,
-
-    // Salary
-    BasicSalary: Number(formData.basicSalary) || 0,
-    HousingAllowance: Number(formData.housingAllowance) || 0,
-    MealAllowance: Number(formData.mealAllowance) || 0,
-    TransportAllowance: Number(formData.transportAllowance) || 0,
-    otherAllowances: Number(formData.otherAllowances) || 0,
-    GrossSalary: Number(formData.grossSalary) || 0,
-
-    // Payroll
-    currency: formData.currency,
-    PaymentFrequency: formData.paymentFrequency,
-    PaymentMethod: formData.paymentMethod,
-    AccountType: formData.accountType,
-    BankName: formData.bankName,
-    AccountName: formData.accountName,
-    AccountNumber: formData.accountNumber,
-    BranchCode: formData.branchCode,
-
-    // Leave
-    leavePolicy: formData.leavePolicy,
-    CeilingAmount: Number(formData.ceilingAmount) || 0,
-    CeilingYear: Number(formData.ceilingYear) || 0,
-
-    // Work Schedule
-    weeklyScheduleMonday: formData.weeklyScheduleMonday || "",
-    weeklyScheduleTuesday: formData.weeklyScheduleTuesday || "",
-    weeklyScheduleWednesday: formData.weeklyScheduleWednesday || "",
-    weeklyScheduleThursday: formData.weeklyScheduleThursday || "",
-    weeklyScheduleFriday: formData.weeklyScheduleFriday || "",
-    weeklyScheduleSaturday: formData.weeklyScheduleSaturday || "",
-    weeklyScheduleSunday: formData.weeklyScheduleSunday || "",
-
-    notes: formData.notes,
+  // Normalise payment method
+  const mapSalaryMode = (method: string): string | null => {
+    const m = (method ?? "").toLowerCase().trim();
+    if (m.includes("bank")) return "Bank";
+    if (m.includes("mobile")) return "Mobile";
+    if (m.includes("cash")) return "Cash";
+    if (m.includes("check") || m.includes("cheque")) return "Cheque";
+    return method || null;
   };
 
-  // IDs — only on create
-  if (!isEdit) {
-    payload.NrcId = formData.nrcId;
-    payload.SocialSecurityNapsa = formData.socialSecurityNapsa;
-    payload.TpinId = formData.tpinId;
-    payload.NhimaHealthInsurance = formData.nhimaHealthInsurance;
-  }
+  // Computed salary result stashed by CompensationTab
+  const salaryResult: SalaryResult | null = formData._salaryResult ?? null;
 
-  return payload;
+  return {
+    // ── Personal ──────────────────────────────────────────────
+    first_name: formData.firstName || "",
+    middle_name: formData.middleName || "",
+    last_name: formData.lastName || "",
+    employee_name:
+      `${formData.firstName || ""} ${formData.lastName || ""}`.trim(),
+    salutation: formData.salutation || null,
+    gender: formData.gender || "",
+    date_of_birth: formData.dateOfBirth || null,
+    marital_status: formData.maritalStatus || "",
+    blood_group: formData.blood_group || null,
+    bio: formData.bio || null,
+    employee_type: formData.employeeType || formData.employment_type || "",
+    national_identification_number: formData.nationalidentificationnumber,
+    tax_identification_number: formData.taxidentificationnumber,
+    universal_account_number: formData.universalaccountnumber,
+    health_insurance_number: formData.healthInsuranceNo,
+
+    // ── Contact ───────────────────────────────────────────────
+    personal_email: formData.email || "",
+    company_email: formData.CompanyEmail || "",
+    prefered_email: formData.preferredEmail || null,
+    prefered_contact_email: formData.preferredContactEmail || "",
+    cell_number: formData.phoneNumber || "",
+    emergency_phone_number: formData.emergencyContactPhone || "",
+    person_to_be_contacted: formData.emergencyContactName || null,
+    relation: formData.emergencyContactRelation || null,
+    current_address: fullAddress,
+    permanent_address: fullAddress,
+    permanent_accommodation_type: formData.accommodationType || "",
+
+    // ── Employment ────────────────────────────────────────────
+    designation: formData.designation || "",
+    department: formData.department || "",
+    reports_to: formData.reportingManager || "",
+    employment_type: formData.employment_type || null,
+    grade: formData.grade || "",
+    branch: formData.workLocation || "",
+    date_of_joining: formData.dateOfJoining || null,
+    contract_end_date: formData.contractEndDate || null,
+    notice_number_of_days: Number(formData.probationPeriod) || 0,
+    status: formData.employmentStatus || "Active",
+
+    // ── Approvers ─────────────────────────────────────────────
+    leave_approver: formData.leaveApprover || null,
+    expense_approver: formData.expenseApprover || null,
+    shift_request_approver: formData.shiftRequestApprover || null,
+
+    // ── Leave ─────────────────────────────────────────────────
+    leave_policy: formData.leavePolicy || "",
+
+    // ── Compensation ──────────────────────────────────────────
+    salary_structure: formData.salaryStructure || null,
+    base_salary: Number(formData.basicSalary) || 0,
+    gross: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
+    ctc: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
+    salary_mode: mapSalaryMode(formData.paymentMethod || ""),
+    salary_currency: formData.currency || null,
+
+    // ── Bank ──────────────────────────────────────────────────
+    bank_name: formData.bankName || null,
+    bank_ac_no: formData.accountNumber || null,
+    account_type: formData.accountType || null,
+    branch_code: formData.branchCode || null,
+
+    // ── Health / Passport ─────────────────────────────────────
+    health_insurance_provider: formData.healthInsuranceProvider || null,
+    health_insurance_no: formData.healthInsuranceNo || null,
+    health_details: formData.healthDetails || null,
+    passport_number: formData.passportNumber || null,
+    place_of_issue: formData.placeOfIssue || null,
+    date_of_issue: formData.dateOfIssue || null,
+    valid_upto: formData.validUpto || null,
+
+    // ── System ────────────────────────────────────────────────
+    create_user_permission: 1,
+    create_user_automatically: 1,
+  };
 }
 
 // ─── Per-tab validation ───────────────────────────────────────────────────────
-export function validateTab(tab: TabName, formData: Record<string, any>): string | null {
+export function validateTab(
+  tab: TabName,
+  formData: Record<string, any>,
+): string | null {
   switch (tab) {
     case "Personal":
-      if (!formData.firstName || !formData.lastName) return "First name and last name are required";
+      if (!formData.firstName || !formData.lastName)
+        return "First name and last name are required";
       if (!formData.dateOfBirth) return "Date of birth is required";
       if (!formData.gender) return "Gender is required";
       return null;
+
     case "Address & Contact":
-      if (!formData.email || !formData.phoneNumber) return "Email and phone number are required";
+      if (!formData.email || !formData.phoneNumber)
+        return "Email and phone number are required";
       return null;
+
     case "Employment":
-      if (!formData.department || !formData.jobTitle || !formData.engagementDate)
-        return "Department, job title and engagement date are required";
+      if (
+        !formData.department ||
+        !formData.designation ||
+        !formData.dateOfJoining
+      )
+        return "Department, designation, and date of joining are required";
       return null;
+
     case "Compensation":
       if (!formData.basicSalary) return "Basic salary is required";
       return null;
+
     default:
       return null;
   }

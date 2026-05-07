@@ -43,19 +43,6 @@ export async function deleteEmployeeById(id: string): Promise<any> {
   return resp.data;
 }
 
-export async function updateEmployeeDocuments(payload: FormData): Promise<any> {
-  const resp: AxiosResponse = await api.put(
-    EmployeeAPI.updateDocuments,
-    payload,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    },
-  );
-
-  return resp.data;
-}
 
 export async function verifyEmployeeIdentity(
   type: "NRC" | "SSN",

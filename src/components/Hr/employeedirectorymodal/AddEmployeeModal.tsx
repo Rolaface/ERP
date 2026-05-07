@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-  FaUser,
-  FaAddressBook,
-  FaBriefcase,
-  FaCalendarCheck,
-  FaMoneyBillWave,
-  FaCalendarAlt,
-  FaFolder,
-  FaArrowLeft,
-  FaArrowRight,
-  FaCheck,
-} from "react-icons/fa";
-import type { SalaryResult } from "./salaryengine";
 import { uploadEmployeePhoto } from "../../../api/employeeapi";
-
+import ModalFooter from "../../common/ModalFooter";
 import IdentityVerificationModal from "./IdentityVerificationModal";
 import PersonalInfoTab from "./PersonalInfoTab";
 import ContactInfoTab from "./ContactInfoTabs";
@@ -21,13 +8,13 @@ import EmploymentTab from "./EmploymentTab";
 import CompensationTab from "./CompensationTab";
 import { LeaveSetupTab } from "./LeaveSetupTab";
 import WorkScheduleTab from "./WorkScheduletab";
-import DocumentsTab from "./DocumentsTab";
 import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
 import { MinimizableModal } from "../../common/MinimizableModal";
 
 import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
 import { EMPLOYEE_ROLE_CONFIG } from "../../../api/config/employeeRoleConfig";
 import { filterEmployeesByRole } from "../../../api/config/employeeRoleFilter";
+
 import {
   getAllEmployees,
   createEmployee,
@@ -35,121 +22,18 @@ import {
 } from "../../../api/employeeapi";
 import { useCompanySelection } from "../../../hooks/useCompanySelection";
 import { getEmployeeFeatures } from "../../../config/employeeFeatures";
-import { showApiError, showSuccess } from "../../../utils/alert";
+import { showApiError, showSuccess, showStepLoader, closeSwal, showEmployeeCreationResult, showValidationError } from "../../../utils/alert";
 
 import {
   TAB_ORDER,
   type TabName,
   DEFAULT_FORM,
   mapEditDataToForm,
+  buildEmployeePayload,   // ← single source of truth
 } from "./Employeeformconfig";
+import EmployeeBankTab from "./EmployeeBankTab";
 
-
-export function buildEmployeePayload(formData: any) {
-  // Address
-  const fullAddress = [
-    formData.street,
-    formData.city,
-    formData.province,
-    formData.postalCode,
-    formData.country,
-  ]
-    .filter(Boolean)
-    .join(", ");
- 
-  // Salary mode normalisation
-  const mapSalaryMode = (method: string) => {
-    const m = (method ?? "").toLowerCase();
-    if (m.includes("bank"))   return "Bank";
-    if (m.includes("mobile")) return "Mobile";
-    if (m.includes("cash"))   return "Cash";
-    return method || null;
-  };
- 
-  // Pull the pre-computed salary result that CompensationTab wrote to formData
-  const salaryResult: SalaryResult | undefined = formData._salaryResult;
- 
-  return {
-    // ── Personal ────────────────────────────────────────────
-    first_name:     formData.firstName  || "",
-    middle_name:    formData.middleName || "",
-    last_name:      formData.lastName   || "",
-    employee_name:  `${formData.firstName || ""} ${formData.lastName || ""}`.trim(),
-    employee_type:  formData.employeeType || "",
-    salutation:     formData.salutation  || null,
-    gender:         formData.gender      || "",
-    date_of_birth:  formData.dateOfBirth || null,
-    marital_status: formData.maritalStatus || "",
-    blood_group:    formData.bloodGroup  || null,
-    bio:            formData.bio         || null,
- 
-    // ── Contact ─────────────────────────────────────────────
-    personal_email:              formData.email                   || "",
-    company_email:               formData.CompanyEmail            || "",
-    prefered_email:              formData.preferredEmail          || null,
-    prefered_contact_email:      formData.preferredContactEmail   || "",
-    cell_number:                 formData.phoneNumber             || "",
-    emergency_phone_number:      formData.emergencyContactPhone   || "",
-    person_to_be_contacted:      formData.emergencyContactName    || null,
-    relation:                    formData.emergencyContactRelation || null,
-    current_address:             fullAddress,
-    permanent_address:           fullAddress,
-    permanent_accommodation_type: formData.accommodationType      || "",
- 
-    // ── Employment ──────────────────────────────────────────
-    designation:          formData.designation      || "",
-    department:           formData.department       || "",
-    reports_to:           formData.reportingManager || "",
-    employment_type:      formData.employment_type   || null,
-    grade:                formData.grade            || "",
-    branch:               formData.workLocation     || "",
-    date_of_joining:      formData.dateOfJoining    || null,
-    contract_end_date:    formData.contractEndDate  || null,
-    notice_number_of_days: Number(formData.probationPeriod) || 0,
-    leave_approver:        formData.leaveApprover        || null,
-    expense_approver:      formData.expenseApprover      || null,
-    shift_request_approver: formData.shiftRequestApprover || null,
- 
-    // ── Leave ───────────────────────────────────────────────
-    leave_policy: formData.leavePolicy || "",
- 
-    // ── Compensation (base-driven) ───────────────────────────
-    salary_structure: formData.salaryStructure || null,
-    base_salary:      Number(formData.basicSalary) || 0,   
-    gross:            salaryResult?.gross            ?? 0,
-    ctc: salaryResult?.gross ?? 0, 
-   
-    
- 
-  
-    salary_mode:     mapSalaryMode(formData.paymentMethod || ""),
-    salary_currency: formData.currency || null,
- 
-    // ── Bank ────────────────────────────────────────────────
-    bank_name:    formData.bankName      || null,
-    bank_ac_no:   formData.accountNumber || null,
-    account_type: formData.accountType   || null,
-    branch_code:  formData.branchCode    || null,
- 
-    // ── Health / Passport ────────────────────────────────────
-    health_insurance_provider: formData.healthInsuranceProvider || null,
-    health_insurance_no:       formData.healthInsuranceNo       || null,
-    health_details:            formData.healthDetails           || null,
-    passport_number:           formData.passportNumber          || null,
-    place_of_issue:            formData.placeOfIssue            || null,
-    date_of_issue:             formData.dateOfIssue             || null,
-    valid_upto:                formData.validUpto               || null,
- 
-    // ── System ──────────────────────────────────────────────
-    create_user_permission:    1,
-    create_user_automatically: 1,
-  };
-}
-
-
-// ── Tab icons ────────────────────────────────────────────────────────────────
-
-
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type DocumentUpload = {
   uploaded: boolean;
@@ -160,24 +44,40 @@ type DocumentUpload = {
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSubmit: (data: any) => void;
   editData?: any;
   mode?: "add" | "edit";
+  modalId: string;
 };
 
-// ── Component ────────────────────────────────────────────────────────────────
+const extractCleanMessage = (err: any): string | null => {
+  try {
+    const serverMsgs = err?.response?.data?._server_messages;
+    if (!serverMsgs) return null;
+    const outer = JSON.parse(serverMsgs);
+    const parsed = JSON.parse(outer[0]);
+    if (parsed?.message) return String(parsed.message).replace(/<[^>]+>/g, "");
+  } catch {
+    return null;
+  }
+  return null;
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const AddEmployeeModal: React.FC<Props> = ({
   isOpen,
   onClose,
-  onSuccess,
+  onSubmit,
   editData,
+  modalId,
   mode = "add",
 }) => {
   const { companyCode } = useCompanySelection();
   const features = getEmployeeFeatures(companyCode);
   const departments = features.departments;
   const levelsFromSettings = getLevelsFromHrSettings();
+
   const [employeeFile, setEmployeeFile] = useState<File | null>(null);
 
   // ── Step ────────────────────────────────────────────────────────────────
@@ -187,9 +87,7 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   // ── Form state ──────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<Record<string, any>>(DEFAULT_FORM);
-  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>({});
   const [isPreFilled, setIsPreFilled] = useState(false);
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
 
@@ -200,6 +98,8 @@ const AddEmployeeModal: React.FC<Props> = ({
   const [reportingManagers, setReportingManagers] = useState<any[]>([]);
   const [hrManagers, setHrManagers] = useState<any[]>([]);
 
+
+
   // ── Documents ───────────────────────────────────────────────────────────
   const [documents, setDocuments] = useState<Record<string, DocumentUpload>>({
     "NRC Copy": { uploaded: false },
@@ -209,13 +109,20 @@ const AddEmployeeModal: React.FC<Props> = ({
   });
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "uploading">("idle");
 
-  // ── Reset on open ───────────────────────────────────────────────────────
+  // ── Reset / seed on open ────────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
+
     if (editData) {
+      // editData is the flat object from the API response
+      // It may be nested as editData.data or flat – unwrap accordingly
+      const flat =
+        editData?.data ?? editData?.message?.data ?? editData;
+
       setStep("form");
-      setFormData(mapEditDataToForm(editData));
+      setFormData(mapEditDataToForm(flat));
       setIsPreFilled(true);
     } else {
       setStep(features.requireIdentityVerification ? "verification" : "form");
@@ -223,15 +130,15 @@ const AddEmployeeModal: React.FC<Props> = ({
       setVerifiedFields({});
       setIsPreFilled(false);
     }
+
     setCurrentTabIndex(0);
+    setEmployeeFile(null);
   }, [isOpen, editData, features.requireIdentityVerification]);
 
   // ── Body scroll lock ────────────────────────────────────────────────────
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
   // ── Load managers ───────────────────────────────────────────────────────
@@ -248,7 +155,7 @@ const AddEmployeeModal: React.FC<Props> = ({
           filterEmployeesByRole(emps, EMPLOYEE_ROLE_CONFIG.hrManager),
         );
       } catch {
-        
+        // swallow – dropdowns will just be empty
       }
     })();
   }, [isOpen]);
@@ -257,49 +164,183 @@ const AddEmployeeModal: React.FC<Props> = ({
   const handleInputChange = (field: string, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-  const handleNext = () => setCurrentTabIndex((p) => p + 1);
+  const TAB_REQUIRED_FIELDS: Partial<Record<TabName, () => string | null>> = {
+    Personal: () => {
+      if (!formData.firstName?.trim()) return "First Name is required.";
+      if (!formData.dateOfBirth?.trim()) return "Date of Birth is required.";
+      if (!formData.gender?.trim()) return "Gender is required.";
+      return null;
+    },
+    "Address & Contact": () => {
+      if (!formData.email?.trim()) return "Personal Email is required.";
+      if (!formData.CompanyEmail?.trim()) return "Company Email is required.";
+      return null;
+    },
+  };
+
+  const handleNext = () => {
+    const validator = TAB_REQUIRED_FIELDS[activeTab];
+    if (validator) {
+      const error = validator();
+      if (error) { showValidationError(error); return; }
+    }
+    setCurrentTabIndex((p) => p + 1);
+  };
   const handlePrevious = () => setCurrentTabIndex((p) => p - 1);
 
-const handleSave = async () => {
-  try {
-    setSaving(true);
+  const handleCloseRequest = () => {
+    if (saving) return;
+    onClose();
+  };
 
-    const payload = buildEmployeePayload(formData);
+  const handleResetTab = () => {
+    if (saving) return;
 
-    let employeeId: string | null = null;
+    if (editData) {
+      const flat =
+        editData?.data ?? editData?.message?.data ?? editData;
 
-    if (editData?.id) {
-      await updateEmployeeById({ id: String(editData.id), ...payload });
-      employeeId = String(editData.id);
+      setFormData(mapEditDataToForm(flat));
     } else {
-     
-     const res = await createEmployee(payload);
-
-employeeId = res?.message?.data?.employee || null;
-    }
-   
-
-
-   
-    if (employeeFile && employeeId) {
-      await uploadEmployeePhoto(employeeId, employeeFile);
+      setFormData({ ...DEFAULT_FORM });
+      setVerifiedFields({});
+      setEmployeeFile(null);
     }
 
-    showSuccess(
-      editData
-        ? "Employee updated successfully"
-        : "Employee created successfully",
+    setCurrentTabIndex(0);
+  };
+
+  const handleSave = async () => {
+    const payload = buildEmployeePayload(formData);
+    const isEdit = mode === "edit" || !!editData;
+
+    // ── EDIT MODE: keep exact same simple flow as before ───────────────────────
+    if (isEdit) {
+      try {
+        setSaving(true);
+        setSaveStatus("saving");
+
+        const id =
+          editData?.employee ||
+          editData?.data?.employee ||
+          editData?.message?.data?.employee ||
+          editData?.id ||
+          editData?.name;
+
+        if (!id) throw new Error("Cannot determine employee ID for update");
+
+        const res = await updateEmployeeById({ id: String(id), ...payload });
+        const msg =
+          res?.message?.message ||
+          res?.data?.message ||
+          "Employee updated successfully.";
+
+        if (employeeFile) {
+          setSaveStatus("uploading");
+          try { await uploadEmployeePhoto(String(id), employeeFile); } catch { /* silent */ }
+        }
+
+        showSuccess(msg);
+        onSubmit(payload);
+        onClose();
+      } catch (err) {
+        const clean = extractCleanMessage(err);
+        clean ? showValidationError(clean) : showApiError(err);
+      } finally {
+        setSaving(false);
+        setSaveStatus("idle");
+      }
+      return;
+    }
+
+
+    // Step 1 — show loader while creating employee
+    showStepLoader(
+      "Creating Employee…",
+      `<span style="font-size:13px;color:#64748b">
+       Setting up the employee record, please wait.
+     </span>`
     );
 
-    onSuccess?.();
-    onClose();
+    let employeeId = "";
+    let backendMsg = "";
+    let welcomeMsg = "";
+    let serverWarns: string[] = [];
 
-  } catch (err) {
-    showApiError(err);
-  } finally {
-    setSaving(false);
-  }
-};
+    try {
+      const res = await createEmployee(payload);
+
+      // ── Extract all fields from the response ──────────────────────────────
+      const data = res?.message?.data ?? res?.data?.data ?? {};
+
+      employeeId = data?.employee || res?.data?.employee || "";
+      backendMsg = res?.message?.message || res?.data?.message || "Employee created successfully.";
+      welcomeMsg = typeof data?.messages === "string" ? data.messages.trim() : "";
+
+      // Parse Frappe _server_messages (double-encoded JSON array)
+      try {
+        if (res?._server_messages) {
+          const outer: string[] = JSON.parse(res._server_messages);
+          serverWarns = outer.flatMap((raw: string) => {
+            try { const p = JSON.parse(raw); return p?.message ? [String(p.message)] : []; }
+            catch { return []; }
+          });
+        }
+      } catch { /* ignore malformed _server_messages */ }
+
+    } catch (err) {
+
+      closeSwal();
+      const clean = extractCleanMessage(err);
+      clean ? showValidationError(clean) : showApiError(err);
+      return;
+    }
+
+
+    let photoUploaded = false;
+    let photoError = "";
+
+    if (employeeFile && employeeId) {
+      // Update the loader text to show photo upload is in progress
+      showStepLoader(
+        "Uploading Profile Photo…",
+        `<div style="text-align:left;padding:2px 0">
+         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+           <span style="color:#16a34a;font-size:15px">✓</span>
+           <span style="font-size:12.5px;color:#15803d;font-weight:600">${backendMsg}</span>
+         </div>
+         <div style="display:flex;align-items:center;gap:8px">
+           <span style="font-size:12px;color:#6366f1">↑</span>
+           <span style="font-size:12px;color:#6366f1;font-weight:500">Uploading photo to <code style="font-size:11px">${employeeId}</code>…</span>
+         </div>
+       </div>`
+      );
+
+      try {
+        await uploadEmployeePhoto(employeeId, employeeFile);
+        photoUploaded = true;
+      } catch {
+        photoError = "Upload failed";
+      }
+    }
+
+    // Step 3 — all done, close loader and show the full result Swal
+    closeSwal();
+
+    await showEmployeeCreationResult({
+      employeeId,
+      successMessage: backendMsg,
+      welcomeMessage: welcomeMsg || undefined,
+      serverWarnings: serverWarns,
+      photoUploaded,
+      photoError: photoError || undefined,
+    });
+
+    // Only after user clicks "Done" on the result Swal do we close everything
+    onSubmit(payload);
+    onClose();
+  };
+
   const removeDocument = (key: string) =>
     setDocuments((prev) => ({ ...prev, [key]: { uploaded: false } }));
 
@@ -314,11 +355,8 @@ employeeId = res?.message?.data?.employee || null;
       dateOfBirth: data.personalInfo?.dateOfBirth || "",
     }));
     setVerifiedFields({
-      nrcId: true,
-      firstName: true,
-      lastName: true,
-      gender: true,
-      dateOfBirth: true,
+      nrcId: true, firstName: true, lastName: true,
+      gender: true, dateOfBirth: true,
     });
     setIsPreFilled(true);
     setStep("form");
@@ -342,65 +380,31 @@ employeeId = res?.message?.data?.employee || null;
     );
   }
 
+  const footer = (
+    <ModalFooter
+      onCancel={handleCloseRequest}
+      onReset={handleResetTab}
+      onSubmit={handleSave}
+      onNext={!isLastTab ? handleNext : undefined}
+      onPrevious={currentTabIndex > 0 ? handlePrevious : undefined}
+      currentTab={currentTabIndex}
+      totalTabs={TAB_ORDER.length}
+      isSubmitting={saving}
+      submitLabel={editData ? "Update" : "Save"}
+    />
+  );
+
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <MinimizableModal
-      modalId="add-employee"
+      modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
       title={editData ? "Edit Employee" : "New Employee"}
       subtitle="Employee Management"
       customWidth="77vw"
       height="90vh"
-      footer={
-        <div className="flex justify-between w-full items-center px-2">
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 text-xs text-muted hover:text-main hover:bg-app rounded-lg transition"
-          >
-            Cancel
-          </button>
-
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-muted">
-              {currentTabIndex + 1} / {TAB_ORDER.length}
-            </span>
-
-            {currentTabIndex > 0 && (
-              <button
-                onClick={handlePrevious}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-theme rounded-lg hover:bg-app transition text-main"
-              >
-                <FaArrowLeft className="w-3 h-3" /> Previous
-              </button>
-            )}
-
-            {!isLastTab ? (
-              <button
-                onClick={handleNext}
-                className="flex items-center gap-1 px-4 py-1.5 text-xs bg-primary text-white rounded-lg hover:opacity-90 transition"
-              >
-                Next <FaArrowRight className="w-3 h-3" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-1 px-4 py-1.5 text-xs bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition font-semibold"
-              >
-                {saving ? (
-                  "Saving…"
-                ) : (
-                  <>
-                    <FaCheck className="w-3 h-3" />{" "}
-                    {editData ? "Update" : "Save"}
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-      }
+      footer={footer}
     >
       {/* Split layout */}
       <div className="flex h-full overflow-hidden">
@@ -414,11 +418,10 @@ employeeId = res?.message?.data?.employee || null;
                 <button
                   key={tab}
                   onClick={() => setCurrentTabIndex(i)}
-                  className={`relative flex items-center gap-1 px-2.5 py-2 text-[10px] font-medium whitespace-nowrap transition flex-shrink-0 border-b-2 ${
-                    active
-                      ? "text-primary border-primary"
-                      : "text-muted border-transparent hover:text-main"
-                  }`}
+                  className={`relative flex items-center gap-1 px-2.5 py-2 text-[10px] font-medium whitespace-nowrap transition flex-shrink-0 border-b-2 ${active
+                    ? "text-primary border-primary"
+                    : "text-muted border-transparent hover:text-main"
+                    }`}
                 >
                   <span>{tab}</span>
                 </button>
@@ -469,23 +472,29 @@ employeeId = res?.message?.data?.employee || null;
                 handleInputChange={handleInputChange}
               />
             )}
-            {activeTab === "Documents" && (
-              <DocumentsTab
-                documents={documents}
-                setUploadingDoc={setUploadingDoc}
-                removeDocument={removeDocument}
+            {activeTab === "Bank" && (
+              <EmployeeBankTab
+                formData={formData}
+                setFormData={setFormData}
+                isEditMode={!!editData}
+                employeeId={
+                  editData?.employee ||
+                  editData?.id ||
+                  editData?.name
+                }
               />
             )}
+
           </div>
         </div>
 
         {/* RIGHT: Summary panel */}
         <div className="w-[260px] flex-shrink-0 border-l border-theme bg-app">
           <div className="h-full">
-           <EmployeeSummaryPanel
-  formData={formData}
-  onFileSelect={setEmployeeFile}
-/>
+            <EmployeeSummaryPanel
+              formData={formData}
+              onFileSelect={setEmployeeFile}
+            />
           </div>
         </div>
       </div>

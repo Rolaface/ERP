@@ -180,7 +180,7 @@ const BankModal: React.FC<BankModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={isEditMode ? "Edit Bank" : "Add New Bank"}
+      title={isEditMode ? "Edit Bank" : "Create New Bank"}
       subtitle="Provide bank name and SWIFT/BIC number"
       icon={Landmark}
       footer={footer}

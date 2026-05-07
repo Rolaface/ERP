@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import { Tag } from "lucide-react";
+import { Tags } from "lucide-react";
 import { Button, Checkbox } from "../ui/modal/formComponent";
 import { ModalInput } from "../ui/modal/modalComponent";
 import { MinimizableModal } from "../common/MinimizableModal";
@@ -103,11 +103,12 @@ const resolvedModalId = useMemo(
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title="Add Tax Category"
+      title="Create Tax Category"
       subtitle="Create a new tax category"
-      icon={Tag}
+      icon={Tags}
       footer={footer}
       maxWidth="lg"
+      height="40vh"
     >
       <div className="p-6 flex flex-col gap-5">
         <ModalInput

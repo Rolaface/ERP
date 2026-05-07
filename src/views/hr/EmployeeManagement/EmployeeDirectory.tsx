@@ -12,8 +12,8 @@ import {
   getEmployeeById,
   deleteEmployeeById,
 } from "../../../api/employeeapi";
-
-import AddEmployeeModal from "../../../components/Hr/employeedirectorymodal/AddEmployeeModal";
+import { AppPage , AppPageBody } from "../../../components/ui/app-shell";
+import { openEmployeeModal } from "../../../store/modalStore";
 
 import Table from "../../../components/ui/Table/Table";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
@@ -23,8 +23,9 @@ import ActionButton, {
 } from "../../../components/ui/Table/ActionButton";
 
 import type { Column } from "../../../components/ui/Table/type";
-import type { EmployeeSummary, Employee } from "../../../types/employee";
+import type { EmployeeSummary } from "../../../types/employee";
 import EmployeeDetailView from "../EmployeeManagement/mployeeDetailView";
+
 const unwrapEmployee = (res: any): any =>
   res?.message?.data ?? res?.data ?? res;
 
@@ -35,24 +36,18 @@ const EmployeeDirectory: React.FC = () => {
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const [showModal, setShowModal] = useState(false);
-  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
-  //state for detail view
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
-  //function to handle view employee details
+  // ── View detail ──────────────────────────────────────────────────────────
   const handleViewEmployee = async (id: string) => {
     try {
       showLoading("Loading Employee...");
       const res = await getEmployeeById(id);
-      // API: { message: { status_code, status, message, data: { ...flat } } }
-      const emp = unwrapEmployee(res);
-      setSelectedEmployee(emp);
+      setSelectedEmployee(unwrapEmployee(res));
       setViewMode("detail");
       closeSwal();
     } catch (error) {
@@ -60,21 +55,20 @@ const EmployeeDirectory: React.FC = () => {
       showApiError(error);
     }
   };
- 
+
   const refreshSelectedEmployee = async () => {
-    // Use emp.employee (the Frappe docname like "HR-EMP-00019") as the id
     const id = selectedEmployee?.employee || selectedEmployee?.id;
     if (!id) return;
     const res = await getEmployeeById(id);
     setSelectedEmployee(unwrapEmployee(res));
   };
- 
-  // ── Fetch list ────────────────────────────────────────────────────────────
+
+  // ── Fetch list ───────────────────────────────────────────────────────────
   const fetchEmployees = async () => {
     try {
       setLoading(true);
       const res = await getAllEmployees(page, pageSize, searchTerm);
- 
+
       const mapped = (res.data || []).map((e: any) => ({
         id: e.name,
         employeeId: e.name,
@@ -84,7 +78,7 @@ const EmployeeDirectory: React.FC = () => {
         workLocation: e.branch || "-",
         status: e.status,
       }));
- 
+
       setEmployees(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total_items || 0);
@@ -94,35 +88,37 @@ const EmployeeDirectory: React.FC = () => {
       setLoading(false);
     }
   };
- 
+
   useEffect(() => {
     fetchEmployees();
   }, [page]);
- 
-  // ── Action handlers ───────────────────────────────────────────────────────
+
+  // ── Add ──────────────────────────────────────────────────────────────────
   const handleAdd = () => {
-    setEditEmployee(null);
-    setShowModal(true);
+    openEmployeeModal(null, false);
   };
- 
+
+  // ── Edit ─────────────────────────────────────────────────────────────────
   const handleEdit = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       showLoading("Fetching Employee...");
       const res = await getEmployeeById(id);
-      // Edit modal expects the flat object too (mapEditDataToForm reads flat fields)
-      setEditEmployee(unwrapEmployee(res));
-      setShowModal(true);
+      const employeeData = unwrapEmployee(res); // flat data object
       closeSwal();
+
+      
+      openEmployeeModal(employeeData, true);
     } catch (error) {
       closeSwal();
       showApiError(error);
     }
   };
- 
+
+  // ── Delete ───────────────────────────────────────────────────────────────
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
- 
+
     const result = await fireManagedSwal({
       title: "Are you sure?",
       text: "This employee will be permanently deleted.",
@@ -132,9 +128,9 @@ const EmployeeDirectory: React.FC = () => {
       cancelButtonColor: "#6b7280",
       confirmButtonText: "Yes, delete",
     });
- 
+
     if (!result.isConfirmed) return;
- 
+
     try {
       showLoading("Deleting Employee...");
       await deleteEmployeeById(id);
@@ -147,26 +143,11 @@ const EmployeeDirectory: React.FC = () => {
     }
   };
 
-const handleSaved = async () => {
-  setShowModal(false);
-  setEditEmployee(null);
-  await fetchEmployees();
-
-  showSuccess(editEmployee ? "Employee updated" : "Employee added");
-};
-
-  const uniqueDepartments = Array.from(
-    new Set(employees.map((e) => e.department)),
-  ).filter((d) => d !== "");
-
-  /* ===============================
-     TABLE COLUMNS
-  ================================ */
-
+  // ── Columns ──────────────────────────────────────────────────────────────
   const columns: Column<EmployeeSummary>[] = [
     { key: "employeeId", header: "Employee ID", align: "left" },
-    { key: "name", header: "Name", align: "left" },
-    { key: "jobTitle", header: "Job Title", align: "left" },
+    { key: "name",       header: "Name",        align: "left" },
+    { key: "jobTitle",   header: "Job Title",   align: "left" },
     {
       key: "department",
       header: "Department",
@@ -190,8 +171,11 @@ const handleSaved = async () => {
       align: "center",
       render: (e) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={() => handleViewEmployee(e.id)}iconOnly />
-
+          <ActionButton
+            type="view"
+            onClick={() => handleViewEmployee(e.id)}
+            iconOnly
+          />
           <ActionMenu
             onEdit={(ev) => handleEdit(e.id, ev as any)}
             onDelete={(ev) => handleDelete(e.id, ev as any)}
@@ -201,12 +185,9 @@ const handleSaved = async () => {
     },
   ];
 
-  /* ===============================
-     RENDER
-  ================================ */
-
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="p-6">
+    <AppPageBody>
       {viewMode === "table" ? (
         <Table
           loading={loading}
@@ -226,7 +207,7 @@ const handleSaved = async () => {
           pageSizeOptions={[10, 25, 50, 100]}
           onPageSizeChange={(size) => {
             setPageSize(size);
-            setPage(1); // reset page
+            setPage(1);
           }}
           onPageChange={setPage}
         />
@@ -240,20 +221,7 @@ const handleSaved = async () => {
           onDocumentUploaded={refreshSelectedEmployee}
         />
       ) : null}
-
-      {/* Add / Edit Modal */}
-      <AddEmployeeModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditEmployee(null);
-        }}
-        onSuccess={handleSaved}
-    
-        editData={editEmployee}
-        mode={editEmployee ? "edit" : "add"}
-      />
-    </div>
+    </AppPageBody>
   );
 };
 

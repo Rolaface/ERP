@@ -67,6 +67,8 @@ export interface ItemFormData {
   shelfLife: string | number;
   endOfLife: string;
   trackInventory: boolean;
+  allowSales: boolean;
+  allowPurchase: boolean;
   has_batch_no: boolean;
   batchNo: string;
   create_new_batch: boolean;

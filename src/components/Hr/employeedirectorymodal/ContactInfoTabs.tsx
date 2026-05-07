@@ -40,6 +40,17 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             onChange={(e) => handleInputChange("email", e.target.value)}
             required
           />
+          <ModalSelect
+          label="Preferred Contact Email"
+          name="preferredContactMethod"
+          value={formData.preferredContactMethod}
+          onChange={(e) => handleInputChange("preferredContactMethod", e.target.value)}
+          options={[
+            { label: "Company Email", value: "Company Email" },
+            { label: "Personal Email", value: "Personal Email" },
+            { label: "User ID ", value: "User ID" },
+          ]}
+          />
           <ModalInput
             label="Company Email"
             name="CompanyEmail"
@@ -55,8 +66,7 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             type="tel"
             value={formData.phoneNumber}
             onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-            placeholder="+260971234567"
-            required
+            placeholder="+91"
           />
           <ModalInput
             label="Alternate Phone"
@@ -88,12 +98,12 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
               value={formData.city}
               onChange={(e) => handleInputChange("city", e.target.value)}
             />
-            <ModalSelect
+            <ModalInput
               label="Province"
               name="province"
               value={formData.province}
               onChange={(e) => handleInputChange("province", e.target.value)}
-              options={PROVINCE_OPTIONS}
+              placeholder="Enter province"
             />
             <ModalInput
               label="Postal Code"
@@ -116,7 +126,6 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             name="emergencyContactName"
             value={formData.emergencyContactName}
             onChange={(e) => handleInputChange("emergencyContactName", e.target.value)}
-            required
           />
           <ModalInput
             label="Phone"
@@ -124,8 +133,7 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             type="tel"
             value={formData.emergencyContactPhone}
             onChange={(e) => handleInputChange("emergencyContactPhone", e.target.value)}
-            placeholder="+260"
-            required
+            placeholder="+91"
           />
           <ModalInput
             label="Relationship"

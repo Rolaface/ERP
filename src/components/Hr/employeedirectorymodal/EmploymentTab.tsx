@@ -7,6 +7,7 @@ import {
   getAllDesignations,
   getAllEmploymentTypes,
 } from "../../../api/utils/frappeUtilsApi";
+import DatePickerInput from "../../calendar/DatePickerInput";
 
 type EmploymentTabProps = {
   formData: any;
@@ -85,7 +86,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
           <SearchSelect2
             label="Department"
             value={formData.department}
-            required
             placeholder="Search Department..."
             fetchOptions={fetchDepartmentOptions}
             onChange={(value) => handleInputChange("department", value)}
@@ -94,7 +94,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
           <SearchSelect2
             label="Grade"
             value={formData.grade}
-            required
             placeholder="Search Grade..."
             fetchOptions={fetchGradeOptions}
             onChange={(value) => handleInputChange("grade", value)}
@@ -103,7 +102,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
           <SearchSelect2
             label="Designation"
             value={formData.designation}
-            required
             placeholder="Search Designation..."
             fetchOptions={fetchDesignationOptions}
             onChange={(value) => handleInputChange("designation", value)}
@@ -112,7 +110,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
           <SearchSelect2
             label="Employee Type"
             value={formData.employment_type}
-            required
             placeholder="Search Employee Type..."
             fetchOptions={fetchEmploymentTypeOptions}
             onChange={(value) => handleInputChange("employment_type", value)}
@@ -151,8 +148,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             onChange={(e) =>
               handleInputChange("reportingManager", e.target.value)
             }
-            
-            required
             placeholder="Select Manager"
           />
 
@@ -162,7 +157,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             value={formData.hrManager}
             onChange={(e) => handleInputChange("hrManager", e.target.value)}
             options={hrManagerOptions}
-            required
             placeholder="Select HR Manager"
           />
 
@@ -176,27 +170,21 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             }
           />
 
-          <ModalInput
+          <DatePickerInput
             label="Date of Joining"
             name="dateOfJoining"
-            type="date"
             value={formData.dateOfJoining}
-            onChange={(e) =>
-              handleInputChange("dateOfJoining", e.target.value)
-            }
-            required
+            onChange={handleInputChange}
           />
 
-          <ModalInput
+          <DatePickerInput
             label="Contract End Date"
             name="contractEndDate"
-            type="date"
             value={formData.contractEndDate}
-            onChange={(e) =>
-              handleInputChange("contractEndDate", e.target.value)
-            }
+            onChange={handleInputChange}
             disabled={!isContractBased}
           />
+
         </div>
         {!isContractBased && (
           <p className="text-[10px] text-muted mt-1.5">

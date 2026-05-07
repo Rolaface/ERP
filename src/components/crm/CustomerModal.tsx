@@ -231,8 +231,6 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     name="tpin"
                     value={form.tpin}
                     onChange={handleChange}
-                    required
-                    error={errors.tpin}
                     placeholder="Tax identification"
                   />
                 </Tooltip>
@@ -248,8 +246,6 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                         target: { name: "customerTaxCategory", value },
                       } as React.ChangeEvent<HTMLSelectElement>)
                     }
-                    error={errors.customerTaxCategory}
-                    required
                   />
                 </Tooltip>
 

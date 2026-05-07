@@ -1,12 +1,12 @@
 import React from "react";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import {
-  getCountries,
+ 
   getRolaCountries,
   getRolaUOMs,
-  getUOMs,
+  
 } from "../../api/itemZraApi";
-import { useCompanySelection } from "../../hooks/useCompanySelection";
+
 import { ModalInput, YesNoCheckbox } from "../ui/modal/modalComponent";
 import type {
   ItemFieldSetter,
@@ -22,18 +22,12 @@ interface AdditionalDetailsSectionProps {
   errors?: Partial<Record<keyof ItemFormData, string>>;
 }
 
-const isRolaCompany = (companyCode: string) => {
-  const normalized = companyCode?.toUpperCase();
-  return normalized === "ROLA" || normalized === "COMP-00004";
-};
+
 
 const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
   React.memo(({ form, onFormChange, onToggleChange, setField, errors }) => {
-    const { companyCode } = useCompanySelection();
-    const useRolaLookups = isRolaCompany(companyCode);
-    const fetchCountries = useRolaLookups ? getRolaCountries : getCountries;
-    const fetchUoms = useRolaLookups ? getRolaUOMs : getUOMs;
-
+ const fetchCountries = getRolaCountries;
+const fetchUoms = getRolaUOMs;
     return (
       <div className="flex flex-wrap items-end gap-x-4 gap-y-4">
         {/* Packing Unit: N x N */}
@@ -72,16 +66,16 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
 
               const list = data?.data ?? [];
 
-            return list
-  .filter((item: any) =>
-    (item.name ?? item.cdNm ?? "")
-      .toLowerCase()
-      .includes(q.toLowerCase()),
-  )
-  .map((item: any) => ({
-    label: item.name ?? item.cdNm ?? "",
-    value: item.name ?? item.cdNm ?? "",
-  }));
+              return list
+                .filter((item: any) =>
+                  (item.name ?? item.cdNm ?? "")
+                    .toLowerCase()
+                    .includes(q.toLowerCase()),
+                )
+                .map((item: any) => ({
+                  label: item.name ?? item.cdNm ?? "",
+                  value: item.name ?? item.cdNm ?? "",
+                }));
             }}
             onChange={(value) => setField("unitOfMeasureCd", value)}
             placeholder="Search..."
@@ -100,7 +94,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
           />
         </div>
 
-       
+
         <div className="w-[160px] min-w-0">
           <SearchSelect2
             label="Country of origin"
@@ -148,6 +142,30 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
           value={form.taxPreference === "Taxable" ? "Y" : "N"}
           onChange={(name, value) =>
             onToggleChange(name, value === "Y" ? "Taxable" : "Non-Taxable")
+          }
+        />
+        <YesNoCheckbox
+          name="trackInventory"
+          label="Track Inventory"
+          value={form.trackInventory ? "Y" : "N"}
+          onChange={(name, value) =>
+            setField("trackInventory", value === "Y")
+          }
+        />
+        <YesNoCheckbox
+          name="allowSales"
+          label="Allow Sales"
+          value={form.allowSales ? "Y" : "N"}
+          onChange={(name, value) =>
+            setField("allowSales", value === "Y")
+          }
+        />
+        <YesNoCheckbox
+          name="allowPurchase"
+          label="Allow Purchase"
+          value={form.allowPurchase ? "Y" : "N"}
+          onChange={(name, value) =>
+            setField("allowPurchase", value === "Y")
           }
         />
       </div>

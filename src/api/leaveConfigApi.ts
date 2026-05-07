@@ -69,7 +69,7 @@ export async function getAllLeaveTypes(): Promise<LeaveType[]> {
  */
 export async function getLeaveTypeById(name: string): Promise<LeaveType> {
   try {
-    // FIX 3: Use LEAVE_RESOURCE.getById instead of the whole object
+   
     const url = `${LEAVE_RESOURCE.getById}/${encodeURIComponent(name)}`;
     const resp: AxiosResponse<FrappeDetailResponse<LeaveType>> = await api.get(url);
     
