@@ -140,11 +140,12 @@ const Login = () => {
         <div className="absolute inset-0 pointer-events-none 
   bg-[radial-gradient(circle_at_50%_40%,rgba(59,130,246,0.08),transparent_60%)]" />
         {/* Card with entrance animation */}
+        
         <div className="relative w-full max-w-md 
-bg-white/80 backdrop-blur-xl 
-rounded-3xl p-10 
-border border-white/40
-shadow-[0_10px_25px_rgba(0,0,0,0.06),0_20px_50px_rgba(0,0,0,0.08)]
+bg-[rgba(255,255,255,0.72)] backdrop-blur-2xl
+rounded-[30px] p-10
+border border-white/50
+shadow-[0_8px_30px_rgba(15,23,42,0.08),0_20px_60px_rgba(59,130,246,0.10)]
 lg:-ml-24 lg:-mt-16 
 animate-[fadeInUp_0.9s_ease-out]">
 
