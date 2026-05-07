@@ -113,7 +113,7 @@ doc.setFontSize(8);
 
   if (company?.documents?.companyLogoUrl) {
     try {
-     doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 50, logoTopY, 50, 20);
+     doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 65, logoTopY, 65, 22);
     } catch {}
   } else {
 
