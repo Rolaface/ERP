@@ -181,7 +181,7 @@ animate-[fadeInUp_0.9s_ease-out]">
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
                 className="w-full h-12 px-4 rounded-xl 
-bg-[#F9FAFB] border border-[#E5E7EB]
+bg-[#F4F8FC] border border-[#E5E7EB]
 shadow-inner
 placeholder:text-[#94A3B8]
 focus:bg-white focus:border-primary 
@@ -214,7 +214,7 @@ outline-none transition-all duration-200"
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full h-12 px-4 pr-10 rounded-xl 
-bg-[#F9FAFB] border border-[#E5E7EB]
+bg-[#F4F8FC] border border-[#E5E7EB]
 shadow-inner
 placeholder:text-[#94A3B8]
 focus:bg-white focus:border-primary 
