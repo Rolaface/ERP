@@ -5,8 +5,8 @@ import { showApiError } from "../utils/alert";
 
 export const MODULE_STRUCTURE: Record<string, string[]> = {
   Sales: ["Sales Invoice"],
-  CustomerManagement: ["Customer", "Payment Entry"],
-  Procurement: ["Supplier", "Payment Entry", "Request For Quotation", "Purchase Order", "Purchase Invoice"],
+  CustomerManagement: ["Customer"],
+  Procurement: ["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice"],
   Inventory: ["Item Tax Template", "Item", "Item Group", "Warehouse", "Stock Entry"],
   Accounting: ["GL Entry", "Journal Entry","Account"],
   Assets: ["Asset Category", "Asset", "Asset Movement"],
