@@ -6,7 +6,7 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
-
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import {
   deleteTaxConfig,
   type TaxConfig,
@@ -52,24 +52,31 @@ export function TaxConfigurationSetup() {
     [fetchDetail],
   );
 
-  const handleDelete = useCallback(
-    async (row: TaxConfig) => {
-      if (!row.name) return;
-      if (!confirm(`Delete "${row.name}"?`)) return;
-      try {
-        setActionLoadingId(row.name);
-        await deleteTaxConfig(row.name);
-        showSuccess("Tax configuration deleted");
-        fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete");
-      } finally {
-        setActionLoadingId(null);
-      }
-    },
-    [fetchAll],
-  );
+const handleDelete = useCallback(
+  async (row: TaxConfig) => {
+    if (!row.name) return;
 
+    try {
+      setActionLoadingId(row.name);
+
+      const deleted = await confirmDelete({
+        text: `Delete "${row.name}"?`,
+        loadingText: "Deleting Tax Configuration...",
+        successMessage: "Tax configuration deleted",
+        action: async () => {
+          await deleteTaxConfig(row.name!);
+        },
+      });
+
+      if (deleted) {
+        fetchAll();
+      }
+    } finally {
+      setActionLoadingId(null);
+    }
+  },
+  [fetchAll],
+);
   const columns: Column<TaxConfig>[] = useMemo(
     () => [
       {

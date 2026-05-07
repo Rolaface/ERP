@@ -6,6 +6,7 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import {
   deleteDesignation,
   getAllDesignations,
@@ -63,23 +64,31 @@ export function DesignationSetup() {
     }
   }, []);
 
-  const handleDelete = useCallback(
-    async (row: Designation) => {
-      if (!row.name) return;
-      if (!confirm(`Delete "${row.designation_name ?? row.name}"?`)) return;
-      try {
-        setActionLoadingId(row.name);
-        await deleteDesignation(row.name);
-        showSuccess("Designation deleted");
+const handleDelete = useCallback(
+  async (row: Designation) => {
+    if (!row.name) return;
+
+    try {
+      setActionLoadingId(row.name);
+
+      const deleted = await confirmDelete({
+        text: `Delete "${row.designation_name ?? row.name}"?`,
+        loadingText: "Deleting Designation...",
+        successMessage: "Designation deleted",
+        action: async () => {
+          await deleteDesignation(row.name!);
+        },
+      });
+
+      if (deleted) {
         fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete");
-      } finally {
-        setActionLoadingId(null);
       }
-    },
-    [fetchAll],
-  );
+    } finally {
+      setActionLoadingId(null);
+    }
+  },
+  [fetchAll],
+);
 
   const columns: Column<Designation>[] = useMemo(
     () => [

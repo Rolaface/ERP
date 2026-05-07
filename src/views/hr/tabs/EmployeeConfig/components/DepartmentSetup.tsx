@@ -6,12 +6,14 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
+
 import {
   deleteDepartment,
   getAllDepartments,
   getDepartment,
   type Department,
 } from "../../../../../api/employeeConfigApi";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { openDepartmentModal } from "../../../../../store/modalStore";
 export function DepartmentSetup() {
@@ -66,23 +68,31 @@ setTotalPages(response.pagination.total_pages);
     }
   }, []);
 
-  const handleDelete = useCallback(
-    async (row: Department) => {
-      if (!row.name) return;
-      if (!confirm(`Delete "${row.department_name ?? row.name}"?`)) return;
-      try {
-        setActionLoadingId(row.name);
-        await deleteDepartment(row.name);
-        showSuccess("Department deleted");
+const handleDelete = useCallback(
+  async (row: Department) => {
+    if (!row.name) return;
+
+    try {
+      setActionLoadingId(row.name);
+
+      const deleted = await confirmDelete({
+        text: `Delete "${row.department_name ?? row.name}"?`,
+        loadingText: "Deleting Department...",
+        successMessage: "Department deleted",
+        action: async () => {
+          await deleteDepartment(row.name!);
+        },
+      });
+
+      if (deleted) {
         fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete");
-      } finally {
-        setActionLoadingId(null);
       }
-    },
-    [fetchAll],
-  );
+    } finally {
+      setActionLoadingId(null);
+    }
+  },
+  [fetchAll],
+);
 
   const columns: Column<Department>[] = useMemo(
     () => [

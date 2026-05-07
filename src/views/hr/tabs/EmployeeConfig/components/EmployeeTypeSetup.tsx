@@ -13,6 +13,7 @@ import {
   type EmployeeType,
 } from "../../../../../api/employeeConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openEmployeeTypeModal } from "../../../../../store/modalStore";
 export function EmployeeTypeSetup() {
   const [rows, setRows] = useState<EmployeeType[]>([]);
@@ -63,24 +64,31 @@ export function EmployeeTypeSetup() {
     }
   }, []);
 
-  const handleDelete = useCallback(
-    async (row: EmployeeType) => {
-      if (!row.name) return;
-      if (!confirm(`Delete "${row.employee_type_name ?? row.name}"?`)) return;
-      try {
-        setActionLoadingId(row.name);
-        await deleteEmployeeType(row.name);
-        showSuccess("Employee type deleted");
-        fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete");
-      } finally {
-        setActionLoadingId(null);
-      }
-    },
-    [fetchAll],
-  );
+const handleDelete = useCallback(
+  async (row: EmployeeType) => {
+    if (!row.name) return;
 
+    try {
+      setActionLoadingId(row.name);
+
+      const deleted = await confirmDelete({
+        text: `Delete "${row.employee_type_name ?? row.name}"?`,
+        loadingText: "Deleting Employee Type...",
+        successMessage: "Employee type deleted",
+        action: async () => {
+          await deleteEmployeeType(row.name!);
+        },
+      });
+
+      if (deleted) {
+        fetchAll();
+      }
+    } finally {
+      setActionLoadingId(null);
+    }
+  },
+  [fetchAll],
+);
   const columns: Column<EmployeeType>[] = useMemo(
     () => [
       {

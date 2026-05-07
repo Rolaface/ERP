@@ -6,14 +6,15 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
-import { SalaryComponentModal } from "../../../../../components/Hr/hrsetupmodals/Salarycomponentmodal";
+import { showApiError, showSuccess } from "../../../../../utils/alert";
 import {
   deleteSalaryComponent,
   type SalaryComponent,
 } from "../../../../../api/payrollConfigApi";
 import { openSalaryComponentModal } from "../../../../../store/modalStore";
-import { showApiError, showSuccess } from "../../../../../utils/alert";
+
 import { useSalaryComponents } from "../hooks/useSalaryComponents";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 
 export function SalaryComponentSetup() {
   const {
@@ -31,28 +32,32 @@ export function SalaryComponentSetup() {
   } = useSalaryComponents();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<SalaryComponent | null>(null);
-  const MODAL_ID = "salary-component-modal";
 
-  const handleDelete = useCallback(
-    async (row: SalaryComponent) => {
-      if (!row.name) return;
-      if (!confirm(`Delete "${row.salary_component}"?`)) return;
-      try {
-        setActionLoadingId(row.name);
-        await deleteSalaryComponent(row.name);
-        showSuccess("Component deleted");
+const handleDelete = useCallback(
+  async (row: SalaryComponent) => {
+    if (!row.name) return;
+
+    try {
+      setActionLoadingId(row.name);
+
+      const deleted = await confirmDelete({
+        text: `Delete "${row.salary_component}"?`,
+        loadingText: "Deleting Component...",
+        successMessage: "Component deleted",
+        action: async () => {
+          await deleteSalaryComponent(row.name!);
+        },
+      });
+
+      if (deleted) {
         fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete");
-      } finally {
-        setActionLoadingId(null);
       }
-    },
-    [fetchAll],
-  );
-
+    } finally {
+      setActionLoadingId(null);
+    }
+  },
+  [fetchAll],
+);
   const columns: Column<SalaryComponent>[] = useMemo(
     () => [
       {

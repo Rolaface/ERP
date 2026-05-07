@@ -13,6 +13,7 @@ import {
 import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { useSalaryStructures } from "../hooks/useSalaryStructures";
 import { openSalaryStructureModal } from "../../../../../store/modalStore";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 
 export function SalaryStructureSetup() {
   const {
@@ -51,23 +52,31 @@ export function SalaryStructureSetup() {
     [fetchDetail],
   );
 
-  const handleDelete = useCallback(
-    async (row: SalaryStructure) => {
-      if (!row.name) return;
-      if (!confirm(`Delete "${row.name}"?`)) return;
-      try {
-        setActionLoadingId(row.name);
-        await deleteSalaryStructure(row.name);
-        showSuccess("Structure deleted");
+const handleDelete = useCallback(
+  async (row: SalaryStructure) => {
+    if (!row.name) return;
+
+    try {
+      setActionLoadingId(row.name);
+
+      const deleted = await confirmDelete({
+        text: `Delete "${row.name}"?`,
+        loadingText: "Deleting Salary Structure...",
+        successMessage: "Structure deleted",
+        action: async () => {
+          await deleteSalaryStructure(row.name!);
+        },
+      });
+
+      if (deleted) {
         fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete");
-      } finally {
-        setActionLoadingId(null);
       }
-    },
-    [fetchAll],
-  );
+    } finally {
+      setActionLoadingId(null);
+    }
+  },
+  [fetchAll],
+);
 
   const columns: Column<SalaryStructure>[] = useMemo(
     () => [

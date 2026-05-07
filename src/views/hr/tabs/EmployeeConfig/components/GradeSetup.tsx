@@ -6,6 +6,7 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import {
   deleteEmployeeGrade,
   getAllEmployeeGrades,
@@ -63,23 +64,31 @@ export function GradeSetup() {
     }
   }, []);
 
-  const handleDelete = useCallback(
-    async (row: EmployeeGrade) => {
-      if (!row.name) return;
-      if (!confirm(`Delete "${row.name}"?`)) return;
-      try {
-        setActionLoadingId(row.name);
-        await deleteEmployeeGrade(row.name);
-        showSuccess("Grade deleted");
+const handleDelete = useCallback(
+  async (row: EmployeeGrade) => {
+    if (!row.name) return;
+
+    try {
+      setActionLoadingId(row.name);
+
+      const deleted = await confirmDelete({
+        text: `Delete "${row.name}"?`,
+        loadingText: "Deleting Grade...",
+        successMessage: "Grade deleted",
+        action: async () => {
+          await deleteEmployeeGrade(row.name!);
+        },
+      });
+
+      if (deleted) {
         fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete");
-      } finally {
-        setActionLoadingId(null);
       }
-    },
-    [fetchAll],
-  );
+    } finally {
+      setActionLoadingId(null);
+    }
+  },
+  [fetchAll],
+);
 
   const columns: Column<EmployeeGrade>[] = useMemo(
     () => [
