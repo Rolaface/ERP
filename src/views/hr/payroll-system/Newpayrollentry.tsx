@@ -102,21 +102,35 @@ const [formData, setFormData] = useState<PayrollEntry>({
     setSubmitError(null);
   };
 
-  const handleSubmit = async () => {
-    if (submitting) return;
-    if (!formData.selectedEmployees.length) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await onSuccess(formData.selectedEmployees, formData);
-    } catch (err: unknown) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Failed to create payroll entry.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
+const handleSubmit = async () => {
+  if (submitting) return false;
+
+  if (!formData.selectedEmployees.length) {
+    return false;
+  }
+
+  setSubmitting(true);
+  setSubmitError(null);
+
+  try {
+    await onSuccess(
+      formData.selectedEmployees,
+      formData,
+    );
+
+    return true;
+  } catch (err: unknown) {
+    setSubmitError(
+      err instanceof Error
+        ? err.message
+        : "Failed to create payroll entry.",
+    );
+
+    return false;
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   useEffect(() => {
     (async () => {

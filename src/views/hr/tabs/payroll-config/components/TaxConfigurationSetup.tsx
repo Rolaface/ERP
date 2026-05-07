@@ -32,51 +32,49 @@ export function TaxConfigurationSetup() {
   } = useTaxConfigs();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-
-
   const handleEdit = useCallback(
     async (row: TaxConfig) => {
       const detail = await fetchDetail(row.name);
       if (!detail) return;
       openTaxConfigModal(
-  detail,
-  true,
-  {
-    onSuccess: fetchAll,
-  },
-  {
-    title: "Edit Tax Configuration",
-  },
-);
+        detail,
+        true,
+        {
+          onSuccess: fetchAll,
+        },
+        {
+          title: "Edit Tax Configuration",
+        },
+      );
     },
     [fetchDetail],
   );
 
-const handleDelete = useCallback(
-  async (row: TaxConfig) => {
-    if (!row.name) return;
+  const handleDelete = useCallback(
+    async (row: TaxConfig) => {
+      if (!row.name) return;
 
-    try {
-      setActionLoadingId(row.name);
+      try {
+        setActionLoadingId(row.name);
 
-      const deleted = await confirmDelete({
-        text: `Delete "${row.name}"?`,
-        loadingText: "Deleting Tax Configuration...",
-        successMessage: "Tax configuration deleted",
-        action: async () => {
-          await deleteTaxConfig(row.name!);
-        },
-      });
+        const deleted = await confirmDelete({
+          text: `Delete "${row.name}"?`,
+          loadingText: "Deleting Tax Configuration...",
+          successMessage: "Tax configuration deleted",
+          action: async () => {
+            await deleteTaxConfig(row.name!);
+          },
+        });
 
-      if (deleted) {
-        fetchAll();
+        if (deleted) {
+          fetchAll();
+        }
+      } finally {
+        setActionLoadingId(null);
       }
-    } finally {
-      setActionLoadingId(null);
-    }
-  },
-  [fetchAll],
-);
+    },
+    [fetchAll],
+  );
   const columns: Column<TaxConfig>[] = useMemo(
     () => [
       {
@@ -169,17 +167,17 @@ const handleDelete = useCallback(
         enableAdd
         addLabel="Add Tax"
         onAdd={() =>
-  openTaxConfigModal(
-    null,
-    false,
-    {
-      onSuccess: fetchAll,
-    },
-    {
-      title: "New Tax Configuration",
-    },
-  )
-}
+          openTaxConfigModal(
+            null,
+            false,
+            {
+              onSuccess: fetchAll,
+            },
+            {
+              title: "New Tax Configuration",
+            },
+          )
+        }
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -193,8 +191,6 @@ const handleDelete = useCallback(
         enableColumnSelector
         tableId="tax-configurations"
       />
-
-      
     </>
   );
 }
