@@ -94,29 +94,29 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => (
       </div>
       <div>
         <DatePickerInput
-  label="Posting Date"
-  name="postingDate"
-  required
-  value={data.postingDate}
-  onChange={async (name, value) => {
-    onChange(name, value);
+          label="Posting Date"
+          name="postingDate"
+          required
+          value={data.postingDate}
+          onChange={async (name, value) => {
+            onChange(name, value);
 
-    try {
-      if (data.currency && value) {
-        const resp = await getExchangeRate({
-          from_currency: data.currency,
-         to_currency: getBaseCurrencyFromStorage(),
-          transaction_date: value,
-          args: "for_buying",
-        });
+            try {
+              if (data.currency && value) {
+                const resp = await getExchangeRate({
+                  from_currency: data.currency,
+                  to_currency: getBaseCurrencyFromStorage(),
+                  transaction_date: value,
+                  args: "for_buying",
+                });
 
-        onChange("exchangeRate", Number(resp.message));
-      }
-    } catch (err) {
-      console.error("Failed to fetch exchange rate", err);
-    }
-  }}
-/>
+                onChange("exchangeRate", Number(resp.message));
+              }
+            } catch (err) {
+              console.error("Failed to fetch exchange rate", err);
+            }
+          }}
+        />
       </div>
       <div>
         <ModalSelect
@@ -158,25 +158,25 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => (
           placeholder="Search currency…"
           fetchOptions={fetchCurrencyOptions}
           onChange={async (val: any) => {
-  const value = typeof val === "string" ? val : val?.value;
+            const value = typeof val === "string" ? val : val?.value;
 
-  onChange("currency", value);
+            onChange("currency", value);
 
-  try {
-    if (value && data.postingDate) {
-      const resp = await getExchangeRate({
-        from_currency: value,
-        to_currency: getBaseCurrencyFromStorage(),
-        transaction_date: data.postingDate,
-        args: "for_buying",
-      });
+            try {
+              if (value && data.postingDate) {
+                const resp = await getExchangeRate({
+                  from_currency: value,
+                  to_currency: getBaseCurrencyFromStorage(),
+                  transaction_date: data.postingDate,
+                  args: "for_buying",
+                });
 
-      onChange("exchangeRate", Number(resp.message));
-    }
-  } catch (err) {
-    console.error("Failed to fetch exchange rate", err);
-  }
-}}
+                onChange("exchangeRate", Number(resp.message));
+              }
+            } catch (err) {
+              console.error("Failed to fetch exchange rate", err);
+            }
+          }}
         />
       </div>
 
@@ -191,29 +191,29 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => (
       </div>
     </div>
 
-   
+
 
     <div className="grid grid-cols-2 gap-5">
       <div>
-       <SearchSelect2
-  label="Payroll Payable Account"
-  value={data.payrollPayableAccount}
-  placeholder="Search payroll payable account..."
-fetchOptions={(q) =>
-  getPayrollPayableAccounts(
-    JSON.parse(
-      localStorage.getItem("company-info") || "{}"
-    )?.state?.companyName || "",
-    q
-  )
-}
-  onChange={(val: any) => {
-    const value =
-      typeof val === "string" ? val : val?.value;
+        <SearchSelect2
+          label="Payroll Payable Account"
+          value={data.payrollPayableAccount}
+          placeholder="Search payroll payable account..."
+          fetchOptions={(q) =>
+            getPayrollPayableAccounts(
+              JSON.parse(
+                localStorage.getItem("company-info") || "{}"
+              )?.state?.companyName || "",
+              q
+            )
+          }
+          onChange={(val: any) => {
+            const value =
+              typeof val === "string" ? val : val?.value;
 
-    onChange("payrollPayableAccount", value);
-  }}
-/>
+            onChange("payrollPayableAccount", value);
+          }}
+        />
       </div>
       <div className="flex items-end">
         {/* payload hint */}
