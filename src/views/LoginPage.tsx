@@ -150,11 +150,12 @@ animate-[fadeInUp_0.9s_ease-out]">
 
           {/* Header */}
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-1">
-              Welcome back
+            <h2 className="text-[22px] font-bold text-[#0F172A] mb-2 tracking-tight">
+              Welcome back to Rola
             </h2>
-            <p className="text-sm text-[#64748B]">
-              Sign in to access your workspace
+
+            <p className="text-sm leading-relaxed text-[#64748B] max-w-[320px]">
+              Continue managing operations, finance, and teams in one secure place.
             </p>
           </div>
 
@@ -263,7 +264,7 @@ outline-none transition-all duration-200"
   bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.25),transparent)]" />
 
               <span className="relative z-10">
-                {isSubmitting ? "Checking..." : "Sign in"}
+                {isSubmitting ? "Signing you in..." : "Sign in"}
               </span>
             </button>
             <div className="flex items-center justify-center gap-2 text-xs text-[#64748B] mt-3">
@@ -277,9 +278,9 @@ outline-none transition-all duration-200"
           <div className="mt-8 pt-6 border-t border-[#F1F5F9] text-center space-y-2">
 
             <p className="text-sm text-[#475569]">
-              Don’t have an account?{" "}
-              <span className="text-primary font-semibold cursor-pointer">
-                Sign up here
+              New to Rola?{" "}
+              <span className="text-primary font-semibold cursor-pointer hover:opacity-80 transition">
+                Create your workspace
               </span>
             </p>
 
