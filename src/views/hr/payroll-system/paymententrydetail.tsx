@@ -22,8 +22,7 @@ import {
   // TODO: import when salary slip API is ready:
   // getSalarySlipsForEntry,
   // type SalarySlip,
-} from "../../../api/payrollEntryApi";
-
+} from "../../../api/payroll/payrollEntryApi";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 // TODO: Remove this stub and import SalarySlip from payrollEntryApi once ready
