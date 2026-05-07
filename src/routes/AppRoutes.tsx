@@ -63,10 +63,10 @@ const AppRoutes: React.FC = () => {
             <Route path="/inventory" element={<Navigate to="/inventory/dashboard" replace />} />
             <Route path="/inventory/:tab" element={<InventoryModule />} />
 
-            {/* Accounting Module */}
+            
             <Route path="/accounting" element={<AccountingModule />} />
 
-            {/* CRM Module */}
+         
             <Route path="/crm" element={<CrmModule />} />
 
             <Route path="/settings" element={<Settings />} />

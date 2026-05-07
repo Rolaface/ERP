@@ -12,7 +12,7 @@ import {
   getEmployeeById,
   deleteEmployeeById,
 } from "../../../api/employeeapi";
-
+import { AppPage , AppPageBody } from "../../../components/ui/app-shell";
 import { openEmployeeModal } from "../../../store/modalStore";
 
 import Table from "../../../components/ui/Table/Table";
@@ -187,7 +187,7 @@ const EmployeeDirectory: React.FC = () => {
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="p-6">
+    <AppPageBody>
       {viewMode === "table" ? (
         <Table
           loading={loading}
@@ -221,7 +221,7 @@ const EmployeeDirectory: React.FC = () => {
           onDocumentUploaded={refreshSelectedEmployee}
         />
       ) : null}
-    </div>
+    </AppPageBody>
   );
 };
 
