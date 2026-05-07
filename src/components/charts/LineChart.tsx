@@ -60,9 +60,8 @@ const LineChart: React.FC<LineChartProps> = ({ title, loading, trendData = {}, m
           show: true,
           color: metric.color,
           fontWeight: 'bold',
-          // Format label as: "Payable: ₹1.5K"
           formatter: function (params: any) {
-            return params.value[1] + ': ' + currencyFormatter.format(params.value[2]);
+            return params.value[1] + ':\n' + currencyFormatter.format(params.value[2]);
           }
         },
         labelLayout: {
@@ -99,7 +98,7 @@ const LineChart: React.FC<LineChartProps> = ({ title, loading, trendData = {}, m
       },
       grid: { 
         left: '3%', 
-        right: '15%', // Keep right padding high so endLabels fit
+        right: 130, 
         bottom: '3%', 
         top: '15%', 
         containLabel: true 

@@ -28,8 +28,9 @@ const [loadingInventory, setLoadingInventory] = useState(true);
   const [inventoryData, setInventoryData] = useState<any[]>([]);
   // 2. Independent Filter States for Charts
   const [salesYear, setSalesYear] = useState(availableYears[0]);
+  const [salesInterval, setSalesInterval] = useState('Monthly'); // Add this line
   const [purchaseYear, setPurchaseYear] = useState(availableYears[0]);
-
+const [purchaseInterval, setPurchaseInterval] = useState('Monthly'); // Add this line
   // 3. Data States
   const [summaryData, setSummaryData] = useState<DashboardSummaryResponse['data'] | null>(null);
   const [notesData, setNotesData] = useState<DashboardNotesResponse['data'] | null>(null);
@@ -40,7 +41,6 @@ const [loadingInventory, setLoadingInventory] = useState(true);
     style: 'currency', currency: 'INR', maximumFractionDigits: 2, notation: "compact"
   }), []);
 
-  // --- Fetch Summary & Notes (Runs once on mount) ---
   useEffect(() => {
     let mounted = true;
     const fetchGlobal = async () => {
@@ -115,13 +115,13 @@ const [loadingInventory, setLoadingInventory] = useState(true);
     return () => { mounted = false; };
   }, [inventoryYear, inventoryMode]);
 
-  // --- Fetch Sales Chart independently ---
-  useEffect(() => {
+ useEffect(() => {
     let mounted = true;
     const fetchSales = async () => {
       setLoadingSales(true);
       try {
-        const sales = await getSalesChart({ year: salesYear });
+        // Pass the interval here
+        const sales = await getSalesChart({ year: salesYear, interval: salesInterval });
         if (mounted) setSalesData(sales?.data || null);
       } catch (e) {
         console.error("Error fetching sales chart:", e);
@@ -131,15 +131,15 @@ const [loadingInventory, setLoadingInventory] = useState(true);
     };
     fetchSales();
     return () => { mounted = false; };
-  }, [salesYear]);
+  }, [salesYear, salesInterval]);
 
-  // --- Fetch Purchase Chart independently ---
-  useEffect(() => {
+ useEffect(() => {
     let mounted = true;
     const fetchPurchase = async () => {
       setLoadingPurchase(true);
       try {
-        const purchase = await getPurchaseChart({ year: purchaseYear });
+        // Pass the interval here
+        const purchase = await getPurchaseChart({ year: purchaseYear, interval: purchaseInterval });
         if (mounted) setPurchaseData(purchase?.data || null);
       } catch (e) {
         console.error("Error fetching purchase chart:", e);
@@ -149,7 +149,7 @@ const [loadingInventory, setLoadingInventory] = useState(true);
     };
     fetchPurchase();
     return () => { mounted = false; };
-  }, [purchaseYear]);
+  }, [purchaseYear, purchaseInterval]);
 
   return (
     <div className="flex h-screen w-full flex-col bg-gray-50 p-4 overflow-hidden">
@@ -204,7 +204,7 @@ const [loadingInventory, setLoadingInventory] = useState(true);
 
           {/* 4 Charts (2x2 Grid) */}
           <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 min-h-0">
-            <LineChart 
+            {/* <LineChart 
               title="SALES CHART" 
               loading={loadingSales} 
               trendData={salesData?.trend} 
@@ -221,6 +221,36 @@ const [loadingInventory, setLoadingInventory] = useState(true);
                   {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               }
+            /> */}
+            <LineChart 
+              title="SALES CHART" 
+              loading={loadingSales} 
+              trendData={salesData?.trend} 
+              metrics={[
+                { key: 'receivable', name: 'Receivable', color: '#3b82f6' },
+                { key: 'received', name: 'Received', color: '#10b981' }
+              ]} 
+              filterNode={
+                <div className="flex gap-2">
+                  <select 
+                    value={salesInterval} 
+                    onChange={e => setSalesInterval(e.target.value)}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Half-Yearly">Half-Yearly</option>
+                    <option value="Yearly">Yearly</option>
+                  </select>
+                  <select 
+                    value={salesYear} 
+                    onChange={e => setSalesYear(e.target.value)}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              }
             />
             
             <LineChart 
@@ -232,13 +262,25 @@ const [loadingInventory, setLoadingInventory] = useState(true);
                 { key: 'paid', name: 'Paid', color: '#ef4444' }
               ]} 
               filterNode={
-                <select 
-                  value={purchaseYear} 
-                  onChange={e => setPurchaseYear(e.target.value)}
-                  className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-                >
-                  {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
+                <div className="flex gap-2">
+                  <select 
+                    value={purchaseInterval} 
+                    onChange={e => setPurchaseInterval(e.target.value)}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Half-Yearly">Half-Yearly</option>
+                    <option value="Yearly">Yearly</option>
+                  </select>
+                  <select 
+                    value={purchaseYear} 
+                    onChange={e => setPurchaseYear(e.target.value)}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
               }
             />
             
