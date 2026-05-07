@@ -235,9 +235,45 @@ outline-none transition-all duration-200"
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="
+    group
+    absolute right-2 top-1/2 -translate-y-1/2
+
+    flex items-center justify-center
+
+    w-9 h-9 rounded-full
+
+    text-[#94A3B8]
+    hover:text-[#475569]
+
+    hover:bg-blue-500/5
+
+    active:scale-95
+
+    transition-all duration-200
+    ease-[cubic-bezier(0.22,1,0.36,1)]
+  "
                 >
-                  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                  <span
+                    className="
+      transition-all duration-200
+      ease-[cubic-bezier(0.22,1,0.36,1)]
+
+      group-hover:scale-110
+    "
+                  >
+                    {showPassword ? (
+                      <Eye
+                        size={18}
+                        className="transition-all duration-200"
+                      />
+                    ) : (
+                      <EyeOff
+                        size={18}
+                        className="transition-all duration-200"
+                      />
+                    )}
+                  </span>
                 </button>
               </div>
 
