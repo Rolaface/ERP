@@ -1,17 +1,16 @@
 import React, { useState, useMemo } from "react";
 import type { PayrollRecord } from "../../../types/payrolltypes";
 
-
 import Table from "../../../components/ui/Table/Table";
 import type { Column } from "../../../components/ui/Table/type";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
-import { Play, Zap } from "lucide-react";
-import { Btn } from "./Ui";
+import { Play } from "lucide-react";
 import {
   ActionButton,
   ActionGroup,
   ActionMenu,
 } from "../../../components/ui/Table/ActionButton";
+import PayrollEntryDetail from "./paymententrydetail"; 
 
 interface Props {
   records: PayrollRecord[];
@@ -21,7 +20,6 @@ interface Props {
   onRunPayroll: (id: string) => void;
   onViewPayslip: (r: PayrollRecord) => void;
   onEditRecord: (r: PayrollRecord) => void;
-  onViewDetails: (r: PayrollRecord) => void;
 }
 
 export const PayrollDashboard: React.FC<Props> = ({
@@ -32,14 +30,13 @@ export const PayrollDashboard: React.FC<Props> = ({
   onRunPayroll,
   onViewPayslip,
   onEditRecord,
-  onViewDetails,
 }) => {
-
   const [searchQuery] = useState("");
-  const [selectedDept ] = useState("All");
-  const [filterStatus ] = useState("All");
+  const [selectedDept] = useState("All");
+  const [filterStatus] = useState("All");
 
-
+  // When set, renders the full-page detail view instead of the table
+  const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
 
   const filtered = useMemo(
     () =>
@@ -56,6 +53,19 @@ export const PayrollDashboard: React.FC<Props> = ({
     [records, selectedDept, filterStatus, searchQuery],
   );
 
+  // ── Full-page detail view ──
+  if (detailEntryId) {
+    return (
+      <div className="flex-1 min-h-0 flex flex-col h-full">
+        <PayrollEntryDetail
+          payrollEntryId={detailEntryId}
+          onBack={() => setDetailEntryId(null)}
+          // onViewSalarySlip={...} // wire when salary slip page/modal is ready
+        />
+      </div>
+    );
+  }
+
   const payrollColumns: Column<any>[] = [
     {
       key: "name",
@@ -65,7 +75,6 @@ export const PayrollDashboard: React.FC<Props> = ({
         <span className="font-semibold text-primary">{row.name}</span>
       ),
     },
-
     {
       key: "currency",
       header: "Currency",
@@ -74,7 +83,6 @@ export const PayrollDashboard: React.FC<Props> = ({
         <span className="text-xs font-semibold">{row.currency}</span>
       ),
     },
-
     {
       key: "branch",
       header: "Branch",
@@ -83,7 +91,6 @@ export const PayrollDashboard: React.FC<Props> = ({
         <span className="text-xs text-muted">{row.branch || "-"}</span>
       ),
     },
-
     {
       key: "payroll_frequency",
       header: "Frequency",
@@ -93,7 +100,6 @@ export const PayrollDashboard: React.FC<Props> = ({
         </span>
       ),
     },
-
     {
       key: "status",
       header: "Status",
@@ -108,7 +114,7 @@ export const PayrollDashboard: React.FC<Props> = ({
             type="view"
             iconOnly
             variant="secondary"
-            onClick={() => onViewDetails(row)}
+            onClick={() => setDetailEntryId(row.name)}
             title="View details"
           />
           <ActionButton
@@ -140,29 +146,24 @@ export const PayrollDashboard: React.FC<Props> = ({
   ];
 
   return (
-    <>
-
-      {/* Table card */}
-      <div className="flex-1 min-h-0 px-5 pb-4 flex flex-col">
-        <div className="flex-1 min-h-0 overflow-y-auto">
-         <Table
-  tableId="payroll-dashboard"
-  showToolbar
-  enableAdd
-  addLabel="New Payroll"
-  onAdd={onNewPayroll}
-
-            columns={payrollColumns}
-            enableColumnSelector
-            data={filtered}
-            loading={loading}
-            totalItems={filtered.length}
-            currentPage={1}
-            totalPages={1}
-            pageSize={10}
-          />
-        </div>
+    <div className="flex-1 min-h-0 px-5 pb-4 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <Table
+          tableId="payroll-dashboard"
+          showToolbar
+          enableAdd
+          addLabel="New Payroll"
+          onAdd={onNewPayroll}
+          columns={payrollColumns}
+          enableColumnSelector
+          data={filtered}
+          loading={loading}
+          totalItems={filtered.length}
+          currentPage={1}
+          totalPages={1}
+          pageSize={10}
+        />
       </div>
-    </>
+    </div>
   );
 };

@@ -15,6 +15,8 @@ import {
   updateSalaryStructure,
   deleteSalaryStructure,
 } from "../../../views/hr/tabs/salarystructure";
+import { fireManagedSwal } from "../../../utils/swalManager";
+import { confirmDelete } from "../../../api/utils/confirmDelete";
 import type { SalaryStructure } from "../../../views/hr/tabs/salarystructure";
 import type { SalaryComponent } from "../../../views/hr/tabs/salarystructure";
 
@@ -25,9 +27,7 @@ export default function SalaryStructureTab() {
   const [showModal, setShowModal] = useState(false);
   const [editingStructure, setEditingStructure] =
     useState<SalaryStructure | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
-    null,
-  );
+
 
   const refreshStructures = () => {
     setStructures(getSalaryStructures());
@@ -61,18 +61,35 @@ export default function SalaryStructureTab() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    const structure = structures.find((s) => s.id === id);
-    if (structure && structure.usedBy > 0) {
-      alert(
-        `Cannot delete! This structure is used by ${structure.usedBy} employees.`,
-      );
-      return;
-    }
-    deleteSalaryStructure(id);
+const handleDelete = async (id: string) => {
+  const structure = structures.find((s) => s.id === id);
+
+  if (!structure) return;
+
+  if (structure.usedBy > 0) {
+    await fireManagedSwal({
+      icon: "error",
+      title: "Cannot Delete",
+      text: `This structure is used by ${structure.usedBy} employees.`,
+      confirmButtonColor: "#ef4444",
+    });
+
+    return;
+  }
+
+  const deleted = await confirmDelete({
+    text: `Delete "${structure.name}"?`,
+    loadingText: "Deleting Salary Structure...",
+    successMessage: "Salary structure deleted",
+    action: async () => {
+      deleteSalaryStructure(id);
+    },
+  });
+
+  if (deleted) {
     refreshStructures();
-    setShowDeleteConfirm(null);
-  };
+  }
+};
 
   const handleSave = (structure: SalaryStructure) => {
     const existingIndex = structures.findIndex((s) => s.id === structure.id);
@@ -113,7 +130,7 @@ export default function SalaryStructureTab() {
             key={structure.id}
             structure={structure}
             onEdit={handleEdit}
-            onDelete={() => setShowDeleteConfirm(structure.id)}
+           onDelete={() => handleDelete(structure.id)}
           />
         ))}
       </div>
@@ -143,14 +160,7 @@ export default function SalaryStructureTab() {
         />
       )}
 
-      {/* Delete Confirmation */}
-      {showDeleteConfirm && (
-        <DeleteConfirmModal
-          structure={structures.find((s) => s.id === showDeleteConfirm)!}
-          onConfirm={() => handleDelete(showDeleteConfirm)}
-          onCancel={() => setShowDeleteConfirm(null)}
-        />
-      )}
+      
     </div>
   );
 }

@@ -32,8 +32,13 @@ export type ModalType =
   | "payroll"
   | "salaryComponent"
   | "salaryStructure"
+  | "leaveApply"
+  | "taxConfig"
+  | "department"
+  | "designation"
+  | "grade"
   | "User"
-  | "leaveApply";
+  | "employeeType";
 
 export interface ModalContext {
   source?: string;
@@ -658,4 +663,55 @@ export const openLeaveApplyModal = (
   useModalStore
     .getState()
     .openModal("leaveApply", initialData, isEdit, context, meta);
-   
+
+    export const openTaxConfigModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("taxConfig", initialData, isEdit, context, meta);
+
+    export const openDepartmentModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("department", initialData, isEdit, context, meta);
+
+    export const openDesignationModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("designation", initialData, isEdit, context, meta);
+
+    export const openGradeModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("grade", initialData, isEdit, context, meta);
+
+export const openEmployeeTypeModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("employeeType", initialData, isEdit, context, meta);
+
+    
