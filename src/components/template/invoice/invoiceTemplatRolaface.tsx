@@ -113,7 +113,7 @@ doc.setFontSize(8);
 
   if (company?.documents?.companyLogoUrl) {
     try {
-     doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 45, logoTopY, 45, 15);
+     doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 55, logoTopY, 55, 25);
     } catch {}
   } else {
 
@@ -129,7 +129,7 @@ doc.setFontSize(8);
 
 
   const billToX = M;
-  const metaX = W / 2 + 30; 
+  const metaX = W / 2 + 40; 
   const col2ValX = MR;       
 
 
