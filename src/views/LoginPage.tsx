@@ -22,6 +22,11 @@ const Login = () => {
 
   const [rememberMe, setRememberMe] = useState(false);
 
+  const [cardGlow, setCardGlow] = useState({
+    x: 50,
+    y: 50,
+  });
+
   return (
     <div className="h-screen w-full flex overflow-hidden bg-[#0B1220]">
 
@@ -207,7 +212,24 @@ const Login = () => {
         </div>
         {/* Card with entrance animation */}
 
-        <div className="relative lg:-ml-24 lg:-mt-16 animate-[fadeInUp_0.9s_ease-out]">
+        <div
+          className="
+    group
+    relative
+
+    lg:-ml-24 lg:-mt-16
+
+    animate-[fadeInUp_0.9s_ease-out]
+  "
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+            setCardGlow({ x, y });
+          }}
+        >
 
           {/* ================= Gradient Border Aura ================= */}
           <div
@@ -269,7 +291,14 @@ const Login = () => {
 
       shadow-[0_8px_30px_rgba(15,23,42,0.08),0_20px_60px_rgba(59,130,246,0.10)]
 
-      overflow-hidden
+transition-all duration-500
+ease-[cubic-bezier(0.22,1,0.36,1)]
+
+group-hover:-translate-y-[2px]
+
+group-hover:shadow-[0_20px_50px_rgba(15,23,42,0.12),0_30px_80px_rgba(59,130,246,0.16)]
+
+overflow-hidden
     "
           >
             {/* ================= Inner Glass Rim ================= */}
@@ -281,6 +310,29 @@ const Login = () => {
 
         pointer-events-none
       "
+            />
+
+            {/* ================= Dynamic Light Reflection ================= */}
+            <div
+              className="
+    absolute inset-0 rounded-[30px]
+
+    pointer-events-none
+
+    opacity-0
+    group-hover:opacity-100
+
+    transition-opacity duration-500
+  "
+              style={{
+                background: `
+      radial-gradient(
+        circle at ${cardGlow.x}% ${cardGlow.y}%,
+        rgba(255,255,255,0.22),
+        transparent 22%
+      )
+    `,
+              }}
             />
 
 
