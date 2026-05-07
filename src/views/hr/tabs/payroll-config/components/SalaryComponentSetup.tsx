@@ -11,6 +11,7 @@ import {
   deleteSalaryComponent,
   type SalaryComponent,
 } from "../../../../../api/payrollConfigApi";
+import { openSalaryComponentModal } from "../../../../../store/modalStore";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { useSalaryComponents } from "../hooks/useSalaryComponents";
 
@@ -132,14 +133,11 @@ export function SalaryComponentSetup() {
         render: (row) => (
           <ActionGroup>
             <ActionButton
-              type="edit"
-              iconOnly
-              onClick={() => {
-                setEditTarget(row);
-                setModalOpen(true);
-              }}
-              disabled={actionLoadingId === row.name}
-            />
+  type="edit"
+  iconOnly
+  onClick={() => openSalaryComponentModal(row, true)}
+  disabled={actionLoadingId === row.name}
+/>
             <ActionMenu
               customActions={[
                 {
@@ -171,10 +169,7 @@ export function SalaryComponentSetup() {
         }}
         enableAdd
         addLabel="Add Component"
-        onAdd={() => {
-          setEditTarget(null);
-          setModalOpen(true);
-        }}
+        onAdd={() => openSalaryComponentModal()}   
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -187,14 +182,6 @@ export function SalaryComponentSetup() {
         }}
         enableColumnSelector
         tableId="salary-components"
-      />
-
-      <SalaryComponentModal
-        modalId={MODAL_ID}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialData={editTarget}
-        onSuccess={fetchAll}
       />
     </>
   );

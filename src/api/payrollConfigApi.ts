@@ -17,7 +17,6 @@ export interface SalaryComponentAccount {
 }
 
 export interface SalaryComponent {
-  /** Frappe resource name — same as salary_component on creation */
   name?: string;
   salary_component: string;
   salary_component_abbr: string;
@@ -25,10 +24,24 @@ export interface SalaryComponent {
   depends_on_payment_days?: 0 | 1;
   amount_based_on_formula?: 0 | 1;
   formula?: string;
-  is_tax_applicable?: number;
+  is_tax_applicable?: 0 | 1;
   amount?: number;
   accounts?: SalaryComponentAccount[];
   description?: string;
+  // flexible benefit fields
+  is_flexible_benefit?: 0 | 1;
+  max_benefit_amount?: number;
+  payout_method?:
+    | "Accrue and payout at end of payroll period"
+    | "Accrue per cycle, pay only on claim"
+    | "Allow claim for full benefit amount"
+    | "";
+  pay_against_benefit_claim?: 0 | 1;
+  only_tax_impact?: 0 | 1;
+  create_separate_payment_entry_against_benefit_claim?: 0 | 1;
+  // deduction-specific
+  variable_based_on_taxable_salary?: 0 | 1;
+  is_income_tax_component?: 0 | 1;
 }
 
 export interface StructureComponentRow {
@@ -36,7 +49,6 @@ export interface StructureComponentRow {
 }
 
 export interface SalaryStructure {
-  /** Frappe resource name — immutable after creation */
   name?: string;
   is_active?: "Yes" | "No";
   docstatus?: 0 | 1 | 2;
@@ -69,12 +81,6 @@ export interface TaxConfig {
   other_taxes_and_charges: TaxChargeRow[];
 }
 
-// Frappe resource list response shape
-interface FrappeListResponse<T> {
-  data: T[];
-}
-
-// Frappe resource detail response shape
 interface FrappeDetailResponse<T> {
   data: T;
 }
@@ -95,29 +101,12 @@ type PaginatedResponse<T> = {
 // SALARY COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * GET /api/resource/Salary Component
- * Returns a flat list of all salary components.
- */
 export async function getAllSalaryComponents(
   start: number,
   pageSize: number,
   search: string,
 ): Promise<PaginatedResponse<SalaryComponent>> {
   try {
-    const fields = JSON.stringify([
-      "name",
-      "salary_component",
-      "salary_component_abbr",
-      "type",
-      "formula",
-      "amount",
-      "amount_based_on_formula",
-      "depends_on_payment_days",
-      "is_tax_applicable",
-      "description",
-    ]);
-
     const query = buildListParams({
       fields: [
         "name",
@@ -130,6 +119,11 @@ export async function getAllSalaryComponents(
         "depends_on_payment_days",
         "is_tax_applicable",
         "description",
+        "is_flexible_benefit",
+        "max_benefit_amount",
+        "payout_method",
+       
+        "is_income_tax_component",
       ],
       start,
       pageSize,
@@ -137,10 +131,7 @@ export async function getAllSalaryComponents(
       searchFields: ["salary_component", "salary_component_abbr"],
     });
 
-    const url = `${Payroll.salaryComponent.getAll}?${query}`;
-
-    const resp = await api.get(url);
-
+    const resp = await api.get(`${Payroll.salaryComponent.getAll}?${query}`);
     return resp.data;
   } catch (error: any) {
     throw new Error(
@@ -151,18 +142,10 @@ export async function getAllSalaryComponents(
   }
 }
 
-/**
- * GET /api/resource/Salary Component/{name}
- * Returns the full detail of a single salary component (includes child tables).
- */
-export async function getSalaryComponent(
-  name: string,
-): Promise<SalaryComponent> {
+export async function getSalaryComponent(name: string): Promise<SalaryComponent> {
   try {
     const url = `${Payroll.salaryComponent.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<SalaryComponent>> =
-      await api.get(url);
-
+    const resp: AxiosResponse<FrappeDetailResponse<SalaryComponent>> = await api.get(url);
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(
@@ -173,17 +156,12 @@ export async function getSalaryComponent(
   }
 }
 
-/**
- * POST /api/resource/Salary Component
- * Creates a new salary component.
- */
 export async function createSalaryComponent(
   payload: Omit<SalaryComponent, "name">,
 ): Promise<SalaryComponent> {
   try {
     const resp: AxiosResponse<FrappeDetailResponse<SalaryComponent>> =
       await api.post(Payroll.salaryComponent.create, payload);
-
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(
@@ -194,10 +172,6 @@ export async function createSalaryComponent(
   }
 }
 
-/**
- * PUT /api/resource/Salary Component/{name}
- * Updates an existing salary component.
- */
 export async function updateSalaryComponent(
   name: string,
   payload: Partial<Omit<SalaryComponent, "name">>,
@@ -206,7 +180,6 @@ export async function updateSalaryComponent(
     const url = `${Payroll.salaryComponent.update}/${encodeURIComponent(name)}`;
     const resp: AxiosResponse<FrappeDetailResponse<SalaryComponent>> =
       await api.put(url, payload);
-
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(
@@ -217,9 +190,6 @@ export async function updateSalaryComponent(
   }
 }
 
-/**
- * DELETE /api/resource/Salary Component/{name}
- */
 export async function deleteSalaryComponent(name: string): Promise<void> {
   try {
     const url = `${Payroll.salaryComponent.delete}/${encodeURIComponent(name)}`;
@@ -237,10 +207,6 @@ export async function deleteSalaryComponent(name: string): Promise<void> {
 // SALARY STRUCTURE
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * GET /api/resource/Salary Structure
- * Returns a flat list of all salary structures.
- */
 export async function getAllSalaryStructures(
   start: number,
   pageSize: number,
@@ -255,11 +221,8 @@ export async function getAllSalaryStructures(
       searchFields: ["name"],
     });
 
-    const url = `${Payroll.salaryStructure.getAll}?${query}`;
-
     const resp: AxiosResponse<PaginatedResponse<SalaryStructure>> =
-      await api.get(url);
-
+      await api.get(`${Payroll.salaryStructure.getAll}?${query}`);
     return resp.data;
   } catch (error: any) {
     throw new Error(
@@ -269,18 +232,11 @@ export async function getAllSalaryStructures(
     );
   }
 }
-/**
- * GET /api/resource/Salary Structure/{name}
- * Returns full detail including earnings + deductions child tables.
- */
-export async function getSalaryStructure(
-  name: string,
-): Promise<SalaryStructure> {
+
+export async function getSalaryStructure(name: string): Promise<SalaryStructure> {
   try {
     const url = `${Payroll.salaryStructure.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<SalaryStructure>> =
-      await api.get(url);
-
+    const resp: AxiosResponse<FrappeDetailResponse<SalaryStructure>> = await api.get(url);
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(
@@ -291,18 +247,12 @@ export async function getSalaryStructure(
   }
 }
 
-/**
- * POST /api/resource/Salary Structure
- * Creates a new salary structure.
- * Note: Frappe derives `name` from the `name` field in the payload for this doctype.
- */
 export async function createSalaryStructure(
   payload: SalaryStructure,
 ): Promise<SalaryStructure> {
   try {
     const resp: AxiosResponse<FrappeDetailResponse<SalaryStructure>> =
       await api.post(Payroll.salaryStructure.create, payload);
-
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(
@@ -313,10 +263,6 @@ export async function createSalaryStructure(
   }
 }
 
-/**
- * PUT /api/resource/Salary Structure/{name}
- * Updates an existing salary structure.
- */
 export async function updateSalaryStructure(
   name: string,
   payload: Partial<Omit<SalaryStructure, "name">>,
@@ -325,7 +271,6 @@ export async function updateSalaryStructure(
     const url = `${Payroll.salaryStructure.update}/${encodeURIComponent(name)}`;
     const resp: AxiosResponse<FrappeDetailResponse<SalaryStructure>> =
       await api.put(url, payload);
-
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(
@@ -336,9 +281,6 @@ export async function updateSalaryStructure(
   }
 }
 
-/**
- * DELETE /api/resource/Salary Structure/{name}
- */
 export async function deleteSalaryStructure(name: string): Promise<void> {
   try {
     const url = `${Payroll.salaryStructure.delete}/${encodeURIComponent(name)}`;
@@ -352,27 +294,25 @@ export async function deleteSalaryStructure(name: string): Promise<void> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 // INCOME TAX SLAB
+// ─────────────────────────────────────────────────────────────────────────────
 
-export async function getAllTaxConfigs(
-
-): Promise<PaginatedResponse<TaxConfig>> {
+export async function getAllTaxConfigs(): Promise<PaginatedResponse<TaxConfig>> {
   try {
-   const query = buildListParams({
-        fields: [ 
-      "name",
-      "effective_from",
-      "standard_tax_exemption_amount",
-      "allow_tax_exemption",
-      "tax_relief_limit",
-      "disabled",
+    const query = buildListParams({
+      fields: [
+        "name",
+        "effective_from",
+        "standard_tax_exemption_amount",
+        "allow_tax_exemption",
+        "tax_relief_limit",
+        "disabled",
       ],
     });
 
-    const url = `${Payroll.incomeTaxSlab.getAll}?${query}`;
     const resp: AxiosResponse<PaginatedResponse<TaxConfig>> =
-      await api.get(url);
-
+      await api.get(`${Payroll.incomeTaxSlab.getAll}?${query}`);
     return resp.data;
   } catch (error: any) {
     throw new Error(
@@ -386,9 +326,7 @@ export async function getAllTaxConfigs(
 export async function getTaxConfig(name: string): Promise<TaxConfig> {
   try {
     const url = `${Payroll.incomeTaxSlab.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
-      await api.get(url);
-
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> = await api.get(url);
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(
@@ -401,11 +339,8 @@ export async function getTaxConfig(name: string): Promise<TaxConfig> {
 
 export async function createTaxConfig(payload: TaxConfig): Promise<TaxConfig> {
   try {
-    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> = await api.post(
-      Payroll.incomeTaxSlab.create,
-      payload,
-    );
-
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
+      await api.post(Payroll.incomeTaxSlab.create, payload);
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(
@@ -422,11 +357,8 @@ export async function updateTaxConfig(
 ): Promise<TaxConfig> {
   try {
     const url = `${Payroll.incomeTaxSlab.update}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> = await api.put(
-      url,
-      payload,
-    );
-
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
+      await api.put(url, payload);
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(
@@ -455,42 +387,25 @@ export async function searchSalaryStructures(q?: string) {
     ["docstatus", "=", 1],
     ["is_active", "=", "Yes"],
   ];
-
-  if (q) {
-    filters.push(["name", "like", `%${q}%`]);
-  }
+  if (q) filters.push(["name", "like", `%${q}%`]);
 
   const params = new URLSearchParams();
   params.append("filters", JSON.stringify(filters));
   params.append("fields", JSON.stringify(["name"]));
   params.append("limit_page_length", "20");
 
-  const resp = await api.get(
-    `${Payroll.salaryStructure.getAll}?${params.toString()}`,
-  );
-
+  const resp = await api.get(`${Payroll.salaryStructure.getAll}?${params.toString()}`);
   return resp?.data?.data ?? [];
 }
 
-//for dropdown in salary structure setup form
-export async function getSalaryComponentOptions(
-  search?: string,
-): Promise<SalaryComponent[]> {
+export async function getSalaryComponentOptions(search?: string): Promise<SalaryComponent[]> {
   try {
-    const fields = JSON.stringify(["name", "salary_component", "type"]);
-
     const params = new URLSearchParams();
+    params.append("fields", JSON.stringify(["name", "salary_component", "type"]));
+    params.append("limit_page_length", "0");
+    if (search) params.append("search", search);
 
-    params.append("fields", fields);
-    params.append("limit_page_length", "0"); // fetch all
-    if (search) {
-      params.append("search", search);
-    }
-
-    const url = `${Payroll.salaryComponent.getAll}?${params.toString()}`;
-
-    const resp = await api.get(url);
-
+    const resp = await api.get(`${Payroll.salaryComponent.getAll}?${params.toString()}`);
     return resp.data?.data ?? [];
   } catch (error: any) {
     throw new Error(
@@ -499,32 +414,4 @@ export async function getSalaryComponentOptions(
         "Failed to fetch salary component options",
     );
   }
-}
-
-export interface SalaryComponent {
-  /** Frappe resource name — same as salary_component on creation */
-  name?: string;
-  salary_component: string;
-  salary_component_abbr: string;
-  type: SalaryComponentType;
-  depends_on_payment_days?: 0 | 1;
-  amount_based_on_formula?: 0 | 1;
-  formula?: string;
-  is_tax_applicable?: number;
-  amount?: number;
-  accounts?: SalaryComponentAccount[];
-  description?: string;
-
-  // ── Flexible Benefit fields ──────────────────────────────────────────────
-  is_flexible_benefit?: 0 | 1;
-  max_benefit_amount?: number;
-  payout_method?:
-    | "Accrue and payout at end of payroll period"
-    | "Accrue per cycle, pay only on claim"
-    | "Allow claim for full benefit amount"
-    | "";
-
-  pay_against_benefit_claim?: 0 | 1;
-  only_tax_impact?: 0 | 1;
-  create_separate_payment_entry_against_benefit_claim?: 0 | 1;
 }

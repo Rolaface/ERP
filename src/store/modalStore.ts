@@ -30,6 +30,8 @@ export type ModalType =
   | "Bank"
   | "employee"
   | "payroll"
+  | "salaryComponent"
+  | "salaryStructure"
   | "User";
 
 export interface ModalContext {
@@ -625,3 +627,23 @@ export const openPayrollModal = (
   useModalStore
     .getState()
     .openModal("payroll", initialData, isEdit, context, meta);
+
+export const openSalaryComponentModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("salaryComponent", initialData, isEdit, context, meta);
+
+export const openSalaryStructureModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("salaryStructure", initialData, isEdit, context, meta);

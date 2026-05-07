@@ -18,6 +18,8 @@ import { showSuccess } from "../../utils/alert";
 import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
 import { MinimizableModal } from "./MinimizableModal";
 import { createUser } from "../../api/RoleManagement/CreateUserApi";
+import type { SalaryComponent } from "../../api/payrollConfigApi";
+import type { SalaryStructure } from "../../api/payrollConfigApi";
 import {
   useDataRefreshStore,
   REFRESH_KEYS,
@@ -90,6 +92,18 @@ const EmployeeModal = lazy(
 
 const NewPayrollEntry = lazy(
   () => import("../../views/hr/payroll-system/Newpayrollentry"),
+);
+const SalaryComponentModal = lazy(
+  () =>
+    import("../Hr/hrsetupmodals/Salarycomponentmodal").then((m) => ({
+      default: m.SalaryComponentModal,
+    })),
+);
+const SalaryStructureModal = lazy(
+  () =>
+    import("../Hr/hrsetupmodals/Salarystructuremodal").then((m) => ({
+      default: m.SalaryStructureModal,
+    })),
 );
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
@@ -613,6 +627,36 @@ const GlobalModalHandler: React.FC = () => {
         }}
       />
     </MinimizableModal>,
+  );
+  case "salaryComponent":
+  return wrappedModal(
+    <SalaryComponentModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData<SalaryComponent>(modal.initialData)}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+        handleClose();
+      }}
+    />,
+  );
+  case "salaryStructure":
+  return wrappedModal(
+    <SalaryStructureModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData<SalaryStructure>(modal.initialData)}
+      earningComponents={[]}
+      deductionComponents={[]}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+        handleClose();
+      }}
+    />,
   );
     }
   };
