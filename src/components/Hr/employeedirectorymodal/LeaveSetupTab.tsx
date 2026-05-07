@@ -1,164 +1,192 @@
-
-import React, { useState, useEffect } from "react";
-import { Info } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { FaInfoCircle, FaCalendarCheck } from "react-icons/fa";
+import SearchSelect2 from "../../ui/modal/SearchSelect2";
+import { getAllLeavePolicies } from "../../../api/utils/frappeUtilsApi";
+import { getLeavePolicyById } from "../../../api/leaveConfigApi";
+import { getAllEmployees } from "../../../api/employeeapi";
 
 type LeaveSetupTabProps = {
   formData: any;
   handleInputChange: (field: string, value: string | boolean | any) => void;
 };
 
-// Mock data - Replace with API call
-const LEAVE_POLICIES = [
-  {
-    id: "standard",
-    name: "Standard Leave Policy 2025",
-    types: [
-      { name: "Annual Leave", code: "AL", quota: 24, accrual: "Monthly" },
-      { name: "Sick Leave", code: "SL", quota: 14, accrual: "Yearly" },
-      { name: "Maternity", code: "ML", quota: 90, accrual: "One-time" },
-    ],
-  },
-  {
-    id: "probation",
-    name: "Probation Leave Policy",
-    types: [
-      { name: "Annual Leave", code: "AL", quota: 12, accrual: "Monthly" },
-      { name: "Sick Leave", code: "SL", quota: 7, accrual: "Yearly" },
-    ],
-  },
-];
-
 export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
   formData,
   handleInputChange,
 }) => {
-  const [selectedPolicy, setSelectedPolicy] = useState(
-    formData.leavePolicy || "",
-  );
   const [policyDetails, setPolicyDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!selectedPolicy) {
-      setPolicyDetails(null);
-      return;
-    }
+  const selectedPolicy = useMemo(() => {
+    if (!formData.leavePolicy) return null;
+    return {
+      value: formData.leavePolicy,
+      label: formData.leavePolicyLabel || formData.leavePolicy,
+    };
+  }, [formData.leavePolicy, formData.leavePolicyLabel]);
 
-    const policy = LEAVE_POLICIES.find((p) => p.id === selectedPolicy);
-    if (policy) {
-      setPolicyDetails(policy);
-      handleInputChange("leavePolicy", selectedPolicy);
-      handleInputChange("leavePolicyDetails", policy);
-    }
-  }, [selectedPolicy]);
-
-  // Calculate prorated leave for mid-year joiners
-  const calculateProratedLeave = (quota: number, accrual: string) => {
-    if (!formData.engagementDate) return quota;
-
-    const joinDate = new Date(formData.engagementDate);
-    const currentYear = new Date().getFullYear();
-    const yearEnd = new Date(currentYear, 11, 31);
-
-    const monthsRemaining = Math.ceil(
-      (yearEnd.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24 * 30),
-    );
-
-    if (accrual === "Monthly") {
-      return Math.ceil((quota / 12) * monthsRemaining);
-    }
-
-    return quota;
+  const fetchLeavePolicies = async (q: string) => {
+    const list = await getAllLeavePolicies(q);
+    return list || [];
   };
 
+  const loadPolicyDetails = async (policyId: string) => {
+    setLoading(true);
+    try {
+      const details = await getLeavePolicyById(policyId);
+      setPolicyDetails(details);
+    } catch (err) {
+      console.error("Failed to fetch policy details", err);
+      setPolicyDetails(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePolicyChange = async (value: string, option: { label: string; value: string }) => {
+    if (!value) return;
+    handleInputChange("leavePolicy", value);
+    handleInputChange("leavePolicyLabel", option?.label || value);
+    await loadPolicyDetails(value);
+  };
+
+  const fetchEmployees = async (q: string) => {
+  const resp = await getAllEmployees(1, 200, "Active");
+
+  const list = resp?.data || [];
+
+  return list
+    .filter((emp: any) =>
+      `${emp.employee_name}`.toLowerCase().includes(q.toLowerCase())
+    )
+    .map((emp: any) => ({
+      label: emp.employee_name,
+      value: emp.name, // employee ID (HR-EMP-0001)
+    }));
+};
+
+  // Load on mount if already set (edit mode)
+  useEffect(() => {
+    if (formData.leavePolicy) {
+      loadPolicyDetails(formData.leavePolicy);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const items: any[] = policyDetails?.leave_policy_details ?? [];
+  const total = items.reduce((s: number, i: any) => s + (i.annual_allocation ?? 0), 0);
+
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      <div className="bg-card p-5 rounded-lg border border-theme space-y-4">
-        <div className="flex items-center justify-between">
-          <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
-            Leave Configuration
-          </h4>
-          <Info className="w-4 h-4 text-muted" />
-        </div>
+    <div className="max-w-4xl mx-auto space-y-3">
+      <div className="grid grid-cols-2 gap-3">
 
-        <div>
-          <label className="block text-xs text-main mb-2 font-medium">
-            Select Leave Policy *
-          </label>
-          <select
-            value={selectedPolicy}
-            onChange={(e) => setSelectedPolicy(e.target.value)}
-            className="w-full px-4 py-2 border border-theme bg-card text-main rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
-          >
-            <option value="">Choose leave policy...</option>
-            {LEAVE_POLICIES.map((policy) => (
-              <option key={policy.id} value={policy.id}>
-                {policy.name}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-muted mt-1">
-            ⚙️ Managed in HR Settings → Leave Policy
+        {/* LEFT — selector */}
+        <div className="bg-card p-3 rounded-lg border border-theme space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider">
+              Leave Configuration
+            </h4>
+            <FaCalendarCheck className="w-3.5 h-3.5 text-muted" />
+          </div>
+
+          <SearchSelect2
+            label="Leave Policy"
+            value={selectedPolicy?.label || selectedPolicy?.value || ""}
+            placeholder="Search leave policy..."
+            fetchOptions={fetchLeavePolicies}
+            onChange={(value, option) => handlePolicyChange(value, option)}
+          />
+
+          <p className="text-[10px] text-muted flex items-center gap-1">
+            <FaInfoCircle className="w-3 h-3 flex-shrink-0" />
+            Managed in HR Settings → Leave Policy
           </p>
-        </div>
 
-        {/* Policy Preview */}
-        {policyDetails && (
-          <div className="border-t border-theme pt-4 mt-4">
-            <p className="text-xs font-semibold text-main mb-3">
-              Leave Entitlement:
-            </p>
-            <div className="space-y-3">
-              {policyDetails.types.map((leave: any, idx: number) => {
-                const prorated = calculateProratedLeave(
-                  leave.quota,
-                  leave.accrual,
-                );
-                return (
-                  <div
-                    key={idx}
-                    className="bg-app p-3 rounded border border-theme"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <span className="text-sm font-medium text-main">
-                          {leave.name}
-                        </span>
-                        <span className="ml-2 text-xs px-2 py-0.5 bg-app text-main rounded">
-                          {leave.code}
-                        </span>
-                      </div>
-                      <span className="text-sm font-semibold text-primary">
-                        {leave.quota} days
-                      </span>
-                    </div>
-                    <div className="text-xs text-main">
-                      <p>Accrual: {leave.accrual}</p>
-                      {formData.engagementDate &&
-                        leave.accrual === "Monthly" && (
-                          <p className="text-green-success font-medium mt-1">
-                            Prorated for{" "}
-                            {new Date(formData.engagementDate).getFullYear()}:{" "}
-                            {prorated} days
-                          </p>
-                        )}
-                    </div>
-                  </div>
-                );
-              })}
+          {!formData.leavePolicy && (
+            <div className="mt-2 p-3 rounded border border-dashed border-theme text-center">
+              <FaCalendarCheck className="w-5 h-5 text-muted mx-auto mb-1" />
+              <p className="text-[10px] text-muted">
+                Select a policy to preview entitlements
+              </p>
             </div>
-          </div>
-        )}
+          )}
+          <SearchSelect2
+  label="Leave Approver"
+  value={formData.leaveApproverLabel || formData.leaveApprover || ""}
+  placeholder="Search employee..."
+  fetchOptions={fetchEmployees}
+  onChange={(value: string, option: any) => {
+    handleInputChange("leaveApprover", value);        
+    handleInputChange("leaveApproverLabel", option?.label); // UI
+  }}
+/>
+        </div>
+        
 
-        {/* Engagement Date Warning */}
-        {!formData.engagementDate && (
-          <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
-            <p className="text-xs text-warning">
-              ⚠️ Set engagement date in Employment tab to see prorated leave
-              calculation
-            </p>
-          </div>
-        )}
+        {/* RIGHT — policy detail table */}
+        <div className="bg-card p-3 rounded-lg border border-theme">
+
+          {loading && (
+            <p className="text-xs text-muted py-4 text-center">Loading…</p>
+          )}
+
+          {!loading && !policyDetails && (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-[10px] text-muted italic">
+                Policy preview will appear here
+              </p>
+            </div>
+          )}
+
+          {!loading && policyDetails && (
+            <div className="space-y-2">
+              {/* Policy name */}
+              <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider pb-1 border-b border-theme">
+                {policyDetails.title ?? policyDetails.name}
+              </h4>
+
+              {/* Table */}
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-theme">
+                    <th className="text-left text-[10px] font-semibold text-muted uppercase tracking-wider py-1.5 px-1 w-3/4">
+                      Leave Type
+                    </th>
+                    <th className="text-right text-[10px] font-semibold text-muted uppercase tracking-wider py-1.5 px-1 w-1/4">
+                      Days / Year
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item: any, idx: number) => (
+                    <tr key={idx} className="border-b border-theme/30">
+                      <td className="py-1.5 px-1 text-xs text-main capitalize">
+                        {item.leave_type}
+                      </td>
+                      <td className="py-1.5 px-1 text-xs text-main text-right font-medium">
+                        {item.annual_allocation}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-theme">
+                    <td className="py-1.5 px-1 text-[10px] font-semibold text-muted uppercase tracking-wider">
+                      Total
+                    </td>
+                    <td className="py-1.5 px-1 text-xs font-semibold text-main text-right">
+                      {total}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
 };
+
+export default LeaveSetupTab;

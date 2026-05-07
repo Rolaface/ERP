@@ -127,61 +127,71 @@ export const TaxConfigModal: React.FC<Props> = ({
       slabs: (prev.slabs ?? []).filter((_, i) => i !== idx),
     }));
 
-  const handleSave = async () => {
-    if (!form.name.trim()) {
-      showValidationError("Tax name is required");
-      return;
-    }
-    if (!form.effective_from) {
-      showValidationError("Effective from date is required");
-      return;
-    }
-    if ((form.slabs ?? []).length === 0) {
-      showValidationError("At least one tax slab is required");
-      return;
-    }
+const handleSave = async () => {
+  if (!form.name.trim()) {
+    showValidationError("Tax name is required");
+    return;
+  }
+  if (!form.effective_from) {
+    showValidationError("Effective from date is required");
+    return;
+  }
+  if ((form.slabs ?? []).length === 0) {
+    showValidationError("At least one tax slab is required");
+    return;
+  }
 
-    try {
-      setSaving(true);
-      const payload: TaxConfig = {
-        ...form,
-        standard_tax_exemption_amount:
-          Number(form.standard_tax_exemption_amount) || 0,
+  try {
+    setSaving(true);
+
+    const slabs = (form.slabs ?? []).map((row) => ({
+      from_amount: Number(row.from_amount) || 0,
+      to_amount: Number(row.to_amount) || 0,
+      percent_deduction: Number(row.percent_deduction) || 0,
+    }));
+
+    const other_taxes_and_charges = (form.other_taxes_and_charges ?? []).map((row) => ({
+      description: row.description,
+      percent: Number(row.percent) || 0,
+      min_taxable_income: Number(row.min_taxable_income) || 0,
+      max_taxable_income: Number(row.max_taxable_income) || 0,
+    }));
+
+    if (isEdit && initialData?.name) {
+      // UPDATE — name excluded, matches PUT spec
+      await updateTaxConfig(initialData.name, {
+        standard_tax_exemption_amount: Number(form.standard_tax_exemption_amount) || 0,
         allow_tax_exemption: form.allow_tax_exemption ? 1 : 0,
         tax_relief_limit: Number(form.tax_relief_limit) || 0,
         disabled: form.disabled ? 1 : 0,
-        slabs: (form.slabs ?? []).map((row) => ({
-          from_amount: Number(row.from_amount) || 0,
-          to_amount: Number(row.to_amount) || 0,
-          percent_deduction: Number(row.percent_deduction) || 0,
-        })),
-        other_taxes_and_charges: (form.other_taxes_and_charges ?? []).map(
-          (row) => ({
-            description: row.description,
-            percent: Number(row.percent) || 0,
-            min_taxable_income: Number(row.min_taxable_income) || 0,
-            max_taxable_income: Number(row.max_taxable_income) || 0,
-          }),
-        ),
-      };
-
-      if (isEdit && initialData?.name) {
-        const { name: _name, ...updatePayload } = payload;
-        await updateTaxConfig(initialData.name, updatePayload);
-        showSuccess("Tax configuration updated");
-      } else {
-        await createTaxConfig(payload);
-        showSuccess("Tax configuration created");
-      }
-      onSuccess?.();
-      onClose();
-    } catch (err: any) {
-      showApiError(err?.message ?? "Failed to save tax configuration");
-    } finally {
-      setSaving(false);
+        effective_from: form.effective_from,
+        slabs,
+        other_taxes_and_charges,
+      });
+      showSuccess("Tax configuration updated");
+    } else {
+      // CREATE — full payload, matches POST spec
+      await createTaxConfig({
+        name: form.name,
+        effective_from: form.effective_from,
+        standard_tax_exemption_amount: Number(form.standard_tax_exemption_amount) || 0,
+        allow_tax_exemption: form.allow_tax_exemption ? 1 : 0,
+        tax_relief_limit: Number(form.tax_relief_limit) || 0,
+        disabled: form.disabled ? 1 : 0,
+        slabs,
+        other_taxes_and_charges,
+      });
+      showSuccess("Tax configuration created");
     }
-  };
 
+    onSuccess?.();
+    onClose();
+  } catch (err: any) {
+    showApiError(err?.message ?? "Failed to save tax configuration");
+  } finally {
+    setSaving(false);
+  }
+};
   const footer = (
     <div className="flex w-full items-center justify-end gap-3">
       <button
@@ -361,6 +371,121 @@ export const TaxConfigModal: React.FC<Props> = ({
             ))}
           </div>
         </div>
+        {/* ── Other Taxes and Charges ─────────────────────────────────── */}
+<div className="rounded-xl border border-[var(--border)] overflow-hidden mt-6">
+  <div className="flex items-center justify-between border-b border-[var(--border)] bg-app px-4 py-2.5">
+    <span className="text-xs font-semibold text-main">Other Taxes and Charges</span>
+    <button
+      type="button"
+      onClick={() =>
+        setForm((prev) => ({
+          ...prev,
+          other_taxes_and_charges: [
+            ...(prev.other_taxes_and_charges ?? []),
+            { description: "", percent: 0, min_taxable_income: 0, max_taxable_income: 0 },
+          ],
+        }))
+      }
+      className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+    >
+      <Plus className="h-3 w-3" />
+      Add Row
+    </button>
+  </div>
+
+  {/* Column headers */}
+  <div className="grid grid-cols-[2rem_1fr_1fr_1fr_1fr_2.5rem] border-b border-[var(--border)] bg-[var(--border)]/30 px-4 py-2">
+    <span className="text-[10px] font-semibold uppercase tracking-wide text-sub">No.</span>
+    <span className="text-[10px] font-semibold uppercase tracking-wide text-sub">Description <span className="text-red-400">*</span></span>
+    <span className="text-[10px] font-semibold uppercase tracking-wide text-sub">Percent <span className="text-red-400">*</span></span>
+    <span className="text-[10px] font-semibold uppercase tracking-wide text-sub">Min Taxable Income</span>
+    <span className="text-[10px] font-semibold uppercase tracking-wide text-sub">Max Taxable Income</span>
+    <span />
+  </div>
+
+  {/* Rows */}
+  <div className="divide-y divide-[var(--border)]">
+    {(form.other_taxes_and_charges ?? []).length === 0 ? (
+      <p className="py-6 text-center text-xs text-sub">No rows</p>
+    ) : (
+      (form.other_taxes_and_charges ?? []).map((row, idx) => (
+        <div
+          key={idx}
+          className="grid grid-cols-[2rem_1fr_1fr_1fr_1fr_2.5rem] items-center gap-3 px-4 py-2 hover:bg-app transition"
+        >
+          <span className="text-center text-xs font-mono text-sub">{idx + 1}</span>
+
+          <ModalInput
+            label=""
+            value={row.description}
+            placeholder="e.g. NHIMA"
+            onChange={(e) =>
+              setForm((prev) => {
+                const rows = [...(prev.other_taxes_and_charges ?? [])];
+                rows[idx] = { ...rows[idx], description: e.target.value };
+                return { ...prev, other_taxes_and_charges: rows };
+              })
+            }
+          />
+
+          <ModalInput
+            label=""
+            type="number"
+            value={row.percent}
+            onChange={(e) =>
+              setForm((prev) => {
+                const rows = [...(prev.other_taxes_and_charges ?? [])];
+                rows[idx] = { ...rows[idx], percent: Number(e.target.value) || 0 };
+                return { ...prev, other_taxes_and_charges: rows };
+              })
+            }
+          />
+
+          <ModalInput
+            label=""
+            type="number"
+            value={row.min_taxable_income}
+            onChange={(e) =>
+              setForm((prev) => {
+                const rows = [...(prev.other_taxes_and_charges ?? [])];
+                rows[idx] = { ...rows[idx], min_taxable_income: Number(e.target.value) || 0 };
+                return { ...prev, other_taxes_and_charges: rows };
+              })
+            }
+          />
+
+          <ModalInput
+            label=""
+            type="number"
+            value={row.max_taxable_income}
+            onChange={(e) =>
+              setForm((prev) => {
+                const rows = [...(prev.other_taxes_and_charges ?? [])];
+                rows[idx] = { ...rows[idx], max_taxable_income: Number(e.target.value) || 0 };
+                return { ...prev, other_taxes_and_charges: rows };
+              })
+            }
+          />
+
+          <button
+            type="button"
+            onClick={() =>
+              setForm((prev) => ({
+                ...prev,
+                other_taxes_and_charges: (prev.other_taxes_and_charges ?? []).filter(
+                  (_, i) => i !== idx,
+                ),
+              }))
+            }
+            className="flex items-center justify-center rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ))
+    )}
+  </div>
+</div>
       </div>
     </MinimizableModal >
   );

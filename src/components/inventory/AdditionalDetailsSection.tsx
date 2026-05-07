@@ -1,12 +1,12 @@
 import React from "react";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import {
-  getCountries,
+ 
   getRolaCountries,
   getRolaUOMs,
-  getUOMs,
+  
 } from "../../api/itemZraApi";
-import { useCompanySelection } from "../../hooks/useCompanySelection";
+
 import { ModalInput, YesNoCheckbox } from "../ui/modal/modalComponent";
 import type {
   ItemFieldSetter,
@@ -22,18 +22,12 @@ interface AdditionalDetailsSectionProps {
   errors?: Partial<Record<keyof ItemFormData, string>>;
 }
 
-const isRolaCompany = (companyCode: string) => {
-  const normalized = companyCode?.toUpperCase();
-  return normalized === "ROLA" || normalized === "COMP-00004";
-};
+
 
 const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
   React.memo(({ form, onFormChange, onToggleChange, setField, errors }) => {
-    const { companyCode } = useCompanySelection();
-    const useRolaLookups = isRolaCompany(companyCode);
-    const fetchCountries = useRolaLookups ? getRolaCountries : getCountries;
-    const fetchUoms = useRolaLookups ? getRolaUOMs : getUOMs;
-
+ const fetchCountries = getRolaCountries;
+const fetchUoms = getRolaUOMs;
     return (
       <div className="flex flex-wrap items-end gap-x-4 gap-y-4">
         {/* Packing Unit: N x N */}

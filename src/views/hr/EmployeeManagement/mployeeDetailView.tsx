@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   showApiError,
   showSuccess,
@@ -17,23 +17,126 @@ import {
   DollarSign,
   FileText,
   X,
+  User,
+  Building2,
+  CreditCard,
+  Shield,
+  ArrowLeft,
+  Clock,
+  Coins   
 } from "lucide-react";
-import { updateEmployeeDocuments } from "../../../api/employeeapi";
+import {
+  uploadEmployeeDocument,
+  getEmployeeDocuments,
+} from "../../../api/employeedocument";
 import { ERP_BASE } from "../../../config/api";
 
-// Props matching your original structure
 type Props = {
-  employee: any;
+  employee: any; // flat API response from getEmployeeById
   onBack: () => void;
   onDocumentUploaded: () => Promise<void>;
 };
 
-const getFileUrl = (file?: string | null) => {
-  if (!file) return null;
-  return `${ERP_BASE}${file}`;
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const getFileUrl = (file?: string | null) =>
+  file ? `${ERP_BASE}${file}` : null;
+
+const fmt = (val: any) =>
+  val !== null && val !== undefined && val !== "" ? String(val) : null;
+
+const fmtDate = (val: any) => {
+  if (!val) return null;
+  try {
+    return new Date(val).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return val;
+  }
 };
 
-// Document Upload Modal Component
+const fmtMoney = (val: any, currency = "ZMW") => {
+  const n = Number(val);
+  if (!n) return null;
+  return `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+};
+
+const initials = (emp: any) => {
+  const f = (emp?.first_name?.[0] || "").toUpperCase();
+  const l = (emp?.last_name?.[0] || "").toUpperCase();
+  return f + l || "?";
+};
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+const Field = ({
+  label,
+  value,
+  className = "",
+  mono = false,
+}: {
+  label: string;
+  value?: string | null;
+  className?: string;
+  mono?: boolean;
+}) => (
+  <div className={className}>
+    <p className="text-[10px] uppercase tracking-wider text-muted font-semibold mb-0.5">
+      {label}
+    </p>
+    <p className={`text-xs font-medium text-main ${mono ? "font-mono" : ""}`}>
+      {value || <span className="text-muted italic font-normal">—</span>}
+    </p>
+  </div>
+);
+
+const Section = ({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) => (
+  <div className="mb-5">
+    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-theme">
+      {icon && <span className="text-primary">{icon}</span>}
+      <h3 className="text-[11px] font-bold text-main uppercase tracking-wider">
+        {title}
+      </h3>
+    </div>
+    {children}
+  </div>
+);
+
+const QuickStat = ({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string | null;
+}) => (
+  <div className="flex items-start gap-2.5 py-2 border-b border-theme last:border-0">
+    <div className="text-primary mt-0.5 flex-shrink-0 w-4">{icon}</div>
+    <div className="flex-1 min-w-0">
+      <p className="text-[9px] uppercase tracking-wider text-muted font-semibold">
+        {label}
+      </p>
+      <p className="text-[11px] font-semibold text-main truncate">
+        {value || "—"}
+      </p>
+    </div>
+  </div>
+);
+
+// ── Document Upload Modal ─────────────────────────────────────────────────────
+
 const DocumentUploadModal: React.FC<{
   onClose: () => void;
   onUpload: (payload: { description: string; file: File }) => Promise<void>;
@@ -42,49 +145,49 @@ const DocumentUploadModal: React.FC<{
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
-const handleSubmit = async () => {
-  if (!description || !file) return;
-
-  try {
-    setLoading(true);
-    await onUpload({ description, file });
-    onClose();
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleSubmit = async () => {
+    if (!description || !file) return;
+    try {
+      setLoading(true);
+      await onUpload({ description, file });
+      onClose();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-      <div className="bg-card w-full max-w-md rounded-xl shadow-xl">
-        <div className="flex justify-between items-center px-5 py-4 border-b border-border">
+      <div className="bg-card w-full max-w-md rounded-xl shadow-xl border border-theme">
+        <div className="flex justify-between items-center px-5 py-3.5 border-b border-theme">
           <h3 className="text-sm font-semibold text-main">Upload Document</h3>
-          <button onClick={onClose}>
-            <X className="w-4 h-4 text-muted hover:text-main" />
+          <button
+            onClick={onClose}
+            className="text-muted hover:text-main transition"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="p-5 space-y-4">
           <div>
-            <label className="text-xs font-medium text-muted">
-              Document Description
+            <label className="text-[10px] uppercase tracking-wider font-semibold text-muted">
+              Document Name
             </label>
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-main"
-              placeholder="e.g. NRC, Offer Letter"
+              className="mt-1 w-full border border-theme rounded-lg px-3 py-2 text-xs bg-app text-main focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+              placeholder="e.g. NRC Copy, Offer Letter"
             />
           </div>
 
-          <label className="block">
-            <div className="border-2 border-dashed border-border rounded-lg p-5 text-center cursor-pointer hover:border-primary transition">
-              <Upload className="w-6 h-6 mx-auto text-primary mb-2" />
-              <p className="text-xs text-muted">
-                Click to upload or drag & drop
-              </p>
-              <p className="text-[11px] text-muted/70 mt-1">
-                PDF, JPG, PNG (max 5MB)
+          <label className="block cursor-pointer">
+            <div className="border-2 border-dashed border-theme rounded-lg p-5 text-center hover:border-primary/50 hover:bg-primary/5 transition">
+              <Upload className="w-5 h-5 mx-auto text-primary mb-1.5" />
+              <p className="text-xs text-muted">Click to select file</p>
+              <p className="text-[10px] text-muted/60 mt-0.5">
+                PDF, JPG, PNG — max 5MB
               </p>
             </div>
             <input
@@ -96,29 +199,31 @@ const handleSubmit = async () => {
           </label>
 
           {file && (
-            <div className="flex items-center gap-2 text-xs bg-background border border-border rounded-lg px-3 py-2">
-              <FileText className="w-4 h-4 text-muted" />
-              <span className="truncate flex-1 text-main">{file.name}</span>
-              <span className="text-muted">
+            <div className="flex items-center gap-2 text-xs bg-app border border-theme rounded-lg px-3 py-2">
+              <FileText className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+              <span className="truncate flex-1 text-main font-medium">
+                {file.name}
+              </span>
+              <span className="text-muted text-[10px]">
                 {(file.size / 1024).toFixed(1)} KB
               </span>
             </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-border bg-background">
+        <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-theme bg-app rounded-b-xl">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 text-xs border border-border rounded-lg hover:bg-row-hover"
+            className="px-4 py-1.5 text-xs border border-theme rounded-lg hover:bg-app text-main transition"
           >
             Cancel
           </button>
           <button
             disabled={!description || !file || loading}
             onClick={handleSubmit}
-            className="px-5 py-1.5 text-xs bg-primary text-white rounded-lg disabled:opacity-50 hover:bg-primary/90"
+            className="px-5 py-1.5 text-xs bg-primary text-white rounded-lg disabled:opacity-40 hover:opacity-90 transition font-semibold"
           >
-            {loading ? "Uploading..." : "Upload"}
+            {loading ? "Uploading…" : "Upload"}
           </button>
         </div>
       </div>
@@ -126,219 +231,220 @@ const handleSubmit = async () => {
   );
 };
 
+// ── Status helpers ────────────────────────────────────────────────────────────
+
+const statusClasses: Record<string, string> = {
+  active:
+    "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
+  inactive:
+    "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700",
+  suspended:
+    "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
+  left: "bg-red-100 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+};
+
+const getStatusClass = (status?: string) =>
+  statusClasses[(status || "").toLowerCase()] ||
+  "bg-gray-100 text-gray-600 border-gray-200";
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
+type TabId = "personal" | "employment" | "compensation" | "documents";
+
+const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  { id: "personal", label: "Personal", icon: <User className="w-3.5 h-3.5" /> },
+  {
+    id: "employment",
+    label: "Employment",
+    icon: <Briefcase className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "compensation",
+    label: "Compensation",
+    icon: <DollarSign className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "documents",
+    label: "Documents",
+    icon: <FileText className="w-3.5 h-3.5" />,
+  },
+];
+
 const EmployeeDetailView: React.FC<Props> = ({
-  employee,
+  employee: emp,
   onBack,
   onDocumentUploaded,
 }) => {
-  const [activeTab, setActiveTab] = useState<
-    "personal" | "employment" | "compensation" | "documents"
-  >("personal");
+  const [activeTab, setActiveTab] = useState<TabId>("personal");
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [documents, setDocuments] = useState([]);
 
-  const {
-    status,
-    identityInfo,
-    personalInfo,
-    contactInfo,
-    employmentInfo,
-    payrollInfo,
-    documents,
-    leaveInfo,
-  } = employee;
+  // ── Derived display values from flat API ──────────────────────────────────
 
-  const getStatusBadge = () => {
-    const statusLower = status?.toLowerCase() || "";
-    if (statusLower === "active")
-      return "bg-green-100 text-green-700 border-green-300";
-    return "bg-gray-100 text-gray-600 border-gray-300";
+  const fullName = [emp.first_name, emp.middle_name, emp.last_name]
+    .filter(Boolean)
+    .join(" ");
+
+  const currency = fmt(emp.salary_currency) || "ZMW";
+
+  const handleUploadDocument = async ({
+    description,
+    file,
+  }: {
+    description: string;
+    file: File;
+  }) => {
+    try {
+      showLoading("Uploading Document…");
+      await uploadEmployeeDocument(emp.employee, description, file);
+      await onDocumentUploaded();
+
+      await fetchDocuments();
+
+      closeSwal();
+
+      showSuccess("Document uploaded successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
   };
 
-const handleUploadDocument = async ({
-  description,
-  file,
-}: {
-  description: string;
-  file: File;
-}) => {
-  try {
-    showLoading("Uploading Document...");
+  const fetchDocuments = async () => {
+    if (!emp.employee) return;
 
-    const formData = new FormData();
-    formData.append("employeeId", employee.id);
-    formData.append("name[0]", description);
-    formData.append("description[0]", description);
-    formData.append("file[0]", file);
-    formData.append("isUpdate", "1");
-    formData.append("isDelete", "0");
+    try {
+      const res = await getEmployeeDocuments(emp.employee);
 
-    await updateEmployeeDocuments(formData);
+      setDocuments(res?.message?.data || []);
+    } catch (error) {
+      console.error(error);
+      setDocuments([]);
+    }
+  };
 
-    await onDocumentUploaded();
-
-    closeSwal();
-    showSuccess("Document uploaded successfully");
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
-
+  useEffect(() => {
+    fetchDocuments();
+  }, [emp.employee]);
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Compact Header */}
-      <div className="bg-card border-b border-border px-6 py-3">
+    <div className="min-h-screen bg-app">
+      {/* ── Top bar ── */}
+      <div className="bg-card border-b border-theme px-6 py-3 flex items-center gap-4">
         <button
           onClick={onBack}
-          className="text-sm text-primary hover:text-primary/80 font-semibold inline-flex items-center gap-2 mb-2"
+          className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:opacity-80 transition flex-shrink-0"
         >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Back
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to Directory
         </button>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center text-white text-lg font-bold">
-              {personalInfo?.FirstName?.[0]}
-              {personalInfo?.LastName?.[0]}
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-main">
-                {personalInfo?.FirstName} {personalInfo?.LastName}
-              </h1>
-              <p className="text-muted text-xs">
-                {employmentInfo?.JobTitle} • {employmentInfo?.Department}
-              </p>
-            </div>
-          </div>
-          <div
-            className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadge()}`}
-          >
-            {status}
-          </div>
-        </div>
       </div>
 
-      {/* L-Shaped Layout - More Compact */}
-      <div className="max-w-[1400px] mx-auto px-6 py-4">
-        <div className="grid grid-cols-12 gap-4">
-          {/* LEFT SIDEBAR - Compact ID Card */}
+      {/* ── Body ── */}
+      <div className="max-w-[1400px] mx-auto px-6 py-5">
+        <div className="grid grid-cols-12 gap-5">
+          {/* ── LEFT SIDEBAR ── */}
           <div className="col-span-12 lg:col-span-3">
-            <div className="bg-card rounded-lg shadow border border-border overflow-hidden sticky top-4">
-              {/* Compact Header */}
-              <div className="bg-gradient-to-br from-primary to-primary/90 px-4 py-5 text-center">
-                <div className="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center text-primary text-xl font-bold shadow-lg mb-2 ring-2 ring-white/30">
-                  {personalInfo?.FirstName?.[0]}
-                  {personalInfo?.LastName?.[0]}
-                </div>
-                <h3 className="text-black text-sm font-bold">
-                  {personalInfo?.FirstName} {personalInfo?.LastName}
+            <div className="bg-card rounded-xl border border-theme shadow-sm sticky top-4 overflow-hidden">
+              {/* Avatar header */}
+              <div className="bg-primary px-4 py-6 text-center relative">
+                <div
+                  className="absolute inset-0 opacity-10"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(circle at 30% 20%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)",
+                    backgroundSize: "24px 24px",
+                  }}
+                />
+                {emp.image ? (
+                  <img
+                    src={getFileUrl(emp.image)!}
+                    alt={fullName}
+                    className="w-16 h-16 rounded-full object-cover mx-auto mb-2 ring-2 ring-white/40 shadow-lg"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-white text-xl font-bold mx-auto mb-2 ring-2 ring-white/30 shadow-lg">
+                    {initials(emp)}
+                  </div>
+                )}
+                <h3 className="text-white text-sm font-bold leading-snug">
+                  {fullName}
                 </h3>
-                <p className="text-black text-xs">{employmentInfo?.JobTitle}</p>
+                <p className="text-white/70 text-[11px] mt-0.5">
+                  {fmt(emp.designation)}
+                </p>
               </div>
 
               {/* Employee ID */}
-              <div className="px-4 py-2 border-b border-border text-center">
-                <p className="text-[10px] text-black font-bold uppercase mb-0.5">
-                  ID
+              <div className="px-4 py-2.5 border-b border-theme bg-app text-center">
+                <p className="text-[9px] uppercase tracking-widest text-muted font-bold mb-0.5">
+                  Employee ID
                 </p>
-                <p className="text-sm font-mono font-bold text-black">
-                  {employmentInfo?.employeeId}
+                <p className="text-sm font-mono font-bold text-primary">
+                  {fmt(emp.employee) || "—"}
                 </p>
               </div>
 
-              {/* Quick Info - Compact */}
-              <div className="px-4 py-3 space-y-2.5">
-                <QuickInfo
-                  icon={<Mail className="w-4 h-4" />}
-                  label="Email"
-                  value={contactInfo?.workEmail}
+              {/* Quick stats */}
+              <div className="px-4 py-2">
+                <QuickStat
+                  icon={<Mail className="w-3.5 h-3.5" />}
+                  label="Work Email"
+                  value={fmt(emp.company_email)}
                 />
-                <QuickInfo
-                  icon={<Phone className="w-4 h-4" />}
+                <QuickStat
+                  icon={<Phone className="w-3.5 h-3.5" />}
                   label="Phone"
-                  value={contactInfo?.phoneNumber}
+                  value={fmt(emp.cell_number)}
                 />
-                <QuickInfo
-                  icon={<MapPin className="w-4 h-4" />}
-                  label="Location"
-                  value={employmentInfo?.workLocation}
+                <QuickStat
+                  icon={<Building2 className="w-3.5 h-3.5" />}
+                  label="Department"
+                  value={fmt(emp.department)}
                 />
-                <QuickInfo
-                  icon={<Calendar className="w-4 h-4" />}
+                <QuickStat
+                  icon={<Calendar className="w-3.5 h-3.5" />}
                   label="Joined"
-                  value={employmentInfo?.joiningDate}
+                  value={fmtDate(emp.date_of_joining)}
+                />
+                <QuickStat
+                  icon={<MapPin className="w-3.5 h-3.5" />}
+                  label="Branch"
+                  value={fmt(emp.branch)}
                 />
               </div>
 
-              {/* Compact Salary */}
+              {/* Salary pill */}
               <div className="px-4 pb-4">
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <DollarSign className="w-3 h-3 text-green-600" />
-                    <p className="text-[10px] text-green-700 dark:text-green-400 font-bold uppercase">
-                      Gross Salary
-                    </p>
-                  </div>
-                  <p className="text-xl font-bold text-green-900 dark:text-green-100">
-                    {payrollInfo?.currency}{" "}
-                    {Number(payrollInfo?.grossSalary || 0).toLocaleString()}
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3">
+                  <p className="text-[9px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold mb-1 flex items-center gap-1">
+                    <Coins    className="w-3 h-3" /> Gross / CTC
                   </p>
-                  <p className="text-[10px] text-green-700 dark:text-green-400">
-                    {payrollInfo?.paymentFrequency}
+                  <p className="text-lg font-bold text-emerald-800 dark:text-emerald-200">
+                    {fmtMoney(emp.ctc, currency) || "—"}
+                  </p>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    {fmt(emp.salary_mode)} · {fmt(emp.salary_structure)}
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* RIGHT CONTENT - Tabbed */}
-          <div className="col-span-12 lg:col-span-9">
-            {/* Compact Tabs */}
-            <div className="bg-card rounded-t-lg border border-border border-b-0 px-4 pt-3 flex gap-1 overflow-x-auto">
-              {[
-                {
-                  id: "personal",
-                  label: "Personal",
-                  icon: <FileText className="w-3.5 h-3.5" />,
-                },
-                {
-                  id: "employment",
-                  label: "Employment",
-                  icon: <Briefcase className="w-3.5 h-3.5" />,
-                },
-                {
-                  id: "compensation",
-                  label: "Compensation",
-                  icon: <DollarSign className="w-3.5 h-3.5" />,
-                },
-                {
-                  id: "documents",
-                  label: "Documents",
-                  icon: <FileText className="w-3.5 h-3.5" />,
-                },
-              ].map((tab) => (
+          {/* ── RIGHT CONTENT ── */}
+          <div className="col-span-12 lg:col-span-9 flex flex-col">
+            {/* Tabs */}
+            <div className="bg-card border border-theme border-b-0 rounded-t-xl px-4 pt-3 flex gap-0.5">
+              {TABS.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-all inline-flex items-center gap-1.5 whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? "bg-background text-primary border-t-2 border-x-2 border-primary -mb-[2px]"
-                      : "text-muted hover:text-main"
-                  }`}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-semibold rounded-t-lg transition-all whitespace-nowrap border-b-2 ${activeTab === tab.id
+                      ? "text-primary border-primary bg-app"
+                      : "text-muted border-transparent hover:text-main"
+                    }`}
                 >
                   {tab.icon}
                   {tab.label}
@@ -346,376 +452,372 @@ const handleUploadDocument = async ({
               ))}
             </div>
 
-            {/* Tab Content - Compact */}
-            <div className="bg-card rounded-b-lg rounded-tr-lg border border-border shadow">
-              <div
-                className="p-5"
-                style={{ maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}
-              >
-                {/* PERSONAL TAB */}
-                {activeTab === "personal" && (
-                  <div className="space-y-5">
-                    <Section title="Personal Information">
-                      <div className="grid grid-cols-3 gap-x-4 gap-y-3">
-                        <InfoField
-                          label="Full Name"
-                          value={`${personalInfo?.FirstName} ${personalInfo?.OtherNames || ""} ${personalInfo?.LastName}`}
-                          className="col-span-2"
-                        />
-                        <InfoField
-                          label="Gender"
-                          value={personalInfo?.Gender}
-                        />
-                        <InfoField
-                          label="Date of Birth"
-                          value={personalInfo?.Dob}
-                        />
-                        <InfoField
-                          label="Marital Status"
-                          value={personalInfo?.maritalStatus}
-                        />
-                        <InfoField
-                          label="Nationality"
-                          value={personalInfo?.Nationality}
-                        />
-                      </div>
-                    </Section>
+            {/* Tab body */}
+            <div
+              className="bg-card border border-theme rounded-b-xl rounded-tr-xl shadow-sm flex-1 overflow-y-auto p-5"
+              style={{ maxHeight: "calc(100vh - 210px)" }}
+            >
+              {/* ── PERSONAL ── */}
+              {activeTab === "personal" && (
+                <div className="space-y-5">
+                  <Section
+                    title="Personal Info"
+                    icon={<User className="w-3.5 h-3.5" />}
+                  >
+                    <div className="grid grid-cols-3 gap-x-5 gap-y-4">
+                      <Field
+                        label="Full Name"
+                        value={fullName}
+                        className="col-span-2"
+                      />
+                      <Field label="Gender" value={fmt(emp.gender)} />
+                      <Field
+                        label="Date of Birth"
+                        value={fmtDate(emp.date_of_birth)}
+                      />
+                      <Field
+                        label="Marital Status"
+                        value={fmt(emp.marital_status)}
+                      />
+                      <Field label="Blood Group" value={fmt(emp.blood_group)} />
+                      <Field label="Salutation" value={fmt(emp.salutation)} />
+                    </div>
+                  </Section>
 
-                    <Section title="Contact Information">
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        <InfoField
-                          label="Personal Email"
-                          value={contactInfo?.Email}
-                        />
-                        <InfoField
-                          label="Work Email"
-                          value={contactInfo?.workEmail}
-                        />
-                        <InfoField
-                          label="Phone"
-                          value={contactInfo?.phoneNumber}
-                        />
-                        <InfoField
-                          label="Alt. Phone"
-                          value={contactInfo?.alternatePhone}
-                        />
-                        <InfoField
-                          label="Address"
-                          value={`${contactInfo?.address?.street}, ${contactInfo?.address?.city}`}
-                          className="col-span-2"
-                        />
-                      </div>
-                    </Section>
+                  <Section
+                    title="Contact"
+                    icon={<Mail className="w-3.5 h-3.5" />}
+                  >
+                    <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                      <Field
+                        label="Personal Email"
+                        value={fmt(emp.personal_email)}
+                      />
+                      <Field
+                        label="Company Email"
+                        value={fmt(emp.company_email)}
+                      />
+                      <Field label="Cell Number" value={fmt(emp.cell_number)} />
+                      <Field
+                        label="Preferred Email"
+                        value={
+                          fmt(emp.prefered_email) ||
+                          fmt(emp.prefered_contact_email)
+                        }
+                      />
+                      <Field
+                        label="Current Address"
+                        value={fmt(emp.current_address)}
+                        className="col-span-2"
+                      />
+                      <Field
+                        label="Permanent Address"
+                        value={fmt(emp.permanent_address)}
+                        className="col-span-2"
+                      />
+                    </div>
+                  </Section>
 
-                    <Section title="Emergency Contact">
-                      <div className="grid grid-cols-3 gap-x-4 gap-y-3">
-                        <InfoField
-                          label="Name"
-                          value={contactInfo?.emergencyContact?.name}
-                        />
-                        <InfoField
-                          label="Relationship"
-                          value={contactInfo?.emergencyContact?.relationship}
-                        />
-                        <InfoField
-                          label="Phone"
-                          value={contactInfo?.emergencyContact?.phone}
-                        />
-                      </div>
-                    </Section>
+                  <Section
+                    title="Emergency Contact"
+                    icon={<Shield className="w-3.5 h-3.5" />}
+                  >
+                    <div className="grid grid-cols-3 gap-x-5 gap-y-4">
+                      <Field
+                        label="Contact Name"
+                        value={fmt(emp.person_to_be_contacted)}
+                      />
+                      <Field label="Relationship" value={fmt(emp.relation)} />
+                      <Field
+                        label="Phone"
+                        value={fmt(emp.emergency_phone_number)}
+                      />
+                    </div>
+                  </Section>
 
-                    <Section title="Compliance IDs">
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        <InfoField label="NRC ID" value={identityInfo?.NrcId} />
-                        <InfoField label="TPIN" value={identityInfo?.TpinId} />
-                        <InfoField
-                          label="NAPSA"
-                          value={identityInfo?.SocialSecurityNapsa}
-                        />
-                        <InfoField
-                          label="NHIMA"
-                          value={identityInfo?.NhimaHealthInsurance}
-                        />
-                      </div>
-                    </Section>
-                  </div>
-                )}
+                  <Section
+                    title="Identity & Compliance"
+                    icon={<CreditCard className="w-3.5 h-3.5" />}
+                  >
+                    <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                      <Field
+                        label="Passport Number"
+                        value={fmt(emp.passport_number)}
+                        mono
+                      />
+                      <Field
+                        label="Place of Issue"
+                        value={fmt(emp.place_of_issue)}
+                      />
+                      <Field
+                        label="Date of Issue"
+                        value={fmtDate(emp.date_of_issue)}
+                      />
+                      <Field
+                        label="Valid Upto"
+                        value={fmtDate(emp.valid_upto)}
+                      />
+                      <Field
+                        label="Health Insurance"
+                        value={fmt(emp.health_insurance_provider)}
+                      />
+                      <Field
+                        label="Insurance No."
+                        value={fmt(emp.health_insurance_no)}
+                        mono
+                      />
+                    </div>
+                  </Section>
+                </div>
+              )}
 
-                {/* EMPLOYMENT TAB */}
-                {activeTab === "employment" && (
-                  <div className="space-y-5">
-                    <Section title="Employment Details">
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        <InfoField
-                          label="Employee Type"
-                          value={employmentInfo?.EmployeeType}
-                        />
-                        <InfoField
-                          label="Manager"
-                          value={employmentInfo?.reportingManager}
-                        />
-                        <InfoField
-                          label="Joining Date"
-                          value={employmentInfo?.joiningDate}
-                        />
-                        <InfoField
-                          label="Probation"
-                          value={employmentInfo?.probationPeriod}
-                        />
-                        <InfoField
-                          label="Contract End"
-                          value={employmentInfo?.contractEndDate}
-                        />
-                        <InfoField
-                          label="Shift"
-                          value={employmentInfo?.shift}
-                        />
-                        <InfoField
-                          label="Work Address"
-                          value={employmentInfo?.workAddress}
-                          className="col-span-2"
-                        />
-                      </div>
-                    </Section>
+              {/* ── EMPLOYMENT ── */}
+              {activeTab === "employment" && (
+                <div className="space-y-5">
+                  <Section
+                    title="Role & Assignment"
+                    icon={<Briefcase className="w-3.5 h-3.5" />}
+                  >
+                    <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                      <Field label="Designation" value={fmt(emp.designation)} />
+                      <Field label="Department" value={fmt(emp.department)} />
+                      <Field
+                        label="Employment Type"
+                        value={fmt(emp.employment_type)}
+                      />
+                      <Field
+                        label="Employee Type"
+                        value={fmt(emp.employee_type)}
+                      />
+                      <Field label="Grade" value={fmt(emp.grade)} />
+                      <Field
+                        label="Branch / Location"
+                        value={fmt(emp.branch)}
+                      />
+                      <Field label="Reports To" value={fmt(emp.reports_to)} />
+                      <Field label="Company" value={fmt(emp.company)} />
+                    </div>
+                  </Section>
 
-                    {employmentInfo?.weeklySchedule && (
-                      <Section title="Weekly Schedule">
-                        <div className="grid grid-cols-4 gap-x-4 gap-y-2">
-                          <InfoField
-                            label="Mon"
-                            value={employmentInfo.weeklySchedule.monday || "—"}
-                          />
-                          <InfoField
-                            label="Tue"
-                            value={employmentInfo.weeklySchedule.tuesday || "—"}
-                          />
-                          <InfoField
-                            label="Wed"
-                            value={
-                              employmentInfo.weeklySchedule.wednesday || "—"
-                            }
-                          />
-                          <InfoField
-                            label="Thu"
-                            value={
-                              employmentInfo.weeklySchedule.thursday || "—"
-                            }
-                          />
-                          <InfoField
-                            label="Fri"
-                            value={employmentInfo.weeklySchedule.friday || "—"}
-                          />
-                          <InfoField
-                            label="Sat"
-                            value={
-                              employmentInfo.weeklySchedule.saturday || "—"
-                            }
-                          />
-                          <InfoField
-                            label="Sun"
-                            value={employmentInfo.weeklySchedule.sunday || "—"}
-                          />
-                        </div>
-                      </Section>
-                    )}
+                  <Section
+                    title="Dates & Contract"
+                    icon={<Calendar className="w-3.5 h-3.5" />}
+                  >
+                    <div className="grid grid-cols-3 gap-x-5 gap-y-4">
+                      <Field
+                        label="Date of Joining"
+                        value={fmtDate(emp.date_of_joining)}
+                      />
+                      <Field
+                        label="Contract End"
+                        value={fmtDate(emp.contract_end_date)}
+                      />
+                      <Field
+                        label="Notice Period"
+                        value={
+                          emp.notice_number_of_days
+                            ? `${emp.notice_number_of_days} days`
+                            : null
+                        }
+                      />
+                      <Field
+                        label="Date of Retirement"
+                        value={fmtDate(emp.date_of_retirement)}
+                      />
+                      <Field
+                        label="Relieving Date"
+                        value={fmtDate(emp.relieving_date)}
+                      />
+                    </div>
+                  </Section>
 
-                    {leaveInfo && (
-                      <Section title="Leave Setup">
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                          <InfoField
-                            label="Opening Balance"
-                            value={leaveInfo?.openingLeaveBalance}
-                            className="col-span-2"
-                          />
-                          <InfoField
-                            label="Monthly Rate"
-                            value={`${leaveInfo?.initialLeaveRateMonthly} days/month`}
-                          />
-                          <InfoField
-                            label="Ceiling"
-                            value={`${leaveInfo?.ceilingAmount} days (${leaveInfo?.ceilingYear})`}
-                          />
-                        </div>
-                      </Section>
-                    )}
-                  </div>
-                )}
+                  <Section
+                    title="Approvers"
+                    icon={<User className="w-3.5 h-3.5" />}
+                  >
+                    <div className="grid grid-cols-3 gap-x-5 gap-y-4">
+                      <Field
+                        label="Leave Approver"
+                        value={fmt(emp.leave_approver)}
+                      />
+                      <Field
+                        label="Expense Approver"
+                        value={fmt(emp.expense_approver)}
+                      />
+                      <Field
+                        label="Shift Approver"
+                        value={fmt(emp.shift_request_approver)}
+                      />
+                    </div>
+                  </Section>
 
-                {/* COMPENSATION TAB */}
-                {activeTab === "compensation" && (
-                  <div className="space-y-5">
-                    <Section title="Salary Breakdown">
-                      <div className="space-y-2">
-                        {Object.entries(payrollInfo?.salaryBreakdown || {}).map(
-                          ([key, value]) => (
-                            <div
-                              key={key}
-                              className="flex justify-between items-center py-1.5 border-b border-border"
-                            >
-                              <span className="text-xs text-muted font-medium">
-                                {key}
-                              </span>
-                              <span className="text-xs font-bold text-main">
-                                {payrollInfo?.currency}{" "}
-                                {Number(value).toLocaleString()}
-                              </span>
-                            </div>
-                          ),
-                        )}
-                        <div className="flex justify-between items-center py-2 bg-background rounded-lg px-3 mt-2">
-                          <span className="text-sm text-main font-bold">
-                            Gross Salary
-                          </span>
-                          <span className="text-base font-bold text-primary">
-                            {payrollInfo?.currency}{" "}
-                            {Number(
-                              payrollInfo?.grossSalary || 0,
-                            ).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </Section>
+                  <Section
+                    title="Leave"
+                    icon={<Clock className="w-3.5 h-3.5" />}
+                  >
+                    <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                      <Field
+                        label="Leave Policy"
+                        value={fmt(emp.leave_policy)}
+                      />
+                      <Field
+                        label="Holiday List"
+                        value={fmt(emp.holiday_list)}
+                      />
+                      <Field
+                        label="Default Shift"
+                        value={fmt(emp.default_shift)}
+                      />
+                    </div>
+                  </Section>
+                </div>
+              )}
 
-                    <Section title="Statutory Deductions">
-                      <div className="space-y-2">
-                        <DeductionRow
-                          label="NAPSA (Employee)"
-                          value={`${payrollInfo?.statutoryDeductions?.napsaEmployeeRate}%`}
-                        />
-                        <DeductionRow
-                          label="NAPSA (Employer)"
-                          value={`${payrollInfo?.statutoryDeductions?.napsaEmployerRate}%`}
-                        />
-                        <DeductionRow
-                          label="NHIMA"
-                          value={`${payrollInfo?.statutoryDeductions?.nhimaRate}%`}
-                        />
-                        <DeductionRow
-                          label="PAYE"
-                          value={`${payrollInfo?.currency} ${Number(payrollInfo?.statutoryDeductions?.payeAmount || 0).toLocaleString()}`}
-                        />
-                      </div>
-                    </Section>
-
-                    <Section title="Bank Account">
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        <InfoField
-                          label="Account Name"
-                          value={payrollInfo?.bankAccount?.AccountName}
-                        />
-                        <InfoField
-                          label="Account Number"
-                          value={payrollInfo?.bankAccount?.AccountNumber}
-                        />
-                        <InfoField
-                          label="Bank Name"
-                          value={payrollInfo?.bankAccount?.BankName}
-                        />
-                        <InfoField
-                          label="Branch Code"
-                          value={payrollInfo?.bankAccount?.branchCode}
-                        />
-                        <InfoField
-                          label="Account Type"
-                          value={payrollInfo?.bankAccount?.AccountType}
-                        />
-                      </div>
-                    </Section>
-                  </div>
-                )}
-
-                {/* DOCUMENTS TAB */}
-                {activeTab === "documents" && (
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xs font-bold text-main uppercase tracking-wider">
-                        Documents
-                      </h3>
-                      <button
-                        onClick={() => setShowUploadModal(true)}
-                        className="px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-primary/90 inline-flex items-center gap-1.5"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        Upload
-                      </button>
+              {/* ── COMPENSATION ── */}
+              {activeTab === "compensation" && (
+                <div className="space-y-5">
+                  <Section
+                    title="Salary"
+                    icon={<DollarSign className="w-3.5 h-3.5" />}
+                  >
+                    <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                      <Field
+                        label="Salary Structure"
+                        value={fmt(emp.salary_structure)}
+                      />
+                      <Field
+                        label="Currency"
+                        value={fmt(emp.salary_currency)}
+                      />
+                      <Field label="Salary Mode" value={fmt(emp.salary_mode)} />
+                      <Field
+                        label="CTC / Gross"
+                        value={fmtMoney(emp.ctc, currency)}
+                      />
                     </div>
 
-                    {documents && documents.length > 0 ? (
-                      <div className="space-y-2">
-                        {documents.map((doc: any) => (
-                          <div
-                            key={doc.id}
-                            className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-background transition-colors"
-                          >
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                📄
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-semibold text-main truncate">
-                                  {doc.description}
-                                </p>
-                                <p className="text-[10px] text-muted">
-                                  PDF Document
-                                </p>
-                              </div>
-                            </div>
+                    {/* CTC highlight bar */}
+                    <div className="mt-4 flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
+                      <span className="text-xs font-semibold text-main">
+                        Total CTC
+                      </span>
+                      <span className="text-base font-bold text-primary">
+                        {fmtMoney(emp.ctc, currency) || "—"}
+                      </span>
+                    </div>
+                  </Section>
 
-                            <div className="flex items-center gap-1 ml-3">
-                              {doc.file ? (
-                                <>
-                                  <button
-                                    onClick={() =>
-                                      window.open(
-                                        getFileUrl(doc.file),
-                                        "_blank",
-                                      )
-                                    }
-                                    className="p-2 text-primary hover:bg-primary/10 rounded-lg transition"
-                                    title="View"
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </button>
-                                  <a
-                                    href={getFileUrl(doc.file)}
-                                    download
-                                    className="p-2 text-muted hover:text-main hover:bg-row-hover rounded-lg transition"
-                                    title="Download"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </a>
-                                </>
-                              ) : (
-                                <span className="text-[10px] text-muted italic">
-                                  No file
-                                </span>
-                              )}
+                  <Section
+                    title="Bank Account"
+                    icon={<CreditCard className="w-3.5 h-3.5" />}
+                  >
+                    <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                      <Field label="Bank Name" value={fmt(emp.bank_name)} />
+                      <Field
+                        label="Account Number"
+                        value={fmt(emp.bank_ac_no)}
+                        mono
+                      />
+                      <Field
+                        label="Account Type"
+                        value={fmt(emp.account_type)}
+                      />
+                      <Field
+                        label="Branch Code"
+                        value={fmt(emp.branch_code)}
+                        mono
+                      />
+                    </div>
+                  </Section>
+                </div>
+              )}
+
+              {/* ── DOCUMENTS ── */}
+              {activeTab === "documents" && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[11px] font-bold text-main uppercase tracking-wider">
+                      Documents
+                    </h3>
+                    <button
+                      onClick={() => setShowUploadModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg hover:opacity-90 transition"
+                    >
+                      <Upload className="w-3 h-3" />
+                      Upload
+                    </button>
+                  </div>
+
+                  {documents && documents.length > 0 ? (
+                    <div className="space-y-2">
+                      {documents.map((doc: any) => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center justify-between p-3 border border-theme rounded-lg hover:bg-app transition"
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <FileText className="w-4 h-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-main truncate">
+                                {doc.document_name}
+                              </p>
+                              <p className="text-[10px] text-muted">
+                                {doc.file_type || "Document"}
+                              </p>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-primary/5 flex items-center justify-center">
-                          <FileText className="w-8 h-8 text-muted/40" />
+                          <div className="flex items-center gap-1 ml-3">
+                            {doc.file_url ? (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    window.open(getFileUrl(doc.file_url)!, "_blank")
+                                  }
+                                  className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition"
+                                  title="View"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <a
+                                  href={getFileUrl(doc.file_url)!}
+                                  download
+                                  className="p-1.5 text-muted hover:text-main hover:bg-app rounded-lg transition"
+                                  title="Download"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </a>
+                              </>
+                            ) : (
+                              <span className="text-[10px] text-muted italic">
+                                No file
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-muted text-xs font-semibold mb-1">
-                          No documents uploaded
-                        </p>
-                        <p className="text-muted/70 text-[10px]">
-                          Click upload to add documents
-                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-14">
+                      <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-primary/5 flex items-center justify-center">
+                        <FileText className="w-7 h-7 text-muted/30" />
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                      <p className="text-xs font-semibold text-muted mb-1">
+                        No documents yet
+                      </p>
+                      <p className="text-[10px] text-muted/60">
+                        Click Upload to attach files
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Upload Modal */}
       {showUploadModal && (
         <DocumentUploadModal
           onClose={() => setShowUploadModal(false)}
@@ -725,43 +827,5 @@ const handleUploadDocument = async ({
     </div>
   );
 };
-
-// Helper Components
-const QuickInfo = ({ icon, label, value }: any) => (
-  <div className="flex items-start gap-2">
-    <div className="text-primary mt-0.5 flex-shrink-0">{icon}</div>
-    <div className="flex-1 min-w-0">
-      <p className="text-[10px] text-muted font-semibold mb-0.5">{label}</p>
-      <p className="text-xs text-main font-medium truncate">{value || "—"}</p>
-    </div>
-  </div>
-);
-
-const Section = ({ title, children }: any) => (
-  <div>
-    <h3 className="text-xs font-bold text-main uppercase tracking-wider mb-3 pb-2 border-b border-border">
-      {title}
-    </h3>
-    {children}
-  </div>
-);
-
-const InfoField = ({ label, value, className = "" }: any) => (
-  <div className={className}>
-    <p className="text-[10px] text-muted font-semibold mb-0.5 uppercase tracking-wide">
-      {label}
-    </p>
-    <p className="text-xs font-semibold text-main">{value || "—"}</p>
-  </div>
-);
-
-const DeductionRow = ({ label, value }: any) => (
-  <div className="flex justify-between items-center py-1.5 border-b border-border">
-    <span className="text-xs text-muted font-medium">{label}</span>
-    <span className="text-xs font-bold text-red-600 dark:text-red-400">
-      {value}
-    </span>
-  </div>
-);
 
 export default EmployeeDetailView;

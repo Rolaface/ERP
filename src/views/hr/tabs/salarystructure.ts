@@ -32,7 +32,7 @@ let salaryStructures: SalaryStructure[] = [
     status: "Active",
     level: "Senior",
     usedBy: 12,
-    defaultGrossSalary: 240000, // ✅ Default: ZMW 240,000/year (20K/month)
+    defaultGrossSalary: 240000, 
     components: [
       {
         id: "c1",
@@ -110,7 +110,7 @@ let salaryStructures: SalaryStructure[] = [
     status: "Active",
     level: "Mid",
     usedBy: 45,
-    defaultGrossSalary: 120000, // ✅ Default: ZMW 120,000/year (10K/month)
+    defaultGrossSalary: 120000, 
     components: [
       {
         id: "c1",
@@ -275,7 +275,7 @@ export const deleteSalaryStructure = (id: string): void => {
   salaryStructures = salaryStructures.filter((s) => s.id !== id);
 };
 
-// ✅ Calculate salary breakdown with proper handling
+
 export const calculateSalaryBreakdown = (
   structureId: string,
   grossSalary: number,
@@ -323,7 +323,7 @@ export const getLevelsFromHrSettings = () => {
   return Array.from(new Set(active.map((s) => s.level)));
 };
 
-// ✅ Get default gross salary for a structure
+
 export const getDefaultGrossSalary = (structureId: string): number => {
   const structure = getSalaryStructureById(structureId);
   return structure?.defaultGrossSalary || 0;

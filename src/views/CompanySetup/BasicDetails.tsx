@@ -279,7 +279,7 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({ basic, terms, onSaveSuccess
     setForm((prev) => ({ ...prev, [section]: { ...prev[section], [key]: value } }));
   };
 
-  // ✅ Same pattern as BankDetails — always include terms in every payload
+
   const basePayload = () => ({
     id: COMPANY_ID,
     ...(terms !== undefined && terms !== null ? { terms } : {}),

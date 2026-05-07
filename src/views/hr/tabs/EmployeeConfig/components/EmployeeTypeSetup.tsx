@@ -31,15 +31,12 @@ export function EmployeeTypeSetup() {
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getAllEmployeeTypes();
-      const filtered = search
-        ? data.filter((r) =>
-            r.employee_type?.toLowerCase().includes(search.toLowerCase()),
-          )
-        : data;
-      setTotalItems(filtered.length);
-      setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
-      setRows(filtered.slice((page - 1) * pageSize, page * pageSize));
+      const start = (page - 1) * pageSize;
+      const response = await getAllEmployeeTypes(start, pageSize, search);
+
+      setRows(response.data);
+      setTotalItems(response.pagination.total);
+      setTotalPages(response.pagination.total_pages);
     } catch (err: any) {
       showApiError(err?.message ?? "Failed to load employee types");
     } finally {
@@ -65,7 +62,7 @@ export function EmployeeTypeSetup() {
   const handleDelete = useCallback(
     async (row: EmployeeType) => {
       if (!row.name) return;
-      if (!confirm(`Delete "${row.employee_type ?? row.name}"?`)) return;
+      if (!confirm(`Delete "${row.employee_type_name ?? row.name}"?`)) return;
       try {
         setActionLoadingId(row.name);
         await deleteEmployeeType(row.name);
@@ -87,10 +84,10 @@ export function EmployeeTypeSetup() {
         header: "Employee Type",
         render: (row) => (
           <span className="font-medium text-main">
-            {row.employee_type || row.name || "-"}
+            {row.employee_type_name || row.name || "-"}
           </span>
         ),
-        tooltip: (row) => row.employee_type ?? row.name ?? "",
+        tooltip: (row) => row.employee_type_name ?? row.name ?? "",
       },
       {
         key: "actions",
@@ -109,7 +106,7 @@ export function EmployeeTypeSetup() {
 
   return (
     <>
-      <Table columns={columns} data={rows} loading={loading} rowKey={(row) => row.name ?? row.employee_type} showToolbar searchValue={search} onSearch={(v) => { setSearch(v); setPage(1); }} enableAdd addLabel="Add Employee Type" onAdd={() => { setEditTarget(null); setModalOpen(true); }} currentPage={page} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} pageSizeOptions={[10, 25, 50]} onPageChange={setPage} onPageSizeChange={(s) => { setPageSize(s); setPage(1); }} enableColumnSelector tableId="employee-types" />
+      <Table columns={columns} data={rows} loading={loading} rowKey={(row) => row.name ?? row.employee_type_name} showToolbar searchValue={search} onSearch={(v) => { setSearch(v); setPage(1); }} enableAdd addLabel="Add Employee Type" onAdd={() => { setEditTarget(null); setModalOpen(true); }} currentPage={page} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} pageSizeOptions={[10, 25, 50]} onPageChange={setPage} onPageSizeChange={(s) => { setPageSize(s); setPage(1); }} enableColumnSelector tableId="employee-types" />
       <EmployeeTypeModal modalId={MODAL_ID} isOpen={modalOpen} onClose={() => setModalOpen(false)} initialData={editTarget} onSuccess={fetchAll} />
     </>
   );

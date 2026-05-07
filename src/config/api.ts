@@ -1,6 +1,4 @@
-
 import { ENV } from "./env";
-
 
 const getApiBaseUrl = (): string => {
   if (typeof window === "undefined") {
@@ -108,8 +106,8 @@ export const API = {
 
   RoleManagement: {
     createUserRoles: `${ERP_BASE}/api/method/auth_api.role_management.api.role.create`,
-    getUserRoles:`${ERP_BASE}/api/method/auth_api.role_management.api.role.get`,
-    getUserRolesbyId:`${ERP_BASE}/api/method/auth_api.role_management.api.role.get_by_id`,
+    getUserRoles: `${ERP_BASE}/api/method/auth_api.role_management.api.role.get`,
+    getUserRolesbyId: `${ERP_BASE}/api/method/auth_api.role_management.api.role.get_by_id`,
     updateUserRoles: `${ERP_BASE}/api/method/auth_api.role_management.api.role.update`,
     updateUserRolesStatus: `${ERP_BASE}/api/method/auth_api.role_management.api.role.update_status`,
     createUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.signup`,
@@ -120,7 +118,7 @@ export const API = {
     deleteUser:  `${ERP_BASE}/api/method/frappe.client.delete`,
     getUserDetails: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_login_user`
   },
-  
+
   Account: {
     createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
     getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
@@ -187,14 +185,23 @@ export const API = {
    * EMPLOYEE / HRMS
    * ========================= */
   employee: {
-    getAll: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.get_all_employees`,
-    getById: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.get_employee`,
-    create: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.create_employee`,
-    update: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.update_employee`,
-    delete: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.delete_employee`,
-    updateDocuments: `${ERP_BASE}/api/method/hrms.napsa_client.employee.api.manage_employee_documents`,
+    getAll: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employees`,
+    getById: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employee_by_id`,
+    Dp: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.upload_employee_image`,
+    create: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.create_employee`,
+    update: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee`,
+    delete: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.delete_employee`,
+
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
+  },
+
+  employeeDocumnet: {
+    uploadDocument: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.upload_employee_document`,
+    getDocuments: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employee_documents`,
+    getDocumentById: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employees`,
+    updateDocument: `${ERP_BASE}/api/method/update_employee_document`,
+    deleteDocument: `${ERP_BASE}/api/method/delete_employee_document`,
   },
 
   /* =========================
@@ -323,15 +330,15 @@ export const API = {
     editInvoice: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
   },
 
-  CreditNote:{
-    Credit_note:`${ERP_BASE}/api/resource/Sales Invoice`,
+  CreditNote: {
+    Credit_note: `${ERP_BASE}/api/resource/Sales Invoice`,
   },
-  DebitNote:{
-      Debit_note:`${ERP_BASE}/api/resource/Purchase Invoice`
+  DebitNote: {
+    Debit_note: `${ERP_BASE}/api/resource/Purchase Invoice`,
   },
 
- Bank:{
-      Bank:`${ERP_BASE}/api/resource/Bank`
+  Bank: {
+    Bank: `${ERP_BASE}/api/resource/Bank`,
   },
   /* =========================
    * STOCK
@@ -394,14 +401,12 @@ export const API = {
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
   },
 
-
-  rfq:{
+  rfq: {
     create: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.create_rfq`,
     GetAll: `${ERP_BASE}/api/resource/Request for Quotation`,
-    update: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.update_rfq`
+    update: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.update_rfq`,
   },
 
-  
   /* =========================
    * SUPPLIER
    * ========================= */
@@ -421,7 +426,7 @@ export const API = {
     getTown: `${CODES_BASE}/towns/`,
   },
 
-  AssetsTypes: { 
+  AssetsTypes: {
     getall: `${ERP_BASE}/api/resource/Asset Category`,
     create: `${ERP_BASE}/api/method/custom_api.api.fixed_assets.api.create_asset_category`,
     update: `${ERP_BASE}/api/method/custom_api.api.fixed_assets.api.update_asset_category`,
@@ -488,20 +493,20 @@ export const API = {
   payroll: {
     // Salary Component
     salaryComponent: {
-      getAll:   `${ERP_BASE}/api/resource/Salary Component`,
-      getById:  `${ERP_BASE}/api/resource/Salary Component`,   
-      create:   `${ERP_BASE}/api/resource/Salary Component`,
-      update:   `${ERP_BASE}/api/resource/Salary Component`,  
-      delete:   `${ERP_BASE}/api/resource/Salary Component`,   
+      getAll: `${ERP_BASE}/api/resource/Salary Component`,
+      getById: `${ERP_BASE}/api/resource/Salary Component`,
+      create: `${ERP_BASE}/api/resource/Salary Component`,
+      update: `${ERP_BASE}/api/resource/Salary Component`,
+      delete: `${ERP_BASE}/api/resource/Salary Component`,
     },
- 
+
     // Salary Structure
     salaryStructure: {
-      getAll:   `${ERP_BASE}/api/resource/Salary Structure`,
-      getById:  `${ERP_BASE}/api/resource/Salary Structure`,  
-      create:   `${ERP_BASE}/api/resource/Salary Structure`,
-      update:   `${ERP_BASE}/api/resource/Salary Structure`,   
-      delete:   `${ERP_BASE}/api/resource/Salary Structure`,  
+      getAll: `${ERP_BASE}/api/resource/Salary Structure`,
+      getById: `${ERP_BASE}/api/resource/Salary Structure`,
+      create: `${ERP_BASE}/api/resource/Salary Structure`,
+      update: `${ERP_BASE}/api/resource/Salary Structure`,
+      delete: `${ERP_BASE}/api/resource/Salary Structure`,
     },
 
     incomeTaxSlab: {
@@ -510,6 +515,11 @@ export const API = {
       create: `${ERP_BASE}/api/resource/Income Tax Slab`,
       update: `${ERP_BASE}/api/resource/Income Tax Slab`,
       delete: `${ERP_BASE}/api/resource/Income Tax Slab`,
+    },
+
+    payrollentry: {
+      createpayrollentry: `${ERP_BASE}/api/resource/Payroll Entry`,
+      runpayroll:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.run_payroll`,
     },
   },
 
@@ -536,14 +546,27 @@ export const API = {
       delete: `${ERP_BASE}/api/resource/Employee Grade`,
     },
     employeeType: {
-      getAll: `${ERP_BASE}/api/resource/Employee Type`,
-      getById: `${ERP_BASE}/api/resource/Employee Type`,
-      create: `${ERP_BASE}/api/resource/Employee Type`,
-      update: `${ERP_BASE}/api/resource/Employee Type`,
-      delete: `${ERP_BASE}/api/resource/Employee Type`,
+      getAll: `${ERP_BASE}/api/resource/Employment Type`,
+      getById: `${ERP_BASE}/api/resource/Employment Type`,
+      create: `${ERP_BASE}/api/resource/Employment Type`,
+      update: `${ERP_BASE}/api/resource/Employment Type`,
+      delete: `${ERP_BASE}/api/resource/Employment Type`,
     },
   },
- 
+  leaveType: {
+    getAll: `${ERP_BASE}/api/resource/Leave Type`,
+    getById: `${ERP_BASE}/api/resource/Leave Type`,
+    create: `${ERP_BASE}/api/resource/Leave Type`,
+    update: `${ERP_BASE}/api/resource/Leave Type`,
+    delete: `${ERP_BASE}/api/resource/Leave Type`,
+  },
+  leaveApplication: {
+    getAll: `${ERP_BASE}/api/resource/Leave Application`,
+    getById: `${ERP_BASE}/api/resource/Leave Application`,
+    create: `${ERP_BASE}/api/resource/Leave Application`,
+    update: `${ERP_BASE}/api/resource/Leave Application`,
+    delete: `${ERP_BASE}/api/resource/Leave Application`,
+  },
 
   /* =========================
    * UTILS
@@ -554,6 +577,11 @@ export const API = {
     createlocation: `${ERP_BASE}/api/resource/Location`,
     getitemcodeforFaixedAsset: `${ERP_BASE}/api/method/custom_api.api.search.get_items`,
     getemployeeforAssetMovement: `${ERP_BASE}/api/method/custom_api.api.search.get_employees`,
-  
+    getdepartment: `${ERP_BASE}/api/method/custom_hrms.api.search.get_departments`,
+    getgrade: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employee_grades`,
+    getdesignation: `${ERP_BASE}/api/method/custom_hrms.api.search.get_designations`,
+    getemployeetype: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employment_types`,
+    getsalarystructure: `${ERP_BASE}/api/method/custom_hrms.api.search.get_salary_structures`,
+    getleavepolicy: `${ERP_BASE}/api/method/custom_hrms.api.search.get_leave_policies`,
   },
 } as const;

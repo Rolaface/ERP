@@ -29,31 +29,23 @@ export function DepartmentSetup() {
   const [editTarget, setEditTarget] = useState<Department | null>(null);
   const MODAL_ID = "department-modal";
 
-  const fetchAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await getAllDepartments();
-      const filtered = search
-        ? data.filter(
-            (r) =>
-              r.department_name
-                ?.toLowerCase()
-                .includes(search.toLowerCase()) ||
-              
-              r.parent_department
-                ?.toLowerCase()
-                .includes(search.toLowerCase()),
-          )
-        : data;
-      setTotalItems(filtered.length);
-      setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
-      setRows(filtered.slice((page - 1) * pageSize, page * pageSize));
-    } catch (err: any) {
-      showApiError(err?.message ?? "Failed to load departments");
-    } finally {
-      setLoading(false);
-    }
-  }, [search, page, pageSize]);
+const fetchAll = useCallback(async () => {
+  try {
+    setLoading(true);
+
+    const start = (page - 1) * pageSize;
+const response = await getAllDepartments(start, pageSize, search);
+
+    setRows(response.data);
+setTotalItems(response.pagination.total);
+setTotalPages(response.pagination.total_pages);
+
+  } catch (err: any) {
+    showApiError(err?.message ?? "Failed to load departments");
+  } finally {
+    setLoading(false);
+  }
+}, [page, pageSize, search]);
 
   useEffect(() => {
     fetchAll();
