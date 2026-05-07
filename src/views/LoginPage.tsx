@@ -242,17 +242,45 @@ outline-none transition-all duration-200"
               </div>
 
               {/* Remember */}
-              <div className="flex items-center mt-3">
+              <label className="group flex items-center gap-3 mt-4 cursor-pointer select-none w-fit">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={() => setRememberMe(!rememberMe)}
-                  className="w-4 h-4 accent-primary"
+                  className="
+      w-4 h-4 rounded-[4px]
+
+      border border-[#C7D7EA]
+      bg-[#F8FBFF]
+
+      accent-primary
+
+      transition-all duration-200
+      ease-[cubic-bezier(0.22,1,0.36,1)]
+
+      hover:scale-105
+      hover:border-blue-400
+
+      checked:shadow-[0_0_0_4px_rgba(59,130,246,0.10)]
+
+      active:scale-95
+
+      cursor-pointer
+    "
                 />
-                <span className="ml-2 text-sm text-[#475569]">
+
+                <span
+                  className="
+      text-sm font-medium text-[#475569]
+
+      transition-colors duration-200
+
+      group-hover:text-[#334155]
+    "
+                >
                   Remember me
                 </span>
-              </div>
+              </label>
             </div>
 
             {/* Button */}
