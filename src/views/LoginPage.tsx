@@ -180,16 +180,21 @@ animate-[fadeInUp_0.9s_ease-out]">
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full h-12 px-4 rounded-xl 
+                className="w-full h-12 px-4 rounded-xl
 bg-[#F4F8FC] border border-[#DCE7F3]
-shadow-inner
+shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)]
+text-[15px] text-[#0F172A]
 placeholder:text-[#94A3B8]
-focus:bg-white focus:border-primary 
-focus:ring-4 focus:ring-blue-500/10
+
+focus:bg-white
 focus:border-blue-500/70
-focus:shadow-[0_0_0_1px_rgba(59,130,246,0.30),0_8px_20px_rgba(59,130,246,0.10)]
+focus:ring-4 focus:ring-blue-500/10
+focus:shadow-[0_0_0_1px_rgba(59,130,246,0.28),0_10px_30px_rgba(59,130,246,0.12)]
+focus:-translate-y-[1px]
 focus:placeholder:opacity-60
-outline-none transition-all duration-200"
+
+outline-none
+transition-all duration-300 ease-out"
                 required
               />
             </div>
