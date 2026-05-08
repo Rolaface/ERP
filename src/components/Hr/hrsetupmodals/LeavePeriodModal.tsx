@@ -7,7 +7,7 @@ import { createLeavePeriod, updateLeavePeriod, type LeavePeriod } from "../../..
 import { ModalInput, YesNoCheckbox } from "../../../components/ui/modal/modalComponent";
 import { showApiError, showSuccess, showValidationError } from "../../../utils/alert";
 import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
-
+import DatePickerInput from "../../calendar/DatePickerInput";
 interface Props {
   modalId: string;
   isOpen: boolean;
@@ -21,7 +21,7 @@ const EMPTY: LeavePeriod = {
   from_date: "",
   to_date: "",
   is_active: 1,
-};
+}; 
 
 export const LeavePeriodModal: React.FC<Props> = ({
   modalId,
@@ -137,23 +137,24 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
           disabled={isEdit} 
         />
 
-       <div className="grid grid-cols-2 gap-4">
-  <ModalInput
-    id="from_date"        // Add a unique ID
-    name="from_date"      // Add a unique name (optional, but good practice)
+     <div className="grid grid-cols-2 gap-4">
+  <DatePickerInput
     label="From Date"
-    type="date"
+    name="from_date"
     value={form.from_date}
-    onChange={(e) => set("from_date", e.target.value)} // Removed the "&&" check
+    onChange={(name, value) =>
+      set(name as keyof typeof form, value)
+    }
     required
   />
-  <ModalInput
-    id="to_date"          // Add a unique ID
-    name="to_date"        // Add a unique name
+
+  <DatePickerInput
     label="To Date"
-    type="date"
+    name="to_date"
     value={form.to_date}
-    onChange={(e) => set("to_date", e.target.value)} // Removed the "&&" check
+    onChange={(name, value) =>
+      set(name as keyof typeof form, value)
+    }
     required
   />
 </div>
