@@ -5,8 +5,9 @@ import {
   getAllDepartments,
   getAllGrades,
   getAllDesignations,
-  getAllEmploymentTypes,
+  getAllEmploymentTypes
 } from "../../../api/utils/frappeUtilsApi";
+import { getAllEmployees } from "../../../api/employeeapi";
 import DatePickerInput from "../../calendar/DatePickerInput";
 
 type EmploymentTabProps = {
@@ -47,8 +48,23 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
       handleInputChange("contractEndDate", "");
     }
   }, [formData.employeeType]);
+const fetchEmployeeOptions = async (q: string) => {
+  const res = await getAllEmployees(1, 200);
 
-
+  return (res.data || [])
+    .filter((emp: any) =>
+      `${emp.employee_name} ${emp.name}`
+        .toLowerCase()
+        .includes(q.toLowerCase()),
+    )
+    .map((emp: any) => ({
+      label: emp.employee_name,
+      value: emp.name,
+      meta: {
+        employeeId: emp.name,
+      },
+    }));
+};
   const hrManagerOptions = hrManagers.map((mgr) => ({
     label: mgr.name,
     value: mgr.employeeId,
@@ -141,16 +157,23 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
           Reporting & Dates
         </h4>
         <div className="grid grid-cols-3 gap-2.5">
-          <ModalSelect
-            label="Reporting Manager"
-            name="reportingManager"
-            value={formData.reportingManager}
-            onChange={(e) =>
-              handleInputChange("reportingManager", e.target.value)
-            }
-            placeholder="Select Manager"
-          />
+<SearchSelect2
+  label="Reporting To"
+  value={formData.reportingToLabel}
+  placeholder="Search Employee..."
+  fetchOptions={fetchEmployeeOptions}
+  onChange={(value, option) => {
+    handleInputChange(
+      "reports_to",
+      value,
+    );
 
+    handleInputChange(
+      "reportingToLabel",
+      option?.label || "",
+    );
+  }}
+/>
           <ModalSelect
             label="HR Manager"
             name="hrManager"

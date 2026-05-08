@@ -6,13 +6,14 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
-import { TaxConfigModal } from "../../../../../components/Hr/hrsetupmodals/TaxConfigModal";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import {
   deleteTaxConfig,
   type TaxConfig,
 } from "../../../../../api/payrollConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { useTaxConfigs } from "../hooks/useTaxConfigs";
+import { openTaxConfigModal } from "../../../../../store/modalStore";
 
 export function TaxConfigurationSetup() {
   const {
@@ -31,16 +32,20 @@ export function TaxConfigurationSetup() {
   } = useTaxConfigs();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<TaxConfig | null>(null);
-  const MODAL_ID = "tax-config-modal";
-
   const handleEdit = useCallback(
     async (row: TaxConfig) => {
       const detail = await fetchDetail(row.name);
       if (!detail) return;
-      setEditTarget(detail);
-      setModalOpen(true);
+      openTaxConfigModal(
+        detail,
+        true,
+        {
+          onSuccess: fetchAll,
+        },
+        {
+          title: "Edit Tax Configuration",
+        },
+      );
     },
     [fetchDetail],
   );
@@ -48,21 +53,28 @@ export function TaxConfigurationSetup() {
   const handleDelete = useCallback(
     async (row: TaxConfig) => {
       if (!row.name) return;
-      if (!confirm(`Delete "${row.name}"?`)) return;
+
       try {
         setActionLoadingId(row.name);
-        await deleteTaxConfig(row.name);
-        showSuccess("Tax configuration deleted");
-        fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete");
+
+        const deleted = await confirmDelete({
+          text: `Delete "${row.name}"?`,
+          loadingText: "Deleting Tax Configuration...",
+          successMessage: "Tax configuration deleted",
+          action: async () => {
+            await deleteTaxConfig(row.name!);
+          },
+        });
+
+        if (deleted) {
+          fetchAll();
+        }
       } finally {
         setActionLoadingId(null);
       }
     },
     [fetchAll],
   );
-
   const columns: Column<TaxConfig>[] = useMemo(
     () => [
       {
@@ -154,10 +166,18 @@ export function TaxConfigurationSetup() {
         }}
         enableAdd
         addLabel="Add Tax"
-        onAdd={() => {
-          setEditTarget(null);
-          setModalOpen(true);
-        }}
+        onAdd={() =>
+          openTaxConfigModal(
+            null,
+            false,
+            {
+              onSuccess: fetchAll,
+            },
+            {
+              title: "New Tax Configuration",
+            },
+          )
+        }
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -170,14 +190,6 @@ export function TaxConfigurationSetup() {
         }}
         enableColumnSelector
         tableId="tax-configurations"
-      />
-
-      <TaxConfigModal
-        modalId={MODAL_ID}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialData={editTarget}
-        onSuccess={fetchAll}
       />
     </>
   );

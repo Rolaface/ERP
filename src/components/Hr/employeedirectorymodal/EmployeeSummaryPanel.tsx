@@ -146,14 +146,14 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
           )}
         </div>
 
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          hidden
-          onChange={handleUpload}
-        />
-
+ <input
+  id="employee-photo-input"
+  type="file"
+  accept="image/*"
+  ref={fileInputRef}
+  hidden
+  onChange={handleUpload}
+/>
         <h3 className="text-xs font-semibold text-main text-center leading-snug">
           {fullName || "New Employee"}
         </h3>

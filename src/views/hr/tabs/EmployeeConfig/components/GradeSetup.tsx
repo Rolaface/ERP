@@ -6,6 +6,7 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import {
   deleteEmployeeGrade,
   getAllEmployeeGrades,
@@ -13,8 +14,7 @@ import {
   type EmployeeGrade,
 } from "../../../../../api/employeeConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
-import { GradeModal } from "../../../../../components/empployeesetupmodal/GradeModal";
-
+import { openGradeModal } from "../../../../../store/modalStore";
 export function GradeSetup() {
   const [rows, setRows] = useState<EmployeeGrade[]>([]);
   const [loading, setLoading] = useState(false);
@@ -24,9 +24,6 @@ export function GradeSetup() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<EmployeeGrade | null>(null);
-  const MODAL_ID = "grade-modal";
 
   const fetchAll = useCallback(async () => {
     try {
@@ -52,30 +49,46 @@ export function GradeSetup() {
     if (!row.name) return;
     try {
       const detail = await getEmployeeGrade(row.name);
-      setEditTarget(detail);
-      setModalOpen(true);
+      openGradeModal(
+        detail,
+        true,
+        {
+          onSuccess: fetchAll,
+        },
+        {
+          title: "Edit Grade",
+        },
+      );
     } catch (err: any) {
       showApiError(err?.message ?? "Failed to load grade details");
     }
   }, []);
 
-  const handleDelete = useCallback(
-    async (row: EmployeeGrade) => {
-      if (!row.name) return;
-      if (!confirm(`Delete "${row.name}"?`)) return;
-      try {
-        setActionLoadingId(row.name);
-        await deleteEmployeeGrade(row.name);
-        showSuccess("Grade deleted");
+const handleDelete = useCallback(
+  async (row: EmployeeGrade) => {
+    if (!row.name) return;
+
+    try {
+      setActionLoadingId(row.name);
+
+      const deleted = await confirmDelete({
+        text: `Delete "${row.name}"?`,
+        loadingText: "Deleting Grade...",
+        successMessage: "Grade deleted",
+        action: async () => {
+          await deleteEmployeeGrade(row.name!);
+        },
+      });
+
+      if (deleted) {
         fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete");
-      } finally {
-        setActionLoadingId(null);
       }
-    },
-    [fetchAll],
-  );
+    } finally {
+      setActionLoadingId(null);
+    }
+  },
+  [fetchAll],
+);
 
   const columns: Column<EmployeeGrade>[] = useMemo(
     () => [
@@ -103,8 +116,21 @@ export function GradeSetup() {
         align: "center",
         render: (row) => (
           <ActionGroup>
-            <ActionButton type="edit" iconOnly onClick={() => handleEdit(row)} disabled={actionLoadingId === row.name} />
-            <ActionMenu customActions={[{ label: "Delete", onClick: () => handleDelete(row), disabled: actionLoadingId === row.name }]} />
+            <ActionButton
+              type="edit"
+              iconOnly
+              onClick={() => handleEdit(row)}
+              disabled={actionLoadingId === row.name}
+            />
+            <ActionMenu
+              customActions={[
+                {
+                  label: "Delete",
+                  onClick: () => handleDelete(row),
+                  disabled: actionLoadingId === row.name,
+                },
+              ]}
+            />
           </ActionGroup>
         ),
       },
@@ -114,8 +140,45 @@ export function GradeSetup() {
 
   return (
     <>
-      <Table columns={columns} data={rows} loading={loading} rowKey={(row) => row.name} showToolbar searchValue={search} onSearch={(v) => { setSearch(v); setPage(1); }} enableAdd addLabel="Add Grade" onAdd={() => { setEditTarget(null); setModalOpen(true); }} currentPage={page} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} pageSizeOptions={[10, 25, 50]} onPageChange={setPage} onPageSizeChange={(s) => { setPageSize(s); setPage(1); }} enableColumnSelector tableId="employee-grades" />
-      <GradeModal modalId={MODAL_ID} isOpen={modalOpen} onClose={() => setModalOpen(false)} initialData={editTarget} onSuccess={fetchAll} />
+      <Table
+        columns={columns}
+        data={rows}
+        loading={loading}
+        rowKey={(row) => row.name}
+        showToolbar
+        searchValue={search}
+        onSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="Add Grade"
+       onAdd={() =>
+  openGradeModal(
+    null,
+    false,
+    {
+      onSuccess: fetchAll,
+    },
+    {
+      title: "New Grade",
+    },
+  )
+}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[10, 25, 50]}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => {
+          setPageSize(s);
+          setPage(1);
+        }}
+        enableColumnSelector
+        tableId="employee-grades"
+      />
+     
     </>
   );
 }

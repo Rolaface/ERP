@@ -46,6 +46,11 @@ export const API = {
    * ========================= */
   dashboard: {
     summary: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.summary`,
+    dashboardSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.dashboard_summary`,
+    salesChart: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.sales_chart`,
+    purchaseChart: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.purchase_chart`,
+    inventoryChart: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.inventory_chart`,
+    notes: `${ERP_BASE}/api/method/custom_api.api.dashboard.main.api.notes`,
   },
 
   /* =========================
@@ -518,8 +523,9 @@ export const API = {
     },
 
     payrollentry: {
-      createpayrollentry: `${ERP_BASE}/api/resource/Payroll Entry`,
+      createpayrollentry:`${ERP_BASE}/api/resource/Payroll Entry`,
       runpayroll:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.run_payroll`,
+      salaryslip:`${ERP_BASE}/api/resource/Salary Slip`,
     },
   },
 

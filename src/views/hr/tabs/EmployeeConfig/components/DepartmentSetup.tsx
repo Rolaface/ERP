@@ -6,15 +6,16 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
+
 import {
   deleteDepartment,
   getAllDepartments,
   getDepartment,
   type Department,
 } from "../../../../../api/employeeConfigApi";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
-import { DepartmentModal } from "../../../../../components/empployeesetupmodal/DepartmentModal";
-
+import { openDepartmentModal } from "../../../../../store/modalStore";
 export function DepartmentSetup() {
   const [rows, setRows] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,10 +26,7 @@ export function DepartmentSetup() {
   const [totalItems, setTotalItems] = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Department | null>(null);
-  const MODAL_ID = "department-modal";
-
+ 
 const fetchAll = useCallback(async () => {
   try {
     setLoading(true);
@@ -55,30 +53,46 @@ setTotalPages(response.pagination.total_pages);
     if (!row.name) return;
     try {
       const detail = await getDepartment(row.name);
-      setEditTarget(detail);
-      setModalOpen(true);
+     openDepartmentModal(
+  detail,
+  true,
+  {
+    onSuccess: fetchAll,
+  },
+  {
+    title: "Edit Department",
+  },
+);
     } catch (err: any) {
       showApiError(err?.message ?? "Failed to load department details");
     }
   }, []);
 
-  const handleDelete = useCallback(
-    async (row: Department) => {
-      if (!row.name) return;
-      if (!confirm(`Delete "${row.department_name ?? row.name}"?`)) return;
-      try {
-        setActionLoadingId(row.name);
-        await deleteDepartment(row.name);
-        showSuccess("Department deleted");
+const handleDelete = useCallback(
+  async (row: Department) => {
+    if (!row.name) return;
+
+    try {
+      setActionLoadingId(row.name);
+
+      const deleted = await confirmDelete({
+        text: `Delete "${row.department_name ?? row.name}"?`,
+        loadingText: "Deleting Department...",
+        successMessage: "Department deleted",
+        action: async () => {
+          await deleteDepartment(row.name!);
+        },
+      });
+
+      if (deleted) {
         fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete");
-      } finally {
-        setActionLoadingId(null);
       }
-    },
-    [fetchAll],
-  );
+    } finally {
+      setActionLoadingId(null);
+    }
+  },
+  [fetchAll],
+);
 
   const columns: Column<Department>[] = useMemo(
     () => [
@@ -161,10 +175,18 @@ setTotalPages(response.pagination.total_pages);
         }}
         enableAdd
         addLabel="Add Department"
-        onAdd={() => {
-          setEditTarget(null);
-          setModalOpen(true);
-        }}
+      onAdd={() =>
+  openDepartmentModal(
+    null,
+    false,
+    {
+      onSuccess: fetchAll,
+    },
+    {
+      title: "New Department",
+    },
+  )
+}
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -179,13 +201,7 @@ setTotalPages(response.pagination.total_pages);
         tableId="employee-departments"
       />
 
-      <DepartmentModal
-        modalId={MODAL_ID}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialData={editTarget}
-        onSuccess={fetchAll}
-      />
+      
     </>
   );
 }

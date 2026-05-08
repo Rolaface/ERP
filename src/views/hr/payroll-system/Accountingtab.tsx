@@ -117,43 +117,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
         </div> */}
       </div>
 
-      {/* Payload preview */}
-      {data.selectedEmployees.length > 0 && (
-        <div className="rounded-xl border border-theme bg-app p-4 font-mono text-[11px] text-muted overflow-x-auto">
-          <p className="text-[10px] font-extrabold text-main uppercase tracking-wider mb-3 font-sans">
-            API Payload Preview
-          </p>
-          <pre className="whitespace-pre-wrap break-all leading-relaxed">
-            {JSON.stringify(
-              {
-                payroll_frequency: data.payrollFrequency || "",
-                posting_date: data.postingDate,
-                start_date: data.startDate,
-                end_date: data.endDate,
-                exchange_rate: data.exchangeRate,
-                payroll_payable_account: data.payrollPayableAccount,
-                payment_account: data.paymentAccount,
-                bank_account: data.bankAccount ?? "",
-                ...(data.costCenter ? { cost_center: data.costCenter } : {}),
-                ...(data.project ? { project: data.project } : {}),
-                currency: data.currency,
-                deduct_tax_for_unsubmitted_tax_exemption_proof:
-                  data.deductTaxForProof ? 1 : 0,
-                salary_slip_based_on_timesheet: data.salarySlipTimesheet
-                  ? 1
-                  : 0,
-                employees: data.selectedEmployees.map((id) => ({
-                  employee: id,
-                  is_salary_withheld: 0,
-                })),
-              },
-              null,
-              2,
-            )}
-          </pre>
-        </div>
-      )}
-
+  
       {/* Summary card */}
       {data.selectedEmployees.length > 0 && (
         <div className="rounded-xl border border-success/30 bg-success/5 p-5">
