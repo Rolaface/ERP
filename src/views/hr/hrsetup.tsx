@@ -1,9 +1,9 @@
-import { useState } from "react";
 import {
   AppPage,
   AppPageBody,
   AppSubTabs,
 } from "../../components/ui/app-shell";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
 import GeneralSettingsTab from "./tabs/GeneralSettingsTab";
 import EmployeeConfigTab from "./tabs/EmployeeConfig";
@@ -21,7 +21,12 @@ const TABS = [
 ];
 
 export default function HRSetup() {
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useUrlTab({
+    tabs: TABS,
+    defaultTab: "general",
+    param: "setupTab",
+    basePath: "/hr",
+  });
 
   const renderTab = () => {
     switch (activeTab) {

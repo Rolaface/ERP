@@ -1,5 +1,4 @@
-import React, { useMemo, useCallback } from "react";
-import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import React, { useMemo } from "react";
 import {
   LayoutDashboard,
   Layers,
@@ -14,6 +13,7 @@ import {
   AppPageBody,
   AppTabs,
 } from "../../components/ui/app-shell";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
 // Lazy modules
 const FADashboard = React.lazy(() => import("./FA_Dashboard"));
@@ -58,9 +58,6 @@ const allTabs = [
   },
 ];
 const FixedAssetsModule: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
   const { can } = usePermission();
 
    const assetTabs = useMemo(
@@ -68,19 +65,12 @@ const FixedAssetsModule: React.FC = () => {
     [can]
   );         
 
-    const activeTab = searchParams.get("tab") || DEFAULT_TAB;
-  
-   const resolvedTab =
-    assetTabs.find((t) => t.id === activeTab)?.id ??
-    assetTabs[0]?.id ??
-    DEFAULT_TAB;     
-
-
-  const handleTabChange = useCallback((tabId: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("tab", tabId);
-    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-  }, [navigate, location.pathname, searchParams]);
+  const fallbackTab = assetTabs[0]?.id ?? DEFAULT_TAB;
+  const [resolvedTab, handleTabChange] = useUrlTab({
+    tabs: assetTabs,
+    defaultTab: fallbackTab,
+    basePath: "/fasset",
+  });
 
 
   const tabComponents = useMemo(() => ({

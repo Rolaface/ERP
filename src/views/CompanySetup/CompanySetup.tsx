@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import {
   Building2,
   IdCard,
@@ -16,6 +15,7 @@ import {
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
+import { useUrlTab } from "../../hooks/useUrlTab";
 import BasicDetails from "./BasicDetails";
 import AccountingDetails from "./AccountingDetails";
 import BuyingSelling from "./BuyingSelling";
@@ -85,25 +85,12 @@ const navTabs = [
 ];
 
 const CompanySetup: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const activeTab = useMemo(() => {
-    const path = location.pathname;
-    if (path === BASE || path === `${BASE}/`) return DEFAULT_TAB;
-    return path.replace(`${BASE}/`, "") || DEFAULT_TAB;
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const path = location.pathname;
-    if (path === BASE || path === `${BASE}/`) {
-      navigate(`${BASE}/${DEFAULT_TAB}`, { replace: true });
-    }
-  }, [location.pathname, navigate]);
-
-  const handleTabChange = useCallback((tabId: string) => {
-    navigate(`${BASE}/${tabId}`, { replace: true });
-  }, [navigate]);
+  const [activeTab, handleTabChange] = useUrlTab({
+    tabs: navTabs,
+    defaultTab: DEFAULT_TAB,
+    basePath: BASE,
+    pathPrefix: BASE,
+  });
 
   const isBasicTab = activeTab === DEFAULT_TAB;
 

@@ -10,7 +10,7 @@ import {
 } from "../../components/ui/app-shell";
 import AppSkeleton from "../../components/ui/AppSkeleton";
 import { usePermission } from "../../hooks/permission/usePermission";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
 const BankPage = lazy(() => import("./Bank"));
 const BankAccountSetup = lazy(() => import("./BankAccountSetup"));
@@ -35,10 +35,6 @@ const ALL_BANK_TABS = [
 const DEFAULT_TAB = "bank";
 
 const BankModule: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
-
   const { can } = usePermission();
 
   const bankTabs = useMemo(
@@ -49,24 +45,12 @@ const BankModule: React.FC = () => {
     [can]
   );
 
-  const activeTab =
-    searchParams.get("tab") || DEFAULT_TAB;
-
-  const resolvedTab =
-    bankTabs.find((t) => t.id === activeTab)?.id ??
-    bankTabs[0]?.id ??
-    DEFAULT_TAB;
-
-  const handleTabChange = (tabId: string) => {
-    const newParams = new URLSearchParams(searchParams);
-
-    newParams.set("tab", tabId);
-
-    navigate(
-      `${location.pathname}?${newParams.toString()}`,
-      { replace: true }
-    );
-  };
+  const fallbackTab = bankTabs[0]?.id ?? DEFAULT_TAB;
+  const [resolvedTab, handleTabChange] = useUrlTab({
+    tabs: bankTabs,
+    defaultTab: fallbackTab,
+    basePath: "/bank-management",
+  });
 
   const renderTab = () => {
     switch (resolvedTab) {

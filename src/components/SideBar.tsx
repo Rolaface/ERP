@@ -274,9 +274,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
     loadCompany();
   }, []);
 
-  const isSettingsRoute = ["/settings", "/companySetup", "/userManagement"].some((p) =>
-    location.pathname.startsWith(p)
-  );
+  const isSettingsRoute = [
+    "/settings",
+    "/companySetup",
+    "/userManagement",
+    "/bank-management",
+    "/mode-of-payment-setup",
+    "/payment-entry",
+    "/currency-conversion",
+    "/customer-group",
+    "/Tax-Maintenance",
+  ].some((p) => location.pathname.startsWith(p));
 
   useEffect(() => {
     if (!open) setSettingsOpen(false);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { lazy, Suspense, useMemo } from "react";
 import {
   FaUserTie,
   FaUserFriends,
@@ -15,15 +15,16 @@ import {
   AppTabs,
   AppPageBody,
 } from "../../components/ui/app-shell";
+import AppSkeleton from "../../components/ui/AppSkeleton";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
-import HrDashboard from "./HrDashboard";
-import EmployeeManagement from "./EmployeeManagement/EmployeeManagement";
-import PerformanceDevelopment from "./performance&growth/performancedevolpment";
-import ComplianceManagement from "./compiliance/ComplianceManagement";
-import TimeAttendance from "./time_leave/Attendance";
-import Leave from "./time_leave/Leave";
-import PayrollManagement from "./payroll-system/PayrollManagement";
-import HRSettingsPage from "./hrsetup";
+const HrDashboard = lazy(() => import("./HrDashboard"));
+const EmployeeManagement = lazy(() => import("./EmployeeManagement/EmployeeManagement"));
+const PerformanceDevelopment = lazy(() => import("./performance&growth/performancedevolpment"));
+const TimeAttendance = lazy(() => import("./time_leave/Attendance"));
+const Leave = lazy(() => import("./time_leave/Leave"));
+const PayrollManagement = lazy(() => import("./payroll-system/PayrollManagement"));
+const HRSettingsPage = lazy(() => import("./hrsetup"));
 
 const navTabs = [
   { key: "dashboard", label: "HR Dashboard", icon: <FaChartLine /> },
@@ -33,42 +34,64 @@ const navTabs = [
   { key: "performance", label: "Performance & Growth", icon: <FaChartLine /> },
   { key: "payroll", label: "Payroll", icon: <FaMoneyCheckAlt /> },
   // { key: "compliance", label: "Compliance Management", icon: <FaClipboardList /> },
-  { key: "Hrsetting", label: "HR Setup", icon: <FaSlidersH /> },
+  { key: "setup", label: "HR Setup", icon: <FaSlidersH /> },
 ];
 
 const HrPayrollModule: React.FC = () => {
-  const [tab, setTab] = useState("dashboard");
+  const tabs = useMemo(
+    () =>
+      navTabs.map((t) => ({
+        id: t.key,
+        label: t.label,
+        icon: t.icon,
+      })),
+    [],
+  );
+
+  const [tab, setTab] = useUrlTab({
+    tabs,
+    defaultTab: "dashboard",
+    basePath: "/hr",
+    pathPrefix: "/hr",
+  });
+
+  const renderTab = () => {
+    switch (tab) {
+      case "dashboard":
+        return <HrDashboard />;
+      case "management":
+        return <EmployeeManagement />;
+      case "attendance":
+        return <TimeAttendance />;
+      case "leave":
+        return <Leave />;
+      case "payroll":
+        return <PayrollManagement />;
+      case "performance":
+        return <PerformanceDevelopment />;
+      case "setup":
+        return <HRSettingsPage />;
+      default:
+        return <HrDashboard />;
+    }
+  };
 
   return (
-    <AppPage viewportLocked>
-      {/* Header */}
+    <AppPage viewportLocked={tab === "dashboard"}>
       <AppPageHeader
         title="Human Resources"
         icon={<FaUserTie />}
         description="Manage employees, payroll, attendance, and compliance"
       />
 
-      {/* Tabs */}
       <AppTabs
-        tabs={navTabs.map((t) => ({
-          id: t.key,
-          label: t.label,
-          icon: t.icon,
-        }))}
+        tabs={tabs}
         activeTab={tab}
         onChange={setTab}
       />
 
-      {/* Content */}
-      <AppPageBody className="mt-2">
-        {tab === "dashboard" && <HrDashboard />}
-        {tab === "management" && <EmployeeManagement />}
-        {tab === "attendance" && <TimeAttendance />}
-        {tab === "leave" && <Leave />}
-        {tab === "payroll" && <PayrollManagement />}
-        {tab === "performance" && <PerformanceDevelopment />}
-        {/* {tab === "compliance" && <ComplianceManagement />} */}
-        {tab === "Hrsetting" && <HRSettingsPage />}
+      <AppPageBody className="mt-2" viewportLocked={tab === "dashboard"}>
+        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>
     </AppPage>
   );
