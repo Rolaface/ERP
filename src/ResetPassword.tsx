@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { resetPasswordApi } from "../src/api/authService";
 
-
-
 const ResetPassword: React.FC = () => {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");

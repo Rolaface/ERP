@@ -21,6 +21,14 @@ const Login = () => {
     error,
     handleSubmit,
     isSubmitting,
+    forgotOpen,
+    setForgotOpen,
+    forgotEmail,
+    setForgotEmail,
+    forgotStatus,
+    forgotMessage,
+    handleForgotPassword,
+    closeForgotModal,
   } = useLogin();
 
   const [rememberMe, setRememberMe] = useState(false);
@@ -98,6 +106,7 @@ focus:scale-[1.01]"
                 <label className="form-label">Password</label>
                 <button
                   type="button"
+                  onClick={() => setForgotOpen(true)}
                   className="text-sm text-primary hover:underline"
                 >
                   Forgot password?
@@ -156,7 +165,7 @@ focus:scale-[1.01]"
                 {/* Gradient overlay */}
                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-300" />
 
-                {/* ✅ ADD IT HERE */}
+
                 {isSubmitting && (
                   <span className="absolute inset-0 bg-white/10 animate-pulse z-10" />
                 )}
@@ -276,6 +285,80 @@ focus:scale-[1.01]"
         <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-grid-subtle mix-blend-overlay" />
 
       </section>
+      {forgotOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) closeForgotModal(); }}
+        >
+          <div className="card relative w-full max-w-sm mx-4 p-8 animate-fade-up">
+
+            {/* Close */}
+            <button
+              type="button"
+              onClick={closeForgotModal}
+              className="absolute top-4 right-4 text-muted hover:text-main transition-colors"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+
+            <h2 className="heading-lg font-bold text-main mb-2">Reset password</h2>
+            <p className="text-muted text-sm mb-6">
+              Enter your email and we'll send a reset link.
+            </p>
+
+            {/* Status messages */}
+            {forgotStatus === "success" && (
+              <div className="mb-4 p-3 rounded-lg bg-success/10 border border-success/20">
+                <p className="text-success text-sm">{forgotMessage}</p>
+              </div>
+            )}
+            {forgotStatus === "error" && (
+              <div className="mb-4 p-3 rounded-lg bg-danger/10 border border-danger/20">
+                <p className="text-danger text-sm">{forgotMessage}</p>
+              </div>
+            )}
+
+            {forgotStatus !== "success" && (
+              <>
+                <div className="space-y-2 mb-6">
+                  <label className="form-label">Email address</label>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleForgotPassword()}
+                    className="input-base focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    placeholder="name@company.com"
+                    autoFocus
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={forgotStatus === "loading"}
+                  className="btn btn-primary w-full h-12 flex items-center justify-center gap-2
+              transition-all duration-[120ms] hover:shadow-lg hover:-translate-y-[1px]
+              active:scale-[0.97] disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {forgotStatus === "loading" ? "Sending..." : "Send reset link"}
+                </button>
+              </>
+            )}
+
+            {forgotStatus === "success" && (
+              <button
+                type="button"
+                onClick={closeForgotModal}
+                className="btn btn-primary w-full h-12 flex items-center justify-center mt-2"
+              >
+                Back to login
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
