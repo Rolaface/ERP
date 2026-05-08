@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useState, useMemo, useCallback } from "react";
-import { useOutletContext, useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import ApprovalModal from "../../components/procurement/ApprovalModal";
 import {
   LayoutDashboard,
@@ -21,6 +21,7 @@ import {
 } from "../../components/ui/app-shell";
 import DebitNotesTable from "../Sales/DebitNotesTable";
 import { usePermission } from "../../hooks/permission/usePermission";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
 const RFQsTable = lazy(() => import("./Rfqs"));
 const PurchaseOrdersTable = lazy(() => import("./PurchaseOrders"));
@@ -111,9 +112,6 @@ const ALL_PROCUREMENT_TABS = [
 const DEFAULT_TAB = "procurementdashboard";
 
 const Procurement: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
   const { can } = usePermission();                          
 
   // Filter tabs based on permissions
@@ -122,27 +120,18 @@ const Procurement: React.FC = () => {
     [can]
   );                                                        
 
-  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
-
-  // If current tab not visible, fall back to first visible
-
-  const resolvedTab =
-    procurementTabs.find((t) => t.id === activeTab)?.id ??
-    procurementTabs[0]?.id ??
-    DEFAULT_TAB;      
+  const fallbackTab = procurementTabs[0]?.id ?? DEFAULT_TAB;
+  const [resolvedTab, handleTabChange] = useUrlTab({
+    tabs: procurementTabs,
+    defaultTab: fallbackTab,
+    basePath: "/procurement",
+  });
           
   
   const isDashboardTab = resolvedTab === "procurementdashboard";
   const { openSupplierCreate, openPOCreate } = useOutletContext<OutletContextType>();
 
   const [showApprovalModal, setShowApprovalModal] = useState(false);
-
-  const handleTabChange = useCallback((tabId: string) => {
-    const newParams = new URLSearchParams(searchParams);
-
-    newParams.set("tab", tabId);
-    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-  }, [navigate, location.pathname, searchParams]);
 
   const handleAdd = useCallback(() => {
     if (resolvedTab === "supplier") openSupplierCreate();

@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { AppSetupLayout } from "../../../components/ui/app-shell";
+import { useUrlTab } from "../../../hooks/useUrlTab";
 import { LeaveTypeSetup } from "./leave-config/components/LeaveTypeSetup";
 import { TaxConfigurationSetup } from "./payroll-config/components/TaxConfigurationSetup";
 import { SETUP_SECTIONS } from "./leave-config/sections";
@@ -8,9 +8,12 @@ import { LeavePolicySetup } from "./leave-config/components/LeavePolicySetup";
 import { LeavePolicyAssignmentSetup } from "./leave-config/components/LeavePolicyAssignmentSetup";
 
 export default function LeaveConfigTab() {
-  const [activeSection, setActiveSection] = useState<string>(
-    SETUP_SECTIONS[0].key,
-  );
+  const [activeSection, setActiveSection] = useUrlTab({
+    tabs: SETUP_SECTIONS.map((section) => ({ id: section.key })),
+    defaultTab: SETUP_SECTIONS[0].key,
+    param: "leaveSetup",
+    basePath: "/hr",
+  });
 
   return (
     <AppSetupLayout

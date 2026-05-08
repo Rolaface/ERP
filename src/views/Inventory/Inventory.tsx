@@ -1,5 +1,5 @@
-import React, {lazy, useMemo, useEffect, useCallback } from "react";
-import { useOutletContext, useNavigate, useLocation } from "react-router-dom";
+import React, {lazy, useMemo } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -16,6 +16,7 @@ import {
   AppTabs,
 } from "../../components/ui/app-shell";
 import { usePermission } from "../../hooks/permission/usePermission";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
 
 const Items = lazy(() => import("./Items"));
@@ -90,8 +91,6 @@ const ALL_INVENTORY_TAB = [
 const DEFAULT_TAB = "dashboard";
 
 const Inventory: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const { openWarehouseCreate, openWarehouseEdit } = useOutletContext<OutletContextType>();
    const { can } = usePermission();       
     
@@ -100,32 +99,15 @@ const Inventory: React.FC = () => {
     [can]
   );   
 
-  const activeTab = useMemo(() => {
-    const path = location.pathname;
-    const base = "/inventory";
-    if (path === base || path === `${base}/`) {
-      return DEFAULT_TAB;
-    }
-    return path.replace(`${base}/`, "") || DEFAULT_TAB;
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const path = location.pathname;
-    if (path === "/inventory" || path === "/inventory/") {
-      navigate("/inventory/dashboard", { replace: true });
-    }
-  }, [location.pathname, navigate]);
-
-    const resolvedTab =
-    inventoryTabs.find((t) => t.id === activeTab)?.id ??
-    inventoryTabs[0]?.id ??
-    DEFAULT_TAB;     
+  const fallbackTab = inventoryTabs[0]?.id ?? DEFAULT_TAB;
+  const [resolvedTab, handleTabChange] = useUrlTab({
+    tabs: inventoryTabs,
+    defaultTab: fallbackTab,
+    basePath: "/inventory",
+    pathPrefix: "/inventory",
+  });
 
   const isDashboardTab = resolvedTab === "dashboard";
-
-  const handleTabChange = useCallback((tabId: string) => {
-    navigate(`/inventory/${tabId}`, { replace: true });
-  }, [navigate]);
 
   // Stable tab components - NO remounting on tab switch
   const tabComponents = useMemo(() => ({

@@ -4,14 +4,17 @@ import {
 } from "react-icons/fa";
 import React, { useRef, useState, useEffect } from "react";
 
-// Base URL for relative image paths from the API (e.g. "/files/photo.jpg")
+
+import { ERP_BASE } from "../../../config/api";
+
 const getFullImageUrl = (path: string): string => {
   if (!path) return "";
-  // Already absolute
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  // Relative path — prepend backend origin
-  const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
-  return `${base}${path}`;
+
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  return `${ERP_BASE}${path}`;
 };
 
 type EmployeeSummaryPanelProps = {

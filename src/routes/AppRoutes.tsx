@@ -113,11 +113,7 @@ const AppRoutes: React.FC = () => {
 
             {/* Inventory */}
             <Route
-              path="/inventory"
-              element={<Navigate to="/inventory/dashboard" replace />}
-            />
-            <Route
-              path="/inventory/:tab"
+              path="/inventory/*"
               element={
                 <PermissionRoute modules={["Item", "Item Group", "Warehouse", "Stock Entry"]}>
                   <InventoryModule />
@@ -147,7 +143,7 @@ const AppRoutes: React.FC = () => {
 
             {/* HR */}
             <Route
-              path="/hr"
+              path="/hr/*"
               element={
                 <PermissionRoute modules={["Employee", "Payroll Entry"]}>
                   <HrPayrollModule />
@@ -172,11 +168,7 @@ const AppRoutes: React.FC = () => {
 
             {/* Company Setup — needs Company read */}
             <Route
-              path="/companySetup"
-              element={<Navigate to="/companySetup/basic" replace />}
-            />
-            <Route
-              path="/companySetup/:tab"
+              path="/companySetup/*"
               element={
                 <PermissionRoute modules={["Company"]}>
                   <CompanySetup />

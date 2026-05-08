@@ -31,7 +31,7 @@ function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
+} 
 
 const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
   name,
@@ -41,15 +41,15 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
 }) => {
  const [imgFailed, setImgFailed] = useState(false);
 
-const ERP_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const ERP_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
 const imageUrl = image
   ? image.startsWith("http")
     ? image
-    : `${ERP_BASE_URL}${image}`
+    : `${ERP_BASE}${image}`
   : null;
 const showImage = !!imageUrl && !imgFailed;
-console.log("FINAL IMAGE URL", imageUrl);
+
 
 const [bg, fg] = getAvatarColors(employeeId || name);
 

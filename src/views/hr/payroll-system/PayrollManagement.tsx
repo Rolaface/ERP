@@ -179,7 +179,7 @@ useEffect(() => {
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
   return (
-    <div className="h-screen flex flex-col bg-app overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col bg-app overflow-hidden">
       <PayrollDashboard
         records={payrollRecords}
         loading={loading}

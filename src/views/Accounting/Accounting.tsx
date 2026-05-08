@@ -1,5 +1,4 @@
-import React, { useState, Suspense, lazy, useCallback, useMemo } from "react";
-import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import React, { useState, Suspense, lazy, useMemo } from "react";
 import {
   BookOpen,
   Scale,
@@ -18,6 +17,7 @@ import {
 } from "../../components/ui/app-shell";
 import AppSkeleton from "../../components/ui/AppSkeleton";
 import { usePermission } from "../../hooks/permission/usePermission";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
 
 // ─── Lazy Imports ─────────────────────────────────────────────────────────────
@@ -103,30 +103,18 @@ const DEFAULT_TAB = "gl";
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const AccountingModule: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
   const { can } = usePermission();
   const accountingTabs = useMemo(
     () => allTabs.filter((tab) => !tab.module || can(tab.module, tab.action)),
     [can]
   );
 
-  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
-
-  const resolvedTab =
-    accountingTabs.find((t) => t.id === activeTab)?.id ??
-    accountingTabs[0]?.id ??
-    DEFAULT_TAB;
-
-  const handleTabChange = useCallback(
-    (tabId: string) => {
-      const newParams = new URLSearchParams(searchParams);
-      newParams.set("tab", tabId);
-      navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-    },
-    [navigate, location.pathname, searchParams]
-  );
+  const fallbackTab = accountingTabs[0]?.id ?? DEFAULT_TAB;
+  const [resolvedTab, handleTabChange] = useUrlTab({
+    tabs: accountingTabs,
+    defaultTab: fallbackTab,
+    basePath: "/accounting",
+  });
 
   // ── GL sub-tab state (owned here because GeneralLedger receives it as a prop) ──
   const [glSubTab, setGlSubTab] = useState<string>("chart");
