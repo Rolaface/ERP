@@ -46,44 +46,11 @@ export const confirmDelete = async ({
     showSuccess(successMessage);
 
     return true;
- } catch (error: any) {
-  closeSwal();
+  } catch (error) {
+    closeSwal();
 
-  let message = "Operation failed";
+    showApiError(error);
 
-  try {
-    const data = error?.response?.data || error;
-
-    const serverMessages = data?._server_messages;
-
-    if (serverMessages) {
-      const parsed = JSON.parse(serverMessages);
-
-      if (parsed.length > 0) {
-        const first = JSON.parse(parsed[0]);
-
-        message = first.message || message;
-      }
-    } else {
-      message =
-        data?.message ||
-        data?.exception ||
-        error?.message ||
-        message;
-    }
-  } catch {
-    message =
-      error?.message ||
-      message;
+    return false;
   }
-
-  await fireManagedSwal({
-    icon: "error",
-    title: "Operation Failed",
-    text: message,
-    confirmButtonColor: "#ef4444",
-  });
-
-  return false;
-}
 };
