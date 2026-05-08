@@ -523,10 +523,18 @@ export const API = {
       delete: `${ERP_BASE}/api/resource/Income Tax Slab`,
     },
 
+    payrollPeriod: {
+      getAll: `${ERP_BASE}/api/resource/Payroll Period`,
+      getById: `${ERP_BASE}/api/resource/Payroll Period`,
+      create: `${ERP_BASE}/api/resource/Payroll Period`,
+      update: `${ERP_BASE}/api/resource/Payroll Period`,
+      delete: `${ERP_BASE}/api/resource/Payroll Period`,
+    },
+
     payrollentry: {
-      createpayrollentry:`${ERP_BASE}/api/resource/Payroll Entry`,
-      runpayroll:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.run_payroll`,
-      salaryslip:`${ERP_BASE}/api/resource/Salary Slip`,
+      createpayrollentry: `${ERP_BASE}/api/resource/Payroll Entry`,
+      runpayroll: `${ERP_BASE}/api/method/custom_hrms.api.payroll.api.run_payroll`,
+      salaryslip: `${ERP_BASE}/api/resource/Salary Slip`,
     },
   },
 
@@ -590,5 +598,6 @@ export const API = {
     getemployeetype: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employment_types`,
     getsalarystructure: `${ERP_BASE}/api/method/custom_hrms.api.search.get_salary_structures`,
     getleavepolicy: `${ERP_BASE}/api/method/custom_hrms.api.search.get_leave_policies`,
+    getUsers: `${ERP_BASE}/api/method/custom_hrms.api.search.get_users`,
   },
 } as const;

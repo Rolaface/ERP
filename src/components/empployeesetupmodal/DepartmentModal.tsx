@@ -2,6 +2,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Building2, Save, X } from "lucide-react";
 
 import { MinimizableModal } from "../../components/common/MinimizableModal";
+import { getAllDepartments } from "../../api/utils/frappeUtilsApi";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
+import { getalluser } from "../../api/utils/frappeUtilsApi";
 import {
   ModalInput,
   YesNoCheckbox,
@@ -62,24 +65,24 @@ export const DepartmentModal: React.FC<Props> = ({
   const [expenseApprovers, setExpenseApprovers] = useState("");
   const [shiftApprovers, setShiftApprovers] = useState("");
   const [saving, setSaving] = useState(false);
+  const [departmentOptions, setDepartmentOptions] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen) {
       setForm(
         initialData
           ? {
-            parent_department:
-              initialData.parent_department ?? "All Departments",
-            department_name:
-              initialData.department_name ?? initialData.name ?? "",
+              parent_department:
+                initialData.parent_department ?? "All Departments",
+              department_name:
+                initialData.department_name ?? initialData.name ?? "",
 
-            is_group: initialData.is_group ?? 0,
-            leave_block_list: initialData.leave_block_list ?? "",
-            leave_approvers: initialData.leave_approvers ?? [],
-            expense_approvers: initialData.expense_approvers ?? [],
-            shift_request_approver:
-              initialData.shift_request_approver ?? [],
-          }
+              is_group: initialData.is_group ?? 0,
+              leave_block_list: initialData.leave_block_list ?? "",
+              leave_approvers: initialData.leave_approvers ?? [],
+              expense_approvers: initialData.expense_approvers ?? [],
+              shift_request_approver: initialData.shift_request_approver ?? [],
+            }
           : { ...EMPTY },
       );
       setLeaveApprovers(approversToText(initialData?.leave_approvers));
@@ -87,6 +90,25 @@ export const DepartmentModal: React.FC<Props> = ({
       setShiftApprovers(approversToText(initialData?.shift_request_approver));
     }
   }, [isOpen, initialData]);
+
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const res = await getAllDepartments();
+
+        setDepartmentOptions(
+          (res || []).map((d: any) => ({
+            label: d.department_name || d.name,
+            value: d.name,
+          })),
+        );
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadDepartments();
+  }, []);
 
   const set = useCallback(
     <K extends keyof DepartmentForm>(key: K, value: DepartmentForm[K]) =>
@@ -99,7 +121,6 @@ export const DepartmentModal: React.FC<Props> = ({
       showValidationError("Department name is required");
       return;
     }
-
 
     try {
       setSaving(true);
@@ -143,7 +164,11 @@ export const DepartmentModal: React.FC<Props> = ({
         className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving..." : isEdit ? "Update Department" : "Create Department"}
+        {saving
+          ? "Saving..."
+          : isEdit
+            ? "Update Department"
+            : "Create Department"}
       </button>
     </div>
   );
@@ -170,12 +195,21 @@ export const DepartmentModal: React.FC<Props> = ({
             required
           />
 
-
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <ModalInput
+            <SearchSelect2
               label="Parent Department"
               value={form.parent_department ?? ""}
-              onChange={(e) => set("parent_department", e.target.value)}
+              fetchOptions={async (search: string) => {
+                const res = await getAllDepartments(search);
+
+                return res || [];
+              }}
+              onChange={(val: any) =>
+                set(
+                  "parent_department",
+                  typeof val === "string" ? val : val?.value || "",
+                )
+              }
             />
             <ModalInput
               label="Leave Block List"
@@ -184,7 +218,6 @@ export const DepartmentModal: React.FC<Props> = ({
             />
           </div>
 
-
           <div className="">
             <YesNoCheckbox
               name="is_group"
@@ -192,28 +225,42 @@ export const DepartmentModal: React.FC<Props> = ({
               value={form.is_group ? "Y" : "N"}
               onChange={(_, value) => set("is_group", value === "Y" ? 1 : 0)}
             />
-
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mt-7">
-          <ModalInput
-            label="Leave Approvers"
+          <SearchSelect2
+            label="Leave Approver"
             value={leaveApprovers}
-            onChange={(e) => setLeaveApprovers(e.target.value)}
-            placeholder="Administrator"
+            placeholder="Search user..."
+            fetchOptions={getalluser}
+            onChange={(val: any) => {
+              setLeaveApprovers(
+                typeof val === "string" ? val : val?.value || "",
+              );
+            }}
           />
-          <ModalInput
-            label="Expense Approvers"
+          <SearchSelect2
+            label="Expense Approver"
             value={expenseApprovers}
-            onChange={(e) => setExpenseApprovers(e.target.value)}
-            placeholder="Administrator"
+            placeholder="Search user..."
+            fetchOptions={getalluser}
+            onChange={(val: any) => {
+              setExpenseApprovers(
+                typeof val === "string" ? val : val?.value || "",
+              );
+            }}
           />
-          <ModalInput
-            label="Shift Approvers"
+          <SearchSelect2
+            label="Shift Approver"
             value={shiftApprovers}
-            onChange={(e) => setShiftApprovers(e.target.value)}
-            placeholder="Administrator"
+            placeholder="Search user..."
+            fetchOptions={getalluser}
+            onChange={(val: any) => {
+              setShiftApprovers(
+                typeof val === "string" ? val : val?.value || "",
+              );
+            }}
           />
         </div>
       </div>
