@@ -631,7 +631,7 @@ const { can } = usePermission();
               // Status transitions — needs write
               ...(can(PI_MODULE, "write")
                 ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map((status) => ({
-                    label: `Mark as ${status}`,
+                    label: `${status}`,
                     danger: status === "Cancelled" || status === "Debit Note Issued",
                     onClick: () => handleStatusChange(o.pId, status),
                   }))
