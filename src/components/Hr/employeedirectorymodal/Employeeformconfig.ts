@@ -240,6 +240,7 @@ universalaccountnumber: data.universal_account_number || "",
         : data.ctc != null
           ? String(data.ctc)
           : "",
+          
     grossSalary: data.gross != null ? String(data.gross) : "",
     currency: data.salary_currency || "",
     paymentMethod: data.salary_mode || "",
@@ -357,6 +358,7 @@ export function buildEmployeePayload(formData: Record<string, any>) {
 
     // ── Compensation ──────────────────────────────────────────
     salary_structure: formData.salaryStructure || null,
+    income_tax_slab:formData.Taxslab,
     base_salary: Number(formData.basicSalary) || 0,
     gross: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
     ctc: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,

@@ -1,7 +1,7 @@
 import React from "react";
 import { Users, UserCheck } from "lucide-react";
-import { AppSubTabs } from "../../../components/ui/app-shell";
 import { useUrlTab } from "../../../hooks/useUrlTab";
+import { HrSectionFrame } from "../components/HrTabLayout";
 
 import EmployeeDirectory from "./EmployeeDirectory";
 import Recruitment from "./Recruitment";
@@ -20,16 +20,14 @@ const EmployeeManagement: React.FC = () => {
   });
 
   return (
-    <div className="bg-app">
-      <div className="space-y-6">
-        <AppSubTabs tabs={tabs} activeTab={mainTab} onChange={setMainTab} />
-
-        <div>
-          {mainTab === "directory" && <EmployeeDirectory />}
-          {mainTab === "recruitment" && <Recruitment />}
-        </div>
-      </div>
-    </div>
+    <HrSectionFrame
+      tabs={tabs}
+      activeTab={mainTab}
+      onTabChange={setMainTab}
+    >
+      {mainTab === "directory" && <EmployeeDirectory />}
+      {mainTab === "recruitment" && <Recruitment />}
+    </HrSectionFrame>
   );
 };
 

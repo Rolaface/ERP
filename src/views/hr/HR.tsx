@@ -12,11 +12,11 @@ import {
 import {
   AppPage,
   AppPageHeader,
-  AppTabs,
   AppPageBody,
 } from "../../components/ui/app-shell";
 import AppSkeleton from "../../components/ui/AppSkeleton";
 import { useUrlTab } from "../../hooks/useUrlTab";
+import { HrPrimaryTabs } from "./components/HrTabLayout";
 
 const HrDashboard = lazy(() => import("./HrDashboard"));
 const EmployeeManagement = lazy(() => import("./EmployeeManagement/EmployeeManagement"));
@@ -84,13 +84,9 @@ const HrPayrollModule: React.FC = () => {
         description="Manage employees, payroll, attendance, and compliance"
       />
 
-      <AppTabs
-        tabs={tabs}
-        activeTab={tab}
-        onChange={setTab}
-      />
+      <HrPrimaryTabs tabs={tabs} activeTab={tab} onChange={setTab} />
 
-      <AppPageBody className="mt-2" viewportLocked={tab === "dashboard"}>
+      <AppPageBody className="px-4 py-3" viewportLocked={tab === "dashboard"}>
         <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>
     </AppPage>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Calendar, Clock, ClipboardList, Settings, User } from "lucide-react";
-import { AppSubTabs } from "../../../components/ui/app-shell";
 import { useUrlTab } from "../../../hooks/useUrlTab";
+import { HrSectionFrame } from "../components/HrTabLayout";
 import LeaveManagement from "./LeaveApproval";
 import LeaveApply from "./LeaveApply";
 import History from "./History";
@@ -38,30 +38,20 @@ const Leave: React.FC = () => {
   };
 
   return (
-    <div className=" bg-app">
-      <div className="space-y-6">
-        <AppSubTabs tabs={tabs} activeTab={tab} onChange={setTab} />
-
-        <div>
-          {tab === "leave" && <LeaveManagement />}
-
-          {tab === "leaveApply" && <LeaveApply editLeaveId={editLeaveId} />}
-
-          {tab === "employeeDashboard" && <EmployeeDashboard />}
-
-          {tab === "employeeHistory" && <EmployeeHistory />}
-
-          {tab === "history" && (
-            <History
-              onNewRequest={handleGoToApply}
-              onEditLeave={handleEditLeave}
-            />
-          )}
-
-          {tab === "setup" && <Setup />}
-        </div>
-      </div>
-    </div>
+    <HrSectionFrame
+      tabs={tabs}
+      activeTab={tab}
+      onTabChange={setTab}
+    >
+      {tab === "leave" && <LeaveManagement />}
+      {tab === "leaveApply" && <LeaveApply editLeaveId={editLeaveId} />}
+      {tab === "employeeDashboard" && <EmployeeDashboard />}
+      {tab === "employeeHistory" && <EmployeeHistory />}
+      {tab === "history" && (
+        <History onNewRequest={handleGoToApply} onEditLeave={handleEditLeave} />
+      )}
+      {tab === "setup" && <Setup />}
+    </HrSectionFrame>
   );
 };
 
