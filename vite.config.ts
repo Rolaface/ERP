@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
    proxy: {
   "/api": {
-    target: "http://site1.local:8001",
+    target: "https://api.erp.stagingrolaface.rolaface.com",
     changeOrigin: true,
     secure: true,
   },

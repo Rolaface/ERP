@@ -28,7 +28,9 @@ import {
   REFRESH_KEYS,
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
-import { Copy } from "lucide-react";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
+
 
 type OutletContextType = {
   openItemCreate: (context?: { onSuccess?: () => void }) => void;
@@ -38,6 +40,10 @@ type OutletContextType = {
     context?: { onSuccess?: () => void },
   ) => void;
 };
+
+
+const ITEM_MODULE = "Item";
+
 
 const flattenItemDetail = (fullItem: any): Item => {
   if (!fullItem) return {} as Item;
@@ -104,6 +110,7 @@ const Items: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [filters, setFilters] = useState<ItemFilters>({});
+  const { can } = usePermission();
 
   /* ── View mode — "table" or "detail" ── */
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
@@ -164,7 +171,7 @@ const Items: React.FC = () => {
       setTotalPages(pagination?.total_pages ?? 1);
       setTotalItems(pagination?.total ?? 0);
     } catch (err) {
-      console.error(err);
+      showApiError(err);
       setItems([]);
       setTotalPages(1);
       setTotalItems(0);
@@ -211,7 +218,7 @@ const Items: React.FC = () => {
       }));
       setAllItems(flat);
     } catch (err) {
-      console.error("Failed to fetch all items for sidebar", err);
+       showApiError(err);
     }
   }, []);
 
@@ -231,7 +238,7 @@ const Items: React.FC = () => {
       }
       setSelectedItem(flattenItemDetail(raw));
     } catch (err) {
-      console.error("Failed to refetch selected item", err);
+      showApiError(err)
     }
   }, [activeSummary?.id, fetchAllItems, fetchItems]);
 
@@ -270,7 +277,6 @@ const Items: React.FC = () => {
 
       setSelectedItem(flattenItemDetail(raw));
     } catch (err) {
-      console.error("handleRowClick: API call failed", err);
       showApiError(err);
       setViewMode("table");
     } finally {
@@ -363,9 +369,9 @@ const Items: React.FC = () => {
       align: "left",
       render: (i) => (
         <div className="py-1.5">
-        <span className="block">
-          {i.id}
-        </span>
+          <span className="block">
+            {i.id}
+          </span>
         </div>
       ),
       tooltip: (i) => i.id,
@@ -476,18 +482,22 @@ const Items: React.FC = () => {
             }}
           />
 
-          <ActionButton
-            type="edit"
-            iconOnly
-            title="Edit Item"
-            onClick={(e?: React.MouseEvent<HTMLButtonElement>) => {
-              e?.stopPropagation();
-              handleEdit(i.id, e as any);
-            }}
-          />
+          <PermissionGate module={ITEM_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              iconOnly
+              title="Edit Item"
+              onClick={(e?: React.MouseEvent<HTMLButtonElement>) => {
+                e?.stopPropagation();
+                handleEdit(i.id, e as any);
+              }}
+            />
+          </PermissionGate>
 
           <ActionMenu
-            onDelete={(e) => handleDeleteClick(i, e as any)}
+            {...(can(ITEM_MODULE, "delete")
+              ? { onDelete: (e) => handleDeleteClick(i, e as any) }
+              : {})}
           />
         </ActionGroup>
       ),
@@ -507,7 +517,7 @@ const Items: React.FC = () => {
             showToolbar
             searchValue={searchTerm}
             onSearch={setSearchTerm}
-            enableAdd
+            enableAdd={can(ITEM_MODULE, "create")}
             addLabel="Add Item"
             onAdd={handleAddItem}
             currentPage={page}

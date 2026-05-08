@@ -170,28 +170,27 @@ export const usePurchaseOrderForm = ({
     onFormChange: handleFormChange,
   });
   const handleAddressRemove = useCallback(
-  (boxKey: BoxType) => {
-    setAddressSelected((prev) => ({ ...prev, [boxKey]: null }));
-    setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: "" }));
-    const formKeyMap: Record<BoxType, string> = {
-      companyBilling:  "companyBillingAddress",
-      supplierBilling: "supplierAddress",
-      companyShipping: "shippingAddress",
-      supplierDispatch: "dispatchAddress",
-    };
-    handleFormChange({
-      target: {
-        name: `addresses.${formKeyMap[boxKey]}`,
-        value: { id: "", addressTitle: "", addressType: "", addressLine1: "", addressLine2: "", city: "", state: "", country: "", postalCode: "", phone: "", email: "" },
-      },
-    });
-  },
-  [handleFormChange],
-);
+    (boxKey: BoxType) => {
+      setAddressSelected((prev) => ({ ...prev, [boxKey]: null }));
+      setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: "" }));
+      const formKeyMap: Record<BoxType, string> = {
+        companyBilling: "companyBillingAddress",
+        supplierBilling: "supplierAddress",
+        companyShipping: "shippingAddress",
+        supplierDispatch: "dispatchAddress",
+      };
+      handleFormChange({
+        target: {
+          name: `addresses.${formKeyMap[boxKey]}`,
+          value: { id: "", addressTitle: "", addressType: "", addressLine1: "", addressLine2: "", city: "", state: "", country: "", postalCode: "", phone: "", email: "" },
+        },
+      });
+    },
+    [handleFormChange],
+  );
 
   // ── Company addresses: load ONCE when modal opens ──
   const companyAddressLoadedRef = useRef(false);
-
 
   const handleBulkItemChange = useCallback(
     (field: keyof ItemRow, value: string) => {
@@ -388,18 +387,18 @@ export const usePurchaseOrderForm = ({
       });
 
 
-    if (mapped.supplierId) {
-  loadAddressesForSupplier(
-    mapped.supplierId,
-    "supplierBilling",
-    !!mapped.addresses.supplierAddress.id,
-  );
-  loadAddressesForSupplier(
-    mapped.supplierId,
-    "supplierDispatch",
-    !!mapped.addresses.dispatchAddress.id,
-  );
-}
+      if (mapped.supplierId) {
+        loadAddressesForSupplier(
+          mapped.supplierId,
+          "supplierBilling",
+          !!mapped.addresses.supplierAddress.id,
+        );
+        loadAddressesForSupplier(
+          mapped.supplierId,
+          "supplierDispatch",
+          !!mapped.addresses.dispatchAddress.id,
+        );
+      }
       hasLoadedRef.current = true;
     };
 
@@ -488,66 +487,64 @@ export const usePurchaseOrderForm = ({
     }));
   };
 
-  // Fetches supplier addresses using the FRESH supplierId from the API response,
-  // not form.supplierId (which may still be stale at the time of the call).
- // Change the function signature to accept an autoSelect flag
-const loadAddressesForSupplier = useCallback(
-  async (
-    freshSupplierId: string,
-    boxKey: "supplierBilling" | "supplierDispatch",
-    autoSelect = true,  
-  ) => {
-    if (!freshSupplierId) return;
 
-    const { getAddressList } = await import("../api/Adressapi");
+  const loadAddressesForSupplier = useCallback(
+    async (
+      freshSupplierId: string,
+      boxKey: "supplierBilling" | "supplierDispatch",
+      autoSelect = true,
+    ) => {
+      if (!freshSupplierId) return;
 
-    const apiParams: { supplierId: string; addressType?: string } = {
-      supplierId: freshSupplierId,
-    };
-    if (boxKey === "supplierBilling") {
-      apiParams.addressType = "Billing";
-    }
+      const { getAddressList } = await import("../api/Adressapi");
 
-    setAddressLoading((prev) => ({ ...prev, [boxKey]: true }));
-
-    try {
-      const data = await getAddressList(apiParams);
-      setAddressList((prev) => ({ ...prev, [boxKey]: data }));
-
-    
-      if (autoSelect && data?.length > 0) {
-        const first = data[0];
-        setAddressSelected((prev) => ({ ...prev, [boxKey]: first }));
-        setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: first.id }));
-
-        const prefix = boxKey === "supplierBilling" ? "supplierAddress" : "dispatchAddress";
-        handleFormChange({
-          target: {
-            name: `addresses.${prefix}`,
-            value: {
-              id: first.id,
-              addressTitle: first.title,
-              addressType: first.addressType,
-              addressLine1: first.addressLine1 ?? "",
-              addressLine2: first.addressLine2 ?? "",
-              city: first.city ?? "",
-              state: first.state ?? "",
-              country: first.country ?? "",
-              postalCode: first.pincode ?? "",
-              phone: first.phone ?? "",
-              email: first.email ?? "",
-            },
-          },
-        });
+      const apiParams: { supplierId: string; addressType?: string } = {
+        supplierId: freshSupplierId,
+      };
+      if (boxKey === "supplierBilling") {
+        apiParams.addressType = "Billing";
       }
-    } catch (err) {
-      console.error(`[usePurchaseOrderForm] Failed to load "${boxKey}":`, err);
-    } finally {
-      setAddressLoading((prev) => ({ ...prev, [boxKey]: false }));
-    }
-  },
-  [handleFormChange],
-);
+
+      setAddressLoading((prev) => ({ ...prev, [boxKey]: true }));
+
+      try {
+        const data = await getAddressList(apiParams);
+        setAddressList((prev) => ({ ...prev, [boxKey]: data }));
+
+
+        if (autoSelect && data?.length > 0) {
+          const first = data[0];
+          setAddressSelected((prev) => ({ ...prev, [boxKey]: first }));
+          setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: first.id }));
+
+          const prefix = boxKey === "supplierBilling" ? "supplierAddress" : "dispatchAddress";
+          handleFormChange({
+            target: {
+              name: `addresses.${prefix}`,
+              value: {
+                id: first.id,
+                addressTitle: first.title,
+                addressType: first.addressType,
+                addressLine1: first.addressLine1 ?? "",
+                addressLine2: first.addressLine2 ?? "",
+                city: first.city ?? "",
+                state: first.state ?? "",
+                country: first.country ?? "",
+                postalCode: first.pincode ?? "",
+                phone: first.phone ?? "",
+                email: first.email ?? "",
+              },
+            },
+          });
+        }
+      } catch (err) {
+        console.error(`[usePurchaseOrderForm] Failed to load "${boxKey}":`, err);
+      } finally {
+        setAddressLoading((prev) => ({ ...prev, [boxKey]: false }));
+      }
+    },
+    [handleFormChange],
+  );
 
   const handleSupplierChange = useCallback(async (sup: any) => {
     if (!sup?.id) return;
@@ -877,7 +874,7 @@ const loadAddressesForSupplier = useCallback(
         return { ...prev, items };
       });
     } catch (err) {
-      console.error("Failed to fetch item details", err);
+      showApiError(err);
     }
   }, [form.taxCategory]);
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -919,7 +916,10 @@ const loadAddressesForSupplier = useCallback(
       }
 
       showSuccess(
-        isEditMode ? "Purchase Order Updated" : "Purchase Order Created",
+        res?.message ||
+        (isEditMode
+          ? "Purchase Order Updated"
+          : "Purchase Order Created"),
       );
 
       useDataRefreshStore

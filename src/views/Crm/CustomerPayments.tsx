@@ -201,8 +201,8 @@ const handleAddPayment = () => {
         showToolbar
         enableColumnSelector
         searchValue={searchTerm}
-        enableAdd
-        addLabel="Recieve Payment"
+        // enableAdd
+        // addLabel="Recieve Payment"
         onAdd={handleAddPayment}
         onSearch={(q) => {
           setSearchTerm(q);

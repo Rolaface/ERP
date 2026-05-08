@@ -7,8 +7,9 @@ import {
 } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import { getAllSalesInvoices } from "../../api/salesApi";
+import { showApiError } from "../../utils/alert";
 
-// 1. UPDATED INTERFACE TO MATCH API JSON
+
 interface SalesInvoice {
   id: string;
   invoiceDate: string;
@@ -51,7 +52,7 @@ const CustomerInvoices = ({ customerName }: Props) => {
         setTotalPages(res?.pagination?.total_pages || 1);
         setTotalItems(res?.pagination?.total || 0);
       } catch (err) {
-        console.error("Invoice fetch failed", err);
+        showApiError(err);
       } finally {
         setLoading(false);
       }
@@ -64,11 +65,11 @@ const CustomerInvoices = ({ customerName }: Props) => {
     setPage(1);
   }, [customerName]);
 
-  /* SUMMARY */
+ 
   const summary = useMemo(() => {
     const total = invoices.length;
 
-    // 2. UPDATED TO USE 'status' INSTEAD OF 'invoiceStatus'
+
     const draft = invoices.filter(
       (inv) => inv.status === "Draft"
     ).length;
@@ -77,7 +78,6 @@ const CustomerInvoices = ({ customerName }: Props) => {
       (inv) => inv.status === "Paid"
     ).length;
 
-    // 3. UPDATED TO USE 'total' INSTEAD OF 'totalAmount'
     const totalValue = invoices.reduce(
       (sum, inv) => sum + (inv.total || 0),
       0
@@ -86,8 +86,7 @@ const CustomerInvoices = ({ customerName }: Props) => {
     return { total, draft, paid, totalValue };
   }, [invoices]);
 
-  /* TABLE COLUMNS */
-  // 4. UPDATED ALL KEYS AND ROW PROPERTIES
+
   const columns = [
     {
       key: "id",

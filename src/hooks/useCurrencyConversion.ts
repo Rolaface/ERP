@@ -5,7 +5,7 @@ import {
   deleteCurrencyExchange,
   updateCurrencyExchange,
 } from "../api/currencyExchangeApi";
-import { showSuccess, showApiError } from "../utils/alert";
+import { showSuccess } from "../utils/alert";
 
 export interface CurrencyConversionPayload {
   id: string;

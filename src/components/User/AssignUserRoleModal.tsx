@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Users,
   ChevronDown,
   ChevronRight,
-  CheckSquare,
-  Square,
-  Minus,
+  ShieldCheck
 } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
@@ -27,6 +24,8 @@ const PERMISSION_KEYS: PermissionKey[] = [
   "import",
   "export",
   "report",
+  "submit",
+  "cancel",
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -49,6 +48,8 @@ const ACTION_LABELS: Record<PermissionKey, string> = {
   import: "Import",
   export: "Export",
   report: "Report",
+  submit: "Submit",
+  cancel: "Cancel",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -74,8 +75,8 @@ const ActionChip: React.FC<ActionChipProps> = ({ permKey, selected, onClick }) =
     className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-semibold transition-all duration-150 select-none bg-card border-[var(--border)] hover:bg-[var(--row-hover)] text-main"
   >
     <div className={`w-3 h-3 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${selected
-        ? "bg-primary border-primary"
-        : "border-[var(--border)] bg-app"
+      ? "bg-primary border-primary"
+      : "border-[var(--border)] bg-app"
       }`}>
       {selected && (
         <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 8 8">
@@ -114,10 +115,10 @@ const ActionRow: React.FC<ActionRowProps> = ({
   return (
     <div
       className={`flex items-center gap-3 py-2 px-3 rounded-lg transition-colors ${indent
-          ? "ml-6 bg-[var(--row-hover)]/40 hover:bg-[var(--row-hover)]"
-          : isModule
-            ? "bg-primary/5 border border-primary/10"
-            : ""
+        ? "ml-6 bg-[var(--row-hover)]/40 hover:bg-[var(--row-hover)]"
+        : isModule
+          ? "bg-primary/5 border border-primary/10"
+          : ""
         }`}
     >
       {/* Tri-state checkbox + label */}
@@ -127,10 +128,10 @@ const ActionRow: React.FC<ActionRowProps> = ({
         className="flex items-center gap-2 min-w-[160px] group"
       >
         <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${allSelected
-            ? "bg-primary border-primary"
-            : someSelected
-              ? "bg-primary/30 border-primary"
-              : "border-[var(--border)] bg-app"
+          ? "bg-primary border-primary"
+          : someSelected
+            ? "bg-primary/30 border-primary"
+            : "border-[var(--border)] bg-app"
           }`}>
           {allSelected && (
             <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 8 8">
@@ -283,9 +284,9 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={isEdit ? "Edit Role" : "Add New Role"}
+      title={isEdit ? "Edit Role" : "Create New Role"}
       subtitle="Define role name and module permissions"
-      icon={Users}
+      icon={ShieldCheck}
       footer={footer}
       maxWidth="5xl"
       height="82vh"
@@ -300,11 +301,15 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
             <input
               type="text"
               value={form.role}
+              disabled={isEdit}
               onChange={(e) => handleFieldChangeDirty("role", e.target.value)}
               placeholder="e.g. Admin, HR Manager, Sales Executive"
-              className={`w-full px-3 py-2 text-sm bg-app border rounded-lg text-main placeholder:text-muted focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all ${errors.role
-                ? "border-[var(--danger)]"
-                : "border-[var(--border)]"
+              className={`w-full px-3 py-2 text-sm border rounded-lg text-main placeholder:text-muted outline-none transition-all ${isEdit
+                  ? "bg-[var(--disabled-bg)] cursor-not-allowed opacity-70 border-[var(--border)]"
+                  : "bg-app focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                } ${errors.role
+                  ? "border-[var(--danger)]"
+                  : "border-[var(--border)]"
                 }`}
             />
             {errors.role && (
@@ -347,8 +352,8 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
               <div
                 key={module}
                 className={`rounded-xl border transition-all ${hasAny
-                    ? "border-primary/20 bg-primary/3"
-                    : "border-[var(--border)] bg-card"
+                  ? "border-primary/20 bg-primary/3"
+                  : "border-[var(--border)] bg-card"
                   }`}
               >
                 {/* Module row */}
@@ -391,10 +396,10 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
                         return (
                           <>
                             <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${allChecked
-                                ? "bg-primary border-primary"
-                                : someChecked
-                                  ? "bg-primary/30 border-primary"
-                                  : "border-[var(--border)] bg-app"
+                              ? "bg-primary border-primary"
+                              : someChecked
+                                ? "bg-primary/30 border-primary"
+                                : "border-[var(--border)] bg-app"
                               }`}>
                               {allChecked && (
                                 <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 8 8">

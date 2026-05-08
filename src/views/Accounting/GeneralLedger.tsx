@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import COATab from "./COA";
 import JETab, { type JournalEntry } from "./JE";
 import { FolderTree, BookText } from "lucide-react";
+import { usePermission } from "../../hooks/permission/usePermission";
+
 /*
-   Types */
+   Types
+*/
 type Account = {
   code: string;
   name: string;
@@ -31,7 +34,8 @@ type Props = {
 };
 
 /*
-   GeneralLedger — tab shell only */
+   GeneralLedger — tab shell only
+*/
 const GeneralLedger: React.FC<Props> = ({
   glSubTab,
   setGlSubTab,
@@ -39,36 +43,57 @@ const GeneralLedger: React.FC<Props> = ({
   setSearchTerm,
   journalEntries,
 }) => {
+  const { can } = usePermission();
+
+  const glTabs = useMemo(
+    () =>
+      [
+        {
+          id: "chart",
+          label: "Chart of Accounts",
+          icon: <FolderTree size={16} strokeWidth={1.75} />,
+          module: "Account",
+          action: "read" as const,
+        },
+        {
+          id: "journal",
+          label: "Journal Entries",
+          icon: <BookText size={16} strokeWidth={1.75} />,
+          module: "Journal Entry",
+          action: "read" as const,
+        },
+      ].filter((tab) => can(tab.module, tab.action)),
+    [can]
+  );
+
   return (
-    <div className=" bg-app">
+    <div className="bg-app">
       {/* Sub-tabs */}
       <div className="flex gap-6 border-b border-[var(--border)] mb-6">
-        <button
-          onClick={() => setGlSubTab("chart")}
-          className={`flex items-center gap-2 pb-3 border-b-2 text-sm font-medium transition-colors ${glSubTab === "chart"
-              ? "text-primary border-current"
-              : "text-muted hover:text-main border-transparent"
+        {glTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setGlSubTab(tab.id)}
+            className={`flex items-center gap-2 pb-3 border-b-2 text-sm font-medium transition-colors ${
+              glSubTab === tab.id
+                ? "text-primary border-current"
+                : "text-muted hover:text-main border-transparent"
             }`}
-        >
-          <FolderTree size={16} strokeWidth={1.75} />
-          <span>Chart of Accounts</span>
-        </button>
-        <button
-          onClick={() => setGlSubTab("journal")}
-          className={`flex items-center gap-2 pb-3 border-b-2 text-sm font-medium transition-colors ${glSubTab === "journal"
-              ? "text-primary border-current"
-              : "text-muted hover:text-main border-transparent"
-            }`}
-        >
-          <BookText size={16} strokeWidth={1.75} />
-          <span>Journal Entries</span>
-        </button>
+          >
+            {tab.icon}
+            <span>{tab.label}</span>
+          </button>
+        ))}
       </div>
 
-      {glSubTab === "chart" ? (
-        <COATab searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-      ) : (
+      {/* Content */}
+      {glSubTab === "journal" ? (
         <JETab journalEntries={journalEntries} />
+      ) : (
+        <COATab
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+        />
       )}
     </div>
   );

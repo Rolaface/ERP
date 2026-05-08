@@ -79,8 +79,8 @@ displayName: form.accountFor === "Company" ? prev.displayName : "",
       try {
         const data = await getBankAccounts("Bank");
         setBanks(Array.isArray(data) ? data : []);
-      } catch {
-        showApiError("Failed to load banks");
+      } catch(err) {
+        showApiError(err);
       }
     })();
   }, []);
@@ -92,8 +92,8 @@ displayName: form.accountFor === "Company" ? prev.displayName : "",
       try {
         const data = await getBankAccounts(form.accountFor as AccountType);
         setEntities(Array.isArray(data) ? data : []);
-      } catch {
-        showApiError("Failed to load data");
+      } catch (err){
+        showApiError(err);
       }
     })();
   }, [form.accountFor]);

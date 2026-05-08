@@ -430,7 +430,7 @@ export const useSupplierForm = ({
       res?.message ||
         (isEditMode ? "Supplier Updated" : "Supplier Created");
 
-    } catch (err: any) {
+    } catch (err) {
       showApiError(err);
     } finally {
       setLoading(false);

@@ -11,8 +11,9 @@ import { getAllPayments } from "../../api/CustomerPayment";
 import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openPaymentEntryModal } from "../../store/modalStore";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
-// API Response Type
 
 interface PaymentAPI {
   paymentId: string;
@@ -39,13 +40,15 @@ type PaymentRow = {
   partyType?: string;
 };
 
+const PAYMENT_ENTRY_MODULE = "Payment Entry";
+
 const PaymentEntry: React.FC = () => {
   const [data, setData] = useState<PaymentRow[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
+  const { can } = usePermission();
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -181,12 +184,15 @@ const PaymentEntry: React.FC = () => {
             setPage(1);
           }}
           showToolbar
-          enableAdd
+          enableAdd={can(PAYMENT_ENTRY_MODULE, "create")}
           addLabel="Add Payment Entry"
-          onAdd={() =>
-            openPaymentEntryModal(null, false, {
-              onSuccess: () => fetchPayments(),
-            })
+          onAdd={
+            can(PAYMENT_ENTRY_MODULE, "create")
+              ? () =>
+                openPaymentEntryModal(null, false, {
+                  onSuccess: () => fetchPayments(),
+                })
+              : undefined
           }
         />
       </AppPageBody>

@@ -16,7 +16,8 @@ import {
 import { fireManagedSwal } from "../../utils/swalManager";
 import { Copy } from "lucide-react";
 import AssetCategoryModal from "../../components/FixedAsset/AssetCategoryModal";
-
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface AssetCategory {
@@ -37,7 +38,7 @@ const getAssetCategories = async (
     fields: [
       "name",
       "asset_category_name",
-     
+
       "non_depreciable_category",
     ],
     page,
@@ -57,7 +58,7 @@ const getAssetCategories = async (
       accounts: [],
     })),
     pagination: {
-      total_pages: 1, 
+      total_pages: 1,
       total: data.length,
     },
   };
@@ -73,6 +74,8 @@ const deleteAssetCategory = async (_id: string) => {
   return { status: 200 };
 };
 
+const ASSET_CATEGORY_MODULE = "Asset Category";
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const AssetCategoryTable: React.FC = () => {
@@ -84,6 +87,7 @@ const AssetCategoryTable: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const { can } = usePermission();
 
   // ── Modal state ─────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
@@ -181,42 +185,42 @@ const AssetCategoryTable: React.FC = () => {
   // ── Columns ─────────────────────────────────────────────────
   const columns: Column<AssetCategory>[] = [
     {
-  key: "id",
-  header: "Name",
-  align: "center",
-  render: (o) => {
-    const id = o.id || "";
+      key: "id",
+      header: "Name",
+      align: "center",
+      render: (o) => {
+        const id = o.id || "";
 
-    const handleCopy = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      navigator.clipboard.writeText(id);
-    };
+        const handleCopy = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(id);
+        };
 
-    return (
-      <div className="flex items-center justify-center gap-1 group">
-        <span className="font-mono text-sm truncate max-w-[120px]">
-          {id || "—"}
-        </span>
-        <button
-          onClick={handleCopy}
-          className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-          title="Copy full ID"
-        >
-          <Copy size={14} />
-        </button>
-      </div>
-    );
-  },
-  tooltip: (o) => o.id || "—",
-},
+        return (
+          <div className="flex items-center justify-center gap-1 group">
+            <span className="font-mono text-sm truncate max-w-[120px]">
+              {id || "—"}
+            </span>
+            <button
+              onClick={handleCopy}
+              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
+              title="Copy full ID"
+            >
+              <Copy size={14} />
+            </button>
+          </div>
+        );
+      },
+      tooltip: (o) => o.id || "—",
+    },
     {
       key: "assetCategoryName",
       header: "Category Name",
       align: "center",
-      render: (o) => 
-      <div className="py-1.5">
-      <span className="block">{o.assetCategoryName || "—"}</span>
-      </div>,
+      render: (o) =>
+        <div className="py-1.5">
+          <span className="block">{o.assetCategoryName || "—"}</span>
+        </div>,
       tooltip: (o) => o.assetCategoryName || "—",
     },
     {
@@ -224,8 +228,8 @@ const AssetCategoryTable: React.FC = () => {
       header: "Capital WIP",
       align: "center",
       render: (o) => (
-          <div className="py-1.5">
-        <StatusBadge status={o.enableCapitalWorkInProgress ? "Enabled" : "Disabled"} />
+        <div className="py-1.5">
+          <StatusBadge status={o.enableCapitalWorkInProgress ? "Enabled" : "Disabled"} />
         </div>
       ),
     },
@@ -245,13 +249,20 @@ const AssetCategoryTable: React.FC = () => {
       align: "center",
       render: (o) => (
         <ActionGroup>
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(o, e as any)}
-            iconOnly
-          />
+          {can(ASSET_CATEGORY_MODULE, "write") && (
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(o, e as any)}
+              iconOnly
+            />
+          )}
+
           <ActionMenu
-            onDelete={(e) => handleDelete(o, e as any)}
+            {...(can(ASSET_CATEGORY_MODULE, "delete")
+              ? {
+                onDelete: (e) => handleDelete(o, e as any),
+              }
+              : {})}
           />
         </ActionGroup>
       ),
@@ -268,7 +279,7 @@ const AssetCategoryTable: React.FC = () => {
         loading={loading}
         searchValue={searchTerm}
         onSearch={setSearchTerm}
-        enableAdd
+        enableAdd={can(ASSET_CATEGORY_MODULE, "create")}
         addLabel="Add Asset Category"
         onAdd={handleAddClick}
         enableColumnSelector

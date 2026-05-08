@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import { getPurchaseInvoices } from "../../api/procurement/PurchaseInvoiceApi";
+import { showApiError } from "../../utils/alert";
+
 
 interface PurchaseInvoice {
   pId: string;
@@ -47,7 +49,7 @@ const SupplierPurchaseInvoices = ({ supplierName }: Props) => {
         setTotalPages(resp?.pagination?.total_pages || 1);
         setTotalItems(resp?.pagination?.total || 0);
       } catch (err) {
-        console.error("Invoice fetch failed", err);
+        showApiError(err);
       } finally {
         setLoading(false);
       }
