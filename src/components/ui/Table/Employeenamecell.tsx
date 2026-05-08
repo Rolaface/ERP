@@ -44,11 +44,12 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
 const ERP_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const imageUrl = image
-  ? image
-      .replace("http://site1.local:8001", ERP_BASE_URL)
-      .replace("http://site1.local", ERP_BASE_URL)
+  ? image.startsWith("http")
+    ? image
+    : `${ERP_BASE_URL}${image}`
   : null;
 const showImage = !!imageUrl && !imgFailed;
+console.log("FINAL IMAGE URL", imageUrl);
 
 const [bg, fg] = getAvatarColors(employeeId || name);
 
