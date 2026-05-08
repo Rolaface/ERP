@@ -47,9 +47,6 @@ export interface EmployeeType {
   employee_type_name: string;
 }
 
-function getErrorMessage(error: any, fallback: string) {
-  return error?.response?.data?.message || error?.message || fallback;
-}
 
 type DepartmentResponse = {
   data: Department[];
@@ -125,11 +122,11 @@ export async function getAllDepartments(
 
     return resp.data;
 
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to fetch departments"));
+  } catch (error) {
+    throw error;
   }
 }
-  
+
 
 export async function getDepartment(name: string): Promise<Department> {
   try {
@@ -137,8 +134,8 @@ export async function getDepartment(name: string): Promise<Department> {
     const resp: AxiosResponse<FrappeDetailResponse<Department>> =
       await api.get(url);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to fetch department"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -149,8 +146,8 @@ export async function createDepartment(
     const resp: AxiosResponse<FrappeDetailResponse<Department>> =
       await api.post(EmployeeConfig.department.create, payload);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to create department"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -165,8 +162,8 @@ export async function updateDepartment(
       payload,
     );
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to update department"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -174,8 +171,8 @@ export async function deleteDepartment(name: string): Promise<void> {
   try {
     const url = `${EmployeeConfig.department.delete}/${encodeURIComponent(name)}`;
     await api.delete(url);
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to delete department"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -196,8 +193,8 @@ export async function getAllDesignations(
     const url = `${EmployeeConfig.designation.getAll}?${query}`;
     const resp: AxiosResponse<DesignationResponse> = await api.get(url);
     return resp.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to fetch designations"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -207,8 +204,8 @@ export async function getDesignation(name: string): Promise<Designation> {
     const resp: AxiosResponse<FrappeDetailResponse<Designation>> =
       await api.get(url);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to fetch designation"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -219,8 +216,8 @@ export async function createDesignation(
     const resp: AxiosResponse<FrappeDetailResponse<Designation>> =
       await api.post(EmployeeConfig.designation.create, payload);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to create designation"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -233,8 +230,8 @@ export async function updateDesignation(
     const resp: AxiosResponse<FrappeDetailResponse<Designation>> =
       await api.put(url, payload);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to update designation"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -242,8 +239,8 @@ export async function deleteDesignation(name: string): Promise<void> {
   try {
     const url = `${EmployeeConfig.designation.delete}/${encodeURIComponent(name)}`;
     await api.delete(url);
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to delete designation"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -264,8 +261,8 @@ export async function getAllEmployeeGrades(
     const url = `${EmployeeConfig.grade.getAll}?${query}`;
     const resp: AxiosResponse<EmployeeGradeResponse> = await api.get(url);
     return resp.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to fetch grades"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -275,8 +272,8 @@ export async function getEmployeeGrade(name: string): Promise<EmployeeGrade> {
     const resp: AxiosResponse<FrappeDetailResponse<EmployeeGrade>> =
       await api.get(url);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to fetch grade"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -287,8 +284,8 @@ export async function createEmployeeGrade(
     const resp: AxiosResponse<FrappeDetailResponse<EmployeeGrade>> =
       await api.post(EmployeeConfig.grade.create, payload);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to create grade"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -301,8 +298,8 @@ export async function updateEmployeeGrade(
     const resp: AxiosResponse<FrappeDetailResponse<EmployeeGrade>> =
       await api.put(url, payload);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to update grade"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -310,8 +307,8 @@ export async function deleteEmployeeGrade(name: string): Promise<void> {
   try {
     const url = `${EmployeeConfig.grade.delete}/${encodeURIComponent(name)}`;
     await api.delete(url);
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to delete grade"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -332,8 +329,8 @@ export async function getAllEmployeeTypes(
     const url = `${EmployeeConfig.employeeType.getAll}?${query}`;
     const resp: AxiosResponse<EmployeeTypeResponse> = await api.get(url);
     return resp.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to fetch employee types"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -343,8 +340,8 @@ export async function getEmployeeType(name: string): Promise<EmployeeType> {
     const resp: AxiosResponse<FrappeDetailResponse<EmployeeType>> =
       await api.get(url);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to fetch employee type"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -355,8 +352,8 @@ export async function createEmployeeType(
     const resp: AxiosResponse<FrappeDetailResponse<EmployeeType>> =
       await api.post(EmployeeConfig.employeeType.create, payload);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to create employee type"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -369,8 +366,8 @@ export async function updateEmployeeType(
     const resp: AxiosResponse<FrappeDetailResponse<EmployeeType>> =
       await api.put(url, payload);
     return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to update employee type"));
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -378,7 +375,7 @@ export async function deleteEmployeeType(name: string): Promise<void> {
   try {
     const url = `${EmployeeConfig.employeeType.delete}/${encodeURIComponent(name)}`;
     await api.delete(url);
-  } catch (error: any) {
-    throw new Error(getErrorMessage(error, "Failed to delete employee type"));
+  } catch (error) {
+    throw error;
   }
 }

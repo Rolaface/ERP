@@ -83,7 +83,7 @@ const STATUS_TRANSITIONS: Record<PIStatus, PIStatus[]> = {
 
 const invoiceStatusOptions = [
   { label: "Draft", value: "Draft" },
-  { label: "Submitted", value: "Submitted" },
+  { label: "Approved", value: "Submitted" },
   { label: "Unpaid", value: "Unpaid" },
   { label: "Paid", value: "Paid" },
   { label: "Party Paid", value: "Party Paid" },
@@ -95,7 +95,7 @@ type OutletContextType = {
   openPIEdit: (pId: string | number) => void;
 };
 
-const PI_MODULE      = "Purchase Invoice";
+const PI_MODULE = "Purchase Invoice";
 const PAYMENT_MODULE = "Payment Entry";
 
 const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
@@ -113,7 +113,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
   const [company, setCompany] = useState<any | null>(null);
-const { can } = usePermission(); 
+  const { can } = usePermission();
   // ── PDF preview modal
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
@@ -475,30 +475,30 @@ const { can } = usePermission();
     }
   };
   const formatDate = (date: string | Date) => {
-  if (!date) return "";
+    if (!date) return "";
 
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-  }
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
 
-  // Date object — use local methods
-  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-};
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
-  
+
   const columns: Column<Purchaseinvoice>[] = [
     {
       key: "pId",
       header: "PI ID",
       align: "left",
-       render: (o) => (
+      render: (o) => (
         <div className="py-1.5">
-        <span className="block">
-          {o.pId || "—"}
-        </span>
+          <span className="block">
+            {o.pId || "—"}
+          </span>
         </div>
       ),
       tooltip: (o) => o.pId || "—",
@@ -548,9 +548,9 @@ const { can } = usePermission();
       align: "center",
       render: (o) => (
         <div className="py-1.5">
-        <code className="block whitespace-nowrap">
-          {Number(o.amount || 0).toFixed(2)}
-        </code>
+          <code className="block whitespace-nowrap">
+            {Number(o.amount || 0).toFixed(2)}
+          </code>
         </div>
       ),
       tooltip: (o) => o.amount || "—",
@@ -587,11 +587,13 @@ const { can } = usePermission();
       align: "left",
       render: (o) => (
         <div className="py-1.5">
-          <StatusBadge status={o.status} />
+          <StatusBadge
+            status={o.status === "Submitted" ? "Approved" : o.status}
+          />
         </div>
       ),
     },
-   {
+    {
       key: "actions",
       header: "Actions",
       align: "center",
@@ -631,10 +633,10 @@ const { can } = usePermission();
               // Status transitions — needs write
               ...(can(PI_MODULE, "write")
                 ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map((status) => ({
-                    label: `${status}`,
-                    danger: status === "Cancelled" || status === "Debit Note Issued",
-                    onClick: () => handleStatusChange(o.pId, status),
-                  }))
+                  label: status === "Submitted" ? "Approved" : status,
+                  danger: status === "Cancelled" || status === "Debit Note Issued",
+                  onClick: () => handleStatusChange(o.pId, status),
+                }))
                 : []),
             ]}
           />
@@ -653,10 +655,10 @@ const { can } = usePermission();
         loading={loading}
         searchValue={searchTerm}
         onSearch={setSearchTerm}
-        enableAdd={can(PI_MODULE, "create")} 
+        enableAdd={can(PI_MODULE, "create")}
         addLabel="Add Purchase Invoice"
         onAdd={handleAddClick}
-        enableExport={can(PI_MODULE, "export")}   
+        enableExport={can(PI_MODULE, "export")}
         onExport={handleExportExcel}
         enableColumnSelector
         currentPage={page}
