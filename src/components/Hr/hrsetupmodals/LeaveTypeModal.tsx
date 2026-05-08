@@ -48,7 +48,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
         initialData
           ? {
               leave_type_name: initialData.leave_type_name ?? "",
-              max_leaves_allowed: initialData.max_leaves_allowed ?? 0,
+              max_leaves_allowed: initialData.max_leaves_allowed ,
               is_lwp: initialData.is_lwp ?? 0,
               is_carry_forward: initialData.is_carry_forward ?? 0,
               allow_negative: initialData.allow_negative ?? 0,
@@ -142,27 +142,37 @@ export const LeaveTypeModal: React.FC<Props> = ({
             placeholder="e.g. Casual Leave"
             required
           />
-          <ModalInput
-            label="Max Leaves Allowed"
-            type="number"
-            value={form.max_leaves_allowed}
-            // onChange={(e) => set("max_leaves_allowed", parseFloat(e.target.value) || 0)}
-           onChange={(e) => set("max_leaves_allowed", e.target.valueAsNumber)}
-          />
+       <ModalInput
+  label="Max Leaves Allowed"
+  type="number"
+  className="no-spinner"
+  value={form.max_leaves_allowed || ""}
+  placeholder="0"
+  onChange={(e) =>
+    set(
+      "max_leaves_allowed",
+      Number(e.target.value) || 0,
+    )
+  }
+/>
         </div>
 
         {/* ── Row 2: Salary Configuration ────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4">
           <ModalInput
-            label="Fraction of Daily Salary Per Leave"
-            type="number"
-            step="0.1"
-            value={form.fraction_of_daily_salary_per_leave}
-            // onChange={(e) => set("fraction_of_daily_salary_per_leave", parseFloat(e.target.value) || 0)}
-           onChange={(e) =>
-              set("fraction_of_daily_salary_per_leave", e.target.valueAsNumber)
-            }
-          />
+  label="Fraction of Daily Salary Per Leave"
+  type="number"
+  step="0.1"
+  className="no-spinner"
+  value={form.fraction_of_daily_salary_per_leave || ""}
+  placeholder="0"
+  onChange={(e) =>
+    set(
+      "fraction_of_daily_salary_per_leave",
+      Number(e.target.value) || 0,
+    )
+  }
+/>
         </div>
 
         {/* ── Row 3: Boolean Toggles (Checkboxes) ──────────────────────── */}

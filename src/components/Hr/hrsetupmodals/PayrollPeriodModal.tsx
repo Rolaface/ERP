@@ -8,6 +8,7 @@ import {
   updatePayrollPeriod,
   type PayrollPeriod,
 } from "../../../api/payrollConfigApi";
+import DatePickerInput from "../../calendar/DatePickerInput";
 import {
   showApiError,
   showSuccess,
@@ -146,22 +147,22 @@ export const PayrollPeriodModal: React.FC<Props> = ({
           />
         </div>
 
-        <div className="w-[150px]">
-          <ModalInput
+        <div className="w-[170px]">
+          <DatePickerInput
             label="Start Date"
-            type="date"
+            name="start_date"
             value={form.start_date}
-            onChange={(e) => set("start_date", e.target.value)}
+            onChange={(name, value) => set(name as keyof typeof EMPTY, value)}
             required
           />
         </div>
 
-        <div className="w-[150px]">
-          <ModalInput
+        <div className="w-[170px]">
+          <DatePickerInput
             label="End Date"
-            type="date"
+            name="end_date"
             value={form.end_date}
-            onChange={(e) => set("end_date", e.target.value)}
+            onChange={(name, value) => set(name as keyof typeof EMPTY, value)}
             required
           />
         </div>

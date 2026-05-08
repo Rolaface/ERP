@@ -438,6 +438,8 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 <ModalInput
                   label="Fixed Amount"
                   type="number"
+                  className="no-spinner"
+                  placeholder="0"
                   value={form.amount ?? 0}
                   onChange={(e) => set("amount", parseFloat(e.target.value))}
                 />
@@ -539,9 +541,11 @@ export const SalaryComponentModal: React.FC<Props> = ({
                   <ModalInput
                     label="Max Benefit Amount (Yearly)"
                     type="number"
-                    value={form.max_benefit_amount ?? 0}
+                    value={form.max_benefit_amount}
+                    className="no-spinner"
+                    
                     onChange={(e) =>
-                      set("max_benefit_amount", parseFloat(e.target.value) || 0)
+                      set("max_benefit_amount", parseFloat(e.target.value) )
                     }
                     placeholder="0"
                   />
