@@ -32,10 +32,10 @@ export interface SalaryComponent {
   is_flexible_benefit?: 0 | 1;
   max_benefit_amount?: number;
   payout_method?:
-  | "Accrue and payout at end of payroll period"
-  | "Accrue per cycle, pay only on claim"
-  | "Allow claim for full benefit amount"
-  | "";
+    | "Accrue and payout at end of payroll period"
+    | "Accrue per cycle, pay only on claim"
+    | "Allow claim for full benefit amount"
+    | "";
   pay_against_benefit_claim?: 0 | 1;
   only_tax_impact?: 0 | 1;
   create_separate_payment_entry_against_benefit_claim?: 0 | 1;
@@ -103,7 +103,6 @@ export interface PayrollPeriod {
   company?: string;
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // SALARY COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,6 +128,7 @@ export async function getAllSalaryComponents(
         "is_flexible_benefit",
         "max_benefit_amount",
         "payout_method",
+        " variable_based_on_taxable_salary",
 
         "is_income_tax_component",
       ],
@@ -145,10 +145,13 @@ export async function getAllSalaryComponents(
   }
 }
 
-export async function getSalaryComponent(name: string): Promise<SalaryComponent> {
+export async function getSalaryComponent(
+  name: string,
+): Promise<SalaryComponent> {
   try {
     const url = `${Payroll.salaryComponent.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<SalaryComponent>> = await api.get(url);
+    const resp: AxiosResponse<FrappeDetailResponse<SalaryComponent>> =
+      await api.get(url);
     return resp.data?.data;
   } catch (error) {
     throw error;
@@ -216,10 +219,13 @@ export async function getAllSalaryStructures(
   }
 }
 
-export async function getSalaryStructure(name: string): Promise<SalaryStructure> {
+export async function getSalaryStructure(
+  name: string,
+): Promise<SalaryStructure> {
   try {
     const url = `${Payroll.salaryStructure.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<SalaryStructure>> = await api.get(url);
+    const resp: AxiosResponse<FrappeDetailResponse<SalaryStructure>> =
+      await api.get(url);
     return resp.data?.data;
   } catch (error) {
     throw error;
@@ -285,8 +291,9 @@ export async function getAllTaxConfigs(
       search,
       searchFields: ["name"],
     });
-    const resp: AxiosResponse<PaginatedResponse<TaxConfig>> =
-      await api.get(`${Payroll.incomeTaxSlab.getAll}?${query}`);
+    const resp: AxiosResponse<PaginatedResponse<TaxConfig>> = await api.get(
+      `${Payroll.incomeTaxSlab.getAll}?${query}`,
+    );
     return resp.data;
   } catch (error) {
     throw error;
@@ -296,7 +303,8 @@ export async function getAllTaxConfigs(
 export async function getTaxConfig(name: string): Promise<TaxConfig> {
   try {
     const url = `${Payroll.incomeTaxSlab.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> = await api.get(url);
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
+      await api.get(url);
     return resp.data?.data;
   } catch (error) {
     throw error;
@@ -305,8 +313,10 @@ export async function getTaxConfig(name: string): Promise<TaxConfig> {
 
 export async function createTaxConfig(payload: TaxConfig): Promise<TaxConfig> {
   try {
-    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
-      await api.post(Payroll.incomeTaxSlab.create, payload);
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> = await api.post(
+      Payroll.incomeTaxSlab.create,
+      payload,
+    );
     return resp.data?.data;
   } catch (error) {
     throw error;
@@ -319,8 +329,10 @@ export async function updateTaxConfig(
 ): Promise<TaxConfig> {
   try {
     const url = `${Payroll.incomeTaxSlab.update}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
-      await api.put(url, payload);
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> = await api.put(
+      url,
+      payload,
+    );
     return resp.data?.data;
   } catch (error) {
     throw error;
@@ -348,18 +360,27 @@ export async function searchSalaryStructures(q?: string) {
   params.append("fields", JSON.stringify(["name"]));
   params.append("limit_page_length", "20");
 
-  const resp = await api.get(`${Payroll.salaryStructure.getAll}?${params.toString()}`);
+  const resp = await api.get(
+    `${Payroll.salaryStructure.getAll}?${params.toString()}`,
+  );
   return resp?.data?.data ?? [];
 }
 
-export async function getSalaryComponentOptions(search?: string): Promise<SalaryComponent[]> {
+export async function getSalaryComponentOptions(
+  search?: string,
+): Promise<SalaryComponent[]> {
   try {
     const params = new URLSearchParams();
-    params.append("fields", JSON.stringify(["name", "salary_component", "type"]));
+    params.append(
+      "fields",
+      JSON.stringify(["name", "salary_component", "type"]),
+    );
     params.append("limit_page_length", "0");
     if (search) params.append("search", search);
 
-    const resp = await api.get(`${Payroll.salaryComponent.getAll}?${params.toString()}`);
+    const resp = await api.get(
+      `${Payroll.salaryComponent.getAll}?${params.toString()}`,
+    );
     return resp.data?.data ?? [];
   } catch (error) {
     throw error;
@@ -383,8 +404,9 @@ export async function getAllPayrollPeriods(
       search,
       searchFields: ["name"],
     });
-    const resp: AxiosResponse<PaginatedResponse<PayrollPeriod>> =
-      await api.get(`${Payroll.payrollPeriod.getAll}?${query}`);
+    const resp: AxiosResponse<PaginatedResponse<PayrollPeriod>> = await api.get(
+      `${Payroll.payrollPeriod.getAll}?${query}`,
+    );
     return resp.data;
   } catch (error: any) {
     throw new Error(
@@ -398,7 +420,8 @@ export async function getAllPayrollPeriods(
 export async function getPayrollPeriod(name: string): Promise<PayrollPeriod> {
   try {
     const url = `${Payroll.payrollPeriod.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<PayrollPeriod>> = await api.get(url);
+    const resp: AxiosResponse<FrappeDetailResponse<PayrollPeriod>> =
+      await api.get(url);
     return resp.data?.data;
   } catch (error: any) {
     throw new Error(
