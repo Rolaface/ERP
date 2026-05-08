@@ -212,7 +212,10 @@ const AddEmployeeModal: React.FC<Props> = ({
   };
 
   const handleSave = async () => {
-    if (!employeeFile) {
+
+    const payload = buildEmployeePayload(formData);
+    const isEdit = mode === "edit" || !!editData;
+        if (!employeeFile) {
   const result = await fireManagedSwal({
     icon: "info",
     title: "Add Employee Photo?",
@@ -236,8 +239,6 @@ const AddEmployeeModal: React.FC<Props> = ({
     return;
   }
 }
-    const payload = buildEmployeePayload(formData);
-    const isEdit = mode === "edit" || !!editData;
 
     // ── EDIT MODE: keep exact same simple flow as before ───────────────────────
     if (isEdit) {
