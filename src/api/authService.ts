@@ -140,21 +140,24 @@ export const logoutApi = async (): Promise<void> => {
   }
 };
 
-export const resetPasswordApi = async (
-  username: string
-): Promise<{ message: string }> => {
-
-  await new Promise((resolve) => setTimeout(resolve, 800));
-
-  if (!username || username.trim() === "") {
-    throw new Error("Username is required");
-  }
-
-  if (username.length < 3) {
-    throw new Error("Invalid username");
-  }
-
-  return {
-    message: "Reset link sent successfully (demo mode)",
+interface ForgotPasswordResponse {
+  message?: {
+    status?: string;
+    message?: string;
   };
+}
+
+export const resetPasswordApi = async (email: string): Promise<{ message: string }> => {
+  const resp: AxiosResponse<ForgotPasswordResponse> = await api.post(
+    API.loginApi.forgotPassword,
+    { email }   
+  );
+
+  const data = resp.data;
+
+  if (!data?.message || data.message.status !== "success") {
+    throw new Error(data?.message?.message ?? "RESET_FAILED");
+  }
+
+  return { message: data.message.message ?? "Reset link sent successfully." };
 };
