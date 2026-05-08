@@ -8,7 +8,6 @@ import ActionButton, {
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
 
-import { LeavePolicyModal } from "../../../../../components/Hr/hrsetupmodals/LeavePolicyModal";
 import {
   deleteLeavePolicy,
   updateLeavePolicy, 
@@ -17,6 +16,8 @@ import {
 import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { parseFrappeError } from "../hooks/parseFrappeError";
 import { useLeavePolicies } from "../hooks/useLeavePolicies";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
+import { openLeavePolicyModal } from "../../../../../store/modalStore";
 
 export function LeavePolicySetup() {
   const {
@@ -34,9 +35,6 @@ export function LeavePolicySetup() {
   } = useLeavePolicies();
   
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<LeavePolicy | null>(null);
-  const MODAL_ID = "leave-policy-modal";
 
   // ─── Delete Handler ────────────────────────────────────────────────────────
   const handleDelete = useCallback(
@@ -46,15 +44,22 @@ export function LeavePolicySetup() {
         showApiError("Cannot delete a submitted policy. Cancel it first.");
         return;
       }
-      if (!confirm(`Delete leave policy "${row.title || row.name}"?`)) return;
       
       try {
         setActionLoadingId(row.name);
-        await deleteLeavePolicy(row.name);
-        showSuccess("Leave policy deleted");
-        fetchAll();
-      } catch (err: any) {
-        showApiError(parseFrappeError(err) || "Failed to delete leave policy");
+
+        const deleted = await confirmDelete({
+          text: `Delete leave policy "${row.title || row.name}"?`,
+          loadingText: "Deleting Policy...",
+          successMessage: "Leave policy deleted",
+          action: async () => {
+            await deleteLeavePolicy(row.name!);
+          },
+        });
+
+        if (deleted) {
+          fetchAll();
+        }
       } finally {
         setActionLoadingId(null);
       }
@@ -67,9 +72,6 @@ export function LeavePolicySetup() {
     async (row: LeavePolicy, newStatus: 1 | 2) => {
       if (!row.name) return;
       const actionText = newStatus === 1 ? "submit" : "cancel";
-      
-      if (!confirm(`Are you sure you want to ${actionText} leave policy "${row.title || row.name}"?`)) return;
-
       try {
         setActionLoadingId(row.name);
         // Only sending the docstatus to update it
@@ -163,10 +165,8 @@ export function LeavePolicySetup() {
               <ActionButton
                 type="edit"
                 iconOnly
-                onClick={() => {
-                  setEditTarget(row);
-                  setModalOpen(true);
-                }}
+                // Pass row data and the fetchAll callback directly to the store
+                onClick={() => openLeavePolicyModal(row, true, { onSuccess: fetchAll })}
                 disabled={actionLoadingId === row.name || row.docstatus !== 0} // Disable edit if not Draft
               />
               {dropdownActions.length > 0 && (
@@ -177,49 +177,38 @@ export function LeavePolicySetup() {
         },
       },
     ],
-    [actionLoadingId, handleDelete, handleStatusChange],
+    // Don't forget to add fetchAll to dependencies so the modal gets the latest reference!
+    [actionLoadingId, handleDelete, handleStatusChange, fetchAll],
   );
 
   return (
-    <>
-      <Table
-        columns={columns}
-        data={rows}
-        loading={loading}
-        rowKey={(row) => row.name!}
-        showToolbar
-        searchValue={search}
-        onSearch={(v) => {
-          setSearch(v);
-          setPage(1);
-        }}
-        enableAdd
-        addLabel="Add Leave Policy"
-        onAdd={() => {
-          setEditTarget(null);
-          setModalOpen(true);
-        }}
-        currentPage={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50]}
-        onPageChange={setPage}
-        onPageSizeChange={(s) => {
-          setPageSize(s);
-          setPage(1);
-        }}
-        enableColumnSelector
-        tableId="leave-policies-table"
-      />
-
-      <LeavePolicyModal
-        modalId={MODAL_ID}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialData={editTarget}
-        onSuccess={fetchAll}
-      />
-    </>
+    <Table
+      columns={columns}
+      data={rows}
+      loading={loading}
+      rowKey={(row) => row.name!}
+      showToolbar
+      searchValue={search}
+      onSearch={(v) => {
+        setSearch(v);
+        setPage(1);
+      }}
+      enableAdd
+      addLabel="Add Leave Policy"
+      // Trigger modal for creation (null row)
+      onAdd={() => openLeavePolicyModal(null, false, { onSuccess: fetchAll })}
+      currentPage={page}
+      totalPages={totalPages}
+      totalItems={totalItems}
+      pageSize={pageSize}
+      pageSizeOptions={[10, 25, 50]}
+      onPageChange={setPage}
+      onPageSizeChange={(s) => {
+        setPageSize(s);
+        setPage(1);
+      }}
+      enableColumnSelector
+      tableId="leave-policies-table"
+    />
   );
 }

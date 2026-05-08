@@ -95,33 +95,33 @@ const editId = initialData?.name || initialData?.id;
     fetchLeaveDetail();
   }, [editId, isOpen]);
   
-  useEffect(() => {
-    if (!employeeId || !isOpen) {
-      setLeaveBalance(null);
-      return;
-    }
+  // useEffect(() => {
+  //   if (!employeeId || !isOpen) {
+  //     setLeaveBalance(null);
+  //     return;
+  //   }
 
-    const fetchLeaveBalance = async () => {
-      try {
-        setBalanceLoading(true);
-        const res = await getEmployeeLeaveBalanceReport({
-          employeeId,
-          fromDate: "2026-01-01",
-          toDate: "2026-12-31",
-        });
+  //   const fetchLeaveBalance = async () => {
+  //     try {
+  //       setBalanceLoading(true);
+  //       const res = await getEmployeeLeaveBalanceReport({
+  //         employeeId,
+  //         fromDate: "2026-01-01",
+  //         toDate: "2026-12-31",
+  //       });
 
-        const uiBalance = mapLeaveBalanceFromApi(res.data);
-        setLeaveBalance(uiBalance);
-      } catch (err) {
-        console.error("Failed to fetch leave balance", err);
-        setLeaveBalance(null);
-      } finally {
-        setBalanceLoading(false);
-      }
-    };
+  //       const uiBalance = mapLeaveBalanceFromApi(res.data);
+  //       setLeaveBalance(uiBalance);
+  //     } catch (err) {
+  //       console.error("Failed to fetch leave balance", err);
+  //       setLeaveBalance(null);
+  //     } finally {
+  //       setBalanceLoading(false);
+  //     }
+  //   };
 
-    fetchLeaveBalance();
-  }, [employeeId, isOpen]);
+  //   fetchLeaveBalance();
+  // }, [employeeId, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -413,8 +413,7 @@ return (
               />
             </div>
 
-            {/* Summary Box */}
-            {leaveBalance && (
+            {/* {leaveBalance && (
               <div className="space-y-4 rounded-xl border border-[var(--border)] bg-app p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-wider text-sub">
                   Leave Balance Summary
@@ -440,7 +439,7 @@ return (
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
 
           {/* RIGHT: Form */}

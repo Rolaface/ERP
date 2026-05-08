@@ -38,7 +38,11 @@ export type ModalType =
   | "designation"
   | "grade"
   | "User"
-  | "employeeType";
+  | "employeeType"
+  | "leaveType"
+  | "leavePeriod"
+  | "leavePolicy"
+  | "leavePolicyAssignment";
 
 export interface ModalContext {
   source?: string;
@@ -714,4 +718,42 @@ export const openEmployeeTypeModal = (
     .getState()
     .openModal("employeeType", initialData, isEdit, context, meta);
 
-    
+export const openLeaveTypeModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("leaveType", initialData, isEdit, context, meta);   
+
+export const openLeavePeriodModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("leavePeriod", initialData, isEdit, context, meta);   
+
+export const openLeavePolicyModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("leavePolicy", initialData, isEdit, context, meta); 
+
+export const openLeavePolicyAssignmentModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("leavePolicyAssignment", initialData, isEdit, context, meta); 

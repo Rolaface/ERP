@@ -25,6 +25,7 @@ import {
   REFRESH_KEYS,
 } from "../../store/dataRefreshStore";
 import type { LeaveApplication } from "../../api/leaveApplicationApi";
+import type { LeaveType } from "../../api/leaveConfigApi";
 
 const CustomerModal = lazy(() => import("../crm/CustomerModal"));
 const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
@@ -111,13 +112,35 @@ const LeaveApplyModal = lazy(
   () =>
     import("../../components/Hr/hrsetupmodals/LeaveApplyModal"),
 );
+const LeaveTypeModal = lazy(
+  ()=>
+  import("../Hr/hrsetupmodals/LeaveTypeModal").then((m) => ({
+      default: m.LeaveTypeModal,
+    })),
+);
+const LeavePeriodModal = lazy(
+  ()=>
+  import("../Hr/hrsetupmodals/LeavePeriodModal").then((m) => ({
+      default: m.LeavePeriodModal,
+    })),
+);
+const LeavePolicyModal = lazy(
+  ()=>
+  import("../Hr/hrsetupmodals/LeavePolicyModal").then((m) => ({
+      default: m.LeavePolicyModal,
+    })),
+);const LeavePolicyAssignmentModal = lazy(
+  ()=>
+  import("../Hr/hrsetupmodals/LeavePolicyAssignmentModal").then((m) => ({
+      default: m.LeavePolicyAssignmentModal,
+    })),
+);
 const TaxConfigModal = lazy(
   () =>
     import("../Hr/hrsetupmodals/TaxConfigModal").then((m) => ({
       default: m.TaxConfigModal,
     })),
 );
-
 const DepartmentModal = lazy(
   () =>
     import("../empployeesetupmodal/DepartmentModal").then((m) => ({
@@ -777,6 +800,70 @@ onSuccess={async (empIds, formData) => {
       isOpen={true}
       onClose={handleClose}
       initialData={getInitialData<LeaveApplication>(modal.initialData)}
+      // earningComponents={[]}
+      // deductionComponents={[]}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+        handleClose();
+      }}
+    />,
+  );
+   case "leaveType":
+  return wrappedModal(
+    <LeaveTypeModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData<LeaveType>(modal.initialData)}
+      // earningComponents={[]}
+      // deductionComponents={[]}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+        handleClose();
+      }}
+    />,
+  );
+  case "leavePeriod":
+  return wrappedModal(
+    <LeavePeriodModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      // earningComponents={[]}
+      // deductionComponents={[]}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+        handleClose();
+      }}
+    />,
+  );
+  case "leavePolicy":
+  return wrappedModal(
+    <LeavePolicyModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      // earningComponents={[]}
+      // deductionComponents={[]}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+        handleClose();
+      }}
+    />,
+  );
+  case "leavePolicyAssignment":
+  return wrappedModal(
+    <LeavePolicyAssignmentModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
       // earningComponents={[]}
       // deductionComponents={[]}
       onSuccess={() => {
