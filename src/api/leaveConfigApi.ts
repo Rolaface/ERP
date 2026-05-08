@@ -271,14 +271,45 @@ export interface LeavePolicy {
 /**
  * GET /api/resource/Leave Policy
  */
+// export async function getAllLeavePolicies(): Promise<LeavePolicy[]> {
+//   try {
+//     const resp: AxiosResponse<FrappeListResponse<LeavePolicy>> = await api.get(
+//       LEAVE_POLICY_RESOURCE.getAll,
+//       { params: { fields: '["*"]', limit_page_length: 0 } }
+//     );
+//     return resp.data?.data || [];
+//   }catch (error: any) {
+//     throw error;
+//   }
+// }
+/**
+ * GET /api/resource/Leave Policy
+ * Fetches all policies, then fetches full details for each to include child tables.
+ */
 export async function getAllLeavePolicies(): Promise<LeavePolicy[]> {
   try {
+    // 1. Fetch the basic list of all policies
     const resp: AxiosResponse<FrappeListResponse<LeavePolicy>> = await api.get(
       LEAVE_POLICY_RESOURCE.getAll,
       { params: { fields: '["*"]', limit_page_length: 0 } }
     );
-    return resp.data?.data || [];
-  }catch (error: any) {
+    
+    const policies = resp.data?.data || [];
+    const fullPolicies = await Promise.all(
+      policies.map(async (policy) => {
+        if (policy.name) {
+          try {
+            return await getLeavePolicyById(policy.name);
+          }  catch (error: any) {
+    throw error;
+  }
+        }
+        return policy;
+      })
+    );
+
+    return fullPolicies;
+  } catch (error: any) {
     throw error;
   }
 }

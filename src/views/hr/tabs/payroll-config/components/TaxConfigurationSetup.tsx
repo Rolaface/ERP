@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 
 import Table from "../../../../../components/ui/Table/Table";
 import ActionButton, {
@@ -11,7 +11,7 @@ import {
   deleteTaxConfig,
   type TaxConfig,
 } from "../../../../../api/payrollConfigApi";
-import { showApiError, showSuccess } from "../../../../../utils/alert";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../../../../store/dataRefreshStore";
 import { useTaxConfigs } from "../hooks/useTaxConfigs";
 import { openTaxConfigModal } from "../../../../../store/modalStore";
 
@@ -31,6 +31,25 @@ export function TaxConfigurationSetup() {
     fetchDetail,
   } = useTaxConfigs();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const triggerRefresh = useDataRefreshStore(
+    (state) => state.triggerRefresh
+  );
+
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh
+  );
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.TAX_CONFIGURATION_LIST,
+      () => {
+        fetchAll();
+      }
+    );
+
+    return unsubscribe;
+  }, [subscribeToRefresh, fetchAll]);
+
 
   const handleEdit = useCallback(
     async (row: TaxConfig) => {
@@ -40,14 +59,18 @@ export function TaxConfigurationSetup() {
         detail,
         true,
         {
-          onSuccess: fetchAll,
+          onSuccess: () => {
+            triggerRefresh(
+              REFRESH_KEYS.TAX_CONFIGURATION_LIST
+            );
+          },
         },
         {
           title: "Edit Tax Configuration",
         },
       );
     },
-    [fetchDetail],
+    [fetchDetail, triggerRefresh]
   );
 
   const handleDelete = useCallback(
@@ -67,13 +90,15 @@ export function TaxConfigurationSetup() {
         });
 
         if (deleted) {
-          fetchAll();
+          triggerRefresh(
+            REFRESH_KEYS.TAX_CONFIGURATION_LIST
+          );
         }
       } finally {
         setActionLoadingId(null);
       }
     },
-    [fetchAll],
+    [triggerRefresh],
   );
   const columns: Column<TaxConfig>[] = useMemo(
     () => [
@@ -112,11 +137,10 @@ export function TaxConfigurationSetup() {
           const isActive = !row.disabled;
           return (
             <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                isActive
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${isActive
                   ? "bg-emerald-100 text-emerald-700"
                   : "bg-gray-100 text-gray-500"
-              }`}
+                }`}
             >
               {isActive ? "Active" : "Inactive"}
             </span>
@@ -171,7 +195,11 @@ export function TaxConfigurationSetup() {
             null,
             false,
             {
-              onSuccess: fetchAll,
+              onSuccess: () => {
+                triggerRefresh(
+                  REFRESH_KEYS.TAX_CONFIGURATION_LIST
+                );
+              },
             },
             {
               title: "New Tax Configuration",

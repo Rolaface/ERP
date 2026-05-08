@@ -186,8 +186,8 @@ const handleSave = async () => {
 
     onSuccess?.();
     onClose();
-  } catch (err: any) {
-    showApiError(err?.message ?? "Failed to save tax configuration");
+  } catch (err) {
+    showApiError(err);
   } finally {
     setSaving(false);
   }

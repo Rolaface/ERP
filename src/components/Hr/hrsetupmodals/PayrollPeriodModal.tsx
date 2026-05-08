@@ -93,8 +93,8 @@ export const PayrollPeriodModal: React.FC<Props> = ({
 
       onSuccess?.();
       onClose();
-    } catch (err: any) {
-      showApiError(err?.message ?? "Failed to save payroll period");
+    } catch (err) {
+      showApiError(err);
     } finally {
       setSaving(false);
     }

@@ -7,14 +7,14 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
-
-import { LeaveTypeModal } from "../../../../../components/Hr/hrsetupmodals/LeaveTypeModal";
 import {
   deleteLeaveType,
   type LeaveType,
 } from "../../../../../api/leaveConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { useLeaveTypes } from "../hooks/useLeaveTypes";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
+import { openLeaveTypeModal } from "../../../../../store/modalStore";
 
 export function LeaveTypeSetup() {
   const {
@@ -32,22 +32,25 @@ export function LeaveTypeSetup() {
   } = useLeaveTypes();
   
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<LeaveType | null>(null);
-  const MODAL_ID = "leave-type-modal";
 
   const handleDelete = useCallback(
     async (row: LeaveType) => {
       if (!row.name) return;
-      if (!confirm(`Delete leave type "${row.leave_type_name}"?`)) return;
-      
       try {
         setActionLoadingId(row.name);
-        await deleteLeaveType(row.name);
-        showSuccess("Leave type deleted");
-        fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete leave type");
+
+        const deleted = await confirmDelete({
+          text: `Delete "${row.leave_type_name}"?`,
+          loadingText: "Deleting Leave Type...",
+          successMessage: "Leave type deleted",
+          action: async () => {
+            await deleteLeaveType(row.name!);
+          },
+        });
+
+        if (deleted) {
+          fetchAll();
+        }
       } finally {
         setActionLoadingId(null);
       }
@@ -132,10 +135,7 @@ export function LeaveTypeSetup() {
             <ActionButton
               type="edit"
               iconOnly
-              onClick={() => {
-                setEditTarget(row);
-                setModalOpen(true);
-              }}
+              onClick={() => openLeaveTypeModal(row, true, { onSuccess: fetchAll })}
               disabled={actionLoadingId === row.name}
             />
             <ActionMenu
@@ -151,49 +151,37 @@ export function LeaveTypeSetup() {
         ),
       },
     ],
-    [actionLoadingId, handleDelete],
+    [actionLoadingId, handleDelete, fetchAll],
   );
 
   return (
-    <>
-      <Table
-        columns={columns}
-        data={rows}
-        loading={loading}
-        rowKey={(row) => row.name ?? row.leave_type_name}
-        showToolbar
-        searchValue={search}
-        onSearch={(v) => {
-          setSearch(v);
-          setPage(1);
-        }}
-        enableAdd
-        addLabel="Add Leave Type"
-        onAdd={() => {
-          setEditTarget(null);
-          setModalOpen(true);
-        }}
-        currentPage={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50]}
-        onPageChange={setPage}
-        onPageSizeChange={(s) => {
-          setPageSize(s);
-          setPage(1);
-        }}
-        enableColumnSelector
-        tableId="leave-types-table"
-      />
-
-      <LeaveTypeModal
-        modalId={MODAL_ID}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialData={editTarget}
-        onSuccess={fetchAll}
-      />
-    </>
+    <Table
+      columns={columns}
+      data={rows}
+      loading={loading}
+      rowKey={(row) => row.name ?? row.leave_type_name}
+      showToolbar
+      searchValue={search}
+      onSearch={(v) => {
+        setSearch(v);
+        setPage(1);
+      }}
+      enableAdd
+      addLabel="Add Leave Type"
+      // Open modal in "Add" mode (null/undefined row) and pass the fetch callback
+      onAdd={() => openLeaveTypeModal(null, false, { onSuccess: fetchAll })}
+      currentPage={page}
+      totalPages={totalPages}
+      totalItems={totalItems}
+      pageSize={pageSize}
+      pageSizeOptions={[10, 25, 50]}
+      onPageChange={setPage}
+      onPageSizeChange={(s) => {
+        setPageSize(s);
+        setPage(1);
+      }}
+      enableColumnSelector
+      tableId="leave-types-table"
+    />
   );
 }

@@ -74,8 +74,8 @@ export const DesignationModal: React.FC<Props> = ({
       }
       onSuccess?.();
       onClose();
-    } catch (err: any) {
-      showApiError(err?.message ?? "Failed to save designation");
+    } catch (err) {
+      showApiError(err);
     } finally {
       setSaving(false);
     }

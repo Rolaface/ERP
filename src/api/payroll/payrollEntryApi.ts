@@ -65,17 +65,7 @@ export interface PayrollEntryDetail {
   employees: PayrollEmployeeDetail[];
 }
 
-// TODO: Uncomment once Salary Slip API is ready
-// export interface SalarySlip {
-//   name: string;
-//   employee: string;
-//   employee_name: string;
-//   gross_pay: number;
-//   net_pay: number;
-//   status: string;
-//   start_date: string;
-//   end_date: string;
-// }
+
 
 // ─── Functions ────────────────────────────────────────────────────────────────
 
@@ -97,11 +87,12 @@ export async function getAllPayrollEntries(
   const start = (page - 1) * pageSize;
 
   const resp: AxiosResponse = await api.get(
-    `${API.payroll.payrollentry.createpayrollentry}?fields=["name","company","posting_date","status","branch","currency","payroll_frequency"]&limit_start=${start}&limit_page_length=${pageSize}`,
+    `${API.payroll.payrollentry.createpayrollentry}?fields=["name","company","posting_date","status","branch","currency","payroll_frequency"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&order_by=creation desc`,
   );
 
   return {
     data: resp.data?.data || [],
+    pagination: resp.data?.pagination || {},
   };
 }
 
@@ -175,9 +166,7 @@ export interface SalarySlip {
 export async function getSalarySlipsByEmployee(
   employeeId: string,
 ): Promise<SalarySlip[]> {
-  const filters = JSON.stringify([
-    ["employee", "=", employeeId],
-  ]);
+  const filters = JSON.stringify([["employee", "=", employeeId]]);
 
   const fields = JSON.stringify([
     "name",
