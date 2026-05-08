@@ -39,9 +39,9 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
   hrManagers,
 }) => {
   const isContractBased =
-    formData.employeeType === "Contract" ||
-    formData.employeeType === "Temporary" ||
-    formData.employeeType === "Intern";
+    formData.employment_type === "Contract" ||
+    formData.employment_type === "Temporary" ||
+    formData.employment_type === "Intern";
 
   useEffect(() => {
     if (!isContractBased && formData.contractEndDate) {
@@ -174,16 +174,9 @@ const fetchEmployeeOptions = async (q: string) => {
     );
   }}
 />
-          <ModalSelect
-            label="HR Manager"
-            name="hrManager"
-            value={formData.hrManager}
-            onChange={(e) => handleInputChange("hrManager", e.target.value)}
-            options={hrManagerOptions}
-            placeholder="Select HR Manager"
-          />
+          
 
-          <ModalInput
+          {/* <ModalInput
             label="Probation Period (months)"
             name="probationPeriod"
             type="number"
@@ -191,7 +184,7 @@ const fetchEmployeeOptions = async (q: string) => {
             onChange={(e) =>
               handleInputChange("probationPeriod", e.target.value)
             }
-          />
+          /> */}
 
           <DatePickerInput
             label="Date of Joining"
@@ -224,19 +217,13 @@ const fetchEmployeeOptions = async (q: string) => {
         </h4>
         <div className="grid grid-cols-2 gap-2.5">
           <ModalInput
-            label="Work Location"
+            label="Branch"
             name="workLocation"
             value={formData.workLocation}
             onChange={(e) => handleInputChange("workLocation", e.target.value)}
-            placeholder="e.g., Lusaka HQ"
+            placeholder="e.g., Main HQ"
           />
-          <ModalInput
-            label="Work Address"
-            name="workAddress"
-            value={formData.workAddress}
-            onChange={(e) => handleInputChange("workAddress", e.target.value)}
-            placeholder="Office address"
-          />
+         
         </div>
       </div>
     </div>

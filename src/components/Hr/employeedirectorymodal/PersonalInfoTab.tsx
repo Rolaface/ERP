@@ -4,6 +4,7 @@ import { getEmployeeFeatures } from "../../../config/employeeFeatures";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import DatePickerInput from "../../calendar/DatePickerInput";
 
+
 type PersonalInfoTabProps = {
   formData: any;
   handleInputChange: (field: string, value: string | boolean) => void;
@@ -14,6 +15,7 @@ const GENDER_OPTIONS = [
   { label: "Male", value: "Male" },
   { label: "Female", value: "Female" },
   { label: "Other", value: "Other" },
+  { label: "Prefer not to say", value: "Prefer not to say" },
 ];
 
 const MARITAL_STATUS_OPTIONS = [
@@ -21,6 +23,17 @@ const MARITAL_STATUS_OPTIONS = [
   { label: "Married", value: "Married" },
   { label: "Divorced", value: "Divorced" },
   { label: "Widowed", value: "Widowed" },
+];
+
+const blood_group_option = [
+  { label: "A+", value: "A+" },
+  { label: "A-", value: "A-" },
+  { label: "B+", value: "B+" },
+  { label: "B-", value: "B-" },
+  { label: "AB+", value: "AB+" },
+  { label: "AB-", value: "AB-" },
+  { label: "O+", value: "O+" },
+  { label: "O-", value: "O-" },
 ];
 
 const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
@@ -123,13 +136,13 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             onChange={handleInputChange}
             required
           />
-          <ModalInput
-            label="Blood Group"
-            name="blood_group"
-            value={formData.blood_group || ""}
-            onChange={(e) => handleInputChange("blood_group", e.target.value)}
-
-          />
+          <ModalSelect
+  label="Blood Group"
+  name="blood_group"
+  value={formData.blood_group || ""}
+  onChange={(e) => handleInputChange("blood_group", e.target.value)}
+  options={blood_group_option}
+/>
 
           <ModalSelect
             label="Gender"

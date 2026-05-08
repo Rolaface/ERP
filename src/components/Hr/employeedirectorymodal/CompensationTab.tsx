@@ -103,7 +103,7 @@ const ComponentTable: React.FC<ComponentTableProps> = ({
               name={comp.key}
               value={comp.isFormula ? comp.amount : (overrides[comp.key] ?? comp.amount)}
               onChange={(val) => onOverrideChange(comp.key, val)}
-              disabled={comp.isFormula}
+              disabled={true}
             />
           </td>
         </tr>

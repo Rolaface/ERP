@@ -276,11 +276,7 @@ universalaccountnumber: data.universal_account_number || "",
   };
 }
 
-// ─── Build API payload from formData ─────────────────────────────────────────
-/**
- * Converts formData → the shape expected by createEmployee / updateEmployeeById.
- * This is the ONLY place where form field names are translated back to API field names.
- */
+
 export function buildEmployeePayload(formData: Record<string, any>) {
   // Join address parts into the single stored string
   const fullAddress = [
