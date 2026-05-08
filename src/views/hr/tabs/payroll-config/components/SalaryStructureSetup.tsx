@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 
 import Table from "../../../../../components/ui/Table/Table";
 import ActionButton, {
@@ -10,7 +10,7 @@ import {
   deleteSalaryStructure,
   type SalaryStructure,
 } from "../../../../../api/payrollConfigApi";
-import { showApiError, showSuccess } from "../../../../../utils/alert";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../../../../store/dataRefreshStore";
 import { useSalaryStructures } from "../hooks/useSalaryStructures";
 import { openSalaryStructureModal } from "../../../../../store/modalStore";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
@@ -27,11 +27,29 @@ export function SalaryStructureSetup() {
     setPageSize,
     totalPages,
     totalItems,
-   
+
     fetchAll,
     fetchDetail,
   } = useSalaryStructures();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const triggerRefresh = useDataRefreshStore(
+    (state) => state.triggerRefresh
+  );
+
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh
+  );
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.SALARY_STRUCTURE_LIST,
+      () => {
+        fetchAll();
+      }
+    );
+
+    return unsubscribe;
+  }, [subscribeToRefresh, fetchAll]);
 
 
   const handleEdit = useCallback(
@@ -39,44 +57,50 @@ export function SalaryStructureSetup() {
       const detail = await fetchDetail(row.name!);
       if (!detail) return;
       openSalaryStructureModal(
-  detail,
-  true,
-  {
-    onSuccess: fetchAll,
-  },
-  {
-    title: "Edit Salary Structure",
-  },
-);
+        detail,
+        true,
+        {
+          onSuccess: () => {
+            triggerRefresh(
+              REFRESH_KEYS.SALARY_STRUCTURE_LIST
+            );
+          },
+        },
+        {
+          title: "Edit Salary Structure",
+        },
+      );
     },
-    [fetchDetail],
+    [fetchDetail, triggerRefresh]
   );
 
-const handleDelete = useCallback(
-  async (row: SalaryStructure) => {
-    if (!row.name) return;
+  const handleDelete = useCallback(
+    async (row: SalaryStructure) => {
+      if (!row.name) return;
 
-    try {
-      setActionLoadingId(row.name);
+      try {
+        setActionLoadingId(row.name);
 
-      const deleted = await confirmDelete({
-        text: `Delete "${row.name}"?`,
-        loadingText: "Deleting Salary Structure...",
-        successMessage: "Structure deleted",
-        action: async () => {
-          await deleteSalaryStructure(row.name!);
-        },
-      });
+        const deleted = await confirmDelete({
+          text: `Delete "${row.name}"?`,
+          loadingText: "Deleting Salary Structure...",
+          successMessage: "Structure deleted",
+          action: async () => {
+            await deleteSalaryStructure(row.name!);
+          },
+        });
 
-      if (deleted) {
-        fetchAll();
+        if (deleted) {
+          triggerRefresh(
+            REFRESH_KEYS.SALARY_STRUCTURE_LIST
+          );
+        }
+      } finally {
+        setActionLoadingId(null);
       }
-    } finally {
-      setActionLoadingId(null);
-    }
-  },
-  [fetchAll],
-);
+    },
+    [triggerRefresh],
+  );
 
   const columns: Column<SalaryStructure>[] = useMemo(
     () => [
@@ -93,11 +117,10 @@ const handleDelete = useCallback(
         header: "Status",
         render: (row) => (
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              row.is_active === "Yes"
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-gray-100 text-gray-500"
-            }`}
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.is_active === "Yes"
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-gray-100 text-gray-500"
+              }`}
           >
             {row.is_active === "Yes" ? "Active" : "Inactive"}
           </span>
@@ -179,17 +202,21 @@ const handleDelete = useCallback(
         enableAdd
         addLabel="Add Structure"
         onAdd={() =>
-  openSalaryStructureModal(
-    null,
-    false,
-    {
-      onSuccess: fetchAll,
-    },
-    {
-      title: "New Salary Structure",
-    },
-  )
-}
+          openSalaryStructureModal(
+            null,
+            false,
+            {
+              onSuccess: () => {
+                triggerRefresh(
+                  REFRESH_KEYS.SALARY_STRUCTURE_LIST
+                );
+              },
+            },
+            {
+              title: "New Salary Structure",
+            },
+          )
+        }
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -204,7 +231,7 @@ const handleDelete = useCallback(
         tableId="salary-structures"
       />
 
-   
+
     </>
   );
 }

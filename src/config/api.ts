@@ -38,6 +38,7 @@ export const NAPSA_BASE = ENV.napsaBaseUrl;
 export const API = {
   loginApi: {
     login: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
+    forgotPassword: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.forgot_password`,
     logout: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`,
   },
 
