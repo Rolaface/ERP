@@ -55,6 +55,8 @@ const buildPayload = (
 });
 
 export default function PayrollManagement() {
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -77,8 +79,9 @@ export default function PayrollManagement() {
   const loadPayrollEntries = async () => {
     try {
       setLoading(true);
-      const resp = await getAllPayrollEntries();
+      const resp = await getAllPayrollEntries(page, 10);
       setPayrollRecords(resp?.data || []);
+     setTotalPages(resp?.pagination?.total_pages || 1);
     } catch (err) {
       console.error(err);
     } finally {
@@ -86,37 +89,36 @@ export default function PayrollManagement() {
     }
   };
 
-  useEffect(() => {
-    loadPayrollEntries();
-  }, []);
-
+useEffect(() => {
+  loadPayrollEntries();
+}, [page]);
   // ── Handlers ───────────────────────────────────────────────────────────────
-//
-const handleCreatePayroll = async (
-  empIds: string[],
-  formData?: PayrollEntry,
-) => {
-  if (!empIds.length) return;
-  try {
-    showLoading("Creating Payroll");
-    if (formData) {
-      const payload = buildPayload(formData, empIds);
-      const created = await createPayrollEntry(payload);
-      if (!created) throw new Error("Payroll creation failed");
+  //
+  const handleCreatePayroll = async (
+    empIds: string[],
+    formData?: PayrollEntry,
+  ) => {
+    if (!empIds.length) return;
+    try {
+      showLoading("Creating Payroll");
+      if (formData) {
+        const payload = buildPayload(formData, empIds);
+        const created = await createPayrollEntry(payload);
+        if (!created) throw new Error("Payroll creation failed");
+      }
+      await loadPayrollEntries();
+      setSelectedEmpIds([]);
+      setShowCreateModal(false);
+      closeSwal();
+      showSuccess(
+        `Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`,
+      );
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+      throw error; // ← THIS is the critical missing line
     }
-    await loadPayrollEntries();
-    setSelectedEmpIds([]);
-    setShowCreateModal(false);
-    closeSwal();
-    showSuccess(
-      `Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`,
-    );
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-    throw error; // ← THIS is the critical missing line
-  }
-};
+  };
 
   const pendingRecords = payrollRecords.filter((r) => r.status === "Pending");
 
@@ -178,20 +180,23 @@ const handleCreatePayroll = async (
   // ── Dashboard ──────────────────────────────────────────────────────────────
   return (
     <div className="h-screen flex flex-col bg-app overflow-hidden">
-    <PayrollDashboard
-  records={payrollRecords}
-  loading={loading}
-  onQuickCreate={() => setShowCreateModal(true)}
-  onNewPayroll={() =>
-    openPayrollModal(null, false, {
-      onSubmit: async ({ empIds, formData }: any) => {
-  await handleCreatePayroll(empIds, formData);
-  // loadPayrollEntries is already called inside handleCreatePayroll
-  // no need to call it again here
-},
-    })
-  }
-  onRunPayroll={handleRunPayroll}
+      <PayrollDashboard
+        records={payrollRecords}
+        loading={loading}
+        currentPage={page}
+totalPages={totalPages}
+onPageChange={setPage}
+        onQuickCreate={() => setShowCreateModal(true)}
+        onNewPayroll={() =>
+          openPayrollModal(null, false, {
+            onSubmit: async ({ empIds, formData }: any) => {
+              await handleCreatePayroll(empIds, formData);
+              // loadPayrollEntries is already called inside handleCreatePayroll
+              // no need to call it again here
+            },
+          })
+        }
+        onRunPayroll={handleRunPayroll}
         onViewPayslip={(r) => setSelectedRecord(r)}
         onEditRecord={(r) => {
           openPayrollModal(r, true, {

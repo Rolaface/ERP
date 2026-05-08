@@ -18,8 +18,9 @@ import { showSuccess } from "../../utils/alert";
 import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
 import { MinimizableModal } from "./MinimizableModal";
 import { createUser } from "../../api/RoleManagement/CreateUserApi";
-import type { SalaryComponent } from "../../api/payrollConfigApi";
-import type { SalaryStructure } from "../../api/payrollConfigApi";
+import type { SalaryComponent,PayrollPeriod,SalaryStructure } from "../../api/payrollConfigApi";
+
+
 import {
   useDataRefreshStore,
   REFRESH_KEYS,
@@ -147,7 +148,12 @@ const EmployeeTypeModal = lazy(
       default: m.EmployeeTypeModal,
     })),
 );
-
+const PayrollPeriodModal = lazy(
+  () =>
+    import("../Hr/hrsetupmodals/PayrollPeriodModal").then((m) => ({
+      default: m.PayrollPeriodModal,
+    })),
+);
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
@@ -779,6 +785,20 @@ onSuccess={async (empIds, formData) => {
       initialData={getInitialData<LeaveApplication>(modal.initialData)}
       // earningComponents={[]}
       // deductionComponents={[]}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+        handleClose();
+      }}
+    />,
+  );
+  case "Payrollperiod":
+  return wrappedModal(
+    <PayrollPeriodModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData<PayrollPeriod>(modal.initialData)}
       onSuccess={() => {
         if (context?.onSuccess) context.onSuccess(undefined);
         handleClose();

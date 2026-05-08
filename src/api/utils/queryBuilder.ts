@@ -23,6 +23,8 @@ export function buildListParams({
   if (typeof pageSize === "number") {
     params.append("limit_page_length", String(pageSize));
   }
+  params.append("order_by", "creation desc");
+
 
   if (search && searchFields?.length) {
     const orFilters = searchFields.map((field) => [

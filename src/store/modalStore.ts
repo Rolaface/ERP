@@ -38,6 +38,7 @@ export type ModalType =
   | "designation"
   | "grade"
   | "User"
+  |"Payrollperiod"
   | "employeeType";
 
 export interface ModalContext {
@@ -715,3 +716,12 @@ export const openEmployeeTypeModal = (
     .openModal("employeeType", initialData, isEdit, context, meta);
 
     
+export const openPayrollPeriodModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("Payrollperiod", initialData, isEdit, context, meta);

@@ -32,10 +32,10 @@ export interface SalaryComponent {
   is_flexible_benefit?: 0 | 1;
   max_benefit_amount?: number;
   payout_method?:
-  | "Accrue and payout at end of payroll period"
-  | "Accrue per cycle, pay only on claim"
-  | "Allow claim for full benefit amount"
-  | "";
+    | "Accrue and payout at end of payroll period"
+    | "Accrue per cycle, pay only on claim"
+    | "Allow claim for full benefit amount"
+    | "";
   pay_against_benefit_claim?: 0 | 1;
   only_tax_impact?: 0 | 1;
   create_separate_payment_entry_against_benefit_claim?: 0 | 1;
@@ -96,6 +96,12 @@ type PaginatedResponse<T> = {
     has_prev: boolean;
   };
 };
+export interface PayrollPeriod {
+  name?: string;
+  start_date: string;
+  end_date: string;
+  company?: string;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SALARY COMPONENT
@@ -122,6 +128,7 @@ export async function getAllSalaryComponents(
         "is_flexible_benefit",
         "max_benefit_amount",
         "payout_method",
+        " variable_based_on_taxable_salary",
 
         "is_income_tax_component",
       ],
@@ -138,10 +145,13 @@ export async function getAllSalaryComponents(
   }
 }
 
-export async function getSalaryComponent(name: string): Promise<SalaryComponent> {
+export async function getSalaryComponent(
+  name: string,
+): Promise<SalaryComponent> {
   try {
     const url = `${Payroll.salaryComponent.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<SalaryComponent>> = await api.get(url);
+    const resp: AxiosResponse<FrappeDetailResponse<SalaryComponent>> =
+      await api.get(url);
     return resp.data?.data;
   } catch (error) {
     throw error;
@@ -209,10 +219,13 @@ export async function getAllSalaryStructures(
   }
 }
 
-export async function getSalaryStructure(name: string): Promise<SalaryStructure> {
+export async function getSalaryStructure(
+  name: string,
+): Promise<SalaryStructure> {
   try {
     const url = `${Payroll.salaryStructure.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<SalaryStructure>> = await api.get(url);
+    const resp: AxiosResponse<FrappeDetailResponse<SalaryStructure>> =
+      await api.get(url);
     return resp.data?.data;
   } catch (error) {
     throw error;
@@ -258,7 +271,11 @@ export async function deleteSalaryStructure(name: string): Promise<void> {
 // INCOME TAX SLAB
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function getAllTaxConfigs(): Promise<PaginatedResponse<TaxConfig>> {
+export async function getAllTaxConfigs(
+  start: number,
+  pageSize: number,
+  search: string,
+): Promise<PaginatedResponse<TaxConfig>> {
   try {
     const query = buildListParams({
       fields: [
@@ -269,10 +286,14 @@ export async function getAllTaxConfigs(): Promise<PaginatedResponse<TaxConfig>> 
         "tax_relief_limit",
         "disabled",
       ],
+      start,
+      pageSize,
+      search,
+      searchFields: ["name"],
     });
-
-    const resp: AxiosResponse<PaginatedResponse<TaxConfig>> =
-      await api.get(`${Payroll.incomeTaxSlab.getAll}?${query}`);
+    const resp: AxiosResponse<PaginatedResponse<TaxConfig>> = await api.get(
+      `${Payroll.incomeTaxSlab.getAll}?${query}`,
+    );
     return resp.data;
   } catch (error) {
     throw error;
@@ -282,7 +303,8 @@ export async function getAllTaxConfigs(): Promise<PaginatedResponse<TaxConfig>> 
 export async function getTaxConfig(name: string): Promise<TaxConfig> {
   try {
     const url = `${Payroll.incomeTaxSlab.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> = await api.get(url);
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
+      await api.get(url);
     return resp.data?.data;
   } catch (error) {
     throw error;
@@ -291,8 +313,10 @@ export async function getTaxConfig(name: string): Promise<TaxConfig> {
 
 export async function createTaxConfig(payload: TaxConfig): Promise<TaxConfig> {
   try {
-    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
-      await api.post(Payroll.incomeTaxSlab.create, payload);
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> = await api.post(
+      Payroll.incomeTaxSlab.create,
+      payload,
+    );
     return resp.data?.data;
   } catch (error) {
     throw error;
@@ -305,8 +329,10 @@ export async function updateTaxConfig(
 ): Promise<TaxConfig> {
   try {
     const url = `${Payroll.incomeTaxSlab.update}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> =
-      await api.put(url, payload);
+    const resp: AxiosResponse<FrappeDetailResponse<TaxConfig>> = await api.put(
+      url,
+      payload,
+    );
     return resp.data?.data;
   } catch (error) {
     throw error;
@@ -334,20 +360,135 @@ export async function searchSalaryStructures(q?: string) {
   params.append("fields", JSON.stringify(["name"]));
   params.append("limit_page_length", "20");
 
-  const resp = await api.get(`${Payroll.salaryStructure.getAll}?${params.toString()}`);
+  const resp = await api.get(
+    `${Payroll.salaryStructure.getAll}?${params.toString()}`,
+  );
   return resp?.data?.data ?? [];
 }
 
-export async function getSalaryComponentOptions(search?: string): Promise<SalaryComponent[]> {
+export async function getSalaryComponentOptions(
+  search?: string,
+): Promise<SalaryComponent[]> {
   try {
     const params = new URLSearchParams();
-    params.append("fields", JSON.stringify(["name", "salary_component", "type"]));
+    params.append(
+      "fields",
+      JSON.stringify(["name", "salary_component", "type"]),
+    );
     params.append("limit_page_length", "0");
     if (search) params.append("search", search);
 
-    const resp = await api.get(`${Payroll.salaryComponent.getAll}?${params.toString()}`);
+    const resp = await api.get(
+      `${Payroll.salaryComponent.getAll}?${params.toString()}`,
+    );
     return resp.data?.data ?? [];
   } catch (error) {
     throw error;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAYROLL PERIOD
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getAllPayrollPeriods(
+  start: number,
+  pageSize: number,
+  search: string,
+): Promise<PaginatedResponse<PayrollPeriod>> {
+  try {
+    const query = buildListParams({
+      fields: ["name", "start_date", "end_date", "company"],
+      start,
+      pageSize,
+      search,
+      searchFields: ["name"],
+    });
+    const resp: AxiosResponse<PaginatedResponse<PayrollPeriod>> = await api.get(
+      `${Payroll.payrollPeriod.getAll}?${query}`,
+    );
+    return resp.data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to fetch payroll periods",
+    );
+  }
+}
+
+export async function getPayrollPeriod(name: string): Promise<PayrollPeriod> {
+  try {
+    const url = `${Payroll.payrollPeriod.getById}/${encodeURIComponent(name)}`;
+    const resp: AxiosResponse<FrappeDetailResponse<PayrollPeriod>> =
+      await api.get(url);
+    return resp.data?.data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to fetch payroll period",
+    );
+  }
+}
+
+export async function createPayrollPeriod(
+  payload: PayrollPeriod,
+): Promise<PayrollPeriod> {
+  try {
+    const resp: AxiosResponse<FrappeDetailResponse<PayrollPeriod>> =
+      await api.post(Payroll.payrollPeriod.create, payload);
+    return resp.data?.data;
+  } catch (error: any) {
+    // Try to extract Frappe _server_messages first
+    const serverMessages = error?.response?.data?._server_messages;
+    if (serverMessages) {
+      try {
+        const parsed = JSON.parse(serverMessages);
+        const first = JSON.parse(parsed[0]);
+        // Strip HTML tags from message
+        const clean = first.message.replace(/<[^>]*>/g, "");
+        throw new Error(clean);
+      } catch (innerErr: any) {
+        if (innerErr.message && !innerErr.message.includes("JSON")) {
+          throw innerErr;
+        }
+      }
+    }
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to create payroll period",
+    );
+  }
+}
+export async function updatePayrollPeriod(
+  name: string,
+  payload: Partial<Omit<PayrollPeriod, "name">>,
+): Promise<PayrollPeriod> {
+  try {
+    const url = `${Payroll.payrollPeriod.update}/${encodeURIComponent(name)}`;
+    const resp: AxiosResponse<FrappeDetailResponse<PayrollPeriod>> =
+      await api.put(url, payload);
+    return resp.data?.data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to update payroll period",
+    );
+  }
+}
+
+export async function deletePayrollPeriod(name: string): Promise<void> {
+  try {
+    const url = `${Payroll.payrollPeriod.delete}/${encodeURIComponent(name)}`;
+    await api.delete(url);
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to delete payroll period",
+    );
   }
 }

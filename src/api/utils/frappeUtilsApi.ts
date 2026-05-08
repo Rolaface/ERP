@@ -130,3 +130,22 @@ export async function getAllLeavePolicies(
     );
   }
 }
+export async function getalluser(
+  search?: string
+): Promise<any[]> {
+  try {
+    const url = search
+      ? `${FrappeUtilsAPI.getUsers}?search=${encodeURIComponent(search)}`
+      : FrappeUtilsAPI.getUsers;
+
+    const resp: AxiosResponse = await api.get(url);
+
+    return resp.data?.data ?? []; 
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to fetch leave policies"
+    );
+  }
+}

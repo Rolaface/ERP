@@ -68,13 +68,7 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
             placeholder="+91"
           />
-          <ModalInput
-            label="Alternate Phone"
-            name="alternatePhone"
-            type="tel"
-            value={formData.alternatePhone}
-            onChange={(e) => handleInputChange("alternatePhone", e.target.value)}
-          />
+          
         </div>
       </div>
 
