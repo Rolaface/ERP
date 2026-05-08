@@ -119,8 +119,8 @@ export const DepartmentModal: React.FC<Props> = ({
       }
       onSuccess?.();
       onClose();
-    } catch (err: any) {
-      showApiError(err?.message ?? "Failed to save department");
+    } catch (err) {
+      showApiError(err);
     } finally {
       setSaving(false);
     }

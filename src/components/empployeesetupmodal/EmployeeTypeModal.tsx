@@ -69,8 +69,8 @@ export const EmployeeTypeModal: React.FC<Props> = ({
       }
       onSuccess?.();
       onClose();
-    } catch (err: any) {
-      showApiError(err?.message ?? "Failed to save employee type");
+    } catch (err) {
+      showApiError(err);
     } finally {
       setSaving(false);
     }
