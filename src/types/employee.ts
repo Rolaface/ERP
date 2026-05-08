@@ -5,6 +5,7 @@ export interface EmployeeSummary {
   department: string;
   workLocation: string;
   status: string;
+  image?: string | null;
 }
 export interface Employee {
   id: string;

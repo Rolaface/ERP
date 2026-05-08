@@ -1,4 +1,4 @@
-import React, { useEffect, useState,useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 
 import {
   showApiError,
@@ -12,7 +12,7 @@ import {
   getEmployeeById,
   deleteEmployeeById,
 } from "../../../api/employeeapi";
-import { AppPage , AppPageBody } from "../../../components/ui/app-shell";
+import { AppPage, AppPageBody } from "../../../components/ui/app-shell";
 import { openEmployeeModal } from "../../../store/modalStore";
 
 import Table from "../../../components/ui/Table/Table";
@@ -23,6 +23,9 @@ import ActionButton, {
 } from "../../../components/ui/Table/ActionButton";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../../store/dataRefreshStore";
 
+// ── NEW: self-contained avatar + name cell ────────────────────────────────────
+import EmployeeNameCell from "../../../components/ui/Table/Employeenamecell";
+// ─────────────────────────────────────────────────────────────────────────────
 
 import type { Column } from "../../../components/ui/Table/type";
 import type { EmployeeSummary } from "../../../types/employee";
@@ -43,13 +46,9 @@ const EmployeeDirectory: React.FC = () => {
 
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
-  const triggerRefresh = useDataRefreshStore(
-  (state) => state.triggerRefresh
-);
 
-const subscribeToRefresh = useDataRefreshStore(
-  (state) => state.subscribeToRefresh
-);
+  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
 
   // ── View detail ──────────────────────────────────────────────────────────
   const handleViewEmployee = async (id: string) => {
@@ -82,6 +81,9 @@ const subscribeToRefresh = useDataRefreshStore(
         id: e.name,
         employeeId: e.name,
         name: e.employee_name,
+        // ── avatar image from API ──────────────────────────────────────────
+        image: e.image ?? null,
+        // ─────────────────────────────────────────────────────────────────
         jobTitle: e.designation,
         department: e.department || "-",
         workLocation: e.branch || "-",
@@ -90,33 +92,33 @@ const subscribeToRefresh = useDataRefreshStore(
 
       setEmployees(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
-      setTotalItems(res.pagination?.total_items || 0);
+      setTotalItems(res.pagination?.total || 0);
     } catch (error) {
       showApiError(error);
     } finally {
       setLoading(false);
     }
-}, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm]);
 
-useEffect(() => {
-  fetchEmployees();
-}, [fetchEmployees]);
   useEffect(() => {
-  const unsubscribe = subscribeToRefresh(
-    REFRESH_KEYS.EMPLOYEE_LIST,
-    fetchEmployees
-  );
+    fetchEmployees();
+  }, [fetchEmployees]);
 
-  return () => unsubscribe();
-}, [subscribeToRefresh, fetchEmployees]);
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.EMPLOYEE_LIST,
+      fetchEmployees
+    );
+    return () => unsubscribe();
+  }, [subscribeToRefresh, fetchEmployees]);
 
   // ── Add ──────────────────────────────────────────────────────────────────
   const handleAdd = () => {
     openEmployeeModal(null, false, {
-  onSuccess: () => {
-    triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
-  },
-});
+      onSuccess: () => {
+        triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
+      },
+    });
   };
 
   // ── Edit ─────────────────────────────────────────────────────────────────
@@ -125,10 +127,8 @@ useEffect(() => {
     try {
       showLoading("Fetching Employee...");
       const res = await getEmployeeById(id);
-      const employeeData = unwrapEmployee(res); // flat data object
+      const employeeData = unwrapEmployee(res);
       closeSwal();
-
-      
       openEmployeeModal(employeeData, true);
     } catch (error) {
       closeSwal();
@@ -155,7 +155,6 @@ useEffect(() => {
     try {
       showLoading("Deleting Employee...");
       await deleteEmployeeById(id);
-    
       closeSwal();
       showSuccess("Employee deleted successfully");
       triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
@@ -168,8 +167,23 @@ useEffect(() => {
   // ── Columns ──────────────────────────────────────────────────────────────
   const columns: Column<EmployeeSummary>[] = [
     { key: "employeeId", header: "Employee ID", align: "left" },
-    { key: "name",       header: "Name",        align: "left" },
-    { key: "jobTitle",   header: "Job Title",   align: "left" },
+
+    // ── Name column: avatar + name via EmployeeNameCell ───────────────────
+    {
+      key: "name",
+      header: "Name",
+      align: "left",
+      render: (e) => (
+        <EmployeeNameCell
+          name={e.name}
+          employeeId={e.id}
+          image={e.image}
+        />
+      ),
+    },
+    // ─────────────────────────────────────────────────────────────────────
+
+    { key: "jobTitle", header: "Job Title", align: "left" },
     {
       key: "department",
       header: "Department",
