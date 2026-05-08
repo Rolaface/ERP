@@ -8,13 +8,14 @@ import ActionButton, {
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
 
-import { LeavePolicyAssignmentModal } from "../../../../../components/Hr/hrsetupmodals/LeavePolicyAssignmentModal";
 import {
   deleteLeavePolicyAssignment,
   type LeavePolicyAssignment,
 } from "../../../../../api/leaveConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { useLeavePolicyAssignments } from "../hooks/useLeavePolicyAssignments";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
+import { openLeavePolicyAssignmentModal } from "../../../../../store/modalStore";
 
 export function LeavePolicyAssignmentSetup() {
   const {
@@ -32,9 +33,6 @@ export function LeavePolicyAssignmentSetup() {
   } = useLeavePolicyAssignments();
   
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<LeavePolicyAssignment | null>(null);
-  const MODAL_ID = "leave-policy-assignment-modal";
 
   const handleDelete = useCallback(
     async (row: LeavePolicyAssignment) => {
@@ -43,15 +41,21 @@ export function LeavePolicyAssignmentSetup() {
         showApiError("Cannot delete a submitted assignment. Cancel it first.");
         return;
       }
-      if (!confirm(`Delete assignment for employee "${row.employee}"?`)) return;
-      
       try {
         setActionLoadingId(row.name);
-        await deleteLeavePolicyAssignment(row.name);
-        showSuccess("Leave policy assignment deleted");
-        fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete leave policy assignment");
+
+        const deleted = await confirmDelete({
+          text: `Delete "${row.name}"?`,
+          loadingText: "Deleting Leave Policy Assignment..",
+          successMessage: "Leave Policy Assignment deleted",
+          action: async () => {
+            await deleteLeavePolicyAssignment(row.name!);
+          },
+        });
+
+        if (deleted) {
+          fetchAll();
+        }
       } finally {
         setActionLoadingId(null);
       }
@@ -132,10 +136,8 @@ export function LeavePolicyAssignmentSetup() {
             <ActionButton
               type="edit"
               iconOnly
-              onClick={() => {
-                setEditTarget(row);
-                setModalOpen(true);
-              }}
+              // Pass row data and the fetchAll callback directly to the global store
+              onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
               disabled={actionLoadingId === row.name || row.docstatus === 1}
             />
             <ActionMenu
@@ -151,49 +153,38 @@ export function LeavePolicyAssignmentSetup() {
         ),
       },
     ],
-    [actionLoadingId, handleDelete],
+    // Ensure fetchAll is included in the dependency array
+    [actionLoadingId, handleDelete, fetchAll],
   );
 
   return (
-    <>
-      <Table
-        columns={columns}
-        data={rows}
-        loading={loading}
-        rowKey={(row) => row.name!}
-        showToolbar
-        searchValue={search}
-        onSearch={(v) => {
-          setSearch(v);
-          setPage(1);
-        }}
-        enableAdd
-        addLabel="Add Assignment"
-        onAdd={() => {
-          setEditTarget(null);
-          setModalOpen(true);
-        }}
-        currentPage={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50]}
-        onPageChange={setPage}
-        onPageSizeChange={(s) => {
-          setPageSize(s);
-          setPage(1);
-        }}
-        enableColumnSelector
-        tableId="leave-policy-assignments-table"
-      />
-
-      <LeavePolicyAssignmentModal
-        modalId={MODAL_ID}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialData={editTarget}
-        onSuccess={fetchAll}
-      />
-    </>
+    <Table
+      columns={columns}
+      data={rows}
+      loading={loading}
+      rowKey={(row) => row.name!}
+      showToolbar
+      searchValue={search}
+      onSearch={(v) => {
+        setSearch(v);
+        setPage(1);
+      }}
+      enableAdd
+      addLabel="Add Assignment"
+      // Trigger modal for creation (null row)
+      onAdd={() => openLeavePolicyAssignmentModal(null, false, { onSuccess: fetchAll })}
+      currentPage={page}
+      totalPages={totalPages}
+      totalItems={totalItems}
+      pageSize={pageSize}
+      pageSizeOptions={[10, 25, 50]}
+      onPageChange={setPage}
+      onPageSizeChange={(s) => {
+        setPageSize(s);
+        setPage(1);
+      }}
+      enableColumnSelector
+      tableId="leave-policy-assignments-table"
+    />
   );
 }

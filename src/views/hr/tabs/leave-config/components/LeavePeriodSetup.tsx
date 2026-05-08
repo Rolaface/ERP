@@ -7,13 +7,13 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
-import { LeavePeriodModal } from "../../../../../components/Hr/hrsetupmodals/LeavePeriodModal";
 import {
   deleteLeavePeriod,
   type LeavePeriod,
 } from "../../../../../api/leaveConfigApi";
-import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { useLeavePeriods } from "../hooks/useLeavePeriod";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
+import { openLeavePeriodModal } from "../../../../../store/modalStore";
 
 export function LeavePeriodSetup() {
   const {
@@ -31,22 +31,25 @@ export function LeavePeriodSetup() {
   } = useLeavePeriods();
   
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<LeavePeriod | null>(null);
-  const MODAL_ID = "leave-period-modal";
 
   const handleDelete = useCallback(
     async (row: LeavePeriod) => {
       if (!row.name) return;
-      if (!confirm(`Delete leave period "${row.name}"?`)) return;
-      
       try {
         setActionLoadingId(row.name);
-        await deleteLeavePeriod(row.name);
-        showSuccess("Leave period deleted");
-        fetchAll();
-      } catch (err: any) {
-        showApiError(err?.message ?? "Failed to delete leave period");
+
+        const deleted = await confirmDelete({
+          text: `Delete "${row.name}"?`,
+          loadingText: "Deleting Leave Period...",
+          successMessage: "Leave Period deleted",
+          action: async () => {
+            await deleteLeavePeriod(row.name!);
+          },
+        });
+
+        if (deleted) {
+          fetchAll();
+        }
       } finally {
         setActionLoadingId(null);
       }
@@ -107,10 +110,8 @@ export function LeavePeriodSetup() {
             <ActionButton
               type="edit"
               iconOnly
-              onClick={() => {
-                setEditTarget(row);
-                setModalOpen(true);
-              }}
+              // Use the global store action here
+              onClick={() => openLeavePeriodModal(row, true, { onSuccess: fetchAll })}
               disabled={actionLoadingId === row.name}
             />
             <ActionMenu
@@ -126,49 +127,37 @@ export function LeavePeriodSetup() {
         ),
       },
     ],
-    [actionLoadingId, handleDelete],
+    [actionLoadingId, handleDelete, fetchAll],
   );
 
   return (
-    <>
-      <Table
-        columns={columns}
-        data={rows}
-        loading={loading}
-        rowKey={(row) => row.name}
-        showToolbar
-        searchValue={search}
-        onSearch={(v) => {
-          setSearch(v);
-          setPage(1);
-        }}
-        enableAdd
-        addLabel="Add Leave Period"
-        onAdd={() => {
-          setEditTarget(null);
-          setModalOpen(true);
-        }}
-        currentPage={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50]}
-        onPageChange={setPage}
-        onPageSizeChange={(s) => {
-          setPageSize(s);
-          setPage(1);
-        }}
-        enableColumnSelector
-        tableId="leave-periods-table"
-      />
-
-      <LeavePeriodModal
-        modalId={MODAL_ID}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialData={editTarget}
-        onSuccess={fetchAll}
-      />
-    </>
+    <Table
+      columns={columns}
+      data={rows}
+      loading={loading}
+      rowKey={(row) => row.name}
+      showToolbar
+      searchValue={search}
+      onSearch={(v) => {
+        setSearch(v);
+        setPage(1);
+      }}
+      enableAdd
+      addLabel="Add Leave Period"
+      // Open modal in "Add" mode (null row) and pass the fetch callback
+      onAdd={() => openLeavePeriodModal(null, false, { onSuccess: fetchAll })}
+      currentPage={page}
+      totalPages={totalPages}
+      totalItems={totalItems}
+      pageSize={pageSize}
+      pageSizeOptions={[10, 25, 50]}
+      onPageChange={setPage}
+      onPageSizeChange={(s) => {
+        setPageSize(s);
+        setPage(1);
+      }}
+      enableColumnSelector
+      tableId="leave-periods-table"
+    />
   );
 }

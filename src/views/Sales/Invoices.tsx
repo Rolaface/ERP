@@ -17,7 +17,7 @@ import {
   editSalesInvoice,
 } from "../../api/salesApi";
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
-import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
+import { generateInvoicePDF } from "../../components/template/invoice/invoiceTemplatRolaface";
 import PdfPreviewModal from "./PdfPreviewModal";
 import InvoiceDetailModal, { type InvoiceDetail } from "./InvoiceDetailsModal";
 import {

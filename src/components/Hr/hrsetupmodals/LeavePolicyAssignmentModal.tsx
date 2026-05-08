@@ -9,6 +9,7 @@ import {
   getAllLeavePolicies,
   type LeavePolicyAssignment 
 } from "../../../api/leaveConfigApi";
+import { getAllEmployees, getEmployeeById } from "../../../api/employeeapi";
 import { ModalInput, YesNoCheckbox } from "../../../components/ui/modal/modalComponent";
 import { showApiError, showSuccess, showValidationError } from "../../../utils/alert";
 import PolicySelect from "../../selects/LeavePolicySelect";
@@ -40,6 +41,7 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<LeavePolicyAssignment>(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [employees, setEmployees] = useState<any[]>([]);
   
   useEffect(() => {
     if (isOpen) {
@@ -63,7 +65,19 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
       setForm((prev) => ({ ...prev, [key]: value })),
     [],
   );
-
+ useEffect(() => {
+    if (!isOpen) return;
+    const fetchEmployees = async () => {
+      try {
+        const res = await getAllEmployees(1, 100);
+        // Extract directly from res.data based on your API response
+        setEmployees(res.data || []);
+      } catch (error) {
+        console.error("Failed to fetch employees", error);
+      }
+    };
+    fetchEmployees();
+  }, [isOpen]);
   const handleSave = async () => {
     if (!form.employee.trim()) {
       showValidationError("Employee is required");
