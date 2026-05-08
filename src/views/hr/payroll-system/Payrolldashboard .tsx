@@ -10,7 +10,7 @@ import {
   ActionGroup,
   ActionMenu,
 } from "../../../components/ui/Table/ActionButton";
-import PayrollEntryDetail from "./payrolldetail/paymententrydetail"; 
+import PayrollEntryDetail from "./payrolldetail/paymententrydetail";
 
 interface Props {
   records: PayrollRecord[];
@@ -20,6 +20,9 @@ interface Props {
   onRunPayroll: (id: string) => void;
   onViewPayslip: (r: PayrollRecord) => void;
   onEditRecord: (r: PayrollRecord) => void;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
 export const PayrollDashboard: React.FC<Props> = ({
@@ -30,6 +33,9 @@ export const PayrollDashboard: React.FC<Props> = ({
   onRunPayroll,
   onViewPayslip,
   onEditRecord,
+  currentPage,
+  totalPages,
+  onPageChange,
 }) => {
   const [searchQuery] = useState("");
   const [selectedDept] = useState("All");
@@ -159,8 +165,9 @@ export const PayrollDashboard: React.FC<Props> = ({
           data={filtered}
           loading={loading}
           totalItems={filtered.length}
-          currentPage={1}
-          totalPages={1}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
           pageSize={10}
         />
       </div>
