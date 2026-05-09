@@ -193,7 +193,8 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
           }
         />
         <Row
-          label="Gross/mo"
+          label="Gross/month
+          "
           value={grossMonthly}
           valueClass="text-primary font-semibold"
         />

@@ -5,7 +5,7 @@ export const TAB_ORDER = [
   "Employment",
   "Leave Setup",
   "Compensation",
-   "Bank",
+  "Bank",
   "Work Schedule",
 ] as const;
 
@@ -40,10 +40,10 @@ export const DEFAULT_FORM: Record<string, any> = {
   bio: "",
   salutation: "",
   nationalidentificationnumber: "",
-taxidentificationnumber: "",
-universalaccountnumber: "",
-reports_to: "",
-reportingToLabel: "",
+  taxidentificationnumber: "",
+  universalaccountnumber: "",
+  reports_to: "",
+  reportingToLabel: "",
 
   // IDs / Statutory
   nrcId: "",
@@ -169,8 +169,8 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     salutation: data.salutation || "",
     nationality: data.nationality || "",
     nationalidentificationnumber: data.national_identification_number || "",
-taxidentificationnumber: data.tax_identification_number || "",
-universalaccountnumber: data.universal_account_number || "",
+    taxidentificationnumber: data.tax_identification_number || "",
+    universalaccountnumber: data.universal_account_number || "",
 
     // ── Statutory IDs ─────────────────────────────────────────
     nrcId: data.nrc_id || "",
@@ -240,7 +240,7 @@ universalaccountnumber: data.universal_account_number || "",
         : data.ctc != null
           ? String(data.ctc)
           : "",
-          
+
     grossSalary: data.gross != null ? String(data.gross) : "",
     currency: data.salary_currency || "",
     paymentMethod: data.salary_mode || "",
@@ -276,7 +276,6 @@ universalaccountnumber: data.universal_account_number || "",
     existingPhotoUrl: data.image || "",
   };
 }
-
 
 export function buildEmployeePayload(formData: Record<string, any>) {
   // Join address parts into the single stored string
@@ -326,8 +325,7 @@ export function buildEmployeePayload(formData: Record<string, any>) {
     personal_email: formData.email || "",
     company_email: formData.CompanyEmail || "",
     prefered_email: formData.preferredEmail || null,
-    prefered_contact_email:
-  formData.preferredContactMethod || "",
+    prefered_contact_email: formData.preferredContactMethod || "",
     cell_number: formData.phoneNumber || "",
     emergency_phone_number: formData.emergencyContactPhone || "",
     person_to_be_contacted: formData.emergencyContactName || null,
@@ -358,7 +356,7 @@ export function buildEmployeePayload(formData: Record<string, any>) {
 
     // ── Compensation ──────────────────────────────────────────
     salary_structure: formData.salaryStructure || null,
-    income_tax_slab:formData.Taxslab,
+    income_tax_slab: formData.Taxslab,
     base_salary: Number(formData.basicSalary) || 0,
     gross: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
     ctc: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
@@ -402,6 +400,9 @@ export function validateTab(
     case "Address & Contact":
       if (!formData.email || !formData.phoneNumber)
         return "Email and phone number are required";
+      if (!formData.preferredContactMethod)
+        return "Please select a preferred contact email";
+
       return null;
 
     case "Employment":
