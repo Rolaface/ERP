@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, {  useState } from "react";
+import { ERP_BASE } from "../../../config/api";
 interface EmployeeNameCellProps {
   name: string;
   employeeId?: string;
@@ -41,7 +42,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
 }) => {
  const [imgFailed, setImgFailed] = useState(false);
 
-const ERP_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
+
 
 const imageUrl = image
   ? image.startsWith("http")
