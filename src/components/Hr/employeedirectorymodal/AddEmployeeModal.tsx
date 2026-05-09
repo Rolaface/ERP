@@ -23,14 +23,21 @@ import {
 } from "../../../api/employeeapi";
 import { useCompanySelection } from "../../../hooks/useCompanySelection";
 import { getEmployeeFeatures } from "../../../config/employeeFeatures";
-import { showApiError, showSuccess, showStepLoader, closeSwal, showEmployeeCreationResult, showValidationError } from "../../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showStepLoader,
+  closeSwal,
+  showEmployeeCreationResult,
+  showValidationError,
+} from "../../../utils/alert";
 
 import {
   TAB_ORDER,
   type TabName,
   DEFAULT_FORM,
   mapEditDataToForm,
-  buildEmployeePayload,  
+  buildEmployeePayload,
 } from "./Employeeformconfig";
 import EmployeeBankTab from "./EmployeeBankTab";
 
@@ -88,7 +95,9 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   // ── Form state ──────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<Record<string, any>>(DEFAULT_FORM);
-  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>({});
+  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>(
+    {},
+  );
   const [isPreFilled, setIsPreFilled] = useState(false);
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
 
@@ -98,8 +107,6 @@ const AddEmployeeModal: React.FC<Props> = ({
   // ── People dropdowns ────────────────────────────────────────────────────
   const [reportingManagers, setReportingManagers] = useState<any[]>([]);
   const [hrManagers, setHrManagers] = useState<any[]>([]);
-
-
 
   // ── Documents ───────────────────────────────────────────────────────────
   const [, setDocuments] = useState<Record<string, DocumentUpload>>({
@@ -119,8 +126,7 @@ const AddEmployeeModal: React.FC<Props> = ({
     if (editData) {
       // editData is the flat object from the API response
       // It may be nested as editData.data or flat – unwrap accordingly
-      const flat =
-        editData?.data ?? editData?.message?.data ?? editData;
+      const flat = editData?.data ?? editData?.message?.data ?? editData;
 
       setStep("form");
       setFormData(mapEditDataToForm(flat));
@@ -139,7 +145,9 @@ const AddEmployeeModal: React.FC<Props> = ({
   // ── Body scroll lock ────────────────────────────────────────────────────
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   // ── Load managers ───────────────────────────────────────────────────────
@@ -174,7 +182,12 @@ const AddEmployeeModal: React.FC<Props> = ({
     },
     "Address & Contact": () => {
       if (!formData.email?.trim()) return "Personal Email is required.";
+
       if (!formData.CompanyEmail?.trim()) return "Company Email is required.";
+
+      if (!formData.preferredContactMethod?.trim())
+        return "Please select a preferred contact email.";
+
       return null;
     },
   };
@@ -183,7 +196,10 @@ const AddEmployeeModal: React.FC<Props> = ({
     const validator = TAB_REQUIRED_FIELDS[activeTab];
     if (validator) {
       const error = validator();
-      if (error) { showValidationError(error); return; }
+      if (error) {
+        showValidationError(error);
+        return;
+      }
     }
     setCurrentTabIndex((p) => p + 1);
   };
@@ -198,8 +214,7 @@ const AddEmployeeModal: React.FC<Props> = ({
     if (saving) return;
 
     if (editData) {
-      const flat =
-        editData?.data ?? editData?.message?.data ?? editData;
+      const flat = editData?.data ?? editData?.message?.data ?? editData;
 
       setFormData(mapEditDataToForm(flat));
     } else {
@@ -212,14 +227,13 @@ const AddEmployeeModal: React.FC<Props> = ({
   };
 
   const handleSave = async () => {
-
     const payload = buildEmployeePayload(formData);
     const isEdit = mode === "edit" || !!editData;
-        if (!employeeFile) {
-  const result = await fireManagedSwal({
-    icon: "info",
-    title: "Add Employee Photo?",
-    html: `
+    if (!employeeFile) {
+      const result = await fireManagedSwal({
+        icon: "info",
+        title: "Add Employee Photo?",
+        html: `
       <div style="text-align:center">
         <p style="font-size:13px;color:#64748b;margin-top:6px">
           A profile picture helps HR teams quickly identify employees
@@ -227,18 +241,18 @@ const AddEmployeeModal: React.FC<Props> = ({
         </p>
       </div>
     `,
-    showCancelButton: true,
-    confirmButtonText: "Upload Photo",
-    cancelButtonText: "Skip for Now",
-    confirmButtonColor: "#2563eb",
-    cancelButtonColor: "#64748b",
-  });
+        showCancelButton: true,
+        confirmButtonText: "Upload Photo",
+        cancelButtonText: "Skip for Now",
+        confirmButtonColor: "#2563eb",
+        cancelButtonColor: "#64748b",
+      });
 
-  if (result.isConfirmed) {
-    document.getElementById("employee-photo-input")?.click();
-    return;
-  }
-}
+      if (result.isConfirmed) {
+        document.getElementById("employee-photo-input")?.click();
+        return;
+      }
+    }
 
     // ── EDIT MODE: keep exact same simple flow as before ───────────────────────
     if (isEdit) {
@@ -263,7 +277,11 @@ const AddEmployeeModal: React.FC<Props> = ({
 
         if (employeeFile) {
           setSaveStatus("uploading");
-          try { await uploadEmployeePhoto(String(id), employeeFile); } catch { /* silent */ }
+          try {
+            await uploadEmployeePhoto(String(id), employeeFile);
+          } catch {
+            /* silent */
+          }
         }
 
         showSuccess(msg);
@@ -279,13 +297,12 @@ const AddEmployeeModal: React.FC<Props> = ({
       return;
     }
 
-
     // Step 1 — show loader while creating employee
     showStepLoader(
       "Creating Employee…",
       `<span style="font-size:13px;color:#64748b">
        Setting up the employee record, please wait.
-     </span>`
+     </span>`,
     );
 
     let employeeId = "";
@@ -300,28 +317,35 @@ const AddEmployeeModal: React.FC<Props> = ({
       const data = res?.message?.data ?? res?.data?.data ?? {};
 
       employeeId = data?.employee || res?.data?.employee || "";
-      backendMsg = res?.message?.message || res?.data?.message || "Employee created successfully.";
-      welcomeMsg = typeof data?.messages === "string" ? data.messages.trim() : "";
+      backendMsg =
+        res?.message?.message ||
+        res?.data?.message ||
+        "Employee created successfully.";
+      welcomeMsg =
+        typeof data?.messages === "string" ? data.messages.trim() : "";
 
       // Parse Frappe _server_messages (double-encoded JSON array)
       try {
         if (res?._server_messages) {
           const outer: string[] = JSON.parse(res._server_messages);
           serverWarns = outer.flatMap((raw: string) => {
-            try { const p = JSON.parse(raw); return p?.message ? [String(p.message)] : []; }
-            catch { return []; }
+            try {
+              const p = JSON.parse(raw);
+              return p?.message ? [String(p.message)] : [];
+            } catch {
+              return [];
+            }
           });
         }
-      } catch { /* ignore malformed _server_messages */ }
-
+      } catch {
+        /* ignore malformed _server_messages */
+      }
     } catch (err) {
-
       closeSwal();
       const clean = extractCleanMessage(err);
       clean ? showValidationError(clean) : showApiError(err);
       return;
     }
-
 
     let photoUploaded = false;
     let photoError = "";
@@ -339,7 +363,7 @@ const AddEmployeeModal: React.FC<Props> = ({
            <span style="font-size:12px;color:#6366f1">↑</span>
            <span style="font-size:12px;color:#6366f1;font-weight:500">Uploading photo to <code style="font-size:11px">${employeeId}</code>…</span>
          </div>
-       </div>`
+       </div>`,
       );
 
       try {
@@ -381,8 +405,11 @@ const AddEmployeeModal: React.FC<Props> = ({
       dateOfBirth: data.personalInfo?.dateOfBirth || "",
     }));
     setVerifiedFields({
-      nrcId: true, firstName: true, lastName: true,
-      gender: true, dateOfBirth: true,
+      nrcId: true,
+      firstName: true,
+      lastName: true,
+      gender: true,
+      dateOfBirth: true,
     });
     setIsPreFilled(true);
     setStep("form");
@@ -444,10 +471,11 @@ const AddEmployeeModal: React.FC<Props> = ({
                 <button
                   key={tab}
                   onClick={() => setCurrentTabIndex(i)}
-                  className={`relative flex items-center gap-1 px-2.5 py-2 text-[10px] font-medium whitespace-nowrap transition flex-shrink-0 border-b-2 ${active
-                    ? "text-primary border-primary"
-                    : "text-muted border-transparent hover:text-main"
-                    }`}
+                  className={`relative flex items-center gap-1 px-2.5 py-2 text-[10px] font-medium whitespace-nowrap transition flex-shrink-0 border-b-2 ${
+                    active
+                      ? "text-primary border-primary"
+                      : "text-muted border-transparent hover:text-main"
+                  }`}
                 >
                   <span>{tab}</span>
                 </button>
@@ -504,13 +532,10 @@ const AddEmployeeModal: React.FC<Props> = ({
                 setFormData={setFormData}
                 isEditMode={!!editData}
                 employeeId={
-                  editData?.employee ||
-                  editData?.id ||
-                  editData?.name
+                  editData?.employee || editData?.id || editData?.name
                 }
               />
             )}
-
           </div>
         </div>
 

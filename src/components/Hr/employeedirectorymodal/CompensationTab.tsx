@@ -475,7 +475,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
             <div className="mt-4 grid grid-cols-2 gap-2">
               <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2.5 text-center">
                 <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">
-                  Gross / mo
+                  Gross / month
                 </p>
                 <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                   {fmt(salaryResult.gross / 12)}
@@ -483,7 +483,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               </div>
               <div className="bg-primary/5 rounded-lg p-2.5 text-center">
                 <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">
-                  Net / mo
+                  Net / month
                 </p>
                 <p className="text-sm font-bold text-primary">
                   {fmt(salaryResult.net / 12)}

@@ -6,18 +6,7 @@ type ContactInfoTabProps = {
   handleInputChange: (field: string, value: string | boolean) => void;
 };
 
-const PROVINCE_OPTIONS = [
-  { label: "Central Province",       value: "Central Province" },
-  { label: "Copperbelt Province",    value: "Copperbelt Province" },
-  { label: "Eastern Province",       value: "Eastern Province" },
-  { label: "Luapula Province",       value: "Luapula Province" },
-  { label: "Lusaka Province",        value: "Lusaka Province" },
-  { label: "Muchinga Province",      value: "Muchinga Province" },
-  { label: "Northern Province",      value: "Northern Province" },
-  { label: "North-Western Province", value: "North-Western Province" },
-  { label: "Southern Province",      value: "Southern Province" },
-  { label: "Western Province",       value: "Western Province" },
-];
+
 
 const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
   formData,
@@ -49,7 +38,9 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             { label: "Company Email", value: "Company Email" },
             { label: "Personal Email", value: "Personal Email" },
             { label: "User ID", value: "User ID" },
+            
           ]}
+          required
           />
           <ModalInput
             label="Company Email"

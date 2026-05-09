@@ -375,37 +375,38 @@ export const SalaryComponentModal: React.FC<Props> = ({
         className="space-y-4 pb-2 pr-1"
       >
         {/* ── Row 1: Abbr + Name + Type ── */}
-        <div className="grid grid-cols-[8rem_10rem_minmax(18rem,24rem)] gap-3 items-end">
-          <ModalInput
-            label="Abbreviation"
-            className="uppercase"
-            placeholder="BS"
-            maxLength={5}
-            value={form.salary_component_abbr}
-            onChange={(e) =>
-              set("salary_component_abbr", e.target.value.toUpperCase())
-            }
-            required
-          />
+       <div className="grid grid-cols-[10rem_minmax(18rem,24rem)_8rem] gap-3 items-end">
+  <ModalSelect
+    label="Type"
+    value={form.type}
+    onChange={(e) =>
+      handleTypeChange(e.target.value as SalaryComponentType)
+    }
+    options={[
+      { label: "Earning", value: "Earning" },
+      { label: "Deduction", value: "Deduction" },
+    ]}
+  />
 
-          <ModalSelect
-            label="Type"
-            value={form.type}
-            onChange={(e) =>
-              handleTypeChange(e.target.value as SalaryComponentType)
-            }
-            options={[
-              { label: "Earning", value: "Earning" },
-              { label: "Deduction", value: "Deduction" },
-            ]}
-          />
-          <ModalInput
-            label="Component Name"
-            value={form.salary_component}
-            onChange={(e) => set("salary_component", e.target.value)}
-            required
-          />
-        </div>
+  <ModalInput
+    label="Component Name"
+    value={form.salary_component}
+    onChange={(e) => set("salary_component", e.target.value)}
+    required
+  />
+
+  <ModalInput
+    label="Abbreviation"
+    className="uppercase"
+    placeholder="BS..."
+    maxLength={5}
+    value={form.salary_component_abbr}
+    onChange={(e) =>
+      set("salary_component_abbr", e.target.value.toUpperCase())
+    }
+    required
+  />
+</div>
 
         {/* ── Row 2: Amount Config + Component Options ── */}
         <div className="grid grid-cols-2 gap-3 items-start">
