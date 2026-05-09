@@ -47,25 +47,42 @@ export interface PayrollEmployeeDetail {
 export interface PayrollEntryDetail {
   name: string;
   posting_date: string;
+
   company: string;
+
   currency: string;
   exchange_rate: number;
+
   payroll_payable_account: string;
+  payment_account?: string;
+  bank_account?: string;
+
   status: string;
+
   salary_slip_based_on_timesheet: 0 | 1;
+
   payroll_frequency: string;
+
   start_date: string;
   end_date: string;
+
   deduct_tax_for_unsubmitted_tax_exemption_proof: 0 | 1;
+
+  validate_attendance?: 0 | 1;
+  validate_holidays?: 0 | 1;
+
   number_of_employees: number;
+
   salary_slips_created: number;
   salary_slips_submitted: number;
+
   error_message?: string;
+
   cost_center?: string;
+  project?: string;
+
   employees: PayrollEmployeeDetail[];
 }
-
-
 
 // ─── Functions ────────────────────────────────────────────────────────────────
 
@@ -200,4 +217,22 @@ export async function getSalarySlipsByEmployee(
   );
 
   return resp.data?.data || [];
+}
+
+export async function updatePayrollEntry(
+  id: string,
+  payload: CreatePayrollEntryPayload,
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${API.payroll.payrollentry.createpayrollentry}/${id}`,
+    payload,
+  );
+
+  if (resp.data?.success === false) {
+  throw new Error(
+    resp.data?.message || "Failed to update payroll",
+  );
+}
+
+return resp.data?.data || resp.data;
 }

@@ -261,15 +261,7 @@ const SalarySlipTab: React.FC<{
   employee: PayrollEmployeeDetail;
   payrollEntryId: string;
 }> = ({ employee, payrollEntryId }) => {
-  // TODO: Uncomment once salary slip API is ready in payrollEntryApi.ts
-  // const [slip, setSlip] = useState<SalarySlip | null>(null);
-  // const [loading, setLoading] = useState(false);
-  // useEffect(() => {
-  //   setLoading(true);
-  //   getSalarySlipsForEntry(payrollEntryId)
-  //     .then((slips) => setSlip(slips.find(s => s.employee === employee.employee) ?? null))
-  //     .finally(() => setLoading(false));
-  // }, [payrollEntryId, employee.employee]);
+
 
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted">
