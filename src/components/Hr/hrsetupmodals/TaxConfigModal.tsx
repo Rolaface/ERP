@@ -198,6 +198,7 @@ export const TaxConfigModal: React.FC<Props> = ({
         await updateTaxConfig(initialData.name, {
           standard_tax_exemption_amount:
             Number(form.standard_tax_exemption_amount) || 0,
+              docstatus: 1,
           allow_tax_exemption: form.allow_tax_exemption ? 1 : 0,
           tax_relief_limit: Number(form.tax_relief_limit) || 0,
           disabled: form.disabled ? 1 : 0,
@@ -211,12 +212,14 @@ export const TaxConfigModal: React.FC<Props> = ({
         await createTaxConfig({
           name: form.name,
           effective_from: form.effective_from,
+            docstatus: 1,
           standard_tax_exemption_amount:
             Number(form.standard_tax_exemption_amount) || 0,
           allow_tax_exemption: form.allow_tax_exemption ? 1 : 0,
           tax_relief_limit: Number(form.tax_relief_limit) || 0,
           disabled: form.disabled ? 1 : 0,
           slabs,
+         
           other_taxes_and_charges,
         });
         showSuccess("Tax configuration created");

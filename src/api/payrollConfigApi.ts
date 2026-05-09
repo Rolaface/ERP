@@ -72,6 +72,7 @@ export interface TaxChargeRow {
 
 export interface TaxConfig {
   name: string;
+   docstatus?: number;
   effective_from: string;
   standard_tax_exemption_amount: number;
   allow_tax_exemption: 0 | 1;
