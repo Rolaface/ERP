@@ -4,6 +4,8 @@ import {
   createPayrollEntry,
   getAllPayrollEntries,
   runPayrollEntry,
+  getPayrollEntryDetail,
+  updatePayrollEntry,
 } from "../../../api/payroll/payrollEntryApi";
 import type { CreatePayrollEntryPayload } from "../../../api/payroll/payrollEntryApi";
 import { openPayrollModal } from "../../../store/modalStore";
@@ -81,7 +83,7 @@ export default function PayrollManagement() {
       setLoading(true);
       const resp = await getAllPayrollEntries(page, 10);
       setPayrollRecords(resp?.data || []);
-     setTotalPages(resp?.pagination?.total_pages || 1);
+      setTotalPages(resp?.pagination?.total_pages || 1);
     } catch (err) {
       console.error(err);
     } finally {
@@ -89,9 +91,9 @@ export default function PayrollManagement() {
     }
   };
 
-useEffect(() => {
-  loadPayrollEntries();
-}, [page]);
+  useEffect(() => {
+    loadPayrollEntries();
+  }, [page]);
   // ── Handlers ───────────────────────────────────────────────────────────────
   //
   const handleCreatePayroll = async (
@@ -184,8 +186,8 @@ useEffect(() => {
         records={payrollRecords}
         loading={loading}
         currentPage={page}
-totalPages={totalPages}
-onPageChange={setPage}
+        totalPages={totalPages}
+        onPageChange={setPage}
         onQuickCreate={() => setShowCreateModal(true)}
         onNewPayroll={() =>
           openPayrollModal(null, false, {
@@ -198,16 +200,62 @@ onPageChange={setPage}
         }
         onRunPayroll={handleRunPayroll}
         onViewPayslip={(r) => setSelectedRecord(r)}
-        onEditRecord={(r) => {
-          openPayrollModal(r, true, {
-            onSubmit: async ({ formData }: any) => {
-              console.log("Update Payroll", formData);
+        onEditRecord={async (r) => {
+          try {
+            showLoading("Loading Payroll");
 
-              await loadPayrollEntries();
+            const payroll = await getPayrollEntryDetail((r as any).name);
 
-              showSuccess("Payroll updated successfully");
-            },
-          });
+            const mappedPayroll = {
+              payrollName: payroll.name,
+              postingDate: payroll.posting_date,
+              currency: payroll.currency,
+              exchangeRate: payroll.exchange_rate,
+              company: payroll.company,
+              payrollPayableAccount: payroll.payroll_payable_account,
+              status: payroll.status,
+              salarySlipTimesheet: payroll.salary_slip_based_on_timesheet === 1,
+              deductTaxForProof:
+                payroll.deduct_tax_for_unsubmitted_tax_exemption_proof === 1,
+              payrollFrequency: payroll.payroll_frequency,
+              startDate: payroll.start_date,
+              endDate: payroll.end_date,
+              paymentAccount: payroll.payment_account || "",
+              bankAccount: payroll.bank_account || "",
+              costCenter: payroll.cost_center || "",
+              selectedEmployees:
+                payroll.employees?.map((e) => e.employee) || [],
+            };
+
+            closeSwal();
+
+            openPayrollModal(mappedPayroll, true, {
+              onSubmit: async ({ formData }: any) => {
+                try {
+                  showLoading("Updating Payroll");
+
+                  const payload = buildPayload(
+                    formData,
+                    formData.selectedEmployees || [],
+                  );
+
+                  await updatePayrollEntry(payroll.name, payload);
+
+                  closeSwal();
+                  await loadPayrollEntries();
+                  showSuccess("Payroll updated successfully");
+                  // ← remove "return true" entirely, void is fine
+                } catch (error) {
+                  closeSwal();
+                  showApiError(error);
+                  throw error; // ← throw keeps modal open, no boolean needed
+                }
+              },
+            });
+          } catch (error) {
+            closeSwal();
+            showApiError(error);
+          }
         }}
         onViewDetails={(r) => setDetailRecord(r)}
       />

@@ -138,12 +138,18 @@ export const PayrollDashboard: React.FC<Props> = ({
             }}
             deleteLabel="Remove"
             customActions={[
-              {
-                label: "Run Payroll",
-                icon: <Play className="w-4 h-4" />,
-                onClick: () => onRunPayroll(row.name),
-                disabled: row.status !== "Draft",
-              },
+            {
+  label:
+    row.status === "Failed"
+      ? "Re-Run Payroll"
+      : "Run Payroll",
+
+  icon: <Play className="w-4 h-4" />,
+
+  onClick: () => onRunPayroll(row.name),
+
+  disabled: !["Draft", "Failed"].includes(row.status),
+},
             ]}
           />
         </ActionGroup>
