@@ -103,6 +103,12 @@ const EmployeeDirectory: React.FC = () => {
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
+  
+
+
+  useEffect(() => {
+  setPage(1);
+}, [searchTerm]);
 
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(
@@ -212,7 +218,7 @@ const EmployeeDirectory: React.FC = () => {
         />
       ),
     },
-    // ─────────────────────────────────────────────────────────────────────
+   
 
     { key: "jobTitle", header: "Job Title", align: "left" },
     {
@@ -267,7 +273,10 @@ const EmployeeDirectory: React.FC = () => {
           data={employees}
           showToolbar
           searchValue={searchTerm}
-          onSearch={setSearchTerm}
+          onSearch={(q) => {
+  setSearchTerm(q);
+  setPage(1);
+}}
           enableAdd
           addLabel="Add Employee"
           onAdd={handleAdd}

@@ -154,22 +154,22 @@ const { can } = usePermission();
   const handleSubmit = async (noteNo: string) => {
     const result = await fireManagedSwal({
       icon: "question",
-      title: "Submit Debit Note?",
-      text: `Submit ${noteNo}? This action cannot be undone.`,
+      title: "Approve Debit Note?",
+      text: `Approve ${noteNo}? This action cannot be undone.`,
       showCancelButton: true,
       confirmButtonColor: "#10b981",
       cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, submit",
+      confirmButtonText: "Yes, approve",
       reverseButtons: true,
     });
 
     if (!result.isConfirmed) return;
 
     try {
-      showLoading("Submitting debit note...");
+      showLoading("Approving debit note...");
       await submitDebitNote(noteNo);
       closeSwal();
-      showSuccess("Debit note submitted successfully");
+      showSuccess("Debit note approved successfully");
       fetchDebitNotes();
     } catch (error) {
       closeSwal();
@@ -357,7 +357,7 @@ const { can } = usePermission();
               : {})}
             customActions={[
               ...(r.status === "Draft" && can(DEBIT_NOTE_MODULE, "write")
-                ? [{ label: "Submit", onClick: () => handleSubmit(r.noteNo) }]
+                ? [{ label: "Approve", onClick: () => handleSubmit(r.noteNo) }]
                 : []),
               ...(!["Draft", "Cancelled"].includes(r.status) && can(DEBIT_NOTE_MODULE, "write")
                 ? [{ label: "Cancel", onClick: () => handleCancel(r.noteNo), danger: true }]
