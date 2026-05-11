@@ -59,6 +59,8 @@ interface PurchaseOrdersTableProps {
   onAdd?: () => void;
 }
 
+
+
 type POStatus = "Draft" | "Approved" | "Cancelled" | "Completed";
 
 const STATUS_TRANSITIONS: Record<POStatus, POStatus[]> = {

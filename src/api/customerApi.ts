@@ -70,3 +70,15 @@ export async function getCustomerGroupTree(): Promise<any[]> {
 
   throw new Error(body?.message || "Failed to fetch customer group tree");
 }
+export async function updateCustomerStatus(
+  id: string,
+  status: "active" | "inactive"
+): Promise<any> {
+  const url = `${CustomerAPI.updateStatus}?id=${id}`;
+
+  const resp: AxiosResponse = await api.patch(url, {
+    status,
+  });
+
+  return resp.data;
+}

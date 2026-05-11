@@ -10,7 +10,7 @@ import { fireManagedSwal } from "../../../utils/swalManager";
 import {
   getAllEmployees,
   getEmployeeById,
-  deleteEmployeeById,
+  deleteEmployeeById,updateEmployeeStatus
 } from "../../../api/employeeapi";
 import { AppPage, AppPageBody } from "../../../components/ui/app-shell";
 import { openEmployeeModal } from "../../../store/modalStore";
@@ -135,6 +135,37 @@ const EmployeeDirectory: React.FC = () => {
       showApiError(error);
     }
   };
+  const handleDisable = async (
+  id: string,
+  e: React.MouseEvent
+) => {
+  e.stopPropagation();
+
+  const result = await fireManagedSwal({
+    title: "Disable Employee?",
+    text: "Employee will be marked as inactive.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Disable",
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    showLoading("Disabling Employee...");
+
+    await updateEmployeeStatus(id, "Inactive");
+
+    closeSwal();
+
+    showSuccess("Employee disabled successfully");
+
+    triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
 
   // ── Delete ───────────────────────────────────────────────────────────────
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -213,9 +244,14 @@ const EmployeeDirectory: React.FC = () => {
             iconOnly
           />
           <ActionMenu
-            onEdit={(ev) => handleEdit(e.id, ev as any)}
-            onDelete={(ev) => handleDelete(e.id, ev as any)}
-          />
+  onEdit={(ev) => handleEdit(e.id, ev as any)}
+  onDelete={(ev) => handleDelete(e.id, ev as any)}
+  onDisable={
+    e.status !== "Inactive"
+      ? (ev) => handleDisable(e.id, ev as any)
+      : undefined
+  }
+/>
         </ActionGroup>
       ),
     },
