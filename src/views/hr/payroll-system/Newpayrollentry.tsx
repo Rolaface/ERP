@@ -218,12 +218,7 @@ const handleSubmit = async () => {
         )}
       </div>
 
-      {/* ── Error banner ── */}
-      {submitError && (
-        <div className="shrink-0 mx-5 mb-0 px-4 py-2.5 rounded-lg bg-danger/10 border border-danger/30 text-xs text-danger font-semibold">
-          ⚠ {submitError}
-        </div>
-      )}
+      
 
     <div className="shrink-0 border-t border-theme bg-app px-5 py-3">
   <ModalFooter

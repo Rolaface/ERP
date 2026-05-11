@@ -1,4 +1,4 @@
-import { Layers, LayoutList } from "lucide-react";
+import { Layers, LayoutList,Calendar } from "lucide-react";
 import type { AppSetupSection } from "../../../../components/ui/app-shell";
 
 export const SETUP_SECTIONS: AppSetupSection[] = [
@@ -19,5 +19,11 @@ export const SETUP_SECTIONS: AppSetupSection[] = [
     label: "Tax Configurations",
     icon: LayoutList,
     description: "Tax rules and settings",
+  },
+  {
+    key: "payroll_period",
+    label: "Payroll Periods",
+    icon: Calendar,
+    description: "Period start & end dates",
   },
 ];

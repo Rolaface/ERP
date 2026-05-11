@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useMemo } from "react";
-import { useSearchParams, useNavigate, useLocation, useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import {
   LayoutDashboard,
   FileSignature,
@@ -18,6 +18,7 @@ import {
 } from "../../components/ui/app-shell";
 import AppSkeleton from "../../components/ui/AppSkeleton";
 import { usePermission } from "../../hooks/permission/usePermission";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
 
 const QuotationsTable = lazy(() => import("./Quotations"));
@@ -98,9 +99,6 @@ const ALL_SALES_TAB = [
 const DEFAULT_TAB = "salesdashboard";
 
 const SalesModule: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
   const { can } = usePermission();       
   
    const salesTabs = useMemo(
@@ -112,22 +110,16 @@ const SalesModule: React.FC = () => {
     useOutletContext<OutletContextType>();
   
 
-  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
-  
-   const resolvedTab =
-    salesTabs.find((t) => t.id === activeTab)?.id ??
-    salesTabs[0]?.id ??
-    DEFAULT_TAB;     
+  const fallbackTab = salesTabs[0]?.id ?? DEFAULT_TAB;
+  const [activeTab, handleTabChange] = useUrlTab({
+    tabs: salesTabs,
+    defaultTab: fallbackTab,
+    basePath: "/sales",
+  });
+  const resolvedTab = activeTab;
 
 
   const isDashboardTab = resolvedTab === "salesdashboard";
-
-  const handleTabChange = (tabId: string) => {
-    // Update URL with new tab, preserving other query params
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("tab", tabId);
-    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-  };
 
   const renderTab = () => {
     switch (resolvedTab) {

@@ -5,7 +5,7 @@ export const TAB_ORDER = [
   "Employment",
   "Leave Setup",
   "Compensation",
-   "Bank",
+  "Bank",
   "Work Schedule",
 ] as const;
 
@@ -40,8 +40,10 @@ export const DEFAULT_FORM: Record<string, any> = {
   bio: "",
   salutation: "",
   nationalidentificationnumber: "",
-taxidentificationnumber: "",
-universalaccountnumber: "",
+  taxidentificationnumber: "",
+  universalaccountnumber: "",
+  reports_to: "",
+  reportingToLabel: "",
 
   // IDs / Statutory
   nrcId: "",
@@ -167,8 +169,8 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     salutation: data.salutation || "",
     nationality: data.nationality || "",
     nationalidentificationnumber: data.national_identification_number || "",
-taxidentificationnumber: data.tax_identification_number || "",
-universalaccountnumber: data.universal_account_number || "",
+    taxidentificationnumber: data.tax_identification_number || "",
+    universalaccountnumber: data.universal_account_number || "",
 
     // ── Statutory IDs ─────────────────────────────────────────
     nrcId: data.nrc_id || "",
@@ -189,7 +191,7 @@ universalaccountnumber: data.universal_account_number || "",
     email: data.personal_email || "",
     CompanyEmail: data.company_email || "",
     preferredEmail: data.prefered_email || "",
-    preferredContactEmail: data.prefered_contact_email || "",
+    preferredContactMethod: data.prefered_contact_email || "",
     phoneNumber: data.cell_number || "",
     alternatePhone: data.alternate_phone || "",
 
@@ -204,7 +206,7 @@ universalaccountnumber: data.universal_account_number || "",
     // ── Emergency Contact ─────────────────────────────────────
     emergencyContactName: data.person_to_be_contacted || "",
     emergencyContactPhone: data.emergency_phone_number || "",
-    emergencyContactRelation: data.relation || "",
+    emergencyContactRelationship: data.relation || "",
 
     // ── Employment ────────────────────────────────────────────
     department: data.department || "",
@@ -213,7 +215,7 @@ universalaccountnumber: data.universal_account_number || "",
     employment_type: data.employment_type || "",
     employeeType: data.employee_type || "",
     employmentStatus: data.status || "Active",
-    reportingManager: data.reports_to || "",
+    reportingToLabel: data.reports_to || "",
     workLocation: data.branch || "",
     dateOfJoining: data.date_of_joining || "",
     contractEndDate: data.contract_end_date || "",
@@ -238,6 +240,7 @@ universalaccountnumber: data.universal_account_number || "",
         : data.ctc != null
           ? String(data.ctc)
           : "",
+
     grossSalary: data.gross != null ? String(data.gross) : "",
     currency: data.salary_currency || "",
     paymentMethod: data.salary_mode || "",
@@ -274,11 +277,6 @@ universalaccountnumber: data.universal_account_number || "",
   };
 }
 
-// ─── Build API payload from formData ─────────────────────────────────────────
-/**
- * Converts formData → the shape expected by createEmployee / updateEmployeeById.
- * This is the ONLY place where form field names are translated back to API field names.
- */
 export function buildEmployeePayload(formData: Record<string, any>) {
   // Join address parts into the single stored string
   const fullAddress = [
@@ -327,11 +325,11 @@ export function buildEmployeePayload(formData: Record<string, any>) {
     personal_email: formData.email || "",
     company_email: formData.CompanyEmail || "",
     prefered_email: formData.preferredEmail || null,
-    prefered_contact_email: formData.preferredContactEmail || "",
+    prefered_contact_email: formData.preferredContactMethod || "",
     cell_number: formData.phoneNumber || "",
     emergency_phone_number: formData.emergencyContactPhone || "",
     person_to_be_contacted: formData.emergencyContactName || null,
-    relation: formData.emergencyContactRelation || null,
+    relation: formData.emergencyContactRelationship || null,
     current_address: fullAddress,
     permanent_address: fullAddress,
     permanent_accommodation_type: formData.accommodationType || "",
@@ -339,7 +337,7 @@ export function buildEmployeePayload(formData: Record<string, any>) {
     // ── Employment ────────────────────────────────────────────
     designation: formData.designation || "",
     department: formData.department || "",
-    reports_to: formData.reportingManager || "",
+    reports_to: formData.reports_to || "",
     employment_type: formData.employment_type || null,
     grade: formData.grade || "",
     branch: formData.workLocation || "",
@@ -358,6 +356,7 @@ export function buildEmployeePayload(formData: Record<string, any>) {
 
     // ── Compensation ──────────────────────────────────────────
     salary_structure: formData.salaryStructure || null,
+    income_tax_slab: formData.Taxslab,
     base_salary: Number(formData.basicSalary) || 0,
     gross: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
     ctc: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
@@ -401,6 +400,9 @@ export function validateTab(
     case "Address & Contact":
       if (!formData.email || !formData.phoneNumber)
         return "Email and phone number are required";
+      if (!formData.preferredContactMethod)
+        return "Please select a preferred contact email";
+
       return null;
 
     case "Employment":

@@ -38,6 +38,8 @@ export type ModalType =
   | "designation"
   | "grade"
   | "User"
+  |"Payrollperiod"
+  | "employeeType"
   | "employeeType"
   | "leaveType"
   | "leavePeriod"
@@ -718,6 +720,17 @@ export const openEmployeeTypeModal = (
     .getState()
     .openModal("employeeType", initialData, isEdit, context, meta);
 
+    
+export const openPayrollPeriodModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("Payrollperiod", initialData, isEdit, context, meta);
+
 export const openLeaveTypeModal = (
   initialData?: unknown,
   isEdit = false,
@@ -726,7 +739,8 @@ export const openLeaveTypeModal = (
 ) =>
   useModalStore
     .getState()
-    .openModal("leaveType", initialData, isEdit, context, meta);   
+    .openModal("leaveType", initialData, isEdit, context, meta); 
+
 
 export const openLeavePeriodModal = (
   initialData?: unknown,

@@ -175,12 +175,24 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
           mobile_no: d.mobile_no ?? "",
           roleIds: d.roles,
         };
-        handleReset();                         
+        handleReset();
         Object.entries(mapped).forEach(([k, v]) =>
           handleFieldChange(k as keyof CreateUserFormData, v as never)
-        ); 
-        d.roles.forEach((r) => addRole(r, r)); 
-        setLanguageLabel(d.language);
+        );
+        d.roles.forEach((r) => addRole(r, r));
+        fetchLanguages("")
+          .then((langs) => {
+            const matched = langs.find(
+              (l) => l.value === d.language
+            );
+
+            setLanguageLabel(
+              matched?.label ?? d.language
+            );
+          })
+          .catch(() => {
+            setLanguageLabel(d.language);
+          });
       })
       .catch(() => {/* silently fail, form stays empty */ })
       .finally(() => setIsFetchingUser(false));

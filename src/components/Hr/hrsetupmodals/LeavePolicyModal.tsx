@@ -67,7 +67,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
       ...prev,
       leave_policy_details: [
         ...prev.leave_policy_details,
-        { leave_type: "", annual_allocation: 0 },
+        { leave_type: "", annual_allocation:0},
       ],
     }));
   };
@@ -203,14 +203,22 @@ export const LeavePolicyModal: React.FC<Props> = ({
   className="flex-1"
 />
 
-                  <ModalInput
-                    label="Annual Allocation"
-                    type="number"
-                    value={detail.annual_allocation}
-                    onChange={(e) => updateDetailRow(index, "annual_allocation", e.target.valueAsNumber)}
-                    required
-                    disabled={initialData?.docstatus === 1}
-                  />
+               <ModalInput
+  label="Annual Allocation"
+  type="number"
+  className="no-spinner"
+  value={detail.annual_allocation || ""}
+  placeholder="0"
+  onChange={(e) =>
+    updateDetailRow(
+      index,
+      "annual_allocation",
+      Number(e.target.value) || 0,
+    )
+  }
+  required
+  disabled={initialData?.docstatus === 1}
+/>
                 </div>
                 {initialData?.docstatus !== 1 && (
                   <button

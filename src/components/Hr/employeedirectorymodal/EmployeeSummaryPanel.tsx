@@ -4,14 +4,17 @@ import {
 } from "react-icons/fa";
 import React, { useRef, useState, useEffect } from "react";
 
-// Base URL for relative image paths from the API (e.g. "/files/photo.jpg")
+
+import { ERP_BASE } from "../../../config/api";
+
 const getFullImageUrl = (path: string): string => {
   if (!path) return "";
-  // Already absolute
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  // Relative path — prepend backend origin
-  const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
-  return `${base}${path}`;
+
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  return `${ERP_BASE}${path}`;
 };
 
 type EmployeeSummaryPanelProps = {
@@ -146,14 +149,14 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
           )}
         </div>
 
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          hidden
-          onChange={handleUpload}
-        />
-
+ <input
+  id="employee-photo-input"
+  type="file"
+  accept="image/*"
+  ref={fileInputRef}
+  hidden
+  onChange={handleUpload}
+/>
         <h3 className="text-xs font-semibold text-main text-center leading-snug">
           {fullName || "New Employee"}
         </h3>
@@ -190,7 +193,8 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
           }
         />
         <Row
-          label="Gross/mo"
+          label="Gross/month
+          "
           value={grossMonthly}
           valueClass="text-primary font-semibold"
         />

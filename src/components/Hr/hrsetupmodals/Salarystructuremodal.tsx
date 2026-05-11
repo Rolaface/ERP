@@ -177,8 +177,8 @@ export const SalaryStructureModal: React.FC<Props> = ({
       }
      onSuccess?.();
 onClose(); 
-    } catch (err: any) {
-      showApiError(err?.message ?? "Failed to save salary structure");
+    } catch (err) {
+      showApiError(err);
     } finally {
       setSaving(false);
     }

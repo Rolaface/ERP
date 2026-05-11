@@ -9,6 +9,7 @@ import {
   type SalaryComponent as ApiSalaryComponent,
 } from "../../../api/payrollConfigApi";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
+import { getAllTaxConfigs } from "../../../api/payrollConfigApi";
 import {
   calculateSalary,
   toKey,
@@ -45,7 +46,12 @@ interface PlainInputProps {
 }
 
 const PlainInput: React.FC<PlainInputProps> = ({
-  name, value, onChange, placeholder = "0", disabled = false, className = "",
+  name,
+  value,
+  onChange,
+  placeholder = "0",
+  disabled = false,
+  className = "",
 }) => (
   <>
     <style>{`
@@ -79,31 +85,48 @@ interface ComponentTableProps {
 }
 
 const ComponentTable: React.FC<ComponentTableProps> = ({
-  sectionLabel, accentClass, components, overrides, onOverrideChange,
+  sectionLabel,
+  accentClass,
+  components,
+  overrides,
+  onOverrideChange,
 }) => {
   if (!components.length) return null;
   return (
     <>
       <tr>
-        <td colSpan={2}
-          className={`pt-3 pb-1 px-2 text-[10px] font-bold uppercase tracking-widest border-b border-theme ${accentClass}`}>
+        <td
+          colSpan={2}
+          className={`pt-3 pb-1 px-2 text-[10px] font-bold uppercase tracking-widest border-b border-theme ${accentClass}`}
+        >
           {sectionLabel}
         </td>
       </tr>
       {components.map((comp) => (
-        <tr key={comp.key} className="border-b border-theme/30 hover:bg-app/50 transition-colors">
+        <tr
+          key={comp.key}
+          className="border-b border-theme/30 hover:bg-app/50 transition-colors"
+        >
           <td className="py-2 px-2 w-1/2">
-            <p className="text-xs text-main font-medium leading-tight">{comp.name}</p>
+            <p className="text-xs text-main font-medium leading-tight">
+              {comp.name}
+            </p>
             {comp.isFormula && comp.formula && (
-              <p className="text-[10px] text-muted font-mono mt-0.5 leading-none">= {comp.formula}</p>
+              <p className="text-[10px] text-muted font-mono mt-0.5 leading-none">
+                = {comp.formula}
+              </p>
             )}
           </td>
           <td className="py-1.5 px-2 w-1/2">
             <PlainInput
               name={comp.key}
-              value={comp.isFormula ? comp.amount : (overrides[comp.key] ?? comp.amount)}
+              value={
+                comp.isFormula
+                  ? comp.amount
+                  : (overrides[comp.key] ?? comp.amount)
+              }
               onChange={(val) => onOverrideChange(comp.key, val)}
-              disabled={comp.isFormula}
+              disabled={true}
             />
           </td>
         </tr>
@@ -115,18 +138,41 @@ const ComponentTable: React.FC<ComponentTableProps> = ({
 // ─── Summary Row ──────────────────────────────────────────────────────────────
 
 const SummaryRow = ({
-  label, value, bold = false, accent = false, negative = false, dimmed = false, topBorder = false,
+  label,
+  value,
+  bold = false,
+  accent = false,
+  negative = false,
+  dimmed = false,
+  topBorder = false,
 }: {
-  label: string; value: string; bold?: boolean; accent?: boolean;
-  negative?: boolean; dimmed?: boolean; topBorder?: boolean;
+  label: string;
+  value: string;
+  bold?: boolean;
+  accent?: boolean;
+  negative?: boolean;
+  dimmed?: boolean;
+  topBorder?: boolean;
 }) => (
-  <div className={`flex justify-between items-center py-1 ${topBorder ? "border-t border-theme mt-1 pt-2" : ""}`}>
-    <span className={`text-xs ${dimmed ? "text-muted" : "text-main"} ${bold ? "font-semibold" : ""}`}>
+  <div
+    className={`flex justify-between items-center py-1 ${topBorder ? "border-t border-theme mt-1 pt-2" : ""}`}
+  >
+    <span
+      className={`text-xs ${dimmed ? "text-muted" : "text-main"} ${bold ? "font-semibold" : ""}`}
+    >
       {label}
     </span>
-    <span className={`text-xs font-${bold ? "bold" : "medium"} ${
-      accent ? "text-primary" : negative ? "text-red-500 dark:text-red-400" : dimmed ? "text-muted" : "text-main"
-    }`}>
+    <span
+      className={`text-xs font-${bold ? "bold" : "medium"} ${
+        accent
+          ? "text-primary"
+          : negative
+            ? "text-red-500 dark:text-red-400"
+            : dimmed
+              ? "text-muted"
+              : "text-main"
+      }`}
+    >
       {value}
     </span>
   </div>
@@ -135,7 +181,8 @@ const SummaryRow = ({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export const CompensationTab: React.FC<CompensationTabProps> = ({
-  formData, handleInputChange,
+  formData,
+  handleInputChange,
 }) => {
   const [componentDefs, setComponentDefs] = useState<SalaryComponentDef[]>([]);
   const [isLoadingStructure, setIsLoadingStructure] = useState(false);
@@ -147,70 +194,97 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
 
   // ── Recalculate whenever base / overrides / defs change ─────────────────
   useEffect(() => {
-    if (!componentDefs.length) { setSalaryResult(null); return; }
+    if (!componentDefs.length) {
+      setSalaryResult(null);
+      return;
+    }
     const result = calculateSalary(base, componentDefs, overrides);
     setSalaryResult(result);
-    for (const comp of result.components) handleInputChange(comp.key, String(comp.amount));
+    for (const comp of result.components)
+      handleInputChange(comp.key, String(comp.amount));
     handleInputChange("_salaryResult", result);
     handleInputChange("grossSalary", String(result.gross));
   }, [base, overrides, componentDefs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Load salary structure ────────────────────────────────────────────────
-  const handleSalaryStructureChange = useCallback(async (val: any) => {
-    const value = typeof val === "string" ? val : val?.value;
-    if (!value) return;
+  const handleSalaryStructureChange = useCallback(
+    async (val: any) => {
+      const value = typeof val === "string" ? val : val?.value;
+      if (!value) return;
 
-    handleInputChange("salaryStructure", value);
-    setIsLoadingStructure(true);
-    setComponentDefs([]);
-    setOverrides({});
-    setSalaryResult(null);
+      handleInputChange("salaryStructure", value);
+      setIsLoadingStructure(true);
+      setComponentDefs([]);
+      setOverrides({});
+      setSalaryResult(null);
 
-    try {
-      const structure: SalaryStructure = await getSalaryStructure(value);
+      try {
+        const structure: SalaryStructure = await getSalaryStructure(value);
 
-      const enrichRows = async (rows: Array<{ salary_component: string }>): Promise<ApiSalaryComponent[]> => {
-        const results = await Promise.allSettled(rows.map((row) => getSalaryComponent(row.salary_component)));
-        return results
-          .filter((r): r is PromiseFulfilledResult<ApiSalaryComponent> => r.status === "fulfilled")
-          .map((r) => r.value);
-      };
+        const enrichRows = async (
+          rows: Array<{ salary_component: string }>,
+        ): Promise<ApiSalaryComponent[]> => {
+          const results = await Promise.allSettled(
+            rows.map((row) => getSalaryComponent(row.salary_component)),
+          );
+          return results
+            .filter(
+              (r): r is PromiseFulfilledResult<ApiSalaryComponent> =>
+                r.status === "fulfilled",
+            )
+            .map((r) => r.value);
+        };
 
-      const [earnings, deductions] = await Promise.all([
-        enrichRows(structure.earnings ?? []),
-        enrichRows(structure.deductions ?? []),
-      ]);
+        const [earnings, deductions] = await Promise.all([
+          enrichRows(structure.earnings ?? []),
+          enrichRows(structure.deductions ?? []),
+        ]);
 
-      const defs: SalaryComponentDef[] = [
-        ...earnings.map((c) => ({ ...c, type: "Earning" as const })),
-        ...deductions.map((c) => ({ ...c, type: "Deduction" as const })),
-      ] as SalaryComponentDef[];
+        const defs: SalaryComponentDef[] = [
+          ...earnings.map((c) => ({ ...c, type: "Earning" as const })),
+          ...deductions.map((c) => ({ ...c, type: "Deduction" as const })),
+        ] as SalaryComponentDef[];
 
-      const initOverrides: Record<string, number> = {};
-      for (const def of defs) {
-        if (def.amount_based_on_formula !== 1 && def.amount) {
-          initOverrides[toKey(def.salary_component)] = def.amount;
+        const initOverrides: Record<string, number> = {};
+        for (const def of defs) {
+          if (def.amount_based_on_formula !== 1 && def.amount) {
+            initOverrides[toKey(def.salary_component)] = def.amount;
+          }
         }
-      }
 
-      setComponentDefs(defs);
-      setOverrides(initOverrides);
-    } catch (err) {
-      console.error("Failed to load salary structure:", err);
-    } finally {
-      setIsLoadingStructure(false);
-    }
-  }, [handleInputChange]);
+        setComponentDefs(defs);
+        setOverrides(initOverrides);
+      } catch (err) {
+        console.error("Failed to load salary structure:", err);
+      } finally {
+        setIsLoadingStructure(false);
+      }
+    },
+    [handleInputChange],
+  );
 
   const handleOverrideChange = useCallback((key: string, val: string) => {
     setOverrides((prev) => ({ ...prev, [key]: toNum(val) }));
   }, []);
 
+  const handleTaxSlabChange = useCallback(
+  (val: any) => {
+    const value = typeof val === "string"
+      ? val
+      : val?.value || "";
+
+    handleInputChange("Taxslab", value);
+  },
+  [handleInputChange],
+);
+
   const { earningRows, deductionRows } = useMemo(() => {
     if (!salaryResult) return { earningRows: [], deductionRows: [] };
     return {
       earningRows: salaryResult.components.filter((c) => c.type === "Earning"),
-      deductionRows: salaryResult.components.filter((c) => c.type === "Deduction"),
+      deductionRows: salaryResult.components.filter(
+        (c) => c.type === "Deduction",
+      ),
     };
   }, [salaryResult]);
 
@@ -233,7 +307,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="w-full space-y-3">
-
       {/* ── Top controls row ── */}
       <div className="bg-card rounded-lg border border-theme p-3 space-y-3">
         <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
@@ -248,11 +321,27 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           fetchOptions={getAllSalaryStructures}
           onChange={handleSalaryStructureChange}
         />
+        <SearchSelect2
+          label="Tax Slab"
+          value={formData.Taxslab}
+          placeholder="Select tax slab..."
+          fetchOptions={async (q: string) => {
+            const res = await getAllTaxConfigs(0, 20, q);
+
+            return (res.data || []).map((item: any) => ({
+              label: item.name,
+              value: item.name,
+            }));
+          }}
+        onChange={handleTaxSlabChange}
+        />
 
         {/* Row 2: Base salary + Currency + Mode */}
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-muted mb-1">Base Salary</label>
+            <label className="block text-[11px] font-semibold text-muted mb-1">
+              Base Salary
+            </label>
             <PlainInput
               name="basicSalary"
               value={formData.basicSalary ?? ""}
@@ -277,11 +366,13 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               label="Payment Mode"
               name="paymentMethod"
               value={formData.paymentMethod || ""}
-              onChange={(e) => handleInputChange("paymentMethod", e.target.value)}
+              onChange={(e) =>
+                handleInputChange("paymentMethod", e.target.value)
+              }
               options={[
-                { label: "Bank",   value: "Bank" },
-                { label: "Cash",   value: "Cash" },
-                { label: "Check",  value: "Check" },
+                { label: "Bank", value: "Bank" },
+                { label: "Cash", value: "Cash" },
+                { label: "Check", value: "Check" },
               ]}
             />
           </div>
@@ -298,12 +389,15 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
       {/* ── Components + Summary — side by side when components exist ── */}
       {!isLoadingStructure && hasComponents && salaryResult && (
         <div className="grid grid-cols-2 gap-3">
-
           {/* LEFT: component table */}
           <div className="bg-card rounded-lg border border-theme p-3">
             <h4 className="text-xs font-semibold text-main uppercase tracking-wide mb-2">
               Components
-              {currency && <span className="ml-1 normal-case font-normal text-muted">({currency})</span>}
+              {currency && (
+                <span className="ml-1 normal-case font-normal text-muted">
+                  ({currency})
+                </span>
+              )}
             </h4>
             <table className="w-full border-collapse">
               <thead>
@@ -341,50 +435,82 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               Summary
             </h4>
             <div className="space-y-0.5">
-              <SummaryRow label="Base Salary (Input)"       value={`${currency} ${fmt(base)}`}                          dimmed />
-              <SummaryRow label="Total Earnings (Annual)"   value={`${currency} ${fmt(salaryResult.gross)}`}             bold />
-              <SummaryRow label="Total Earnings (Monthly)"  value={`${currency} ${fmt(salaryResult.gross / 12)}`}        dimmed />
+              <SummaryRow
+                label="Base Salary (Input)"
+                value={`${currency} ${fmt(base)}`}
+                dimmed
+              />
+              <SummaryRow
+                label="Total Earnings (Annual)"
+                value={`${currency} ${fmt(salaryResult.gross)}`}
+                bold
+              />
+              <SummaryRow
+                label="Total Earnings (Monthly)"
+                value={`${currency} ${fmt(salaryResult.gross / 12)}`}
+                dimmed
+              />
               {salaryResult.deductionsTotal > 0 && (
-                <SummaryRow label="Total Deductions (Annual)" value={`− ${currency} ${fmt(salaryResult.deductionsTotal)}`} negative />
+                <SummaryRow
+                  label="Total Deductions (Annual)"
+                  value={`− ${currency} ${fmt(salaryResult.deductionsTotal)}`}
+                  negative
+                />
               )}
-              <SummaryRow label="Net Pay (Annual)"  value={`${currency} ${fmt(salaryResult.net)}`}      bold accent topBorder />
-              <SummaryRow label="Net Pay (Monthly)" value={`${currency} ${fmt(salaryResult.net / 12)}`} dimmed />
+              <SummaryRow
+                label="Net Pay (Annual)"
+                value={`${currency} ${fmt(salaryResult.net)}`}
+                bold
+                accent
+                topBorder
+              />
+              <SummaryRow
+                label="Net Pay (Monthly)"
+                value={`${currency} ${fmt(salaryResult.net / 12)}`}
+                dimmed
+              />
             </div>
 
             {/* Quick stats */}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2.5 text-center">
-                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Gross / mo</p>
+                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">
+                  Gross / month
+                </p>
                 <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                   {fmt(salaryResult.gross / 12)}
                 </p>
               </div>
               <div className="bg-primary/5 rounded-lg p-2.5 text-center">
-                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Net / mo</p>
+                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">
+                  Net / month
+                </p>
                 <p className="text-sm font-bold text-primary">
                   {fmt(salaryResult.net / 12)}
                 </p>
               </div>
             </div>
           </div>
-
         </div>
       )}
 
       {/* Empty state when no structure selected */}
       {!isLoadingStructure && !hasComponents && !formData.salaryStructure && (
         <div className="bg-card rounded-lg border border-dashed border-theme p-8 text-center">
-          <p className="text-xs text-muted">Select a salary structure above to view and configure components.</p>
+          <p className="text-xs text-muted">
+            Select a salary structure above to view and configure components.
+          </p>
         </div>
       )}
 
       {/* Empty state when structure selected but no components */}
       {!isLoadingStructure && !hasComponents && formData.salaryStructure && (
         <div className="bg-card rounded-lg border border-theme p-6 text-center">
-          <p className="text-xs text-muted italic">No components found in this structure.</p>
+          <p className="text-xs text-muted italic">
+            No components found in this structure.
+          </p>
         </div>
       )}
-
     </div>
   );
 };

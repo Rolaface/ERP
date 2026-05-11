@@ -1,9 +1,6 @@
-import { useState } from "react";
-import {
-  AppPage,
-  AppPageBody,
-  AppSubTabs,
-} from "../../components/ui/app-shell";
+import { CalendarDays, FileText, Settings2, SlidersHorizontal, Users } from "lucide-react";
+import { useUrlTab } from "../../hooks/useUrlTab";
+import { HrSectionFrame } from "./components/HrTabLayout";
 
 import GeneralSettingsTab from "./tabs/GeneralSettingsTab";
 import EmployeeConfigTab from "./tabs/EmployeeConfig";
@@ -13,15 +10,20 @@ import WorkScheduleTab from "./tabs/WorkScheduleTab";
 import SalarySlipSetup from "./tabs/Salaryslipsetup";
 
 const TABS = [
-  { id: "general", label: "General Settings" },
-  { id: "employee", label: "Employee Configuration" },
-  { id: "payroll", label: "Payroll Configuration" },
-  { id: "leave", label: "Leave Configuration" },
-  { id: "slip", label: "Salary Slip Setup" },
+  { id: "general", label: "General", icon: <Settings2 size={15} /> },
+  { id: "employee", label: "Employee", icon: <Users size={15} /> },
+  { id: "payroll", label: "Payroll", icon: <SlidersHorizontal size={15} /> },
+  { id: "leave", label: "Leave", icon: <CalendarDays size={15} /> },
+  { id: "slip", label: "Salary Slip", icon: <FileText size={15} /> },
 ];
 
 export default function HRSetup() {
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useUrlTab({
+    tabs: TABS,
+    defaultTab: "general",
+    param: "setupTab",
+    basePath: "/hr",
+  });
 
   const renderTab = () => {
     switch (activeTab) {
@@ -35,20 +37,12 @@ export default function HRSetup() {
   };
 
   return (
-    <AppPage>
-
-    
-      <AppSubTabs
-        tabs={TABS}
-        activeTab={activeTab}
-        onChange={setActiveTab}
-      />
-
-   
-      <AppPageBody>
-        {renderTab()}
-      </AppPageBody>
-
-    </AppPage>
+    <HrSectionFrame
+      tabs={TABS}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+    >
+      {renderTab()}
+    </HrSectionFrame>
   );
 }

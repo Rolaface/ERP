@@ -89,19 +89,17 @@ const ModeOfPaymentSetup: React.FC = () => {
       align: "center",
       render: (row: any) => (
         <ActionGroup>
-          <ActionMenu
-            customActions={
-              can(MODE_OF_PAYMENT_MODULE, "write")
-                ? [
-                  {
-                    label: row.enabled ? "Disable" : "Enable",
-                    onClick: () => handleToggle(row),
-                    disabled: actionLoadingId === String(row.id),
-                  },
-                ]
-                : []
-            }
-          />
+          {can(MODE_OF_PAYMENT_MODULE, "write") && (
+            <ActionMenu
+              customActions={[
+                {
+                  label: row.enabled ? "Disable" : "Enable",
+                  onClick: () => handleToggle(row),
+                  disabled: actionLoadingId === String(row.id),
+                },
+              ]}
+            />
+          )}
         </ActionGroup>
       ),
     },
@@ -123,13 +121,10 @@ const ModeOfPaymentSetup: React.FC = () => {
           showToolbar
           enableAdd={can(MODE_OF_PAYMENT_MODULE, "create")}
           addLabel="Add Mode of Payment"
-          onAdd={
-            can(MODE_OF_PAYMENT_MODULE, "create")
-              ? () =>
-                openModeOfPaymentModal(null, false, {
-                  onSuccess: fetchData,
-                })
-              : undefined
+          onAdd={() =>
+            openModeOfPaymentModal(null, false, {
+              onSuccess: fetchData,
+            })
           }
           currentPage={page}
           totalPages={totalPages}

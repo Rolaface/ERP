@@ -4,6 +4,7 @@ import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import { getAllLeavePolicies } from "../../../api/utils/frappeUtilsApi";
 import { getLeavePolicyById } from "../../../api/leaveConfigApi";
 import { getAllEmployees } from "../../../api/employeeapi";
+import { getalluser } from "../../../api/utils/frappeUtilsApi";
 
 type LeaveSetupTabProps = {
   formData: any;
@@ -43,43 +44,35 @@ export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
     }
   };
 
-  const handlePolicyChange = async (value: string, option: { label: string; value: string }) => {
+  const handlePolicyChange = async (
+    value: string,
+    option: { label: string; value: string },
+  ) => {
     if (!value) return;
     handleInputChange("leavePolicy", value);
     handleInputChange("leavePolicyLabel", option?.label || value);
     await loadPolicyDetails(value);
   };
 
-  const fetchEmployees = async (q: string) => {
-  const resp = await getAllEmployees(1, 200, "Active");
-
-  const list = resp?.data || [];
-
-  return list
-    .filter((emp: any) =>
-      `${emp.employee_name}`.toLowerCase().includes(q.toLowerCase())
-    )
-    .map((emp: any) => ({
-      label: emp.employee_name,
-      value: emp.name, // employee ID (HR-EMP-0001)
-    }));
-};
+  
 
   // Load on mount if already set (edit mode)
   useEffect(() => {
     if (formData.leavePolicy) {
       loadPolicyDetails(formData.leavePolicy);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const items: any[] = policyDetails?.leave_policy_details ?? [];
-  const total = items.reduce((s: number, i: any) => s + (i.annual_allocation ?? 0), 0);
+  const total = items.reduce(
+    (s: number, i: any) => s + (i.annual_allocation ?? 0),
+    0,
+  );
 
   return (
     <div className="max-w-4xl mx-auto space-y-3">
       <div className="grid grid-cols-2 gap-3">
-
         {/* LEFT — selector */}
         <div className="bg-card p-3 rounded-lg border border-theme space-y-2.5">
           <div className="flex items-center justify-between">
@@ -111,21 +104,19 @@ export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
             </div>
           )}
           <SearchSelect2
-  label="Leave Approver"
-  value={formData.leaveApproverLabel || formData.leaveApprover || ""}
-  placeholder="Search employee..."
-  fetchOptions={fetchEmployees}
-  onChange={(value: string, option: any) => {
-    handleInputChange("leaveApprover", value);        
-    handleInputChange("leaveApproverLabel", option?.label); // UI
-  }}
-/>
+            label="Leave Approver"
+            value={formData.leaveApproverLabel || formData.leaveApprover || ""}
+            placeholder="Search ..."
+            fetchOptions={getalluser}
+            onChange={(value: string, option: any) => {
+              handleInputChange("leaveApprover", value);
+              handleInputChange("leaveApproverLabel", option?.label); // UI
+            }}
+          />
         </div>
-        
 
         {/* RIGHT — policy detail table */}
         <div className="bg-card p-3 rounded-lg border border-theme">
-
           {loading && (
             <p className="text-xs text-muted py-4 text-center">Loading…</p>
           )}
@@ -182,7 +173,6 @@ export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
               </table>
             </div>
           )}
-
         </div>
       </div>
     </div>

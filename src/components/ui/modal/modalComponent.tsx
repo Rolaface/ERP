@@ -67,12 +67,7 @@ ModalSelect.displayName = "ModalSelect";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/**
- * Parse any of these formats into a JS Date (local time, no UTC shift):
- *   "05-Mar-2026"  ← display format
- *   "yyyy-mm-dd"   ← backend ISO / <input type="date">
- *   ISO strings    ← e.g. "2024-03-15T00:00:00.000Z"
- */
+
 function parseDate(value: string): Date | null {
   if (!value) return null;
 

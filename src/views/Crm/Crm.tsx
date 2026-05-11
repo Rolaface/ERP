@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useMemo, useCallback } from "react";
-import { useOutletContext, useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -13,6 +13,7 @@ import {
   AppTabs,
 } from "../../components/ui/app-shell";
 import { usePermission } from "../../hooks/permission/usePermission";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
 const CustomerManagement = lazy(() => import("./CustomerManagement"));
 const CRMDashboard = lazy(() => import("./CRMDashboard"));
@@ -75,9 +76,6 @@ const ALL_TABS = [
 const DEFAULT_TAB = "dashboard";
 
 const CRM: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
   const { can } = usePermission();                      
 
   // Filter tabs based on permissions
@@ -86,16 +84,12 @@ const CRM: React.FC = () => {
     [can]
   );                                                      
 
-  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
-
-  const resolvedTab =
-    crmTabs.find((t) => t.id === activeTab)?.id ?? crmTabs[0]?.id ?? DEFAULT_TAB;  
-
-  const handleTabChange = useCallback((tabId: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("tab", tabId);
-    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-  }, [navigate, location.pathname, searchParams]);
+  const fallbackTab = crmTabs[0]?.id ?? DEFAULT_TAB;
+  const [resolvedTab, handleTabChange] = useUrlTab({
+    tabs: crmTabs,
+    defaultTab: fallbackTab,
+    basePath: "/crm",
+  });
 
   const { openCustomerCreate } = useOutletContext<OutletContextType>();
   const handleAddCustomer = useCallback(() => openCustomerCreate(), [openCustomerCreate]);

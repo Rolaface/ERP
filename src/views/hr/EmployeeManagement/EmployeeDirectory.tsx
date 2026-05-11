@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 
 import {
   showApiError,
@@ -12,7 +12,7 @@ import {
   getEmployeeById,
   deleteEmployeeById,
 } from "../../../api/employeeapi";
-import { AppPage , AppPageBody } from "../../../components/ui/app-shell";
+import { AppPage, AppPageBody } from "../../../components/ui/app-shell";
 import { openEmployeeModal } from "../../../store/modalStore";
 
 import Table from "../../../components/ui/Table/Table";
@@ -21,6 +21,11 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../../components/ui/Table/ActionButton";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../../store/dataRefreshStore";
+
+// ── NEW: self-contained avatar + name cell ────────────────────────────────────
+import EmployeeNameCell from "../../../components/ui/Table/Employeenamecell";
+// ─────────────────────────────────────────────────────────────────────────────
 
 import type { Column } from "../../../components/ui/Table/type";
 import type { EmployeeSummary } from "../../../types/employee";
@@ -41,6 +46,9 @@ const EmployeeDirectory: React.FC = () => {
 
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+
+  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
 
   // ── View detail ──────────────────────────────────────────────────────────
   const handleViewEmployee = async (id: string) => {
@@ -64,7 +72,7 @@ const EmployeeDirectory: React.FC = () => {
   };
 
   // ── Fetch list ───────────────────────────────────────────────────────────
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
       const res = await getAllEmployees(page, pageSize, searchTerm);
@@ -73,6 +81,9 @@ const EmployeeDirectory: React.FC = () => {
         id: e.name,
         employeeId: e.name,
         name: e.employee_name,
+        // ── avatar image from API ──────────────────────────────────────────
+        image: e.image ?? null,
+        // ─────────────────────────────────────────────────────────────────
         jobTitle: e.designation,
         department: e.department || "-",
         workLocation: e.branch || "-",
@@ -81,21 +92,33 @@ const EmployeeDirectory: React.FC = () => {
 
       setEmployees(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
-      setTotalItems(res.pagination?.total_items || 0);
+      setTotalItems(res.pagination?.total || 0);
     } catch (error) {
       showApiError(error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, searchTerm]);
 
   useEffect(() => {
     fetchEmployees();
-  }, [page]);
+  }, [fetchEmployees]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.EMPLOYEE_LIST,
+      fetchEmployees
+    );
+    return () => unsubscribe();
+  }, [subscribeToRefresh, fetchEmployees]);
 
   // ── Add ──────────────────────────────────────────────────────────────────
   const handleAdd = () => {
-    openEmployeeModal(null, false);
+    openEmployeeModal(null, false, {
+      onSuccess: () => {
+        triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
+      },
+    });
   };
 
   // ── Edit ─────────────────────────────────────────────────────────────────
@@ -104,10 +127,8 @@ const EmployeeDirectory: React.FC = () => {
     try {
       showLoading("Fetching Employee...");
       const res = await getEmployeeById(id);
-      const employeeData = unwrapEmployee(res); // flat data object
+      const employeeData = unwrapEmployee(res);
       closeSwal();
-
-      
       openEmployeeModal(employeeData, true);
     } catch (error) {
       closeSwal();
@@ -134,9 +155,9 @@ const EmployeeDirectory: React.FC = () => {
     try {
       showLoading("Deleting Employee...");
       await deleteEmployeeById(id);
-      setEmployees((prev) => prev.filter((emp) => emp.id !== id));
       closeSwal();
       showSuccess("Employee deleted successfully");
+      triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
     } catch (error) {
       closeSwal();
       showApiError(error);
@@ -146,8 +167,23 @@ const EmployeeDirectory: React.FC = () => {
   // ── Columns ──────────────────────────────────────────────────────────────
   const columns: Column<EmployeeSummary>[] = [
     { key: "employeeId", header: "Employee ID", align: "left" },
-    { key: "name",       header: "Name",        align: "left" },
-    { key: "jobTitle",   header: "Job Title",   align: "left" },
+
+    // ── Name column: avatar + name via EmployeeNameCell ───────────────────
+    {
+      key: "name",
+      header: "Name",
+      align: "left",
+      render: (e) => (
+        <EmployeeNameCell
+          name={e.name}
+          employeeId={e.id}
+          image={e.image}
+        />
+      ),
+    },
+    // ─────────────────────────────────────────────────────────────────────
+
+    { key: "jobTitle", header: "Job Title", align: "left" },
     {
       key: "department",
       header: "Department",

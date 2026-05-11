@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-
+import { useDataRefreshStore, REFRESH_KEYS } from "../../../../../store/dataRefreshStore";
 import Table from "../../../../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -24,6 +24,15 @@ export function EmployeeTypeSetup() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const triggerRefresh = useDataRefreshStore(
+    (state) => state.triggerRefresh
+  );
+
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh
+  );
+
+
 
   const fetchAll = useCallback(async () => {
     try {
@@ -45,6 +54,17 @@ export function EmployeeTypeSetup() {
     fetchAll();
   }, [fetchAll]);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.EMPLOYEE_TYPE_LIST,
+      () => {
+        fetchAll();
+      }
+    );
+
+    return unsubscribe;
+  }, [subscribeToRefresh, fetchAll]);
+
   const handleEdit = useCallback(async (row: EmployeeType) => {
     if (!row.name) return;
     try {
@@ -53,7 +73,11 @@ export function EmployeeTypeSetup() {
         detail,
         true,
         {
-          onSuccess: fetchAll,
+          onSuccess: () => {
+            triggerRefresh(
+              REFRESH_KEYS.EMPLOYEE_TYPE_LIST
+            );
+          },
         },
         {
           title: "Edit Employee Type",
@@ -62,33 +86,35 @@ export function EmployeeTypeSetup() {
     } catch (err: any) {
       showApiError(err?.message ?? "Failed to load employee type details");
     }
-  }, []);
+  }, [triggerRefresh]);
 
-const handleDelete = useCallback(
-  async (row: EmployeeType) => {
-    if (!row.name) return;
+  const handleDelete = useCallback(
+    async (row: EmployeeType) => {
+      if (!row.name) return;
 
-    try {
-      setActionLoadingId(row.name);
+      try {
+        setActionLoadingId(row.name);
 
-      const deleted = await confirmDelete({
-        text: `Delete "${row.employee_type_name ?? row.name}"?`,
-        loadingText: "Deleting Employee Type...",
-        successMessage: "Employee type deleted",
-        action: async () => {
-          await deleteEmployeeType(row.name!);
-        },
-      });
+        const deleted = await confirmDelete({
+          text: `Delete "${row.employee_type_name ?? row.name}"?`,
+          loadingText: "Deleting Employee Type...",
+          successMessage: "Employee type deleted",
+          action: async () => {
+            await deleteEmployeeType(row.name!);
+          },
+        });
 
-      if (deleted) {
-        fetchAll();
+        if (deleted) {
+          triggerRefresh(
+            REFRESH_KEYS.EMPLOYEE_TYPE_LIST
+          );
+        }
+      } finally {
+        setActionLoadingId(null);
       }
-    } finally {
-      setActionLoadingId(null);
-    }
-  },
-  [fetchAll],
-);
+    },
+    [triggerRefresh],
+  );
   const columns: Column<EmployeeType>[] = useMemo(
     () => [
       {
@@ -144,18 +170,22 @@ const handleDelete = useCallback(
         }}
         enableAdd
         addLabel="Add Employee Type"
-       onAdd={() =>
-  openEmployeeTypeModal(
-    null,
-    false,
-    {
-      onSuccess: fetchAll,
-    },
-    {
-      title: "New Employee Type",
-    },
-  )
-}
+        onAdd={() =>
+          openEmployeeTypeModal(
+            null,
+            false,
+            {
+              onSuccess: () => {
+                triggerRefresh(
+                  REFRESH_KEYS.EMPLOYEE_TYPE_LIST
+                );
+              },
+            },
+            {
+              title: "New Employee Type",
+            },
+          )
+        }
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -169,7 +199,7 @@ const handleDelete = useCallback(
         enableColumnSelector
         tableId="employee-types"
       />
-      
+
     </>
   );
 }

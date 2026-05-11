@@ -1,5 +1,4 @@
-import React, { useMemo, useCallback } from "react";
-import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import React, { useMemo } from "react";
 import { Users, ShieldCheck } from "lucide-react";
 import {
   AppPage,
@@ -8,6 +7,7 @@ import {
   AppTabs,
 } from "../../components/ui/app-shell";
 import { usePermission } from "../../hooks/permission/usePermission";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
 const UserCreation = React.lazy(() => import("./UserCreation"));
 const UserRole = React.lazy(() => import("./UserRoles"));
@@ -36,9 +36,6 @@ const TAB_DEFINITIONS = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const UserModule: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
   const { can } = usePermission();   
 
  
@@ -50,22 +47,12 @@ const UserModule: React.FC = () => {
     [can]
   );
 
-  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
-
-  // If the current tab is no longer visible, fall back to the first visible tab
-  const resolvedTab =
-    visibleTabs.find((t) => t.id === activeTab)?.id ??
-    visibleTabs[0]?.id ??
-    DEFAULT_TAB;
-
-  const handleTabChange = useCallback(
-    (tabId: string) => {
-      const newParams = new URLSearchParams(searchParams);
-      newParams.set("tab", tabId);
-      navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-    },
-    [navigate, location.pathname, searchParams]
-  );
+  const fallbackTab = visibleTabs[0]?.id ?? DEFAULT_TAB;
+  const [resolvedTab, handleTabChange] = useUrlTab({
+    tabs: visibleTabs,
+    defaultTab: fallbackTab,
+    basePath: "/userManagement",
+  });
 
   const tabComponents: Record<string, React.ReactNode> = useMemo(
     () => ({

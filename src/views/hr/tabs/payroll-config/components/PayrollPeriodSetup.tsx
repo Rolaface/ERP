@@ -1,0 +1,109 @@
+import { useCallback, useMemo, useState } from "react";
+import Table from "../../../../../components/ui/Table/Table";
+import ActionButton, { ActionGroup, ActionMenu } from "../../../../../components/ui/Table/ActionButton";
+import type { Column } from "../../../../../components/ui/Table/type";
+import { confirmDelete } from "../../../../../api/utils/confirmDelete";
+import { deletePayrollPeriod, type PayrollPeriod } from "../../../../../api/payrollConfigApi";
+import { usePayrollPeriods } from "../hooks/usePayrollPeriods";
+import { openPayrollPeriodModal } from "../../../../../store/modalStore";
+
+export function PayrollPeriodSetup() {
+  const {
+    rows, loading, search, setSearch,
+    page, setPage, pageSize, setPageSize,
+    totalPages, totalItems, fetchAll, fetchDetail,
+  } = usePayrollPeriods();
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  const handleEdit = useCallback(async (row: PayrollPeriod) => {
+    const detail = await fetchDetail(row.name!);
+    if (!detail) return;
+    openPayrollPeriodModal(detail, true, { onSuccess: fetchAll }, { title: "Edit Payroll Period" });
+  }, [fetchDetail, fetchAll]);
+
+  const handleDelete = useCallback(async (row: PayrollPeriod) => {
+    if (!row.name) return;
+    try {
+      setActionLoadingId(row.name);
+      const deleted = await confirmDelete({
+        text: `Delete "${row.name}"?`,
+        loadingText: "Deleting Payroll Period...",
+        successMessage: "Payroll period deleted",
+        action: async () => { await deletePayrollPeriod(row.name!); },
+      });
+      if (deleted) fetchAll();
+    } finally {
+      setActionLoadingId(null);
+    }
+  }, [fetchAll]);
+
+  const columns: Column<PayrollPeriod>[] = useMemo(() => [
+    {
+      key: "name",
+      header: "Name",
+      render: (row) => <span className="font-medium text-main">{row.name || "—"}</span>,
+      tooltip: (row) => row.name,
+    },
+    {
+      key: "company",
+      header: "Company",
+      render: (row) => <span className="text-sm text-main">{row.company || "—"}</span>,
+    },
+    {
+      key: "start_date",
+      header: "Start Date",
+      render: (row) => <span className="text-sm text-main">{row.start_date || "—"}</span>,
+    },
+    {
+      key: "end_date",
+      header: "End Date",
+      render: (row) => <span className="text-sm text-main">{row.end_date || "—"}</span>,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (row) => (
+        <ActionGroup>
+          <ActionButton
+            type="edit"
+            iconOnly
+            onClick={() => handleEdit(row)}
+            disabled={actionLoadingId === row.name}
+          />
+          <ActionMenu
+            customActions={[{
+              label: "Delete",
+              onClick: () => handleDelete(row),
+              disabled: actionLoadingId === row.name,
+            }]}
+          />
+        </ActionGroup>
+      ),
+    },
+  ], [actionLoadingId, handleEdit, handleDelete]);
+
+  return (
+    <Table
+      columns={columns}
+      data={rows}
+      loading={loading}
+      rowKey={(row) => row.name ?? ""}
+      showToolbar
+      searchValue={search}
+      onSearch={(v) => { setSearch(v); setPage(1); }}
+      enableAdd
+      addLabel="Add Period"
+      onAdd={() => openPayrollPeriodModal(null, false, { onSuccess: fetchAll }, { title: "New Payroll Period" })}
+      currentPage={page}
+      totalPages={totalPages}
+      totalItems={totalItems}
+      pageSize={pageSize}
+      pageSizeOptions={[10, 25, 50]}
+      onPageChange={setPage}
+      onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+      enableColumnSelector
+      tableId="payroll-periods"
+    />
+  );
+}
