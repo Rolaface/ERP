@@ -85,3 +85,14 @@ export async function uploadEmployeePhoto(
 
   return resp.data;
 }
+
+export async function updateEmployeeStatus(
+  id: string,
+  status: "Active" | "Inactive" | "Suspended" | "Left"
+): Promise<any> {
+  const url = `${EmployeeAPI.updateStatus}?id=${id}&status=${status}`;
+
+  const resp: AxiosResponse = await api.patch(url);
+
+  return resp.data;
+}

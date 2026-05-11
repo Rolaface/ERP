@@ -6,6 +6,7 @@ import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
 import {
   createSalaryComponent,
   updateSalaryComponent,
+  getSalaryComponent,
   type SalaryComponent,
   type SalaryComponentType,
 } from "../../../api/payrollConfigApi";
@@ -109,7 +110,7 @@ const EMPTY: Omit<SalaryComponent, "name"> = {
   formula: "",
   amount: "" as any,
   description: "",
-  accounts: [],
+  accounts: [{ account: "" }],
   is_flexible_benefit: 0,
   pay_against_benefit_claim: 0,
   max_benefit_amount: 0,
@@ -175,6 +176,46 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const [form, setForm] = useState<Omit<SalaryComponent, "name">>(EMPTY);
   const [saving, setSaving] = useState(false);
   const { fetchAccounts } = useAccountSearch();
+  const [loadingData, setLoadingData] = useState(false);
+
+  const loadSalaryComponent = async (name: string) => {
+    try {
+      setLoadingData(true);
+
+      const data = await getSalaryComponent(name);
+
+      setForm({
+        salary_component: data.salary_component ?? "",
+        salary_component_abbr: data.salary_component_abbr ?? "",
+        type: data.type ?? "Earning",
+        depends_on_payment_days: data.depends_on_payment_days ?? 1,
+        is_tax_applicable: data.is_tax_applicable ?? 0,
+        amount_based_on_formula: data.amount_based_on_formula ?? 0,
+        formula: data.formula ?? "",
+        amount: data.amount ?? 0,
+        description: data.description ?? "",
+        accounts:
+          data.accounts && data.accounts.length > 0
+            ? [...data.accounts]
+            : [{ account: "" }],
+        is_flexible_benefit: data.is_flexible_benefit ?? 0,
+        pay_against_benefit_claim: data.pay_against_benefit_claim ?? 0,
+        max_benefit_amount: data.max_benefit_amount ?? 0,
+        only_tax_impact: data.only_tax_impact ?? 0,
+        create_separate_payment_entry_against_benefit_claim:
+          data.create_separate_payment_entry_against_benefit_claim ?? 0,
+        payout_method: data.payout_method ?? "",
+        variable_based_on_taxable_salary:
+          data.variable_based_on_taxable_salary ?? 0,
+        is_income_tax_component: data.is_income_tax_component ?? 0,
+      });
+    } catch (err) {
+      showApiError(err);
+      onClose();
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   // inject styles once
   useEffect(() => {
@@ -188,37 +229,17 @@ export const SalaryComponentModal: React.FC<Props> = ({
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      setForm(
-        initialData
-          ? {
-              salary_component: initialData.salary_component ?? "",
-              salary_component_abbr: initialData.salary_component_abbr ?? "",
-              type: initialData.type ?? "Earning",
-              depends_on_payment_days: initialData.depends_on_payment_days ?? 1,
-              is_tax_applicable: initialData.is_tax_applicable ?? 0,
-              amount_based_on_formula: initialData.amount_based_on_formula ?? 0,
-              formula: initialData.formula ?? "",
-              amount: initialData.amount ?? 0,
-              description: initialData.description ?? "",
-              accounts: initialData.accounts ? [...initialData.accounts] : [],
-              is_flexible_benefit: initialData.is_flexible_benefit ?? 0,
-              pay_against_benefit_claim:
-                initialData.pay_against_benefit_claim ?? 0,
-              max_benefit_amount: initialData.max_benefit_amount ?? 0,
-              only_tax_impact: initialData.only_tax_impact ?? 0,
-              create_separate_payment_entry_against_benefit_claim:
-                initialData.create_separate_payment_entry_against_benefit_claim ??
-                0,
-              payout_method: initialData.payout_method ?? "",
-              variable_based_on_taxable_salary:
-                initialData.variable_based_on_taxable_salary ?? 0,
-              is_income_tax_component: initialData.is_income_tax_component ?? 0,
-            }
-          : { ...EMPTY, accounts: [] },
-      );
+    if (!isOpen) return;
+
+    if (isEdit && initialData?.name) {
+      loadSalaryComponent(initialData.name);
+    } else {
+      setForm({
+        ...EMPTY,
+        accounts: [{ account: "" }],
+      });
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, isEdit, initialData?.name]);
 
   const set = useCallback(
     <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
@@ -281,7 +302,31 @@ export const SalaryComponentModal: React.FC<Props> = ({
       showValidationError("Payout method is required for flexible benefits");
       return;
     }
+    // const hasAccounts = (form.accounts ?? []).some(
+    //   (a) => a.account?.trim()
+    // );
 
+    // if (!hasAccounts) {
+    //   const proceed = await showConfirm(
+    //     "No ledger account selected. Journal Entries may not be created correctly during payroll processing.",
+    //     {
+    //       title: "Continue Without Ledger Account?",
+    //       confirmButtonText: "Continue Anyway",
+    //       cancelButtonText: "Go Back",
+    //       confirmButtonColor: "#f59e0b",
+    //     }
+    //   );
+
+    //   if (!proceed) return;
+    // }
+    const hasAccounts = (form.accounts ?? []).some((a) => a.account?.trim());
+
+    if (!hasAccounts) {
+      showValidationError(
+        "Ledger Account is required for Journal Entry creation.",
+      );
+      return;
+    }
     try {
       setSaving(true);
       const payload: Omit<SalaryComponent, "name"> = {
@@ -365,8 +410,8 @@ export const SalaryComponentModal: React.FC<Props> = ({
       title={isEdit ? "Edit Salary Component" : "New Salary Component"}
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}
-      customWidth="50vw"
-      height="auto"
+      customWidth="74vw"
+      height="84vh"
       footer={footer}
     >
       {/* Fixed-height scroll container — no modal resize on type switch */}
@@ -375,38 +420,49 @@ export const SalaryComponentModal: React.FC<Props> = ({
         className="space-y-4 pb-2 pr-1"
       >
         {/* ── Row 1: Abbr + Name + Type ── */}
-       <div className="grid grid-cols-[10rem_minmax(18rem,24rem)_8rem] gap-3 items-end">
-  <ModalSelect
-    label="Type"
-    value={form.type}
-    onChange={(e) =>
-      handleTypeChange(e.target.value as SalaryComponentType)
-    }
-    options={[
-      { label: "Earning", value: "Earning" },
-      { label: "Deduction", value: "Deduction" },
-    ]}
-  />
+        <div className="grid grid-cols-[10rem_minmax(18rem,24rem)_8rem] gap-3 items-end">
+          <ModalSelect
+            label="Type"
+            value={form.type}
+            onChange={(e) =>
+              handleTypeChange(e.target.value as SalaryComponentType)
+            }
+            options={[
+              { label: "Earning", value: "Earning" },
+              { label: "Deduction", value: "Deduction" },
+            ]}
+          />
 
-  <ModalInput
-    label="Component Name"
-    value={form.salary_component}
-    onChange={(e) => set("salary_component", e.target.value)}
-    required
-  />
+          <ModalInput
+            label="Component Name"
+            value={form.salary_component}
+            onChange={(e) => set("salary_component", e.target.value)}
+            required
+          />
 
-  <ModalInput
-    label="Abbreviation"
-    className="uppercase"
-    placeholder="BS..."
-    maxLength={5}
-    value={form.salary_component_abbr}
-    onChange={(e) =>
-      set("salary_component_abbr", e.target.value.toUpperCase())
-    }
-    required
-  />
-</div>
+          <div className="relative">
+            <ModalInput
+              label="Abbreviation"
+              className="uppercase"
+              placeholder="BS..."
+              maxLength={5}
+              value={form.salary_component_abbr}
+              onChange={(e) =>
+                set("salary_component_abbr", e.target.value.toUpperCase())
+              }
+              required
+            />
+
+            {form.salary_component_abbr?.trim() && (
+              <div className="pointer-events-none absolute -bottom-4 right-0 text-[10px] text-sub">
+                Formula variable:
+                <span className="ml-1 font-mono text-primary">
+                  {form.salary_component_abbr}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* ── Row 2: Amount Config + Component Options ── */}
         <div className="grid grid-cols-2 gap-3 items-start">
@@ -544,9 +600,8 @@ export const SalaryComponentModal: React.FC<Props> = ({
                     type="number"
                     value={form.max_benefit_amount}
                     className="no-spinner"
-                    
                     onChange={(e) =>
-                      set("max_benefit_amount", parseFloat(e.target.value) )
+                      set("max_benefit_amount", parseFloat(e.target.value))
                     }
                     placeholder="0"
                   />
@@ -601,32 +656,27 @@ export const SalaryComponentModal: React.FC<Props> = ({
             </button>
           </div>
 
-          {(form.accounts ?? []).length === 0 ? (
-            <p className="rounded-lg border border-dashed border-[var(--border)] py-3 text-center text-xs text-sub">
-              No ledger accounts linked
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {(form.accounts ?? []).map((acc, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <SearchSelect2
-                    label="Ledger Account"
-                    value={acc.account}
-                    placeholder="Search ledger account..."
-                    fetchOptions={fetchAccounts}
-                    onChange={(value) => updateAccount(idx, value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeAccount(idx)}
-                    className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="space-y-2">
+            {(form.accounts ?? []).map((acc, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <SearchSelect2
+                  label="Ledger Account"
+                  value={acc.account}
+                  placeholder="Search ledger account..."
+                  fetchOptions={fetchAccounts}
+                  onChange={(value) => updateAccount(idx, value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => removeAccount(idx)}
+                  className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* ── Description ── */}

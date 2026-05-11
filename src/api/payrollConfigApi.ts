@@ -46,6 +46,22 @@ export interface SalaryComponent {
 
 export interface StructureComponentRow {
   salary_component: string;
+
+  amount?: number;
+  amount_based_on_formula?: 0 | 1;
+
+  formula?: string;
+
+  abbr?: string;
+  salary_component_abbr?: string;
+
+  depends_on_payment_days?: 0 | 1;
+
+  is_tax_applicable?: 0 | 1;
+
+  type?: SalaryComponentType;
+
+  [key: string]: any;
 }
 
 export interface SalaryStructure {
@@ -58,28 +74,28 @@ export interface SalaryStructure {
 }
 
 export interface TaxSlabRow {
-  from_amount: number;
-  to_amount: number;
-  percent_deduction: number;
+  from_amount?: number;
+  to_amount?: number;
+  percent_deduction?: number;
 }
 
 export interface TaxChargeRow {
   description: string;
-  percent: number;
-  min_taxable_income: number;
-  max_taxable_income: number;
+  percent?: number;
+  min_taxable_income?: number;
+  max_taxable_income?: number;
 }
 
 export interface TaxConfig {
   name: string;
    docstatus?: number;
   effective_from: string;
-  standard_tax_exemption_amount: number;
+  standard_tax_exemption_amount?: number;
   allow_tax_exemption: 0 | 1;
   tax_relief_limit: number;
   disabled?: 0 | 1;
   slabs: TaxSlabRow[];
-  other_taxes_and_charges: TaxChargeRow[];
+  other_taxes_and_charges?: TaxChargeRow[];
 }
 
 interface FrappeDetailResponse<T> {

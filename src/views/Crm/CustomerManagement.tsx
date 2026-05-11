@@ -12,6 +12,7 @@ import {
   deleteCustomerById,
   getAllCustomers,
   getCustomerByCustomerCode,
+  updateCustomerStatus,
 } from "../../api/customerApi";
 import type { CustomerSummary, CustomerDetail } from "../../types/customer";
 import Table from "../../components/ui/Table/Table";
@@ -24,7 +25,10 @@ import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import {
+  REFRESH_KEYS,
+  useDataRefreshStore,
+} from "../../store/dataRefreshStore";
 import { Copy } from "lucide-react";
 
 type OutletContextType = {
@@ -37,18 +41,17 @@ interface Props {
 }
 
 const CUSTOMER_MODULE = "Customer";
-const PAYMENT_MODULE  = "Payment Entry";
+const PAYMENT_MODULE = "Payment Entry";
 
 const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
-  const {
-    openCustomerCreate,
-    openCustomerEdit
-  } =
+  const { openCustomerCreate, openCustomerEdit } =
     useOutletContext<OutletContextType>();
-    const { can } = usePermission();  
+  const { can } = usePermission();
 
   const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh,
+  );
 
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -64,7 +67,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
 
-
   const fetchCustomers = async () => {
     try {
       setCustLoading(true);
@@ -72,13 +74,12 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       const response = await getAllCustomers(
         page,
         pageSize,
-        taxCategory || undefined
+        taxCategory || undefined,
       );
 
       setCustomers(response?.data || []);
       setTotalPages(response?.pagination?.total_pages || 1);
       setTotalItems(response?.pagination?.total || 0);
-
     } catch (error) {
       console.error("Error loading customers:", error);
       showApiError(error);
@@ -130,7 +131,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         onSuccess: async () => {
           await handleCustomerSaved();
         },
-      }
+      },
     );
   };
 
@@ -200,7 +201,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       setSelectedCustomer(fullCustomer);
       setViewMode("detail");
     } catch (error) {
-
       showApiError(error);
     } finally {
       setCustLoading(false);
@@ -212,6 +212,37 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     setSelectedCustomer(null);
   };
 
+  const handleDisableCustomer = async (
+    customerId: string,
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+
+    const result = await fireManagedSwal({
+      title: "Disable Customer?",
+      text: "Customer will be marked as inactive.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Disable",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      showLoading("Disabling Customer...");
+
+      await updateCustomerStatus(customerId, "inactive");
+
+      closeSwal();
+
+      showSuccess("Customer disabled successfully.");
+
+      triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
   const columns: Column<CustomerSummary>[] = [
     {
       key: "id",
@@ -281,11 +312,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Currency",
       align: "center",
       render: (customer) => (
-          <div className="py-1.5">
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main whitespace-nowrap block text-center">
-          {customer.currency}
-        </code>
-          </div>
+        <div className="py-1.5">
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main whitespace-nowrap block text-center">
+            {customer.currency}
+          </code>
+        </div>
       ),
       tooltip: (customer) => customer.currency,
     },
@@ -296,23 +327,23 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       render: (customer) => (
         <div className="py-1.5">
           <span
-            className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
-              ? "bg-green-100 text-green-700"
-              : "bg-gray-100 text-gray-600"
-              }`}
+            className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
+              customer.status === "Active"
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-100 text-gray-600"
+            }`}
           >
-          {customer.status}
-        </span>
+            {customer.status}
+          </span>
         </div>
       ),
     },
- {
+    {
       key: "actions",
       header: "Actions",
       align: "center",
       render: (customer) => (
         <ActionGroup>
-
           {/* View — always shown if they can read */}
           <PermissionGate module={CUSTOMER_MODULE} action="read">
             <ActionButton
@@ -334,17 +365,23 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
           {/* Delete + Receive Payment — inside ActionMenu */}
           <ActionMenu
-            // Delete only if user has delete permission
             {...(can(CUSTOMER_MODULE, "delete")
               ? { onDelete: (e) => handleDelete(customer.id, e as any) }
               : {})}
+            onDisable={
+              customer.status !== "Inactive"
+                ? (e) => handleDisableCustomer(customer.id, e as any)
+                : undefined
+            }
             customActions={[
               // Receive Payment only if user has Payment Entry create
               ...(can(PAYMENT_MODULE, "create")
-                ? [{
-                    label: "Receive Payment",
-                    onClick: () => handleMakePayment(customer),
-                  }]
+                ? [
+                    {
+                      label: "Receive Payment",
+                      onClick: () => handleMakePayment(customer),
+                    },
+                  ]
                 : []),
             ]}
           />
@@ -366,7 +403,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
           pageSizeOptions={[10, 25, 50, 100]}
           searchValue={searchTerm}
           onSearch={setSearchTerm}
-          enableAdd={can(CUSTOMER_MODULE, "create")} 
+          enableAdd={can(CUSTOMER_MODULE, "create")}
           addLabel="Add Customer"
           onAdd={handleAddCustomer}
           enableColumnSelector
@@ -402,8 +439,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
           onEdit={handleEditCustomer}
         />
       ) : null}
-
-
     </div>
   );
 };

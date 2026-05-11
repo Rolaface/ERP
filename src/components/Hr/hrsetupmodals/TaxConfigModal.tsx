@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Percent, Plus, Save, Trash2, X } from "lucide-react";
+import { Percent, Save, Trash2, X } from "lucide-react";
 
 import { MinimizableModal } from "../../common/MinimizableModal";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import {
   ModalInput,
-  ModalSelect,
   YesNoCheckbox,
 } from "../../../components/ui/modal/modalComponent";
 import {
@@ -30,32 +29,92 @@ interface Props {
 }
 const ITEMS_PER_PAGE = 5;
 
-const DEFAULT_SLABS: TaxSlabRow[] = [
-  { from_amount: 0, to_amount: 0, percent_deduction: 0 },
-  { from_amount: 0, to_amount: 0, percent_deduction: 0 },
-  { from_amount: 0, to_amount: 0, percent_deduction: 0 },
-  { from_amount: 0, to_amount: 0, percent_deduction: 0 },
+type NumericDraft = number | string;
+
+type TaxSlabDraftRow = Omit<
+  TaxSlabRow,
+  "from_amount" | "to_amount" | "percent_deduction"
+> & {
+  from_amount: NumericDraft;
+  to_amount: NumericDraft;
+  percent_deduction: NumericDraft;
+};
+
+type TaxChargeDraftRow = Omit<
+  TaxChargeRow,
+  "percent" | "min_taxable_income" | "max_taxable_income"
+> & {
+  percent: NumericDraft;
+  min_taxable_income: NumericDraft;
+  max_taxable_income: NumericDraft;
+};
+
+type TaxConfigDraft = Omit<
+  TaxConfig,
+  | "standard_tax_exemption_amount"
+  | "tax_relief_limit"
+  | "slabs"
+  | "other_taxes_and_charges"
+> & {
+  standard_tax_exemption_amount: NumericDraft;
+  tax_relief_limit: NumericDraft;
+  slabs: TaxSlabDraftRow[];
+  other_taxes_and_charges: TaxChargeDraftRow[];
+};
+
+const normalizeNumericDraft = (value: unknown): NumericDraft =>
+  value === null || value === undefined ? "" : (value as NumericDraft);
+
+const numberForPayload = (value: NumericDraft): number =>
+  value === "" ? 0 : Number(value) || 0;
+
+const makeEmptySlab = (): TaxSlabDraftRow => ({
+  from_amount: "",
+  to_amount: "",
+  percent_deduction: "",
+});
+
+const makeEmptyCharge = (): TaxChargeDraftRow => ({
+  description: "",
+  percent: "",
+  min_taxable_income: "",
+  max_taxable_income: "",
+});
+
+const DEFAULT_SLABS: TaxSlabDraftRow[] = [
+  makeEmptySlab(),
+  makeEmptySlab(),
+  makeEmptySlab(),
+  makeEmptySlab(),
 ];
 
-const DEFAULT_CHARGES: TaxChargeRow[] = [
-  {
-    description: "",
-    percent: 0,
-    min_taxable_income: 0,
-    max_taxable_income: 0,
-  },
-];
+const DEFAULT_CHARGES: TaxChargeDraftRow[] = [makeEmptyCharge()];
 
-const EMPTY: TaxConfig = {
+const EMPTY: TaxConfigDraft = {
   name: "",
   effective_from: "",
-  standard_tax_exemption_amount: 0,
+  standard_tax_exemption_amount: "",
   allow_tax_exemption: 0,
-  tax_relief_limit: 0,
+  tax_relief_limit: "",
   disabled: 0,
   slabs: DEFAULT_SLABS,
   other_taxes_and_charges: DEFAULT_CHARGES,
 };
+
+const toSlabDraft = (row: TaxSlabRow): TaxSlabDraftRow => ({
+  ...row,
+  from_amount: normalizeNumericDraft(row.from_amount),
+  to_amount: normalizeNumericDraft(row.to_amount),
+  percent_deduction: normalizeNumericDraft(row.percent_deduction),
+});
+
+const toChargeDraft = (row: TaxChargeRow): TaxChargeDraftRow => ({
+  ...row,
+  description: row.description ?? "",
+  percent: normalizeNumericDraft(row.percent),
+  min_taxable_income: normalizeNumericDraft(row.min_taxable_income),
+  max_taxable_income: normalizeNumericDraft(row.max_taxable_income),
+});
 
 export const TaxConfigModal: React.FC<Props> = ({
   modalId,
@@ -65,7 +124,7 @@ export const TaxConfigModal: React.FC<Props> = ({
   onSuccess,
 }) => {
   const isEdit = Boolean(initialData?.name);
-  const [form, setForm] = useState<TaxConfig>(EMPTY);
+  const [form, setForm] = useState<TaxConfigDraft>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [slabPage, setSlabPage] = useState(0);
   const [chargePage, setChargePage] = useState(0);
@@ -78,30 +137,39 @@ export const TaxConfigModal: React.FC<Props> = ({
               name: initialData.name ?? "",
               effective_from: initialData.effective_from ?? "",
               standard_tax_exemption_amount:
-                initialData.standard_tax_exemption_amount ?? 0,
+                normalizeNumericDraft(
+                  initialData.standard_tax_exemption_amount,
+                ),
               allow_tax_exemption: initialData.allow_tax_exemption ?? 0,
-              tax_relief_limit: initialData.tax_relief_limit ?? 0,
+              tax_relief_limit: normalizeNumericDraft(
+                initialData.tax_relief_limit,
+              ),
               disabled: initialData.disabled ?? 0,
               slabs: initialData.slabs?.length
-                ? [...initialData.slabs]
-                : DEFAULT_SLABS,
+                ? initialData.slabs.map(toSlabDraft)
+                : DEFAULT_SLABS.map(() => makeEmptySlab()),
               other_taxes_and_charges: initialData.other_taxes_and_charges
                 ?.length
-                ? [...initialData.other_taxes_and_charges]
-                : DEFAULT_CHARGES,
+                ? initialData.other_taxes_and_charges.map(toChargeDraft)
+                : DEFAULT_CHARGES.map(() => makeEmptyCharge()),
             }
           : {
               ...EMPTY,
-              slabs: DEFAULT_SLABS.map((row) => ({ ...row })),
-              other_taxes_and_charges: DEFAULT_CHARGES.map((row) => ({
-                ...row,
-              })),
+              slabs: DEFAULT_SLABS.map(() => makeEmptySlab()),
+              other_taxes_and_charges: DEFAULT_CHARGES.map(() =>
+                makeEmptyCharge(),
+              ),
             },
       );
+      setSlabPage(0);
+      setChargePage(0);
     }
   }, [isOpen, initialData]);
 
-  const set = <K extends keyof TaxConfig>(key: K, value: TaxConfig[K]) =>
+  const set = <K extends keyof TaxConfigDraft>(
+    key: K,
+    value: TaxConfigDraft[K],
+  ) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const addSlab = () => {
@@ -109,23 +177,16 @@ export const TaxConfigModal: React.FC<Props> = ({
 
     setForm((prev) => ({
       ...prev,
-      slabs: [
-        ...(prev.slabs ?? []),
-        {
-          from_amount: 0,
-          to_amount: 0,
-          percent_deduction: 0,
-        },
-      ],
+      slabs: [...(prev.slabs ?? []), makeEmptySlab()],
     }));
 
     setSlabPage(Math.max(0, Math.ceil(newTotal / ITEMS_PER_PAGE) - 1));
   };
 
-  const updateSlab = <K extends keyof TaxSlabRow>(
+  const updateSlab = <K extends keyof TaxSlabDraftRow>(
     idx: number,
     key: K,
-    value: TaxSlabRow[K],
+    value: TaxSlabDraftRow[K],
   ) =>
     setForm((prev) => {
       const slabs = [...(prev.slabs ?? [])];
@@ -157,10 +218,18 @@ export const TaxConfigModal: React.FC<Props> = ({
 
   const safeChargePage = Math.min(chargePage, totalChargePages - 1);
 
-  const paginatedCharges = (form.other_taxes_and_charges || []).slice(
-    safeChargePage * ITEMS_PER_PAGE,
-    (safeChargePage + 1) * ITEMS_PER_PAGE,
-  );
+  useEffect(() => {
+    if (slabPage !== safeSlabPage) {
+      setSlabPage(safeSlabPage);
+    }
+  }, [slabPage, safeSlabPage]);
+
+  useEffect(() => {
+    if (chargePage !== safeChargePage) {
+      setChargePage(safeChargePage);
+    }
+  }, [chargePage, safeChargePage]);
+
   const handleSave = async () => {
     if (!form.name.trim()) {
       showValidationError("Tax name is required");
@@ -179,17 +248,17 @@ export const TaxConfigModal: React.FC<Props> = ({
       setSaving(true);
 
       const slabs = (form.slabs ?? []).map((row) => ({
-        from_amount: Number(row.from_amount) || 0,
-        to_amount: Number(row.to_amount) || 0,
-        percent_deduction: Number(row.percent_deduction) || 0,
+        from_amount: numberForPayload(row.from_amount),
+        to_amount: numberForPayload(row.to_amount),
+        percent_deduction: numberForPayload(row.percent_deduction),
       }));
 
       const other_taxes_and_charges = (form.other_taxes_and_charges ?? []).map(
         (row) => ({
           description: row.description,
-          percent: Number(row.percent) || 0,
-          min_taxable_income: Number(row.min_taxable_income) || 0,
-          max_taxable_income: Number(row.max_taxable_income) || 0,
+          percent: numberForPayload(row.percent),
+          min_taxable_income: numberForPayload(row.min_taxable_income),
+          max_taxable_income: numberForPayload(row.max_taxable_income),
         }),
       );
 
@@ -197,10 +266,10 @@ export const TaxConfigModal: React.FC<Props> = ({
         // UPDATE — name excluded, matches PUT spec
         await updateTaxConfig(initialData.name, {
           standard_tax_exemption_amount:
-            Number(form.standard_tax_exemption_amount) || 0,
-              docstatus: 1,
+            numberForPayload(form.standard_tax_exemption_amount),
+          docstatus: 1,
           allow_tax_exemption: form.allow_tax_exemption ? 1 : 0,
-          tax_relief_limit: Number(form.tax_relief_limit) || 0,
+          tax_relief_limit: numberForPayload(form.tax_relief_limit),
           disabled: form.disabled ? 1 : 0,
           effective_from: form.effective_from,
           slabs,
@@ -212,14 +281,14 @@ export const TaxConfigModal: React.FC<Props> = ({
         await createTaxConfig({
           name: form.name,
           effective_from: form.effective_from,
-            docstatus: 1,
+          docstatus: 1,
           standard_tax_exemption_amount:
-            Number(form.standard_tax_exemption_amount) || 0,
+            numberForPayload(form.standard_tax_exemption_amount),
           allow_tax_exemption: form.allow_tax_exemption ? 1 : 0,
-          tax_relief_limit: Number(form.tax_relief_limit) || 0,
+          tax_relief_limit: numberForPayload(form.tax_relief_limit),
           disabled: form.disabled ? 1 : 0,
           slabs,
-         
+
           other_taxes_and_charges,
         });
         showSuccess("Tax configuration created");
@@ -233,6 +302,40 @@ export const TaxConfigModal: React.FC<Props> = ({
       setSaving(false);
     }
   };
+
+  const updateCharge = <K extends keyof TaxChargeDraftRow>(
+    idx: number,
+    key: K,
+    value: TaxChargeDraftRow[K],
+  ) =>
+    setForm((prev) => {
+      const rows = [...(prev.other_taxes_and_charges ?? [])];
+      rows[idx] = { ...rows[idx], [key]: value };
+      return { ...prev, other_taxes_and_charges: rows };
+    });
+
+  const addCharge = () => {
+    const newTotal = totalCharges + 1;
+
+    setForm((prev) => ({
+      ...prev,
+      other_taxes_and_charges: [
+        ...(prev.other_taxes_and_charges ?? []),
+        makeEmptyCharge(),
+      ],
+    }));
+
+    setChargePage(Math.max(0, Math.ceil(newTotal / ITEMS_PER_PAGE) - 1));
+  };
+
+  const removeCharge = (idx: number) =>
+    setForm((prev) => ({
+      ...prev,
+      other_taxes_and_charges: (prev.other_taxes_and_charges ?? []).filter(
+        (_, i) => i !== idx,
+      ),
+    }));
+
   const footer = (
     <div className="flex w-full items-center justify-end gap-3">
       <button
@@ -284,7 +387,7 @@ export const TaxConfigModal: React.FC<Props> = ({
     label="Effective From"
     name="effective_from"
     value={form.effective_from}
-    onChange={(name, value) => set(name as keyof TaxConfig, value)}
+    onChange={(_, value) => set("effective_from", value)}
     required
   />
 </div>
@@ -293,14 +396,11 @@ export const TaxConfigModal: React.FC<Props> = ({
             <ModalInput
               label="Exemption Amount"
               type="number"
-              value={form.standard_tax_exemption_amount || ""}
+              value={form.standard_tax_exemption_amount}
               placeholder="0"
               className="no-spinner"
               onChange={(e) =>
-                set(
-                  "standard_tax_exemption_amount",
-                  Number(e.target.value) || 0,
-                )
+                set("standard_tax_exemption_amount", e.target.value)
               }
             />
           </div>
@@ -309,12 +409,10 @@ export const TaxConfigModal: React.FC<Props> = ({
             <ModalInput
               label="Tax Relief Limit"
               type="number"
-              value={form.tax_relief_limit || ""}
+              value={form.tax_relief_limit}
               placeholder="0"
               className="no-spinner"
-              onChange={(e) =>
-                set("tax_relief_limit", Number(e.target.value) || 0)
-              }
+              onChange={(e) => set("tax_relief_limit", e.target.value)}
             />
           </div>
 
@@ -377,14 +475,10 @@ export const TaxConfigModal: React.FC<Props> = ({
                     label=""
                     type="number"
                     className="no-spinner"
-                    value={row.from_amount || ""}
+                    value={row.from_amount}
                     placeholder="0"
                     onChange={(e) =>
-                      updateSlab(
-                        idx,
-                        "from_amount",
-                        Number(e.target.value) || 0,
-                      )
+                      updateSlab(idx, "from_amount", e.target.value)
                     }
                   />
 
@@ -392,10 +486,10 @@ export const TaxConfigModal: React.FC<Props> = ({
                     label=""
                     type="number"
                     className="no-spinner"
-                    value={row.to_amount || ""}
+                    value={row.to_amount}
                     placeholder="0"
                     onChange={(e) =>
-                      updateSlab(idx, "to_amount", Number(e.target.value) || 0)
+                      updateSlab(idx, "to_amount", e.target.value)
                     }
                   />
 
@@ -403,14 +497,10 @@ export const TaxConfigModal: React.FC<Props> = ({
                     label=""
                     type="number"
                     className="no-spinner"
-                    value={row.percent_deduction || ""}
+                    value={row.percent_deduction}
                     placeholder="0"
                     onChange={(e) =>
-                      updateSlab(
-                        idx,
-                        "percent_deduction",
-                        Number(e.target.value) || 0,
-                      )
+                      updateSlab(idx, "percent_deduction", e.target.value)
                     }
                   />
 
@@ -525,14 +615,7 @@ export const TaxConfigModal: React.FC<Props> = ({
                     value={row.description}
                     placeholder="e.g. NHIMA"
                     onChange={(e) =>
-                      setForm((prev) => {
-                        const rows = [...(prev.other_taxes_and_charges ?? [])];
-                        rows[idx] = {
-                          ...rows[idx],
-                          description: e.target.value,
-                        };
-                        return { ...prev, other_taxes_and_charges: rows };
-                      })
+                      updateCharge(idx, "description", e.target.value)
                     }
                   />
 
@@ -540,17 +623,10 @@ export const TaxConfigModal: React.FC<Props> = ({
                     label=""
                     type="number"
                     className="no-spinner"
-                    value={row.percent || ""}
+                    value={row.percent}
                     placeholder="0"
                     onChange={(e) =>
-                      setForm((prev) => {
-                        const rows = [...(prev.other_taxes_and_charges ?? [])];
-                        rows[idx] = {
-                          ...rows[idx],
-                          percent: Number(e.target.value) || 0,
-                        };
-                        return { ...prev, other_taxes_and_charges: rows };
-                      })
+                      updateCharge(idx, "percent", e.target.value)
                     }
                   />
 
@@ -558,17 +634,10 @@ export const TaxConfigModal: React.FC<Props> = ({
                     label=""
                     type="number"
                     className="no-spinner"
-                    value={row.min_taxable_income || ""}
+                    value={row.min_taxable_income}
                     placeholder="0"
                     onChange={(e) =>
-                      setForm((prev) => {
-                        const rows = [...(prev.other_taxes_and_charges ?? [])];
-                        rows[idx] = {
-                          ...rows[idx],
-                          min_taxable_income: Number(e.target.value) || 0,
-                        };
-                        return { ...prev, other_taxes_and_charges: rows };
-                      })
+                      updateCharge(idx, "min_taxable_income", e.target.value)
                     }
                   />
 
@@ -576,30 +645,16 @@ export const TaxConfigModal: React.FC<Props> = ({
                     label=""
                     type="number"
                     className="no-spinner"
-                    value={row.max_taxable_income || ""}
+                    value={row.max_taxable_income}
                     placeholder="0"
                     onChange={(e) =>
-                      setForm((prev) => {
-                        const rows = [...(prev.other_taxes_and_charges ?? [])];
-                        rows[idx] = {
-                          ...rows[idx],
-                          max_taxable_income: Number(e.target.value) || 0,
-                        };
-                        return { ...prev, other_taxes_and_charges: rows };
-                      })
+                      updateCharge(idx, "max_taxable_income", e.target.value)
                     }
                   />
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        other_taxes_and_charges: (
-                          prev.other_taxes_and_charges ?? []
-                        ).filter((_, i) => i !== idx),
-                      }))
-                    }
+                    onClick={() => removeCharge(idx)}
                     className="flex items-center justify-center rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -613,20 +668,7 @@ export const TaxConfigModal: React.FC<Props> = ({
   <div className="flex items-center gap-3">
     <button
       type="button"
-      onClick={() =>
-        setForm((prev) => ({
-          ...prev,
-          other_taxes_and_charges: [
-            ...(prev.other_taxes_and_charges ?? []),
-            {
-              description: "",
-              percent: 0,
-              min_taxable_income: 0,
-              max_taxable_income: 0,
-            },
-          ],
-        }))
-      }
+      onClick={addCharge}
       className="btn btn-outline rounded-lg px-4 py-1.5 text-[11px] font-semibold"
     >
       + Add Row
