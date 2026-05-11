@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -185,6 +185,7 @@ export const API = {
     getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
     group: `${ERP_BASE}/api/method/custom_api.api.search.get_customers_group`,
     grouptree: `${ERP_BASE}/api/method/custom_api.api.customer_group_item_restriction.get_customer_group_tree`,
+    updateStatus:`${ERP_BASE}/api/method/custom_api.api.selling.customer.api.update_customer_status`,
   },
 
   /* =========================
@@ -197,6 +198,7 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.create_employee`,
     update: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee`,
     delete: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.delete_employee`,
+    updateStatus:`${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee_status`,
 
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,

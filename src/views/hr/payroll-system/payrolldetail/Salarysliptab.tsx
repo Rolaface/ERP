@@ -461,6 +461,7 @@ export const SalarySlipTab: React.FC<Props> = ({ employee }) => {
   const totalReal       = earningsWithAmt.reduce((s, e) => s + Number(e.amount), 0);
 
   interface PieEntry {
+      [key: string]: string | number;
     name: string;
     value: number;   // possibly inflated for rendering
     realValue: number;
