@@ -736,7 +736,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                 // Status transitions — needs write
                 ...(can(SALES_MODULE, "write")
                   ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
-                    label: `${status}`,
+                    label: status === "Approved" ? "Approve" : status,
                     danger: status === "Paid",
                     onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
                   }))

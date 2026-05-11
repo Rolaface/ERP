@@ -132,7 +132,7 @@ export function SalaryStructureSetup() {
         render: (row) => {
           const labels: Record<number, string> = {
             0: "Draft",
-            1: "Submitted",
+            1: "Approved",
             2: "Cancelled",
           };
           const colors: Record<number, string> = {

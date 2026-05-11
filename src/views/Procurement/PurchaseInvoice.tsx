@@ -633,7 +633,8 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
               // Status transitions — needs write
               ...(can(PI_MODULE, "write")
                 ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map((status) => ({
-                  label: status === "Submitted" ? "Approved" : status,
+                  label: status === "Submitted" ? "Approve" : status === "Cancelled" ? "Cancel" : status,
+                  
                   danger: status === "Cancelled" || status === "Debit Note Issued",
                   onClick: () => handleStatusChange(o.pId, status),
                 }))

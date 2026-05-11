@@ -92,21 +92,21 @@ const CreditNotesTable: React.FC = () => {
   const handleSubmit = async (noteNo: string) => {
     const result = await fireManagedSwal({
       icon: "question",
-      title: "Submit Credit Note?",
-      text: `Submit ${noteNo}? This action cannot be undone.`,
+      title: "Approve Credit Note?",
+      text: `Approve ${noteNo}? This action cannot be undone.`,
       showCancelButton: true,
       confirmButtonColor: "#22c55e",
       cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, submit",
+      confirmButtonText: "Yes, approve",
       reverseButtons: true,
     });
     if (!result.isConfirmed) return;
 
     try {
-      showLoading("Submitting credit note...");
+      showLoading("Approving credit note...");
       await submitCreditNote(noteNo);
       closeSwal();
-      showSuccess(`Credit note ${noteNo} submitted successfully`);
+      showSuccess(`Credit note ${noteNo} approved successfully`);
       fetchCreditNotes();
     } catch (error) {
       closeSwal();
@@ -391,7 +391,7 @@ const CreditNotesTable: React.FC = () => {
             customActions={[
               // Submit — needs write + Draft
               ...(r.status === "Draft" && can(CREDIT_NOTE_MODULE, "write")
-                ? [{ label: "Submit", onClick: () => handleSubmit(r.noteNo) }]
+                ? [{ label: "Approve", onClick: () => handleSubmit(r.noteNo) }]
                 : []),
               // Cancel — needs write
               ...(!["Draft", "Cancelled"].includes(r.status) && can(CREDIT_NOTE_MODULE, "write")

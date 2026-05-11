@@ -617,7 +617,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
               // Status transitions — needs write
               ...(can(PO_MODULE, "write")
                 ? (STATUS_TRANSITIONS[o.status as POStatus] ?? []).map((status) => ({
-                  label: `${status}`,
+                  label: status === "Approved" ? "Approve" : status,  
                   danger: status === "Completed",
                   onClick: () => handleStatusChange(o.id, status),
                 }))
