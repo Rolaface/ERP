@@ -17,6 +17,7 @@ import AccountSelect from "../selects/AccountSelect";
 
 // IMPORT YOUR STORE
 import { useModalStore } from "../../store/modalStore";
+import Tooltip from "../Tooltip";
 
 interface JournalEntryModalProps {
   isOpen: boolean;
@@ -147,53 +148,128 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
       customWidth="80vw"
       height="80vh"
     >
-      <div className="flex flex-col gap-6 py-3 px-1">
-        {/* TOP SECTION */}
-        <div className="flex flex-row items-start gap-6 w-full">
-          <div className="flex flex-col gap-1 w-1/4 min-w-[150px]">
-            <ModalInput
-              label="Posting Date"
-              name="postingDate"
-              type="date"
-              value={form.postingDate}
-              onChange={handleChange}
-              required
-              error={errors.postingDate}
-              disabled={actualIsReadOnly}
-            />
-          </div>
+<div className="flex flex-col gap-6 py-3 px-1">
+  {/* TOP SECTION */}
+  <div className="grid grid-cols-4 gap-6 w-full items-start">
+    
+    {/* Posting Date: Always Row 1, Column 1 */}
+    <div className="flex flex-col gap-1 w-full col-start-1 row-start-1">
+      <ModalInput
+        label="Posting Date"
+        name="postingDate"
+        type="date"
+        value={form.postingDate}
+        onChange={handleChange}
+        required
+        error={errors.postingDate}
+        disabled={actualIsReadOnly}
+      />
+    </div>
 
-          <div className="flex flex-col gap-1 flex-1">
-            <ModalInput
-              label="User Remarks"
-              name="remarks"
-              value={form.remarks}
-              onChange={handleChange}
-              placeholder="Enter remarks for this journal entry..."
-              error={errors.remarks}
-              disabled={actualIsReadOnly}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1 justify-center mt-7 min-w-max">
-            <label
-              className={`flex items-center gap-2 w-fit ${actualIsReadOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
-            >
-              <input
-                type="checkbox"
-                name="isOpening"
-                checked={form.isOpening}
-                onChange={handleChange}
-                className="w-4 h-4 accent-primary"
-                disabled={actualIsReadOnly}
-              />
-              <span className="text-sm font-medium text-main">
-                Is Opening Entry
-              </span>
-            </label>
-          </div>
+    {/* Type: Always Row 1, Column 2 */}
+    <div className="flex flex-col gap-1 w-full col-start-2 row-start-1">
+      {/* <ModalSelect
+        label="Type"
+        name="voucher_type"
+        value={form.voucher_type || "Company"}
+        onChange={handleChange}
+        required
+        error={errors.voucher_type}
+        placeholder="Select Type"
+        disabled={actualIsReadOnly}
+      >
+        <option value="Individual">Bank Entry</option>
+        <option value="Company">Journal Entry</option>
+      </ModalSelect> */}
+      <ModalSelect
+  label="Type"
+  name="voucher_type"
+  value={form.voucher_type || "Journal Entry"} 
+  onChange={handleChange}
+  required
+  error={errors.voucher_type}
+  placeholder="Select Type"
+  disabled={actualIsReadOnly}
+>
+  <option value="Bank Entry">Bank Entry</option>      
+  <option value="Journal Entry">Journal Entry</option>  
+</ModalSelect>
+    </div>
+    {form.voucher_type === "Bank Entry" && (
+      <>
+        <div className="flex flex-col gap-1 w-full col-start-3 row-start-1">
+          <ModalInput
+            label="Reference Number"
+            name="cheque_no"
+            value={form.cheque_no}
+            onChange={handleChange}
+            placeholder="Enter reference number..."
+            error={errors.cheque_no}
+            disabled={actualIsReadOnly}
+          />
         </div>
+        
+        <div className="flex flex-col gap-1 w-full col-start-4 row-start-1">
+          <ModalInput
+            label="Reference Date"
+            name="cheque_date"
+            type="date"
+            value={form.cheque_date}
+            onChange={handleChange}
+            placeholder="Enter reference date..."
+            error={errors.cheque_date}
+            disabled={actualIsReadOnly}
+          />
+        </div>
+      </>
+    )}
 
+    <div 
+      className={`flex flex-col gap-1 w-full ${
+        form.voucher_type === "Journal Entry" 
+          ? "col-start-3 row-start-1 col-span-1" 
+          : "col-start-1 row-start-2 col-span-2"
+      }`}
+    >
+      <ModalInput
+        label="User Remarks"
+        name="remarks"
+        value={form.remarks}
+        onChange={handleChange}
+        placeholder="Enter remarks for this journal entry..."
+        error={errors.remarks}
+        disabled={actualIsReadOnly}
+      />
+    </div>
+
+    <div 
+      className={`flex flex-col gap-1 justify-center min-w-max mt-7 ${
+        form.voucher_type === "Journal Entry" 
+          ? "col-start-4 row-start-1" 
+          : "col-start-3 row-start-2"
+      }`}
+    >
+      <label
+        className={`flex items-center gap-2 w-fit ${
+          actualIsReadOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"
+        }`}
+      >
+        <input
+          type="checkbox"
+          name="isOpening"
+          checked={form.isOpening}
+          onChange={handleChange}
+          className="w-4 h-4 accent-primary"
+          disabled={actualIsReadOnly}
+        />
+        <span className="text-sm font-medium text-main">
+          Is Opening Entry
+        </span>
+      </label>
+    </div>
+
+  </div>
+{/* </div> */}
         {/* MIDDLE SECTION */}
         <div className="flex flex-col gap-3 mt-2">
           <div className="flex items-center justify-between">

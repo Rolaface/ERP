@@ -12,8 +12,11 @@ import { getAllCurrencyExchanges } from "../api/currencyExchangeApi";
 
 export interface JournalEntryForm {
   postingDate: string;
+  voucher_type: string;
   isOpening: boolean;
   remarks: string;
+  cheque_no: string;
+  cheque_date: string;
 }
 
 export interface JournalEntryLine {
@@ -25,6 +28,7 @@ export interface JournalEntryLine {
   partyType: string;
   party: string;
   exchange_rate: string;
+  voucher_type: string;
   remark: string;
 }
 
@@ -33,6 +37,9 @@ export type JournalEntryErrors = Partial<Record<keyof JournalEntryForm, string>>
 const emptyForm = (): JournalEntryForm => ({
   postingDate: new Date().toISOString().split("T")[0],
   isOpening: false,
+  voucher_type: "Journal Entry",
+  cheque_no: "",
+  cheque_date: "",
   remarks: "",
 });
 
@@ -43,6 +50,7 @@ const emptyEntry = (): JournalEntryLine => ({
   amount: "",
   partyType: "",
   party: "",
+  voucher_type: "",
   exchange_rate: "1",
   remark: "",
 });
@@ -167,6 +175,9 @@ useEffect(() => {
         setForm({
           postingDate: doc.postingDate || doc.posting_date,
           isOpening: doc.isOpening || doc.is_opening === "Yes",
+          voucher_type: doc.voucher_type || doc.voucherType || "Journal Entry",
+          cheque_date: doc.cheque_date || doc.chequeDate || "",
+          cheque_no: doc.cheque_no || doc.chequeNo || "",
           remarks: doc.remark || doc.user_remark || "",
         });
 
@@ -184,6 +195,7 @@ useEffect(() => {
                 entryType: isDebit ? "Dr" : "Cr",
                 amount: amountVal.toString(),
                 partyType: acc.party_type || acc.partyType || "",
+                voucher_type: acc.voucher_type || acc.voucherType || "",
                 party: acc.party || "",
                 exchange_rate: (acc.exchange_rate || acc.exchangeRate || 1).toString(),
                 remark: acc.user_remark || acc.remark || "",
@@ -424,6 +436,12 @@ const handleEntryChange = (
       showApiError("A journal entry requires at least two valid rows.");
       return false;
     }
+    if(form.voucher_type == "Bank Entry"){
+      if(form.cheque_no.length === 0 || form.cheque_date.length === 0){
+        showApiError("Reference Number and Reference Date");
+        return false;
+      }
+    }
 
     // if (totals.debit === 0 && totals.credit === 0) {
     //   showApiError("Total Debit and Credit cannot be zero.");
@@ -448,6 +466,9 @@ const handleEntryChange = (
         posting_date: form.postingDate,
         is_opening: form.isOpening ? "Yes" : "No",
         user_remark: form.remarks.trim(),
+        voucher_type: form.voucher_type || undefined,
+        cheque_no: form.cheque_no || undefined,
+        cheque_date: form.cheque_date || undefined,
         multi_currency: 1, 
         accounts: validEntries.map((entry) => {
           const val = Math.abs(parseFloat(entry.amount)) || 0;
@@ -461,6 +482,7 @@ const handleEntryChange = (
             party_type: entry.partyType || undefined,
             party: entry.party || undefined,
             user_remark: entry.remark || undefined,
+            
           };
         }),
       };
