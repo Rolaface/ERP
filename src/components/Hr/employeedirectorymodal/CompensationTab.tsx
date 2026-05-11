@@ -4,9 +4,9 @@ import { getAllSalaryStructures } from "../../../api/utils/frappeUtilsApi";
 import { getCurrencyList } from "../../../api/lookupApi";
 import {
   getSalaryStructure,
-  getSalaryComponent,
+ 
   type SalaryStructure,
-  type SalaryComponent as ApiSalaryComponent,
+  
 } from "../../../api/payrollConfigApi";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import { getAllTaxConfigs } from "../../../api/payrollConfigApi";
@@ -221,29 +221,25 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
       try {
         const structure: SalaryStructure = await getSalaryStructure(value);
 
-        const enrichRows = async (
-          rows: Array<{ salary_component: string }>,
-        ): Promise<ApiSalaryComponent[]> => {
-          const results = await Promise.allSettled(
-            rows.map((row) => getSalaryComponent(row.salary_component)),
-          );
-          return results
-            .filter(
-              (r): r is PromiseFulfilledResult<ApiSalaryComponent> =>
-                r.status === "fulfilled",
-            )
-            .map((r) => r.value);
-        };
+      
+        
+const defs: SalaryComponentDef[] = [
+  ...(structure.earnings ?? []).map((row) => ({
+    ...row,
+    amount: row.amount ?? 0,
+    type: "Earning" as const,
+    salary_component_abbr:
+      row.salary_component_abbr ?? row.abbr ?? "",
+  })),
 
-        const [earnings, deductions] = await Promise.all([
-          enrichRows(structure.earnings ?? []),
-          enrichRows(structure.deductions ?? []),
-        ]);
-
-        const defs: SalaryComponentDef[] = [
-          ...earnings.map((c) => ({ ...c, type: "Earning" as const })),
-          ...deductions.map((c) => ({ ...c, type: "Deduction" as const })),
-        ] as SalaryComponentDef[];
+  ...(structure.deductions ?? []).map((row) => ({
+    ...row,
+    amount: row.amount ?? 0,
+    type: "Deduction" as const,
+    salary_component_abbr:
+      row.salary_component_abbr ?? row.abbr ?? "",
+  })),
+];
 
         const initOverrides: Record<string, number> = {};
         for (const def of defs) {
@@ -254,6 +250,22 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
 
         setComponentDefs(defs);
         setOverrides(initOverrides);
+        const basicSalary = defs.find(
+  (d) =>
+    toKey(d.salary_component) === "basic_salary" ||
+    d.salary_component_abbr?.toLowerCase() === "bs"
+);
+
+if (
+  basicSalary &&
+  basicSalary.amount_based_on_formula !== 1 &&
+  basicSalary.amount
+) {
+  handleInputChange(
+    "basicSalary",
+    String(basicSalary.amount)
+  );
+}
       } catch (err) {
         console.error("Failed to load salary structure:", err);
       } finally {

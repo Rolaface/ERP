@@ -308,3 +308,43 @@ export async function getSalarySlipDetail(name: string): Promise<SalarySlip> {
 
   return resp.data?.data;
 }
+
+
+export async function getSalarySlipPdf(
+  name: string,
+  doctype: string = "Salary Slip",
+): Promise<Blob> {
+  const resp: AxiosResponse = await api.get(
+    `${API.payroll.payrollentry.salaryslip_pdf}`,
+    {
+      params: {
+        name,
+        doctype,
+      },
+      responseType: "blob",
+    },
+  );
+
+  return resp.data;
+}
+
+export function viewSalarySlipPdf(blob: Blob): void {
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
+
+  // Revoke after short delay to free memory
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+export function downloadSalarySlipPdf(blob: Blob, filename?: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename ?? `salary-slip.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}

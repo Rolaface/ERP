@@ -144,6 +144,12 @@ export function calculateSalary(
       0;
 
     setInContext(context, nameKey, abbrKey, value);
+   if (
+  nameKey.toLowerCase() === "basic_salary" ||
+  abbrKey?.toLowerCase() === "bs"
+) {
+  context.base = value;
+}
   }
 
   // ── Pass 2: Iterative evaluation of formula-based components ──────────────
