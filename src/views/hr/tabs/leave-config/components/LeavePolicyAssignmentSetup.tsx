@@ -10,6 +10,7 @@ import type { Column } from "../../../../../components/ui/Table/type";
 
 import {
   deleteLeavePolicyAssignment,
+  updateLeavePolicyAssignment,
   type LeavePolicyAssignment,
 } from "../../../../../api/leaveConfigApi";
 import { showApiError, showSuccess } from "../../../../../utils/alert";
@@ -63,6 +64,33 @@ export function LeavePolicyAssignmentSetup() {
     [fetchAll],
   );
 
+  const handleCancel = useCallback(
+    async (row: LeavePolicyAssignment) => {
+      if (!row.name) return;
+      try {
+        setActionLoadingId(row.name);
+
+        const cancelled = await confirmDelete({
+          text: `Cancel assignment for "${row.employee}"?`,
+          loadingText: "Cancelling Leave Policy Assignment..",
+          successMessage: "Leave Policy Assignment cancelled",
+          action: async () => {
+            await updateLeavePolicyAssignment(row.name!, { docstatus: 2 });
+          },
+        });
+
+        if (cancelled) {
+          fetchAll();
+        }
+      } catch (err) {
+         // showApiError is already imported in your file
+         showApiError("Failed to cancel assignment"); 
+      } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [fetchAll],
+  );
   const columns: Column<LeavePolicyAssignment>[] = useMemo(
     () => [
       {
@@ -127,30 +155,72 @@ export function LeavePolicyAssignmentSetup() {
           );
         },
       },
+      // {
+      //   key: "actions",
+      //   header: "Actions",
+      //   align: "center",
+      //   render: (row) => (
+      //     <ActionGroup>
+      //       <ActionButton
+      //         type="edit"
+      //         iconOnly
+      //         // Pass row data and the fetchAll callback directly to the global store
+      //         onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
+      //         disabled={actionLoadingId === row.name || row.docstatus === 1}
+      //       />
+      //       <ActionMenu
+      //         customActions={[
+      //           {
+      //             label: "Delete",
+      //             onClick: () => handleDelete(row),
+      //             disabled: actionLoadingId === row.name || row.docstatus === 1,
+      //           },
+      //         ]}
+      //       />
+      //     </ActionGroup>
+      //   ),
+      // },
       {
         key: "actions",
         header: "Actions",
         align: "center",
-        render: (row) => (
-          <ActionGroup>
-            <ActionButton
-              type="edit"
-              iconOnly
-              // Pass row data and the fetchAll callback directly to the global store
-              onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
-              disabled={actionLoadingId === row.name || row.docstatus === 1}
-            />
-            <ActionMenu
-              customActions={[
-                {
-                  label: "Delete",
-                  onClick: () => handleDelete(row),
-                  disabled: actionLoadingId === row.name || row.docstatus === 1,
-                },
-              ]}
-            />
-          </ActionGroup>
-        ),
+        render: (row) => {
+          // Dynamically build the menu list based on docstatus
+          const menuActions = [];
+          
+          // Show "Cancel" only if submitted
+          if (row.docstatus === 1) {
+            menuActions.push({
+              label: "Cancel",
+              onClick: () => handleCancel(row),
+              disabled: actionLoadingId === row.name,
+            });
+          }
+          
+          // Show "Delete" only if Draft (0) or Cancelled (2)
+          if (row.docstatus === 0 || row.docstatus === 2) {
+            menuActions.push({
+              label: "Delete",
+              onClick: () => handleDelete(row),
+              disabled: actionLoadingId === row.name,
+            });
+          }
+
+          return (
+            <ActionGroup>
+              <ActionButton
+                type="edit"
+                iconOnly
+                onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
+                disabled={actionLoadingId === row.name}
+              />
+              {/* Only show the menu (three dots) if there are actions available */}
+              {menuActions.length > 0 && (
+                <ActionMenu customActions={menuActions} />
+              )}
+            </ActionGroup>
+          );
+        },
       },
     ],
     // Ensure fetchAll is included in the dependency array

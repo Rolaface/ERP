@@ -104,7 +104,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
       setSaving(true);
       const payload: LeavePolicy = {
         title: form.title,
-        docstatus: form.docstatus,
+        docstatus: isEdit ? form.docstatus : 1,
         leave_policy_details: validDetails,
       };
 
@@ -113,7 +113,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
         showSuccess(form.docstatus === 1 ? "Leave policy submitted successfully" : "Leave policy updated successfully");
       } else {
         await createLeavePolicy(payload);
-        showSuccess("Leave policy created successfully");
+        showSuccess("Leave policy created and submitted successfully");
       }
       onSuccess?.();
       onClose();

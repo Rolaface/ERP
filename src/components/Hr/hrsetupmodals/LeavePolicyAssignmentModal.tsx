@@ -5,7 +5,8 @@ import { MinimizableModal } from "../../common/MinimizableModal";
 
 import { 
   createLeavePolicyAssignment, 
-  updateLeavePolicyAssignment, 
+  updateLeavePolicyAssignment,
+  getAllLeavePeriods, 
   getAllLeavePolicies,
   type LeavePolicyAssignment 
 } from "../../../api/leaveConfigApi";
@@ -14,6 +15,7 @@ import { ModalInput, YesNoCheckbox } from "../../../components/ui/modal/modalCom
 import { showApiError, showSuccess, showValidationError } from "../../../utils/alert";
 import PolicySelect from "../../selects/LeavePolicySelect";
 import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
+import SearchSelect2 from "../../ui/modal/SearchSelect2";
 interface Props {
   modalId: string;
   isOpen: boolean;
@@ -28,7 +30,7 @@ const EMPTY: LeavePolicyAssignment = {
   assignment_based_on: "Leave Period",
   leave_period: "",
   carry_forward: 0,
-  docstatus: 0,
+  docstatus: 1,
 };
 
 export const LeavePolicyAssignmentModal: React.FC<Props> = ({
@@ -41,8 +43,9 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<LeavePolicyAssignment>(EMPTY);
   const [saving, setSaving] = useState(false);
-  const [employees, setEmployees] = useState<any[]>([]);
-  
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("");
+
   useEffect(() => {
     if (isOpen) {
       setForm(
@@ -65,19 +68,57 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
       setForm((prev) => ({ ...prev, [key]: value })),
     [],
   );
- useEffect(() => {
-    if (!isOpen) return;
-    const fetchEmployees = async () => {
-      try {
-        const res = await getAllEmployees(1, 100);
-        // Extract directly from res.data based on your API response
-        setEmployees(res.data || []);
-      } catch (error) {
-        console.error("Failed to fetch employees", error);
-      }
-    };
-    fetchEmployees();
-  }, [isOpen]);
+
+  const fetchEmployeesOptions = async (query: string) => {
+    try {
+      const res = await getAllEmployees(1, 100); 
+      const allEmployees = res.data || [];
+
+      const filteredEmployees = query
+        ? allEmployees.filter((emp: any) =>
+            emp.employee_name?.toLowerCase().includes(query.toLowerCase()) ||
+            emp.name?.toLowerCase().includes(query.toLowerCase())
+          )
+        : allEmployees;
+
+      return filteredEmployees.map((emp: any) => ({
+        label: `${emp.employee_name} (${emp.employee_number || emp.name})`,
+        value: emp.employee_number || emp.name,
+        raw: emp, 
+      }));
+    } catch (error) {
+      showApiError(parseFrappeError(error) || "Failed to fetch leave employees");
+      return [];
+    }
+  };
+
+const fetchLeavePeriodsOptions = async (query: string) => {
+    try {
+      const res: any = await getAllLeavePeriods(); 
+      
+      let allPeriods = [];
+      if (Array.isArray(res)) allPeriods = res;
+      else if (Array.isArray(res?.data)) allPeriods = res.data;
+      else if (Array.isArray(res?.data?.data)) allPeriods = res.data.data;
+      else if (Array.isArray(res?.message)) allPeriods = res.message;
+      else if (Array.isArray(res?.data?.message)) allPeriods = res.data.message;
+
+      const filteredPeriods = query
+        ? allPeriods.filter((period: any) =>
+            period.name?.toLowerCase().includes(query.toLowerCase())
+          )
+        : allPeriods;
+
+      return filteredPeriods.map((period: any) => ({
+        label: period.name, 
+        value: period.name, 
+        raw: period,        
+      }));
+    } catch (error) {
+      showApiError(parseFrappeError(error) || "Failed to fetch leave periods");
+      return [];
+    }
+  };
   const handleSave = async () => {
     if (!form.employee.trim()) {
       showValidationError("Employee is required");
@@ -96,7 +137,6 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
       setSaving(true);
       const payload = { ...form };
       
-      // Clean up payload based on selection
       if (payload.assignment_based_on === "Joining Date") {
         delete payload.leave_period;
       }
@@ -104,8 +144,6 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
       if (isEdit && initialData?.name) {
         await updateLeavePolicyAssignment(initialData.name, {
           carry_forward: payload.carry_forward,
-          // Frappe typically restricts updating core fields once saved, 
-          // passing only allowed fields here or pass full depending on your system limits
         });
         showSuccess("Assignment updated successfully");
       } else {
@@ -157,14 +195,27 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
     >
       <div className="space-y-5 pb-2">
         <div className="grid grid-cols-2 gap-4">
-          <ModalInput
+          {/* <ModalInput
             label="Employee ID"
             value={form.employee}
             onChange={(e) => set("employee", e.target.value)}
             placeholder="e.g. HR-EMP-00001"
             required
             disabled={isEdit} // Core link generally cannot be changed
-          />
+          /> */}
+          <SearchSelect2
+  label="Select Employee"
+  placeholder="Search by name..."
+  value={selectedEmployeeId} 
+  fetchOptions={fetchEmployeesOptions}
+  onChange={(val, option) => {
+    setSelectedEmployeeId(val);
+    set("employee", val); 
+    console.log("Selected ID:", val);
+    console.log("Full Employee Object:", option.raw); 
+  }}
+  required={true}
+/>
           {/* <ModalInput
             label="Leave Policy"
             value={form.leave_policy}
@@ -207,14 +258,18 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
             </div>
 
             {form.assignment_based_on === "Leave Period" && (
-              <ModalInput
-                label="Leave Period"
-                value={form.leave_period || ""}
-                onChange={(e) => set("leave_period", e.target.value)}
-                placeholder="e.g. HR-LPR-2026-00001"
-                required
-                disabled={isEdit}
-              />
+             <SearchSelect2
+        label="Leave Period"
+        placeholder="Search leave period (e.g., HR-LPR-...)"
+        value={selectedPeriod}
+        fetchOptions={fetchLeavePeriodsOptions}
+        onChange={(val) => {
+          setSelectedPeriod(val);
+          set("leave_period", val); 
+          console.log("Selected Leave Period Name:", val); 
+        }}
+        required={true}
+      />
             )}
           </div>
         </div>
@@ -228,14 +283,14 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
               onChange={(name, value) => set("carry_forward", value === "Y" ? 1 : 0)}
             />
             
-            {!isEdit && (
+            {/* {!isEdit && (
               <YesNoCheckbox
                 name="docstatus"
                 label="Submit Immediately"
                 value={form.docstatus === 1 ? "Y" : "N"}
                 onChange={(name, value) => set("docstatus", value === "Y" ? 1 : 0)}
               />
-            )}
+            )} */}
           </div>
         </div>
       </div>
