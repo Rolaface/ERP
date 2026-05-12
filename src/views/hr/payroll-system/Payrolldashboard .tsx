@@ -10,7 +10,7 @@ import {
   ActionGroup,
   ActionMenu,
 } from "../../../components/ui/Table/ActionButton";
-import PayrollEntryDetail from "./payrolldetail/paymententrydetail";
+import PayrollEntryDetail from "./payrolldetail/payrollentrydetail";
 
 interface Props {
   records: PayrollRecord[];

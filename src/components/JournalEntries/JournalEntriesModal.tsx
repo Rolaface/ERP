@@ -18,6 +18,7 @@ import AccountSelect from "../selects/AccountSelect";
 // IMPORT YOUR STORE
 import { useModalStore } from "../../store/modalStore";
 import Tooltip from "../Tooltip";
+import DatePickerInput from "../calendar/DatePickerInput";
 
 interface JournalEntryModalProps {
   isOpen: boolean;
@@ -210,16 +211,18 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
         </div>
         
         <div className="flex flex-col gap-1 w-full col-start-4 row-start-1">
-          <ModalInput
-            label="Reference Date"
-            name="cheque_date"
-            type="date"
-            value={form.cheque_date}
-            onChange={handleChange}
-            placeholder="Enter reference date..."
-            error={errors.cheque_date}
-            disabled={actualIsReadOnly}
-          />
+          <DatePickerInput
+    label="Reference Date"
+    name="cheque_date"
+    value={form.cheque_date}
+   onChange={(name, value) => {
+    handleChange({
+      target: { name, value, type: "date" },
+    } as React.ChangeEvent<HTMLInputElement>);
+  }}
+    disabled={actualIsReadOnly}
+    required
+  />
         </div>
       </>
     )}
@@ -242,7 +245,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
       />
     </div>
 
-    <div 
+    {/* <div 
       className={`flex flex-col gap-1 justify-center min-w-max mt-7 ${
         form.voucher_type === "Journal Entry" 
           ? "col-start-4 row-start-1" 
@@ -259,15 +262,44 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
           name="isOpening"
           checked={form.isOpening}
           onChange={handleChange}
-          className="w-4 h-4 accent-primary"
+          className="w-4 h-5 accent-primary"
           disabled={actualIsReadOnly}
         />
         <span className="text-sm font-medium text-main">
           Is Opening Entry
         </span>
       </label>
+    </div> */}
+<div 
+      className={`flex flex-col gap-1 w-full ${
+        form.voucher_type === "Journal Entry" 
+          ? "col-start-4 row-start-1" 
+          : "col-start-3 row-start-2"
+      }`}
+    >
+      {/* Invisible label acts as a perfectly sized spacer */}
+      <label className="text-sm invisible">Spacer</label>
+      
+      <div className="flex items-center h-full">
+        <label
+          className={`flex items-center gap-2 w-fit ${
+            actualIsReadOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"
+          }`}
+        >
+          <input
+            type="checkbox"
+            name="isOpening"
+            checked={form.isOpening}
+            onChange={handleChange}
+            className="w-4 h-4 accent-primary" 
+            disabled={actualIsReadOnly}
+          />
+          <span className="text-sm font-medium text-main">
+            Is Opening Entry
+          </span>
+        </label>
+      </div>
     </div>
-
   </div>
 {/* </div> */}
         {/* MIDDLE SECTION */}
