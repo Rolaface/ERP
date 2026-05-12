@@ -5,6 +5,7 @@ import {
   showLoading,
   closeSwal,
 } from "../../../utils/alert";
+import { ShieldCheck } from "lucide-react";
 import { User, Briefcase, DollarSign, FileText } from "lucide-react";
 import {
   uploadEmployeeDocument,
@@ -19,6 +20,7 @@ import { CompensationTab } from "./detailtab/Compensationtab";
 import { DocumentsTab, DocumentUploadModal } from "./detailtab/documenttab";
 import { SalarySlipTable } from "./detailtab/Salaryslip";
 import { getSalarySlipsByEmployee } from "../../../api/payroll/payrollEntryApi";
+import { StatutoryTab } from "./detailtab/StatutoryTab";
 
 // ── Use your existing AppSubTabs primitive ────────────────────────────────────
 // AppSubTabs gives the same underline-tab style used throughout your app.
@@ -27,14 +29,25 @@ import { AppSubTabs } from "../../../components/ui/app-shell";
 
 // ─── Tabs config ──────────────────────────────────────────────────────────────
 
-type TabId = "personal" | "employment" | "compensation" | "salarySlip" | "documents";
+type TabId =
+  | "personal"
+  | "statutory"
+  | "employment"
+  | "compensation"
+  | "salarySlip"
+  | "documents";
 
 const TABS = [
-  { id: "personal",     label: "Personal",     icon: <User       size={14} /> },
-  { id: "employment",   label: "Employment",   icon: <Briefcase  size={14} /> },
+  { id: "personal", label: "Personal", icon: <User size={14} /> },
+  {
+    id: "statutory",
+    label: "Statutory",
+    icon: <ShieldCheck size={14} />,
+  },
+  { id: "employment", label: "Employment", icon: <Briefcase size={14} /> },
   { id: "compensation", label: "Compensation", icon: <DollarSign size={14} /> },
-  { id: "salarySlip",   label: "Salary Slip",  icon: <FileText   size={14} /> },
-  { id: "documents",    label: "Documents",    icon: <FileText   size={14} /> },
+  { id: "salarySlip", label: "Salary Slip", icon: <FileText size={14} /> },
+  { id: "documents", label: "Documents", icon: <FileText size={14} /> },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -47,14 +60,20 @@ type Props = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-const EmployeeDetailView: React.FC<Props> = ({ employee: emp, onBack, onDocumentUploaded }) => {
-  const [activeTab,          setActiveTab]          = useState<TabId>("personal");
-  const [showUploadModal,    setShowUploadModal]    = useState(false);
-  const [documents,          setDocuments]          = useState<any[]>([]);
-  const [salarySlips,        setSalarySlips]        = useState<any[]>([]);
+const EmployeeDetailView: React.FC<Props> = ({
+  employee: emp,
+  onBack,
+  onDocumentUploaded,
+}) => {
+  const [activeTab, setActiveTab] = useState<TabId>("personal");
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [salarySlips, setSalarySlips] = useState<any[]>([]);
   const [salarySlipsLoading, setSalarySlipsLoading] = useState(false);
 
-  const fullName = [emp.first_name, emp.middle_name, emp.last_name].filter(Boolean).join(" ");
+  const fullName = [emp.first_name, emp.middle_name, emp.last_name]
+    .filter(Boolean)
+    .join(" ");
   const currency = fmt(emp.salary_currency) || "";
 
   // ── Data fetching ──────────────────────────────────────────────────────────
@@ -118,7 +137,6 @@ const EmployeeDetailView: React.FC<Props> = ({ employee: emp, onBack, onDocument
      * so this just sits inside the body's flex-col.
      */
     <div className="flex flex-1 min-h-0 gap-4">
-
       {/* ── Sidebar — fixed width, sticky ─────────────────────────────────── */}
       <div className="w-[256px] shrink-0 self-start sticky top-0">
         <EmployeeSidebar
@@ -132,7 +150,6 @@ const EmployeeDetailView: React.FC<Props> = ({ employee: emp, onBack, onDocument
 
       {/* ── Detail panel — grows, clips, scrolls internally ───────────────── */}
       <div className="flex flex-1 flex-col min-w-0 min-h-0 bg-card rounded-xl border border-[var(--border)] overflow-hidden">
-
         {/*
          * AppSubTabs — same underline style used in Employment Directory,
          * Payroll, etc. Zero extra styling needed; it matches out of the box.
@@ -145,14 +162,16 @@ const EmployeeDetailView: React.FC<Props> = ({ employee: emp, onBack, onDocument
 
         {/* Scrollable tab body */}
         <div className="flex-1 overflow-y-auto p-5">
-          {activeTab === "personal"     && <PersonalTab     emp={emp} fullName={fullName} />}
-          {activeTab === "employment"   && <EmploymentTab   emp={emp} />}
-          {activeTab === "compensation" && <CompensationTab emp={emp} currency={currency} />}
-          {activeTab === "salarySlip"   && (
-            <SalarySlipTable
-              slips={salarySlips}
-              loading={salarySlipsLoading}
-            />
+          {activeTab === "personal" && (
+            <PersonalTab emp={emp} fullName={fullName} />
+          )}
+          {activeTab === "statutory" && <StatutoryTab emp={emp} />}
+          {activeTab === "employment" && <EmploymentTab emp={emp} />}
+          {activeTab === "compensation" && (
+            <CompensationTab emp={emp} currency={currency} />
+          )}
+          {activeTab === "salarySlip" && (
+            <SalarySlipTable slips={salarySlips} loading={salarySlipsLoading} />
           )}
           {activeTab === "documents" && (
             <DocumentsTab
@@ -163,7 +182,6 @@ const EmployeeDetailView: React.FC<Props> = ({ employee: emp, onBack, onDocument
           )}
         </div>
       </div>
-
     </div>
   );
 };
